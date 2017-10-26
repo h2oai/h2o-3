@@ -6,6 +6,7 @@ package hex;
 public interface GLMMetrics {
     double residual_deviance(); //naming is pythonic because its user-facing via grid search sort criterion
     double null_deviance();
+    double likelihood();
     long residual_degrees_of_freedom();
     long null_degrees_of_freedom();
 }

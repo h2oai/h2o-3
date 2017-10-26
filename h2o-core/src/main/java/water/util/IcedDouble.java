@@ -18,4 +18,9 @@ public class IcedDouble extends Iced {
     _val = atd;
     return this;
   }
+
+  public IcedDouble add(IcedDouble y) {
+    _val += y._val;
+    return this;
+  }
 }

@@ -5,11 +5,9 @@ import hex.DataInfo.Row;
 
 import hex.FrameTask2;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMModel.GLMWeights;
 import hex.gram.Gram;
-import hex.glm.GLMModel.GLMParameters.Family;
 import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
@@ -48,7 +46,7 @@ public abstract class GLMTask  {
       Chunk w = _hasWeights?chks[i++]:new C0DChunk(1.0,len);
       Chunk o = _hasOffset?chks[i++]:new C0DChunk(0.0,len);
       Chunk r = chks[i];
-      if(_glmf._family != Family.multinomial) {
+      if(_glmf._family != GLM.Family.multinomial) {
         double ymu = _glmf.link(_ymu[0]);
         for (int j = 0; j < len; ++j)
           _nullDev += w.atd(j)*_glmf.deviance(r.atd(j), _glmf.linkInv(ymu + o.atd(j)));
@@ -70,7 +68,7 @@ public abstract class GLMTask  {
       super(null,dinfo, jobKey);
       _glmf = new GLMWeightsFun(parms);
       _beta = beta;
-      _sparseOffset = _sparse?GLM.sparseOffset(_beta,_dinfo):0;
+      _sparseOffset = _sparse? GLM.sparseOffset(_beta,_dinfo):0;
     }
     private transient GLMWeights _glmw;
     private final double _sparseOffset;
@@ -188,6 +186,7 @@ public abstract class GLMTask  {
    private double [] _predictorSDs;
    private final boolean _expandedResponse; // true iff family == multinomial and response has been maually expanded into binary columns
 
+   public int [] badCols(){return _basicStats.badCols();}
    public double [] predictorMeans(){return _basicStats.mean();}
    public double [] predictorSDs(){
      if(_predictorSDs != null) return _predictorSDs;
@@ -366,7 +365,7 @@ public abstract class GLMTask  {
       super(cmp, dinfo, jobKey);
       _beta = beta;
       _glmw = glmw;
-      assert _glmw._family != Family.multinomial:"Generic glm weights task does not work for family multinomial";
+      assert _glmw._family != GLM.Family.multinomial:"Generic glm weights task does not work for family multinomial";
     }
 
     @Override public void chunkInit(){
@@ -466,17 +465,12 @@ public abstract class GLMTask  {
     final double [] _beta;
     public double [] _gradient;
     public double _likelihood;
-    final transient  double _currentLambda;
-    final transient double _reg;
     protected final DataInfo _dinfo;
 
 
     protected GLMGradientTask(Key jobKey, DataInfo dinfo, double reg, double lambda, double[] beta){
       _dinfo = dinfo;
       _beta = beta.clone();
-      _reg = reg;
-      _currentLambda = lambda;
-
     }
     protected abstract void computeGradientMultipliers(double [] es, double [] ys, double [] ws);
 
@@ -616,11 +610,7 @@ public abstract class GLMTask  {
       ArrayUtils.add(_gradient,gmgt._gradient);
       _likelihood += gmgt._likelihood;
     }
-    @Override public final void postGlobal(){
-      ArrayUtils.mult(_gradient,_reg);
-      for(int j = 0; j < _beta.length - 1; ++j)
-        _gradient[j] += _currentLambda * _beta[j];
-    }
+
   }
 
   static class GLMGenericGradientTask extends GLMGradientTask {
@@ -694,7 +684,7 @@ public abstract class GLMTask  {
   static class GLMBinomialGradientTask extends GLMGradientTask {
     public GLMBinomialGradientTask(Key jobKey, double obj_reg, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
       super(jobKey,dinfo, obj_reg,lambda,beta);
-      assert parms._family == Family.binomial && parms._link == Link.logit;
+      assert parms._family == GLM.Family.binomial && parms._link == GLM.Link.logit;
     }
 
     @Override
@@ -713,7 +703,7 @@ public abstract class GLMTask  {
   static class GLMGaussianGradientTask extends GLMGradientTask {
     public GLMGaussianGradientTask(Key jobKey, DataInfo dinfo, double obj_reg, GLMParameters parms, double lambda, double [] beta) {
       super(jobKey,dinfo, obj_reg,lambda,beta);
-      assert parms._family == Family.gaussian && parms._link == Link.identity;
+      assert parms._family == GLM.Family.gaussian && parms._link == GLM.Link.identity;
     }
 
     @Override
@@ -735,8 +725,6 @@ public abstract class GLMTask  {
 
   static class GLMMultinomialGradientTask extends MRTask<GLMMultinomialGradientTask> {
     final double [][] _beta;
-    final transient double _currentLambda;
-    final transient double _reg;
     private double [][] _gradient;
     double _likelihood;
     Job _job;
@@ -747,18 +735,11 @@ public abstract class GLMTask  {
      *
      * @param job
      * @param dinfo
-     * @param lambda
      * @param beta coefficients as 2D array [P][K]
-     * @param reg
      */
-    public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, double reg) {
-      _currentLambda = lambda;
-      _reg = reg;
+    public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double [] beta) {
       // need to flip the beta
-      _beta = new double[beta[0].length][beta.length];
-      for(int i = 0; i < _beta.length; ++i)
-        for(int j = 0; j < _beta[i].length; ++j)
-          _beta[i][j] = beta[j][i];
+      _beta = ArrayUtils.transpose(ArrayUtils.convertTo2DMatrix(beta,dinfo.fullN()+1));
       _job = job;
       _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .125;
       _dinfo = dinfo;
@@ -916,23 +897,8 @@ public abstract class GLMTask  {
         ArrayUtils.add(_gradient,gmgt._gradient);
       _likelihood += gmgt._likelihood;
     }
-
-    @Override public void postGlobal(){
-      ArrayUtils.mult(_gradient, _reg);
-      int P = _beta.length;
-      // add l2 penalty
-      for(int c = 0; c < P-1; ++c)
-        for(int j = 0; j < _beta[0].length; ++j)
-          _gradient[c][j] += _currentLambda * _beta[c][j];
-    }
-
     public double [] gradient(){
-      double [] res = MemoryManager.malloc8d(_gradient.length*_gradient[0].length);
-      int P = _gradient.length;
-      for(int k = 0; k < _gradient[0].length; ++k)
-        for(int i = 0; i < _gradient.length; ++i)
-          res[k*P + i] = _gradient[i][k];
-      return res;
+      return ArrayUtils.flat(_gradient);
     }
   }
 
@@ -1425,7 +1391,7 @@ public abstract class GLMTask  {
       _yy += y*y;
       final int numStart = _dinfo.numStart();
       double wz,w;
-      if(_glmf._family == Family.multinomial) {
+      if(_glmf._family == GLM.Family.multinomial) {
         y = (y == _c)?1:0;
         double mu = r.response(1);
         double eta = r.response(2);
@@ -1724,7 +1690,7 @@ public abstract class GLMTask  {
       wx = new double[_dinfo.fullN()+1];
       wxx = new double[_dinfo.fullN()+1];
       DataInfo.Rows rows =_dinfo.rows(chunks,_sparse);
-      double sparseOffset = rows._sparse?GLM.sparseOffset(_betaw,_dinfo):0;
+      double sparseOffset = rows._sparse? GLM.sparseOffset(_betaw,_dinfo):0;
       for(int i = 0; i < rows._nrows; ++i) {
         Row r = rows.row(i);
         if (r.isBad() || r.weight == 0) {
@@ -1732,8 +1698,8 @@ public abstract class GLMTask  {
           continue;
         }
         final double y = r.response(0);
-        assert ((_params._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
-        assert ((_params._family != Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
+        assert ((_params._family != GLM.Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";
+        assert ((_params._family != GLM.Family.binomial) || (0 <= y && y <= 1)) : "illegal response column, y must be <0,1>  for family=Binomial. got " + y;
         final double eta;
         final int numStart = _dinfo.numStart();
         eta = r.innerProduct(_betaw) + sparseOffset;
@@ -1798,10 +1764,10 @@ public abstract class GLMTask  {
     double _sumsqe;
     double _wsum;
 
-    public ComputeSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, /*, double [] betaOld,*/ double [] betaNew, GLMParameters parms) {
+    public ComputeSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, /*, double [] betaOld,*/ double [] betaNew, GLMWeightsFun glmf) {
       super(cmp, dinfo, jobKey);
 //      _betaOld = betaOld;
-      _glmf = new GLMWeightsFun(parms);
+      _glmf = glmf;
       _betaNew = betaNew;
     }
 
@@ -1821,7 +1787,7 @@ public abstract class GLMTask  {
     protected void processRow(Row r) {
       double z = r.response(0) - r.offset;
       double w = r.weight;
-      if(_glmf._family != Family.gaussian) {
+      if(_glmf._family != GLM.Family.gaussian) {
 //        double etaOld = r.innerProduct(_betaOld) + _sparseOffsetOld;
         double etaOld = r.innerProduct(_betaNew) + _sparseOffsetNew;
         _glmf.computeWeights(r.response(0),etaOld,r.offset,r.weight,_glmw);
@@ -1859,7 +1825,7 @@ public abstract class GLMTask  {
       double [][] gram = new double[_newCols.length][_dinfo.fullN() + 1];
       double [] xy = new double[_newCols.length];
       final int ns = _dinfo.numStart();
-      double sparseOffset = rows._sparse?GLM.sparseOffset(_beta,_dinfo):0;
+      double sparseOffset = rows._sparse? GLM.sparseOffset(_beta,_dinfo):0;
       for (int rid = 0; rid < rows._nrows; ++rid) {
         int j = 0;
         Row r = rows.row(rid);

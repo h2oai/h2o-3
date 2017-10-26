@@ -43,7 +43,7 @@ public class GLMScore extends MRTask<GLMScore> {
     _generatePredictions = generatePredictions;
     _m._parms = m._parms;
     _nclasses = m._output.nclasses();
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial){
+    if(_m._parms._family == GLM.Family.multinomial){
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
     } else {
@@ -72,7 +72,7 @@ public class GLMScore extends MRTask<GLMScore> {
   }
 
   public double [] scoreRow(DataInfo.Row r, double o, double [] preds) {
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
+    if(_m._parms._family == GLM.Family.multinomial) {
       double[] eta = _eta;
       final double[][] bm = _beta_multinomial;
       double sumExp = 0;
@@ -90,7 +90,7 @@ public class GLMScore extends MRTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      if (_m._parms._family == GLMModel.GLMParameters.Family.binomial || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial) { // threshold for prediction
+      if (_m._parms._family == GLM.Family.binomial || _m._parms._family == GLM.Family.quasibinomial) { // threshold for prediction
         preds[0] = mu >= _defaultThreshold?1:0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1
@@ -121,7 +121,7 @@ public class GLMScore extends MRTask<GLMScore> {
   }
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial)
+    if(_m._parms._family == GLM.Family.multinomial)
       _eta = MemoryManager.malloc8d(_nclasses);
     double[] ps;
     _vcov = _m._output._vcov;

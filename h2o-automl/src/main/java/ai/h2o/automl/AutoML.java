@@ -8,6 +8,7 @@ import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
 import hex.deepwater.DeepWater;
 import hex.deepwater.DeepWaterParameters;
+import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -672,9 +673,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         setCommonModelBuilderParams(glmParameters);
 
     glmParameters._lambda_search = true;
-    glmParameters._family = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMModel.GLMParameters.Family.binomial :
-            getResponseColumn().isCategorical() ? GLMModel.GLMParameters.Family.multinomial :
-                    GLMModel.GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
+    glmParameters._family = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLM.Family.binomial :
+            getResponseColumn().isCategorical() ? GLM.Family.multinomial :
+                    GLM.Family.gaussian;  // TODO: other continuous distributions!
 
     Map<String, Object[]> searchParams = new HashMap<>();
     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!

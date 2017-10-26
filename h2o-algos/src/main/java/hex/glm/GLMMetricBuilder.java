@@ -7,7 +7,6 @@ import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
 import hex.ModelMetricsMultinomial.MetricBuilderMultinomial;
 import hex.ModelMetricsRegression.MetricBuilderRegression;
 import hex.ModelMetricsSupervised.MetricBuilderSupervised;
-import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMWeightsFun;
 import water.H2O;
 import water.fvec.Frame;
@@ -70,9 +69,9 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if(_glmf._family == Family.multinomial)
+      if(_glmf._family == GLM.Family.multinomial)
         add2(yact[0], ds, weight, offset);
-      else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial)
+      else if (_glmf._family == GLM.Family.binomial || _glmf._family == GLM.Family.quasibinomial)
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -107,7 +106,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   public void add(double yreal, double ymodel, double weight, double offset) {
     if(weight == 0)return;
     _yact[0] = (float) yreal;
-    if(_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial) {
+    if(_glmf._family == GLM.Family.binomial || _glmf._family == GLM.Family.quasibinomial) {
       _ds[1] = 1 - ymodel;
       _ds[2] = ymodel;
     } else {
@@ -135,7 +134,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       null_devince += weight * _glmf.deviance(yreal, _ymu[0]);
     else
       null_devince += weight * _glmf.deviance(yreal, _glmf.linkInv(offset +_glmf.link(_ymu[0])));
-    if (_glmf._family == Family.poisson) { // AIC for poisson
+    if (_glmf._family == GLM.Family.poisson) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = MathUtils.logFactorial(y);
       _aic2 += weight * (yreal * Math.log(ymodel) - logfactorial - ymodel);
@@ -185,7 +184,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     GLMModel gm = (GLMModel)m;
     computeAIC();
     ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
-    if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial) {
+    if (_glmf._family == GLM.Family.binomial || _glmf._family == GLM.Family.quasibinomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       GainsLift gl = null;
       if (preds!=null) {
@@ -197,7 +196,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
         }
       }
       metrics = new ModelMetricsBinomialGLM(m, f, metrics._nobs, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl);
-    } else if( _glmf._family == Family.multinomial) {
+    } else if( _glmf._family == GLM.Family.multinomial) {
       ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) metrics;
       metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs,metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF());
     } else {

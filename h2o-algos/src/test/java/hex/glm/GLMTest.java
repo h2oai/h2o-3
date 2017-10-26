@@ -3,20 +3,21 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.TransformType;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
-import hex.glm.GLMModel.GLMParameters.Link;
-import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLM.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
 import org.junit.*;
 
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLM.Family;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
+import water.util.PrettyPrint;
+
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -58,9 +59,9 @@ public class GLMTest  extends TestUtil {
 
     private void checkScore(long rid, double [] predictions, double [] outputs){
       int start = 0;
-      if(_m._parms._family == Family.binomial && Math.abs(predictions[2] - _m.defaultThreshold()) < 1e-10)
+      if(_m._parms._family == GLM.Family.binomial && Math.abs(predictions[2] - _m.defaultThreshold()) < 1e-10)
         start = 1;
-      if(_m._parms._family == Family.multinomial) {
+      if(_m._parms._family == GLM.Family.multinomial) {
         double [] maxs = new double[2];
         for(int j = 1; j < predictions.length; ++j) {
           if(predictions[j] > maxs[0]) {
@@ -77,7 +78,7 @@ public class GLMTest  extends TestUtil {
         assertEquals("mismatch at row " + (rid) + ", p = " + j + ": " + outputs[j] + " != " + predictions[j] + ", predictions = " + Arrays.toString(predictions) + ", output = " + Arrays.toString(outputs), outputs[j], predictions[j], 1e-6);
     }
     @Override public void map(Chunk [] chks) {
-      int nout = _m._parms._family == Family.multinomial ? _m._output.nclasses() + 1 : _m._parms._family == Family.binomial ? 3 : 1;
+      int nout = _m._parms._family == GLM.Family.multinomial ? _m._output.nclasses() + 1 : _m._parms._family == GLM.Family.binomial ? 3 : 1;
       Chunk[] outputChks = Arrays.copyOfRange(chks, chks.length - nout, chks.length);
       chks = Arrays.copyOf(chks, chks.length - nout);
       Chunk off = new C0DChunk(0, chks[0]._len);
@@ -113,7 +114,7 @@ public class GLMTest  extends TestUtil {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
       fr = ParseDataset.parse(parsed, raw);
-      GLMParameters params = new GLMParameters(Family.gaussian);
+      GLMParameters params = new GLMParameters(GLM.Family.gaussian);
       params._train = fr._key;
       // params._response = 1;
       params._response_column = fr._names[1];
@@ -148,7 +149,7 @@ public class GLMTest  extends TestUtil {
       fr = ParseDataset.parse(parsed, raw);
       Vec v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max() + ", mean = " + v.mean());
-      GLMParameters params = new GLMParameters(Family.poisson);
+      GLMParameters params = new GLMParameters(GLM.Family.poisson);
       params._train = fr._key;
       // params._response = 1;
       params._response_column = fr._names[1];
@@ -164,7 +165,7 @@ public class GLMTest  extends TestUtil {
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
       FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
       fr = ParseDataset.parse(parsed, raw);
-      GLMParameters params2 = new GLMParameters(Family.poisson);
+      GLMParameters params2 = new GLMParameters(GLM.Family.poisson);
       params2._train = fr._key;
       // params2._response = 1;
       params2._response_column = fr._names[1];
@@ -204,7 +205,7 @@ public class GLMTest  extends TestUtil {
 //      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
 //      double [] vals = new double[] {1.0,1.0};
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
-      GLMParameters params = new GLMParameters(Family.gamma);
+      GLMParameters params = new GLMParameters(GLM.Family.gamma);
       // params._response = 1;
       params._response_column = fr._names[1];
       params._train = parsed;
@@ -260,7 +261,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = ParseDataset.parse(parsed, raw);
     GLM job = null;
     try {
-      GLMParameters params = new GLMParameters(Family.poisson);
+      GLMParameters params = new GLMParameters(GLM.Family.poisson);
       // params._response = 1;
       params._response_column = fr._names[1];
       params._train = parsed;
@@ -284,7 +285,7 @@ public class GLMTest  extends TestUtil {
     DataInfo dinfo = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
-      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial, GLM.Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
       params._lambda = new double[]{0};
@@ -302,7 +303,7 @@ public class GLMTest  extends TestUtil {
       GLMGradientTask grtGen = new GLMGenericGradientTask(null,dinfo,params._obj_reg, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ", grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
-      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      params = new GLMParameters(GLM.Family.gaussian, GLM.Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       params._use_all_factor_levels = false;
       dinfo.remove();
       dinfo = new DataInfo(fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
@@ -439,7 +440,7 @@ public class GLMTest  extends TestUtil {
       fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
       fr.remove("C21").remove();
       fr.remove("C29").remove();
-      GLMParameters params = new GLMParameters(Family.multinomial);
+      GLMParameters params = new GLMParameters(GLM.Family.multinomial);
       params._response_column = "C55";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{};
@@ -484,7 +485,7 @@ public class GLMTest  extends TestUtil {
     Frame score = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-      GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
+      GLMParameters params = new GLMParameters(GLM.Family.poisson, GLM.Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
@@ -503,7 +504,7 @@ public class GLMTest  extends TestUtil {
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
       testScoring(model,fr);
       model.delete();
-      params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0},0,0);
+      params = new GLMParameters(GLM.Family.gamma, GLM.Family.gamma.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
@@ -519,7 +520,7 @@ public class GLMTest  extends TestUtil {
       model.delete();
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
-      params = new GLMParameters(Family.gaussian);
+      params = new GLMParameters(GLM.Family.gaussian);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"name"};
@@ -618,7 +619,7 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = true;
-      params._family = Family.binomial;
+      params._family = GLM.Family.binomial;
       params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
@@ -687,8 +688,8 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = true;
-      params._family = Family.binomial;
-      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._family = GLM.Family.binomial;
+      params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
       params._response_column = "IsDepDelayed";
       params._ignored_columns = new String[]{"IsDepDelayed_REC"};
       params._train = fr._key;
@@ -716,8 +717,8 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = true;
-      params._family = Family.binomial;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._family = GLM.Family.binomial;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       params._response_column = "IsDepDelayed";
       params._ignored_columns = new String[]{"IsDepDelayed_REC"};
       params._train = fr._key;
@@ -744,8 +745,8 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = true;
-      params._family = Family.gaussian;
-      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._family = GLM.Family.gaussian;
+      params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
       params._response_column = "C1";
       params._train = fr._key;
       GLM glm = new GLM( params, modelKey);
@@ -772,8 +773,8 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = true;
-      params._family = Family.gaussian;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._family = GLM.Family.gaussian;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       params._response_column = "C1";
       params._train = fr._key;
       GLM glm = new GLM( params, modelKey);
@@ -814,7 +815,7 @@ public class GLMTest  extends TestUtil {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
       params._standardize = false;
-      params._family = Family.binomial;
+      params._family = GLM.Family.binomial;
       params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
@@ -826,7 +827,7 @@ public class GLMTest  extends TestUtil {
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       double[] beta_1 = model.beta();
-      params._solver = Solver.L_BFGS;
+      params._solver = GLM.Solver.L_BFGS;
       params._max_iterations = 1000;
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
@@ -1015,7 +1016,7 @@ public class GLMTest  extends TestUtil {
     Frame f = new Frame(Key.<Frame>make("TestData"), null, new Vec[]{v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12});
     DKV.put(f);
     DataInfo dinfo = new DataInfo(f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-    GLMParameters params = new GLMParameters(Family.gaussian);
+    GLMParameters params = new GLMParameters(GLM.Family.gaussian);
     //                              public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta, double lambda) {
     final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(true).doAll(dinfo._adaptedFrame);
     final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(false).doAll(dinfo._adaptedFrame);
@@ -1030,7 +1031,7 @@ public class GLMTest  extends TestUtil {
     H2O.submitTask(new H2OCountedCompleter() {
       @Override
       public void compute2() {
-        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null).solve(null, beta);
+        new GramBasedSolver.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null).solve(null, beta);
         tryComplete();
       }
     }).join();
@@ -1067,7 +1068,7 @@ public class GLMTest  extends TestUtil {
     String[] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "IsDepDelayed_REC"};
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.gaussian);
+      GLMParameters params = new GLMParameters(GLM.Family.gaussian);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
@@ -1122,8 +1123,8 @@ public class GLMTest  extends TestUtil {
       xy.remove();
       params = (GLMParameters) params.clone();
       params._standardize = false;
-      params._family = Family.binomial;
-      params._link = Link.logit;
+      params._family = GLM.Family.binomial;
+      params._link = GLM.Link.logit;
       model3 = new GLM( params).trainModel().get();
       testScoring(model3,frMM);
       params._train = fr._key;
@@ -1187,7 +1188,7 @@ public class GLMTest  extends TestUtil {
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
@@ -1195,7 +1196,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = true;
-      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
       params._nlambdas = 5;
       GLM glm = new GLM( params);
@@ -1224,7 +1225,7 @@ public class GLMTest  extends TestUtil {
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
@@ -1232,7 +1233,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       GLM glm = new GLM( params);
       model1 = glm.trainModel().get();
@@ -1278,16 +1279,16 @@ public class GLMTest  extends TestUtil {
     Scope.enter();
     rnd = new Random(System.currentTimeMillis());
     try {
-      for(Solver slvr: Solver.values()) {
+      for(Solver slvr: GLM.Solver.values()) {
         for (double alpha : new double[]{0, .5, 1}) {
           for (Frame fr : new Frame[]{frSC,frCC, frMM}) {
             // run COD_NAIVE
-            for (Family f : new Family[]{Family.gaussian,Family.binomial}) {
+            for (Family f : new Family[]{GLM.Family.gaussian, GLM.Family.binomial}) {
               double r = rnd.nextDouble();
               if(r >= ratio) continue;
-              String[] ignoredCols = f == Family.binomial?new String[]{"IsDepDelayed_REC"}:new String[]{"IsDepDelayed"};
+              String[] ignoredCols = f == GLM.Family.binomial?new String[]{"IsDepDelayed_REC"}:new String[]{"IsDepDelayed"};
               GLMParameters params = new GLMParameters(f);
-              params._response_column = f == Family.binomial?"IsDepDelayed":"IsDepDelayed_REC";
+              params._response_column = f == GLM.Family.binomial?"IsDepDelayed":"IsDepDelayed_REC";
               params._ignored_columns = ignoredCols;
               params._train = fr._key;
               params._valid = fr._key;
@@ -1308,13 +1309,13 @@ public class GLMTest  extends TestUtil {
                 System.out.println(i + ": solver = " + slvr + " alpha = " + alpha + " lambda = " + lambda + " frame = " + fr._key + " family = " + f);
                 System.out.println("====================================================================================================");
                 GLMParameters parms2 = (GLMParameters) params.clone();
-                parms2._solver = Solver.AUTO;
+                parms2._solver = GLM.Solver.AUTO;
                 parms2._lambda = new double[]{lambda};
                 parms2._lambda_search = false;
                 parms2._beta_epsilon = 1e-5;
                 parms2._objective_epsilon = 1e-8;
                 model2 = new GLM(parms2).trainModel().get();
-                double[] beta = f == Family.multinomial ? ArrayUtils.flat(model2._output.getNormBetaMultinomial()) : model2._output.getNormBeta();
+                double[] beta = f == GLM.Family.multinomial ? ArrayUtils.flat(model2._output.getNormBetaMultinomial()) : model2._output.getNormBeta();
                 double[] beta_ls = sm1[i].getBeta(new double [beta.length]);
                 System.out.println(ArrayUtils.pprint(new double[][]{beta, beta_ls}));
                 // Can't compare beta here, have to compare objective value
@@ -1327,7 +1328,7 @@ public class GLMTest  extends TestUtil {
                 Assert.assertEquals(obj,obj_ls,obj_ls*1e-2);
                 System.out.println("obj    " + obj);
                 System.out.println("obj_ls " + obj_ls);
-                double epsilon = slvr == Solver.L_BFGS?5e-3*obj:1e-3*obj;
+                double epsilon = slvr == GLM.Solver.L_BFGS?5e-3*obj:1e-3*obj;
                 Assert.assertTrue(obj_ls < obj + epsilon);
                 model2.delete();
               }
@@ -1354,7 +1355,7 @@ public class GLMTest  extends TestUtil {
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
@@ -1362,7 +1363,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = null; // new double [] {0.25};
       params._alpha = new double[]{1};
       params._standardize = false;
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       params._nlambdas = 5;
       GLM glm = new GLM( params);
@@ -1383,7 +1384,7 @@ public class GLMTest  extends TestUtil {
 
 
   public static double residualDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
+    if (m._parms._family == GLM.Family.binomial || m._parms._family == GLM.Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._resDev;
     } else {
@@ -1392,7 +1393,7 @@ public class GLMTest  extends TestUtil {
     }
   }
   public static double residualDevianceTest(GLMModel m) {
-    if(m._parms._family == Family.binomial) {
+    if(m._parms._family == GLM.Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
       return metrics._resDev;
     } else {
@@ -1401,7 +1402,7 @@ public class GLMTest  extends TestUtil {
     }
   }
   public static double nullDevianceTest(GLMModel m) {
-    if(m._parms._family == Family.binomial) {
+    if(m._parms._family == GLM.Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM)m._output._validation_metrics;
       return metrics._nullDev;
     } else {
@@ -1410,7 +1411,7 @@ public class GLMTest  extends TestUtil {
     }
   }
   public static double aic(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == GLM.Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._AIC;
     } else {
@@ -1420,7 +1421,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double nullDOF(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == GLM.Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._nullDegressOfFreedom;
     } else {
@@ -1430,7 +1431,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double resDOF(GLMModel m) {
-    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
+    if (m._parms._family == GLM.Family.binomial || m._parms._family == GLM.Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._residualDegressOfFreedom;
     } else {
@@ -1449,7 +1450,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double mse(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == GLM.Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._MSE;
     } else {
@@ -1459,7 +1460,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double nullDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
+    if (m._parms._family == GLM.Family.binomial || m._parms._family == GLM.Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._nullDev;
     } else {
@@ -1521,7 +1522,7 @@ public class GLMTest  extends TestUtil {
 //          -8.894088     0.001588    -0.009589     0.231777    -0.459937     0.556231     0.556395     0.027854    -0.011355     1.010179
       String [] cfs1 = new String [] {"Intercept","AGE", "RACE.R2","RACE.R3", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
       double [] vals = new double [] {-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
@@ -1618,10 +1619,10 @@ public class GLMTest  extends TestUtil {
   }
 
   @Test public void testQuasibinomial(){
-    GLMParameters params = new GLMParameters(Family.quasibinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.quasibinomial);
     GLM glm = new GLM(params);
     params.validate(glm);
-    params._link = Link.log;
+    params._link = GLM.Link.log;
     try {
       params.validate(glm);
       Assert.assertTrue("should've thrown IAE", false);
@@ -1640,14 +1641,14 @@ public class GLMTest  extends TestUtil {
 //          -8.894088     0.001588    -0.009589     0.231777    -0.459937     0.556231     0.556395     0.027854    -0.011355     1.010179
       String[] cfs1 = new String[]{"Intercept", "AGE", "RACE.R2", "RACE.R3", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
       double[] vals = new double[]{-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
-      params = new GLMParameters(Family.quasibinomial);
+      params = new GLMParameters(GLM.Family.quasibinomial);
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._nfolds = 5;
       params._standardize = false;
-      params._link = Link.logit;
+      params._link = GLM.Link.logit;
 //      params._missing_values_handling = MissingValuesHandling.Skip;
       glm = new GLM(params);
       model = glm.trainModel().get();
@@ -1673,7 +1674,7 @@ public class GLMTest  extends TestUtil {
     Frame score = null;
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "response";
       // params._response = fr.find(params._response_column);
       params._ignored_columns = new String[]{"ID"};
@@ -1708,7 +1709,7 @@ public class GLMTest  extends TestUtil {
 
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.poisson);
+      GLMParameters params = new GLMParameters(GLM.Family.poisson);
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
@@ -1731,11 +1732,11 @@ public class GLMTest  extends TestUtil {
 
     try {
       Scope.enter();
-      GLMParameters params = new GLMParameters(Family.poisson);
+      GLMParameters params = new GLMParameters(GLM.Family.poisson);
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
-      params._family = Family.poisson;
+      params._family = GLM.Family.poisson;
       GLM glm = new GLM( params);
       model = glm.trainModel().get();
       testScoring(model,vfr);
@@ -1751,7 +1752,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
-      GLMParameters params = new GLMParameters(Family.binomial);
+      GLMParameters params = new GLMParameters(GLM.Family.binomial);
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
@@ -1777,10 +1778,10 @@ public class GLMTest  extends TestUtil {
     Key pros = Key.make("prostate");
     Frame f = parse_test_file(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
 
-    for(Family fam:new Family[]{Family.multinomial,Family.binomial}) {
+    for(Family fam:new Family[]{/*Family.multinomial,*/GLM.Family.binomial}) {
       for (double alpha : new double[]{0, .5, 1}) {
-        for (Solver s : Solver.values()) {
-          if (s == Solver.COORDINATE_DESCENT_NAIVE || s== Solver.AUTO) continue;
+        for (Solver s : GLM.Solver.values()) {
+          if (s == GLM.Solver.COORDINATE_DESCENT_NAIVE || s== GLM.Solver.AUTO) continue;
 //          if(fam == Family.multinomial && (s != Solver.L_BFGS || alpha != 0)) continue;
           try {
             Scope.enter();
@@ -1790,7 +1791,7 @@ public class GLMTest  extends TestUtil {
             parms._solver = s;
             parms._lambda = new double[]{10, 1, .1, 1e-5, 0};
             parms._lambda_search = true;
-            parms._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+            parms._response_column = fam == GLM.Family.multinomial?"RACE":"CAPSULE";
             GLMModel model = new GLM(parms).trainModel().get();
             GLMModel.RegularizationPath rp = model.getRegularizationPath();
             for (int i = 0; i < parms._lambda.length; ++i) {
@@ -1800,12 +1801,12 @@ public class GLMTest  extends TestUtil {
               parms2._solver = s;
               parms2._lambda = new double[]{parms._lambda[i]};
               parms2._lambda_search = false;
-              parms2._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+              parms2._response_column = fam == GLM.Family.multinomial?"RACE":"CAPSULE";
               parms2._beta_epsilon = 1e-5;
               parms2._objective_epsilon = 1e-8;
               GLMModel model2 = new GLM(parms2).trainModel().get();
               double[] beta_ls = rp._coefficients_std[i];
-              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              double [] beta = fam == GLM.Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
               System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
               // Can't compare beta here, have to compare objective value
               double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();
@@ -1813,7 +1814,7 @@ public class GLMTest  extends TestUtil {
               double likelihood_ls = .5 * res_dev_ls;
               double likelihood = .5 * ((GLMMetrics) model2._output._training_metrics).residual_deviance();
               double nobs = model._nobs;
-              if(fam == Family.multinomial){
+              if(fam == GLM.Family.multinomial){
                 beta = beta.clone();
                 beta_ls = beta_ls.clone();
                 int P = beta.length/model._output.nclasses();
@@ -1857,7 +1858,7 @@ public class GLMTest  extends TestUtil {
     try{
       Scope.enter();
       // test LBFGS with l1 pen
-      GLMParameters params = new GLMParameters(Family.gaussian);
+      GLMParameters params = new GLMParameters(GLM.Family.gaussian);
       // params._response = 0;
       params._lambda = null;
       params._response_column = fr._names[0];
@@ -1868,7 +1869,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 10000;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{Solver.COORDINATE_DESCENT_NAIVE/*,Solver.IRLSM,Solver.COORDINATE_DESCENT*/}){// LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{GLM.Solver.COORDINATE_DESCENT_NAIVE/*,Solver.IRLSM,Solver.COORDINATE_DESCENT*/}){// LBFGS lambda-search is too slow now
         long t0 = System.currentTimeMillis();
         params._solver = s;
         GLM glm = new GLM( params, modelKey);
@@ -1925,14 +1926,14 @@ public class GLMTest  extends TestUtil {
     try{
       Scope.enter();
       // test LBFGS with l1 pen
-      GLMParameters params = new GLMParameters(Family.gaussian);
+      GLMParameters params = new GLMParameters(GLM.Family.gaussian);
       // params._response = 0;
       params._lambda = null;
       params._response_column = fr._names[0];
       params._train = fr._key;
       params._max_active_predictors = 100000;
       params._alpha = new double[]{0};
-      params._solver = Solver.L_BFGS;
+      params._solver = GLM.Solver.L_BFGS;
       GLM glm = new GLM(params);
       model = glm.trainModel().get();
       res = model.score(fr);
@@ -1951,7 +1952,7 @@ public class GLMTest  extends TestUtil {
     try {
       Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
       Scope.track(fr);
-      GLMParameters params = new GLMParameters(Family.gaussian);
+      GLMParameters params = new GLMParameters(GLM.Family.gaussian);
       params._train = fr._key;
       params._response_column = fr._names[8];
       params._alpha = new double[]{1.0};
@@ -1973,7 +1974,7 @@ public class GLMTest  extends TestUtil {
     Vec w = Vec.makeCon(x.group().addVec(),1,0,1,0,1);
     Frame fr = new Frame(Key.<Frame>make("test"),new String[]{"x","y","z","w"},new Vec[]{x,y,z,w});
     DKV.put(fr);
-    GLMParameters parms = new GLMParameters(Family.gaussian);
+    GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
     parms._train = fr._key;
     parms._lambda = new double[]{0};
     parms._alpha = new double[]{0};
@@ -1996,24 +1997,53 @@ public class GLMTest  extends TestUtil {
     H2O.submitTask(new RebalanceDataSet(frMM,k = Key.make(frMM._key.toString() + "_rebalanced"),32)).join();
     frMM.delete();
     frMM = DKV.getGet(k);
-    GLMParameters params = new GLMParameters(Family.gaussian);
+    GLMParameters params = new GLMParameters(GLM.Family.gaussian);
     params._response_column = "IsDepDelayed";
     params._ignored_columns = new String[0];
     params._train = frMM._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+    params._lambda_search = true;
+    params._alpha = new double[]{.5};
+    params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
     params._standardize = true;
-    params._use_all_factor_levels = false;
     GLMModel model1 = new GLM(params).trainModel().get();
     model1.remove();
+    GLMParameters params2 = new GLMParameters(GLM.Family.gaussian);
+    params2._response_column = "IsDepDelayed";
+    params2._ignored_columns = new String[0];
+    params2._train = frMM._key;
+    params2._lambda_search = true;
+    params2._alpha = new double[]{.5};
+    params2._solver = GLM.Solver.COORDINATE_DESCENT;
+    params2._standardize = true;
+    GLMModel model2 = new GLM(params2).trainModel().get();
+    model2.remove();
+    GLMParameters params3 = new GLMParameters(GLM.Family.gaussian);
+    params3._response_column = "IsDepDelayed";
+    params3._ignored_columns = new String[0];
+    params3._train = frMM._key;
+    params3._lambda_search = true;
+    params3._alpha = new double[]{.5};
+    params3._solver = GLM.Solver.L_BFGS;
+    params3._standardize = true;
+    GLMModel model3 = new GLM(params3).trainModel().get();
+    model3.remove();
+    GLMParameters params4 = new GLMParameters(GLM.Family.gaussian);
+    params4._response_column = "IsDepDelayed";
+    params4._ignored_columns = new String[0];
+    params4._train = frMM._key;
+    params4._lambda_search = false;
+    params4._alpha = new double[]{.5};
+    params4._solver = GLM.Solver.L_BFGS;
+    params4._standardize = true;
+    GLMModel model4 = new GLM(params4).trainModel().get();
+    model4.remove();
     frMM.delete();
   }
 
   @Test
   public void testDeviances() {
-    for (Family fam : Family.values()) {
-      if(fam == Family.quasibinomial) continue;
+    for (Family fam : GLM.Family.values()) {
+      if(fam == GLM.Family.quasibinomial) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
@@ -2024,8 +2054,8 @@ public class GLMTest  extends TestUtil {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
-        if (fam==Family.binomial || fam==Family.multinomial) {
-          resp = fam==Family.multinomial?"rad":"chas";
+        if (fam== GLM.Family.binomial || fam== GLM.Family.multinomial) {
+          resp = fam== GLM.Family.multinomial?"rad":"chas";
           Vec v = tfr.remove(resp);
           tfr.add(resp, v.toCategoricalVec());
           v.remove();
@@ -2078,7 +2108,7 @@ public class GLMTest  extends TestUtil {
       Vec v5 = Vec.makeCon(v3.group().addVec(), 1, 0, 0, 0);
       Frame tst = new Frame(Key.<Frame>make("test"), new String[]{"color", "label"}, new Vec[]{v3, v5});
       DKV.put(tst);
-      GLMParameters parms = new GLMParameters(Family.gaussian);
+      GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
       parms._train = trn._key;
       parms._response_column = "label";
       parms._missing_values_handling = MissingValuesHandling.Skip;
@@ -2108,5 +2138,10 @@ public class GLMTest  extends TestUtil {
     }finally {
       Scope.exit();
     }
+  }
+  @Test public void testtesttest(){
+    System.out.println(Double.parseDouble("-0.09375"));
+    System.out.println(-9375*PrettyPrint.pow10(-5));
+    System.out.println(-9375/PrettyPrint.pow10(5));
   }
 }

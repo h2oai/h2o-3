@@ -1,13 +1,10 @@
 package hex.glm;
 
-import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLM.Solver;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -17,7 +14,6 @@ import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -128,7 +124,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Residual Deviance: 305.1 	AIC: 315.1
     String [] cfs1 = new String [] { "Intercept",  "AGE"   ,  "PSA",    "VOL", "GLEASON"};
     double [] vals = new double [] {-4.839677,    -0.007815,    0.023796, -0.007325, 0.794385};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
     params._train = fKeyTrain;
@@ -141,7 +137,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.IRLSM}) { //{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}){
+      for (Solver s : new Solver[]{GLM.Solver.IRLSM}) { //{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}){
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -149,7 +145,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           model = new GLM(params,Key.make("testOffset_" + s)).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
-          boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
+          boolean CD = (s == GLM.Solver.COORDINATE_DESCENT || s == GLM.Solver.COORDINATE_DESCENT_NAIVE);
           System.out.println(" solver " + s);
           System.out.println("validation = " + model._output._training_metrics);
           for (int i = 0; i < cfs1.length; ++i)
@@ -215,14 +211,14 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    just test it does not blow up and the model is sane
 //    model = DKV.get(modelKey).get();
 //    assertEquals(model.coefficients().get("E"), 1, 0); // should be exactly 1
-    GLMParameters parms = new GLMParameters(Family.gaussian);
+    GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
     parms._response_column = "D";
     parms._offset_column = "E";
     parms._train = _abcd._key;
     parms._intercept = false;
     parms._standardize = false;
     GLMModel m = null;
-    for(Solver s:new Solver[]{Solver.IRLSM,Solver.COORDINATE_DESCENT}) {
+    for(Solver s:new Solver[]{GLM.Solver.IRLSM, GLM.Solver.COORDINATE_DESCENT}) {
       parms._solver = s;
       try {
         m = new GLM(parms).trainModel().get();
@@ -325,7 +321,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Residual Deviance: 313 	AIC: 321
     String [] cfs1 = new String [] { "Intercept",  "AGE"   ,  "PSA",     "VOL",    "GLEASON"};
     double [] vals = new double [] {  0,           -0.054102,  0.027517, -0.008937, 0.516363};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
     params._train = fKeyTrain;
@@ -341,7 +337,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-6;
     params._missing_values_handling = MissingValuesHandling.Skip;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS,Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{GLM.Solver.AUTO, GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -349,7 +345,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
-          boolean CD = s == Solver.COORDINATE_DESCENT;
+          boolean CD = s == GLM.Solver.COORDINATE_DESCENT;
           for (int i = 0; i < cfs1.length; ++i)
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);
           assertEquals(355.7, GLMTest.nullDeviance(model), 1e-1);
@@ -420,7 +416,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Residual Deviance: 302.9 	AIC: 318.9
     String [] cfs1 = new String [] {"AGE",     "DPROS.a",  "DPROS.b",    "DPROS.c",  "DPROS.d",      "PSA",    "VOL",  "GLEASON"};
     double [] vals = new double [] {-0.00743,   -6.46499,  -5.60120,   -5.18213,    -5.70027,    0.02753,  -0.01235,   0.86122};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DCAPS"};
     params._train = _prostateTrain._key;
@@ -433,7 +429,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._missing_values_handling = MissingValuesHandling.Skip;
     params._max_iterations = 100; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+    for(Solver s:new Solver[]{GLM.Solver.AUTO, GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -442,7 +438,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
-        boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
+        boolean CD = (s == GLM.Solver.COORDINATE_DESCENT || s == GLM.Solver.COORDINATE_DESCENT_NAIVE);
         for (int i = 0; i < cfs1.length; ++i)
           assertEquals(vals[i], coefs.get(cfs1[i]), CD? 1e-1:1e-4);
         assertEquals(402,   GLMTest.nullDeviance(model), 1e-1);
@@ -555,7 +551,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Residual Deviance: 1195 	AIC: 1217
     String [] cfs1 = new String [] { "Intercept",  "AGE",     "RACE.R2",  "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA",     "VOL",    "GLEASON"};
     double [] vals = new double [] { -6.019527,    -0.027350, -0.424333, -0.869188, 1.359856, 1.745655, 1.517155, 0.664479, 0.034541, -0.005819, 0.947644};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID"};
     params._train = fKeyTrain;
@@ -570,7 +566,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._max_iterations = 1000; // not expected to reach max iterations here
     params._missing_values_handling = MissingValuesHandling.Skip;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{GLM.Solver.AUTO, GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -591,10 +587,10 @@ public class GLMBasicTestBinomial extends TestUtil {
           System.out.println("coefs upsampled = " + coefsUpsampled);
           System.out.println(model._output._training_metrics);
           System.out.println(modelUpsampled._output._training_metrics);
-          boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
+          boolean CD = (s == GLM.Solver.COORDINATE_DESCENT || s == GLM.Solver.COORDINATE_DESCENT_NAIVE);
           for (int i = 0; i < cfs1.length; ++i) {
             System.out.println("cfs = " + cfs1[i] + ": " + coefsUpsampled.get(cfs1[i]) + " =?= " + coefs.get(cfs1[i]));
-            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-5:1e-4);
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == GLM.Solver.IRLSM?1e-5:1e-4);
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);//dec
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);
@@ -675,7 +671,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
     double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID",};
     params._train = _prostateTrain._key;
@@ -687,7 +683,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 1e-10;
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 10000; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+    for(Solver s:new Solver[]{GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -728,7 +724,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    0.000000000 0.000000000 0.680406869 0.007137494 0.000000000 0.000000000
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",   "PSA",      "VOL", "GLEASON", "RACE.R1"};
     double [] vals = new double [] { 0.0,         0.0,   0.0,          0,             0.0,        0.680406869, 0.007137494, 0.0,  0.0,       0.240953925};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID",};
     params._train = _prostateTrain._key;
@@ -740,7 +736,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 1e-6;
     params._gradient_epsilon = 1e-5;
     params._max_iterations = 150; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+    for(Solver s:new Solver[]{GLM.Solver.AUTO, GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -750,11 +746,11 @@ public class GLMBasicTestBinomial extends TestUtil {
         HashMap<String, Double> coefs = model.coefficients();
         System.out.println("coefs = " + coefs.toString());
         System.out.println("metrics = " + model._output._training_metrics);
-        double relTol = s == Solver.IRLSM?1e-1:1;
+        double relTol = s == GLM.Solver.IRLSM?1e-1:1;
         for (int i = 0; i < cfs1.length; ++i)
           assertEquals(vals[i], coefs.get(cfs1[i]), relTol * (vals[i] + 1e-1));
         assertEquals(402.0254,   GLMTest.nullDeviance(model), 1e-1);
-        assertEquals(394.3998, GLMTest.residualDeviance(model), s == Solver.L_BFGS?50:1);
+        assertEquals(394.3998, GLMTest.residualDeviance(model), s == GLM.Solver.L_BFGS?50:1);
         System.out.println("VAL METRICS: " + model._output._validation_metrics);
         model.delete();
         // test scoring
@@ -892,7 +888,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    Residual Deviance: 1235 	AIC: 1243
     String [] cfs1 = new String [] { "Intercept",  "AGE"   ,  "PSA",     "VOL",    "GLEASON"};
     double [] vals = new double [] {  0,           -0.070637,   0.034939, -0.006326, 0.645700};
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._ignored_columns = new String[]{"ID","RACE","DPROS","DCAPS"};
     params._train = fTrain._key;
@@ -907,7 +903,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._intercept = false;
     params._beta_epsilon = 1e-6;
     try {
-      for (Solver s : new Solver[]{ Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{ GLM.Solver.IRLSM, GLM.Solver.L_BFGS, GLM.Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -922,7 +918,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
-          boolean CD = s == Solver.COORDINATE_DESCENT;
+          boolean CD = s == GLM.Solver.COORDINATE_DESCENT;
           for (int i = 0; i < cfs1.length; ++i)
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);
           assertEquals(1494, GLMTest.nullDeviance(model), 1);
@@ -1039,7 +1035,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    PSA          0.030255231 0.011148747  2.71377864 6.652060e-03
 //    VOL         -0.009793481 0.008753002 -1.11887108 2.631951e-01
 //    GLEASON      0.851867113 0.182282351  4.67333842 2.963429e-06
-    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMParameters params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "CAPSULE";
     params._standardize = false;
     params._train = _prostateTrain._key;
@@ -1050,27 +1046,27 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-4;
     GLM job0 = null;
     try {
-      params._solver = Solver.L_BFGS;
+      params._solver = GLM.Solver.L_BFGS;
       job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
       job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
-    params._solver = Solver.IRLSM;
+    params._solver = GLM.Solver.IRLSM;
     try {
       params._lambda = new double[]{1};
       job0 = new GLM(params);
@@ -1196,7 +1192,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     } finally {
       if(model != null) model.delete();
     }
-    params = new GLMParameters(Family.binomial);
+    params = new GLMParameters(GLM.Family.binomial);
     params._response_column = "IsDepDelayed";
     params._standardize = false;
     params._train = _airlinesTrain._key;

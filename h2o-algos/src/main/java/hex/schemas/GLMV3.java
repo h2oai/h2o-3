@@ -3,7 +3,7 @@ package hex.schemas;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLM.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
@@ -72,7 +72,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
-    public GLMParameters.Family family;
+    public GLM.Family family;
 
     @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
@@ -132,7 +132,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public double obj_reg;
 
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
-    public GLMParameters.Link link;
+    public GLM.Link link;
 
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;

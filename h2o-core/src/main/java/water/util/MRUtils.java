@@ -15,6 +15,13 @@ import static water.util.RandomUtils.getRNG;
 
 public class MRUtils {
 
+  public static int memoryUsageMultiplier(Frame fr, boolean distributed){
+    // (log2(numtasks) - log2(numcpus)*numcpus
+    HeartBeat hb = H2O.SELF._heartbeat;
+    int numcpus = hb._cpus_allowed;
+    int numtasks = fr.anyVec().nChunks()/(distributed?H2O.CLOUD.size():1);
+    return numtasks <= numcpus?numtasks:(MathUtils.log2(numtasks) - MathUtils.log2(numcpus))*numcpus;
+  }
 
   /**
    * Sample rows from a frame.

@@ -1,13 +1,10 @@
 package hex.glm;
 
 import hex.FrameSplitter;
-import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
-import hex.ModelMetricsMultinomial;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLM.Solver;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -15,9 +12,6 @@ import org.junit.Test;
 import water.*;
 
 import water.fvec.*;
-import water.util.FrameUtils;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +26,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(new String[] {"-name","tomas_test_cloud"}, 1, 60000);
     _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
     _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};
@@ -51,7 +45,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @Test
   public void testCovtypeNoIntercept(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.multinomial);
     GLMModel model = null;
     Frame preds = null;
     Vec weights = _covtype.anyVec().makeCon(1);
@@ -69,7 +63,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
       params._intercept = false;
       double[] alpha = new double[]{0,.5,.1};
-      Solver s = Solver.L_BFGS;
+      Solver s = GLM.Solver.L_BFGS;
       System.out.println("solver = " + s);
       params._solver = s;
       params._max_iterations = 5000;
@@ -104,7 +98,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @Test
   public void testCovtypeBasic(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.multinomial);
     GLMModel model = null;
     Frame preds = null;
     Vec weights = _covtype.anyVec().makeCon(1);
@@ -116,22 +110,22 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._response_column = "C55";
       params._train = k;
       params._valid = _covtype._key;
-      params._lambda = new double[]{4.881e-05};
-      params._alpha = new double[]{1};
-      params._objective_epsilon = 1e-6;
-      params._beta_epsilon = 1e-4;
+      params._objective_epsilon = 3e-6;
+//      params._lambda = new double[]{4.881e-05};
+      params._alpha = new double[]{0.9};
+      params._lambda_search = false;
       params._weights_column = "weights";
       params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
-      double[] alpha = new double[]{1};
+      double[] alpha = new double[]{.99};
       double[] expected_deviance = new double[]{25499.76};
-      double[] lambda = new double[]{2.544750e-05};
-      for (Solver s : new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT, Solver.L_BFGS}) {
+//      double[] lambda = new double[]{2.544750e-05};
+      for (Solver s : new Solver[]{GLM.Solver.IRLSM/*, Solver.COORDINATE_DESCENT*/, GLM.Solver.L_BFGS}) {
         System.out.println("solver = " + s);
         params._solver = s;
-        params._max_iterations = params._solver == Solver.L_BFGS?300:10;
+        params._max_iterations = params._solver == GLM.Solver.L_BFGS?3000:350;
         for (int i = 0; i < alpha.length; ++i) {
           params._alpha[0] = alpha[i];
-          params._lambda[0] = lambda[i];
+//          params._lambda = new double[]{lambda[i]};
           model = new GLM(params).trainModel().get();
           System.out.println(model._output._model_summary);
           System.out.println(model._output._training_metrics);
@@ -157,7 +151,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @Test
   public void testCovtypeMinActivePredictors(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.multinomial);
     GLMModel model = null;
     Frame preds = null;
     try {
@@ -173,7 +167,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double[] alpha = new double[]{.99};
       double expected_deviance = 33000;
       double[] lambda = new double[]{2.544750e-05};
-      Solver s = Solver.COORDINATE_DESCENT;
+      Solver s = GLM.Solver.COORDINATE_DESCENT;
       System.out.println("solver = " + s);
       params._solver = s;
       model = new GLM(params).trainModel().get();
@@ -200,7 +194,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @Test
   public void testCovtypeLS(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.multinomial);
     GLMModel model = null;
     Frame preds = null;
     try {
@@ -214,7 +208,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._beta_epsilon = 1e-4;
       params._max_active_predictors = 50;
       params._max_iterations = 500;
-      params._solver = Solver.AUTO;
+      params._solver = GLM.Solver.AUTO;
       params._lambda_search = true;
       model = new GLM(params).trainModel().get();
       System.out.println(model._output._training_metrics);
@@ -237,7 +231,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
 
   @Test
   public void testCovtypeNAs(){
-    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMParameters params = new GLMParameters(GLM.Family.multinomial);
     GLMModel model = null;
     Frame preds = null;
     Frame covtype_subset = null, covtype_copy = null;
@@ -261,7 +255,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._beta_epsilon = 1e-4;
       params._max_active_predictors = 50;
       params._max_iterations = 500;
-      params._solver = Solver.L_BFGS;
+      params._solver = GLM.Solver.L_BFGS;
       params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
 //      params._lambda_search = true;
       model = new GLM(params).trainModel().get();

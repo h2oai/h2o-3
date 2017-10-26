@@ -30,6 +30,10 @@ public class ADMM {
     final double _eps;
     final int max_iter;
 
+    public static class ProgressMonitor {
+      public void progress(double [] beta, int iter){}
+    }
+
     MathUtils.Norm _gradientNorm = Norm.L_Infinite;
 
     public double [] _u;
@@ -48,7 +52,7 @@ public class ADMM {
       ABSTOL = abstol;
     }
 
-    public L_BFGS.ProgressMonitor _pm;
+    public ProgressMonitor _pm;
     public boolean solve(ProximalSolver solver, double[] res, double lambda, boolean hasIntercept) {
       return solve(solver, res, lambda, hasIntercept, null, null);
     }
@@ -71,13 +75,13 @@ public class ADMM {
           gerr = ArrayUtils.linfnorm(grad,false);
           break;
         case L2_2:
-          gerr = ArrayUtils.l2norm2(grad, false);
+          gerr = ArrayUtils.l2norm2(grad, grad.length);
           break;
         case L2:
-          gerr = Math.sqrt(ArrayUtils.l2norm2(grad, false));
+          gerr = Math.sqrt(ArrayUtils.l2norm2(grad, grad.length));
           break;
         case L1:
-          gerr = ArrayUtils.l1norm(grad,false);
+          gerr = ArrayUtils.l1norm(grad,grad.length);
           break;
         default:
           throw H2O.unimpl();
@@ -112,7 +116,7 @@ public class ADMM {
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
       for (i = 0; i < max_iter && solver.solve(beta_given, x); ++i) {
-        if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
+        if(_pm != null && ((i + 1) & 3) == 0)_pm.progress(z,solver.iter());
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         for (int j = 0; j < N - hasIcpt; ++j) {
@@ -164,7 +168,6 @@ public class ADMM {
           if(gerr > _eps)
             Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
-          if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
           return true;
         }
       }
@@ -175,7 +178,6 @@ public class ADMM {
         Log.warn("ADMM solver stopped after " + i + " iterations. (max_iter=" + max_iter + ")");
       if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
       iter = max_iter;
-      if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
       return false;
     }
 
@@ -226,12 +228,24 @@ public class ADMM {
     return sx <= kappa?0:sign*(sx - kappa);
   }
 
-  public static void subgrad(final double lambda, final double [] beta, final double [] grad){
-    if(beta == null)return;
+  public static double[] subgrad(double lambda, double [] beta, double [] grad){
+    if(beta == null) return grad;
+    grad = grad.clone();
     for(int i = 0; i < grad.length-1; ++i) {// add l2 reg. term to the gradient
       if(beta[i] < 0) grad[i] = shrinkage(grad[i]-lambda,lambda*1e-4);
       else if(beta[i] > 0) grad[i] = shrinkage(grad[i] + lambda,lambda*1e-4);
       else grad[i] = shrinkage(grad[i], lambda);
     }
+    return grad;
+  }
+
+  public static class ProximalGradientInfo extends OptimizationUtils.GradientInfo {
+    public final OptimizationUtils.GradientInfo _origGinfo;
+
+    public ProximalGradientInfo(OptimizationUtils.GradientInfo origGinfo, double objVal, double[] gradient) {
+      super(objVal, gradient);
+      _origGinfo = origGinfo;
+    }
+    public OptimizationUtils.GradientInfo origGinfo(){return _origGinfo;}
   }
 }

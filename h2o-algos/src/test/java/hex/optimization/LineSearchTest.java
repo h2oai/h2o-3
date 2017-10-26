@@ -1,7 +1,7 @@
 package hex.optimization;
 
 import hex.optimization.OptimizationUtils.GradientInfo;
-import hex.optimization.OptimizationUtils.GradientSolver;
+import hex.optimization.OptimizationUtils.GradientFunc;
 import hex.optimization.OptimizationUtils.MoreThuente;
 import org.junit.Test;
 import water.TestUtil;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 public class LineSearchTest extends TestUtil {
 
   @Test public void testMoreThuenteMethod() {
-    GradientSolver f = new GradientSolver(){
+    GradientFunc f = new GradientFunc(){
       @Override
       public GradientInfo getGradient(double[] beta) {
         GradientInfo ginfo = new GradientInfo(0,new double[1]);
@@ -79,7 +79,7 @@ public class LineSearchTest extends TestUtil {
     assertEquals(6,ls.nfeval());
     assertEquals(14,Math.round(10*ls.step()));
 
-    f = new GradientSolver(){
+    f = new GradientFunc(){
       @Override
       public GradientInfo getGradient(double[] beta) {
         GradientInfo ginfo = new GradientInfo(0,new double[1]);
@@ -127,7 +127,7 @@ public class LineSearchTest extends TestUtil {
     assertEquals(16, Math.round(10 * ls.step()));
 
 
-    f = new GradientSolver(){
+    f = new GradientFunc(){
       final double beta = 0.01;
       final double l = 39;
 
@@ -298,7 +298,7 @@ public class LineSearchTest extends TestUtil {
     assertEquals(92, Math.round(100 * ls.step()));
   }
 
-  private static class F implements GradientSolver {
+  private static class F implements GradientFunc {
     final double a;
     final double b;
 

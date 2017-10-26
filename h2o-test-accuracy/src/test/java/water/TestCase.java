@@ -383,22 +383,22 @@ public class TestCase {
         case "_family":
           switch (parameterValue) {
             case "gaussian":
-              glmParams._family = GLMModel.GLMParameters.Family.gaussian;
+              glmParams._family = GLM.Family.gaussian;
               break;
             case "binomial":
-              glmParams._family = GLMModel.GLMParameters.Family.binomial;
+              glmParams._family = GLM.Family.binomial;
               break;
             case "multinomial":
-              glmParams._family = GLMModel.GLMParameters.Family.multinomial;
+              glmParams._family = GLM.Family.multinomial;
               break;
             case "poisson":
-              glmParams._family = GLMModel.GLMParameters.Family.poisson;
+              glmParams._family = GLM.Family.poisson;
               break;
             case "gamma":
-              glmParams._family = GLMModel.GLMParameters.Family.gamma;
+              glmParams._family = GLM.Family.gamma;
               break;
             case "tweedie":
-              glmParams._family = GLMModel.GLMParameters.Family.tweedie;
+              glmParams._family = GLM.Family.tweedie;
               break;
             default:
               throw new Exception(parameterValue + " family is not supported for gbm test cases");
@@ -407,19 +407,19 @@ public class TestCase {
         case "_solver":
           switch (parameterValue) {
             case "AUTO":
-              glmParams._solver = GLMModel.GLMParameters.Solver.AUTO;
+              glmParams._solver = GLM.Solver.AUTO;
               break;
             case "irlsm":
-              glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+              glmParams._solver = GLM.Solver.IRLSM;
               break;
             case "lbfgs":
-              glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS;
+              glmParams._solver = GLM.Solver.L_BFGS;
               break;
             case "coordinate_descent_naive":
-              glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE;
+              glmParams._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
               break;
             case "coordinate_descent":
-              glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
+              glmParams._solver = GLM.Solver.COORDINATE_DESCENT;
               break;
             default:
               throw new Exception(parameterValue + " solver is not supported for gbm test cases");

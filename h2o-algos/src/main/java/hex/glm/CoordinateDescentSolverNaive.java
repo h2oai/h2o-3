@@ -7,7 +7,6 @@ import water.fvec.Chunk;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Created by tomas on 6/30/17.
@@ -46,12 +45,12 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
   }
 
   @Override
-  protected void fit(GLM glmJob, ComputationState state){
-    double [] beta = state.beta().clone();
+  protected GLM.GLMState fit(GLM.GLMState state){
+    double [] beta = state.beta();
     DataInfo activeData = state.activeData();
     double lambda = state.lambda();
-    double alpha = state._alpha;
-    double betaEpsilon = glmJob._parms._beta_epsilon*glmJob._parms._beta_epsilon;
+    double alpha = state.alpha();
+    double betaEpsilon = state.betaEpsilon()*state.betaEpsilon();
     long size_increment = activeData._adaptedFrame.byteSize()-_oldSz;
     boolean run_local = false;
     if(H2O.CLOUD.size() > 1){
@@ -91,8 +90,7 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
     double sparseRatio = FrameUtils.sparseRatio(activeData._adaptedFrame);
     boolean sparse =  sparseRatio <= .125;
     long t0 = System.currentTimeMillis();
-    // public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
-    GenWeightsRes gt = _data.eval(new GenWeightsFun(sparse, activeData, glmJob._parms, beta));
+    GenWeightsRes gt = _data.eval(new GenWeightsFun(sparse, activeData, state.glmWeightsFun(), beta));
     int iter1Sum = 0;
     int iter_x = 0;
     double gamma = beta[beta.length-1]; // scalar offset, can be intercept and/or sparse offset compensation for skipped centering
@@ -111,7 +109,6 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
       int iter1 = 0;
       double RES = gt.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
       while (iter1++ < 1000) {
-        if(glmJob._job.stop_requested()) throw new Job.JobCancelledException();
         if (activeData._cats > 0) {
           double [] bNew = null, bOld = null;
           for (int i = 0; i < activeData._cats; ++i) {
@@ -161,7 +158,7 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
           }
         }
         // compute intercept
-        if (glmJob._parms._family != GLMModel.GLMParameters.Family.gaussian && !Double.isNaN(RES)) { // TODO handle no intercept case
+        if (/*glmJob._parms._family != GLMModel.GLMParameters.Family.gaussian && */!Double.isNaN(RES)) { // TODO handle no intercept case
           beta[beta.length - 1] = RES*wsumInv + betaold[beta.length-1];
           double icptdiff = beta[beta.length - 1] - betaold[beta.length-1];
           gamma += icptdiff;
@@ -178,8 +175,8 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
           break;
       }
       iter1Sum += iter1;
-      gt = _data.eval(new GenWeightsFun(sparse, activeData, glmJob._parms, beta));
-      if(!glmJob.progress(beta.clone(),gt._likelihood) || glmJob._parms._family == GLMModel.GLMParameters.Family.gaussian)
+      gt = _data.eval(new GenWeightsFun(sparse, activeData, state.glmWeightsFun(), beta));
+      if(!state.update(beta,gt._likelihood,1) || state.family() == GLM.Family.gaussian)
         break;
       double maxDiff = 0;
       for(int i = 0; i < beta.length-1; ++i){ // intercept does not count
@@ -192,7 +189,8 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
         break;
     }
     long endTimeTotalNaive = System.currentTimeMillis();
-    Log.info(glmJob.LogMsg("COD Naive took " + iter2 + ":" + iter1Sum + " iterations, " + (endTimeTotalNaive-startTimeTotalNaive)*0.001 + " seconds"));
+    Log.info(state.LogMsg("COD Naive took " + iter2 + ":" + iter1Sum + " iterations, " + (endTimeTotalNaive-startTimeTotalNaive)*0.001 + " seconds"));
+    return state;
   }
 
 
@@ -506,8 +504,8 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
     final boolean _sparse;
     final GLMModel.GLMWeightsFun _glmf;
 
-    public GenWeightsFun(boolean sparse, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
-      _glmf = new GLMModel.GLMWeightsFun(glm);
+    public GenWeightsFun(boolean sparse, DataInfo dinfo, GLMModel.GLMWeightsFun glmf, double[] betaw) {
+      _glmf = glmf;
       _betaw = betaw;
       _dinfo = dinfo;
       _sparse = sparse;
@@ -521,7 +519,6 @@ public class CoordinateDescentSolverNaive extends GLMSolver {
       res.wxx = MemoryManager.malloc8d(_dinfo.fullN() + 1);
       return res;
     }
-
 
     @Override
     public GenWeightsRes map(DataChunk data, final GenWeightsRes accum) {

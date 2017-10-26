@@ -1,12 +1,12 @@
 package hex.optimization;
 
 import hex.DataInfo;
-import hex.glm.GLM.GLMGradientSolver;
+import hex.glm.GLM;
+import hex.glm.GLMGradientFunc;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.optimization.OptimizationUtils.GradientInfo;
-import hex.optimization.OptimizationUtils.GradientSolver;
+import hex.optimization.OptimizationUtils.GradientFunc;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -34,7 +34,7 @@ public class L_BFGS_Test  extends TestUtil {
   @Test
   public void rosenbrock() {
     final double a = 1, b = 100;
-    GradientSolver gs = new GradientSolver() {
+    OptimizationUtils.GradientFunc gs = new GradientFunc() {
       @Override
       public GradientInfo getGradient(double[] beta) {
         final double[] g = new double[2];
@@ -62,7 +62,7 @@ public class L_BFGS_Test  extends TestUtil {
     Key parsedKey = Key.make("prostate");
     DataInfo dinfo = null;
     try {
-      GLMParameters glmp = new GLMParameters(Family.binomial, Family.binomial.defaultLink);
+      GLMParameters glmp = new GLMParameters(GLM.Family.binomial, GLM.Family.binomial.defaultLink);
       glmp._alpha = new double[]{0};
       glmp._lambda = new double[]{1e-5};
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
@@ -72,18 +72,12 @@ public class L_BFGS_Test  extends TestUtil {
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
       glmp._obj_reg = 1/380.0;
-      GLMGradientSolver solver = new GLMGradientSolver(null,glmp._obj_reg,glmp, dinfo, 1e-5, null);
+      GLMGradientFunc solver = new GLMGradientFunc(null,glmp._obj_reg,glmp, dinfo, 0,1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.vec("CAPSULE").mean());
-      L_BFGS.Result r = lbfgs.solve(solver, beta, solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
-        int _i = 0;
-        public boolean progress(double [] beta, GradientInfo ginfo){
-          System.out.println(++_i +":" + ginfo._objVal + ", " + ArrayUtils.l2norm2(ginfo._gradient,false));
-          return true;
-        }
-      });
+      L_BFGS.Result r = lbfgs.solve(solver, beta, solver.getGradient(beta),null);
       assertEquals(378.34, 2 * r.ginfo._objVal * source.numRows(), 1e-1);
     } finally {
       if(dinfo != null)
@@ -104,19 +98,19 @@ public class L_BFGS_Test  extends TestUtil {
     try {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/arcene.csv");
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
-      GLMParameters glmp = new GLMParameters(Family.gaussian);
+      GLMParameters glmp = new GLMParameters(GLM.Family.gaussian);
       glmp._lambda = new double[]{1e-5};
       glmp._alpha = new double[]{0};
       glmp._obj_reg = 0.01;
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      GradientSolver solver = new GLMGradientSolver(null,glmp._obj_reg,glmp, dinfo, 1e-5, null);
+      OptimizationUtils.GradientFunc solver = new GLMGradientFunc(null,glmp._obj_reg,glmp, dinfo, 0,1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.lastVec().mean());
       L_BFGS.Result r1 = lbfgs.solve(solver, beta.clone(), solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
         int _i = 0;
-        public boolean progress(double [] beta, GradientInfo ginfo){
+        public boolean progress(double [] beta, GradientInfo ginfo, int iter){
           System.out.println(++_i +":" + ginfo._objVal);
           return true;
         }
@@ -125,7 +119,7 @@ public class L_BFGS_Test  extends TestUtil {
       final int iter = r1.iter;
       L_BFGS.Result r2 = lbfgs.solve(solver, r1.coefs, r1.ginfo, new L_BFGS.ProgressMonitor(){
         int _i = 0;
-        public boolean progress(double [] beta, GradientInfo ginfo){
+        public boolean progress(double [] beta, GradientInfo ginfo, int iter){
           System.out.println(iter + " + " + ++_i +":" + ginfo._objVal);
           return true;
         }
@@ -134,7 +128,7 @@ public class L_BFGS_Test  extends TestUtil {
       lbfgs = new L_BFGS().setMaxIter(100);
       L_BFGS.Result r3 = lbfgs.solve(solver, beta.clone(), solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
         int _i = 0;
-        public boolean progress(double [] beta, GradientInfo ginfo){
+        public boolean progress(double [] beta, GradientInfo ginfo, int iter){
           System.out.println(++_i +":" + ginfo._objVal + ", " + ArrayUtils.l2norm2(ginfo._gradient,false));
           return true;
         }

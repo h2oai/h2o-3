@@ -1,10 +1,10 @@
 package hex.optimization;
 
+import hex.glm.GLMGradientFunc;
 import hex.optimization.OptimizationUtils.*;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -20,13 +20,13 @@ import java.util.Random;
  *
  * Usage:
  *
- * To apply L-BFGS to your optimization problem, provide a GradientSolver with following 2 methods:
+ * To apply L-BFGS to your optimization problem, provide a GradientFunc with following 2 methods:
  *   1) double [] getGradient(double []):
  *      evaluate ginfo at given coefficients, typically an MRTask
  *   2) double [] getObjVals(double[] beta, double[] direction):
  *      evaluate objective value at line-search search points (e.g. objVals[k] = obj(beta + step(k)*direction), step(k) = .75^k)
  *      typically a single MRTask
- *   @see hex.glm.GLM.GLMGradientSolver
+ *   @see GLMGradientFunc
  *
  * L-BFGS will then perform following loop:
  *   while(not converged):
@@ -66,8 +66,9 @@ public final class L_BFGS extends Iced {
    * Monitor progress and enable early termination.
    */
   public interface ProgressMonitor {
-    boolean progress(double [] betaDiff, GradientInfo ginfo);
+    boolean progress(double [] betaDiff, GradientInfo ginfo, int iter);
   }
+
 
   // constants used in line search
 
@@ -173,8 +174,8 @@ public final class L_BFGS extends Iced {
    * @return Optimal solution (coefficients) + ginfo info returned by the user ginfo
    * function evaluated at the found optmimum.
    */
-//  public final Result solve(GradientSolver gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {return solve(gslvr,beta,beta.clone(),ginfo,pm);}
-  public final Result solve(GradientSolver gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {
+//  public final Result solve(GradientFunc gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {return solve(gslvr,beta,beta.clone(),ginfo,pm);}
+  public final Result solve(GradientFunc gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {
     if(_hist == null)
       _hist = new History(_historySz, beta.length);
     int iter = 0;
@@ -192,7 +193,7 @@ public final class L_BFGS extends Iced {
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
-      if(!pm.progress(lineSearch.getX(), ginfo)){
+      if(pm != null && !pm.progress(lineSearch.getX(), ginfo, iter)){
         break;
       }
     }
@@ -211,13 +212,8 @@ public final class L_BFGS extends Iced {
    * @return Optimal solution (coefficients) + ginfo info returned by the user ginfo
    * function evaluated at the found optmimum.
    */
-  public final Result solve(GradientSolver gslvr, double [] coefs){
-    return solve(gslvr, coefs, gslvr.getGradient(coefs), new ProgressMonitor(){
-      @Override
-      public boolean progress(double[] beta, GradientInfo ginfo) {
-        return true;
-      }
-    });
+  public final Result solve(GradientFunc gslvr, double [] coefs){
+    return solve(gslvr, coefs, gslvr.getGradient(coefs), null);
   }
 
   public static double [] startCoefs(int n, long seed){

@@ -205,11 +205,9 @@ public class VecUtils {
       }
 
       @Override public void reduce(RawVecTsk<T,R,F> other){
+        if(_res == other._res) return;
         if(_res == null) _res = other._res;
         else if(other._res != null) {
-          if(_res == other._res)
-            System.out.println("this = " + this + " that = " + other);
-          assert _res != other._res;
           _res = _fun.reduce(_res,other._res);
         }
       }

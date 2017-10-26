@@ -116,7 +116,7 @@ public class ModelSerializationTest extends TestUtil {
   public void testGLMModel() throws IOException {
     GLMModel model, loadedModel = null;
     try {
-      model = prepareGLMModel("smalldata/junit/cars.csv", ESA, "power (hp)", GLMModel.GLMParameters.Family.poisson);
+      model = prepareGLMModel("smalldata/junit/cars.csv", ESA, "power (hp)", GLM.Family.poisson);
       loadedModel = saveAndLoad(model);
       assertModelBinaryEquals(model, loadedModel);
     } finally {
@@ -162,7 +162,7 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
-  private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
+  private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLM.Family family) {
     Frame f = parse_test_file(dataset);
     try {
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();

@@ -38,4 +38,10 @@ public class ChunkUtils {
         return fr;
     }
 
+    public static double sparseRatio(Chunk[] chks) {
+        double sparseLenSum = 0;
+        for(Chunk c:chks)
+            sparseLenSum += c.sparseLenZero();
+        return sparseLenSum/(chks.length*chks[0].len());
+    }
 }

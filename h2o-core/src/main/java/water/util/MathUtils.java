@@ -63,6 +63,7 @@ public class MathUtils {
    */
   public static final class BasicStats extends Iced {
     private final double[] _mean;
+    private final double [] _min, _max;
     private final double[] _m2;
     double[] _wsums;
     transient double[] _nawsums;
@@ -75,6 +76,10 @@ public class MathUtils {
 
     public BasicStats(int n) {
       _mean = MemoryManager.malloc8d(n);
+      _min = MemoryManager.malloc8d(n);
+      _max = MemoryManager.malloc8d(n);
+      Arrays.fill(_min,Double.POSITIVE_INFINITY);
+      Arrays.fill(_max,Double.NEGATIVE_INFINITY);
       _m2 = MemoryManager.malloc8d(n);
       _wsums = MemoryManager.malloc8d(n);
       _nzCnt = MemoryManager.malloc8(n);
@@ -82,11 +87,22 @@ public class MathUtils {
       _naCnt = MemoryManager.malloc8(n);
     }
 
+    public int [] badCols(){
+      int [] res = new int[_min.length];
+      int j = 0;
+      for(int i = 0 ; i < _min.length; ++i){
+        if(_naCnt[i] == _nobs || _min[i] == _max[i])
+          res[j++] = i;
+      }
+      return Arrays.copyOf(res,j);
+    }
     public void add(double x, double w, int i) {
       if(Double.isNaN(x)) {
         _nawsums[i] += w;
         _naCnt[i]++;
       } else if (w != 0) {
+        if(x > _max[i]) _max[i] = x;
+        if(x < _min[i]) _min[i] = x;
         double wsum = _wsums[i] + w;
         double delta = x - _mean[i];
         double R = delta * w / wsum;
@@ -128,6 +144,8 @@ public class MathUtils {
         if(wsum != 0) {
           double delta = bs._mean[i] - _mean[i];
           _mean[i] = (_wsums[i] * _mean[i] + bs._wsums[i] * bs._mean[i]) / wsum;
+          _min[i] = bs._min[i] < _min[i]?bs._min[i]:_min[i];
+          _max[i] = bs._min[i] > _max[i]?bs._max[i]:_max[i];
           _m2[i] += bs._m2[i] + delta * delta * _wsums[i] * bs._wsums[i] / wsum;
         }
         _wsums[i] = wsum;
@@ -654,8 +672,7 @@ public class MathUtils {
 
   public static double y_log_y(double y, double mu) {
     if(y == 0)return 0;
-    if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
-    return y * Math.log(y / mu);
+    return -Math.log(mu < Double.MIN_NORMAL?Double.MIN_NORMAL:mu);
   }
 
   /** Compare signed longs */

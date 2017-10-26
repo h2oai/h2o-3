@@ -86,23 +86,31 @@ public class ArrayUtils {
       assert (x[index]>=0.0);
       x[index] = sqrt(x[index]);
     }
-
     return x;
   }
-  public static double l2norm2(double [] x){ return l2norm2(x, false); }
 
-  public static double l2norm2(double [][] xs, boolean skipLast){
-    double res = 0;
-    for(double [] x:xs)
-      res += l2norm2(x,skipLast);
-    return res;
-  }
-  public static double l2norm2(double [] x, boolean skipLast){
+  public static double l2norm2(double [] x){ return l2norm2(x, x.length); }
+  public static double l2norm2(double [] x, int skipStep){
+    int skip = skipStep;
     double sum = 0;
-    int last = x.length - (skipLast?1:0);
-    for(int i = 0; i < last; ++i)
+    for(int i = 0; i < x.length; i++){
+      if(i == skip){
+        skip += skipStep + 1;
+        continue;
+      }
       sum += x[i]*x[i];
+    }
     return sum;
+  }
+
+  public static double [] add_l2_grad(double [] gradient, double [] beta, double lambda, int skipStep){
+    int j = 0;
+    while(j < skipStep) {
+      for(int i = 0; i < skipStep; i++, j++)
+        gradient[j] += lambda * beta[j];
+      j++;
+    }
+    return gradient;
   }
   public static double l2norm2(double[] x, double[] y) {  // Computes \sum_{i=1}^n (x_i - y_i)^2
     assert x.length == y.length;
@@ -121,26 +129,37 @@ public class ArrayUtils {
     return sse;
   }
 
-  public static double l1norm(double [] x){ return l1norm(x, false); }
-  public static double l1norm(double [] x, boolean skipLast){
+  public static double l1norm(double [] x){ return l1norm(x, x.length); }
+  public static double l1norm(double [] x, int skipStep){
     double sum = 0;
-    int last = x.length -(skipLast?1:0);
-    for(int i = 0; i < last; ++i)
-      sum += x[i] >= 0?x[i]:-x[i];
+    int skip = skipStep;
+    for(int i = 0; i < x.length; i++) {
+      if(i == skip) {
+        skip += skipStep+1;
+        continue;
+      }
+      double d = x[i];
+      sum += d >= 0 ? d : -d;
+    }
+
     return sum;
   }
-  public static double linfnorm(double [] x, boolean skipLast){
+  public static double linfnorm(double [] x, int skipStride){
     double res = Double.NEGATIVE_INFINITY;
-    int last = x.length -(skipLast?1:0);
-    for(int i = 0; i < last; ++i) {
+    int skip = skipStride;
+    for(int i = 0; i < x.length; ++i) {
+      if(i == skip) {
+        skip += skipStride + 1;
+        continue;
+      }
       if(x[i] > res) res = x[i];
       if(-x[i] > res) res = -x[i];
     }
     return res;
   }
   public static double l2norm(double[] x) { return Math.sqrt(l2norm2(x)); }
-  public static double l2norm(double [] x, boolean skipLast){
-    return Math.sqrt(l2norm2(x, skipLast));
+  public static double l2norm(double [] x, int skipStep){
+    return Math.sqrt(l2norm2(x, skipStep));
   }
   public static double l2norm(double[] x, double[] y) { return Math.sqrt(l2norm2(x,y)); }
   public static double l2norm(double[][] x, double[][] y) { return Math.sqrt(l2norm2(x,y)); }
@@ -703,7 +722,7 @@ public class ArrayUtils {
       if (from[i]>result) result = from[i];
     return result;
   }
-  public static long maxValue(int[] from) {
+  public static int maxValue(int[] from) {
     int result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]>result) result = from[i];
@@ -1261,6 +1280,12 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+  public static <T> T[] select(T[] ary, int[] idxs) {
+    T [] res = Arrays.copyOf(ary,idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
   public static int[] select(int[] ary, int[] idxs) {
     int [] res = MemoryManager.malloc4(idxs.length);
     for(int i = 0; i < res.length; ++i)
@@ -1437,8 +1462,8 @@ public class ArrayUtils {
   }
 
   public static int[] sorted_set_diff(int[] x, int[] y) {
-    assert isSorted(x);
-    assert isSorted(y);
+    assert isSorted(x):"not sorted " + Arrays.toString(x);
+    assert isSorted(y):"not sorted " + Arrays.toString(y);
     int [] res = new int[x.length];
     int j = 0, k = 0;
     for(int i = 0; i < x.length; i++){
@@ -1824,5 +1849,16 @@ public class ArrayUtils {
   public static <T> T[] makeAry(int sz){
     Object [] res = new Object[sz];
     return (T[])res;
+  }
+
+  public static void fillSubRange(int N, int c, int [] ids, double [] src, double [] dst) {
+    if(ids == null) {
+      System.arraycopy(src,0,dst,c*N,N);
+    } else {
+      int j = 0;
+      int off = c * N;
+      for (int i : ids)
+        dst[off + i] = src[j++];
+    }
   }
 }

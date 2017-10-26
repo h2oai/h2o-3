@@ -4,7 +4,6 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -704,7 +703,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         calibBuilder._parms._intercept = true;
         calibBuilder._parms._response_column = "response";
         calibBuilder._parms._train = calibInput._key;
-        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        calibBuilder._parms._family = GLM.Family.binomial;
         calibBuilder._parms._lambda = new double[] {0.0};
 
         _model._output._calib_model = calibBuilder.trainModel().get();

@@ -776,11 +776,9 @@ public final class Gram extends Iced<Gram> {
       _diag[row.binIds[0]] += w;
   }
   public void mul(double x){
-    if(_diag != null)for(int i = 0; i < _diag.length; ++i)
-      _diag[i] *= x;
-    for(int i = 0; i < _xx.length; ++i)
-      for(int j = 0; j < _xx[i].length; ++j)
-        _xx[i][j] *= x;
+    if(_diag != null) ArrayUtils.mult(_diag,x);
+    ArrayUtils.mult(_xx,x);
+    if(_xxCache != null) ArrayUtils.mult(_xxCache.xx,x);
   }
 
   public double [] mul(double [] x){
@@ -788,19 +786,6 @@ public final class Gram extends Iced<Gram> {
     mul(x,res);
     return res;
   }
-  private double [][] XX = null;
-
-/*  public void mul(double [] x, double [] res){
-    Arrays.fill(res,0);
-    if(XX == null) XX = getXX(false,false);
-    for(int i = 0; i < XX.length; ++i){
-      double d  = 0;
-      double [] xi = XX[i];
-      for(int j = 0; j < XX.length; ++j)
-        d += xi[j]*x[j];
-      res[i] = d;
-    }
-  }*/
 
   /*
   This method will not allocate the extra memory and hence is considered for lowMemory systems.

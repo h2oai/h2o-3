@@ -135,7 +135,7 @@ public class WorkFlowTest extends TestUtil {
 
       // ---
       // Build a GLM model also
-      GLMModel.GLMParameters glm_parms = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
+      GLMModel.GLMParameters glm_parms = new GLMModel.GLMParameters(GLM.Family.gaussian);
       // base Model.Parameters
       glm_parms._train = train._key;
       glm_parms._valid = test ._key;

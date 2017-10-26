@@ -8,23 +8,27 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 public class C1SChunkTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass()
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
+
   @Test
   public void test_inflate_impl() {
-    for (int l=0; l<2; ++l) {
+    for (int l = 0; l < 2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
       // 0, 0.2, 0.3, 2.54, NA for l==0
       // NA, 0, 0.2, 0.3, 2.54, NA for l==1
       long[] man = new long[]{0, 2, 3, 254};
       int[] exp = new int[]{1, -1, -1, -2};
-      if (l==1) nc.addNA();
+      if (l == 1) nc.addNA();
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
       int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
-      if (l==1) {
+      if (l == 1) {
         Assert.assertTrue(cc.isNA(0));
         Assert.assertTrue(cc.isNA_abs(0));
       }
@@ -35,16 +39,16 @@ public class C1SChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(man.length + l));
       Assert.assertTrue(cc.isNA_abs(man.length + l));
       double[] densevals = new double[cc.len()];
-      cc.getDoubles(densevals,0,cc.len());
+      cc.getDoubles(densevals, 0, cc.len());
       for (int i = 0; i < densevals.length; ++i) {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
-        else Assert.assertTrue(cc.atd(i)==densevals[i]);
+        else Assert.assertTrue(cc.atd(i) == densevals[i]);
       }
 
-      nc = cc.extractRows(new NewChunk(null, 0),0,len);
+      nc = cc.extractRows(new NewChunk(null, 0), 0, len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
-      if (l==1) {
+      if (l == 1) {
         Assert.assertTrue(nc.isNA(0));
         Assert.assertTrue(nc.isNA_abs(0));
       }
@@ -58,7 +62,7 @@ public class C1SChunkTest extends TestUtil {
       Chunk cc2 = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C1SChunk);
-      if (l==1) {
+      if (l == 1) {
         Assert.assertTrue(cc2.isNA(0));
         Assert.assertTrue(cc2.isNA_abs(0));
       }
@@ -72,27 +76,29 @@ public class C1SChunkTest extends TestUtil {
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }
-  @Test public void test_inflate_impl2() {
-    for (int l=0; l<2; ++l) {
+
+  @Test
+  public void test_inflate_impl2() {
+    for (int l = 0; l < 2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
       long[] man = new long[]{-1228, -997, -9740};
       int[] exp = new int[]{-4, -4, -5};
-      if (l==1) nc.addNA();
+      if (l == 1) nc.addNA();
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
       int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
-      if (l==1) Assert.assertTrue(cc.isNA(0));
+      if (l == 1) Assert.assertTrue(cc.isNA(0));
       for (int i = 0; i < man.length; ++i)
         Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
       Assert.assertTrue(cc.isNA(man.length + l));
 
-      nc = cc.extractRows(new NewChunk(null, 0),0,len);
+      nc = cc.extractRows(new NewChunk(null, 0), 0, len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
-      if (l==1) {
+      if (l == 1) {
         Assert.assertTrue(nc.isNA(0));
         Assert.assertTrue(nc.isNA_abs(0));
       }
@@ -106,7 +112,7 @@ public class C1SChunkTest extends TestUtil {
       Chunk cc2 = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C1SChunk);
-      if (l==1) Assert.assertTrue(cc2.isNA(0));
+      if (l == 1) Assert.assertTrue(cc2.isNA(0));
       for (int i = 0; i < man.length; ++i)
         Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.atd(l + i), 0);
       Assert.assertTrue(cc2.isNA(man.length + l));
@@ -115,13 +121,14 @@ public class C1SChunkTest extends TestUtil {
     }
   }
 
-  @Test public void test_setNA() {
+  @Test
+  public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key, new long[]{0, 15})).makeZero();
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, -128, 0, 12, 0, 126, 0, 0, 19};
     Vec.Writer w = vec.open();
-    for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
+    for (int i = 0; i < vals.length; ++i) w.set(i, vals[i]);
     w.close();
 
     Chunk cc = vec.chunkForChunkIdx(0);
@@ -142,7 +149,7 @@ public class C1SChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
-    cc.extractRows(nc,0,(int)vec.length());
+    cc.extractRows(nc, 0, (int) vec.length());
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
 
@@ -164,4 +171,35 @@ public class C1SChunkTest extends TestUtil {
     vec.remove();
   }
 
+
+  @Test
+  public void test_performance() {
+    int[] exponents = new int[]{/*-32,*/-16, -8, -6, -4, -2, -1, 0, 1, 2, 4, 6, 8, 16/*,32*/};
+    long[] biases = new long[]{-1234567, -12345, -1234,  1, 1234, 12345, 1234567};
+    for(int x = 0; x < 3; ++x) {
+      long tsum = 0;
+      long tmin = Long.MAX_VALUE;
+      double sum = 0;
+      for (int exponent : exponents) {
+        for (long bias : biases) {
+          if (exponent == 0 && 1 >= Math.abs(bias)) continue;
+          NewChunk nc = new NewChunk(null, 0);
+          for (int i = 0; i < 1000000; ++i)
+            nc.addNum(bias + (i%255), exponent);
+          Chunk c = nc.compress();
+          if (!(c instanceof C1SChunk))
+            System.out.println("exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName());
+          Assert.assertTrue(c instanceof C1SChunk);
+          long t0 = System.currentTimeMillis();
+          for (int i = 0; i < c._len; ++i)
+            sum += c.atd(i);
+          long t1 = System.currentTimeMillis();
+          long t = t1 - t0;
+          tsum += t;
+          if (t < tmin) tmin = t;
+        }
+      }
+      System.out.println("tsum = " + tsum + ", tmin = " + tmin + "ms" + ", sum = " + sum);
+    }
+  }
 }

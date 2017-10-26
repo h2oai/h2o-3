@@ -13,8 +13,8 @@ import java.util.Arrays;
 public class OptimizationUtils {
 
   public static class GradientInfo extends Iced {
-    public double _objVal;
-    public double [] _gradient;
+    public final double _objVal;
+    public final double [] _gradient;
 
     public GradientInfo(double objVal, double [] grad){
       _objVal = objVal;
@@ -37,53 +37,55 @@ public class OptimizationUtils {
    *  Provides ginfo computation and line search evaluation specific to given problem.
    *  Typically just a wrapper around MRTask calls.
    */
-  public interface GradientSolver {
+  public static abstract class GradientFunc<T extends GradientInfo> {
     /**
      * Evaluate ginfo at solution beta.
      * @param beta
      * @return
      */
-    GradientInfo getGradient(double [] beta);
-    GradientInfo getObjective(double [] beta);
+    public abstract T getGradient(double [] beta);
+    public T getObjective(double [] beta){return getGradient(beta);}
   }
 
 
-  public interface LineSearchSolver {
-    boolean evaluate(double [] direction);
-    double step();
-    GradientInfo ginfo();
-    LineSearchSolver setInitialStep(double s);
-    int nfeval();
-    double getObj();
-    double[] getX();
+  public static abstract class LineSearchSolver<T extends GradientInfo> {
+    public abstract boolean evaluate(double [] beta_old, double [] beta_new);
+    public abstract boolean evaluate(double [] direction);
+    public abstract double step();
+    public abstract LineSearchSolver setInitialStep(double s);
+    public abstract int nfeval();
+    public abstract double[] getX();
+    public abstract T ginfo();
   }
 
-  public static final class SimpleBacktrackingLS implements LineSearchSolver {
+
+  public static final class SimpleBacktrackingLS<T extends GradientInfo> extends LineSearchSolver<T> {
     private double [] _beta;
     final double _stepDec = .33;
     private double _step;
-    private final GradientSolver _gslvr;
-    private GradientInfo _ginfo; // gradient info excluding l1 penalty
-    private double _objVal; // objective including l1 penalty
-    final double _l1pen;
+    private final GradientFunc<T> _objf;
+    private T _ginfo;
     int _maxfev = 20;
     double _minStep = 1e-4;
 
 
-    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {
-      this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart));
+    public SimpleBacktrackingLS(GradientFunc<T> objf, double [] betaStart) {
+      this(objf, betaStart, objf.getObjective(betaStart));
     }
-    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen, GradientInfo ginfo) {
-      _gslvr = gslvr;
+    public SimpleBacktrackingLS(GradientFunc<T> objf, double [] betaStart, T ginfo) {
+      _objf = objf;
       _beta = betaStart;
       _ginfo = ginfo;
-      _l1pen = l1pen;
-      _objVal = _ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);
     }
-    public int nfeval() {return -1;}
+
+    @Override public T ginfo(){return _ginfo;}
 
     @Override
-    public double getObj() {return _objVal;}
+    public boolean evaluate(double [] beta_old, double [] beta_new){
+      _beta = beta_old;
+      return evaluate(ArrayUtils.subtract(beta_new,beta_old));
+    }
+    public int nfeval() {return -1;}
 
     @Override
     public double[] getX() {return _beta;}
@@ -102,11 +104,9 @@ public class OptimizationUtils {
       }
       double [] newBeta = direction.clone();
       for(int i = 0; i < _maxfev && step >= minStep; ++i, step*= _stepDec) {
-        GradientInfo ginfo = _gslvr.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
-        double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(newBeta,true);
-        if(objVal < _objVal){
+        T ginfo  = _objf.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
+        if(ginfo._objVal < _ginfo._objVal){
           _ginfo = ginfo;
-          _objVal = objVal;
           _beta = newBeta;
           _step = step;
           return true;
@@ -120,32 +120,28 @@ public class OptimizationUtils {
       return _step;
     }
 
-    @Override
-    public GradientInfo ginfo() {
-      return _ginfo;
-    }
 
     @Override public String toString(){return "";}
   }
 
 
 
-  public static final class MoreThuente implements LineSearchSolver {
+  public static final class MoreThuente<T extends GradientInfo> extends LineSearchSolver<T> {
     double _stMin, _stMax;
 
     double _initialStep = 1;
     double _minRelativeImprovement = 1e-8;
-    private final GradientSolver _gslvr;
+    private final GradientFunc<T> _gslvr;
     private double [] _beta;
 
 
-    public MoreThuente(GradientSolver gslvr, double [] betaStart){
+    public MoreThuente(GradientFunc<T> gslvr, double [] betaStart){
       this(gslvr,betaStart,gslvr.getGradient(betaStart),.1,.1,1e-2);
     }
-    public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo){
+    public MoreThuente(GradientFunc gslvr, double [] betaStart, T ginfo){
       this(gslvr,betaStart,ginfo,.1,.1,1e-8);
     }
-    public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo, double ftol, double gtol, double xtol){
+    public MoreThuente(GradientFunc<T> gslvr, double [] betaStart, T ginfo, double ftol, double gtol, double xtol){
       _gslvr = gslvr;
       _beta = betaStart;
       _ginfox = ginfo;
@@ -159,12 +155,15 @@ public class OptimizationUtils {
     public MoreThuente setInitialStep(double t) {_initialStep = t; return this;}
 
     @Override
-    public int nfeval() {
-      return _iter;
+    public boolean evaluate(double [] beta_old, double [] beta_new){
+      _beta = beta_old;
+      return evaluate(ArrayUtils.subtract(beta_new,beta_old));
     }
 
     @Override
-    public double getObj() {return ginfo()._objVal;}
+    public int nfeval() {
+      return _iter;
+    }
 
     @Override
     public double[] getX() { return _beta;}
@@ -180,9 +179,9 @@ public class OptimizationUtils {
     double _stx;
 
     double _bestStep;
-    GradientInfo _betGradient; // gradient info with at least minimal relative improvement and best value of augmented function
+    T _bestGradient; // gradient info with at least minimal relative improvement and best value of augmented function
     double  _bestPsiVal; // best value of augmented function
-    GradientInfo _ginfox;
+    T _ginfox;
 
     // fval, dg and step of the best step so far
     double _fvy;
@@ -205,7 +204,7 @@ public class OptimizationUtils {
       "Non-negative differential." // 7
     };
 
-    private double nextStep(GradientInfo ginfo, double dg, double stp, double off) {
+    private double nextStep(T ginfo, double dg, double stp, double off) {
       double fvp = ginfo._objVal - stp*off;
       double dgp = dg - off;
       double fvx = _fvx - _stx * off;
@@ -327,7 +326,7 @@ public class OptimizationUtils {
       _brackt = false;
       _stx = _sty = 0;
       _stMin = _stMax = 0;
-      _betGradient = null;
+      _bestGradient = null;
       _bestPsiVal = Double.POSITIVE_INFINITY;
       _bestStep = 0;
       double maxObj = _ginfox._objVal - _minRelativeImprovement*_ginfox._objVal;
@@ -360,10 +359,10 @@ public class OptimizationUtils {
 
         for (int i = 0; i < beta.length; ++i)
           beta[i] = _beta[i] + step * direction[i];
-        GradientInfo newGinfo = _gslvr.getGradient(beta);
-        if(newGinfo._objVal < maxObj && (_betGradient == null || (newGinfo._objVal - maxFval) < _bestPsiVal)){
+        T newGinfo = _gslvr.getGradient(beta);
+        if(newGinfo._objVal < maxObj && (_bestGradient == null || (newGinfo._objVal - maxFval) < _bestPsiVal)){
           _bestPsiVal = (newGinfo._objVal - maxFval);
-          _betGradient = newGinfo;
+          _bestGradient = newGinfo;
           _bestStep = step;
         }
         ++_iter;
@@ -389,9 +388,9 @@ public class OptimizationUtils {
         }
         if (step == _minStep && (newGinfo._objVal > maxFval | dgp >= dgtest)){
           _returnStatus = 4;
-          if(_betGradient != null) {
+          if(_bestGradient != null) {
              _stx = _bestStep;
-             _ginfox = _betGradient;
+             _ginfox = _bestGradient;
           } else {
             _stx = step;
             _ginfox = newGinfo;
@@ -400,9 +399,9 @@ public class OptimizationUtils {
         }
         if (_iter >= _maxfev){
           _returnStatus = 3;
-          if(_betGradient != null) {
+          if(_bestGradient != null) {
             _stx = _bestStep;
-            _ginfox = _betGradient;
+            _ginfox = _bestGradient;
           } else {
             _stx = step;
             _ginfox = newGinfo;
@@ -449,9 +448,8 @@ public class OptimizationUtils {
     @Override
     public double step() {return _stx;}
 
-
     @Override
-    public GradientInfo ginfo() {
+    public T ginfo() {
       return _ginfox;
     }
   }

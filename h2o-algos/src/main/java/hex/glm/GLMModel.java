@@ -4,11 +4,13 @@ import hex.*;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
-import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLM.Family;
+import hex.glm.GLM.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -39,6 +41,48 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public void setVcov(double[][] inv) {_output._vcov = inv;}
 
+  public TwoDimTable createLambdaSearchHistoryTable() {
+    String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "deviance_train"};
+    String[] ctypes = new String[]{"string", "string", "int", "string","int", "double"};
+    String[] cformats = new String[]{"%s", "%s", "%d","%s", "%d", "%.3f"};
+    boolean hasTest = _output._validation_metrics != null;
+    boolean hasXval = _output._cross_validation_metrics != null;
+    Submodel sm = _output._submodels[0];
+    long baseTime = sm.timestamp;
+    if(hasTest) {
+      cnames = ArrayUtils.append(cnames, "deviance_test");
+      ctypes = ArrayUtils.append(ctypes,"double");
+      cformats = ArrayUtils.append(cformats,"%.3f");
+    }
+    if(hasXval) {
+      cnames = ArrayUtils.append(cnames, new String[]{"deviance_xval", "deviance_se"});
+      ctypes = ArrayUtils.append(ctypes, new String[]{"double","double"});
+      cformats = ArrayUtils.append(cformats,new String[]{"%.3f","%.3f"});
+    }
+
+    TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_output._submodels.length], cnames, ctypes, cformats, "");
+    int j = 0;
+
+    DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    for (int i = 0; i < _output._submodels.length; ++i) {
+      int col = 0;
+      sm =  _output._submodels[i];
+      res.set(i, col++, fmt.print(sm.timestamp));
+      res.set(i, col++, PrettyPrint.msecs(sm.timestamp - baseTime, true));
+      res.set(i, col++, sm.iteration);
+      res.set(i, col++, GLM.lambdaFormatter.format(sm.lambda_value));
+      res.set(i, col++, sm.rank());
+      res.set(i, col++, sm.devianceTrain);
+      if(hasTest)
+        res.set(i, col++, sm.devianceTest);
+      if(hasXval) {
+        res.set(i, col++, sm.devianceXval);
+        res.set(i, col++, sm.devianceXvalSD);
+      }
+    }
+    return res;
+  }
+
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
     public double []   _explained_deviance_train;
@@ -54,7 +98,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     rp._coefficient_names = _output._coefficient_names;
     int N = _output._submodels.length;
     int P = _output._dinfo.fullN() + 1;
-    if(_parms._family == Family.multinomial){
+    if(_parms._family == GLM.Family.multinomial){
       String [] classNames = _output._domains[_output._domains.length-1];
       String [] coefNames = new String[P*_output.nclasses()];
       for(int c = 0; c < _output.nclasses(); ++c){
@@ -107,13 +151,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial))
+    if(domain == null && (_parms._family == GLM.Family.binomial || _parms._family == GLM.Family.quasibinomial))
       domain = binomialClassNames;
     return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
 
   protected double [] beta_internal(){
-    if(_parms._family == Family.multinomial)
+    if(_parms._family == GLM.Family.multinomial)
       return ArrayUtils.flat(_output._global_beta_multinomial);
     return _output._global_beta;
   }
@@ -144,22 +188,26 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
+  public GLMModel addSubmodel(double lambda) {
+    Submodel sm = _output._submodels.length > 0
+        ?_output._submodels[_output._submodels.length-1]
+        : new Submodel();
+    assert lambda < sm.lambda_value;
+    addSubmodel(new Submodel(sm,lambda));
+    return this;
+  }
   public GLMModel addSubmodel(Submodel sm) {
     _output._submodels = ArrayUtils.append(_output._submodels,sm);
     _output.setSubmodelIdx(_output._submodels.length-1);
     return this;
   }
 
-  public GLMModel updateSubmodel(Submodel sm) {
-    assert sm.lambda_value == _output._submodels[_output._submodels.length-1].lambda_value;
-    _output._submodels[_output._submodels.length-1] = sm;
-    return this;
-  }
-
-  public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
+  public Submodel setCurrentSubmodel(double [] beta, int [] betaCols, double devianceTrain, double devianceTest, double devianceXval, double devianceXvalSD, int iter){
     int id = _output._submodels.length-1;
-    _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,beta,iter,devianceTrain,devianceTest);
+    _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,beta,iter,devianceTrain,devianceTest,devianceXval, devianceXvalSD);
     _output.setSubmodelIdx(id);
+    throw H2O.unimpl();
+//    return _output._submodels[id];
   }
 
   public GLMModel clone2(){
@@ -178,8 +226,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
-    public Link _link = Link.family_default;
-    public Solver _solver = Solver.AUTO;
+    public Link _link = GLM.Link.family_default;
+    public GLM.Solver _solver = GLM.Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
     public double [] _alpha = null;
@@ -211,11 +259,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void validate(GLM glm) {
       if(_alpha != null && (1 < _alpha[0] || _alpha[0] < 0))
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
-      if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
+      if(_compute_p_values && _solver != GLM.Solver.AUTO && _solver != GLM.Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
       if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
         glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
-      if(_compute_p_values && _family == Family.multinomial)
+      if(_compute_p_values && _family == GLM.Family.multinomial)
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_compute_p_values && _non_negative)
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
@@ -229,16 +277,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
         glm.error("_prior","Prior must be in (exclusive) range (0,1)");
-      if(_prior != -1 && _family != Family.binomial)
+      if(_prior != -1 && _family != GLM.Family.binomial)
         glm.error("_prior","Prior is only allowed with family = binomial.");
-      if(_family != Family.tweedie) {
+      if(_family != GLM.Family.tweedie) {
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
       }
       if(_remove_collinear_columns && !_intercept)
         glm.error("_intercept","Remove colinear columns option is currently not supported without intercept");
       if(_beta_constraints != null) {
-        if(_family == Family.multinomial)
+        if(_family == GLM.Family.multinomial)
           glm.error("beta_constraints","beta constraints are not supported for family = multionomial");
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
@@ -263,31 +311,31 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_nlambdas", "only applies if lambda search is on.");
         glm.hide("_early_stopping","only applies if lambda search is on.");
       }
-      if(_link != Link.family_default) { // check we have compatible link
+      if(_link != GLM.Link.family_default) { // check we have compatible link
         switch (_family) {
           case gaussian:
-            if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
+            if (_link != GLM.Link.identity && _link != GLM.Link.log && _link != GLM.Link.inverse)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only identity, log and inverse links are allowed for family=gaussian.");
             break;
           case quasibinomial:
           case binomial:
-            if (_link != Link.logit) // fixme: R also allows log, but it's not clear when can be applied and what should we do in case the predictions are outside of 0/1.
+            if (_link != GLM.Link.logit) // fixme: R also allows log, but it's not clear when can be applied and what should we do in case the predictions are outside of 0/1.
               throw new IllegalArgumentException("Incompatible link function for selected family. Only logit is allowed for family=" + _family + ". Got " + _link);
             break;
           case poisson:
-            if (_link != Link.log && _link != Link.identity)
+            if (_link != GLM.Link.log && _link != GLM.Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only log and identity links are allowed for family=poisson.");
             break;
           case gamma:
-            if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
+            if (_link != GLM.Link.inverse && _link != GLM.Link.log && _link != GLM.Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
           case tweedie:
-            if (_link != Link.tweedie)
+            if (_link != GLM.Link.tweedie)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
             break;
           case multinomial:
-            if(_link != Link.multinomial)
+            if(_link != GLM.Link.multinomial)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only multinomial link allowed for family=multinomial.");
             break;
           default:
@@ -297,8 +345,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMParameters(){
-      this(Family.gaussian, Link.family_default);
-      assert _link == Link.family_default;
+      this(GLM.Family.gaussian, GLM.Link.family_default);
+      assert _link == GLM.Link.family_default;
       _stopping_rounds = 3;
       _stopping_metric = ScoreKeeper.StoppingMetric.deviance;
       _stopping_tolerance = 1e-4;
@@ -342,14 +390,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final boolean canonical(){
       switch(_family){
         case gaussian:
-          return _link == Link.identity;
+          return _link == GLM.Link.identity;
         case binomial:
         case quasibinomial:
-          return _link == Link.logit;
+          return _link == GLM.Link.logit;
         case poisson:
-          return _link == Link.log;
+          return _link == GLM.Link.log;
         case gamma:
-          return _link == Link.inverse;
+          return _link == GLM.Link.inverse;
 //        case tweedie:
 //          return false;
         default:
@@ -364,7 +412,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return (yr - ym) * (yr - ym);
         case quasibinomial:
         case binomial:
-          return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
+          return 2 * ((GLM.y_log_y(yr, ym)) + GLM.y_log_y(1 - yr, 1 - ym));
         case poisson:
           if( yr == 0 ) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
@@ -459,23 +507,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    // supported families
-    public enum Family {
-      gaussian(Link.identity), binomial(Link.logit), quasibinomial(Link.logit),poisson(Link.log),
-      gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie);
-      public final Link defaultLink;
-      Family(Link link){defaultLink = link;}
+    public boolean isWeighted() {
+      return _family != GLM.Family.gaussian || _link != GLM.Link.identity;
     }
-    public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
-
-    // helper function
-    static final double y_log_y(double y, double mu) {
-      if(y == 0)return 0;
-      if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
-      return y * Math.log(y / mu);
-    }
   } // GLMParameters
 
   public static class GLMWeights {
@@ -589,7 +624,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return (yr - ym) * (yr - ym);
         case quasibinomial:
           if(yr == ym) return 0;
-          if(ym > 1) return -2 * (yr*Math.log(ym));
+          if(ym > 1)
+            return -2 * (yr*Math.log(ym));
           double res = -2 * (yr*Math.log(ym) + (1-yr)*Math.log(1-ym));
           return res;
         case binomial:
@@ -681,6 +717,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final int    iteration;
     public final double devianceTrain;
     public final double devianceTest;
+    public final double devianceXval;
+    public final double devianceXvalSD;
+    public final long   timestamp;
     public final int    [] idxs;
     public final double [] beta;
 
@@ -698,11 +737,28 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
 
-    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
+    private Submodel(){
+      lambda_value = Double.POSITIVE_INFINITY;
+      beta = new double[0];
+      idxs = new int[0];
+      devianceTrain = Double.NaN;
+      devianceTest = Double.NaN;
+      devianceXval = Double.NaN;
+      devianceXvalSD = Double.NaN;
+      timestamp = System.currentTimeMillis();
+      iteration = -1;
+    }
+    private Submodel(Submodel sm, double new_lambda){
+      throw H2O.unimpl();
+    }
+    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest, double devXval, double devXvalSD){
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
       this.devianceTest = devTest;
+      this.devianceXval = devXval;
+      this.devianceXvalSD = devXvalSD;
+      timestamp = System.currentTimeMillis();
       int r = 0;
       if(beta != null){
         // grab the indeces of non-zero coefficients
@@ -735,7 +791,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected String[][] scoringDomains(){
     String [][] domains = _output._domains;
-    if((_parms._family == Family.binomial || _parms._family == Family.quasibinomial) && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+    if((_parms._family == GLM.Family.binomial || _parms._family == GLM.Family.quasibinomial) && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
       domains = domains.clone();
       domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
     }
@@ -751,7 +807,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
     String[] _coefficient_names;
-    public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
+    public int _best_lambda_idx = -1; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
     public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_lambda_idx].lambda_value;}
@@ -827,21 +883,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       this(dinfo,column_names,domains,coefficient_names,binomial);
       assert !ArrayUtils.hasNaNsOrInfs(beta);
       _global_beta=beta;
-      _submodels = new Submodel[]{new Submodel(0,beta,-1,Double.NaN,Double.NaN)};
+      _submodels = new Submodel[0];
     }
 
     public GLMOutput() {_isSupervised = true; _nclasses = -1;}
 
     public GLMOutput(GLM glm) {
       super(glm);
-      _dinfo = glm._dinfo.clone();
+      _dinfo = glm.dinfo();
       _dinfo._adaptedFrame = null;
-      String[] cnames = glm._dinfo.coefNames();
-      String [] names = glm._dinfo._adaptedFrame._names;
-      String [][] domains = glm._dinfo._adaptedFrame.domains();
-      if(glm._parms._family == Family.quasibinomial){
-        double [] mins = glm._dinfo._adaptedFrame.lastVec().mins();
-        double [] maxs = glm._dinfo._adaptedFrame.lastVec().maxs();
+      String[] cnames = _dinfo.coefNames();
+      String [] names = _dinfo._adaptedFrame._names;
+      String [][] domains = _dinfo._adaptedFrame.domains();
+      if(glm._parms._family == GLM.Family.quasibinomial){
+        double [] mins = _dinfo._adaptedFrame.lastVec().mins();
+        double [] maxs = _dinfo._adaptedFrame.lastVec().maxs();
         double l = mins[0];
         double u = maxs[0];
         if(!(l<u))
@@ -870,7 +926,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
-      _binomial = (glm._parms._family == Family.binomial || glm._parms._family == Family.quasibinomial);
+      _binomial = (glm._parms._family == GLM.Family.binomial || glm._parms._family == GLM.Family.quasibinomial);
       _nclasses = glm.nclasses();
       _multinomial = _nclasses > 2;
 
@@ -898,18 +954,39 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return res;
     }
 
-    public Submodel pickBestModel() {
-      int bestId = 0;
-      Submodel best = _submodels[0];
-      for(int i = 1; i < _submodels.length; ++i) {
+//    public Submodel pickBestModel() {
+//      int bestId = 0;
+//      Submodel best = _submodels[0];
+//      for(int i = 1; i < _submodels.length; ++i) {
+//        Submodel sm = _submodels[i];
+//        boolean isBetter;
+//        if(!Double.isNaN(best.devianceXval)){
+//          isBetter = sm.devianceXval < best.devianceXval;
+//        } else if(!Double.isNaN(best.devianceTest)){
+//          isBetter = sm.devianceTest < best.devianceTest;
+//        } else
+//          isBetter = sm.devianceTrain < best.devianceTrain;
+//        if(isBetter) {bestId = i; best = sm;}
+//      }
+//      setSubmodelIdx(_best_lambda_idx = bestId);
+//      return best;
+//    }
+
+    public int pickBestModelId() { return pickBestModelId(0);}
+    public int pickBestModelId(int bestId) {
+      Submodel best = _submodels[bestId];
+      for(int i = bestId+1; i < _submodels.length; ++i) {
         Submodel sm = _submodels[i];
-        if(!(sm.devianceTest > best.devianceTest) && sm.devianceTrain < best.devianceTrain){
-          bestId = i;
-          best = sm;
-        }
+        boolean isBetter;
+        if(!Double.isNaN(best.devianceXval)){
+          isBetter = sm.devianceXval < best.devianceXval;
+        } else if(!Double.isNaN(best.devianceTest)){
+          isBetter = sm.devianceTest < best.devianceTest;
+        } else
+          isBetter = sm.devianceTrain < best.devianceTrain;
+        if(isBetter) {bestId = i; best = sm;}
       }
-      setSubmodelIdx(_best_lambda_idx = bestId);
-      return best;
+      return _best_lambda_idx = bestId;
     }
 
     public double[] getNormBeta() {return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
@@ -980,7 +1057,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     HashMap<String, Double> res = new HashMap<>();
     final double [] b = beta();
     if(b == null) return res;
-    if(_parms._family == Family.multinomial){
+    if(_parms._family == GLM.Family.multinomial){
       String [] responseDomain = _output._domains[_output._domains.length-1];
       int len = b.length/_output.nclasses();
       assert b.length == len*_output.nclasses();
@@ -1052,7 +1129,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,0);}
   @Override protected double[] score0(double[] data, double[] preds, double o) {
-    if(_parms._family == Family.multinomial) {
+    if(_parms._family == GLM.Family.multinomial) {
       if(o != 0) throw H2O.unimpl("Offset is not implemented for multinomial.");
       double[] eta = _eta.get();
       if(eta == null || eta.length < _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
@@ -1099,7 +1176,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         eta += b[numStart + i] * d;
       }
       double mu = _parms.linkInv(eta);
-      if (_parms._family == Family.binomial) { // threshold for prediction
+      if (_parms._family == GLM.Family.binomial) { // threshold for prediction
         preds[0] = mu >= defaultThreshold()?1:0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1
@@ -1128,7 +1205,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       body.ip("for(int i = 0; i < " + _output._dinfo._cats + "; ++i) if(Double.isNaN(data[i])) data[i] = CAT_MODES.VALUES[i];").nl();
       body.ip("for(int i = 0; i < " + _output._dinfo._nums + "; ++i) if(Double.isNaN(data[i + " + _output._dinfo._cats + "])) data[i+" + _output._dinfo._cats + "] = NUM_MEANS.VALUES[i];").nl();
     }
-    if(_parms._family != Family.multinomial) {
+    if(_parms._family != GLM.Family.multinomial) {
       body.ip("double eta = 0.0;").nl();
       if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
         body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
@@ -1150,12 +1227,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
       body.ip("eta += b[").p(noff).p("+i]*data[i];").nl();
       body.ip("eta += b[b.length-1]; // reduce intercept").nl();
-      if(_parms._family != Family.tweedie)
+      if(_parms._family != GLM.Family.tweedie)
         body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
       else
         body.ip("double mu = hex.genmodel.GenModel.GLM_tweedieInv(eta," + _parms._tweedie_link_power);
       body.p(");").nl();
-      if (_parms._family == Family.binomial) {
+      if (_parms._family == GLM.Family.binomial) {
         body.ip("preds[0] = (mu >= ").p(defaultThreshold()).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
         body.ip("preds[1] = 1.0 - mu; // class 0").nl();
         body.ip("preds[2] =       mu; // class 1").nl();

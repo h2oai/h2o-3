@@ -2,7 +2,7 @@ package hex;
 
 import hex.ensemble.StackedEnsemble;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMModel;
+import hex.glm.GLM;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -196,8 +196,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       Field distributionField = (familyField != null ? null : ReflectionUtils.findNamedField(aModel, "_dist"));
       if (null != familyField) {
         // GLM only, for now
-        GLMModel.GLMParameters.Family thisFamily = (GLMModel.GLMParameters.Family) familyField.get(aModel._parms);
-        if (thisFamily == GLMModel.GLMParameters.Family.binomial) {
+        GLM.Family thisFamily = (GLM.Family) familyField.get(aModel._parms);
+        if (thisFamily == GLM.Family.binomial) {
           return DistributionFamily.bernoulli;
         }
 

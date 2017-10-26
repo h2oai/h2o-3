@@ -19,9 +19,14 @@ import java.util.Arrays;
 */
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
+  public int [] _activeVecs;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _responses;   // number of responses
-  public int _outpus; // number of outputs
+
+  public double [] selectActive(double [] vec){
+    if(_activeCols == null) return vec;
+    return ArrayUtils.select(vec,_activeCols);
+  }
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -71,6 +76,13 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public double normMul(int i) {
     return _normMul == null?1:_normMul[i];
+  }
+
+  public boolean isFiltered() {return _activeCols != null;}
+
+  public double[] expandBeta(double[] beta) {
+    if(!isFiltered()) return beta.clone();
+    return ArrayUtils.expandAndScatter(beta,_parentDinfo.fullN(),_activeCols);
   }
 
   public enum TransformType {
@@ -160,7 +172,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int [][] _catLvls; // cat lvls post filter (e.g. by strong rules)
   public final int [][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
-  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
+  private DataInfo() {  _parentDinfo = null; _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
   public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -198,6 +210,7 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
     super(Key.<DataInfo>make());
+    _parentDinfo = null;
     _valid = valid != null;
     assert predictor_transform != null;
     assert  response_transform != null;
@@ -357,7 +370,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
-    return res;
+    return isFiltered()?res.filterExpandedColumns(activeCols()):res;
   }
 
   public double[] denormalizeBeta(double [] beta) {
@@ -384,12 +397,15 @@ public class DataInfo extends Keyed<DataInfo> {
 
   private int [] _fullCatOffsets;
   private int [][] _catMap;
+  private final  DataInfo _parentDinfo;
 
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
-  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int[][] intLvls, int [] catModes, int[] activeCols) {
+  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int[][] intLvls, int [] catModes, int[] activeCols, int [] activeVecs) {
     _activeCols=activeCols;
+    _activeVecs = activeVecs;
     _fullCatOffsets = dinfo._catOffsets;
+    _parentDinfo = dinfo;
     if(!dinfo._useAllFactorLevels) {
       _fullCatOffsets = dinfo._catOffsets.clone();
       for (int i = 0; i < _fullCatOffsets.length; ++i)
@@ -455,7 +471,9 @@ public class DataInfo extends Keyed<DataInfo> {
     return (int)Math.round(v.mean());
   }
 
-
+  public DataInfo removeCols(int [] cols){
+    return filterExpandedColumns(ArrayUtils.sorted_set_diff(ArrayUtils.seq(0,fullN()+1),cols));
+  }
   /**
    * Filter the _adaptedFrame so that it contains only the Vecs referenced by the cols
    * parameter.
@@ -464,13 +482,13 @@ public class DataInfo extends Keyed<DataInfo> {
    * @return A DataInfo with _activeCols specifying the active columns
    */
   public DataInfo filterExpandedColumns(int [] cols){
-    assert _activeCols==null;
     assert _predictor_transform != null;
     assert  _response_transform != null;
+    if(_activeCols != null)
+      cols = cols == null?_activeCols.clone():ArrayUtils.select(_activeCols,cols);
     if(cols == null)return IcedUtils.deepCopy(this);  // keep all columns
     int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
     int i = 0, j = 0, ignoredCnt = 0;
-    //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
     int [][] catLvls = new int[_cats][];  // categorical levels to keep (used in getCategoricalOffsetId binary search)
     int [][] intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][]; // interactions levels to keep (used in getInteractionOffsetId binary search)
     int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd
@@ -542,7 +560,10 @@ public class DataInfo extends Keyed<DataInfo> {
     for(int k = prev; k < _nums; ++k)
       ignoredCols[ignoredCnt++] = k+_cats;
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
-    if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
+    if(ignoredCnt > 0) {
+      ignoredCols = Arrays.copyOf(ignoredCols,ignoredCnt);
+      f.remove(ignoredCols);
+    }
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
     double [] normSub = null;
     double [] normMul = null;
@@ -560,7 +581,8 @@ public class DataInfo extends Keyed<DataInfo> {
       for(int k = id; k < (id + nnums); ++k)
         normMul[k-id] = _normMul[cols[k]-off];
     }
-    DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
+    int [] activeVecs = ignoredCnt == 0?null:ArrayUtils.sorted_set_diff(ArrayUtils.seq(0,_adaptedFrame.vecs().length),ignoredCols);
+    DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols,activeVecs);
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     for(int k=id; k < (id+nnums);++k )
@@ -965,6 +987,9 @@ public class DataInfo extends Keyed<DataInfo> {
       if (_intercept)
         res[res.length - 1] += scale;
     }
+
+    public final int numId(int i) {return numIds == null?numStart()+i:numIds[i];}
+    public final double numVal(int i) {return numVals[i];}
   }
 
 
@@ -1126,6 +1151,10 @@ public class DataInfo extends Keyed<DataInfo> {
     return rows(chks,cnt > (chks.length >> 1));
   }
   public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
+  public Rows rowsFromFullData(Chunk [] chks, boolean sparse) {
+    return new Rows(_activeVecs == null?chks:ArrayUtils.select(chks,_activeVecs),sparse);
+  }
+
 
   /**
    * Extract (sparse) rows from given chunks.

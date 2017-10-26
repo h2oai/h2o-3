@@ -4,8 +4,7 @@ import hex.GLMMetrics;
 import hex.ModelMetricsRegressionGLM;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.glm.GLM.Solver;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -99,7 +98,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._alpha = new double[]{0};
     parms._response_column = "y";
     parms._intercept = false;
-    parms._family = Family.binomial;
+    parms._family = GLM.Family.binomial;
     // just make sure it runs
     GLMModel model = new GLM(parms).trainModel().get();
     Map<String,Double> coefs = model.coefficients();
@@ -115,14 +114,14 @@ public class GLMBasicTestRegression extends TestUtil {
   public void testSparse() {
     double [] exp_coefs = new double [] {0.0233151691783671,-0.00543776852277619,-0.0137359312181047,0.00770037200907652,0.0328856331139761,-0.0242845468071283,-0.0101698117745265,0.00868844870137727,0.000349121513384513,-0.0106962199761512,-0.00705001448025939,0.00821574637914086,0.00601015905212279,0.0021278467162546,-0.0233079168835112,0.00535473896013676,-0.00897667301004576,0.00788272228017582,0.00237442711371947,-0.013136425134371,0.00134003869245749,0.0240118046676911,0.000607214787933269,-0.0112908513868027,0.000443119443631777,0.00749330452744921,-0.00558704122833295,0.000533036850835694,0.0130008059852934,-4.40634889376063e-05,-0.00580285872202347,0.0117029111583238,-0.00685480666428133,0.00809526311326634,-0.0088567165389072,-0.0363126456378731,-0.00267237519808936,-0.01669554043682,0.00556943053195684,0.0178196407614288,-0.000903204442155076,-0.0085363297586185,-0.00421147221966977,-0.00828702756129772,0.017027928644479,0.00710126315700672,0.019819043342772,-0.0165232485929677,0.00439570108491533,0.0188325734374437,0.00799712968759025,-0.0100388875424171,-0.0062415137856855,-0.00258013659839137,-6.58516379178382e-05,0.0135032332096949,-0.00776869619293087,-0.00544035128543343,-0.0110626226606883,-0.00768490011210769,-0.00684181016695251,-0.0144627862333649,-0.0262830557415184,-0.0102290180164706,0.00368252955770187,0.015824495748353,0.00383484095683782,0.0151193905626625,-0.00615077094420626,0.0142842231522414,0.00150448184871646,0.0521491615912011,0.0128661232226479,0.00225580439739044,-0.0117476427864401,-0.0059792656068627,0.000787012740598272,0.00255419488737936,0.00406033118385186,0.0102551045653601,0.00423949002681056,-0.0116986428989079,0.00232448128787425,-0.00296198808290357,-0.00793738689381332,-0.000771158906679964,0.00435708760153937,-0.0138922325725763,0.00264561130131037,-0.0156128295187466,-0.0102023187068811,0.0074744189329328,0.0102377749189598,-0.0304739969497646,0.00692556661464647,0.00151065993974025,0.0133704258946895,-0.0167391228441308,0.0111804482435337,-0.0062469732087272,-0.00930165243463748,-0.00418698783410104,0.00190918091726462,0.00632982717347925,-0.00277608255480933,-0.00175463261672652,-0.00267223587651978,-0.00329264073314718,0.000960091877616874,-0.00946014799557438,-0.0112302467393988,-0.00870512647578646,-0.00238582834931644,-0.0100845163232815,-0.00675861103174491,-0.000689229731411459,0.0127651588318169,-0.0062753105816655,-0.00240575758827749,0.00439570108491531,0.00934971690544427,-0.0184380964678117,-0.00474253892124699,0.00522916014066936,-0.0105148336464531,0.0088372219244051,0.0100429095740915,-0.0107657032259033,-0.00512476269437683,-0.00558487620671732,-0.000637298812579742,-0.00118460090105795,-0.00369801350318738,-0.00556276860695209,0.00789011470305446,-0.00248367841256358,0.00677762904717052,-0.00640135771848287,0.00797532960057465,-0.00117508910987595,0.000986931150778778,-0.0148237721063735,0.0053001635341953,-0.0139698571439444,-0.0172255105183439,-0.0177416268392445,-0.0107062660197562,-0.00735448768491512,-0.00418482390542493,0.00933957546887131,-0.00761657876743367,0.0107862806984669,6.99667442150322e-05,-0.00151054027221715,0.00941377216029456,0.0112882845381545,0.0014423575345095,0.00845773223444363,-0.00675939077916714,-0.00329806028742896,0.000276998824889068,0.00206337643122044,-0.00173085772672239,0.00169616445468346,0.00281297187309321,-0.0152343998246272,0.0126261762792184,-0.000224959505615703,-0.00476466349783071,-0.0102541605421868,-0.000561674281900828,0.00367777757696579,-0.000960272764476094,0.00255704179717728,-0.000696266184051808,0.0470920125432207,0.0115016691642458,-0.00287666464467251,-0.00132912286075637,0.00201932482935891,0.00119899092739739,0.00380417340899902,-0.00394363983208331,-0.00294543812868618,-1.77894150438862e-05,-0.00455002740798846,0.000613307426862812,0.00348274063618593,0.00161877234851832,0.0231608701706833,-0.00390062462708628,0.00244047437999614,-0.00143984617445982,-0.00221831741496412,-0.00744853810342609,-0.00575689075773469,-0.00567890661011033,0.00384589889309526,-0.00173241442296732,-0.00526995531653655,-0.00310819786514896,0.00740596461822877,-0.0790037392468225,0.0239744234187787,0.0514310481067108,0.034335426530007,0.0254604884688754,0.0531375235023675,-0.0228335779154641,0.546865402727144};
     GLMModel model1 = null;
-    GLMParameters parms = new GLMParameters(Family.gaussian);
+    GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
     _airlinesMM.add("weights",_airlinesMM.anyVec().makeCon(1.0));
     DKV.put(_airlinesMM._key,_airlinesMM);
     parms._weights_column = "weights";
     parms._train = _airlinesMM._key;
     parms._lambda = new double[]{1e-2};
     parms._alpha = new double[]{0};
-    parms._solver = Solver.IRLSM;
+    parms._solver = GLM.Solver.IRLSM;
     parms._ignored_columns = new String[]{"C1"};
 //    parms._remove_collinear_columns = true;
     parms._response_column = "IsDepDelayed";
@@ -143,7 +142,7 @@ public class GLMBasicTestRegression extends TestUtil {
 
   @Test public void  testWeights() {
     GLMModel model1 = null, model2 = null;
-    GLMParameters parms = new GLMParameters(Family.gaussian);
+    GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
     parms._train = _weighted._key;
     parms._ignored_columns = new String[]{_weighted.name(0)};
     parms._response_column = _weighted.name(1);
@@ -151,7 +150,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
-    for (Solver s : GLMParameters.Solver.values()) {
+    for (Solver s : GLM.Solver.values()) {
 //      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
       System.out.println("===============================================================");
       System.out.println("Solver = " + s);
@@ -185,7 +184,7 @@ public class GLMBasicTestRegression extends TestUtil {
 
   @Test public void  testOffset() {
     GLMModel model1 = null, model2 = null;
-    GLMParameters parms = new GLMParameters(Family.gaussian);
+    GLMParameters parms = new GLMParameters(GLM.Family.gaussian);
     parms._train = _weighted._key;
     parms._ignored_columns = new String[]{_weighted.name(0)};
     parms._response_column = _weighted.name(1);
@@ -193,7 +192,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
-    Solver s = Solver.IRLSM;
+    Solver s = GLM.Solver.IRLSM;
     try {
       parms._lambda = new double[]{0};
       parms._alpha = new double []{0};
@@ -336,7 +335,7 @@ public class GLMBasicTestRegression extends TestUtil {
     double [] resDev  = new double[]{1469,755.4,770.8,908.9,1465,915.7};
     double [] varPow  = new double[]{   0,  1.0, 1.25,  1.5,1.75,  2.0};
 
-    GLMParameters parms = new GLMParameters(Family.tweedie);
+    GLMParameters parms = new GLMParameters(GLM.Family.tweedie);
     parms._train = _earinf._key;
     parms._ignored_columns = new String[]{};
     // "response_column":"Claims","offset_column":"logInsured"
@@ -352,8 +351,8 @@ public class GLMBasicTestRegression extends TestUtil {
       double p = varPow[x];
       parms._tweedie_variance_power = p;
       parms._tweedie_link_power = 1 - p;
-      for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // ignore for now, has trouble with zero columns
+      for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLM.Solver.values()) {
+        if(s == GLM.Solver.COORDINATE_DESCENT_NAIVE) continue; // ignore for now, has trouble with zero columns
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
@@ -397,7 +396,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    Residual Deviance: 579.5 	AIC: 805.9
     String [] cfs1 = new String [] { "Intercept", "Merit.1", "Merit.2", "Merit.3", "Class.2", "Class.3", "Class.4", "Class.5"};
     double [] vals = new double [] { -2.0357,     -0.1378,  -0.2207,  -0.4930,   0.2998,   0.4691,   0.5259,    0.2156};
-      GLMParameters parms = new GLMParameters(Family.poisson);
+      GLMParameters parms = new GLMParameters(GLM.Family.poisson);
       parms._train = _canCarTrain._key;
       parms._ignored_columns = new String[]{"Insured", "Premium", "Cost"};
       // "response_column":"Claims","offset_column":"logInsured"
@@ -410,8 +409,8 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._beta_epsilon = 1e-6;
       parms._gradient_epsilon = 1e-10;
       parms._max_iterations = 1000;
-      for (Solver s : GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
+      for (Solver s : GLM.Solver.values()) {
+        if(s == GLM.Solver.COORDINATE_DESCENT_NAIVE) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
@@ -480,7 +479,7 @@ public class GLMBasicTestRegression extends TestUtil {
     double [] zvals_exp = new double[]{ 9.5021062,       -3.0622693,       -2.6431794,       1.5262357,        0.7548661,        0.4534433};
     double [] pvals_exp = new double[]{ 9.508400e-19,     2.409514e-03,     8.674149e-03,     1.280759e-01,     4.509615e-01,     6.505795e-01 };
 
-    GLMParameters parms = new GLMParameters(Family.tweedie);
+    GLMParameters parms = new GLMParameters(GLM.Family.tweedie);
     parms._tweedie_variance_power = 1.5;
     parms._tweedie_link_power = 1 - parms._tweedie_variance_power;
     parms._train = _earinf._key;
@@ -554,7 +553,7 @@ public class GLMBasicTestRegression extends TestUtil {
     double [] zvals_exp = new double[]{ -3.6734577,  -5.0404946,  -6.1269397,  -6.2739848,   0.8618220,   4.5662083 ,  5.5148904,  -0.4265158 ,  3.1906387,  -3.3392867,   2.9428291,  35.8061272  };
     double [] pvals_exp = new double[]{ 2.392903e-04,  4.643302e-07,  8.958540e-10 , 3.519228e-10,  3.887855e-01 , 4.966252e-06,  3.489974e-08 , 6.697321e-01 , 1.419587e-03,  8.399383e-04,  3.252279e-03, 8.867127e-281};
 
-    GLMParameters parms = new GLMParameters(Family.poisson);
+    GLMParameters parms = new GLMParameters(GLM.Family.poisson);
     parms._train = _canCarTrain._key;
     parms._standardize = false;
     parms._lambda = new double[]{0};
@@ -637,7 +636,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    AIC: 343.16
 //
 //    Number of Fisher Scoring iterations: 2
-    GLMParameters params = new GLMParameters(Family.gaussian);
+    GLMParameters params = new GLMParameters(GLM.Family.gaussian);
     params._response_column = "CAPSULE";
     params._standardize = false;
     params._train = _prostateTrain._key;
@@ -645,24 +644,24 @@ public class GLMBasicTestRegression extends TestUtil {
     params._lambda = new double[]{0};
     params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
     try {
-      params._solver = Solver.L_BFGS;
+      params._solver = GLM.Solver.L_BFGS;
       new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      params._solver = GLM.Solver.COORDINATE_DESCENT_NAIVE;
       new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      params._solver = Solver.COORDINATE_DESCENT;
+      params._solver = GLM.Solver.COORDINATE_DESCENT;
       new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
-    params._solver = Solver.IRLSM;
+    params._solver = GLM.Solver.IRLSM;
     GLM glm = new GLM(params);
     try {
       params._lambda = new double[]{1};

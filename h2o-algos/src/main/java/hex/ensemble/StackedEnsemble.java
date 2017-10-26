@@ -127,7 +127,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       metaBuilder._parms._response_column = _model.responseColumn;
       // TODO: multinomial
       // TODO: support other families for regression
-      metaBuilder._parms._family = _model.modelCategory == ModelCategory.Regression ? GLMModel.GLMParameters.Family.gaussian : GLMModel.GLMParameters.Family.binomial;
+      metaBuilder._parms._family = _model.modelCategory == ModelCategory.Regression ? GLM.Family.gaussian : GLM.Family.binomial;
 
       metaBuilder.init(false);
 
