@@ -167,7 +167,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec"]:
+    if algo not in ["word2vec", "aggregator"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -255,10 +255,10 @@ def gen_module(schema, algo, module):
         lines = help_extra_checks.split("\n")
         for line in lines:
             yield "%s" % line
-    if algo not in ["glm","deeplearning","drf", "gbm","xgboost"]:
+    if algo not in ["aggregator", "glm", "deeplearning", "drf", "gbm", "xgboost"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
-    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+    if algo in ["deeplearning", "drf", "gbm", "xgboost"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d, verbose=verbose) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
@@ -267,6 +267,10 @@ def gen_module(schema, algo, module):
             yield line.lstrip()
 
 def help_preamble_for(algo):
+    if algo == "aggregator":
+        return """
+            Builds an Aggregated Frame of an H2OFrame
+        """
     if algo == "deeplearning":
         return """
             Build a Deep Neural Network model using CPUs
@@ -516,6 +520,14 @@ def help_extra_params_for(algo):
 
 
 def help_extra_checks_for(algo):
+    if algo == "aggregator":
+        # Add aggregator@model$aggregated_frame_id reference to generated model
+        # TODO Change h2oRestApiVersion to 3, when Aggregator is not experimental
+        return """
+  m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
+  m@model$aggregated_frame_id <- m@model$output_frame$name
+  m\n}
+        """
     if algo == "glm":
         return """
   if( !missing(interactions) ) {
@@ -608,6 +620,17 @@ def help_extra_checks_for(algo):
         """
 
 def help_afterword_for(algo):
+    if algo == "aggregator":
+        return """
+            #' Retrieve an aggregated frame from the Aggregator model
+            #'
+            #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+            #' @export
+            h2o.aggregated_frame <- function(model) {
+              key <- model@model$aggregated_frame_id
+              h2o.getFrame(key)
+            }
+        """
     if algo == "deeplearning":
         return """
             #' Anomaly Detection via H2O Deep Learning Model
@@ -668,7 +691,7 @@ def help_afterword_for(algo):
             #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
             #' Returns True if a XGBoost model can be built, or False otherwise.
             #' @export
-            h2o.xgboost.available <- function() {                
+            h2o.xgboost.available <- function() {
                 if (!("XGBoost" %in% h2o.list_core_extensions())) {
                     print("Cannot build a XGboost model - no backend found.")
                     return(FALSE)
@@ -920,8 +943,6 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
-        if name in ["aggregator"]:
-            continue
         module = name
         file_name = name
         if name == "drf":

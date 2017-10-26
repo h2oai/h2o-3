@@ -148,16 +148,16 @@ function() {
         strict_version_check <- TRUE
     } else if (IS.RUNIT) {
         # source h2o-r/h2o-package/R. overrides h2o package load
-        to_src <- c("classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R", "kvstore.R",
-                    "frame.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R", "gbm.R",
+        to_src <- c("aggregator.R", "classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R",
+                    "kvstore.R", "frame.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R", "gbm.R",
                     "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R", "naivebayes.R", "pca.R",
                     "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R", "predict.R", "xgboost.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
         # source h2o-r/tests/runitUtils
-        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R", "gbmR.R", "kmeansR.R",
-                    "naivebayesR.R", "gridR.R", "shared_javapredict.R")
+        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R",
+                    "gbmR.R", "kmeansR.R", "naivebayesR.R", "gridR.R", "shared_javapredict.R")
         src_path <- paste(h2oRDir,"tests","runitUtils",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
