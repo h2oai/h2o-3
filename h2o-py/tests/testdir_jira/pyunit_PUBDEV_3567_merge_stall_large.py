@@ -13,10 +13,9 @@ def pubdev_3567():
     mergedLeft = train.merge(test,by_x=["A"],by_y=["A"],all_x=True)
     mergedRight = train.merge(test,by_x=["A"],by_y=["A"],all_y=True)    # new feature
 
-    pyunit_utils.compare_numeric_frames(mergedAnsRight, mergedRight, 0.01, tol=1e-10)
-    pyunit_utils.compare_numeric_frames(mergedAns, merged, 0.01, tol=1e-10)
-    pyunit_utils.compare_numeric_frames(mergedAnsLeft, mergedLeft, 0.01, tol=1e-10)
-    pyunit_utils.compare_numeric_frames(mergedAnsRight, mergedRight, 0.01, tol=1e-10)
+    pyunit_utils.compare_numeric_frames(mergedAnsRight, mergedRight, 0.0001, tol=1e-10)
+    pyunit_utils.compare_numeric_frames(mergedAns, merged, 0.0001, tol=1e-10)
+    pyunit_utils.compare_numeric_frames(mergedAnsLeft, mergedLeft, 0.0001, tol=1e-10)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_3567)
