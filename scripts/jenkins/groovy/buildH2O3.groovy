@@ -10,7 +10,7 @@ def call(buildConfig) {
 
   // Launch docker container, build h2o-3, create test packages and archive artifacts
   def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
-  insideDocker(buildEnv, 15, 'MINUTES') {
+  insideDocker(buildEnv, buildConfig, 15, 'MINUTES') {
     stage ('Build H2O-3') {
       try {
         buildTarget {
@@ -26,7 +26,7 @@ def call(buildConfig) {
           }
         }
         // R package must be created always because of the INFO Check job, which
-        // is executed in each buil 
+        // is executed in each build
         buildTarget {
           target = 'test-package-r'
           hasJUnit = false

@@ -1,7 +1,7 @@
-def call(customEnv, timeoutValue, timeoutUnit, block) {
+def call(customEnv, buildConfig, timeoutValue, timeoutUnit, block) {
 
   def registry = 'docker.h2o.ai'
-  def image = "${registry}/opsh2oai/h2o-3-runtime:latest"
+  def image = "${registry}/opsh2oai/h2o-3-runtime:${buildConfig.DOCKER_IMAGE_VERSION_TAG}"
   withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
       sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
       sh "docker pull ${image}"
