@@ -4,6 +4,9 @@ class BuildConfig {
   public static final String LANG_R = 'r'
   public static final String LANG_JS = 'js'
   public static final String LANG_JAVA = 'java'
+  // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
+  // always run
+  public static final String LANG_NONE = 'none'
 
   private String mode
   private String nodeLabel
@@ -13,7 +16,8 @@ class BuildConfig {
     (LANG_PY): false,
     (LANG_R): false,
     (LANG_JS): false,
-    (LANG_JAVA): false
+    (LANG_JAVA): false,
+    (LANG_NONE): true
   ]
 
   def initialize(final String mode, final String nodeLabel, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange) {
@@ -68,6 +72,8 @@ class BuildConfig {
   private void detectChanges(List<String> changes) {
     // clear the changes map
     markAllLangsForSkip()
+    // stages for lang none should be executed always
+    changesMap[LANG_NONE] = true
 
     for (change in changes) {
       if (change.startsWith('h2o-py/') || change == 'h2o-bindings/bin/gen_python.py') {
@@ -90,7 +96,8 @@ class BuildConfig {
 
   private void markAllLangsForSkip() {
     changesMap.each { k,v ->
-      changesMap[k] = false
+      // mark no changes for all langs except LANG_NONE
+      changesMap[k] = k == LANG_NONE
     }
   }
 

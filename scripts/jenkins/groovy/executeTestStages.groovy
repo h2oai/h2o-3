@@ -27,54 +27,6 @@ def call(buildConfig) {
     ]
   ]
 
-  // Stages for PRs in testing phase, executed after each push to PR.
-  def PR_TESTING_STAGES = [
-    [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 70, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, lang: buildConfig.LANG_R
-    ]
-  ]
-
   // Stages executed after each push to PR branch.
   def PR_STAGES = [
     [
@@ -144,8 +96,24 @@ def call(buildConfig) {
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
       timeoutValue: 120, lang: buildConfig.LANG_R
+    ],
+    [
+      stageName: 'INFO Check', target: 'test-info',
+      timeoutValue: 10, lang: buildConfig.LANG_NONE, additionalTestPackages: [buildConfig.LANG_R]
+    ],
+    [
+      stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
+      timeoutValue: 10, lang: buildConfig.LANG_PY
     ]
   ]
+
+  // Stages for PRs in testing phase, executed after each push to PR.
+  def PR_TESTING_STAGES = PR_STAGES.findAll{k ->
+    // get all stages shorter than 45 minutes and exclude JS stages
+    (k['timeoutValue'] <= 45 && k['lang'] != buildConfig.LANG_JS) ||
+      // include R Small and Medium-large regardless of previous conditions
+      k['stageName'] == 'R3.4 Medium-large' || k['stageName'] == 'R3.4 Small'
+  }
 
   // Stages executed in addition to PR_STAGES after merge to master.
   def MASTER_STAGES = [
@@ -227,6 +195,7 @@ def executeInParallel(jobs, buildConfig) {
           timeoutValue = c['timeoutValue']
           hasJUnit = c['hasJUnit']
           lang = c['lang']
+          additionalTestPackages = c['additionalTestPackages']
         }
       }
     ]
@@ -250,6 +219,9 @@ def defaultTestPipeline(buildConfig, body) {
   }
   if (config.hasJUnit == null) {
     config.hasJUnit = true
+  }
+  if (config.additionalTestPackages == null) {
+    config.additionalTestPackages = []
   }
 
   node(buildConfig.getNodeLabel()) {
@@ -297,13 +269,21 @@ def defaultTestPipeline(buildConfig, body) {
               deleteDir()
             }
 
-            unpackTestPackage(config.lang, stageDir)
+            // pull the test package unless this is a LANG_NONE stage
+            if (config.lang != buildConfig.LANG_NONE) {
+              unpackTestPackage(config.lang, stageDir)
+            }
+            // pull aditional test packages
+            for (additionalPackage in config.additionalTestPackages) {
+              echo "Pulling additional test-package-${additionalPackage}.zip"
+              unpackTestPackage(additionalPackage, stageDir)
+            }
 
-            if (config.lang == 'py') {
+            if (config.lang == buildConfig.LANG_PY || config.additionalTestPackages.contains(buildConfig.LANG_PY)) {
               installPythonPackage(h2oFolder)
             }
 
-            if (config.lang == 'r') {
+            if (config.lang == buildConfig.LANG_R || config.additionalTestPackages.contains(buildConfig.LANG_R)) {
               installRPackage(h2oFolder)
             }
 

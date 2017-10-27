@@ -2,6 +2,7 @@
 # Docker image tagging
 #
 .NOTPARALLEL: all
+SHELL:=/bin/bash
 
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
@@ -11,12 +12,20 @@ build-h2o-3:
 	@echo
 	@echo "+--Building--+"
 	./gradlew build -x test
+	@echo "+--Git Diff Check--+"
+	if [[ $$(git diff) ]]; then \
+		echo "Non-zero git diff after running gradlew build:"; \
+		git diff; \
+		exit 1; \
+	fi
+	@echo "+--Gradle Check--+"
+	./gradlew -PdoCheckStyle check -x test
 
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
-	h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
+	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 	docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
@@ -120,3 +129,15 @@ test-phantom-js-medium:
 
 test-phantom-js:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+test-info:
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test testdir_algos/deeplearning/runit_deeplearning_iris_basic.R --jvm.xmx 2g
+	cd h2o-r/tests/results && grep -v INFO java_0_0.out.txt > INFO_file.txt || true
+	if [[ $$(wc -c h2o-r/tests/results/INFO_file.txt | awk '{print $$1}') -ne 0 ]]; then \
+		echo "There were non-INFO lines in the output."; \
+		cat h2o-r/tests/results/INFO_file.txt; \
+		exit 1; \
+	fi
+
+test-demos:
+	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-3.15.0.99999-py2.py3-none-any.whl --wipeall --numclouds 1 --jvm.xmx 5g
