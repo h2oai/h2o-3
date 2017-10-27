@@ -9,21 +9,26 @@ def iris_automl():
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
-    #Split frames
+    # Split frames
     fr = df.split_frame(ratios=[.8,.1])
 
-    #Set up train, validation, and test sets
+    # Set up train, validation, and test sets
     train = fr[0]
     valid = fr[1]
     test = fr[2]
 
     aml = H2OAutoML(max_runtime_secs = 3,stopping_rounds=3,stopping_tolerance=0.001)
 
-    print("AutoML (Multinomial) run with x not provided with train, valid, and test")
+    print("AutoML (Multinomial) run with x not provided; uses train, valid, and leaderboard (test) frame")
     aml.train(y="class", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
     assert set(aml.leaderboard.columns) == set(["model_id","mean_per_class_error"])
+
+    # Check that a StackedEnsemble model was trained
+    lbdf = aml.leaderboard.as_data_frame()
+    assert len([x for x in lbdf['model_id'] if "StackedEnsemble" in x]) > 0
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(iris_automl)
