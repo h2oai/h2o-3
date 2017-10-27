@@ -112,7 +112,7 @@ Grid Search Example in R
     h2o.auc(best_gbm_perf1)  # 0.7781932
 
     # Look at the hyperparamters for the best model
-    print(best_gbm1@model$model_summary)
+    print(best_gbm1@model[["model_summary"]])
 
 
 
@@ -156,7 +156,7 @@ Random Grid Search Example in R
     h2o.auc(best_gbm_perf2)  # 0.7811332
 
     # Look at the hyperparamters for the best model
-    print(best_gbm2@model$model_summary)
+    print(best_gbm2@model[["model_summary"]])
 
 
 
