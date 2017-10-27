@@ -238,7 +238,7 @@ def defaultTestPipeline(buildConfig, body) {
 
     def buildEnv = customEnv() + ["PYTHON_VERSION=${config.pythonVersion}", "R_VERSION=${config.rVersion}"]
 
-    insideDocker(buildEnv, config.timeoutValue, 'MINUTES') {
+    insideDocker(buildEnv, buildConfig, config.timeoutValue, 'MINUTES') {
       // NOTES regarding changes detection and rerun:
       // An empty stage is a stage which is created, but does not execute any tests.
       // Consider following scenario:
@@ -328,7 +328,7 @@ def unpackTestPackage(lang, String stageDir) {
     selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
     target: stageDir + '/'
   ]);
-  sh "cd ${stageDir}/h2o-3 && unzip test-package-${lang}.zip && rm test-package-${lang}.zip"
+  sh "cd ${stageDir}/h2o-3 && unzip -o test-package-${lang}.zip && rm test-package-${lang}.zip"
 }
 
 def stageNameToDirName(String stageName) {
