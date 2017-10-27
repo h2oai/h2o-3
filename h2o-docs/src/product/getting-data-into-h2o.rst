@@ -8,7 +8,7 @@ Supported File Formats
 
 H2O currently supports the following file types:
 
-- CSV (delimited) files
+- CSV (delimited) files (including GZipped CSV)
 - ORC
 - SVMLight
 - ARFF
@@ -21,6 +21,12 @@ H2O currently supports the following file types:
  
  - ORC is available only if H2O is running as a Hadoop job. 
  - Users can also import Hive files that are saved in ORC format. 
+ - When doing a parallel data import into a cluster: 
+
+   - If the data is an unzipped csv file, H2O can do offset reads, so each node in your cluster can be directly reading its part of the csv file in parallel. 
+   - If the data is zipped, H2O will have to read the whole file and unzip it before doing the parallel read.
+
+   So, if you have very large data files reading from HDFS, it is best to use unzipped csv. But if the data is further away than the LAN, then it is best to use zipped csv.
 
 .. _data_sources:
 
