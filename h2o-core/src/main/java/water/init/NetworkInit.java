@@ -98,6 +98,7 @@ public class NetworkInit {
         break;
 
       } catch (Exception e) {
+        e.printStackTrace();
         for (Throwable ee = e; ee != null; ee = ee.getCause()) {
           if (ee instanceof GeneralSecurityException)
             throw new RuntimeException("Jetty Server initialization failed (check keystore password)", e);
