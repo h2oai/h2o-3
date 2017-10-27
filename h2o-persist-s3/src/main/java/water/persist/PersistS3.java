@@ -78,7 +78,7 @@ public final class PersistS3 extends Persist {
     public static final String DEFAULT_CREDENTIALS_LOCATION = "AwsCredentials.properties";
 
     @Override public AWSCredentials getCredentials() {
-      File credentials = new File(DEFAULT_CREDENTIALS_LOCATION);
+      File credentials = new File(H2O.ARGS.aws_credentials != null ? H2O.ARGS.aws_credentials : DEFAULT_CREDENTIALS_LOCATION);
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
@@ -119,6 +119,14 @@ public final class PersistS3 extends Persist {
       _bk = decodeKey(k);
       open();
     }
+  }
+
+  @Override
+  public InputStream open(String path) {
+    String[] bk = decodePath(path);
+    GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
+    S3Object s3obj = getClient().getObject(r);
+    return s3obj.getObjectContent();
   }
 
   public static InputStream openStream(Key k, RIStream.ProgressMonitor pmon) throws IOException {

@@ -25,6 +25,7 @@ include 'h2o-automl'
 include 'h2o-genmodel-ext-xgboost'
 include 'h2o-ext-xgboost'
 include 'h2o-ext-krbstandalone'
+include 'h2o-ext-authsupport'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {

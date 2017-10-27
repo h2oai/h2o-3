@@ -3,7 +3,6 @@ package water.parser.parquet;
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
 
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.hadoop.VecParquetReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
@@ -64,6 +63,9 @@ public class ParquetParser extends Parser {
     } catch (IOException e) {
       throw new RuntimeException("Failed to parse records", e);
     }
+    long skipped = reader.getInvalidRecordCount();
+    if (skipped > 0)
+      dout.addError(new ParseWriter.ParseErr("Some records were corrupt (skipped " + skipped + ").", cidx, -1, chunk.start()));
     return dout;
   }
 
