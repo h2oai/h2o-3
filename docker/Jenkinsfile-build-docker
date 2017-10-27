@@ -60,7 +60,6 @@ pipeline {
           docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
           """
           echo "###### Docker image h2o-3-runtime:${currentBuild.number} built and pushed. ######"
-          echo "###### Don't forget to run the release job in order to make this docker image used by the H2O-3 Pipeline jobs. ######"
         }
       }
     }
