@@ -192,7 +192,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       if (aModel._output.isBinomialClassifier())
         return DistributionFamily.bernoulli;
       else if (aModel._output.isClassifier())
-        throw new H2OIllegalArgumentException("Don't know how to set the distribution for a multinomial Random Forest classifier.");
+        return DistributionFamily.multinomial;
       else
         return DistributionFamily.gaussian;
 

@@ -5,7 +5,7 @@ In recent years, the demand for machine learning experts has outpaced the supply
 
 Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, we have designed an easy-to-use interface which automates the process of training a large selection of candidate models.  H2O's AutoML can also be a helpful tool for the advanced user, by providing a simple wrapper function that performs a large number of modeling-related tasks that would typically require many lines of code, and by freeing up their time to focus on other aspects of the data science pipeline tasks such as data-preprocessing, feature engineering and model deployment.
 
-H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  Stacked ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained. 
+H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  
 
 
 AutoML Interface
@@ -137,10 +137,9 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
     # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.674580
     #              XRT_0_AutoML_20170605_212658  0.728358   0.629296
-    # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
     # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
     #
-    # [8 rows x 3 columns]
+    # [7 rows x 3 columns]
 
     # The leader model is stored here
     aml@leader
@@ -195,10 +194,9 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
     # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.67458
     # XRT_0_AutoML_20170605_212658               0.728358   0.629296
-    # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
     # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
     #
-    # [8 rows x 3 columns]
+    # [7 rows x 3 columns]
 
     # The leader model is stored here
     aml.leader
@@ -248,11 +246,6 @@ FAQ
 -  **How do I save AutoML runs?**
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once will be added in a future release.
-
-
--  **Why is there no Stacked Ensemble on my Leaderboard?**
-
-  Currently, Stacked Ensembles supports binary classficiation and regression, but not multi-class classification, although multi-class support is in `development <https://0xdata.atlassian.net/browse/PUBDEV-3960>`__.  So if your leaderboard is missing a Stacked Ensemble, the reason is likely that you are performing multi-class classification and it's not meant to be there.
 
 
 Additional Information
