@@ -9,7 +9,7 @@ dependencies {
   // Dependency on shared model support
   compile project (':h2o-genmodel')
   // Required for h2o-core
-  compile "joda-time:joda-time:2.3"
+  compile "joda-time:joda-time:2.9.9"
   compile "gov.nist.math:jama:1.0.3"
   compile 'org.javassist:javassist:3.18.2-GA'
   compile "org.apache.commons:commons-math3:3.3"
@@ -20,7 +20,7 @@ dependencies {
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
   compile project(":h2o-jaas-pam")
 
-  compile("log4j:log4j:1.2.15") { 
+  compile("log4j:log4j:1.2.17") {
     exclude module: "activation" 
     exclude module: "jms" 
     exclude module: "jmxri" 
@@ -30,7 +30,7 @@ dependencies {
 
   // guava only needed by hadoop now, not by H2O
   compile 'com.google.guava:guava:16.0.1'
-  compile "com.google.code.gson:gson:2.3.1"
+  compile "com.google.code.gson:gson:2.6.2"
   compile 'commons-lang:commons-lang:2.6'
   
   // Duke library: collection of String comparators
