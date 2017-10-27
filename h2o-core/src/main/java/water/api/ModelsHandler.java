@@ -21,8 +21,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
-import static org.apache.commons.io.IOUtils.closeQuietly;
-
 public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
     extends Handler {
 
@@ -215,7 +213,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
     } finally {
-      closeQuietly(is);
+      FileUtils.close(is);
     }
     return s;
   }
