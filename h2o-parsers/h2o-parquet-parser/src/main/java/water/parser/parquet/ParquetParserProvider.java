@@ -1,6 +1,5 @@
 package water.parser.parquet;
 
-import org.apache.parquet.hadoop.VecParquetReader;
 import water.DKV;
 import water.Job;
 import water.Key;
