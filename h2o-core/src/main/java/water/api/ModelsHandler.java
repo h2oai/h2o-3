@@ -200,16 +200,20 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = Schema.newInstance(ModelsV3.class);
+    InputStream is = null;
     try {
       URI targetUri = FileUtils.getURI(mimport.dir);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
-      InputStream is = p.open(targetUri.toString());
+      is = p.open(targetUri.toString());
       final AutoBuffer ab = new AutoBuffer(is);
       ab.sourceName = targetUri.toString();
       Model model = (Model)Keyed.readAll(ab);
+      ab.close();
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
+    } finally {
+      FileUtils.close(is);
     }
     return s;
   }
