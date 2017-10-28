@@ -122,10 +122,11 @@ class H2OAutoML(object):
         else:
             self.project_name = None
 
-        #Set nfolds if a non-default value is specified by the user, otherwise don't send in build_control
+        ###Set nfolds if a non-default value is specified by the user, otherwise don't send in build_control
+        # Always send nfolds
         if nfolds is not 5:
             assert_is_type(nfolds,int)
-            self.build_control["nfolds"] = nfolds 
+        self.build_control["nfolds"] = nfolds 
         self.nfolds = nfolds       
 
         self._job = None
