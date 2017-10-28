@@ -96,7 +96,7 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      max_models = 3,
                      project_name = "aml8")
-  expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb,TRUE)
+  expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb, TRUE)
   
   
   # Add a fold_column and weights_column
@@ -112,12 +112,12 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml9")
   amodel <- h2o.getModel(tail(aml9@leaderboard, 1)$model_id)
-  if(grepl("^StackedEnsemble",amodel@model_id)){
+  if (grepl("^StackedEnsemble", amodel@model_id)) {
     print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for fold_column test")
     amodel <- h2o.getModel(head(tail(aml9@leaderboard, 2), 1)$model_id)
     amodel_fold_column <- amodel@parameters$fold_column$column_name
     expect_equal(amodel_fold_column, fold_column)
-  }else{
+  } else {
     amodel_fold_column <- amodel@parameters$fold_column$column_name
     expect_equal(amodel_fold_column, fold_column)
   }
@@ -129,14 +129,14 @@ automl.args.test <- function() {
                       max_runtime_secs = max_runtime_secs,
                       project_name = "aml10")
   amodel <- h2o.getModel(tail(aml10@leaderboard, 1)$model_id)
-  if(grepl("^StackedEnsemble",amodel@model_id)){
-      print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for weights_column test")
-      amodel <- h2o.getModel(head(tail(aml10@leaderboard, 2), 1)$model_id)
-      amodel_weights_column <- amodel@parameters$weights_column$column_name
-      expect_equal(amodel_weights_column, weights_column)
-  }else{
-      amodel_weights_column <- amodel@parameters$weights_column$column_name
-      expect_equal(amodel_weights_column, weights_column)
+  if (grepl("^StackedEnsemble",amodel@model_id)) {
+    print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for weights_column test")
+    amodel <- h2o.getModel(head(tail(aml10@leaderboard, 2), 1)$model_id)
+    amodel_weights_column <- amodel@parameters$weights_column$column_name
+    expect_equal(amodel_weights_column, weights_column)
+  } else {
+    amodel_weights_column <- amodel@parameters$weights_column$column_name
+    expect_equal(amodel_weights_column, weights_column)
   }
   
   print("Check fold_colum and weights_column")
@@ -147,19 +147,29 @@ automl.args.test <- function() {
                       max_runtime_secs = max_runtime_secs,
                       project_name = "aml11")
   amodel <- h2o.getModel(tail(aml11@leaderboard, 1)$model_id)
-  if(grepl("^StackedEnsemble",amodel@model_id)){
-      print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for fold/weight column test")
-      amodel <- h2o.getModel(head(tail(aml11@leaderboard, 2), 1)$model_id)
-      amodel_fold_column <- amodel@parameters$fold_column$column_name
-      expect_equal(amodel_fold_column, fold_column)
-      amodel_weights_column <- amodel@parameters$weights_column$column_name
-      expect_equal(amodel_weights_column, weights_column)
-  }else{
-      amodel_fold_column <- amodel@parameters$fold_column$column_name
-      expect_equal(amodel_fold_column, fold_column)
-      amodel_weights_column <- amodel@parameters$weights_column$column_name
-      expect_equal(amodel_weights_column, weights_column)
+  if (grepl("^StackedEnsemble",amodel@model_id)) {
+    print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for fold/weight column test")
+    amodel <- h2o.getModel(head(tail(aml11@leaderboard, 2), 1)$model_id)
+    amodel_fold_column <- amodel@parameters$fold_column$column_name
+    expect_equal(amodel_fold_column, fold_column)
+    amodel_weights_column <- amodel@parameters$weights_column$column_name
+    expect_equal(amodel_weights_column, weights_column)
+  } else {
+    amodel_fold_column <- amodel@parameters$fold_column$column_name
+    expect_equal(amodel_fold_column, fold_column)
+    amodel_weights_column <- amodel@parameters$weights_column$column_name
+    expect_equal(amodel_weights_column, weights_column)
   }
+  
+  # TO DO: Finish this
+  print("Check nfolds")
+  aml12 <- h2o.automl(x = x, y = y, 
+                      training_frame = train,
+                      nfolds = 3,
+                      #max_runtime_secs = max_runtime_secs,
+                      max_models = 3,
+                      project_name = "aml12")
+  #expect_equal(nrow(aml12@leaderboard) > nrow_aml12_lb, TRUE)
   
 }
 

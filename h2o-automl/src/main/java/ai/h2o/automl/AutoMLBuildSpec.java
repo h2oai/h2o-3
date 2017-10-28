@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.GridSearchSchema;
+//import hex.Model;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.ImportFilesV3;
@@ -49,6 +50,10 @@ public class AutoMLBuildSpec extends Iced {
     public String project_name = null;
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
+
+    // Cross-validation fold construction
+    public Integer nfolds = 5;  // TO DO: plumb through
+    //public Model.Parameters.FoldAssignmentScheme fold_assignment;
   }
 
   /**

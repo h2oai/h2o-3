@@ -13,6 +13,8 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
+    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
+      disable Stacked Ensemble (thus decreasing the overall model performance).
     :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
     :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
@@ -54,6 +56,7 @@ class H2OAutoML(object):
     >>> aml.train(x = x, y = y,training_frame = train,leaderboard_frame = test)
     """
     def __init__(self,
+                 nfolds=5,
                  max_runtime_secs=3600,
                  max_models=None,
                  stopping_metric="AUTO",
@@ -71,6 +74,7 @@ class H2OAutoML(object):
                   "*Please verify that your H2O jar has the proper AutoML extensions.*\n" \
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
+
 
         #If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
@@ -117,6 +121,12 @@ class H2OAutoML(object):
             self.project_name = project_name
         else:
             self.project_name = None
+
+        #Set nfolds if a non-default value is specified by the user, otherwise don't send in build_control
+        if nfolds is not 5:
+            assert_is_type(nfolds,int)
+            self.build_control["nfolds"] = nfolds 
+        self.nfolds = nfolds       
 
         self._job = None
         self._automl_key = None

@@ -638,7 +638,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._weights_column = buildSpec.input_spec.weights_column;
 
       if (buildSpec.input_spec.fold_column == null) {
-        params._nfolds = 5;
+        //params._nfolds = 5;
+        params._nfolds = buildSpec.build_control.nfolds;
+        // TO DO: below allow the user to specify this (vs Modulo)
         params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       }
     }

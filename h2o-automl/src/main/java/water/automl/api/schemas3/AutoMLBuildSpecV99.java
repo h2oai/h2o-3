@@ -25,14 +25,17 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="optional project name used to group models from multiple runs into a leaderboard; derived from the training data name if not specified")
+    @API(help="Optional project name used to group models from multiple runs into a leaderboard; derived from the training data name if not specified.")
     public String project_name;
 
-    @API(help="loss function", direction=API.Direction.INPUT)
+    @API(help="loss function (not yet enabled)", direction=API.Direction.INPUT)
     public String loss;
 
-    @API(help="stopping criteria for the search", direction=API.Direction.INPUT)
+    @API(help="Model performance based stopping criteria for the AutoML run.", direction=API.Direction.INPUT)
     public HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99 stopping_criteria;
+
+    @API(help="Number of folds for k-fold cross-validation (0 to disable or >= 2). Disabling prevents Stacked Ensembles from being built.", direction=API.Direction.INPUT)
+    public Integer nfolds;
   } // class AutoMLBuildControlV99
 
   /**
