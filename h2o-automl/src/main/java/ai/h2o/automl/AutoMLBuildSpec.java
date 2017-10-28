@@ -52,7 +52,7 @@ public class AutoMLBuildSpec extends Iced {
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
 
     // Cross-validation fold construction
-    public Integer nfolds = 5;  // TO DO: plumb through
+    public int nfolds = 5;  // TODO: not working yet...
     //public Model.Parameters.FoldAssignmentScheme fold_assignment;
   }
 
