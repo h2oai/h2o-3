@@ -1,14 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
-if (!("dplyr" %in% rownames(installed.packages())))
-  install.packages("https://cran.rstudio.com/bin/macosx/el-capitan/contrib/3.4/dplyr_0.7.3.tgz", repos=NULL, type="source")
+
 library(dplyr)
-if (!("text2vec" %in% rownames(installed.packages())))
-  install.packages('https://cran.rstudio.com/bin/macosx/el-capitan/contrib/3.4/text2vec_0.5.0.tgz', repos=NULL, type="source")
 library(text2vec)
-if ("slam" %in% rownames(installed.packages()))
 library(slam)
-if ("data.table" %in% rownames(installed.packages()))
 library(data.table)
 
 # In PUBDEV-4620, it is stated that our code does not work properly if the response column is not the first column.
