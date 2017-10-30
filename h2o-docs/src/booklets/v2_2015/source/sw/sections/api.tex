@@ -3,27 +3,18 @@
 \subsection{Starting H2O Services}
 
 \begin{lstlisting}[style=Scala]
-val sc: SparkContext = ...
-val hc = H2OContext.getOrCreate(sc)
+import org.apache.spark.h2o._
+val hc = new H2OContext(getOrCreate(spark)}
 \end{lstlisting} 
-or:
-\begin{lstlisting}[style=Scala]
-val sc: SparkContext = ...
-val hc = new H2OContext(sc).start()
-\end{lstlisting}
 
 When the number of Spark nodes is known, it can be specified in the \texttt{getOrCreate} call:
 
 \begin{lstlisting}[style=Scala]
-val hc = H2OContext.getOrCreate(sc, numOfSparkNodes)
-\end{lstlisting}
-or, in start method of \texttt{H2OContext}:
-
-\begin{lstlisting}[style=Scala]
-val hc = new H2OContext(sc).start(numOfSparkNodes)
+val hc = H2OContext.getOrCreate(spark, numOfSparkNodes)
 \end{lstlisting}
 
-The former variant is preferred, because it initiates and starts \texttt{H2OContext} in one call and can be used to obtain already existing \texttt{H2OContext}. It is semantically the same as the latter variant though.
+
+This initiates and starts \texttt{H2OContext} in one call and can be used to obtain the already existing \texttt{H2OContext}. 
 
 \subsection{Memory Allocation}
 
@@ -37,7 +28,7 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
 \end{itemize}
 
 \pagebreak
-\textbf{Yarn specific configuration}
+\textbf{YARN-specific configuration}
 
 \begin{itemize}
 \item Refer to the Spark documentation \url{https://spark.apache.org/docs/latest/running-on-yarn.html}
