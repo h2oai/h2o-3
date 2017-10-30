@@ -18,15 +18,11 @@ def call(buildConfig) {
           hasJUnit = false
           archiveFiles = false
         }
-        if (buildConfig.langChanged(buildConfig.LANG_PY)) {
-          buildTarget {
-            target = 'test-package-py'
-            hasJUnit = false
-            archiveFiles = false
-          }
+        buildTarget {
+          target = 'test-package-py'
+          hasJUnit = false
+          archiveFiles = false
         }
-        // R package must be created always because of the INFO Check job, which
-        // is executed in each build
         buildTarget {
           target = 'test-package-r'
           hasJUnit = false
@@ -35,6 +31,13 @@ def call(buildConfig) {
         if (buildConfig.langChanged(buildConfig.LANG_JS)) {
           buildTarget {
             target = 'test-package-js'
+            hasJUnit = false
+            archiveFiles = false
+          }
+        }
+        if (buildConfig.langChanged(buildConfig.LANG_JAVA)) {
+          buildTarget {
+            target = 'test-package-java'
             hasJUnit = false
             archiveFiles = false
           }

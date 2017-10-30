@@ -39,7 +39,6 @@ def call(body) {
 def execMake(target, String h2o3dir) {
   sh """
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-    export USER=jenkins
     export LANG=C.UTF-8
     locale
 

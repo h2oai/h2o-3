@@ -24,6 +24,11 @@ def call(buildConfig) {
     [
       stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
       timeoutValue: 10, lang: buildConfig.LANG_JS
+    ],
+    [
+      stageName: 'Java8 Smoke', target: 'test-junit-smoke',
+      timeoutValue: 10, lang: buildConfig.LANG_JAVA,
+      nodeLabel: buildConfig.getNodeLabel() + ' && !40c' // the mr-0xg* nodes cannot access AWS creds for some reason
     ]
   ]
 
@@ -104,6 +109,11 @@ def call(buildConfig) {
     [
       stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
       timeoutValue: 10, lang: buildConfig.LANG_PY
+    ],
+    [
+      stageName: 'Java 8 JUnit', target: 'test-junit', pythonVersion: '2.7',
+      timeoutValue: 90, lang: buildConfig.LANG_JAVA, additionalTestPackages: [buildConfig.LANG_PY],
+      nodeLabel: buildConfig.getNodeLabel() + ' && !40c' // the mr-0xg* nodes cannot access AWS creds for some reason
     ]
   ]
 
@@ -112,7 +122,9 @@ def call(buildConfig) {
     // get all stages shorter than 45 minutes and exclude JS stages
     (k['timeoutValue'] <= 45 && k['lang'] != buildConfig.LANG_JS) ||
       // include R Small and Medium-large regardless of previous conditions
-      k['stageName'] == 'R3.4 Medium-large' || k['stageName'] == 'R3.4 Small'
+      (k['stageName'] == 'R3.4 Medium-large' || k['stageName'] == 'R3.4 Small') ||
+        // include JUnit
+        (k['lang'] == buildConfig.LANG_JAVA)
   }
 
   // Stages executed in addition to PR_STAGES after merge to master.
@@ -196,6 +208,7 @@ def executeInParallel(jobs, buildConfig) {
           hasJUnit = c['hasJUnit']
           lang = c['lang']
           additionalTestPackages = c['additionalTestPackages']
+          nodeLabel = c['nodeLabel']
         }
       }
     ]
@@ -223,8 +236,11 @@ def defaultTestPipeline(buildConfig, body) {
   if (config.additionalTestPackages == null) {
     config.additionalTestPackages = []
   }
+  if (config.nodeLabel == null) {
+    config.nodeLabel = buildConfig.getNodeLabel()
+  }
 
-  node(buildConfig.getNodeLabel()) {
+  node(config.nodeLabel) {
     echo "###### Pulling scripts. ######"
     step ([$class: 'CopyArtifact',
       projectName: env.JOB_NAME,
