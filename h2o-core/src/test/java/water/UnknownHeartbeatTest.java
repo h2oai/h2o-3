@@ -14,6 +14,7 @@ public class UnknownHeartbeatTest extends TestUtil{
 
   @Test
   public void testIgnoreUnknownHeartBeat() {
+    final int clientsCountBefore = H2O.getClients().size();
     HeartBeat hb = new HeartBeat();
     hb._cloud_name_hash = 777;
     hb._client = true;
@@ -25,7 +26,7 @@ public class UnknownHeartbeatTest extends TestUtil{
     ab.close();
 
     // Verify that we don't have a new client
-    assertEquals(0, H2O.getClients().size());
+    assertEquals(clientsCountBefore, H2O.getClients().size());
   }
 
   @Test
