@@ -26,7 +26,7 @@ object AirlinesWithWeatherDemo extends SparkContextSupport {
 
     // Create SparkContext to execute application on Spark cluster
     val sc = new SparkContext(conf)
-    val h2oContext = H2OContext.getOrCreate(sc)
+    val h2oContext = H2OContext.getOrCreate(spark)
     import h2oContext._
     // Setup environment
     addFiles(sc,

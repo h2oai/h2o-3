@@ -4,21 +4,15 @@
 
 \begin{lstlisting}[style=Scala]
 import org.apache.spark.h2o._
-val hc = new H2OContext(getOrCreate(spark)}
+val hc = new H2OContext.getOrCreate(spark)
 \end{lstlisting} 
-
-When the number of Spark nodes is known, it can be specified in the \texttt{getOrCreate} call:
-
-\begin{lstlisting}[style=Scala]
-val hc = H2OContext.getOrCreate(spark, numOfSparkNodes)
-\end{lstlisting}
 
 
 This initiates and starts \texttt{H2OContext} in one call and can be used to obtain the already existing \texttt{H2OContext}. 
 
 \subsection{Memory Allocation}
 
-H2O resides in the same executor JVM as Spark. The memory provided for H2O is configured via Spark; refer to Spark configuration for more details.
+H2O resides in the same executor JVM as Spark. The memory provided for H2O is configured via Spark; refer to Spark configuration for more details. Note that in the external backend, only the H2O client running in the Spark driver is affected by Spark memory configuration.
 
 \textbf{Generic configuration}
 
