@@ -10,7 +10,7 @@ def call(buildConfig) {
 
   // Launch docker container, build h2o-3, create test packages and archive artifacts
   def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
-  insideDocker(buildEnv, buildConfig, 15, 'MINUTES') {
+  insideDocker(buildEnv, buildConfig, 30, 'MINUTES') {
     stage ('Build H2O-3') {
       try {
         buildTarget {
