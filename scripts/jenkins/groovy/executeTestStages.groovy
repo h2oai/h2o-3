@@ -355,9 +355,9 @@ def stageNameToDirName(String stageName) {
 }
 
 def runAllStages(buildConfig) {
-    // first check the commit message contains #rerun token, if yes, then don't run all stages,
+    // first check the commit message contains !rerun token, if yes, then don't run all stages,
     // if not, then run all stages
-    def result = !buildConfig.commitMessageContains('#rerun')
+    def result = !buildConfig.commitMessageContains('!rerun')
     // if we shouldn't run all stages based on the commit message, check
     // that this is not overriden by environment
     if (!result) {
