@@ -48,7 +48,7 @@ IPYTHON_OPTS="notebook" bin/pysparkling
 
 \begin{lstlisting}[style=Scala]
 from pysparkling import *
-hc = H2OContext(spark).start()
+hc = H2OContext.getOrCreate(spark)
 import h2o
 \end{lstlisting}
 
@@ -72,13 +72,13 @@ $SPARKLING_HOME/bin/pysparkling --num-executors 3 --executor-memory 20g --execut
 Then create an H2O cloud inside the Spark cluster and import H2O-Python package:
 \begin{lstlisting}[style=Scala]
 from pysparkling import *
-hc = H2OContext(spark).start()
+hc = H2OContext.getOrCreate(spark)
 import h2o
 \end{lstlisting}
 
 Or to launch as a Spark Package application:
 \begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.11:2.2.2 --py-files $SPARKLING_HOME/py/dist/pySparkling-2.2.2-py2.7.egg
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.11:2.2.2 --py-files $SPARKLING_HOME/py/build/dist/h2o_pysparkling_2.2-2.2.2.zip
 $SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py 
 \end{lstlisting}
 
