@@ -34,7 +34,7 @@ Converting from an RDD/DataFrame to an \texttt{H2OFrame} requires data duplicati
 
 \subsection{Provided Primitives}
 
-Sparkling Water provides several primitives (for more information, refer to Table~\ref{tab:primitives}). Before using H2O algorithms and data structures, the first step is to create and start the \texttt{H2OContext} instance using the \texttt{val hc = new H2OContext(sc).start()} call. 
+Sparkling Water provides several primitives (for more information, refer to Table~\ref{tab:primitives}). Before using H2O algorithms and data structures, the first step is to create and start the \texttt{H2OContext} instance using the \texttt{val hc = new H2OContext.getOrCreate(spark)} call. 
 
 The \texttt{H2OContext} contains the necessary information for running H2O services and exposes methods for data transformation between the Spark RDD or \texttt{DataFrame} and the \texttt{H2OFrame}. Starting \texttt{H2OContext} involves a distributed operation that contacts all accessible Spark executor nodes and initializes H2O services (such as the key-value store and RPC) inside the executors' JVMs.
 
