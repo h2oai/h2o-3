@@ -25,7 +25,7 @@ object AirlinesWithWeatherDemo extends SparkContextSupport {
     val conf: SparkConf = configure("Sparkling Water: Join of Airlines with Weather Data")
 
     // Create SparkContext to execute application on Spark cluster
-    val sc = new SparkContext(conf)
+    val spark = SparkSession.builder().config(conf).appName("SparkSessionZipsExample").getOrCreate()
     val h2oContext = H2OContext.getOrCreate(spark)
     import h2oContext._
     // Setup environment
