@@ -173,6 +173,10 @@ automl.args.test <- function() {
                       nfolds = 0,
                       max_models = 3,
                       project_name = "aml13")
+  # TO DO: check that leaderboard does not contain any SEs
+  amodel <- h2o.getModel(tail(aml13@leaderboard, 1)$model_id)
+  expect_equal(amodel@parameters$nfolds, 0)
+  # TO DO: Also need to check that we handle the leaderboard properly
   
 }
 

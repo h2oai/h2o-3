@@ -8,9 +8,10 @@ from h2o.automl import H2OAutoML
 """
 This test is used to check arguments passed into H2OAutoML along with different ways of using `.train()`
 """
-def prostate_automl():
+def prostate_automl_args():
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    df = h2o.import_file(path="/Users/me/h2oai/github/h2o-3/smalldata//logreg/prostate.csv")
 
     #Split frames
     fr = df.split_frame(ratios=[.8,.1])
@@ -25,7 +26,7 @@ def prostate_automl():
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     print("Check arguments to H2OAutoML class")
-    aml = H2OAutoML(max_runtime_secs = 10,project_name="aml",stopping_rounds=3,stopping_tolerance=0.001,stopping_metric="AUC",max_models=10,seed=1234)
+    aml = H2OAutoML(max_runtime_secs = 10, project_name="aml", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
     aml.train(y="CAPSULE", training_frame=train)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "aml", "Project name is not set"
@@ -49,7 +50,7 @@ def prostate_automl():
 
     print("AutoML run with x not provided with train and valid")
     aml.project_name = "Project2"
-    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid)
+    aml.train(y="CAPSULE", training_frame=train, validation_frame=valid)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "Project2", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
@@ -60,7 +61,7 @@ def prostate_automl():
 
     print("AutoML run with x not provided with train and test")
     aml.project_name = "Project3"
-    aml.train(y="CAPSULE", training_frame=train,leaderboard_frame=test)
+    aml.train(y="CAPSULE", training_frame=train, leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "Project3", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
@@ -71,7 +72,7 @@ def prostate_automl():
 
     print("AutoML run with x not provided with train, valid, and test")
     aml.project_name = "Project4"
-    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(y="CAPSULE", training_frame=train, validation_frame=valid, leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "Project4", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
@@ -82,7 +83,7 @@ def prostate_automl():
 
     print("AutoML run with x not provided and y as col idx with train, valid, and test")
     aml.project_name = "Project5"
-    aml.train(y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(y=1, training_frame=train, validation_frame=valid, leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "Project5", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
@@ -102,7 +103,32 @@ def prostate_automl():
     print("Check predictions")
     print(aml.predict(train))
 
+    print("Check nfolds is passed through to base models")
+    aml = H2OAutoML(project_name="aml_nfolds3", nfolds=3, max_models=3, seed=1)
+    aml.train(y="CAPSULE", training_frame=train)
+    # grab the last model in the leaderboard, hoping that it's not an SE model
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    # if you get a stacked ensemble, take the second to last 
+    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
+    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
+    assert amodel.params['nfolds']['actual'] == 3
+
+    print("Check nfolds = 0 works properly")
+    aml = H2OAutoML(project_name="aml_nfolds0", nfolds=0, max_models=3, seed=1)
+    aml.train(y="CAPSULE", training_frame=train)
+    # TO DO: Check that leaderboard does not contain any SEs
+    # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
+    # we assume that if one model correctly used nfolds = 0, then they all do, but we could add an extra check for this
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    assert amodel.params['nfolds']['actual'] == 0
+
+    # TO DO:
+    #print("Check nfolds = 1 fails on the client side")
+    #aml = H2OAutoML(project_name="aml_nfolds1", nfolds=1, max_models=3, seed=1)
+    #aml.train(y="CAPSULE", training_frame=train)
+
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(prostate_automl)
+    pyunit_utils.standalone_test(prostate_automl_args)
 else:
-    prostate_automl()
+    prostate_automl_args()
