@@ -160,6 +160,12 @@ h2o.automl <- function(x, y, training_frame,
   }
   
   # Update build_control with nfolds
+  if (nfolds < 0) {
+    stop("nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
+  }
+  if (nfolds == 1) {
+    stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
+  }
   build_control$nfolds <- nfolds
   
   # Create the parameter list to POST to the AutoMLBuilder 

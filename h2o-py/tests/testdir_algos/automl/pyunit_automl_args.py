@@ -11,7 +11,6 @@ This test is used to check arguments passed into H2OAutoML along with different 
 def prostate_automl_args():
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    df = h2o.import_file(path="/Users/me/h2oai/github/h2o-3/smalldata//logreg/prostate.csv")
 
     #Split frames
     fr = df.split_frame(ratios=[.8,.1])

@@ -75,6 +75,10 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
+        
+        #nfolds must not be negative or equal to 1:
+        assert nfolds >= 0, "nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
+        assert nfolds is not 1, "nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."       
 
         #If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
