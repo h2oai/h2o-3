@@ -34,7 +34,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Model performance based stopping criteria for the AutoML run.", direction=API.Direction.INPUT)
     public HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99 stopping_criteria;
 
-    @API(help="Number of folds for k-fold cross-validation (0 to disable or >= 2). Disabling prevents Stacked Ensembles from being built.", direction=API.Direction.INPUT)
+    @API(help="Number of folds for k-fold cross-validation (defaults to 5, must be >=2 or use 0 to disable). Disabling prevents Stacked Ensembles from being built.", direction=API.Direction.INPUT)
     public int nfolds;
   } // class AutoMLBuildControlV99
 
