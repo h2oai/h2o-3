@@ -166,17 +166,18 @@ automl.args.test <- function() {
   } 
   expect_equal(amodel@parameters$nfolds, 3)
   
-  # TO DO: Finish this
   print("Check that nfolds = 0 works properly")  #will need to change after xval leaderboard is implemented
   aml13 <- h2o.automl(x = x, y = y, 
                       training_frame = train,
                       nfolds = 0,
                       max_models = 3,
                       project_name = "aml13")
-  # TO DO: check that leaderboard does not contain any SEs
-  amodel <- h2o.getModel(tail(aml13@leaderboard, 1)$model_id)
+  # Check that leaderboard does not contain any SEs
+  for (model_id in as.vector(aml13@leaderboard$model_id)) {
+    expect_equal(grepl("^StackedEnsemble", model_id), FALSE)
+  }
+  amodel <- h2o.getModel(tail(aml12@leaderboard, 1)$model_id)
   expect_equal(amodel@parameters$nfolds, 0)
-  # TO DO: Also need to check that we handle the leaderboard properly
   
 }
 

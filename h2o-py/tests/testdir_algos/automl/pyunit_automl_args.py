@@ -116,16 +116,11 @@ def prostate_automl_args():
     print("Check nfolds = 0 works properly")
     aml = H2OAutoML(project_name="aml_nfolds0", nfolds=0, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
-    # TO DO: Check that leaderboard does not contain any SEs
-    # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
+    # grab the last model in the leaderboard (which will not be an SE model) and verify that nfolds = 0
     # we assume that if one model correctly used nfolds = 0, then they all do, but we could add an extra check for this
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert amodel.params['nfolds']['actual'] == 0
 
-    # TO DO:
-    #print("Check nfolds = 1 fails on the client side")
-    #aml = H2OAutoML(project_name="aml_nfolds1", nfolds=1, max_models=3, seed=1)
-    #aml.train(y="CAPSULE", training_frame=train)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl_args)
