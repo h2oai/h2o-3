@@ -2,7 +2,7 @@
 
 PySparkling Water is an integration of Python with Sparkling water. It allows the user to start H2O services on a spark cluster from Python API.
 
-In the PySparkling Water driver program, the \texttt{SparkContext} (sc) uses Py4J to start the driver JVM and the JAVA \texttt{SparkContext} is used to create \texttt{H2OContext} (hc).  This in turn starts the H2O cloud in the Spark ecosystem. Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
+In the PySparkling Water driver program, the \texttt{SparkContext} uses Py4J to start the driver JVM and the JAVA \texttt{SparkContext} is used to create \texttt{H2OContext} (hc). This in turn starts the H2O cloud in the Spark ecosystem. Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
 
 PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
 
@@ -11,7 +11,7 @@ PySparkling Water programs can be launched as an application, or in an interacti
 \begin{enumerate}
 \item Download Spark (if not already installed) from the Spark Downloads Page.
 
-Choose Spark release : 2.1.0
+Choose Spark release : 2.2.0
 
 Choose a package type: Pre-built for Hadoop 2.4 and later
 
@@ -30,8 +30,8 @@ export MASTER="local-cluster[3,2,1024]"
 
 \begin{lstlisting}[style=Bash]
 cd ~/Downloads
-unzip sparkling-water-2.1.8.zip
-cd sparkling-water-2.1.8
+unzip sparkling-water-2.2.2.zip
+cd sparkling-water-2.2.2
 \end{lstlisting}
 
 Start an interactive Python terminal:
@@ -48,7 +48,7 @@ IPYTHON_OPTS="notebook" bin/pysparkling
 
 \begin{lstlisting}[style=Scala]
 from pysparkling import *
-hc= H2OContext(sc).start()
+hc = H2OContext.getOrCreate(spark)
 import h2o
 \end{lstlisting}
 
@@ -60,8 +60,8 @@ import h2o
 Alternatively, to launch on YARN:
 
 \begin{lstlisting}[style=Bash]
-wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-2.1/8/sparkling-water-2.1.8.zip
-unzip sparkling-water-2.1.8.zip
+wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-2.2/2/sparkling-water-2.2.2.zip
+unzip sparkling-water-2.2.2.zip
  
 export SPARK_HOME="/path/to/spark/installation"
 export HADOOP_CONF_DIR=/etc/hadoop/conf
@@ -72,20 +72,20 @@ $SPARKLING_HOME/bin/pysparkling --num-executors 3 --executor-memory 20g --execut
 Then create an H2O cloud inside the Spark cluster and import H2O-Python package:
 \begin{lstlisting}[style=Scala]
 from pysparkling import *
-hc= H2OContext(sc).start()
+hc = H2OContext.getOrCreate(spark)
 import h2o
 \end{lstlisting}
 
 Or to launch as a Spark Package application:
 \begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.11:2.1.8 --py-files $SPARKLING_HOME/py/dist/pySparkling-2.1.8-py2.7.egg
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.11:2.2.2 --py-files $SPARKLING_HOME/py/build/dist/h2o_pysparkling_2.2-2.2.2.zip
 $SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py 
 \end{lstlisting}
 
 
 \subsection{Using Spark Data Sources}
 
-The way that a \texttt{H2OFrame} can be used as Spark's data source differs a little bit in Python from Scala.
+The way that an \texttt{H2OFrame} can be used as Spark's data source differs a little bit in Python from Scala.
 
 \subsubsection{Reading from \texttt{H2OFrame}}
 
@@ -111,7 +111,7 @@ or
 df.write.format("h2o").save("new_key")
 \end{lstlisting}
 
-Both variants save \texttt{DataFrame} as a \texttt{H2OFrame} with key \texttt{new\_key}. They won't succeed if a \texttt{H2OFrame} with the same key already exists.
+Both variants save \texttt{DataFrame} as an \texttt{H2OFrame} with key \texttt{new\_key}. They won't succeed if an \texttt{H2OFrame} with the same key already exists.
 
 \subsubsection{Loading and Saving Options}
 
