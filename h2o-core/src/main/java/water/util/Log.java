@@ -334,12 +334,9 @@ abstract public class Log {
     if( _logger != null ) return _logger; // Test again under lock
 
     boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
-    String log4jConfiguration = System.getProperty ("log4j.configuration");
     String h2oLog4jConfiguration = System.getProperty ("h2o.log4j.configuration");
 
-    if (log4jConfiguration != null) {
-      // Inherit configuration from environment
-    } else if (h2oLog4jConfiguration != null) {
+    if (h2oLog4jConfiguration != null) {
       PropertyConfigurator.configure(h2oLog4jConfiguration);
     } else {
       // Create some default properties on the fly if we aren't using a provided configuration.
