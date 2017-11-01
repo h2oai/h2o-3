@@ -802,7 +802,7 @@ public class NewChunk extends Chunk {
         int nzs = 0; // assume one non-null for the element currently being stored
         for( int i:_is) if( i != -1 ) ++nzs;
         if( (nzs+1)*_sparseRatio < _len)
-          set_sparse(nzs, Compress.ZERO);
+          set_sparse(nzs, Compress.NA);
       } else {
         if((_sparseRatio*(_sparseLen) >> 2) > _len)  cancel_sparse();
         else _id = MemoryManager.arrayCopyOf(_id,_sparseLen<<1);
