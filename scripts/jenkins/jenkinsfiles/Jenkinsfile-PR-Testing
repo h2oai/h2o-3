@@ -11,26 +11,28 @@ ansiColor('xterm') {
     // run this on H2O-3 usable docker node, because we don't want to overload
     // master
     node (DEFAULT_NODE_LABEL) {
-      dir ('h2o-3') {
-        // clear the folder
-        deleteDir()
-        // checkout H2O-3
-        retry(3) {
-          timeout(time: 1, unit: 'MINUTES') {
-            echo "###### Checkout H2O-3 ######"
-            checkout scm
+      stage ('Prepare and Build') {
+        dir ('h2o-3') {
+          // clear the folder
+          deleteDir()
+          // checkout H2O-3
+          retry(3) {
+            timeout(time: 1, unit: 'MINUTES') {
+              echo "###### Checkout H2O-3 ######"
+              checkout scm
+            }
           }
         }
+
+        def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
+        buildConfig = prepareH2O3('MODE_PR_TESTING', DEFAULT_NODE_LABEL, false)
+
+        def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+        setJobProperties(buildConfig)
+
+        // Load the executeTestStages script
+        executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
       }
-
-      def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-      buildConfig = prepareH2O3('MODE_PR_TESTING', DEFAULT_NODE_LABEL, false)
-
-      def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-      setJobProperties(buildConfig)
-
-      // Load the executeTestStages script
-      executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
     }
     executeTestStages(buildConfig)
   }
