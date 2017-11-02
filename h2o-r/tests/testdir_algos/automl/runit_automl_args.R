@@ -176,8 +176,8 @@ automl.args.test <- function() {
   for (model_id in as.vector(aml13@leaderboard$model_id)) {
     expect_equal(grepl("^StackedEnsemble", model_id), FALSE)
   }
-  amodel <- h2o.getModel(tail(aml12@leaderboard, 1)$model_id)
-  expect_equal(amodel@parameters$nfolds, 0)
+  amodel <- h2o.getModel(tail(aml13@leaderboard, 1)$model_id)
+  expect_equal(amodel@allparameters$nfolds, 0)
   
 }
 
