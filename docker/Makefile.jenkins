@@ -21,6 +21,10 @@ build-h2o-3:
 	@echo "+--Gradle Check--+"
 	./gradlew -PdoCheckStyle check -x test
 
+warmup-caches:
+	@$(MAKE) -f $(THIS_FILE) build-h2o-3
+	./gradlew cpLibs
+
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
