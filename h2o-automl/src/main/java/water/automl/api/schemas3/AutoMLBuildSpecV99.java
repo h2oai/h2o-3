@@ -25,10 +25,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="Optional project name used to group models from multiple runs into a leaderboard; derived from the training data name if not specified.")
+    @API(help="Optional project name used to group models from multiple AutoML runs into a single Leaderboard; derived from the training data name if not specified.")
     public String project_name;
 
-    @API(help="loss function (not yet enabled)", direction=API.Direction.INPUT)
+    @API(help="Loss function (not yet enabled).", direction=API.Direction.INPUT)
     public String loss;
 
     @API(help="Model performance based stopping criteria for the AutoML run.", direction=API.Direction.INPUT)
@@ -68,10 +68,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "ID of the training data frame.", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 training_frame;
 
-    @API(help = "ID of the validation data frame.", direction=API.Direction.INPUT)
+    @API(help = "ID of the validation data frame (used for early stopping in grid searches and for early stopping of the AutoML process itself).", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 validation_frame;
 
-    @API(help = "ID of the leaderboard/test data frame.", direction=API.Direction.INPUT)
+    @API(help = "ID of the leaderboard data frame (used to score models and rank them on the AutoML Leaderboard).", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 leaderboard_frame;
 
     @API(help = "Response column",
@@ -82,7 +82,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       )
     public FrameV3.ColSpecifierV3 response_column;
 
-    @API(help = "Fold column for cross-validation",
+    @API(help = "Fold column (contains fold IDs) in the training frame. These assignments are used to create the folds for cross-validation of the models.",
             direction=API.Direction.INPUT,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
             is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"},
@@ -90,7 +90,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     )
     public FrameV3.ColSpecifierV3 fold_column;
 
-    @API(help = "Weights column, specifying row weights for model training",
+    @API(help = "Weights column in the training frame, which specifies the row weights used in model training.",
             direction=API.Direction.INPUT,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
             is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"},
@@ -98,7 +98,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     )
     public FrameV3.ColSpecifierV3 weights_column;
 
-    @API(help = "Names of columns to ignore for training",
+    @API(help = "Names of columns to ignore in the training frame when building models.",
          direction=API.Direction.INPUT,
          is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
          is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"},
@@ -112,7 +112,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="Try frame transformations", direction=API.Direction.INPUT)
+    @API(help="Try frame transformations (boolean; not enabled).", direction=API.Direction.INPUT)
     public boolean try_mutations;
   } // class AutoMLFeatureEngineeringV99
 
@@ -124,7 +124,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Prevent AutoML from trying these algos; ignored if you use the model_searches parameter", values = {"DL","GLRM","KMEANS","RF","GBM","GLM"}, direction=API.Direction.INPUT)
     public AutoML.algo[] exclude_algos;
 
-    @API(help="Optional model build parameter sets, including base hyperparameters and optional hyperparameter search")
+    @API(help="Optional model build parameter sets, including base hyperparameters and optional hyperparameter search.")
     public GridSearchSchema[] model_searches;
   } // class AutoMLBuildModels
 
@@ -139,19 +139,19 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   ////////////////
   // Input fields
 
-  @API(help="Specification of overall controls for the AutoML build process", direction=API.Direction.INPUT)
+  @API(help="Specification of overall controls for the AutoML build process.", direction=API.Direction.INPUT)
   public AutoMLBuildControlV99 build_control;
 
-  @API(help="Specification of the input data for the AutoML build process", direction=API.Direction.INPUT)
+  @API(help="Specification of the input data for the AutoML build process.", direction=API.Direction.INPUT)
   public AutoMLInputV99 input_spec;
 
-  @API(help="Specification of the feature engineering for the AutoML build process", direction=API.Direction.INPUT)
+  @API(help="Specification of the feature engineering for the AutoML build process.", direction=API.Direction.INPUT)
   public AutoMLFeatureEngineeringV99 feature_engineering;
 
-  @API(help="If present, specifies details of how to train models", direction=API.Direction.INPUT)
+  @API(help="If present, specifies details of how to train models.", direction=API.Direction.INPUT)
   public AutoMLBuildModelsV99 build_models;
 
-  @API(help="If present, AutoML should build ensembles; more control over the process is optional", direction=API.Direction.INPUT)
+  @API(help="If present, AutoML should build ensembles; more control over the process is optional.", direction=API.Direction.INPUT)
   public AutoMLEnsembleParametersV99 ensemble_parameters;
 
   ////////////////

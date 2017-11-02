@@ -1060,14 +1060,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model[] allModels = leaderboard().getModels();
 
     if (allModels.length == 0){
-      this.job.update(50, "No models built: StackedEnsemble build skipped");
+      this.job.update(50, "No models built; StackedEnsemble build skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts.");
     } else {
       Model m = allModels[0];
       // If nfolds == 0, then skip the Stacked Ensemble
       if (buildSpec.build_control.nfolds == 0) {
-        this.job.update(50, "Cross-validation disabled by the user: StackedEnsemble build skipped");
-        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user: StackedEnsemble build skipped");
+        this.job.update(50, "Cross-validation disabled by the user; StackedEnsemble build skipped");
+        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
       } else {
         ///////////////////////////////////////////////////////////
         // stack all models

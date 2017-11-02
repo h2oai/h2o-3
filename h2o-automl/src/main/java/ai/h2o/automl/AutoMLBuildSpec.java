@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.GridSearchSchema;
-//import hex.Model;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.ImportFilesV3;
