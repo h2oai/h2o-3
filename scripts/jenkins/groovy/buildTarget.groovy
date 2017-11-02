@@ -28,6 +28,11 @@ def call(body) {
     execMake(config.target, config.h2o3dir)
   } finally {
     if (config.hasJUnit) {
+      def findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
+      def replaceCmd = "${findCmd} -exec sed -i 's/&#8;//g' {} +"
+      echo "Post-processing following test result files:"
+      sh findCmd
+      sh replaceCmd
       junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
     }
     if (config.archiveFiles) {
