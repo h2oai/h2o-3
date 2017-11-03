@@ -80,7 +80,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected.
 
--  `standardize <algo-params/standardize.html>`__: If enabled, automatically standardize the data (mean 0, variance 0). If disabled, the user must provide properly scaled input data.
+-  `standardize <algo-params/standardize.html>`__: If enabled, automatically standardize the data (mean 0, variance 1). If disabled, the user must provide properly scaled input data.
 
 -  **activation**: Specify the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).
    
