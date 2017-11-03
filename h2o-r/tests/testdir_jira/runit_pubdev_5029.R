@@ -4,8 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pubdev.5029 <- function() {
-
-    test_file <- "private/test.csv.gz"
+    test_file <- locate("smalldata/flow_examples/mnist/test.csv.gz")
     df <- h2o.importFile(test_file)
     y <- "C785"
     x <- setdiff(names(df), y)
