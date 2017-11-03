@@ -180,7 +180,7 @@ test-package-java:
 		h2o-genmodel-extensions/ \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-3.15.0.jar \
 		h2o-core/build/classes/main \
-		h2o-scala/src/test/scala \
+		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
 		scripts/run.py py \
 		build/h2o.jar sort_crash.csv tests/doOnlyJunitSmokeTestList
@@ -272,7 +272,7 @@ test-junit: test-junit-algos test-junit-avro-parser test-junit-core test-junit-e
 
 JUNIT_SMOKE_DOONLY = $$(head -n 1 tests/doOnlyJunitSmokeTestList)
 test-junit-smoke:
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-core
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-algos
+	#@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-core
+	#@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-algos
 	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.10
 	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.11
