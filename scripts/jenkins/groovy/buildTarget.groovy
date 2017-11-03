@@ -29,7 +29,7 @@ def call(body) {
   } finally {
     if (config.hasJUnit) {
       def findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
-      def replaceCmd = "${findCmd} -exec sed -i 's/&#8;//g' {} +"
+      def replaceCmd = "${findCmd} -exec sed -i 's/&#[0-9]\\+;//g' {} +"
       echo "Post-processing following test result files:"
       sh findCmd
       sh replaceCmd

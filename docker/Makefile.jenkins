@@ -272,7 +272,7 @@ test-junit: test-junit-algos test-junit-avro-parser test-junit-core test-junit-e
 
 JUNIT_SMOKE_DOONLY = $$(head -n 1 tests/doOnlyJunitSmokeTestList)
 test-junit-smoke:
-	#@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-core
-	#@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-algos
+	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-core
+	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-algos
 	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.10
 	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.11
