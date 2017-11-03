@@ -27,8 +27,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Java8 Smoke', target: 'test-junit-smoke',
-      timeoutValue: 10, lang: buildConfig.LANG_JAVA,
-      nodeLabel: buildConfig.getNodeLabel() + ' && !40c' // the mr-0xg* nodes cannot access AWS creds for some reason
+      timeoutValue: 10, lang: buildConfig.LANG_JAVA
     ]
   ]
 
@@ -112,8 +111,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Java 8 JUnit', target: 'test-junit', pythonVersion: '2.7',
-      timeoutValue: 90, lang: buildConfig.LANG_JAVA, additionalTestPackages: [buildConfig.LANG_PY],
-      nodeLabel: buildConfig.getNodeLabel() + ' && !40c' // the mr-0xg* nodes cannot access AWS creds for some reason
+      timeoutValue: 90, lang: buildConfig.LANG_JAVA, additionalTestPackages: [buildConfig.LANG_PY]
     ]
   ]
 
