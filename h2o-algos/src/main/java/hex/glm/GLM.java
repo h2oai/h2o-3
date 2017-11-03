@@ -1207,7 +1207,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     int max_active = 0;
     if(_parms._family == Family.multinomial )
       for(int c = 0; c < _nclass; ++c)
-        max_active = Math.max(_state.activeDataMultinomial(c).fullN(),max_active);
+        max_active += _state.activeDataMultinomial(c).fullN();
     else max_active = _state.activeData().fullN();
     if(max_active >= 5000) // cutoff has to be somewhere
       s = Solver.L_BFGS;
