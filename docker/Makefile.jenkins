@@ -166,15 +166,15 @@ test-package-java:
 		h2o-genmodel/build/libs/h2o-genmodel.jar \
 		h2o-algos/src/ \
 		h2o-algos/build/libs/h2o-algos.jar \
-		h2o-parsers/h2o-avro-parser/src/test/java \
+		h2o-parsers/h2o-avro-parser/src/ \
 		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser.jar \
-		h2o-parsers/h2o-orc-parser/src/test/java \
+		h2o-parsers/h2o-orc-parser/src/ \
 		h2o-parsers/h2o-orc-parser/build/libs/h2o-orc-parser.jar \
-		h2o-parsers/h2o-parquet-parser/src/test/java \
+		h2o-parsers/h2o-parquet-parser/src/ \
 		h2o-parsers/h2o-parquet-parser/build/libs/h2o-parquet-parser.jar \
 		h2o-persist-hdfs/src/ \
 		h2o-persist-hdfs/build/libs/h2o-persist-hdfs.jar \
-		h2o-persist-s3/src/test/java \
+		h2o-persist-s3/src/ \
 		h2o-persist-s3/build/libs/h2o-persist-s3.jar \
 		h2o-extensions/xgboost/ \
 		h2o-genmodel-extensions/ \
