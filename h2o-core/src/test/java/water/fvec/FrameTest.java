@@ -6,6 +6,7 @@ import org.junit.Test;
 import water.*;
 import water.util.FrameUtils;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -78,6 +79,36 @@ public class FrameTest extends TestUtil {
 //      subset2.delete();
       if (x != null) x.delete();
       if (y != null) y.delete();
+    }
+  }
+
+  @Test // deep select filters out all defined values of the chunk and the only left ones are NAs, eg.: c(1, NA, NA) -> c(NA, NA)
+  public void testDeepSelectNAs() {
+    Scope.enter();
+    try {
+      String[] data = new String[2 /*defined*/ + 17 /*undefined*/];
+      data[0] = "A";
+      data[data.length - 1] = "Z";
+      double[] pred = new double[data.length];
+      Arrays.fill(pred, 1.0);
+      pred[0] = 0;
+      pred[data.length - 1] = 0;
+      Frame input = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "predicate")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, data)
+              .withDataForCol(1, pred)
+              .withChunkLayout(data.length) // single chunk
+              .build();
+      Scope.track(input);
+      Frame result = new Frame.DeepSelect().doAll(Vec.T_STR, input).outputFrame();
+      Scope.track(result);
+      assertEquals(data.length - 2, result.numRows());
+      for (int i = 0; i < data.length - 2; i++)
+        assertTrue("Value in row " + i + " is NA", result.vec(0).isNA(i));
+    } finally {
+      Scope.exit();
     }
   }
 
