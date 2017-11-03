@@ -1,6 +1,6 @@
 #! /usr/bin/groovy
 
-def AGENT_LABEL = 'docker && !mr-0xc8 && !40c'
+def AGENT_LABEL = 'docker && !mr-0xc8'
 def DOCKER_FILE_PATH = 'docker/Dockerfile'
 
 pipeline {
