@@ -52,7 +52,7 @@ def stackedensemble_validation_frame_test():
     my_gbm.train(x=x, y=y, training_frame=train)
 
     # Train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees=50,
+    my_rf = H2ORandomForestEstimator(ntrees=10,
                                      nfolds=nfolds,
                                      fold_assignment="Modulo",
                                      keep_cross_validation_predictions=True,
@@ -74,7 +74,7 @@ def stackedensemble_validation_frame_test():
     # Compare test AUC (ensemble with validation_frame should not be worse)
     perf1 = stack1.model_performance(test_data=test)
     perf2 = stack2.model_performance(test_data=test)
-    assert perf1.auc() >= perf2.auc()
+    assert perf2.auc() >= perf1.auc()
 
 
 if __name__ == "__main__":
