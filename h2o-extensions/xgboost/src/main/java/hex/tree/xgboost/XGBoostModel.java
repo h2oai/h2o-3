@@ -295,10 +295,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description) throws XGBoostError {
     return makeMetrics(booster, data, dataFrame, description, null);
   }
+
   private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description,
                                    Key<Frame> predFrameKey) throws XGBoostError {
     ModelMetrics[] mms = new ModelMetrics[1];
-    Frame predictions = makePreds(booster, data, mms, predFrameKey);
+    Frame predictions = makePreds(booster, data, mms, true, predFrameKey);
     if (predFrameKey == null) {
         predictions.remove();
     } else {
@@ -310,10 +311,23 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return mm;
   }
 
-  private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
-    Frame predFrame;
+  private Frame makePredsOnly(Booster booster, DMatrix data, Key<Frame> destinationKey) throws XGBoostError {
+    Frame preds = makePreds(booster, data, null, false, destinationKey);
+    DKV.put(preds);
+    return preds;
+  }
+
+  private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mms, boolean computeMetrics,
+                          Key<Frame> destinationKey) throws XGBoostError {
+    assert (! computeMetrics) || (mms != null && mms.length == 1);
+
+    // Calculate predictions
     final float[][] preds = booster.predict(data);
-    Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
+
+    // Convert to expected output structure and optionally calculate metrics
+    Frame predFrame;
+    ModelMetrics mm = null;
+    Vec resp = computeMetrics ? Vec.makeVec(data.getLabel(), Vec.newKey()) : null;
     float[] weights = data.getWeight();
     if (_output.nclasses()==1) {
       double[] dpreds = new double[preds.length];
@@ -325,8 +339,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 //        for (int j = 0; j < dpreds.length; ++j)
 //          assert weights[j] == 1.0;
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-      mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-      predFrame = new Frame(destinationKey, new Vec[]{pred}, true);
+      if (computeMetrics)
+        mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
+      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{pred});
     }
     else if (_output.nclasses()==2) {
       double[] dpreds = new double[preds.length];
@@ -348,16 +363,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           }
         }
       }.doAll(label,p0,p1);
-      mm[0] = ModelMetricsBinomial.make(p1, resp);
+      if (computeMetrics)
+        mm = ModelMetricsBinomial.make(p1, resp);
       label.setDomain(new String[]{"N","Y"}); // ignored
-      predFrame = new Frame(destinationKey, new Vec[]{label,p0,p1}, true);
+      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{label,p0,p1});
     } else {
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
       domains[0] = _output.classNames();
-      Frame input = new Frame(resp); //has the right size
+      Frame input = new Frame(Vec.makeCon(Double.NaN, preds.length)); // dummy frame of the right size
       predFrame = new MRTask() {
+        @Override
         public void map(Chunk[] chk, NewChunk[] nc) {
+          assert chk.length == 1;
           for (int i=0; i<chk[0]._len; ++i) {
             double[] row = new double[nc.length];
             for (int j=1;j<row.length;++j) {
@@ -369,14 +387,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           }
         }
       }.doAll(_output.nclasses()+1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
-
-      Frame pp = new Frame(predFrame);
-      pp.remove(0);
-      Scope.enter();
-      mm[0] = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
-      Scope.exit();
+      if (computeMetrics) {
+        Frame pp = new Frame(predFrame);
+        pp.remove(0);
+        Scope.enter();
+        mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
+        Scope.exit();
+      }
     }
-    resp.remove();
+    if (resp != null)
+      resp.remove();
+
+    if (computeMetrics) {
+      assert mm != null;
+      mms[0] = mm;
+    }
+    assert "predict".equals(predFrame.name(0));
     return predFrame;
   }
 
@@ -458,13 +484,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     try {
       DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
           _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
-      Key<Frame> destFrameKey = Key.<Frame>make(destination_key);
-      ModelMetrics mm = makeMetrics(model_info().booster(), trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
-      // Update model with newly computed model metrics
+      Key<Frame> destFrameKey = Key.make(destination_key);
       if (computeMetrics){
+        ModelMetrics mm = makeMetrics(model_info().booster(), trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
+        // Update model with newly computed model metrics
         this.addModelMetrics(mm);
         DKV.put(this);
-      }
+      } else
+        makePredsOnly(model_info().booster(), trainMat, destFrameKey);
       return destFrameKey.get();
     } catch (XGBoostError xgBoostError) {
       throw new RuntimeException(xgBoostError);
