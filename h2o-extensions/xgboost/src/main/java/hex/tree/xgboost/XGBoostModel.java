@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import com.sun.jna.Memory;
 import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -371,22 +372,28 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
       domains[0] = _output.classNames();
-      Frame input = new Frame(Vec.makeCon(Double.NaN, preds.length)); // dummy frame of the right size
-      predFrame = new MRTask() {
-        @Override
-        public void map(Chunk[] chk, NewChunk[] nc) {
-          assert chk.length == 1;
-          for (int i=0; i<chk[0]._len; ++i) {
-            double[] row = new double[nc.length];
-            for (int j=1;j<row.length;++j) {
-              double val = preds[i][j-1];
-              nc[j].addNum(val);
-              row[j] = val;
+      Frame input = null;
+      try {
+        input = new Frame(Vec.makeVec(MemoryManager.malloc4f(preds.length), Vec.newKey())); // dummy frame of the right size
+        predFrame = new MRTask() {
+          @Override
+          public void map(Chunk[] chk, NewChunk[] nc) {
+            assert chk.length == 1;
+            for (int i = 0; i < chk[0]._len; ++i) {
+              double[] row = new double[nc.length];
+              for (int j = 1; j < row.length; ++j) {
+                double val = preds[i][j - 1];
+                nc[j].addNum(val);
+                row[j] = val;
+              }
+              nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
             }
-            nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
           }
-        }
-      }.doAll(_output.nclasses()+1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
+        }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
+      } finally {
+        if (input != null)
+          input.remove();
+      }
       if (computeMetrics) {
         Frame pp = new Frame(predFrame);
         pp.remove(0);
@@ -402,7 +409,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert mm != null;
       mms[0] = mm;
     }
-    assert "predict".equals(predFrame.name(0));
+    assert predFrame != null && "predict".equals(predFrame.name(0));
     return predFrame;
   }
 
