@@ -299,13 +299,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description,
                                    Key<Frame> predFrameKey) throws XGBoostError {
+    Futures fs = new Futures();
     ModelMetrics[] mms = new ModelMetrics[1];
-    Frame predictions = makePreds(booster, data, mms, true, predFrameKey);
+    Frame predictions = makePreds(booster, data, mms, true, predFrameKey, fs);
     if (predFrameKey == null) {
-        predictions.remove();
+        predictions.remove(fs);
     } else {
-      DKV.put(predictions);
+      DKV.put(predictions, fs);
     }
+    fs.blockForPending();
     ModelMetrics mm = mms[0]
         .withModelAndFrame(this, dataFrame)
         .withDescription(description);
@@ -313,13 +315,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private Frame makePredsOnly(Booster booster, DMatrix data, Key<Frame> destinationKey) throws XGBoostError {
-    Frame preds = makePreds(booster, data, null, false, destinationKey);
-    DKV.put(preds);
+    Futures fs = new Futures();
+    Frame preds = makePreds(booster, data, null, false, destinationKey, fs);
+    DKV.put(preds, fs);
+    fs.blockForPending();
     return preds;
   }
 
   private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mms, boolean computeMetrics,
-                          Key<Frame> destinationKey) throws XGBoostError {
+                          Key<Frame> destinationKey, Futures fs) throws XGBoostError {
     assert (! computeMetrics) || (mms != null && mms.length == 1);
 
     // Calculate predictions
@@ -379,8 +383,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           @Override
           public void map(Chunk[] chk, NewChunk[] nc) {
             assert chk.length == 1;
+            double[] row = new double[nc.length];
             for (int i = 0; i < chk[0]._len; ++i) {
-              double[] row = new double[nc.length];
+              row[0] = 0;
               for (int j = 1; j < row.length; ++j) {
                 double val = preds[i][j - 1];
                 nc[j].addNum(val);
@@ -392,18 +397,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
       } finally {
         if (input != null)
-          input.remove();
+          input.remove(fs);
       }
       if (computeMetrics) {
         Frame pp = new Frame(predFrame);
         pp.remove(0);
-        Scope.enter();
-        mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
-        Scope.exit();
+        mm = ModelMetricsMultinomial.make(pp, resp, _output.classNames());
       }
     }
     if (resp != null)
-      resp.remove();
+      resp.remove(fs);
 
     if (computeMetrics) {
       assert mm != null;
