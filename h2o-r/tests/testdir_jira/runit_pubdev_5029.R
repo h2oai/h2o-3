@@ -15,7 +15,7 @@ test.pubdev.5029 <- function() {
 
     model <- h2o.glm(x = x, y = y, training_frame = train, lambda_search = TRUE,
                      family = 'multinomial', alpha = 0, weights_column = "weights", seed = -1)
-    expect_equal("GLM", class(model)) # any assertion will do fine
+    expect_true(! is.null(model)) # any assertion will do fine
 }
 
 doTest("PUBDEV-5029: GLM crashes if there are too many active predictors", test.pubdev.5029)
