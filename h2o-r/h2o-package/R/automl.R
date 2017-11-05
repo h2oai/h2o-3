@@ -11,6 +11,7 @@
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
+#' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
@@ -42,6 +43,7 @@
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
+                       nfolds = 5,
                        fold_column = NULL,
                        weights_column = NULL,
                        max_runtime_secs = 3600,
@@ -156,6 +158,15 @@ h2o.automl <- function(x, y, training_frame,
   } else {
     build_control$project_name <- project_name
   }
+  
+  # Update build_control with nfolds
+  if (nfolds < 0) {
+    stop("nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
+  }
+  if (nfolds == 1) {
+    stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
+  }
+  build_control$nfolds <- nfolds
   
   # Create the parameter list to POST to the AutoMLBuilder 
   params <- list(input_spec = input_spec, build_control = build_control)
