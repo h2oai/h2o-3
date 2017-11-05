@@ -27,7 +27,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Java8 Smoke', target: 'test-junit-smoke',
-      timeoutValue: 10, lang: buildConfig.LANG_JAVA
+      timeoutValue: 20, lang: buildConfig.LANG_JAVA
     ]
   ]
 
