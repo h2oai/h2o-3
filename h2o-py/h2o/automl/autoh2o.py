@@ -13,6 +13,8 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
+    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
+      disable Stacked Ensemble (thus decreasing the overall model performance).
     :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
     :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
@@ -42,18 +44,19 @@ class H2OAutoML(object):
     >>> # Import a sample binary outcome train/test set into H2O
     >>> train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
     >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
-    >>> # Identify predictors and response
-    >>> x = train.columns
+    >>> # Identify the response and set of predictors
     >>> y = "response"
+    >>> x = train.columns  #if x is defined as all columns except the response, then x is not required
     >>> x.remove(y)
     >>> # For binary classification, response should be a factor
     >>> train[y] = train[y].asfactor()
     >>> test[y] = test[y].asfactor()
     >>> # Run AutoML for 30 seconds
     >>> aml = H2OAutoML(max_runtime_secs = 30)
-    >>> aml.train(x = x, y = y,training_frame = train,leaderboard_frame = test)
+    >>> aml.train(x = x, y = y, training_frame = train,leaderboard_frame = test)
     """
     def __init__(self,
+                 nfolds=5,
                  max_runtime_secs=3600,
                  max_models=None,
                  stopping_metric="AUTO",
@@ -62,7 +65,7 @@ class H2OAutoML(object):
                  seed=None,
                  project_name=None):
 
-        #Check if H2O jar contains AutoML
+        # Check if H2O jar contains AutoML
         try:
             h2o.api("GET /3/Metadata/schemas/AutoMLV99")
         except h2o.exceptions.H2OResponseError as e:
@@ -72,19 +75,28 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        #If max_runtime_secs is not provided, then it is set to default (3600 secs)
+        
+        # Make bare minimum build_control (if max_runtimes_secs is an invalid value, it will catch below)
+        self.build_control = {
+            'stopping_criteria': {
+                'max_runtime_secs': max_runtime_secs,
+            }
+        }
+
+        # nfolds must be an non-negative integer and not equal to 1:
+        if nfolds is not 5:
+            assert_is_type(nfolds,int)
+        assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
+        assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
+        self.build_control["nfolds"] = nfolds 
+        self.nfolds = nfolds   
+
+        # If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs,int)
         self.max_runtime_secs = max_runtime_secs
 
-        #Make bare minimum build_control
-        self.build_control = {
-            'stopping_criteria': {
-                'max_runtime_secs': self.max_runtime_secs,
-            }
-        }
-
-        #Add other parameters to build_control if available
+        # Add other parameters to build_control if available
         if max_models is not None:
             assert_is_type(max_models,int)
             self.build_control["stopping_criteria"]["max_models"] = max_models
@@ -110,13 +122,14 @@ class H2OAutoML(object):
             self.build_control["stopping_criteria"]["seed"] = seed
             self.seed = seed
 
-        #Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
+        # Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name,str)
             self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
             self.project_name = None
+    
 
         self._job = None
         self._automl_key = None
@@ -136,9 +149,9 @@ class H2OAutoML(object):
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch H2OAutoML
+        >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=training_frame)
-        >>> # Get the top model
+        >>> # Get the best model in the AutoML Leaderboard
         >>> aml.leader
         """
         return h2o.get_model(self._leader_id)
@@ -154,9 +167,9 @@ class H2OAutoML(object):
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch H2OAutoML
+        >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=training_frame)
-        >>> # Get the leaderboard
+        >>> # Get the AutoML Leaderboard
         >>> aml.leaderboard
         """
         return self._leaderboard
@@ -187,13 +200,13 @@ class H2OAutoML(object):
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch H2OAutoML
+        >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=training_frame)
         """
         ncols = training_frame.ncols
         names = training_frame.names
 
-        #Minimal required arguments are training_frame and y (response)
+        # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
@@ -280,11 +293,11 @@ class H2OAutoML(object):
         :returns: A new H2OFrame of predictions.
 
         :examples:
-        >>> #Set up an H2OAutoML object
+        >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
-        >>> #Predict with #1 model from H2OAutoML leaderboard
+        >>> # Predict with #1 model from AutoML Leaderboard
         >>> aml.predict(test_data)
 
         """

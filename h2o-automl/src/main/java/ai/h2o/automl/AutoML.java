@@ -638,8 +638,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._weights_column = buildSpec.input_spec.weights_column;
 
       if (buildSpec.input_spec.fold_column == null) {
-        params._nfolds = 5;
-        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        //params._nfolds = 5;
+        params._nfolds = buildSpec.build_control.nfolds;
+        if (buildSpec.build_control.nfolds > 1) {
+          // TO DO: below allow the user to specify this (vs Modulo)
+          // TO DO: also, the docs currently say that we use Random folds... not Modulo
+          params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        }
       }
     }
   }
@@ -1055,28 +1060,35 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model[] allModels = leaderboard().getModels();
 
     if (allModels.length == 0){
-      this.job.update(50, "No models built: StackedEnsemble build skipped");
+      this.job.update(50, "No models built; StackedEnsemble build skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts.");
     } else {
       Model m = allModels[0];
-      ///////////////////////////////////////////////////////////
-      // stack all models
-      ///////////////////////////////////////////////////////////
+      // If nfolds == 0, then skip the Stacked Ensemble
+      if (buildSpec.build_control.nfolds == 0) {
+        this.job.update(50, "Cross-validation disabled by the user; StackedEnsemble build skipped");
+        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
+      } else {
+        ///////////////////////////////////////////////////////////
+        // stack all models
+        ///////////////////////////////////////////////////////////
 
-      // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
-      int nonEnsembleCount = 0;
-      for (Model aModel : allModels)
-        if (!(aModel instanceof StackedEnsembleModel))
-          nonEnsembleCount++;
+        // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
+        int nonEnsembleCount = 0;
+        for (Model aModel : allModels)
+          if (!(aModel instanceof StackedEnsembleModel))
+            nonEnsembleCount++;
 
-      Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
-      int notEnsembleIndex = 0;
-      for (Model aModel : allModels)
-        if (!(aModel instanceof StackedEnsembleModel))
-          notEnsembles[notEnsembleIndex++] = aModel._key;
+        Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
+        int notEnsembleIndex = 0;
+        for (Model aModel : allModels)
+          if (!(aModel instanceof StackedEnsembleModel))
+            notEnsembles[notEnsembleIndex++] = aModel._key;
 
-      Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
+        Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
+
+      }
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));

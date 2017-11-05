@@ -1,16 +1,16 @@
 ``nfolds``
 ---------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 
 Description
 ~~~~~~~~~~~
 
-This option specifies the number of folds to use for `cross-validation <../../cross-validation.html>`__. 
+This option specifies the number of folds to use for k-fold `cross-validation <../../cross-validation.html>`__. 
 
-N-fold cross-validation is used to validate a model internally, i.e., estimate the model performance without having to sacrifice a validation split. Also, you avoid statistical issues with your validation split (it might be a “lucky” split, especially for imbalanced data). Good values for ``nfolds`` are generally from 5 to 10, but keep in mind that higher values result in higher computational cost. 
+`K-fold cross-validation <https://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validation>`__ is used to validate a model internally, i.e., estimate the model performance without having to sacrifice a validation split. Also, you avoid statistical issues with your validation split (it might be a “lucky” split, especially for imbalanced data). Good values for ``nfolds`` are generally from 5 to 10, but keep in mind that higher values result in higher computational cost. 
 
 When specifying ``nfolds``, the algorithm will build ``nfolds`` +1 models. For example, if you specify ``nfolds=5``, then 6 models are built. The first 5 models (cross-validation models) are built on 80% of the training data, and a different 20% is held out for each of the 5 models. Then the main model is built on 100% of the training data. This main model is the model you get back from H2O in R, Python, and Flow.
 

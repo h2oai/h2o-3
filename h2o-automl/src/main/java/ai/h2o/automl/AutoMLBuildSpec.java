@@ -49,6 +49,10 @@ public class AutoMLBuildSpec extends Iced {
     public String project_name = null;
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
+
+    // Cross-validation fold construction
+    public int nfolds = 5; 
+    //public Model.Parameters.FoldAssignmentScheme fold_assignment;
   }
 
   /**
