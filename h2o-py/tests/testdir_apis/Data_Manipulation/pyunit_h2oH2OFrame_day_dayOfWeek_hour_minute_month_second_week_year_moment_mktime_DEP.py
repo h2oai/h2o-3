@@ -74,6 +74,9 @@ def h2o_H2OFrame_day():
     # but the returned timestamp is in UTC, we need to correct this, thus the + current_utc_offset
     current_utc_offset = ((calendar.timegm(time.gmtime()) - calendar.timegm(time.localtime())) * 1000)
     diff = 2764800000 + current_utc_offset
+    # correct DST
+    if not time.localtime().tm_isdst and not time.strftime("%Z", time.localtime()) == 'UTC':
+        diff -= 3600000.0
     assert_is_type(mktime_datetime, H2OFrame)
     assert abs(datetime[0,0]+diff-mktime_datetime[0,0]) < 1e-6, "h2o.H2OFrame.mktime() command is not working."
 
