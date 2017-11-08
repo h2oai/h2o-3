@@ -6,7 +6,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
 
     MojoModel _metaLearner; //Currently only a GLM. May change to be DRF, GBM, XGBoost, or DL in the future
     MojoModel[] _baseModels; //An array of base models
-    int _baseModelNum;
+    int _baseModelNum; //Number of base models
 
     public StackedEnsembleMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
@@ -16,7 +16,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
     public double[] score0(double[] row, double[] preds) {
         double[] basePreds = new double[_baseModelNum]; //Proper allocation for binomial and regression ensemble (one prediction per base model)
         if(_nclasses > 2) {
-            basePreds = new double[]{_baseModelNum * _nclasses}; //Proper allocation for multinomial ensemble (class probabilities per base model)
+            basePreds = new double[_baseModelNum * _nclasses]; //Proper allocation for multinomial ensemble (class probabilities per base model)
         }
         double[] basePredsRow = new double[preds.length];
         for(int i = 0; i < _baseModelNum; ++i){
