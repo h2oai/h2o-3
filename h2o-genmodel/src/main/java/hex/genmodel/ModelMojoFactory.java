@@ -81,6 +81,7 @@ public class ModelMojoFactory {
         return new SvmMojoReader();
 
       case "StackedEnsemble":
+      case "Stacked Ensemble":
         return new StackedEnsembleMojoReader();
 
       default:

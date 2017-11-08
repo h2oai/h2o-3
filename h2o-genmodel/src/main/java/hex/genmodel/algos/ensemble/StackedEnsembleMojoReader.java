@@ -1,6 +1,5 @@
 package hex.genmodel.algos.ensemble;
 
-import hex.genmodel.ModelMojoReader;
 import hex.genmodel.MultiModelMojoReader;
 
 import java.io.IOException;
