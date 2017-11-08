@@ -15,6 +15,7 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
     @Override
     protected void readParentModelData() throws IOException {
         int baseModelNum = readkv("base_models_num", 0);
+        _model._baseModelNum = baseModelNum;
         _model._metaLearner = getModel((String) readkv("metalearner"));
         _model._baseModels = new MojoModel[baseModelNum];
         for (int i = 0; i < baseModelNum; i++) {
