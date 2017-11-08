@@ -294,7 +294,7 @@ FAQ
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, Na values are grouped with the outliers in the left-most bin.
+  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
