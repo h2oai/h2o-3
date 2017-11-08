@@ -1,10 +1,11 @@
 package hex.genmodel.algos.ensemble;
 
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.MultiModelMojoReader;
 
 import java.io.IOException;
 
-public class StackedEnsembleMojoReader extends ModelMojoReader<StackedEnsembleMojoModel> {
+public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsembleMojoModel> {
 
     @Override
     public String getModelName() {
@@ -12,9 +13,13 @@ public class StackedEnsembleMojoReader extends ModelMojoReader<StackedEnsembleMo
     }
 
     @Override
-    protected void readModelData() throws IOException {
+    protected void readParentModelData() throws IOException {
+        int baseModelNum = readkv("base_models_num", 0);
         _model._metaLearner = readkv("metalearner");
-        _model._baseModels = readkv("base_models");
+        for (int i = 0; i < baseModelNum; i++) {
+            String modelKey = readkv("base_model" + i);
+            _model._baseModels[i] = getModel(modelKey);
+        }
     }
 
     @Override

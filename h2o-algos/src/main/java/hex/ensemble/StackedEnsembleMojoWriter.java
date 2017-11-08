@@ -21,9 +21,10 @@ public class StackedEnsembleMojoWriter extends ModelMojoWriter<StackedEnsembleMo
 
     @Override
     protected void writeModelData() throws IOException {
+        writekv("base_models_num", model._parms._base_models.length);
         writekv("metalearner", model._output._metalearner._key);
         for (int i = 0; i < model._parms._base_models.length; i++) {
-            writekv("base_models" + i, model._parms._base_models[i]);
+            writekv("base_model" + i, model._parms._base_models[i]);
         }
     }
 }
