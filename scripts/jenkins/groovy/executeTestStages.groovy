@@ -11,6 +11,8 @@ def call(buildConfig) {
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
 
+  def BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
+
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
@@ -146,6 +148,12 @@ def call(buildConfig) {
     [
       stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
       timeoutValue: 45, lang: buildConfig.LANG_JS
+    ],
+    [
+      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', lang: buildConfig.LANG_NONE,
+      additionalTestPackages: [buildConfig.LANG_R], image: buildConfig.BENCHMARK_IMAGE,
+      nodeLabel: buildConfig.getBenchmarkNodeLabel(), model: 'gbm', makefilePath: BENCHMARK_MAKEFILE_PATH
     ]
   ]
 
@@ -197,7 +205,7 @@ def executeInParallel(jobs, buildConfig) {
   parallel(jobs.collectEntries { c ->
     [
       c['stageName'], {
-        defaultTestPipeline(buildConfig) {
+        invokeStage(buildConfig) {
           stageName = c['stageName']
           target = c['target']
           pythonVersion = c['pythonVersion']
@@ -207,26 +215,37 @@ def executeInParallel(jobs, buildConfig) {
           lang = c['lang']
           additionalTestPackages = c['additionalTestPackages']
           nodeLabel = c['nodeLabel']
+          executionScript = c['executionScript']
+          image = c['image']
+          model = c['model']
+          makefilePath = c['makefilePath']
         }
       }
     ]
   })
 }
 
-def defaultTestPipeline(buildConfig, body) {
+def invokeStage(buildConfig, body) {
+
+  def DEFAULT_PYTHON = '3.5'
+  def DEFAULT_R = '3.4.1'
+  def DEFAULT_TIMEOUT = 60
+  def DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
+  def DEFAULT_MAKEFILE_PATH = 'docker/Makefile.jenkins'
+
   def config = [:]
   body.resolveStrategy = Closure.DELEGATE_FIRST
   body.delegate = config
   body()
 
   if (config.pythonVersion == null) {
-    config.pythonVersion = '3.5'
+    config.pythonVersion = DEFAULT_PYTHON
   }
   if (config.rVersion == null) {
-    config.rVersion = '3.4.1'
+    config.rVersion = DEFAULT_R
   }
   if (config.timeoutValue == null) {
-    config.timeoutValue = 60
+    config.timeoutValue = DEFAULT_TIMEOUT
   }
   if (config.hasJUnit == null) {
     config.hasJUnit = true
@@ -235,7 +254,16 @@ def defaultTestPipeline(buildConfig, body) {
     config.additionalTestPackages = []
   }
   if (config.nodeLabel == null) {
-    config.nodeLabel = buildConfig.getNodeLabel()
+    config.nodeLabel = buildConfig.getDefaultNodeLabel()
+  }
+  if (config.executionScript == null) {
+    config.executionScript = DEFAULT_EXECUTION_SCRIPT
+  }
+  if (config.image == null) {
+    config.image = buildConfig.DEFAULT_IMAGE
+  }
+  if (config.makefilePath == null) {
+    config.makefilePath = DEFAULT_MAKEFILE_PATH
   }
 
   node(config.nodeLabel) {
@@ -244,162 +272,11 @@ def defaultTestPipeline(buildConfig, body) {
       projectName: env.JOB_NAME,
       filter: "h2o-3/scripts/jenkins/groovy/*",
       selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID]
-    ]);
+    ])
 
-    def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
-    def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
-    def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-
-    def buildEnv = customEnv() + ["PYTHON_VERSION=${config.pythonVersion}", "R_VERSION=${config.rVersion}"]
-
-    insideDocker(buildEnv, buildConfig, config.timeoutValue, 'MINUTES') {
-      // NOTES regarding changes detection and rerun:
-      // An empty stage is a stage which is created, but does not execute any tests.
-      // Consider following scenario:
-      //  commit 1 - only Py files are changed -> only Py stages are created
-      //           - if we have created the empty R stages as well,
-      //             they are marked as SUCCESFUL (no tests -> (almost) nothing to fail)
-      //  commit 2 - we add some R changes and we use rerun -> Py stages are skipped, they were successful in previous build
-      //           - however, if we had created the empty R stages,
-      //             they will be skipped as well, because they are marked as SUCESSFUL in previous build
-      // This is why the stages for not changed langs must NOT be created.
-      // On the other hand, empty stages for those being reran must be created.
-      // Otherwise the rerun mechanism will not be able to distinguish if the
-      // stage is missing in previous build  because it was skipped due to the
-      // change detection (and it should be run in this build) or because it was
-      // skipped due to the rerun (and it shouldn't be run in this build either).
-
-      // run stage only if there is something changed for this or relevant lang.
-      if (buildConfig.langChanged(config.lang)) {
-        echo "###### Changes for ${config.lang} detected, starting ${config.stageName} ######"
-        stage(config.stageName) {
-          // run tests only if all stages should be run or if this stage was FAILED in previous build
-          if(runAllStages(buildConfig) || !wasStageSuccessful(config.stageName)) {
-            echo "###### ${config.stageName} was not successful or was not executed in previous build, executing it now. ######"
-
-            def stageDir = stageNameToDirName(config.stageName)
-            def h2oFolder = stageDir + '/h2o-3'
-            dir(stageDir) {
-              deleteDir()
-            }
-
-            // pull the test package unless this is a LANG_NONE stage
-            if (config.lang != buildConfig.LANG_NONE) {
-              unpackTestPackage(config.lang, stageDir)
-            }
-            // pull aditional test packages
-            for (additionalPackage in config.additionalTestPackages) {
-              echo "Pulling additional test-package-${additionalPackage}.zip"
-              unpackTestPackage(additionalPackage, stageDir)
-            }
-
-            if (config.lang == buildConfig.LANG_PY || config.additionalTestPackages.contains(buildConfig.LANG_PY)) {
-              installPythonPackage(h2oFolder)
-            }
-
-            if (config.lang == buildConfig.LANG_R || config.additionalTestPackages.contains(buildConfig.LANG_R)) {
-              installRPackage(h2oFolder)
-            }
-
-            buildTarget {
-              target = config.target
-              hasJUnit = config.hasJUnit
-              h2o3dir = h2oFolder
-            }
-          } else {
-            echo "###### ${config.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled. ######"
-          }
-        }
-      } else {
-        echo "###### Changes for ${config.lang} NOT detected, skipping ${config.stageName}. ######"
-      }
-    }
+    def script = load(config.executionScript)
+    script(buildConfig, config)
   }
-}
-
-def installPythonPackage(String h2o3dir) {
-  sh """
-    echo "Activating Python ${env.PYTHON_VERSION}"
-    . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-    pip install ${h2o3dir}/h2o-py/dist/*.whl
-  """
-}
-
-def installRPackage(String h2o3dir) {
-  sh """
-    echo "Activating R ${env.R_VERSION}"
-    activate_R_${env.R_VERSION}
-    R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
-  """
-}
-
-def unpackTestPackage(lang, String stageDir) {
-  echo "###### Pulling test package. ######"
-  step ([$class: 'CopyArtifact',
-    projectName: env.JOB_NAME,
-    fingerprintArtifacts: true,
-    filter: "h2o-3/test-package-${lang}.zip, h2o-3/build/h2o.jar",
-    selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
-    target: stageDir + '/'
-  ]);
-  sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${lang}.zip && rm test-package-${lang}.zip"
-}
-
-def stageNameToDirName(String stageName) {
-  if (stageName != null) {
-    return stageName.toLowerCase().replace(' ', '-')
-  }
-  return null
-}
-
-def runAllStages(buildConfig) {
-    // first check the commit message contains !rerun token, if yes, then don't run all stages,
-    // if not, then run all stages
-    def result = !buildConfig.commitMessageContains('!rerun')
-    // if we shouldn't run all stages based on the commit message, check
-    // that this is not overriden by environment
-    if (!result) {
-      result = env.overrideRerun == null || env.overrideRerun.toLowerCase() == 'true'
-    }
-    if (result) {
-      echo "###### RERUN NOT ENABLED, will execute all stages ######"
-    } else {
-      echo "###### RERUN ENABLED, will execute only stages which failed in previous build ######"
-    }
-    return result
-}
-
-@NonCPS
-def wasStageSuccessful(String stageName) {
-  // displayName of the relevant end node.
-  def STAGE_END_TYPE_DISPLAY_NAME = 'Stage : Body : End'
-
-  // There is no previous build, the stage cannot be successful.
-  if (currentBuild.previousBuild == null) {
-    echo "###### No previous build available, marking ${stageName} as FAILED. ######"
-    return false
-  }
-
-  // Get all nodes in previous build.
-  def prevBuildNodes = currentBuild.previousBuild.rawBuild
-    .getAction(org.jenkinsci.plugins.workflow.job.views.FlowGraphAction.class)
-    .getNodes()
-  // Get all end nodes of the relevant stage in previous build. We need to check
-  // the end nodes, because errors are being recorded on the end nodes.
-  def stageEndNodesInPrevBuild = prevBuildNodes.findAll{it.getTypeDisplayName() == STAGE_END_TYPE_DISPLAY_NAME}
-    .findAll{it.getStartNode().getDisplayName() == stageName}
-
-  // If there is no start node for this stage in previous build that means the
-  // stage was not present in previous build, therefore the stage cannot be successful.
-  def stageMissingInPrevBuild = stageEndNodesInPrevBuild.isEmpty()
-  if (stageMissingInPrevBuild) {
-    echo "###### ${stageName} not present in previous build, marking this stage as FAILED. ######"
-    return false
-  }
-
-  // If the list of end nodes for this stage having error is empty, that
-  // means the stage was successful. The errors are being recorded on the end nodes.
-  return stageEndNodesInPrevBuild.find{it.getError() != null} == null
 }
 
 return this

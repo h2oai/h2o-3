@@ -10,29 +10,33 @@ def call(buildConfig) {
 
   // Launch docker container, build h2o-3, create test packages and archive artifacts
   def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
-  insideDocker(buildEnv, buildConfig, 30, 'MINUTES') {
+  insideDocker(buildEnv, buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 30, 'MINUTES') {
     stage ('Build H2O-3') {
       try {
         buildTarget {
           target = 'build-h2o-3'
           hasJUnit = false
           archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
         }
         buildTarget {
           target = 'test-package-py'
           hasJUnit = false
           archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
         }
         buildTarget {
           target = 'test-package-r'
           hasJUnit = false
           archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
         }
         if (buildConfig.langChanged(buildConfig.LANG_JS)) {
           buildTarget {
             target = 'test-package-js'
             hasJUnit = false
             archiveFiles = false
+            makefilePath = 'docker/Makefile.jenkins'
           }
         }
         if (buildConfig.langChanged(buildConfig.LANG_JAVA)) {
@@ -40,6 +44,7 @@ def call(buildConfig) {
             target = 'test-package-java'
             hasJUnit = false
             archiveFiles = false
+            makefilePath = 'docker/Makefile.jenkins'
           }
         }
       } finally {
