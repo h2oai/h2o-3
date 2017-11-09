@@ -56,6 +56,8 @@ Defining an H2O Stacked Ensemble Model
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the independent variable (response column). The data can be numeric or categorical.
 
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
 -  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_folds`` must be set to True. 
 
   **Notes regarding** ``base_models``: 

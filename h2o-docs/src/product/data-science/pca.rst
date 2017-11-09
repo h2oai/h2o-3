@@ -4,15 +4,9 @@ Principal Component Analysis (PCA)
 Introduction
 ~~~~~~~~~~~~
 
-Principal Components Analysis (PCA) is closely related to Principal
-Components Regression. The algorithm is carried out on a set of possibly
-collinear features and performs a transformation to produce a new set of
-uncorrelated features.
+Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
 
-PCA is commonly used to model without regularization or perform
-dimensionality reduction. It can also be useful to carry out as a
-preprocessing step before distance-based algorithms such as K-Means
-since PCA guarantees that all dimensions of a manifold are orthogonal.
+PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out as a preprocessing step before distance-based algorithms such as K-Means since PCA guarantees that all dimensions of a manifold are orthogonal.
 
 Defining a PCA Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -23,7 +17,9 @@ Defining a PCA Model
 
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
@@ -56,8 +52,7 @@ Defining a PCA Model
 Interpreting a PCA Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-PCA output returns a table displaying the number of components specified
-by the value for ``k``.
+PCA output returns a table displaying the number of components specified by the value for ``k``.
 
 The output for PCA includes the following:
 
