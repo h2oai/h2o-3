@@ -1,7 +1,7 @@
 ``transform``
 -------------
 
-- Available in: PCA
+- Available in: PCA, GLRM
 - Hyperparameter: yes
 
 Description
