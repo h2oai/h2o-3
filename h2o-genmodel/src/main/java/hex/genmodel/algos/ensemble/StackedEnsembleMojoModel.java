@@ -15,21 +15,25 @@ public class StackedEnsembleMojoModel extends MojoModel {
     @Override
     public double[] score0(double[] row, double[] preds) {
         double[] basePreds = new double[_baseModelNum]; //Proper allocation for binomial and regression ensemble (one prediction per base model)
-        if(_nclasses > 2) {
-            basePreds = new double[_baseModelNum * _nclasses]; //Proper allocation for multinomial ensemble (class probabilities per base model)
-        }
         double[] basePredsRow = new double[preds.length];
-        for(int i = 0; i < _baseModelNum; ++i){
-            if(_nclasses == 1) { //Regression
-                _baseModels[i].score0(row, basePredsRow);
-                basePreds[i] = basePredsRow[0];
-            }else if(_nclasses == 2){ //Binomial
+        if(_nclasses > 2) { //Multinomial
+            int k = 0;
+            basePreds = new double[_baseModelNum * _nclasses]; //Proper allocation for multinomial ensemble (class probabilities per base model)
+            for(int i = 0; i < _baseModelNum; ++i){
+                for(int j = 0; j < _nclasses; ++j){
+                    basePreds[k] = _baseModels[i].score0(row, basePredsRow)[j+1];
+                    k++;
+                }
+            }
+        }else if(_nclasses == 2){ //Binomial
+            for(int i = 0; i < _baseModelNum; ++i) {
                 _baseModels[i].score0(row, basePredsRow);
                 basePreds[i] = basePredsRow[2];
-            }else{ //Multinomial
-                for(int j = 0; j < _nclasses; ++j){
-                    basePreds[j] = _baseModels[i].score0(row, basePredsRow)[j+1]; //First index is the class prediction, which we are not interested in for the base models
-                }
+            }
+        }else{ //Regression
+            for(int i = 0; i < _baseModelNum; ++i) { //Regression
+                _baseModels[i].score0(row, basePredsRow);
+                basePreds[i] = basePredsRow[0];
             }
         }
         _metaLearner.score0(basePreds, preds);
