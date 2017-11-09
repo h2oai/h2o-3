@@ -50,8 +50,10 @@ public abstract class Paxos {
         return 0;
       }
     }else{
-      // Just report that client with different md5 tried to connect
-      ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
+      if (!h2o._heartbeat.check_jar_md5()) {
+        // Just report that client with different md5 tried to connect
+        ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
+      }
     }
     
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
