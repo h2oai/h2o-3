@@ -101,4 +101,5 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/user_points
    data-science/algo-params/validation_frame
    data-science/algo-params/weights_column
+   data-science/algo-params/x
    data-science/algo-params/y
