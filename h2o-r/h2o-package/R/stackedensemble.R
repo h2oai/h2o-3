@@ -6,13 +6,12 @@
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' @param x (Currently not being used for anything in Stacked Ensemble -- leave blank). 
+#' A vector containing the names or indices of the predictor variables to use in building the model.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].

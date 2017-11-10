@@ -7,7 +7,7 @@
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param target_num_exemplars Targeted number of exemplars Defaults to 5000.
 #' @param rel_tol_num_exemplars Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents) Defaults to 0.5.

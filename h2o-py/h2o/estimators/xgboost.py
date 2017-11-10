@@ -50,7 +50,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def training_frame(self):
         """
-        Id of the training data frame (Not required, to allow initial validation of model parameters).
+        Id of the training data frame.
 
         Type: ``H2OFrame``.
         """
@@ -80,7 +80,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def nfolds(self):
         """
-        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+        Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
         """

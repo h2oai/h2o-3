@@ -6,15 +6,14 @@
 #' Fits a generalized linear model, specified by a response variable, a set of predictors, and a
 #' description of the error distribution.
 #' 
-#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-#'        index, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except y are used.
+#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
@@ -407,8 +406,8 @@ h2o.getFrame(res$destination_frame$name)
 #    args <- .verify_dataxy(training_frame, x, y)
 #    parms$ignored_columns <- args$x_ignore
 #    parms$response_column <- args$y
-#    parms$training_frame  = training_frame
-#    parms$beta_constraints = beta_constraints
+#    parms$training_frame  <- training_frame
+#    parms$beta_constraints <- beta_constraints
 #    if(!missing(model_id))
 #      parms$model_id <- model_id
 #    if(!missing(validation_frame))
