@@ -47,6 +47,8 @@ Defining a DRF Model
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
    independent variable. The data can be numeric or categorical.
 
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
@@ -66,7 +68,7 @@ Defining a DRF Model
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the
    cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
    name to add it to the list of columns excluded from the model. To add
    all columns, click the **All** button. To remove a column from the
    list of ignored columns, click the X next to the column name. To
@@ -294,7 +296,7 @@ FAQ
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, Na values are grouped with the outliers in the left-most bin.
+  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
@@ -316,6 +318,24 @@ FAQ
 -  **What if there are a large number of categorical factor levels?**
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
+
+- **Does the algo stop splitting when all the possible splits lead to worse error measures?**
+
+ It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
+
+- **When does the algo stop splitting on an internal node?**
+
+ A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
+
+- **How does DRF decide which feature to split on?**
+
+ It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
+
+ For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
+
+- **What is the difference between nbins and nbins_top_level?**
+
+ ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
 
 -  **How is variable importance calculated for DRF?**
 

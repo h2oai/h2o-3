@@ -1,26 +1,26 @@
 Cross-Validation
 ================
 
-N-fold cross-validation is used to validate a model internally, i.e.,
+`K-fold cross-validation <https://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validation>`__ is used to validate a model internally, i.e.,
 estimate the model performance without having to sacrifice a validation
 split. Also, you avoid statistical issues with your validation split (it
 might be a “lucky” split, especially for imbalanced data). Good values
-for N are around 5 to 10. Comparing the N validation metrics is always a
+for K are around 5 to 10. Comparing the K validation metrics is always a
 good idea, to check the stability of the estimation, before “trusting”
 the main model.
 
-You have to make sure, however, that the holdout sets for each of the N
+You have to make sure, however, that the holdout sets for each of the K
 models are good. For i.i.d. data, the random splitting of the data into
-N pieces (default behavior) or modulo-based splitting is fine. For
+K pieces (default behavior) or modulo-based splitting is fine. For
 temporal or otherwise structured data with distinct “events”, you have
 to make sure to split the folds based on the events. For example, if you
-have observations (e.g., user transactions) from N cities and you want
-to build models on users from only N-1 cities and validate them on the
+have observations (e.g., user transactions) from K cities and you want
+to build models on users from only K-1 cities and validate them on the
 remaining city (if you want to study the generalization to new cities,
 for example), you will need to specify the parameter “fold\_column" to
-be the city column. Otherwise, you will have rows (users) from all N
-cities randomly blended into the N folds, and all N cv models will see
-all N cities, making the validation less useful (or totally wrong,
+be the city column. Otherwise, you will have rows (users) from all K
+cities randomly blended into the K folds, and all K cross-validation models will see
+all K cities, making the validation less useful (or totally wrong,
 depending on the distribution of the data). This is known as “data
 leakage”: https://youtu.be/NHw\_aKO5KUM?t=889
 
@@ -30,11 +30,11 @@ How Cross-Validation is Calculated
 In general, for all algos that support the nfolds parameter, H2O’s
 cross-validation works as follows:
 
-For example, for nfolds=5, 6 models are built. The first 5 models
+For example, for ``nfolds=5``, 6 models are built. The first 5 models
 (cross-validation models) are built on 80% of the training data, and a
 different 20% is held out for each of the 5 models. Then the main model
 is built on 100% of the training data. This main model is the model you
-get back from H2O in R, Python and Flow.
+get back from H2O in R, Python and Flow (though the CV models are also stored and available to access later).
 
 This main model contains training metrics and cross-validation metrics
 (and optionally, validation metrics if a validation frame was provided).
@@ -79,21 +79,17 @@ validation metrics. Here’s an R code example showing the two approaches:
     library(h2o)
     h2o.init()
     df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-    df$CAPSULE <- as.factor(df$CAPSULE)
-    model_fit <- h2o.gbm(3:8,2,df,nfolds=5,seed=1234)
+    df[,"CAPSULE"] <- as.factor(df[,"CAPSULE"])
+    model_fit <- h2o.gbm(x = 3:8, y = 2, training_frame = df, nfolds = 5, seed = 1)
 
-    # Default: AUC of holdout predictions
-    h2o.auc(model_fit,xval=TRUE)
+    # AUC of cross-validated holdout predictions
+    h2o.auc(model_fit, xval = TRUE)
 
-    # Optional: Average the holdout AUCs
-    cvAUCs <- sapply(sapply(model_fit@model$cross_validation_models, `[[`, "name"), function(x) { h2o.auc(h2o.getModel(x), valid=TRUE) })
-    print(cvAUCs)
-    mean(cvAUCs)
 
 Using Cross-Validated Predictions
 ---------------------------------
 
-With cross-validated model building, H2O builds N+1 models: N
+With cross-validated model building, H2O builds K+1 models: K
 cross-validated model and 1 overarching model over all of the training
 data.
 
@@ -185,9 +181,7 @@ predictions has the same number of rows as the input frame.
 Combining Holdout Predictions
 -----------------------------
 
-The frame of cross-validated predictions is simply the superposition of
-the individual predictions. `Here's an example from
-R <https://0xdata.atlassian.net/browse/PUBDEV-2236>`__:
+The frame of cross-validated predictions is a single-column frame, where each row is the cross-validated prediction of that row.  If you want H2O to keep these cross-validated predictions, you must set ``keep_cross_validation_predictions`` to True.  Here's an example in R:
 
 ::
 
@@ -203,47 +197,9 @@ R <https://0xdata.atlassian.net/browse/PUBDEV-2236>`__:
                       nfolds = 5,  #If you want to specify folds directly, then use "fold_column" arg
                       keep_cross_validation_predictions = TRUE)
 
-    # This is where cv preds are stored:
-    fit@model$cross_validation_predictions$name
+    # This is where list of cv preds are stored (one element per fold):
+    fit@model[["cross_validation_predictions"]]
 
+    # However you most likely want a single-column frame including all cv preds
+    cvpreds <- h2o.getFrame(fit@model[["cross_validation_holdout_predictions_frame_id"]][["name"]])
 
-    # Compress the CV preds into a single H2O Frame:
-    # Each fold's preds are stored in a N x 1 col, where the row values for non-active folds are set to zero
-    # So we will compress this into a single 1-col H2O Frame (easier to digest)
-
-    nfolds <- fit@parameters$nfolds
-    predlist <- sapply(1:nfolds, function(v) h2o.getFrame(fit@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
-    cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
-    pred <- apply(cvpred_sparse, 1, sum)  # These are the cross-validated predicted cluster IDs for each of the 1:N observations
-
-This can be extended to other family types as well (multinomial,
-binomial, regression):
-
-::
-
-    # helper function
-    .compress_to_cvpreds <- function(h2omodel, family) {
-      # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
-      V <- h2omodel@allparameters$nfolds
-      if (family %in% c("bernoulli", "binomial")) {
-        predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
-      } else {
-        predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
-      }
-      cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
-      cvpred_col <- apply(cvpred_sparse, 1, sum)
-      return(cvpred_col)
-    }
-
-
-    # Extract cross-validated predicted values (in order of original rows)
-    h2o.cvpreds <- function(object) {
-
-      # Need to extract family from model object
-      if (class(object) == "H2OBinomialModel") family <- "binomial"
-      if (class(object) == "H2OMulticlassModel") family <- "multinomial"
-      if (class(object) == "H2ORegressionModel") family <- "gaussian"
-
-      cvpreds <- .compress_to_cvpreds(h2omodel = object, family = family)
-      return(cvpreds)
-    }

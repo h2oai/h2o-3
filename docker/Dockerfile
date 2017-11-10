@@ -86,6 +86,31 @@ RUN \
   groupadd -g ${JENKINS_GID} jenkins && \
   adduser --uid ${JENKINS_UID} -gid ${JENKINS_GID} --disabled-password --gecos "" jenkins
 
+# Copy H2O-3 build script and create required folders
+COPY scripts/build-h2o-3 /tmp
+RUN \
+  mkdir -p /opt/h2o-3 /gradle-user-home && \
+  chmod +x /tmp/build-h2o-3 && \
+  chown jenkins:jenkins /tmp/build-h2o-3 /opt/h2o-3 /gradle-user-home
+
+# Set GRADLE USER env var
+ENV GRADLE_USER_HOME '/gradle-user-home'
+ENV GRADLE_OPTS '-Dorg.gradle.daemon=false'
+ENV LANG 'C.UTF-8'
+ENV JAVA_VERSION '8'
+
+
+# build h2o-3 as custom user
+USER jenkins
+RUN \
+  /tmp/build-h2o-3
+
+USER root
+# remove the tmp and h2o-3 files
+# remove the /gradle-user-home/daemon as well since it won't break caches and the folder is messed up
+RUN \
+  rm -rf /tmp/build-h2o-3 /gradle-user-home/daemon
+
 # Expose ports for services
 EXPOSE 54321
 EXPOSE 8080

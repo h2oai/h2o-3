@@ -233,6 +233,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       metaBuilder._parms._train = levelOneTrainingFrame._key;
       metaBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
       metaBuilder._parms._response_column = _model.responseColumn;
+      //Enable lambda search if a validation frame is passed in to get a better GLM fit.
+      //Since we are also using non_negative to true, we should also set early_stopping = false.
+      if(metaBuilder._parms._valid != null){
+        metaBuilder._parms._lambda_search = true;
+        metaBuilder._parms._early_stopping = false;
+      }
 
       if(_model.modelCategory == ModelCategory.Regression){
           metaBuilder._parms._family = GLMModel.GLMParameters.Family.gaussian;

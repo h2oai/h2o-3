@@ -65,7 +65,7 @@ Optional Parameters
 Optional Data Parameters
 ''''''''''''''''''''''''
 
-- **x**: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
+- `x <data-science/algo-params/x.html>`__: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
 
 - `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is is used for early stopping within the training process of the individual models in the AutoML run.  
 
@@ -75,9 +75,12 @@ Optional Data Parameters
 
 - `weights_column <data-science/algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
 
+-  `ignored_columns <data-science/algo-params/ignored_columns.html>`__: (Optional, Python only) Specify the column or columns to be excluded from the model. 
 
 Optional Miscellaneous Parameters
 '''''''''''''''''''''''''''''''''
+
+- `nfolds <data-science/algo-params/nfolds.html>`__:  Number of folds for k-fold cross-validation of the models in the AutoML run. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 

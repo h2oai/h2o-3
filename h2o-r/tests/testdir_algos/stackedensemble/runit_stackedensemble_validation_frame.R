@@ -62,11 +62,19 @@ stackedensemble.validation_frame.test <- function() {
   expect_equal(inherits(h2o.performance(stack2, valid = TRUE), "H2OBinomialMetrics"), TRUE)
   expect_equal(class(h2o.auc(stack2, valid = TRUE)), "numeric")
   
-  
   # Compare test AUC (ensemble with validation_frame should not be worse)
   perf1 <- h2o.performance(model = stack1, newdata = test)
+  cat("\nstack 1 perf metrics(no validation)\n")
+  print(perf1)
   perf2 <- h2o.performance(model = stack2, newdata = test)
-  expect_true(h2o.auc(perf1) >= h2o.auc(perf2))
+  cat("\nstack 2 perf metrics(validation)\n")
+  print(perf2)
+  expect_true(h2o.auc(perf2) >= h2o.auc(perf1)) #Validation frame
+  cat("\nstack1 (no validation) auc\n")
+  print(h2o.auc(perf1))
+  cat("\nstack2 (validation) auc\n")
+  print(h2o.auc(perf2))
+
   
 }
 

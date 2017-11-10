@@ -3,6 +3,8 @@
 Productionizing H2O
 ===================
 
+.. _about-pojo-mojo:
+
 About POJOs and MOJOs
 ---------------------
 

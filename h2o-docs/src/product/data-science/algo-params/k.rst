@@ -1,7 +1,7 @@
 ``k``
 -----
 
-- Available in: K-Means, PCA
+- Available in: K-Means, PCA, GLRM
 - Hyperparameter: yes
 
 Description

@@ -1,13 +1,17 @@
 General
 -------
 
+**I updated my H2O to the newest version. Why can I no longer load a pre-trained model?**
+
+When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
+
 **How do I score using an exported JSON model?**
 
 Since JSON is just a representation format, it cannot be directly
 executed, so a JSON export can't be used for scoring. However, you can
 score by:
 
--  including the POJO in your execution stream and handing it
+-  including the POJO/MOJO in your execution stream and handing it
    observations one at a time
 
 or
