@@ -2189,7 +2189,7 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
 
-    def strdistance(self, y, measure=None):
+    def strdistance(self, y, measure=None, compare_empty=True):
         """
         Compute element-wise string distances between two H2OFrames. Both frames need to have the same
         shape and only contain string/factor columns.
@@ -2204,6 +2204,8 @@ class H2OFrame(object):
             - ``"jw"``:        Jaro, or Jaro-Winker distance
             - ``"soundex"``:   Distance based on soundex encoding
 
+        :param compare_empty if set to TRUE, empty strings will be handled as NaNs
+
         :examples:
           >>>
           >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
@@ -2215,7 +2217,8 @@ class H2OFrame(object):
         """
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
-        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure))._frame()
+        assert_is_type(compare_empty, bool)
+        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
 
 
     def asfactor(self):

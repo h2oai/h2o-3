@@ -4378,6 +4378,7 @@ h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x
 #'
 #' @param x An H2OFrame
 #' @param y A comparison H2OFrame
+#' @param compare_empty if set to TRUE, empty strings will be handled as NaNs
 #' @param method A string identifier indicating what string distance measure to use. Must be one of:
 #'   "lv"                   - Levenshtein distance
 #'   "lcs"                  - Longest common substring distance
@@ -4393,9 +4394,9 @@ h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x
 #' h2o.stringdist(x, y, method = "jw")
 #' }
 #' @export
-h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw", "soundex")) {
+h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw", "soundex"), compare_empty = TRUE) {
   if (! is.H2OFrame(x)) stop("`x` parameter needs to be an H2OFrame")
   if (! is.H2OFrame(y)) stop("`y` parameter needs to be an H2OFrame")
   method <- match.arg(method)
-  .newExpr("strDistance", x, y, .quote(method))
+  .newExpr("strDistance", x, y, .quote(method), compare_empty)
 }
