@@ -6,7 +6,7 @@ Introduction
 
 Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, `Random Forest <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html>`__ and `Gradient Boosting Machine (GBM) <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html>`__ are both ensemble learners.  Both bagging (e.g. Random Forest) and boosting (e.g. GBM) are methods for ensembling that take a collection of weak learners (e.g. decision tree) and form a single, strong learner.
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  This method currently supports regression and binary classification, and `multiclass support <https://0xdata.atlassian.net/browse/PUBDEV-3960>`__ is planned for a future release.
+H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Enemseble supports regression, binary classification and multiclass classification.
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
 
@@ -325,7 +325,7 @@ FAQ
 
 -  **How do I save ensemble models?**
 
-  H2O now supports saving and loading ensemble models. (Refer to `PUBDEV-3970 <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ for more information.) The steps are the same as those described in the `Saving and Loading a Model <../save-and-load-model.html>`__ section. Note that MOJO support is planned for Stacked Ensemble models in a future release. (See `PUBDEV-3877 <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__.)
+  H2O now supports saving and loading ensemble models. The steps are the same as those described in the `Saving and Loading a Model <../save-and-load-model.html>`__ section.  For productionizing Stacked Ensemble models, we recommend using `MOJOs <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/productionizing.html>`__.
 
 -  **Will an stacked ensemble always perform better than a single model?**
   
