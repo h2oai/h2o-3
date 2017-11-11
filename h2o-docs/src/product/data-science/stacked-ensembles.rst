@@ -45,8 +45,23 @@ The steps below describe the individual tasks involved in training and testing a
    b. Feed those predictions into the metalearner to generate the ensemble prediction.
 
 
-Defining an H2O Stacked Ensemble Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Training Base Models for the Ensemble
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble.  In order to stack these models toegther, a few things are required:
+
+- The models must be cross-validated using the same number of folds (e.g. ``nfolds = 5``).
+
+- The cross-validated predictions from all of the models must be preserved by setting ``keep_cross_validation_predictions`` to True.  This is the data which is used to train the metalearner, or "combiner", algorithm in the ensemble. 
+
+- You can train these models manually, or you can use a group of models from a grid search.
+
+- The models must be trained on the same ``training_frame``.  The rows must be identical, but you can use different sets of predictor columns across models if you choose.  Using base models trained on different subsets of the feature space will add more randomness/diversity to the set of base models, which in theory can improve ensemble performance.  However, using all available predictor columns for each base model will often still yield the best results (the more data, the better the models).  
+
+
+Defining an Stacked Ensemble Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
@@ -56,9 +71,9 @@ Defining an H2O Stacked Ensemble Model
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the independent variable (response column). The data can be numeric or categorical.
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+-  `x <algo-params/x.html>`__: (Currently not in use) Specify a vector containing the names or indices of the predictor variables to use when building the model. 
 
--  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_folds`` must be set to True. 
+-  **base_models**: Specify a list of model IDs that can be stacked together.  Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. 
 
   **Notes regarding** ``base_models``: 
 
@@ -66,7 +81,7 @@ Defining an H2O Stacked Ensemble Model
 
     - In R, you can specify a list of models in the ``base_models`` parameter. 
 
--  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. This option is disabled by default.
+-  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 
