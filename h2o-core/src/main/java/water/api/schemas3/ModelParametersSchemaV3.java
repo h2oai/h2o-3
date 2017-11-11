@@ -39,7 +39,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public ModelKeyV3 model_id;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT,
-      help = "Id of the training data frame (Not required, to allow initial validation of model parameters).")
+      help = "Id of the training data frame.")
   public FrameKeyV3 training_frame;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
@@ -47,7 +47,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public FrameKeyV3 validation_frame;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT,
-      help = "Number of folds for N-fold cross-validation (0 to disable or >= 2).")
+      help = "Number of folds for K-fold cross-validation (0 to disable or >= 2).")
   public int nfolds;
 
   @API(level = API.Level.expert, direction = API.Direction.INOUT,

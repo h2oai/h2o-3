@@ -503,20 +503,23 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
-        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-            #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
-            #'        index, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable)."""
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes"]:
+        x_string = """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+            #'        If x is missing, then all columns except y are used."""
+    elif algo == "stackedensemble":
+        x_string = """#' @param x (Currently not being used for anything in Stacked Ensemble -- leave blank). 
+                  #' A vector containing the names or indices of the predictor variables to use in building the model."""
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
     elif algo == "word2vec":
         return None
-    else:
+    else:  #Aggregator, PCA, SVD, K-Means: can this be grouped in with the others?  why are only character names supported?
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
+    if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+        return x_string + "\n" + """#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
+            #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model."""
 
 
 def help_extra_checks_for(algo):
@@ -787,8 +790,8 @@ def help_afterword_for(algo):
             #    args <- .verify_dataxy(training_frame, x, y)
             #    parms$ignored_columns <- args$x_ignore
             #    parms$response_column <- args$y
-            #    parms$training_frame  = training_frame
-            #    parms$beta_constraints = beta_constraints
+            #    parms$training_frame  <- training_frame
+            #    parms$beta_constraints <- beta_constraints
             #    if(!missing(model_id))
             #      parms$model_id <- model_id
             #    if(!missing(validation_frame))
