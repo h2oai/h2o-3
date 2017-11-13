@@ -105,7 +105,9 @@ public class AstStrDistance extends AstPrimitive {
         return new JaccardIndexComparator();
       case "jw":
       case "JaroWinkler":
-        return new JaroWinkler();
+        // JaroWinkler Comparator contains bug which will be fixed in Duke 1.3 release.
+        // Before that happens, we duplicate the JaroWinkler comparator class with the bug fixed
+        return new H2OJaroWinklerComparator();
       case "lv":
       case "Levenshtein":
         return new Levenshtein();
