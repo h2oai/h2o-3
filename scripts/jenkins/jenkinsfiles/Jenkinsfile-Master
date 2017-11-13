@@ -1,5 +1,4 @@
-def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
-def NODE_FOR_CHECKOUT = DEFAULT_NODE_LABEL + ' && !mr-0xc3'
+def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && !mr-0xc10'
 
 def executeTestStages = null
 def buildConfig = null
@@ -7,7 +6,7 @@ def buildConfig = null
 ansiColor('xterm') {
   timestamps {
 
-    node (NODE_FOR_CHECKOUT) {
+    node (DEFAULT_NODE_LABEL) {
       stage ('Prepare and Build') {
         dir ('h2o-3') {
           // clear the folder
