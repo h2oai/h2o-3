@@ -48,12 +48,24 @@ def cancelPreviousBuilds() {
     def exec = build.getExecutor()
 
     if (build.number != currentBuild.number && exec != null) {
-      exec.interrupt(
-        Result.ABORTED,
-        new CauseOfInterruption.UserInterruption(
-          "Aborted by #${currentBuild.id}"
-        )
-      )
+      // todo: this is the original version
+//      exec.interrupt(
+//        Result.ABORTED,
+//        [new CauseOfInterruption.UserInterruption(
+//          "Aborted by #${currentBuild.id}"
+//        )]
+//      )
+
+      // TODO: this is the altered version
+//      exec.interrupt(
+//        exec.abortResult(),
+//        [new CauseOfInterruption.UserInterruption(
+//          "Aborted by #${currentBuild.id}"
+//        )] as CauseOfInterruption[]
+//      )
+
+      // TODO: this is the simplest version, however this does not post the aborted by message
+      exec.doStop()
       println("Aborted previous running build #${build.number}")
     }
   }
