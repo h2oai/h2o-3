@@ -7,9 +7,9 @@ def buildConfig = null
 ansiColor('xterm') {
   timestamps {
 
-    node (NODE_FOR_CHECKOUT) {
+    node(NODE_FOR_CHECKOUT) {
       stage('Prepare and Build') {
-        dir ('h2o-3') {
+        dir('h2o-3') {
           // clear the folder
           deleteDir()
           // checkout H2O-3
@@ -20,6 +20,9 @@ ansiColor('xterm') {
             }
           }
         }
+
+        def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
+        setBuildDesc()
 
         def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
         buildConfig = prepareH2O3('MODE_NIGHTLY', DEFAULT_NODE_LABEL, true)
