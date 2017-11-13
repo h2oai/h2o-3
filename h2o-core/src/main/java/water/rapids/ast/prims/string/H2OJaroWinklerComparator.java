@@ -1,3 +1,11 @@
+/**
+ * This class is equal to
+ * https://github.com/larsga/Duke/blob/master/duke-core/src/main/java/no/priv/garshol/duke/comparators/JaroWinkler.java
+ *
+ * however it is not included in the last available Duke release. Once the new Duke version is release with this
+ * fixed class in, we can remove this class.
+ *
+ */
 package water.rapids.ast.prims.string;
 
 import no.priv.garshol.duke.Comparator;
