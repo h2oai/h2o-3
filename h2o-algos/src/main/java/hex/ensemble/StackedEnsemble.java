@@ -52,6 +52,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override protected StackedEnsembleDriver trainModelImpl() { return _driver = new StackedEnsembleDriver(); }
 
+  @Override public boolean haveMojo() { return true; }
+
   public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos, yay!

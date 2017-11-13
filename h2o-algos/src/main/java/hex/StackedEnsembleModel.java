@@ -1,6 +1,7 @@
 package hex;
 
 import hex.ensemble.StackedEnsemble;
+import hex.ensemble.StackedEnsembleMojoWriter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
@@ -376,6 +377,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     for (Key<Model> ks : _parms._base_models)
       ab.getKey(ks,fs);
     return super.readAll_impl(ab,fs);
+  }
+
+  @Override
+  public StackedEnsembleMojoWriter getMojo() {
+    return new StackedEnsembleMojoWriter(this);
   }
 
 }
