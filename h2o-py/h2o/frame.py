@@ -2204,7 +2204,7 @@ class H2OFrame(object):
             - ``"jw"``:        Jaro, or Jaro-Winker distance
             - ``"soundex"``:   Distance based on soundex encoding
 
-        :param compare_empty if set to TRUE, empty strings will be handled as NaNs
+        :param compare_empty if set to FALSE, empty strings will be handled as NaNs
 
         :examples:
           >>>

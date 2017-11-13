@@ -4378,7 +4378,7 @@ h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x
 #'
 #' @param x An H2OFrame
 #' @param y A comparison H2OFrame
-#' @param compare_empty if set to TRUE, empty strings will be handled as NaNs
+#' @param compare_empty if set to FALSE, empty strings will be handled as NaNs
 #' @param method A string identifier indicating what string distance measure to use. Must be one of:
 #'   "lv"                   - Levenshtein distance
 #'   "lcs"                  - Longest common substring distance
