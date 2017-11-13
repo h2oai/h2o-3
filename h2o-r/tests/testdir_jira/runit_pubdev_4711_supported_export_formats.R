@@ -145,7 +145,7 @@ stacked_ensemble_export <- function() {
                                 model_id = "my_ensemble_binomial",
                                 base_models = list(my_gbm@model_id, my_rf@model_id))
   expect_error(model, POJO)
-  expect_error(model, MOJO)
+  h2o.download_mojo(model, path = RESULT_DIR)
 }
 
 word2vec_export <- function() {

@@ -9,6 +9,7 @@ import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
+import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
 
 import java.util.ServiceLoader;
 
@@ -78,6 +79,10 @@ public class ModelMojoFactory {
 
       case "Support Vector Machine (*Spark*)":
         return new SvmMojoReader();
+
+      case "StackedEnsemble":
+      case "Stacked Ensemble":
+        return new StackedEnsembleMojoReader();
 
       default:
         // Try to load MOJO reader via service

@@ -144,7 +144,7 @@ def stacked_ensemble_export():
                                         base_models=[my_gbm.model_id, my_rf.model_id])
     model.train(x=x, y=y, training_frame=frame)
     expect_error(model.download_pojo, "Stacked Enemble", "POJO")
-    expect_error(model.download_mojo, "Stacked Enemble", "MOJO")
+    model.download_mojo(path=RESULT_DIR)
 
 
 def word2vec_export():
