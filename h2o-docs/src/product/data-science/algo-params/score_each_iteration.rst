@@ -1,3 +1,5 @@
+.. _score_each_iteration:
+
 ``score_each_iteration``
 ------------------------
 

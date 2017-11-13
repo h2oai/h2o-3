@@ -1,3 +1,5 @@
+.. _score_tree_interval:
+
 ``score_tree_interval``
 ------------------------
 
