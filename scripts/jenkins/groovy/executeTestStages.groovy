@@ -342,7 +342,7 @@ def unpackTestPackage(lang, String stageDir) {
     selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
     target: stageDir + '/'
   ]);
-  sh "cd ${stageDir}/h2o-3 && unzip -o test-package-${lang}.zip && rm test-package-${lang}.zip"
+  sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${lang}.zip && rm test-package-${lang}.zip"
 }
 
 def stageNameToDirName(String stageName) {
