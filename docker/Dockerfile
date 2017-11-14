@@ -115,5 +115,9 @@ RUN \
 EXPOSE 54321
 EXPOSE 8080
 
+# TODO: Install with other packages
+RUN \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y s3cmd
+
 CMD \
   ["/bin/bash"]
