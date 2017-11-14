@@ -192,6 +192,10 @@ test-package-java:
 	find . -name "*test*.sh" | zip -q -r test-package-java -@
 	find . -name "*test*.jar" | zip -q -r test-package-java -@
 
+test-junit-jenkins:
+	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	@$(MAKE) -f $(THIS_FILE) test-junit
+
 test-junit:
 	./gradlew test
 
