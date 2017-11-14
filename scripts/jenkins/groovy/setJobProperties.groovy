@@ -9,7 +9,6 @@ def call(buildConfig) {
       buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25'))
     ]
   )
-  currentBuild.description = buildConfig.getCommitMessage()
 }
 
 return this
