@@ -110,7 +110,7 @@ def call(buildConfig) {
       timeoutValue: 10, lang: buildConfig.LANG_PY
     ],
     [
-      stageName: 'Java 8 JUnit', target: 'test-junit', pythonVersion: '2.7',
+      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7',
       timeoutValue: 90, lang: buildConfig.LANG_JAVA, additionalTestPackages: [buildConfig.LANG_PY]
     ]
   ]
