@@ -154,6 +154,7 @@ test-package-java:
 		gradle/ \
 		buildSrc/ \
 		multiNodeUtils.sh \
+		h2o-app/ \
 		h2o-core/src/main/java/ \
 		h2o-core/src/test/java/ \
 		h2o-core/src/test/resources/*.jks \
@@ -183,96 +184,16 @@ test-package-java:
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
 		scripts/run.py py \
-		build/h2o.jar sort_crash.csv tests/doOnlyJunitSmokeTestList
-	find . -name "*.gradle" | zip -q -r test-package-java -@
+		sort_crash.csv tests/doOnlyJunitSmokeTestList
+	find . -name "*.gradle" | zip -q -r test-package-java \
+	    -x h2o-web/* \
+	    -x h2o-bindings/* \
+	    -@
 	find . -name "*test*.sh" | zip -q -r test-package-java -@
 	find . -name "*test*.jar" | zip -q -r test-package-java -@
 
-test-junit-algos:
-	@echo "+--JUnit H2O-Algos TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-algos:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-algos:testMultiNode
-	@echo "+--JUnit H2O-Algos TestSingleNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-algos:testSingleNode
+test-junit:
+	./gradlew test
 
-test-junit-avro-parser:
-	@echo "+--JUnit H2O-AVRO-Parser TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-avro-parser:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-avro-parser:testMultiNode
-
-test-junit-core:
-	echo "+--JUnit H2O-Core TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-core:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-core:testMultiNode
-
-test-junit-ext-xgboost:
-	@echo "+--JUnit H2O-Ext-XGBoost TestSingleNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-ext-xgboost:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-ext-xgboost:testSingleNode
-
-test-junit-orc-parser:
-	@echo "+--JUnit H2O-ORC-Parser TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-orc-parser:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-orc-parser:testMultiNode
-
-test-junit-parquet-parser:
-	@echo "+--JUnit H2O-PARQUET-Parser TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-parquet-parser:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-parquet-parser:testMultiNode
-
-test-junit-persist-s3:
-	@echo "+--JUnit H2O-Persist-S3 TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-persist-s3:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-persist-s3:testMultiNode
-
-test-junit-persist-hdfs:
-	@echo "+--JUnit H2O-Persist-HDFS TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-persist-hdfs:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-persist-hdfs:testMultiNode
-
-test-junit-scala-2.10:
-	@echo "+--JUnit H2O-Scala_2.10 TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-scala_2.10:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-scala_2.10:testMultiNode
-
-test-junit-scala-2.11:
-	@echo "+--JUnit H2O-Scala_2.11 TestMultiNode--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-scala_2.11:cpLibs
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-scala_2.11:testMultiNode
-
-test-junit-integ:
-	@echo "+--JUnit H2O-Test-Integ runPythonMultiJVMTests--+"
-	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
-	./gradlew h2o-test-integ:runPythonMultiJVMTests
-
-test-junit: test-junit-algos test-junit-avro-parser test-junit-core test-junit-ext-xgboost \
-	test-junit-orc-parser test-junit-parquet-parser test-junit-persist-s3 test-junit-persist-hdfs \
-	test-junit-scala-2.10 test-junit-scala-2.11 test-junit-integ
-
-JUNIT_SMOKE_DOONLY = $$(head -n 1 tests/doOnlyJunitSmokeTestList)
 test-junit-smoke:
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-core
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-algos
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.10
-	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.11
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test
