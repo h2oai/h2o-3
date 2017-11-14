@@ -99,7 +99,6 @@ ENV GRADLE_OPTS '-Dorg.gradle.daemon=false'
 ENV LANG 'C.UTF-8'
 ENV JAVA_VERSION '8'
 
-
 # build h2o-3 as custom user
 USER jenkins
 RUN \
@@ -111,13 +110,18 @@ USER root
 RUN \
   rm -rf /tmp/build-h2o-3 /gradle-user-home/daemon
 
+# Install s3cmd
+ENV S3_CMD_VERSION '2.0.1'
+RUN \
+  cd /opt/ && \
+  wget http://netix.dl.sourceforge.net/project/s3tools/s3cmd/${S3_CMD_VERSION}/s3cmd-${S3_CMD_VERSION}.tar.gz && \
+  tar xvzf s3cmd-${S3_CMD_VERSION}.tar.gz && \
+  cd s3cmd-${S3_CMD_VERSION} && \
+  python setup.py install
+
 # Expose ports for services
 EXPOSE 54321
 EXPOSE 8080
-
-# TODO: Install with other packages
-RUN \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y s3cmd
 
 CMD \
   ["/bin/bash"]
