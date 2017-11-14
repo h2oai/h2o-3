@@ -356,22 +356,23 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         for (int j = 0; j < dpreds.length; ++j)
           assert weights[j] == 1.0;
       Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
-      Vec p0 = p1.makeCon(0);
-      Vec label = p1.makeCon(0., Vec.T_CAT);
-      new MRTask() {
-        public void map(Chunk l, Chunk p0, Chunk p1) {
-          for (int i=0; i<l._len; ++i) {
-            double p = p1.atd(i);
-            p0.set(i, 1. - p);
-            double[] row = new double[]{0, 1-p, p};
-            l.set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
+      Frame partPreds = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          Chunk p1c = cs[0];
+          for (int i=0; i< p1c._len; ++i) {
+            double p1 = p1c.atd(i);
+            double p0 = 1. - p1;
+            double[] row = new double[]{0, p0, p1};
+            int label = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold());
+            ncs[0].addNum(label);
+            ncs[1].addNum(p0);
           }
         }
-      }.doAll(label,p0,p1);
+      }.doAll(new byte[]{Vec.T_CAT, Vec.T_NUM}, p1).outputFrame(null, null, new String[][]{new String[]{"Y", "N"}, null});
       if (computeMetrics)
         mm = ModelMetricsBinomial.make(p1, resp);
-      label.setDomain(new String[]{"N","Y"}); // ignored
-      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{label,p0,p1});
+      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{partPreds.vec(0), partPreds.vec(1), p1});
     } else {
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
