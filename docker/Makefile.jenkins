@@ -144,7 +144,7 @@ test-info:
 	fi
 
 test-demos:
-	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-3.15.0.99999-py2.py3-none-any.whl --wipeall --numclouds 1 --jvm.xmx 5g
+	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-package-java:
 	zip -q -r test-package-java \
@@ -179,7 +179,7 @@ test-package-java:
 		h2o-persist-s3/build/libs/h2o-persist-s3.jar \
 		h2o-extensions/xgboost/ \
 		h2o-genmodel-extensions/ \
-		h2o-jaas-pam/build/libs/h2o-jaas-pam-3.15.0.jar \
+		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-core/build/classes/main \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
