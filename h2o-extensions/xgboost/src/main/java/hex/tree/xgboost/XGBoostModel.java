@@ -1,6 +1,5 @@
 package hex.tree.xgboost;
 
-import com.sun.jna.Memory;
 import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
