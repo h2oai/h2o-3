@@ -121,7 +121,6 @@ public class Score extends MRTask<Score> {
   private ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, Frame preds) {
     ModelMetrics mm;
     if (model._output.nclasses() == 2 && _computeGainsLift) {
-      if (preds == null)
       assert preds != null : "Predictions were pre-created";
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
