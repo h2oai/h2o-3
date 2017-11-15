@@ -56,7 +56,7 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = (ModelMetricsSupervised.MetricBuilderSupervised) m.makeMetricBuilder(domain);
+    _mb = m.makeMetricBuilder(domain);
 //    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
@@ -139,7 +139,7 @@ public class Score extends MRTask<Score> {
   }
 
   static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
-    ModelMetricsSupervised.MetricBuilderSupervised mb = (ModelMetricsSupervised.MetricBuilderSupervised) model.makeMetricBuilder(resp.domain());
+    ModelMetricsSupervised.MetricBuilderSupervised mb = model.makeMetricBuilder(resp.domain());
     return mb.makePredictionCache(model, resp);
   }
 
