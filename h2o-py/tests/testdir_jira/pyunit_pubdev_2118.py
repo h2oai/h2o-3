@@ -17,7 +17,7 @@ def mycomp(l,r):
         print(zz)
         diff = max([abs(li-ri) for li,ri in zz])
         print('diff',diff)
-        z = [abs(li-ri)<1e-8 for li,ri in zz]
+        z = [abs(li-ri)<5e-8 for li,ri in zz]
 
         assert all(z), str(i) + ":" +  str(z)
 

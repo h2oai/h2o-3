@@ -2,9 +2,13 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.Score;
 import hex.tree.SharedTreeModel;
 import water.Key;
+import water.fvec.Chunk;
 import water.util.SBPrintStream;
+
+import java.util.Arrays;
 
 public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
@@ -40,12 +44,38 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     super(selfKey,parms,output);
   }
 
+  @Override
+  protected final double[] score0Incremental(Score.ScoreIncInfo sii, Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+    assert _output.nfeatures() == tmp.length;
+    for (int i = 0; i < tmp.length; i++)
+      tmp[i] = chks[i].atd(row_in_chunk);
+
+    if (sii._startTree == 0)
+      Arrays.fill(preds,0);
+    else
+      for (int i = 0; i < sii._workspaceColCnt; i++)
+        preds[sii._predsAryOffset + i] = chks[sii._workspaceColIdx + i].atd(row_in_chunk);
+
+    score0(tmp, preds, offset, sii._startTree, _output._treeKeys.length);
+
+    for (int i = 0; i < sii._workspaceColCnt; i++)
+      chks[sii._workspaceColIdx + i].set(row_in_chunk, preds[sii._predsAryOffset + i]);
+
+    score0Probabilities(preds, offset);
+    score0PostProcessSupervised(preds, tmp);
+    return preds;
+  }
+
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset, int ntrees) {
     super.score0(data, preds, offset, ntrees);    // These are f_k(x) in Algorithm 10.4
+    return score0Probabilities(preds, offset);
+  }
+
+  private double[] score0Probabilities(double preds[/*nclasses+1*/], double offset) {
     if (_parms._distribution == DistributionFamily.bernoulli || _parms._distribution == DistributionFamily.modified_huber) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = new Distribution(_parms).linkInv(f);
