@@ -975,7 +975,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           throw new IllegalArgumentException("Test/Validation dataset is missing response column '" + response + "'");
         else if (isOffset)
           throw new IllegalArgumentException("Test/Validation dataset is missing offset column '" + offset + "'");
-        else if (isWeights && computeMetrics) {
+        else if (isWeights) {
           if (expensive) {
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
