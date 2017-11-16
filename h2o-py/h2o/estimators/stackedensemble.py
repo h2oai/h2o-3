@@ -49,7 +49,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "keep_levelone_frame"}
+                      "keep_levelone_frame", "metalearner_nfolds", "metalearner_fold_assignment",
+                      "metalearner_fold_column"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -140,5 +141,51 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def keep_levelone_frame(self, keep_levelone_frame):
         assert_is_type(keep_levelone_frame, None, bool)
         self._parms["keep_levelone_frame"] = keep_levelone_frame
+
+
+    @property
+    def metalearner_nfolds(self):
+        """
+        Number of folds for k-fold cross-validation of the metalearner algorithm (default is 0: no cross-validation).
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("metalearner_nfolds")
+
+    @metalearner_nfolds.setter
+    def metalearner_nfolds(self, metalearner_nfolds):
+        assert_is_type(metalearner_nfolds, None, int)
+        self._parms["metalearner_nfolds"] = metalearner_nfolds
+
+
+    @property
+    def metalearner_fold_assignment(self):
+        """
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``.
+        """
+        return self._parms.get("metalearner_fold_assignment")
+
+    @metalearner_fold_assignment.setter
+    def metalearner_fold_assignment(self, metalearner_fold_assignment):
+        assert_is_type(metalearner_fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
+        self._parms["metalearner_fold_assignment"] = metalearner_fold_assignment
+
+
+    @property
+    def metalearner_fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
+        return self._parms.get("metalearner_fold_column")
+
+    @metalearner_fold_column.setter
+    def metalearner_fold_column(self, metalearner_fold_column):
+        assert_is_type(metalearner_fold_column, None, str)
+        self._parms["metalearner_fold_column"] = metalearner_fold_column
 
 

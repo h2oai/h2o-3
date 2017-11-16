@@ -233,20 +233,25 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       metaBuilder._parms._train = levelOneTrainingFrame._key;
       metaBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
       metaBuilder._parms._response_column = _model.responseColumn;
+      metaBuilder._parms._nfolds = _model.metalearner_nfolds;  //cross-validation of the metalearner
+      if (_model.metalearner_nfolds > 1) {
+        metaBuilder._parms._fold_assignment = _model.metalearner_fold_assignment;  //cross-validation of the metalearner
+      }
+      metaBuilder._parms._fold_column = _model.metalearner_fold_column;  //cross-validation of the metalearner
       //Enable lambda search if a validation frame is passed in to get a better GLM fit.
       //Since we are also using non_negative to true, we should also set early_stopping = false.
-      if(metaBuilder._parms._valid != null){
+      if (metaBuilder._parms._valid != null) {
         metaBuilder._parms._lambda_search = true;
         metaBuilder._parms._early_stopping = false;
       }
 
-      if(_model.modelCategory == ModelCategory.Regression){
+      if (_model.modelCategory == ModelCategory.Regression) {
           metaBuilder._parms._family = GLMModel.GLMParameters.Family.gaussian;
-      }else if(_model.modelCategory == ModelCategory.Binomial){
+      } else if (_model.modelCategory == ModelCategory.Binomial) {
           metaBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-      }else if(_model.modelCategory == ModelCategory.Multinomial){
+      } else if (_model.modelCategory == ModelCategory.Multinomial) {
           metaBuilder._parms._family = GLMModel.GLMParameters.Family.multinomial;
-      }else{
+      } else {
           throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
       }
 
@@ -267,9 +272,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       _model._output._metalearner = metaBuilder.get();
       _model.doScoreMetrics(_job);
       // _model._output._model_summary = createModelSummaryTable(model._output);
-      if(_parms._keep_levelone_frame) {
+      if (_parms._keep_levelone_frame) {
         _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
-      }else{
+      } else{
         DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
       }
       if (null != levelOneValidationFrame) {
