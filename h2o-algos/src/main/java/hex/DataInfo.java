@@ -1132,7 +1132,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       if(_weights) {
         rows[i].weight = chunks[weightChunkId()].atd(i);
-        if(Double.isNaN(rows[i].weight))
+        if(Double.isNaN(rows[i].weight) && (! _valid))
           rows[i].predictors_bad = true;
       }
     }
@@ -1220,11 +1220,8 @@ public class DataInfo extends Keyed<DataInfo> {
     res._predictor_transform = TransformType.NONE;
     res._response_transform = TransformType.NONE;
     res._adaptedFrame = adaptFrame;
-    if (_weights) {
-      Vec wvec = adaptFrame.vec(names[weightChunkId()]);
-      res._weights = wvec != null && wvec.naCnt() < wvec.length(); // only consider the weights column if it is actually defined
-    } else
-      res._weights = false;
+    res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
+    res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
     res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
     int resId = adaptFrame.find(names[responseChunkId(0)]);
     if(resId == -1 || adaptFrame.vec(resId).isBad())
