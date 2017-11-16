@@ -80,7 +80,7 @@
 #' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
-#'        max_active_predictors is set to 7000 otherwise it is set to 100000000. Defaults to -1.
+#'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.

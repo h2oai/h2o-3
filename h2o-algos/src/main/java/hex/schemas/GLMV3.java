@@ -157,7 +157,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="Maximum number of active predictors during computation. Use as a stopping criterion" +
     " to prevent expensive model building with many predictors." + " Default indicates: If the IRLSM solver is used," +
-    " the value of max_active_predictors is set to 7000 otherwise it is set to 100000000.", direction = Direction.INPUT, level = Level.expert)
+    " the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.", direction = Direction.INPUT, level = Level.expert)
     public int max_active_predictors = -1;
 
     @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction=Direction.INPUT, level=Level.expert)
