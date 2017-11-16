@@ -57,7 +57,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // GLM uses a different column name than the other algos, yay!
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .
       levelOneFrame.add(aModel._key.toString(), preds);
-    } else if(aModel._output.isMultinomialClassifier()){ //Multinomial
+    } else if(aModel._output.isMultinomialClassifier()) { //Multinomial
       levelOneFrame.add(aModelsPredictions);
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
@@ -146,9 +146,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
 
         baseModels.add(aModel);
-        if(!aModel._output.isMultinomialClassifier()){
+        if (!aModel._output.isMultinomialClassifier()) {
             baseModelPredictions.add(aFrame);
-        }else {
+        } else {
             List<String> predColNames= new ArrayList<>(Arrays.asList(aFrame.names()));
             predColNames.remove("predict");
             String[] multClassNames  = predColNames.toArray(new String[0]);
@@ -184,9 +184,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Frame aPred = aModel.score(actuals, predsKey.toString()); // TODO: cache predictions
 
         baseModels.add(aModel);
-        if(!aModel._output.isMultinomialClassifier()){
+        if (!aModel._output.isMultinomialClassifier()) {
           baseModelPredictions.add(aPred);
-        }else {
+        } else {
           List<String> predColNames= new ArrayList<>(Arrays.asList(aPred.names()));
           predColNames.remove("predict");
           String[] multClassNames  = predColNames.toArray(new String[0]);
@@ -235,7 +235,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       metaBuilder._parms._response_column = _model.responseColumn;
       metaBuilder._parms._nfolds = _model._parms.metalearner_nfolds;  //cross-validation of the metalearner
       if (_model._parms.metalearner_nfolds > 1) {
-        if(_model._parms.metalearner_fold_assignment == null){
+        if (_model._parms.metalearner_fold_assignment == null) {
           metaBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
         } else {
           metaBuilder._parms._fold_assignment = _model._parms.metalearner_fold_assignment;  //cross-validation of the metalearner

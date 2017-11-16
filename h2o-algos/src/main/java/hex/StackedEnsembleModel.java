@@ -52,14 +52,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String javaName() { return StackedEnsembleModel.class.getName(); }
     @Override public long progressUnits() { return 1; }  // TODO
 
-    /*
-    public static enum SelectionStrategy { choose_all }
-
-    // TODO: make _selection_strategy an object:
-    // How do we choose which models to stack?
-    public SelectionStrategy _selection_strategy;
-    */
-
     /** Which models can we choose from? */
     public Key<Model> _base_models[] = new Key[0];
     public boolean _keep_levelone_frame = false;
@@ -265,7 +257,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
-      if(!aModel.isSupervised()){
+      if (!aModel.isSupervised()) {
         throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
       }
 

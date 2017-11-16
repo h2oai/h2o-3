@@ -16,8 +16,8 @@
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
-#' @param metalearner_nfolds Number of folds for k-fold cross-validation of the metalearner algorithm (default is 0: no cross-validation).
-#'        Defaults to 0.
+#' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
+#'        0.
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified".

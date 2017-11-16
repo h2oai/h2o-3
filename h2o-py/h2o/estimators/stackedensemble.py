@@ -146,7 +146,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def metalearner_nfolds(self):
         """
-        Number of folds for k-fold cross-validation of the metalearner algorithm (default is 0: no cross-validation).
+        Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
         """

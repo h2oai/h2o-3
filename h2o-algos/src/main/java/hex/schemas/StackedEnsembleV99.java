@@ -22,16 +22,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_nfolds",
       "metalearner_fold_assignment",
       "metalearner_fold_column",
-      //"selection_strategy",
     };
 
-    /*
-    @API(help = "Strategy for choosing which models to stack.", values = { "choose_all" }, gridable = false)
-    public StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy selection_strategy;
-
-    @API(help = "List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must be set to True.", required = true)
-    public KeyV3.ModelKeyV3 base_models[];
-    */
 
     @API(help = "List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
     public KeyV3.ModelKeyV3 base_models[];
@@ -39,7 +31,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(help = "Keep level one frame used for metalearner training.")
     public boolean keep_levelone_frame;
 
-    @API(help = "Number of folds for k-fold cross-validation of the metalearner algorithm (default is 0: no cross-validation).")
+    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+            help = "Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).")
     public int metalearner_nfolds;
 
     // For Ensemble cross-validation
