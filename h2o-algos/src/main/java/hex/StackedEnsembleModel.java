@@ -36,11 +36,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public Parameters.FoldAssignmentScheme basemodel_fold_assignment;  //From 1st base model
   public String basemodel_fold_column;  //From 1st base model
 
-  // Metalearner params
-  public int metalearner_nfolds = 0;
-  public Parameters.FoldAssignmentScheme metalearner_fold_assignment;
-  public String metalearner_fold_column;
-
   public long seed = -1; //From 1st base model
 
 
@@ -68,6 +63,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     /** Which models can we choose from? */
     public Key<Model> _base_models[] = new Key[0];
     public boolean _keep_levelone_frame = false;
+
+    // Metalearner params
+    public int metalearner_nfolds;
+    public Parameters.FoldAssignmentScheme metalearner_fold_assignment;
+    public String metalearner_fold_column;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
