@@ -637,7 +637,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
         building with many predictors. Default indicates: If the IRLSM solver is used, the value of
-        max_active_predictors is set to 7000 otherwise it is set to 100000000.
+        max_active_predictors is set to 5000 otherwise it is set to 100000000.
 
         Type: ``int``  (default: ``-1``).
         """
