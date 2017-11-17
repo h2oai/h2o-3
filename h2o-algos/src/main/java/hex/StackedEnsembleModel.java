@@ -57,9 +57,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public boolean _keep_levelone_frame = false;
 
     // Metalearner params
-    public int metalearner_nfolds;
-    public Parameters.FoldAssignmentScheme metalearner_fold_assignment;
-    public String metalearner_fold_column;
+    public int _metalearner_nfolds;
+    public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
+    public String _metalearner_fold_column;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {

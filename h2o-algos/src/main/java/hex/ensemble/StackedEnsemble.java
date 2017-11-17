@@ -233,15 +233,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       metaBuilder._parms._train = levelOneTrainingFrame._key;
       metaBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
       metaBuilder._parms._response_column = _model.responseColumn;
-      metaBuilder._parms._nfolds = _model._parms.metalearner_nfolds;  //cross-validation of the metalearner
-      if (_model._parms.metalearner_nfolds > 1) {
-        if (_model._parms.metalearner_fold_assignment == null) {
+      metaBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+      if (_model._parms._metalearner_nfolds > 1) {
+        if (_model._parms._metalearner_fold_assignment == null) {
           metaBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
         } else {
-          metaBuilder._parms._fold_assignment = _model._parms.metalearner_fold_assignment;  //cross-validation of the metalearner
+          metaBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
         }
       }
-      metaBuilder._parms._fold_column = _model._parms.metalearner_fold_column;  //cross-validation of the metalearner
+      metaBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
       //Enable lambda search if a validation frame is passed in to get a better GLM fit.
       //Since we are also using non_negative to true, we should also set early_stopping = false.
       if (metaBuilder._parms._valid != null) {
