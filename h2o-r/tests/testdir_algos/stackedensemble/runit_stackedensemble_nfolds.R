@@ -105,7 +105,7 @@ stackedensemble.nfolds.test <- function() {
   # Check that metalearner_fold_assignment is correctly stored in model output
   expect_equal(stack3@parameters$metalearner_fold_assignment, "Modulo")
   expect_equal(stack3@allparameters$metalearner_fold_assignment, "Modulo")
-  # Check that fold_assignment is passed through to metalearner
+  # Check that metalearner_fold_assignment is passed through to metalearner
   meta3 <- h2o.getModel(stack3@model$metalearner$name)
   expect_equal(meta3@parameters$fold_assignment, "Modulo")
   expect_equal(meta3@allparameters$fold_assignment, "Modulo")
