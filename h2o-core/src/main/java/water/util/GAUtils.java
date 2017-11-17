@@ -16,11 +16,13 @@ public class GAUtils {
     boolean logged = logRequest2(uri, header);
 
     final boolean debug = false;
-    if (debug && logged) {
-      System.out.println("GA LOGGED:  " + uri);
-    }
-    else {
-      System.out.println("GA DROPPED: " + uri);
+    if (debug) {
+      if (logged) {
+        System.out.println("GA LOGGED:  " + uri);
+      }
+      else {
+        System.out.println("GA DROPPED: " + uri);
+      }
     }
   }
 
