@@ -1,13 +1,12 @@
-def call(customEnv, buildConfig, timeoutValue, timeoutUnit, block) {
+def call(customEnv, image, registry, timeoutValue, timeoutUnit, block) {
 
   def AWS_CREDENTIALS_ID = 'AWS S3 Credentials'
 
-  def registry = 'docker.h2o.ai'
-  def image = "${registry}/opsh2oai/h2o-3-runtime:${buildConfig.DOCKER_IMAGE_VERSION_TAG}"
   withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
       sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
       sh "docker pull ${image}"
   }
+
   withEnv(customEnv) {
     timeout(time: timeoutValue, unit: timeoutUnit) {
       docker.withRegistry("https://${registry}") {

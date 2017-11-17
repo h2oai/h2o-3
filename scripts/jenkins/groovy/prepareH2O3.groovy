@@ -1,4 +1,4 @@
-def call(final String mode, final String nodeLabel, final boolean overrideDetectionChange) {
+def call(final String mode, final boolean overrideDetectionChange) {
 
   def findCmd = "find . -maxdepth 1 -not -name 'h2o-3' -not -name h2o-3@tmp -not -name '.'"
   def deleteCmd = " -exec rm -rf '{}' ';'"
@@ -13,6 +13,8 @@ def call(final String mode, final String nodeLabel, final boolean overrideDetect
 
   // get commit message
   def commitMessage = sh(script: 'cd h2o-3 && git log -1 --pretty=%B', returnStdout: true).trim()
+  env.GIT_SHA = "${sh(script: 'cd h2o-3 && git rev-parse HEAD', returnStdout: true).trim()}"
+  env.GIT_DATE = "${sh(script: 'cd h2o-3 && git show -s --format=%ci', returnStdout: true).trim()}"
 
   // get changes between merge base and this commit
   sh 'cd h2o-3 && git fetch --no-tags --progress https://github.com/h2oai/h2o-3 +refs/heads/master:refs/remotes/origin/master'
@@ -21,12 +23,13 @@ def call(final String mode, final String nodeLabel, final boolean overrideDetect
 
   // load buildConfig script and initialize the object
   def buildConfig = load('h2o-3/scripts/jenkins/groovy/buildConfig.groovy')
-  buildConfig.initialize(mode, nodeLabel, commitMessage, changes, overrideDetectionChange)
-  echo "Build Config: ${buildConfig.toString()}"
+  buildConfig.initialize(this, mode, commitMessage, changes, overrideDetectionChange)
 
   // Load build script and execute it
   def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
   buildH2O3(buildConfig)
+  buildConfig.readVersion(readFile('h2o-3/h2o-3-DESCRIPTION'))
+  echo "Build Config: ${buildConfig.toString()}"
   return buildConfig
 }
 
