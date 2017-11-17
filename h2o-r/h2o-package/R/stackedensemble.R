@@ -15,13 +15,12 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].
-#' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
 #'        0.
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified".
-#' @param metalearner_fold_column Column with cross-validation fold index assignment per observation.
+#' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 
 #' # See example R code here:
@@ -32,10 +31,9 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
                                 base_models = list(),
-                                keep_levelone_frame = FALSE,
                                 metalearner_nfolds = 0,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                metalearner_fold_column = NULL
+                                keep_levelone_frame = FALSE
                                 ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -83,14 +81,12 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
-  if (!missing(keep_levelone_frame))
-    parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(metalearner_nfolds))
     parms$metalearner_nfolds <- metalearner_nfolds
   if (!missing(metalearner_fold_assignment))
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
-  if (!missing(metalearner_fold_column))
-    parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(keep_levelone_frame))
+    parms$keep_levelone_frame <- keep_levelone_frame
   # Error check and build model
   .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99) 
 }

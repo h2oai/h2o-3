@@ -52,14 +52,16 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String javaName() { return StackedEnsembleModel.class.getName(); }
     @Override public long progressUnits() { return 1; }  // TODO
 
-    /** Which models can we choose from? */
+    // base_models is a list of base model keys to ensemble (must have been cross-validated)
     public Key<Model> _base_models[] = new Key[0];
+    // Should we keep the level-one frame of cv preds + repsonse col?
     public boolean _keep_levelone_frame = false;
 
     // Metalearner params
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
-    public String _metalearner_fold_column;
+    // TO DO: Add _metalearner_fold_column
+    // public String _metalearner_fold_column;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {

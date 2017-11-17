@@ -49,8 +49,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "keep_levelone_frame", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column"}
+                      "metalearner_nfolds", "metalearner_fold_assignment", "keep_levelone_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -129,21 +128,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
-    def keep_levelone_frame(self):
-        """
-        Keep level one frame used for metalearner training.
-
-        Type: ``bool``  (default: ``False``).
-        """
-        return self._parms.get("keep_levelone_frame")
-
-    @keep_levelone_frame.setter
-    def keep_levelone_frame(self, keep_levelone_frame):
-        assert_is_type(keep_levelone_frame, None, bool)
-        self._parms["keep_levelone_frame"] = keep_levelone_frame
-
-
-    @property
     def metalearner_nfolds(self):
         """
         Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).
@@ -175,17 +159,17 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
-    def metalearner_fold_column(self):
+    def keep_levelone_frame(self):
         """
-        Column with cross-validation fold index assignment per observation.
+        Keep level one frame used for metalearner training.
 
-        Type: ``str``.
+        Type: ``bool``  (default: ``False``).
         """
-        return self._parms.get("metalearner_fold_column")
+        return self._parms.get("keep_levelone_frame")
 
-    @metalearner_fold_column.setter
-    def metalearner_fold_column(self, metalearner_fold_column):
-        assert_is_type(metalearner_fold_column, None, str)
-        self._parms["metalearner_fold_column"] = metalearner_fold_column
+    @keep_levelone_frame.setter
+    def keep_levelone_frame(self, keep_levelone_frame):
+        assert_is_type(keep_levelone_frame, None, bool)
+        self._parms["keep_levelone_frame"] = keep_levelone_frame
 
 

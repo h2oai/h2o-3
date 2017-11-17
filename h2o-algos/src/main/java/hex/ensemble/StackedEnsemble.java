@@ -241,7 +241,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           metaBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
         }
       }
-      metaBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
+      // TO DO: Add metalearner_fold_column
+      //metaBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
       //Enable lambda search if a validation frame is passed in to get a better GLM fit.
       //Since we are also using non_negative to true, we should also set early_stopping = false.
       if (metaBuilder._parms._valid != null) {
