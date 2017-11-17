@@ -274,7 +274,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Log.info("Finished training metalearner model.");
 
       _model._output._metalearner = metaBuilder.get();
-      _model.doScoreMetrics(_job);
+      _model.doScoreOrCopyMetrics(_job);
       // _model._output._model_summary = createModelSummaryTable(model._output);
       if (_parms._keep_levelone_frame) {
         _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object

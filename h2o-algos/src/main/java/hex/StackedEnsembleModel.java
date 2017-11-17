@@ -179,13 +179,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       return ModelMetrics.getFromDKV(this, frame);
   }
 
-  public void doScoreMetrics(Job job) {
-
+  public void doScoreOrCopyMetrics(Job job) {
+    // To get ensemble training metrics, the training frame needs to be re-scored since
+    // training metrics from metalearner are not equal to ensemble training metrics
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
-    if (null != this._parms.valid()) {
-      this._output._validation_metrics = doScoreMetricsOneFrame(this._parms.valid(), job);
-    }
+    // Validation and cross-validation metrics can be copied from metalearner (may be null)
+    this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+    this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics;
   }
+
 
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
