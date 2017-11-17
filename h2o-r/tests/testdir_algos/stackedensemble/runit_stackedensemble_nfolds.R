@@ -17,7 +17,7 @@ stackedensemble.nfolds.test <- function() {
   x <- setdiff(names(train), y)
   train[,y] <- as.factor(train[,y])
   test[,y] <- as.factor(test[,y])
-  nfolds <- 5
+  nfolds <- 5  #number of folds for base learners
 
   # Train & Cross-validate a GBM
   my_gbm <- h2o.gbm(x = x,

@@ -35,7 +35,7 @@ def stackedensemble_nfolds_test():
     train[y] = train[y].asfactor()
     test[y] = test[y].asfactor()
 
-    # Set number of folds
+    # Set number of folds for base learners
     nfolds = 5
 
     # Train and cross-validate a GBM
@@ -67,32 +67,39 @@ def stackedensemble_nfolds_test():
     # Train a stacked ensemble & check that metalearner_nfolds works
     # Also test that the xval metrics from metalearner & ensemble are equal
     stack1 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_nfolds=3)
-    # TO DO: This does not work!!  Something wrong on the backend
-    #stack1.train(x=x, y=y, training_frame=train)
+    stack1.train(x=x, y=y, training_frame=train)
+    # Check that metalearner_nfolds is correctly stored in model output
+    assert(stack1.params['metalearner_nfolds']['actual'] == 3)
+    # Check that the metalearner was cross-validated with the correct number of folds
+    meta1 = h2o.get_model(stack1.metalearner()['name'])
+    assert(meta1.params['nfolds']['actual'] == 3)
+    # Check that metalearner fold_assignment is NULL/"AUTO"
+    assert(meta1.params['fold_assignment']['actual'] == "AUTO")
+    # Check that validation metrics are NULL
+    assert(stack1.mse(valid=True) is None)
+    # Check that xval metrics from metalearner and ensemble are equal (use mse as proxy)
+    assert(stack1.mse(xval=True) == meta1.mse(xval=True))
 
 
-    #     ---------------------------------------------------------------------------
-    # TypeError                                 Traceback (most recent call last)
-    # <ipython-input-27-0aa1ded3be98> in <module>()
-    #       1 stack1 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_nfolds=3)
-    # ----> 2 stack1.train(x=x, y=y, training_frame=train)
+    # Train a new ensmeble, also passing a validation frame
+    ss = test.split_frame(ratios=[0.5], seed=1)
+    stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_nfolds=3)
+    stack2.train(x=x, y=y, training_frame=train, validation_frame=ss[0])
+    # Check that valid & xval metrics from metalearner and ensemble are equal (use mse as proxy)
+    meta2 = h2o.get_model(stack2.metalearner()['name'])
+    assert(stack2.mse(valid=True) == meta2.mse(valid=True))
+    # Check that xval metrics from metalearner and ensemble are equal (use mse as proxy)
+    assert(stack2.mse(xval=True) == meta2.mse(xval=True))
 
-    # /usr/local/lib/python2.7/site-packages/h2o/estimators/estimator_base.pyc in train(self, x, y, training_frame, offset_column, fold_column, weights_column, validation_frame, max_runtime_secs, ignored_columns, model_id, verbose)
-    #     208         model.poll(verbose_model_scoring_history=verbose)
-    #     209         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
-    # --> 210         self._resolve_model(model.dest_key, model_json)
-    #     211
-    #     212
 
-    # /usr/local/lib/python2.7/site-packages/h2o/estimators/estimator_base.pyc in _resolve_model(self, model_id, model_json)
-    #     243
-    #     244             if m._is_xvalidated:
-    # --> 245                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
-    #     246
-    #     247             # build a useful dict of the params
-
-    # TypeError: 'NoneType' object is not iterable
-
+    # Check that metalearner_fold_assignment works
+    stack3 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_nfolds=3, metalearner_fold_assignment="Modulo")
+    stack3.train(x=x, y=y, training_frame=train)
+    # Check that metalearner_fold_assignment is correctly stored in model output
+    assert(stack3.params['metalearner_fold_assignment']['actual'] == "Modulo")
+    # Check that the metalearner was cross-validated with the correct number of folds
+    meta3 = h2o.get_model(stack3.metalearner()['name'])
+    assert(meta3.params['fold_assignment']['actual'] == "Modulo")
 
 
 
