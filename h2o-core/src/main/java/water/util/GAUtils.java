@@ -13,16 +13,40 @@ import java.util.Properties;
  */
 public class GAUtils {
   public static void logRequest(String uri, Properties header) {
+    boolean logged = logRequest2(uri, header);
+
+    final boolean debug = false;
+    if (debug && logged) {
+      System.out.println("GA LOGGED:  " + uri);
+    }
+    else {
+      System.out.println("GA DROPPED: " + uri);
+    }
+  }
+
+  private static boolean logRequest2(String uri, Properties header) {
     if (H2O.GA != null && header != null) {
       // skip useless URIs
-      if (uri.contains("/NodePersistentStorage") || uri.contains("/Metadata")) return;
+      if (uri.contains("/NodePersistentStorage")) return false;
+      if (uri.contains("/Metadata")) return false;
+
+      // skip URIs that are too numerous and are causing high counts
+      if (uri.contains("/Rapids/")) return false;
+      if (uri.contains("/Frames/")) return false;
+      if (uri.contains("/Models/")) return false;
+      if (uri.contains("/ParseSetup/")) return false;
+      if (uri.contains("/Predictions/")) return false;
+      if (uri.contains("/DKV/")) return false;
+      if (uri.contains("/index.html")) return false;
+      if (uri.equals("/")) return false;
 
       // clean URIs that include names eg. /3/DKV/random_key_name -> /3/DKV/
       if (uri.contains("/Frames/") ||
-              uri.contains("/DKV/") ||
-              uri.contains("/Models/") ||
-              uri.contains("/Models.java/") ||
-              uri.contains("/Predictions/")) {
+          uri.contains("/DKV/") ||
+          uri.contains("/Models/") ||
+          uri.contains("/Models.java/") ||
+          uri.contains("/Predictions/") ||
+          uri.contains("/AutoML/")) {
         int idx = StringUtils.ordinalIndexOf(uri, "/", 3);
         if (idx > 0)
           uri = uri.substring(0, idx);
@@ -33,7 +57,11 @@ public class GAUtils {
         H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
       else
         H2O.GA.postAsync(new ScreenViewHit(uri));
+
+      return true;
     }
+
+    return false;
   }
 
   public static void logParse(long totalParseSize, int fileCount, int colCount) {
