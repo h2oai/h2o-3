@@ -1,7 +1,69 @@
 class BuildConfig {
 
-  // Specifies tag of the docker image used in ALL of the pipelines
-  public static final String DOCKER_IMAGE_VERSION_TAG = '97'
+  public static enum JenkinsMaster {
+    C1, // indicates we are running under mr-0xc1 master - master or nightly build
+    B4  // indicates we are running under mr-0xb4 master - PR build
+
+    private static JenkinsMaster findByName(final String name) {
+      switch(name.toLowerCase()) {
+        case 'c1':
+          return C1
+        case 'b4':
+          return B4
+        default:
+          throw new IllegalArgumentException(String.format("Master %s is unknown", name))
+      }
+    }
+
+    private static JenkinsMaster findByBuildURL(final String buildURL) {
+      final String name = buildURL.replaceAll('http://mr-0x', '').replaceAll(':8080.*', '')
+      return findByName(name)
+    }
+  }
+
+  public static enum NodeLabels {
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9'),
+    LABELS_B4('docker', 'docker')
+
+    private String defaultNodeLabel
+    private String benchmarkNodeLabel
+
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel) {
+      this.defaultNodeLabel = defaultNodeLabel
+      this.benchmarkNodeLabel = benchmarkNodeLabel
+    }
+
+    public String getDefaultNodeLabel() {
+      return defaultNodeLabel
+    }
+
+    public String getBenchmarkNodeLabel() {
+      return benchmarkNodeLabel
+    }
+
+    private static findByJenkinsMaster(final JenkinsMaster master) {
+      switch (master) {
+        case JenkinsMaster.C1:
+          return LABELS_C1
+        case JenkinsMaster.B4:
+          return LABELS_B4
+        default:
+          throw new IllegalArgumentException(String.format("Master %s is unknown", master))
+      }
+    }
+  }
+
+  public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
+
+  private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
+  private static final String DEFAULT_IMAGE_VERSION_TAG = '102'
+  // This is the default image used for tests, build, etc.
+  public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
+
+  private static final String BENCHMARK_IMAGE_NAME = 'h2o-3-benchmark'
+  private static final String BENCHMARK_IMAGE_VERSION_TAG = '117'
+  // Use this image for benchmark stages
+  public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
   public static final String LANG_PY = 'py'
   public static final String LANG_R = 'r'
@@ -15,6 +77,10 @@ class BuildConfig {
   private String nodeLabel
   private String commitMessage
   private boolean defaultOverrideRerun = false
+  private String majorVersion
+  private String buildVersion
+  private JenkinsMaster master
+  private NodeLabels nodeLabels
   private LinkedHashMap changesMap = [
     (LANG_PY): false,
     (LANG_R): false,
@@ -23,7 +89,7 @@ class BuildConfig {
     (LANG_NONE): true
   ]
 
-  def initialize(final String mode, final String nodeLabel, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange) {
+  def initialize(final Script context, final String mode, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
@@ -32,14 +98,12 @@ class BuildConfig {
     } else {
       detectChanges(changes)
     }
+    master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
+    nodeLabels = NodeLabels.findByJenkinsMaster(master)
   }
 
   def getMode() {
     return mode
-  }
-
-  def getNodeLabel() {
-    return nodeLabel
   }
 
   def getCommitMessage() {
@@ -62,13 +126,40 @@ class BuildConfig {
     return changesMap[lang]
   }
 
+  def getMajorVersion() {
+    return majorVersion
+  }
+
+  def getBuildVersion() {
+    return buildVersion
+  }
+
+  JenkinsMaster getMaster() {
+    return master
+  }
+
+  String getDefaultNodeLabel() {
+    return nodeLabels.getDefaultNodeLabel()
+  }
+
+  String getBenchmarkNodeLabel() {
+    return nodeLabels.getBenchmarkNodeLabel()
+  }
+
   String toString() {
     return """
-    Mode: ${getMode()}
-    Node Label: ${getNodeLabel()}
-    Commit Message: ${getCommitMessage()}
-    Default for Override Rerun: ${getDefaultOverrideRerun()}
-    Changes: ${changesMap}
+=======================================================================
+    Major Version:              | ${getMajorVersion()}
+    Build Version:              | ${getBuildVersion()}
+    Mode:                       | ${getMode()}
+    Default Node Label:         | ${getDefaultNodeLabel()}
+    Benchmark Node Label:       | ${getBenchmarkNodeLabel()}
+    Commit Message:             | ${getCommitMessage()}
+    Default for Override Rerun: | ${getDefaultOverrideRerun()}
+    Runtime image:              | ${DEFAULT_IMAGE}
+    Benchmark image:            | ${BENCHMARK_IMAGE}
+    Changes:                    | ${changesMap}
+=======================================================================
     """
   }
 
@@ -101,6 +192,16 @@ class BuildConfig {
     changesMap.each { k,v ->
       // mark no changes for all langs except LANG_NONE
       changesMap[k] = k == LANG_NONE
+    }
+  }
+
+  public void readVersion(final String versionFileContent) {
+    versionFileContent.split('\n').each{ line ->
+      if (line.startsWith('Version: ')) {
+        def versionString = line.replace('Version: ', '')
+        this.majorVersion = versionString.split('\\.')[0..2].join('.')
+        this.buildVersion = versionString.split('\\.')[3..-1].join('.')
+      }
     }
   }
 
