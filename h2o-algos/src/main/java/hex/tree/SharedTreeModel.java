@@ -426,6 +426,10 @@ public abstract class SharedTreeModel<
   protected boolean binomialOpt() { return true; }
 
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    if (_parms._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
+        _parms._categorical_encoding != Parameters.CategoricalEncodingScheme.Enum) {
+      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    }
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
