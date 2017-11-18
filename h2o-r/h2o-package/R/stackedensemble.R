@@ -6,8 +6,8 @@
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 
-#' @param x (Currently not being used for anything in Stacked Ensemble -- leave blank). 
-#' A vector containing the names or indices of the predictor variables to use in building the model.
+#' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
+#'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. 
 #' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
 #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
@@ -17,9 +17,9 @@
 #'        folds must be identical across models. Defaults to [].
 #' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
 #'        0.
-#' @param metalearner_fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
-#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
-#'        "Random", "Modulo", "Stratified".
+#' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
+#'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
+#'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 

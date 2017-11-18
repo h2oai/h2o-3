@@ -34,7 +34,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).")
     public int metalearner_nfolds;
 
-    // TO DO: Add metalearner_fold_column
+    // TODO: Add metalearner_fold_column
     // also requires: import water.api.schemas3.FrameV3;
     /*
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
@@ -47,7 +47,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     // For Ensemble cross-validation
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
             values = {"AUTO", "Random", "Modulo", "Stratified"},
-            help = "Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will " +
+            help = "Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently set to Random). The 'Stratified' option will " +
                     "stratify the folds based on the response variable, for classification problems.")
     public Model.Parameters.FoldAssignmentScheme metalearner_fold_assignment;
   }

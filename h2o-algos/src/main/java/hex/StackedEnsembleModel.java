@@ -60,7 +60,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Metalearner params
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
-    // TO DO: Add _metalearner_fold_column
+    // TODO: Add _metalearner_fold_column
+    // https://0xdata.atlassian.net/browse/PUBDEV-5084
     // public String _metalearner_fold_column;
   }
 
@@ -183,10 +184,21 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   public void doScoreOrCopyMetrics(Job job) {
     // To get ensemble training metrics, the training frame needs to be re-scored since
-    // training metrics from metalearner are not equal to ensemble training metrics
+    // training metrics from metalearner are not equal to ensemble training metrics.
+    // The training metrics for the metalearner do not reflect true ensemble training metrics because
+    // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
+    // training metrics, we have to re-score the training frame on all the base models, then send these
+    // biased preds through to the metalearner, and then compute the metrics there.
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
-    // Validation and cross-validation metrics can be copied from metalearner (may be null)
+    // Validation metrics can be copied from metalearner (may be null).
+    // Validation frame was already piped through so there's no need to re-do that to get the same results.
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+    // Cross-validation metrics can be copied from metalearner (may be null).
+    // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
+    // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
+    // cross-validated base models (rather than a single set of cross-validated base models), which is extremely
+    // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
+    // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
     this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics;
   }
 

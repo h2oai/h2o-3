@@ -145,8 +145,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def metalearner_fold_assignment(self):
         """
-        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
-        the folds based on the response variable, for classification problems.
+        Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently
+        set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
+        classification problems.
 
         One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``.
         """
