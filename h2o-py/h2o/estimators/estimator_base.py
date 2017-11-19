@@ -241,7 +241,8 @@ class H2OEstimator(ModelBase):
                         model_json["output"][metric] = \
                             metrics_class(model_json["output"][metric], metric, model_json["algo"])
 
-            if m._is_xvalidated:
+            #if m._is_xvalidated:
+            if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None: 
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
             # build a useful dict of the params

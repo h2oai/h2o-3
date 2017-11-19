@@ -30,9 +30,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  public int nfolds = -1; //From 1st base model
-  public Parameters.FoldAssignmentScheme fold_assignment; //From 1st base model
-  public String fold_column; //From 1st base model
+  //public int nfolds = -1; //From 1st base model
+
+  // Get from 1st base model (should be identical across base models)
+  public int basemodel_nfolds = -1;  //From 1st base model
+  public Parameters.FoldAssignmentScheme basemodel_fold_assignment;  //From 1st base model
+  public String basemodel_fold_column;  //From 1st base model
+
   public long seed = -1; //From 1st base model
 
 
@@ -49,17 +53,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String javaName() { return StackedEnsembleModel.class.getName(); }
     @Override public long progressUnits() { return 1; }  // TODO
 
-    /*
-    public static enum SelectionStrategy { choose_all }
-
-    // TODO: make _selection_strategy an object:
-    // How do we choose which models to stack?
-    public SelectionStrategy _selection_strategy;
-    */
-
-    /** Which models can we choose from? */
+    // base_models is a list of base model keys to ensemble (must have been cross-validated)
     public Key<Model> _base_models[] = new Key[0];
+    // Should we keep the level-one frame of cv preds + repsonse col?
     public boolean _keep_levelone_frame = false;
+
+    // Metalearner params
+    public int _metalearner_nfolds;
+    public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
+    // TODO: Add _metalearner_fold_column
+    // https://0xdata.atlassian.net/browse/PUBDEV-5084
+    // public String _metalearner_fold_column;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
@@ -108,7 +112,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
       //Need to remove 'predict' column from multinomial since it contains outcome
-      if(base._output.isMultinomialClassifier()){
+      if (base._output.isMultinomialClassifier()) {
         basePreds.remove("predict");
       }
       base_prediction_frames[baseIdx] = basePreds;
@@ -179,13 +183,26 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       return ModelMetrics.getFromDKV(this, frame);
   }
 
-  public void doScoreMetrics(Job job) {
-
+  public void doScoreOrCopyMetrics(Job job) {
+    // To get ensemble training metrics, the training frame needs to be re-scored since
+    // training metrics from metalearner are not equal to ensemble training metrics.
+    // The training metrics for the metalearner do not reflect true ensemble training metrics because
+    // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
+    // training metrics, we have to re-score the training frame on all the base models, then send these
+    // biased preds through to the metalearner, and then compute the metrics there.
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
-    if (null != this._parms.valid()) {
-      this._output._validation_metrics = doScoreMetricsOneFrame(this._parms.valid(), job);
-    }
+    // Validation metrics can be copied from metalearner (may be null).
+    // Validation frame was already piped through so there's no need to re-do that to get the same results.
+    this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+    // Cross-validation metrics can be copied from metalearner (may be null).
+    // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
+    // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
+    // cross-validated base models (rather than a single set of cross-validated base models), which is extremely
+    // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
+    // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
+    this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics;
   }
+
 
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
@@ -257,7 +274,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
-      if(!aModel.isSupervised()){
+      if (!aModel.isSupervised()) {
         throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
       }
 
@@ -277,17 +294,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
 
-        if (aModel._parms._fold_assignment != fold_assignment) {
-          if ((aModel._parms._fold_assignment == AUTO && fold_assignment == Random) ||
-                  (aModel._parms._fold_assignment == Random && fold_assignment == AUTO)) {
+        if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
+          if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
+                  (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
             // A-ok
           } else {
             throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
           }
         }
 
-        // If we have a fold_column make sure nfolds is consistent
-        if (aModel._parms._fold_column == null && nfolds != aModel._parms._nfolds)
+        // If we have a fold_column make sure nfolds from base models are consistent
+        if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
         // If we don't have a fold_column require nfolds > 1
@@ -297,13 +314,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // NOTE: we already check that the training_frame checksums are the same, so
         // we don't need to check the Vec checksums here:
         if (aModel._parms._fold_column != null &&
-                ! aModel._parms._fold_column.equals(fold_column))
+                ! aModel._parms._fold_column.equals(basemodel_fold_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
 
         if (aModel._parms._fold_column == null &&
-                fold_assignment == Random &&
+                basemodel_fold_assignment == Random &&
                 aModel._parms._seed != seed)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded crossfold validation but have different seeds.");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
 
         if (! aModel._parms._keep_cross_validation_predictions)
           throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
@@ -335,10 +352,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (! responseColumn.equals(_parms._response_column))
           throw  new H2OIllegalArgumentException("StackedModel response_column must match the response_column of each base model.  Found: " + responseColumn + " and: " + _parms._response_column);
 
-        nfolds = aModel._parms._nfolds;
-        fold_assignment = aModel._parms._fold_assignment;
-        if (fold_assignment == AUTO) fold_assignment = Random;
-        fold_column = aModel._parms._fold_column;
+        basemodel_nfolds = aModel._parms._nfolds;
+        basemodel_fold_assignment = aModel._parms._fold_assignment;
+        if (basemodel_fold_assignment == AUTO) basemodel_fold_assignment = Random;
+        basemodel_fold_column = aModel._parms._fold_column;
         seed = aModel._parms._seed;
         _parms._distribution = aModel._parms._distribution;
         beenHere = true;

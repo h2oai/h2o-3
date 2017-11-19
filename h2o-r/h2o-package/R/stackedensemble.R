@@ -6,8 +6,8 @@
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 
-#' @param x (Currently not being used for anything in Stacked Ensemble -- leave blank). 
-#' A vector containing the names or indices of the predictor variables to use in building the model.
+#' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
+#'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. 
 #' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
 #'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
@@ -15,6 +15,11 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].
+#' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
+#'        0.
+#' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
+#'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
+#'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 
@@ -26,6 +31,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
                                 base_models = list(),
+                                metalearner_nfolds = 0,
+                                metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 keep_levelone_frame = FALSE
                                 ) 
 {
@@ -74,6 +81,10 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
+  if (!missing(metalearner_nfolds))
+    parms$metalearner_nfolds <- metalearner_nfolds
+  if (!missing(metalearner_fold_assignment))
+    parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   # Error check and build model
