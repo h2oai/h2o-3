@@ -17,6 +17,7 @@ sandbox*/
 syn_datasets
 build/
 lib/
+results/
 classes/
 h2o-web/src/main/resources/www/steam
 h2o-web/src/main/resources/www/flow
@@ -37,6 +38,7 @@ gradle-app.setting
 src/main/java/water/BuildVersion.java
 .Rproj.user
 .RData
+.gitignore
 .Rhistory
 *.Rproj
 *.Rbuildignore

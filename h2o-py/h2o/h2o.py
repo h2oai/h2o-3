@@ -1269,6 +1269,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
+
 def flow():
     """
     Open H2O Flow in your browser.
