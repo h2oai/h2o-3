@@ -49,7 +49,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "keep_levelone_frame"}
+                      "metalearner_nfolds", "metalearner_fold_assignment", "keep_levelone_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -125,6 +125,38 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
          else:
             assert_is_type(base_models, None, [str])
             self._parms["base_models"] = base_models
+
+
+    @property
+    def metalearner_nfolds(self):
+        """
+        Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("metalearner_nfolds")
+
+    @metalearner_nfolds.setter
+    def metalearner_nfolds(self, metalearner_nfolds):
+        assert_is_type(metalearner_nfolds, None, int)
+        self._parms["metalearner_nfolds"] = metalearner_nfolds
+
+
+    @property
+    def metalearner_fold_assignment(self):
+        """
+        Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently
+        set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
+        classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``.
+        """
+        return self._parms.get("metalearner_fold_assignment")
+
+    @metalearner_fold_assignment.setter
+    def metalearner_fold_assignment(self, metalearner_fold_assignment):
+        assert_is_type(metalearner_fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
+        self._parms["metalearner_fold_assignment"] = metalearner_fold_assignment
 
 
     @property
