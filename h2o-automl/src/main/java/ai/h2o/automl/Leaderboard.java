@@ -18,6 +18,8 @@ import java.util.Set;
 import static water.DKV.getGet;
 import static water.Key.make;
 import java.io.*;  //for testing
+import java.util.zip.Checksum;
+
 /**
  * Utility to track all the models built for a given dataset type.
  * <p>
@@ -219,7 +221,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
           // If leaderboardFrame is null, use xval metrics instead
           // for testing only set leaderboardFrame to null always
-          // TODO: Uncomment this -- commented out for testing
+          // TODO: Uncomment & fix this code -- commented out for testing
           /*
           leaderboardFrame = null;
           if (leaderboardFrame == null) {
@@ -415,24 +417,35 @@ public class Leaderboard extends Keyed<Leaderboard> {
     double[] sort_metrics = new double[models.length];
     int i = 0;
 
-    for (Model m : models)
+    for (Model m : models) {
       System.out.println(" @@@@@@@@@@@@@@@@@@@  m is a model  @@@@@@@@@@@@@@@@@@@ ");  //for testing
       // TODO: THIS CAUSES ERROR
-    //sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
-    // it looks likes this:
-    // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_leaderboard_higgs_train_5k.hex@-3332444352254199426
-    // but it needs to be this:
-    // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_training_higgs_train_5k.hex@7684461323186948522
-    // so really we just need to pass the training frame in instead of `leaderboardFrame` but `trainingFrame` is not in scope...
+      //sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
+      // it looks likes this:
+      // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_leaderboard_higgs_train_5k.hex@-3332444352254199426
+      // but it needs to be this:
+      // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_training_higgs_train_5k.hex@7684461323186948522
+      // so really we just need to pass the training frame in instead of `leaderboardFrame` but `trainingFrame` is not in scope...
 
-    // Or better yet, can we just figure out what the key (input to leaderboard_set_metrics.get()) should be without passing the trainingFrame
+      // Or better yet, can we just figure out what the key (input to leaderboard_set_metrics.get()) should be without passing the trainingFrame
 
-    // what if we try the other version of buildKey(): buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum)
-    // this doesn't seem to be working even though the
-    // ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)
-    // command returns the correct string... ??
-    sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)), sort_metric);
+      // what if we try the other version of buildKey(): buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum)
+      // this doesn't seem to be working even though the
+      // ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)
+      // command returns the correct string... ??
 
+      Key model_key = m._key;
+      long model_checksum = m.checksum();
+      //Method mm_frame_checksum_method = m._output._cross_validation_metrics.class.getDeclaredMethod("frame_checksum");
+      //long model_checksum = m._output._cross_validation_metrics._frame_checksum;
+      //Key frame_key = m._output._cross_validation_metrics._frameKey;
+      //long frame_checksum = m._output._cross_validation_metrics._frame_checksum;
+      Key frame_key = m._output._cross_validation_metrics.frame()._key;
+      long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
+
+      //sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)), sort_metric);
+      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), sort_metric);
+    }
 
     // TODO: Change the logic above to have an if (leaderboardFrame == null), because we don't want to always use the leaderboard frame
     return sort_metrics;
