@@ -922,7 +922,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
-
+    // Set up Stacked Ensemble
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
@@ -931,8 +931,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
     }
     //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+    // Add cross-validation args
+    //stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
+    stackedEnsembleParameters._metalearner_nfolds = 4;  //testing
+    // TODO: Add fold_assignment and fold_column support
     Key modelKey = modelKey(modelName);
-
     Job ensembleJob = trainModel(modelKey, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
