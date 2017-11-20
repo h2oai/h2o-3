@@ -2,7 +2,8 @@
 
 \textbf{Sparkling Water Example Project}
 
-This is a simple example project to start coding with Sparkling Water.
+This is a structure of a simple example project to start coding with Sparkling Water. The source code is available at
+\url{https://github.com/h2oai/h2o-droplets/tree/master/sparkling-water-droplet}
 
 \textbf{Dependencies}
 
@@ -122,7 +123,7 @@ The command creates jar file \texttt{build/libs/sparkling-water-droplet-}\\
 Submit application to Spark cluster (in this case, local cluster is used):
 
 \begin{lstlisting}[style=Bash]
-export MASTER='local-cluster[3,2,1024]'
+export MASTER="local[*]"
 $SPARK_HOME/bin/spark-submit --class water.droplets.SparklingWaterDroplet build/libs/sparkling-water-droplet-all.jar
 \end{lstlisting}
 

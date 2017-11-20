@@ -41,7 +41,7 @@ For example, if you have Spark version 2.2.0 and would like to use Sparkling Wat
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \
-  --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
   /dev/null
 \end{lstlisting}
@@ -52,7 +52,7 @@ The similar command works for spark-shell:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-shell \
- --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2 
+ --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2
 \end{lstlisting}
 
 Note: When you are using Spark packages, you do not need to download Sparkling Water distribution. Spark installation is sufficient.
@@ -75,7 +75,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master local[*] \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
@@ -90,7 +90,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master spark://machine-foo.bar.com:7077 \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
@@ -106,18 +106,19 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --num-executors 5 \
-  --master yarn-client \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --master yarn \
+  --deploy-mode client
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
 
-The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
+The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. Master set to \texttt{yarn} together with the deploy mode \texttt{client} option forces driver to run in the client process.
 
 \newpage
 
 \subsection{Sparkling Water Configuration Properties}
-
+\label{sec:properties}
 The following configuration properties can be passed to Spark to configure Sparking Water:
 
 \subsubsection{Configuration Properties not Dependent on Selected Backend}

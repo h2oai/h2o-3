@@ -12,12 +12,13 @@ This initiates and starts \texttt{H2OContext} in one call and can be used to obt
 
 \subsection{Memory Allocation}
 
-H2O resides in the same executor JVM as Spark. The memory provided for H2O is configured via Spark; refer to Spark configuration for more details. Note that in the external backend, only the H2O client running in the Spark driver is affected by Spark memory configuration.
+In case of internal backend, H2O resides in the same executor JVM as Spark and the memory provided for H2O is configured via Spark; refer to Spark configuration for more details. Note that in the external backend, only the H2O client running in the Spark driver is affected by Spark memory configuration. Memory has to be configured
+explicitly for the rest of the H2O nodes in the external backend.
 
 \textbf{Generic configuration}
 
 \begin{itemize}
-\item Configure the Executor memory (i.e., memory available for H2O) via the Spark configuration property \texttt{spark.executor.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.executor.memory=5g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}
+\item Configure the Executor memory (i.e., memory available for H2O in internal backend) via the Spark configuration property \texttt{spark.executor.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.executor.memory=5g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}
 \item Configure the Driver memory (i.e., memory available for H2O client running inside the Spark driver) via the Spark configuration property \texttt{spark.driver.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.driver.memory=4g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}.
 \end{itemize}
 
@@ -29,7 +30,7 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
 \item For JVMs that require a large amount of memory, we strongly recommend configuring the maximum amount of memory available for individual mappers.
  \end{itemize} 
  
- \subsection{Converting H2OFrame into RDD[T]}
+\subsection{Converting H2OFrame into RDD[T]}
  
  The \texttt{H2OContext} class provides the explicit conversion, \texttt{asRDD}, which creates an RDD-like wrapper around the provided \texttt{H2OFrame}:
 
@@ -93,7 +94,7 @@ def asH2OFrame[A <: Product: TypeTag](rdd: RDD[A], frameName: String): H2OFrame
 \begin{lstlisting}[style=Scala]
 val rdd: RDD[Weather] = ...
 import h2oContext._
-// Implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
+// Implicit call of h2oContext.asH2OFrame[Weather](rdd) is used
 val hf: H2OFrame = rdd
 // Explicit call of of H2OContext API with name for resulting H2OFrame
 val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, "hfNamed")
@@ -118,9 +119,9 @@ def asH2OFrame(rdd: DataFrame, frameName: String): H2OFrame
 \begin{lstlisting}[style=Scala]
 val df: DataFrame = ...
 import h2oContext._
-// Implicit call of H2OContext.asH2OFrame(srdd) is used 
+// Implicit call of h2oContext.asH2OFrame(srdd) is used
 val hf: H2OFrame = df 
-// Explicit call of H2Context API with name for resulting H2OFrame
+// Explicit call of h2oContext API with name for resulting H2OFrame
 val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, "hfNamed")
 \end{lstlisting}
 
@@ -134,7 +135,7 @@ val trainHF = new H2OFrame("train.hex")
 
 \subsection{Type Map Between H2OFrame and Spark DataFrame Types}
 
-For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame, we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
+For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame/Dataset, we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
 
 \begin{table}[!ht]
 \centering
@@ -156,6 +157,33 @@ java.sql.TimeStamp & TimestampType & Time \\
 \end{tabular} 
 \end{table}
 
+\subsection{Type mapping between H2O H2OFrame types and RDD[T] types}
+
+As type \texttt{T} we support following types:
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{l}
+\toprule
+ \textbf{T} \\
+\midrule
+NA \\
+Byte \\
+Short \\
+Integer \\
+Long \\
+Float \\
+Double \\
+String \\
+Boolean \\
+java.sql.Timestamp \\
+Any scala class extending scala \texttt{Product} \\
+org.apache.spark.mllib.regression.LabeledPoint \\
+org.apache.spark.ml.linalg.Vector \\
+org.apache.spark.mllib.linalg \\
+\bottomrule
+\end{tabular}
+\end{table}
 \subsection{Calling H2O Algorithms}
 
 \begin{enumerate}
@@ -168,7 +196,7 @@ val valid: H2OFrame = ...
 val gbmParams = new GBMParameters()
 gbmParams._train = train
 gbmParams._valid = valid
-gbmParams._response_column = 'bikes
+gbmParams._response_column = "bikes"
 gbmParams._ntrees = 500
 gbmParams._max_depth = 6
 \end{lstlisting}
@@ -192,16 +220,16 @@ used as data source to load/save data from/to Spark SQL table.
 
 Let's suppose we have a \texttt{H2OFrame}. The shortest way to load a \texttt{DataFrame} from \texttt{H2OFrame} with default settings is:
 \begin{lstlisting}[style=Scala]
-val df = sqlContext.read.h2o(frame.key)
+val df = spark.read.h2o(frame.key)
 \end{lstlisting}
 
 There are two more ways to load a \texttt{DataFrame} from \texttt{H2OFrame} allowing us to specify additional options:
 \begin{lstlisting}[style=Scala]
-val df = sqlContext.read.format("h2o").option("key",frame.key.toString).load()
+val df = spark.read.format("h2o").option("key", frame.key.toString).load()
 \end{lstlisting}
 or
 \begin{lstlisting}[style=Scala]
-val df = sqlContext.read.format("h2o").load(frame.key.toString)
+val df = spark.read.format("h2o").load(frame.key.toString)
 \end{lstlisting}
 
 \subsubsection{Saving to \texttt{H2OFrame}}
@@ -213,7 +241,7 @@ df.write.h2o("new_key")
 
 There are two more ways to save the \texttt{DataFrame} as \texttt{H2OFrame} allowing us to specify additional options:
 \begin{lstlisting}[style=Scala]
-df.write.format("h2o").option("key","new_key").save()
+df.write.format("h2o").option("key", "new_key").save()
 \end{lstlisting}
 or
 \begin{lstlisting}[style=Scala]
@@ -226,11 +254,11 @@ All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key
 
 If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
 \begin{lstlisting}[style=Scala]
-val df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
+val df = spark.read.from("h2o").option("key","key_one").load("key_two")
 \end{lstlisting}
 or
 \begin{lstlisting}[style=Scala]
-val df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
+val df = spark.read.from("h2o").option("key","key_one").save("key_two")
 \end{lstlisting}
 
 In both examples, "key\_one" is used.
@@ -240,8 +268,8 @@ In both examples, "key\_one" is used.
 There are four save modes available when saving data using Data Source API- see \url{http://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes}
 
 \begin{itemize}
-\item If "append" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
-\item If "overwrite" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
-\item If "error" mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
-\item If "ignore" mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
+\item If \textbf{append} mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
+\item If \textbf{overwrite} mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
+\item If \textbf{error} mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
+\item If \textbf{ignore} mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
 \end{itemize}
