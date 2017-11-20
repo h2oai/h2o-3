@@ -14,9 +14,9 @@ Native support for ensembles of H2O algorithms was added into core H2O in versio
 Stacking / Super Learning
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Stacking, also called Super Learning [3] or Stacked Regression [2], is a class of algorithms that involves training a second-level "metalearner" to find the optimal combination of the base learners.  Unlike bagging and boosting, the goal in stacking is to ensemble strong, diverse sets of learners together. 
+Stacking, also called Super Learning [3_] or Stacked Regression [2_], is a class of algorithms that involves training a second-level "metalearner" to find the optimal combination of the base learners.  Unlike bagging and boosting, the goal in stacking is to ensemble strong, diverse sets of learners together. 
 
-Although the concept of stacking was originally developed in 1992 [1], the theoretical guarantees for stacking were not proven until the publication of a paper titled, `"Super Learner" <http://dx.doi.org/10.2202/1544-6115.1309>`__, in 2007 [3].  In this paper, it was shown that the Super Learner ensemble represents an asymptotically optimal system for learning.  
+Although the concept of stacking was originally developed in 1992 [1_], the theoretical guarantees for stacking were not proven until the publication of a paper titled, `"Super Learner" <http://dx.doi.org/10.2202/1544-6115.1309>`__, in 2007 [3_].  In this paper, it was shown that the Super Learner ensemble represents an asymptotically optimal system for learning.  
 
 There are some ensemble methods that are broadly labeled as stacking, however, the Super Learner ensemble is distinguished by the use of cross-validation to form what is called the "level-one" data, or the data that the metalearning or "combiner" algorithm is trained on.  More detail about the Super Learner algorithm is provided below.
 
@@ -384,13 +384,22 @@ Additional Information
 References
 ~~~~~~~~~~
 
+.. _1:
+
 [1] `David H. Wolpert. "Stacked Generalization." Neural Networks. Volume 5. (1992) <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.1533>`__
 
+.. _2:
+
 [2] `Leo Breiman. "Stacked Regressions." Machine Learning, 24, 49-64 (1996) <http://statistics.berkeley.edu/sites/default/files/tech-reports/367.pdf>`__ 
+
+.. _3:
 
 [3] `Mark J van der Laan, Eric C Polley, and Alan E Hubbard. "Super Learner." Journal of the American
 Statistical Applications in Genetics and Molecular Biology. Volume 6, Issue 1. (September 2007). <https://doi.org/10.2202/1544-6115.1309>`__
 
+.. _4:
+
 [4] `LeDell, E. "Scalable Ensemble Learning and Computationally Efficient Variance Estimation" (Doctoral Dissertation). University of California, Berkeley, USA. (2015) <http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf>`__
+
 
 
