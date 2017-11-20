@@ -1,7 +1,7 @@
 ``transform``
 -------------
 
-- Available in: PCA, GLRM
+- Available in: GLRM, PCA, Aggregator
 - Hyperparameter: yes
 
 Description
@@ -9,11 +9,14 @@ Description
 
 Use the ``transform`` parameter to specify the transformation method used for the training data. Available options include:
 
-- None (default): Do not perform any transformations on the data. 
+- None: Do not perform any transformations on the data. 
 - Standardize: Standardizing subtracts the mean and then divides each variable by its standard deviation.
 - Normalize: Scales all numeric variables in the range [0,1]. 
 - Demean: The mean for each variable is subtracting from each observation resulting in mean zero.  Note that it is not always advisable to demean the data if the Moving Average parameter is of primary interest to estimate.
 - Descale: Divides by the standard deviation of each column.
+
+In PCA and GLRM, this value defaults to ``None``.
+In Aggregator, this value defaults to ``Normalize``.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

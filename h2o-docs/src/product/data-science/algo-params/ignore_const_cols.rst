@@ -1,7 +1,7 @@
 ``ignore_const_cols``
 ---------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator
 - Hyperparameter: no
 
 Description
