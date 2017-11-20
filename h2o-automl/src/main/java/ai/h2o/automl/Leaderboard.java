@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static water.DKV.getGet;
 import static water.Key.make;
+import java.io.*;  //for testing
 /**
  * Utility to track all the models built for a given dataset type.
  * <p>
@@ -216,10 +217,18 @@ public class Leaderboard extends Keyed<Leaderboard> {
             continue;
           }
 
+          /*
           ModelMetrics mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           if (mm == null) {
             Frame preds = aModel.score(leaderboardFrame);
             mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
+          }
+          */
+          // If leaderboardFrame is null, use xval metrics: https://0xdata.atlassian.net/browse/PUBDEV-5071
+          // to test, first just skip the check and always return xval metrics so we can make sure that works
+          ModelMetrics mm = aModel._output._cross_validation_metrics;
+          if (mm == null) {
+            System.out.println(" @@@@@@@@@@@@@@@@@@@  ModelMetrics null @@@@@@@@@@@@@@@@@@@ ");  //for testing
           }
           updating.leaderboard_set_metrics.put(mm._key, mm);
         }
