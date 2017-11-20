@@ -243,7 +243,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     private void computeMetaLearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, String metalearner_algo){
         // train the metalearner model
         // Default Job for just this training
-        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._parms._metalearner_algorithm + _model._key);
+        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._parms._metalearner_algorithm + "_" + _model._key);
         Job job = new Job<>(metalearnerKey, ModelBuilder.javaName(_model._parms._metalearner_algorithm.toLowerCase()),
                 "StackingEnsemble metalearner (" + _model._parms._metalearner_algorithm + ")");
         GLM metaGLMBuilder = null;
@@ -344,7 +344,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
-          _model._output._metalearner = metaGLMBuilder.get();
+          _model._output._metalearner = metaGBMBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
           // _model._output._model_summary = createModelSummaryTable(model._output);
           if (_parms._keep_levelone_frame) {
