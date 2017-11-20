@@ -1,0 +1,10 @@
+description = "H2O Jython Udfs"
+
+dependencies {
+    compile project(":h2o-core")
+    compile 'org.python:jython:2.7.1b3'
+
+    testCompile "junit:junit:${junitVersion}"
+    testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testCompile "org.mockito:mockito-core:2.6.2"
+}
