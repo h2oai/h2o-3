@@ -87,6 +87,50 @@ Optional Miscellaneous Parameters
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
 
+Grid Search Parameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
+
+**AutoML Hyperparameters**
+
+-  ``max_runtime_secs``
+-  ``max_models``
+-  ``stopping_metric``
+-  ``stopping_rounds``
+-  ``stopping_tolerance``
+-  ``seed``
+
+**GBM Hyperparameters**
+
+-  ``score_tree_interval``
+-  ``histogram_type``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``learn_rate``
+-  ``sample_rate``
+-  ``col_sample_rate``
+-  ``col_sample_rate_per_tree``
+-  ``min_split_improvement``
+
+**GLM Hyperparameters**
+
+-  ``alpha``
+-  ``missing_values_handling``
+
+**Deep Learning Hyperparameters**
+
+-  ``epochs``
+-  ``adaptivate_rate``
+-  ``activation``
+-  ``rho``
+-  ``epsilon``
+-  ``input_dropout_ratio``
+-  ``hidden``
+-  ``hidden_dropout_ratios``
+
+
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
