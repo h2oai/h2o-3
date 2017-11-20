@@ -11,6 +11,7 @@ import logging
 import os
 import warnings
 import webbrowser
+import types
 
 
 from h2o.backend import H2OConnection
@@ -1269,12 +1270,115 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
+
 def flow():
     """
     Open H2O Flow in your browser.
 
     """
     webbrowser.open(connection().base_url, new = 1)
+
+
+def _put_key(file_path, dest_key=None):
+    """
+    Upload given file into DKV and save it under give key as raw object.
+
+    :param dest_key:  name of destination key in DKV
+    :param file_path:  path to file to upload
+    :return: key name if object was uploaded successfully
+    """
+    ret = api("POST /3/PutKey?destination_key={}".format(dest_key if dest_key else ''),
+              filename=file_path)
+    return ret["destination_key"]
+
+
+def _create_zip_file(dest_filename, *content_list):
+    from .utils.shared_utils import InMemoryZipArch
+    with InMemoryZipArch(dest_filename) as zip_arch:
+        for filename, file_content in content_list:
+            zip_arch.append(filename, file_content)
+    return dest_filename
+
+
+def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None):
+    """
+    Upload given metrics function into H2O cluster.
+
+    The metrics can have different representation:
+      - method
+      - class: needs to inherit from water.udf.CFunc2 and implement method apply(actual, predict)
+      returning double
+      - string: the same as in class case, but the class is given as a string
+
+    :param func:  metrics representation: string, class, function
+    :param func_file:  internal name of file to save given metrics representation
+    :param func_name:  name for h2o key under which the given metric is saved
+    :param class_name: name of class wrapping the metrics function
+    :return: reference to uploaded metrics function
+    """
+    import inspect
+    import tempfile
+
+    # The template wraps given metrics representation
+    _CFUNC_CODE_TEMPLATE = """# Generated code
+import water.udf.CMetricFunc as MetricFunc
+
+# User given metric function as a class implementing 
+# 3 methods defined by interface CMetricFunc
+{}    
+
+# Generated user metric which satisfies the interface 
+# of Java MetricFunc
+class UserMetric({}, MetricFunc, object):
+    pass
+
+"""
+
+    # Give me source of give object - poorman version
+    def get_source(o):
+        # TODO: in interpreter mode, we cannot get source code
+        # of class. But we can get source code of individual methods
+        return '    '.join(inspect.getsourcelines(o)[0])
+
+    assert_satisfies(func, inspect.isclass(func) or isinstance(func, str),
+                     "The argument func needs to be string or class !")
+    assert_satisfies(func_file, func_file is not None,
+                     "The argument func_file is missing!")
+    assert_satisfies(func_file, func_file.endswith('.py'),
+                     "The argument func_file needs to end with '.py'")
+    code = None
+    derived_func_name = None
+    module_name = func_file[:-3]
+    if isinstance(func, str):
+        assert_satisfies(class_name, class_name is not None,
+                         "The argument class_name is missing! " +
+                         "It needs to reference the class in given string!")
+        derived_func_name = "metrics_{}".format(class_name)
+        code = str
+    else:
+        assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
+        for method in ['perRow', 'combine', 'metric']:
+            assert_satisfies(func, method in func.__dict__, "The class `func` needs to define method `{}`".format(method))
+
+        assert_satisfies(class_name, class_name is None,
+                         "If class is specified then class_name parameter needs to be None")
+
+        class_name = "{}.UserMetric".format(module_name)
+        derived_func_name = "metrics_{}".format(func.__name__)
+        code = _CFUNC_CODE_TEMPLATE.format(get_source(func), func.__name__)
+
+    # If the func name is not given, use whatever we can derived from given definition
+    if not func_name:
+        func_name = derived_func_name
+    # Saved into jar file
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    func_arch_file = _create_zip_file("{}/func.jar".format(tmpdir), (func_file, code))
+    # Upload into K/V
+    dest_key = _put_key(func_arch_file, dest_key=func_name)
+    # Reference
+    return "python:{}={}".format(dest_key, class_name)
+        
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------
