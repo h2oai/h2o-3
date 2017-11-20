@@ -436,14 +436,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
       Key model_key = m._key;
       long model_checksum = m.checksum();
-      //Method mm_frame_checksum_method = m._output._cross_validation_metrics.class.getDeclaredMethod("frame_checksum");
-      //long model_checksum = m._output._cross_validation_metrics._frame_checksum;
-      //Key frame_key = m._output._cross_validation_metrics._frameKey;
-      //long frame_checksum = m._output._cross_validation_metrics._frame_checksum;
       Key frame_key = m._output._cross_validation_metrics.frame()._key;
       long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-
-      //sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)), sort_metric);
       sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), sort_metric);
     }
 
