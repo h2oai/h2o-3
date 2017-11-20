@@ -15,10 +15,10 @@ Early Stopping in All Supervised Algorithms
 
 The ``max_runtime_secs`` option specifes the maximum runtime in seconds that you want to allot in order to complete the model. If this maximum runtime is exceeded before the model build is completed, then the model will fail. When performing a grid search, this option specifies the maximum runtime in seconds for the entire grid. This option can also be combined with ``max_runtime_secs`` in the model parameters. If ``max_runtime_secs`` is not set in the model parameters, then each model build is launched with a limit equal to the remainder of the grid time. On the other hand, if ``max_runtime_secs`` is set in the model parameters, then each build is launched with a limit equal to the minimum of the model time limit and the remaining time for the grid.
 
-Early Stopping in AutoML, Deep Learning, DRF, GBM, and XGBoost
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Early Stopping in AutoML, Grid Search, Deep Learning, DRF, GBM, and XGBoost
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In AutoML, Deep Learning, DRF, GBM, and XGBoost, the following additional parameters are used for early stopping:
+In AutoML, Grid Search, Deep Learning, DRF, GBM, and XGBoost, the following additional parameters are used for early stopping:
 
 - :ref:`stopping_rounds` (Defaults to 3 in AutoML; defaults to 5 in Deep Learning; defaults to 0/disabled in DRF, GBM, XGBoost.)
 - :ref:`stopping_tolerance` (Defaults to 0.001. In AutoML for datasets with more than 1 million rows, this defaults to a larger valued determined by the size of the dataset and the non-NA-rate.)
