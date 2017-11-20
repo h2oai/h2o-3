@@ -19,6 +19,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "base_models",
       "metalearner_nfolds",
       "metalearner_fold_assignment",
+      "metalearner_algorithm",
       //"metalearner_fold_column",
       "keep_levelone_frame",
     };
@@ -50,5 +51,10 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently set to Random). The 'Stratified' option will " +
                     "stratify the folds based on the response variable, for classification problems.")
     public Model.Parameters.FoldAssignmentScheme metalearner_fold_assignment;
+
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT,
+            help = "Algorithm to use as metalearner. " +
+                    "Should either be 'GLM' (default), 'GBM', 'DRF', or 'DeepLearning'.")
+    public String metalearner_algorithm = "GLM";
   }
 }
