@@ -1,3 +1,5 @@
+.. _early_stopping:
+
 ``early_stopping``
 ------------------
 
