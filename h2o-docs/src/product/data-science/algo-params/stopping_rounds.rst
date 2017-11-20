@@ -1,3 +1,5 @@
+.. _stopping_rounds:
+
 ``stopping_rounds``
 -------------------
 

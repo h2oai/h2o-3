@@ -1,3 +1,5 @@
+.. _stopping_metric:
+
 ``stopping_metric``
 -------------------
 

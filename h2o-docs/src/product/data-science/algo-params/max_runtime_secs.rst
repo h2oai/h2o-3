@@ -1,3 +1,5 @@
+.. _max_runtime_secs:
+
 ``max_runtime_secs``
 -----------------------
 
