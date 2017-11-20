@@ -1102,7 +1102,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         //Get top models from each model type (GLM, GBM, DL, DRF, and XRT)
         for(int j = 0; j < bestModels.length; j++) {
           for (int i = 0; i < allModels.length; i++) {
-            if (allModels[i]._parms.algoName().equals("DRF")) {
+            if (allModels[i]._parms.algoName().equals("DRF") && !(allModels[i]._key.toString().contains("XRT_"))) {
               if (!fetchedDRF) {
                 bestModels[j] = allModels[i];
                 fetchedDRF = true;
