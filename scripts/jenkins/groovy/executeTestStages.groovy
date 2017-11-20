@@ -41,7 +41,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: buildConfig.LANG_PY
+      timeoutValue: 30, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
@@ -65,11 +65,11 @@ def call(buildConfig) {
     ],
     [
       stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: buildConfig.LANG_R
+      timeoutValue: 110, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
-      timeoutValue: 120, lang: buildConfig.LANG_R
+      timeoutValue: 140, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
@@ -165,11 +165,11 @@ def call(buildConfig) {
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 90, lang: buildConfig.LANG_R
+      timeoutValue: 110, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
-      timeoutValue: 90, lang: buildConfig.LANG_R
+      timeoutValue: 140, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 CMD Check', target: 'test-r-cmd-check', rVersion: '3.3.3',
