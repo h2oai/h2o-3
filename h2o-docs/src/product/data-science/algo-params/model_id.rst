@@ -1,7 +1,7 @@
 ``model_id``
 ------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost, Aggregator
 - Hyperparameter: no
 
 Description
