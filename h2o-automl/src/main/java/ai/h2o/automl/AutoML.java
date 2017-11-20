@@ -1063,6 +1063,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // (optionally) build StackedEnsemble
     ///////////////////////////////////////////////////////////
     Model[] allModels = leaderboard().getModels();
+
+    //Set aside Model[] for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+    //This will give another ensemble that is smaller than the original which takes all models into consideration.
     Model[] bestModels = new Model[5];
     boolean fetchedDRF = false;
     boolean fetchedXRT = false;
