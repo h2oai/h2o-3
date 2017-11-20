@@ -1,6 +1,5 @@
 package hex.ensemble;
 
-import hex.DataInfo;
 import hex.Model;
 import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -298,6 +297,7 @@ public class StackedEnsembleTest extends TestUtil {
                 stackedEnsembleModel.remove();
                 stackedEnsembleModel._output._metalearner._output._training_metrics.remove();
                 stackedEnsembleModel._output._metalearner.remove();
+                stackedEnsembleModel._output._metalearner.delete();
                 if(stackedEnsembleModel._output._levelone_frame_id != null){
                     stackedEnsembleModel._output._levelone_frame_id.remove();
                 }
