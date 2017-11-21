@@ -20,9 +20,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-// TODO: Why is gaussian imported but other families not?  code is inconsistent below
-import static hex.genmodel.utils.DistributionFamily.gaussian;
-
 public class StackedEnsembleTest extends TestUtil {
 
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -38,7 +35,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm);
+                false, DistributionFamily.gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -66,7 +63,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.drf);
+                false, DistributionFamily.gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.drf);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -94,7 +91,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.deeplearning);
+                false, DistributionFamily.gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.deeplearning);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
                 null,
@@ -122,7 +119,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
+                false, DistributionFamily.gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
 
         // Binomial tests
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
