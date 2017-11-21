@@ -914,7 +914,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return dlJob;
   }
 
-  Job<StackedEnsembleModel>stack(boolean bestModels, Key<Model>[]... modelKeyArrays) {
+  Job<StackedEnsembleModel>stack(String modelName, Key<Model>[]... modelKeyArrays) {
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
@@ -923,12 +923,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
-    Key modelName = modelKey("StackedEnsemble");
-    if(bestModels){
-      modelName = modelKey("StackedEnsembleBestModels");
-    }
+    Key modelKey = modelKey(modelName);
 
-    Job ensembleJob = trainModel(modelName, "stackedensemble", stackedEnsembleParameters);
+    Job ensembleJob = trainModel(modelKey, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
 
@@ -1099,59 +1096,24 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           if (!(aModel instanceof StackedEnsembleModel))
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
-        Job<StackedEnsembleModel> ensembleJob = stack(false, notEnsembles);
+        Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble", notEnsembles);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
-        //Get top models from each model type (GLM, GBM, DL, DRF, and XRT)
-        for(int j = 0; j < bestModels.length; j++) {
-          for (int i = 0; i < allModels.length; i++) {
-            if (allModels[i]._parms.algoName().equals("DRF") && !(allModels[i]._key.toString().contains("XRT_"))) {
-              if (!fetchedDRF) {
-                bestModels[j] = allModels[i];
-                fetchedDRF = true;
-                break;
-              }
-            } else if (allModels[i]._key.toString().contains("XRT_")) { //XRT is not an algo type...
-              if (!fetchedXRT) {
-                bestModels[j] = allModels[i];
-                fetchedXRT = true;
-                break;
-              }
-            } else if (allModels[i]._parms.algoName().equals("GBM")) {
-              if (!fetchedTopGBM) {
-                bestModels[j] = allModels[i];
-                fetchedTopGBM = true;
-                break;
-              }
-            } else if (allModels[i]._parms.algoName().equals("DeepLearning")) {
-              if (!fetchedTopDL) {
-                bestModels[j] = allModels[i];
-                fetchedTopDL = true;
-                break;
-              }
-            } else if (allModels[i]._parms.algoName().equals("GLM")) {
-              if (!fetchedTopGLM) {
-                bestModels[j] = allModels[i];
-                fetchedTopGLM = true;
-                break;
-              }
-            }
-          }
+        List<Model> models = new ArrayList();
+        Set<String> types = new HashSet();
+
+        for (Model bestM : allModels) {
+          String type = getModelType(bestM);
+          if (types.contains(type)) continue;
+          types.add(type);
+          models.add(bestM);
         }
 
-        //Ensure we don't have nulls (could be possible if runtime is short, i.e., models get skipped)
-        int bestModelsLength = 0;
-        for(int i = 0; i < bestModels.length; i++){
-          if(bestModels[i] != null){
-            bestModelsLength++;
-          }
-        }
-        Key<Model>[] bestModelKeys = new Key[bestModelsLength];
-        int bestModelIndex = 0;
-        for (Model aModel : bestModels)
-          if (aModel != null)
-            bestModelKeys[bestModelIndex++] = aModel._key;
-        Job<StackedEnsembleModel> bestEnsembleJob = stack(true, bestModelKeys);
+        Key<Model>[] bestModelKeys = new Key[models.size()];
+        for (int i = 0; i < models.size(); i++)
+          bestModelKeys[i] = models.get(i)._key;
+
+        Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsembleBestModels", bestModelKeys);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build with top models", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
 
       }
@@ -1417,5 +1379,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       else
         userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
     }
+  }
+
+  private String getModelType(Model m) {
+    return m._key.toString().startsWith("XRT_") ? "XRT" : m._parms.algoName();
   }
 }
