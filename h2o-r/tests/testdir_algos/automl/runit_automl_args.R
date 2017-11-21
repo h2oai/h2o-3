@@ -88,7 +88,7 @@ automl.args.test <- function() {
                      max_models = 1,
                      project_name = "aml8")
   nrow_aml8_lb <- nrow(aml8@leaderboard)
-  expect_equal(nrow_aml8_lb, 2)
+  expect_equal(nrow_aml8_lb, 3)
   
   print("Check max_models > 1; leaderboard continuity/growth")
   aml8 <- h2o.automl(x = x, y = y, 
