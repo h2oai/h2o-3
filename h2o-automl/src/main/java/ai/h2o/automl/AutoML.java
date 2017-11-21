@@ -1088,7 +1088,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble", notEnsembles);
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
         //Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
         //This will give another ensemble that is smaller than the original which takes all models into consideration.
@@ -1106,8 +1106,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         for (int i = 0; i < models.size(); i++)
           bestModelKeys[i] = models.get(i)._key;
 
-        Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsembleBestModels", bestModelKeys);
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build with top models", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
+        Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_topmodel", bestModelKeys);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
 
       }
     }
