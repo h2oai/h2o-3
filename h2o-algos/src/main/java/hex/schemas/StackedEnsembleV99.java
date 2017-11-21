@@ -35,7 +35,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
             values = {"AUTO", "glm", "gbm", "drf", "deeplearning"},
             help = "Type of algorithm to use as the metalearner. " +
-                    "Options include 'AUTO' (GLM with non negative weights), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
+                    "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
                     "'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with default parameters).")
     public StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algorithm;
 
