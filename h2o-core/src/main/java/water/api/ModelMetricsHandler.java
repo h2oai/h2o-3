@@ -238,7 +238,12 @@ class ModelMetricsHandler extends Handler {
     if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
 
     ModelMetricsList parms = s.createAndFillImpl();
-    parms._model.score(parms._frame, parms._predictions_name).remove(); // throw away predictions, keep metrics as a side-effect
+
+    String customMetricFunc = s.custom_metric_func;
+    if (customMetricFunc == null) {
+      customMetricFunc = parms._model._parms._custom_metric_func;
+    }
+    parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -408,8 +413,11 @@ class ModelMetricsHandler extends Handler {
         !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-      predictions = parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef
-          .from(s.custom_metric_func));
+      String customMetricFunc = s.custom_metric_func;
+      if (customMetricFunc == null) {
+        customMetricFunc = parms._model._parms._custom_metric_func;
+      }
+      predictions = parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc));
       if (s.deviances) {
         if (!parms._model.isSupervised())
           throw new H2OIllegalArgumentException("Deviances can only be computed for supervised models.");
