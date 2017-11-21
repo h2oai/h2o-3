@@ -92,15 +92,6 @@ Grid Search Parameters
 
 AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
 
-**AutoML Hyperparameters**
-
--  ``max_runtime_secs``
--  ``max_models``
--  ``stopping_metric``
--  ``stopping_rounds``
--  ``stopping_tolerance``
--  ``seed``
-
 **GBM Hyperparameters**
 
 -  ``score_tree_interval``
