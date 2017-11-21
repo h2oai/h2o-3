@@ -111,6 +111,7 @@ def prostate_automl_args():
     print("Check predictions")
     print(aml.predict(train))
 
+    # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
@@ -130,6 +131,11 @@ def prostate_automl_args():
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
+
+    # TO DO
+    #print("Check that exactly two ensembles are trained")
+    #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
+    #aml.train(y="CAPSULE", training_frame=train)
 
 
 if __name__ == "__main__":
