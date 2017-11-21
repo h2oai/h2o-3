@@ -122,7 +122,7 @@ public class StackedEnsembleTest extends TestUtil {
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, null);
+                false, gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
 
         // Binomial tests
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
