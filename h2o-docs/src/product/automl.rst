@@ -5,7 +5,7 @@ In recent years, the demand for machine learning experts has outpaced the supply
 
 Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, we have designed an easy-to-use interface which automates the process of training a large selection of candidate models.  H2O's AutoML can also be a helpful tool for the advanced user, by providing a simple wrapper function that performs a large number of modeling-related tasks that would typically require many lines of code, and by freeing up their time to focus on other aspects of the data science pipeline tasks such as data-preprocessing, feature engineering and model deployment.
 
-H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  
+H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce highly predictive ensemble models which, in most cases, will be the top performing model in the AutoML Leaderboard.  
 
 
 AutoML Interface
@@ -80,7 +80,7 @@ Optional Data Parameters
 Optional Miscellaneous Parameters
 '''''''''''''''''''''''''''''''''
 
-- `nfolds <data-science/algo-params/nfolds.html>`__:  Number of folds for k-fold cross-validation of the models in the AutoML run. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
+- `nfolds <data-science/algo-params/nfolds.html>`__:  Number of folds for k-fold cross-validation of the models in the AutoML run. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance).
 
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 
@@ -143,6 +143,7 @@ When the user specifies:
    3. **training + leaderboard**: The ``training_frame`` is split into training (70%) and validation (30%) sets and the leaderboard frame stays as-is.
    4. **training + validation + leaderboard**: Leave all frames as-is.
 
+In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the ``leaderboard_frame`` will be truly optional, as the leaderboard will be created using cross-validation metrics instead (unless the ``leaderboard_frame`` is excplicitly specified by the user).  However, for now, the holdout leaderboard frame must exist for scoring/ranking purposes.
 
 Code Examples
 ~~~~~~~~~~~~~
@@ -177,16 +178,14 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb <- aml@leaderboard
     lb
 
-    #                                  model_id       auc    logloss
-    #  StackedEnsemble_0_AutoML_20170605_212658  0.776164   0.564872
-    # GBM_grid_0_AutoML_20170605_212658_model_2  0.753550   0.587546
-    #              DRF_0_AutoML_20170605_212658  0.738885   0.611997
-    # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
-    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.674580
-    #              XRT_0_AutoML_20170605_212658  0.728358   0.629296
-    # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
-    #
-    # [7 rows x 3 columns]
+    #                                             model_id      auc  logloss
+    #  1          StackedEnsemble_0_AutoML_20171121_012135 0.788321 0.554019
+    #  2 StackedEnsemble_topmodel_0_AutoML_20171121_012135 0.783099 0.559286
+    #  3         GBM_grid_0_AutoML_20171121_012135_model_1 0.780554 0.560248
+    #  4         GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
+    #  5         GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
+    #  6         GBM_grid_0_AutoML_20171121_012135_model_3 0.771026 0.570270
+    #  [10 rows x 3 columns] 
 
     # The leader model is stored here
     aml@leader
@@ -233,17 +232,19 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
     lb
 
-    # model_id                                        auc    logloss
-    # -----------------------------------------  --------  ---------
-    # StackedEnsemble_0_AutoML_20170605_212658   0.776164   0.564872
-    # GBM_grid_0_AutoML_20170605_212658_model_2  0.75355    0.587546
-    # DRF_0_AutoML_20170605_212658               0.738885   0.611997
-    # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
-    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.67458
-    # XRT_0_AutoML_20170605_212658               0.728358   0.629296
-    # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
-    #
-    # [7 rows x 3 columns]
+    #  model_id                                                auc    logloss
+    #  -------------------------------------------------  --------  ---------
+    #  StackedEnsemble_0_AutoML_20171121_010846           0.786063   0.555833
+    #  StackedEnsemble_topmodel_0_AutoML_20171121_010846  0.783367   0.558511
+    #  GBM_grid_0_AutoML_20171121_010846_model_1          0.779242   0.562157
+    #  GBM_grid_0_AutoML_20171121_010846_model_0          0.778855   0.562648
+    #  GBM_grid_0_AutoML_20171121_010846_model_3          0.769666   0.572165
+    #  GBM_grid_0_AutoML_20171121_010846_model_2          0.769147   0.572064
+    #  XRT_0_AutoML_20171121_010846                       0.744612   0.593885
+    #  DRF_0_AutoML_20171121_010846                       0.733039   0.608609
+    #  GLM_grid_0_AutoML_20171121_010846_model_0          0.685211   0.635138
+
+    #  [9 rows x 3 columns]
 
     # The leader model is stored here
     aml.leader
@@ -263,32 +264,44 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 AutoML Output
 -------------
 
-The AutoML object includes a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+The AutoML object includes a "leaderboard" of models that were trained in the process, including the performance of the model on the ``leaderboard_frame`` test set.  If the user did not specify the ``leaderboard_frame`` argument, then a frame will be automatically partitioned, as explained in the `Auto-Generated Frames <#auto-generated-frames>`__ section.  In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the leaderboard will be created using cross-validation metrics, unless a scoring frame is provided explicitly by the user.
+
+The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+
 
 Here is an example leaderboard for a binary classification task:
 
-+-------------------------------------------+----------+----------+
-|                                  model_id |      auc |  logloss |
-+===========================================+==========+==========+
-| StackedEnsemble_0_AutoML_20170605_212658  | 0.776164 | 0.564872 | 
-+-------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20170605_212658_model_2 | 0.75355  | 0.587546 |
-+-------------------------------------------+----------+----------+
-| DRF_0_AutoML_20170605_212658              | 0.738885 | 0.611997 |
-+-------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20170605_212658_model_0 | 0.735078 | 0.630062 |
-+-------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20170605_212658_model_1 | 0.730645 | 0.67458  |
-+-------------------------------------------+----------+----------+
-| XRT_0_AutoML_20170605_212658              | 0.728358 | 0.629296 |
-+-------------------------------------------+----------+----------+
-| GLM_grid_0_AutoML_20170605_212658_model_1 | 0.685216 | 0.635137 |
-+-------------------------------------------+----------+----------+
-| GLM_grid_0_AutoML_20170605_212658_model_0 | 0.685216 | 0.635137 |
-+-------------------------------------------+----------+----------+
++---------------------------------------------------+----------+----------+
+|                                          model_id |      auc |  logloss |
++===================================================+==========+==========+
+| StackedEnsemble_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
++---------------------------------------------------+----------+----------+
+| StackedEnsemble_topmodel_0_AutoML_20171121_012135 | 0.783099 | 0.559286 |
++---------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_1         | 0.780554 | 0.560248 |
++---------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_0         | 0.779713 | 0.562142 |
++---------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_2         | 0.776206 | 0.564970 |
++---------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_3         | 0.771026 | 0.570270 |
++---------------------------------------------------+----------+----------+
+| DRF_0_AutoML_20171121_012135                      | 0.734653 | 0.601520 |
++---------------------------------------------------+----------+----------+
+| XRT_0_AutoML_20171121_012135                      | 0.730457 | 0.611706 |
++---------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_4         | 0.727098 | 0.666513 |
++---------------------------------------------------+----------+----------+
+| GLM_grid_0_AutoML_20171121_012135_model_0         | 0.685211 | 0.635138 |
++---------------------------------------------------+----------+----------+
+
 
 FAQ
 ~~~
+
+- **Which models are trained in the AutoML process?**
+
+ The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the top performing model from each algorithm class, so it's an ensemble of five base models.  The second "Top Model" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
 
 -  **How do I save AutoML runs?**
 
