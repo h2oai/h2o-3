@@ -42,7 +42,7 @@ public class CFuncRef extends Iced<CFuncRef> {
   }
 
   public String getName() {
-    return keyName + "#" + funcName;
+    return keyName;
   }
 
   public Key getKey() {

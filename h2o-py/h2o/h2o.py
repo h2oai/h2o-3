@@ -1329,7 +1329,7 @@ import water.udf.CMetricFunc as MetricFunc
 
 # Generated user metric which satisfies the interface 
 # of Java MetricFunc
-class UserMetric({}, MetricFunc, object):
+class {}Wrapper({}, MetricFunc, object):
     pass
 
 """
@@ -1363,9 +1363,9 @@ class UserMetric({}, MetricFunc, object):
         assert_satisfies(class_name, class_name is None,
                          "If class is specified then class_name parameter needs to be None")
 
-        class_name = "{}.UserMetric".format(module_name)
+        class_name = "{}.{}Wrapper".format(module_name, func.__name__)
         derived_func_name = "metrics_{}".format(func.__name__)
-        code = _CFUNC_CODE_TEMPLATE.format(get_source(func), func.__name__)
+        code = _CFUNC_CODE_TEMPLATE.format(get_source(func), func.__name__, func.__name__)
 
     # If the func name is not given, use whatever we can derived from given definition
     if not func_name:
