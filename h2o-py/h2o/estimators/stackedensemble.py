@@ -163,7 +163,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def metalearner_algorithm(self):
         """
-        Algorithm to use as metalearner. Should either be 'GLM' (default), 'GBM', 'DRF', or 'DeepLearning'.
+        Algorithm to use as metalearner. Should either be 'glm_non_negative' (default), 'glm' (glm without non negative
+        weights), 'gbm', 'randomForest', or 'deeplearning'.
 
         Type: ``str``.
         """

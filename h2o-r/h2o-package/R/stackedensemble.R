@@ -20,7 +20,8 @@
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
 #'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
-#' @param metalearner_algorithm Algorithm to use as metalearner. Should either be 'GLM' (default), 'GBM', 'DRF', or 'DeepLearning'.
+#' @param metalearner_algorithm Algorithm to use as metalearner. Should either be 'glm_non_negative' (default), 'glm' (glm without non
+#'        negative weights), 'gbm', 'randomForest', or 'deeplearning'.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 
