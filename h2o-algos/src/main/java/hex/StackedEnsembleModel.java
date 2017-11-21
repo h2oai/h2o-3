@@ -64,6 +64,16 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // TODO: Add _metalearner_fold_column
     // https://0xdata.atlassian.net/browse/PUBDEV-5084
     // public String _metalearner_fold_column;
+
+    //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
+    public enum MetalearnerAlgorithm {
+      glm,
+      gbm,
+      drf,
+      deeplearning
+    }
+    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.glm;
+
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
