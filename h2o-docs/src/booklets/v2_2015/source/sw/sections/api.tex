@@ -254,11 +254,11 @@ All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key
 
 If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
 \begin{lstlisting}[style=Scala]
-val df = spark.read.from("h2o").option("key","key_one").load("key_two")
+val df = spark.read.from("h2o").option("key", "key_one").load("key_two")
 \end{lstlisting}
 or
 \begin{lstlisting}[style=Scala]
-val df = spark.read.from("h2o").option("key","key_one").save("key_two")
+val df = spark.read.from("h2o").option("key", "key_one").save("key_two")
 \end{lstlisting}
 
 In both examples, "key\_one" is used.
