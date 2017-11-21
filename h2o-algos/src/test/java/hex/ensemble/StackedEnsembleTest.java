@@ -30,7 +30,35 @@ public class StackedEnsembleTest extends TestUtil {
             "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay",
             "LateAircraftDelay", "IsDepDelayed"};
 
-    @Test public void testBasicEnsembleGBMMetalearner(){
+    @Test public void testBasicEnsembleAUTOMetalearner() {
+
+        basicEnsemble("./smalldata/junit/cars.csv",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                false, DistributionFamily.gaussian, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO);
+
+        basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) {
+                    for( String s : ignored_aircols ) fr.remove(s).remove();
+                    return fr.find("IsArrDelayed"); }
+                },
+                false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO);
+
+        basicEnsemble("./smalldata/iris/iris_wheader.csv",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
+                },
+                false, DistributionFamily.multinomial, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO);
+
+        basicEnsemble("./smalldata/logreg/prostate_train.csv",
+                "./smalldata/logreg/prostate_test.csv",
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
+                },
+                false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO);
+    }
+
+    @Test public void testBasicEnsembleGBMMetalearner() {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
@@ -58,7 +86,7 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm);
     }
 
-    @Test public void testBasicEnsembleDRFMetalearner(){
+    @Test public void testBasicEnsembleDRFMetalearner() {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
@@ -86,7 +114,7 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.drf);
     }
 
-    @Test public void testBasicEnsembleDeepLearningMetalearner(){
+    @Test public void testBasicEnsembleDeepLearningMetalearner() {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,

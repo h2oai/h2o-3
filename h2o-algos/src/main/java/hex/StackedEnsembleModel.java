@@ -67,12 +67,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
     public enum MetalearnerAlgorithm {
+      AUTO,
       glm,
       gbm,
       drf,
       deeplearning
     }
-    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.glm;
+    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
 
   }
 

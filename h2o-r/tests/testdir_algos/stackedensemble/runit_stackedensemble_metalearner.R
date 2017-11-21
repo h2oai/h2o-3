@@ -47,7 +47,7 @@ stackedensemble.metalearner.test <- function() {
                                 base_models = list(my_gbm, my_rf))
   # Check that metalearner_algorithm default is GLM w/ non-negative
   expect_equal(stack0@parameters$metalearner_algorithm, NULL)
-  expect_equal(stack0@allparameters$metalearner_algorithm, "glm")
+  expect_equal(stack0@allparameters$metalearner_algorithm, "AUTO")
   # Check that the metalearner is GLM w/ non-negative
   meta0 <- h2o.getModel(stack0@model$metalearner$name)
   expect_equal(meta0@algorithm, "glm")
@@ -70,7 +70,7 @@ stackedensemble.metalearner.test <- function() {
   expect_equal(length(meta1@parameters), 5)  #no hyperparms are set (only the 5 basic: model_id, seed, distribution, x, y)
 
 
-  # Train a stacked ensemble & check that metalearner_algorithm works with CV
+  # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
   stack2 <- h2o.stackedEnsemble(x = x,
                                 y = y,
                                 training_frame = train,
@@ -84,6 +84,30 @@ stackedensemble.metalearner.test <- function() {
   meta2 <- h2o.getModel(stack2@model$metalearner$name)
   expect_equal(meta2@algorithm, "drf")
   expect_equal(meta2@allparameters$nfolds, 3)
+
+
+  # Train a stacked ensemble & metalearner_algorithm "glm"
+  stack3 <- h2o.stackedEnsemble(x = x,
+                                y = y,
+                                training_frame = train,
+                                base_models = list(my_gbm, my_rf),
+                                metalearner_algorithm = "glm")
+  # Check that metalearner_algorithm is a default GLM
+  expect_equal(stack3@parameters$metalearner_algorithm, "glm")
+  meta3 <- h2o.getModel(stack3@model$metalearner$name)
+  expect_equal(meta3@algorithm, "glm")
+
+
+  # Train a stacked ensemble & metalearner_algorithm "deeplearning"
+  stack4 <- h2o.stackedEnsemble(x = x,
+                                y = y,
+                                training_frame = train,
+                                base_models = list(my_gbm, my_rf),
+                                metalearner_algorithm = "deeplearning")
+  # Check that metalearner_algorithm is a default DNN
+  expect_equal(stack4@parameters$metalearner_algorithm, "deeplearning")
+  meta4 <- h2o.getModel(stack4@model$metalearner$name)
+  expect_equal(meta4@algorithm, "deeplearning")
 
 }
 

@@ -75,7 +75,7 @@ Defining a Stacked Ensemble Model
 
 -  **base_models**: (Required) Specify a list of models (or model IDs) that can be stacked together.  Models must have been cross-validated (i.e. ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
--  **metalearner_algorithm** (Optional) Specify the metalearner algorithm type.  Options include ``"glm"`` (GLM with non negative weights), ``"gbm"`` (GBM with default parameters), ``"drf"`` (Random Forest with default parameters), or ``"deeplearning"`` (Deep Learning with default parameters). Defaults to ``"glm"``.
+-  **metalearner_algorithm** (Optional) Specify the metalearner algorithm type.  Options include ``"AUTO"`` (GLM with non negative weights, and if ``validation_frame`` is present, ``lambda_search`` is set to True; may change over time), ``"glm"`` (GLM with default parameters), ``"gbm"`` (GBM with default parameters), ``"drf"`` (Random Forest with default parameters), or ``"deeplearning"`` (Deep Learning with default parameters).  Defaults to ``"AUTO"``.
 
 -  `metalearner_nfolds <algo-params/nfolds.html>`__: (Optional) Specify the number of folds for cross-validation of the metalearning algorithm.  Defaults to 0 (no cross-validation).  If you want to compare the cross-validated performance of the ensemble model to the cross-validated performance of the base learners or other algorithms, you should make use of this option.
 
@@ -348,7 +348,7 @@ FAQ
 
 -  **How do I improve the performance of an ensemble?**
   
-  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner (GLM) and then try the other options for ``metalearner_algorithm``.  Once fully customized `metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__ is added, you can try out different hyperparamters for the metalearner algorithm as well.  
+  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Once fully customized `metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__ is added, you can try out different hyperparamters for the metalearner algorithm as well.  
 
   Second, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  
 

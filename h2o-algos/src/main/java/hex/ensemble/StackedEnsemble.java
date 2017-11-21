@@ -242,11 +242,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         DRF metaDRFBuilder;
         DeepLearning metaDeepLearningBuilder;
 
-        if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm)) {
+        if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO)) {
 
           //GLM Metalearner
           metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
           metaGLMBuilder._parms._non_negative = true;
+          //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
           metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
           metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -303,7 +304,68 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           _model.update(_job);
           _model.unlock(_job);
 
-        } else if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm)) {
+        } else if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm)) {
+
+        //GLM Metalearner
+        metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
+        metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
+        metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
+        metaGLMBuilder._parms._response_column = _model.responseColumn;
+        metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+        if (_model._parms._metalearner_nfolds > 1) {
+          if (_model._parms._metalearner_fold_assignment == null) {
+            metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          } else {
+            metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+          }
+        }
+        // TODO: Add metalearner_fold_column
+        // metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
+        // TODO: Possibly add this back in and turn on early stopping in all metalearners when a validation frame is present
+        // Enable lambda search if a validation frame is passed in to get a better GLM fit.
+         /*
+          // if (metaGLMBuilder._parms._valid != null) {
+          metaGLMBuilder._parms._lambda_search = true;
+        }
+        */
+        if (_model.modelCategory == ModelCategory.Regression) {
+          metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.gaussian;
+        } else if (_model.modelCategory == ModelCategory.Binomial) {
+          metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        } else if (_model.modelCategory == ModelCategory.Multinomial) {
+          metaGLMBuilder._parms._family = GLMModel.GLMParameters.Family.multinomial;
+        } else {
+          throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
+        }
+
+        metaGLMBuilder.init(false);
+
+        Job<GLMModel> j = metaGLMBuilder.trainModel();
+
+        while (j.isRunning()) {
+          try {
+            _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
+          }
+        }
+
+        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+
+        _model._output._metalearner = metaGLMBuilder.get();
+        _model.doScoreOrCopyMetrics(_job);
+        if (_parms._keep_levelone_frame) {
+          _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
+        } else {
+          DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
+        }
+        if (null != levelOneValidationFrame) {
+          DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
+        }
+        _model.update(_job);
+        _model.unlock(_job);
+
+      } else if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm)) {
 
           //GBM Metalearner
           metaGBMBuilder = ModelBuilder.make("GBM", job, metalearnerKey);
