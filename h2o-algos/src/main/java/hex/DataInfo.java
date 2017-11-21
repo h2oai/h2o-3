@@ -1176,10 +1176,10 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        for (int r = c.nextNZ(-1, _imputeMissing); r < c._len; r = c.nextNZ(r, _imputeMissing)) {
           if (c.atd(r) == 0) continue;
           assert r > oldRow;
-          oldRow = r;Row row = rows[r];
+          oldRow = r; Row row = rows[r];
           if (c.isNA(r) && _skipMissing)
             row.predictors_bad = true;
           if (row.predictors_bad) continue;
