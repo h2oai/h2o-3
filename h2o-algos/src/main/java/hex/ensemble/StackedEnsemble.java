@@ -232,8 +232,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
 
       if(_model._parms._metalearner_algorithm == null){
-        _model._parms._metalearner_algorithm = "glm_non_negative";
-        Log.info("`metalearner_algorithm` is detected to be null. Using default `glm_non_negative`.");
+        _model._parms._metalearner_algorithm = "glm";
+        Log.info("`metalearner_algorithm` is detected to be null. Using default `glm`.");
       }
       //Compute metalearner
       computeMetaLearner(levelOneTrainingFrame, levelOneValidationFrame, _model._parms._metalearner_algorithm);
@@ -251,12 +251,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         DRF metaDRFBuilder;
         DeepLearning metaDeepLearningBuilder;
         
-        if(metalearner_algo.equals("glm") || metalearner_algo.equals("glm_non_negative")){
+        if(metalearner_algo.equals("glm")){
           metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
 
-          if(metalearner_algo.equals("glm_non_negative")) {
-            metaGLMBuilder._parms._non_negative = true;
-          }
+          metaGLMBuilder._parms._non_negative = true;
           metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
           metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -451,7 +449,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           _model.unlock(_job);
         } else {
           throw new H2OIllegalArgumentException("Wrong `metalearner_algorithm`. Passed in " + _model._parms._metalearner_algorithm + " " +
-                  "but should have been GLM, GBM, DRF, DeepLearning");
+                  "but should have been glm, gbm, randomForest, or deeplearning.");
         }
       }
     }

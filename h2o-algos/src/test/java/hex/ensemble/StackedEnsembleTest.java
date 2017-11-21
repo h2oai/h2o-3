@@ -116,35 +116,7 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.bernoulli, "deeplearning");
     }
 
-    @Test public void testBasicEnsembleGLMMetalearner(){
-
-        basicEnsemble("./smalldata/junit/cars.csv",
-                null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
-                false, gaussian, "glm");
-
-        basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
-                null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr) {
-                    for( String s : ignored_aircols ) fr.remove(s).remove();
-                    return fr.find("IsArrDelayed"); }
-                },
-                false, DistributionFamily.bernoulli, "glm");
-
-        basicEnsemble("./smalldata/iris/iris_wheader.csv",
-                null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
-                },
-                false, DistributionFamily.multinomial, "glm");
-
-        basicEnsemble("./smalldata/logreg/prostate_train.csv",
-                "./smalldata/logreg/prostate_test.csv",
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
-                },
-                false, DistributionFamily.bernoulli, "glm");
-    }
-
-    @Test public void testBasicEnsembleGLMNonNegativeMetalearner() {
+    @Test public void testBasicEnsembleGLMMetalearner() {
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
