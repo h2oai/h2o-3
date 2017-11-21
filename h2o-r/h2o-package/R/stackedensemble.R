@@ -13,8 +13,11 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
-#' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
-#'        folds must be identical across models. Defaults to [].
+#' @param base_models List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds >
+#'        1, and folds must be identical across models. Defaults to [].
+#' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'glm' (GLM with non negative weights), 'gbm' (GBM
+#'        with default parameters), 'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with
+#'        default parameters). Must be one of: "glm", "gbm", "drf", "deeplearning". Defaults to glm.
 #' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
 #'        0.
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
@@ -31,6 +34,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
                                 base_models = list(),
+                                metalearner_algorithm = c("glm", "gbm", "drf", "deeplearning"),
                                 metalearner_nfolds = 0,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 keep_levelone_frame = FALSE
@@ -81,6 +85,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
+  if (!missing(metalearner_algorithm))
+    parms$metalearner_algorithm <- metalearner_algorithm
   if (!missing(metalearner_nfolds))
     parms$metalearner_nfolds <- metalearner_nfolds
   if (!missing(metalearner_fold_assignment))

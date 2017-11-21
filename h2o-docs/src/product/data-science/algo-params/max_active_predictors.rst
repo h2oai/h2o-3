@@ -1,3 +1,5 @@
+.. _max_active_predictors:
+
 ``max_active_predictors``
 -------------------------
 
@@ -9,12 +11,12 @@ Description
 
 This option limits the number of active predictors. (Note that the actual number of non-zero predictors in the model is going to be slightly lower). It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
-When using the :math:`\lambda_1` penalty with lambda search, this option will stop the search before it completes. Models built at the beginning of the lambda search have higher lambda alues, consider fewer predictors, and take less time to calculate the model. Models built at the end of the lambda search have lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the ``nlambdas`` parameter for a lambda search to specify the number of models attempted across the search. 
+When using the :math:`\lambda_1` penalty with lambda search, this option will stop the search before it completes. Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model. Models built at the end of the lambda search have lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the ``nlambdas`` parameter for a lambda search to specify the number of models attempted across the search. 
 
 **Default Value**
 
 - If ``solver`` is IRLSM, COORDINATE_DESCENT, or COORDINATE_DESCENT_NAIVE, then ``max_active_predictors`` defaults to 5000.
-- If lambda search is disabled, ``alpha`` < 0, ``solver`` is AUTO, and you have less than 5000 active predictors, then the ``solver`` will be IRLSM, and ``max_active_predictors`` defaults to 5000.
+- If the ``solver`` is AUTO and you have less than 5000 active predictors initially, then the solver will be IRLSM or COD (with lambda search), and ``max_active_predictors`` is set to 5000.
 - If you run lambda search with ``alpha`` > 0, and ``solver`` is AUTO, then ``solver`` will be COORDINATE_DESCENT, and ``max_active_predictors`` will default to 5000. 
 - For all other scenarios, ``max_active_predictors`` will default to 100000000.
 

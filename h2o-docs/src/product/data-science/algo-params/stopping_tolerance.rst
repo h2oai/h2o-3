@@ -1,3 +1,5 @@
+.. _stopping_tolerance:
+
 ``stopping_tolerance``
 ----------------------
 

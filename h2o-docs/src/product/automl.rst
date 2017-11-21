@@ -5,7 +5,7 @@ In recent years, the demand for machine learning experts has outpaced the supply
 
 Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, we have designed an easy-to-use interface which automates the process of training a large selection of candidate models.  H2O's AutoML can also be a helpful tool for the advanced user, by providing a simple wrapper function that performs a large number of modeling-related tasks that would typically require many lines of code, and by freeing up their time to focus on other aspects of the data science pipeline tasks such as data-preprocessing, feature engineering and model deployment.
 
-H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce highly predictive ensemble models which, in most cases, will be the top performing model in the AutoML Leaderboard.  
+H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard.  
 
 
 AutoML Interface
@@ -185,6 +185,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     #  4         GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
     #  5         GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
     #  6         GBM_grid_0_AutoML_20171121_012135_model_3 0.771026 0.570270
+
     #  [10 rows x 3 columns] 
 
     # The leader model is stored here
@@ -268,7 +269,6 @@ The AutoML object includes a "leaderboard" of models that were trained in the pr
 
 The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
 
-
 Here is an example leaderboard for a binary classification task:
 
 +---------------------------------------------------+----------+----------+
@@ -299,9 +299,9 @@ Here is an example leaderboard for a binary classification task:
 FAQ
 ~~~
 
-- **Which models are trained in the AutoML process?**
+-  **Which models are trained in the AutoML process?**
 
- The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the top performing model from each algorithm class, so it's an ensemble of five base models.  The second "Top Model" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
+  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the top performing model from each algorithm class, so it's an ensemble of five base models.  The second "Top Model" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
 
 -  **How do I save AutoML runs?**
 
