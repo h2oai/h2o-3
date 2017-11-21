@@ -3,9 +3,12 @@ import groovy.text.markup.MarkupTemplateEngine
 import groovy.text.markup.TemplateConfiguration
 import groovy.text.Template
 
-def call(build) {
+def call() {
     def LOGO_URL = 'https://h2o2016.wpengine.com/wp-content/themes/h2o2016/images/H2O_logo_yellow.svg'
     def REPO_URL = 'https://github.com/h2oai/h2o-3'
+
+    def result = currentBuild.currentResult
+    def build = currentBuild.rawBuild
 
     def changesContent = ''
     build.getChangeSets().each { changeSetList ->
@@ -16,15 +19,20 @@ def call(build) {
         }
     }
 
-    List failedTests = build.getAction(AbstractTestResultAction.class).getFailedTests()
-    if (failedTests.isEmpty()) {
-        testsContent = "p('All tests passed!')"
-    } else {
-        testsContent = '''ul {
+    testResultsAction = build.getAction(AbstractTestResultAction.class)
+    def testsContent = "p('No tests were run.')"
+    def failedTests = null
+    if (testResultsAction != null) {
+        failedTests = testResultsAction.getFailedTests()
+        if (failedTests.isEmpty()) {
+            testsContent = "p('All tests passed!')"
+        } else {
+            testsContent = '''ul {
       failedTests.each {
         fragment("li(failedTest)", failedTest:it.getFullDisplayName())
       }
     }'''
+        }
     }
 
     def stages = []
@@ -52,7 +60,7 @@ def call(build) {
     String templateString = """
 html {
     head {
-        style('''
+        style('type':'text/css', '''
               .summary {
                   box-shadow: 0px 5px 5px #aaaaaa;
                   background-color: #424242;
@@ -148,16 +156,16 @@ html {
         div('class':'summary') {
             div('class':'summary-header') {
                 div('class':'summary-header-content') {
-                    a('class':'heading', 'href':'${build.getAbsoluteUrl()}', "Build #${build.number} - ${build.result}")
+                    a('class':'heading', 'href':'${build.getAbsoluteUrl()}', "Build #${build.number} - ${result}")
                 }
             }
-            div('class':'summary-result ${build.result.toString().toLowerCase()}') {
+            div('class':'summary-result ${result.toLowerCase()}') {
             }
         }
         div('class':'content') {
             p('class':'section-header', 'Duration')
             div('class':'section-content') {
-                p('Started at <strong>${new Date(build.getStartTimeInMillis())}</strong> finished after <strong>${build.getDurationString()}</strong> at <strong>${new Date(build.getStartTimeInMillis() + build.getDuration())}</strong>')
+                p('Started at <strong>${new Date(build.getStartTimeInMillis())}</strong>')
             }
             p('class':'section-header', 'Changes')
             div('class':'section-content') {
@@ -192,7 +200,7 @@ html {
     model['stages'] = stages
 
     Template template = engine.createTemplate(templateString)
-    return template.make(model)
+    return template.make(model).toString()
 }
 
 def boolToSuccess(final boolean value) {

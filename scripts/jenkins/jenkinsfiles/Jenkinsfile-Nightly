@@ -2,38 +2,49 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
+def emailContent = null
+def sendEmail = null
 
-ansiColor('xterm') {
-  timestamps {
+try {
+  ansiColor('xterm') {
+    timestamps {
 
-    node(DEFAULT_NODE_LABEL) {
-      stage('Prepare and Build') {
-        dir('h2o-3') {
-          // clear the folder
-          deleteDir()
-          // checkout H2O-3
-          retry(3) {
-            timeout(time: 1, unit: 'MINUTES') {
-              echo "###### Checkout H2O-3 ######"
-              checkout scm
+      node(DEFAULT_NODE_LABEL) {
+        stage('Prepare and Build') {
+          dir('h2o-3') {
+            // clear the folder
+            deleteDir()
+            // checkout H2O-3
+            retry(3) {
+              timeout(time: 1, unit: 'MINUTES') {
+                echo "###### Checkout H2O-3 ######"
+                checkout scm
+              }
             }
           }
+
+          emailContent = load('h2o-3/scripts/jenkins/groovy/emailContent.groovy')
+          sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
+
+          def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
+          setBuildDesc()
+
+          def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
+          buildConfig = prepareH2O3('MODE_NIGHTLY', true)
+          buildConfig.setDefaultOverrideRerun(true)
+
+          def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+          setJobProperties(buildConfig)
+
+          // Load the executeTestStages script
+          executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
         }
-
-        def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
-        setBuildDesc()
-
-        def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-        buildConfig = prepareH2O3('MODE_NIGHTLY', true)
-        buildConfig.setDefaultOverrideRerun(true)
-
-        def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-        setJobProperties(buildConfig)
-
-        // Load the executeTestStages script
-        executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
       }
+      executeTestStages(buildConfig)
     }
-    executeTestStages(buildConfig)
+  }
+} finally {
+  if (emailContent != null && sendEmail != null) {
+    sendEmail(emailContent)
   }
 }
