@@ -1061,15 +1061,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     Model[] allModels = leaderboard().getModels();
 
-    //Set aside Model[] for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
-    //This will give another ensemble that is smaller than the original which takes all models into consideration.
-    Model[] bestModels = new Model[5];
-    boolean fetchedDRF = false;
-    boolean fetchedXRT = false;
-    boolean fetchedTopGBM = false;
-    boolean fetchedTopDL = false;
-    boolean fetchedTopGLM = false;
-
     if (allModels.length == 0){
       this.job.update(50, "No models built; StackedEnsemble build skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts.");
@@ -1099,6 +1090,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble", notEnsembles);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
+        //Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+        //This will give another ensemble that is smaller than the original which takes all models into consideration.
         List<Model> models = new ArrayList();
         Set<String> types = new HashSet();
 
