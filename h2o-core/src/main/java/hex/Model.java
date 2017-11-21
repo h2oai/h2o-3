@@ -955,8 +955,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, true, false));
     }
 
-    final double missing = parms.missingColumnsType();
-
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
     ArrayList<String> msgs = new ArrayList<>();
@@ -982,10 +980,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
-          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + (isFold ? 0 : missing);
-          vec = test.anyVec().makeCon(isFold ? 0 : missing);
+          final double defval;
+          if (isWeights) defval = 1; // note: even though computeMetrics is false we should still have sensible weights (GLM skips rows with NA weights)
+          else if (isFold) defval = 0;
+          else {
+            defval = parms.missingColumnsType();
+            convNaN++;
+          }
+          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
+          vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
-          if (!isFold) convNaN++;
           msgs.add(str);
         }
       }
