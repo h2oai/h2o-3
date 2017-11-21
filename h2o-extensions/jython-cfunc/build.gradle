@@ -8,3 +8,14 @@ dependencies {
     testCompile project(path: ":h2o-core", configuration: "testArchives")
     testCompile "org.mockito:mockito-core:2.6.2"
 }
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+    dependsOn ":h2o-core:testJar"
+    // Note: multi node tests are ignored right now!
+    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+
+    // Defeat task 'test' by running no tests.
+    exclude '**'
+}

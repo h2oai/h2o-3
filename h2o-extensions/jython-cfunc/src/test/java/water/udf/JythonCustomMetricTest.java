@@ -25,7 +25,7 @@ public class JythonCustomMetricTest extends TestUtil {
     ClassLoader cl = Thread.currentThread().getContextClassLoader();
     try(InputStream is = cl.getResourceAsStream("py/test_mae_custom_metric.py")) {
       byte[] ba = IOUtils.toByteArray(is);
-      return loadRawTestFunc("python", "test_mae.py", "test.MAE", ba, "test.py");
+      return loadRawTestFunc("python", "test_mae.py", "test_cm.MAE", ba, "test_cm.py");
     }
   }
 }

@@ -61,17 +61,4 @@ public class JythonCFuncTest extends TestUtil {
       DKV.remove(testFuncDef.getKey());
     }
   }
-
-  @Test public void testWeirdIface() throws Exception {
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
-    CFuncRef testFuncDef = null;
-    try(InputStream is = cl.getResourceAsStream("tt.py")) {
-      byte[] ba = IOUtils.toByteArray(is);
-      testFuncDef = loadRawTestFunc("python", "testWI.py", "test.Y", ba, "test.py");
-      ClassLoader dkvCl = new DkvClassLoader(testFuncDef, cl);
-      JythonCFuncLoader loader = new JythonCFuncLoader();
-    } finally {
-      DKV.remove(testFuncDef.getKey());
-    }
-  }
 }
