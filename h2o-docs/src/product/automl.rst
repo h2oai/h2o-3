@@ -87,6 +87,50 @@ Optional Miscellaneous Parameters
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
 
+Grid Search Parameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
+
+**AutoML Hyperparameters**
+
+-  ``max_runtime_secs``
+-  ``max_models``
+-  ``stopping_metric``
+-  ``stopping_rounds``
+-  ``stopping_tolerance``
+-  ``seed``
+
+**GBM Hyperparameters**
+
+-  ``score_tree_interval``
+-  ``histogram_type``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``learn_rate``
+-  ``sample_rate``
+-  ``col_sample_rate``
+-  ``col_sample_rate_per_tree``
+-  ``min_split_improvement``
+
+**GLM Hyperparameters**
+
+-  ``alpha``
+-  ``missing_values_handling``
+
+**Deep Learning Hyperparameters**
+
+-  ``epochs``
+-  ``adaptivate_rate``
+-  ``activation``
+-  ``rho``
+-  ``epsilon``
+-  ``input_dropout_ratio``
+-  ``hidden``
+-  ``hidden_dropout_ratios``
+
+
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -99,8 +143,7 @@ When the user specifies:
    3. **training + leaderboard**: The ``training_frame`` is split into training (70%) and validation (30%) sets and the leaderboard frame stays as-is.
    4. **training + validation + leaderboard**: Leave all frames as-is.
 
-In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the ``leaderboard_frame`` will be truely optional, as the leaderboard will be created using cross-validation metrics instead (unless the ``leaderboard_frame`` is excplicitly specified by the user).  However, for now, the holdout leaderboard frame must exist for scoring/ranking purposes.
-
+In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the ``leaderboard_frame`` will be truly optional, as the leaderboard will be created using cross-validation metrics instead (unless the ``leaderboard_frame`` is excplicitly specified by the user).  However, for now, the holdout leaderboard frame must exist for scoring/ranking purposes.
 
 Code Examples
 ~~~~~~~~~~~~~
@@ -225,8 +268,6 @@ AutoML Output
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the performance of the model on the ``leaderboard_frame`` test set.  If the user did not specify the ``leaderboard_frame`` argument, then a frame will be automatically partitioned, as explained in the `Auto-Generated Frames <#auto-generated-frames>`__ section.  In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the leaderboard will be created using cross-validation metrics, unless a scoring frame is provided explicitly by the user.
 
 The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
-
-
 
 Here is an example leaderboard for a binary classification task:
 
