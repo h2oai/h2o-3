@@ -2,8 +2,8 @@
 
 PySparkling Water is an integration of Python with Sparkling water. It allows the user to start H2O services on a spark cluster from Python API.
 
-In the PySparkling Water driver program, the \texttt{SparkContext} or \texttt{SparkSession} uses Py4J to start the driver JVM and the JAVA \texttt{SparkContext}/\texttt{SparkSession} is used to create \texttt{H2OContext} (hc). This in turn starts the H2O cloud in the Spark ecosystem (In Internal backend only, in external backend, the H2O cloud is running outside of Spark cluster).
-Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
+In the PySparkling Water driver program, the \texttt{SparkContext} or \texttt{SparkSession} uses Py4J to start the driver JVM, and the JAVA \texttt{SparkContext}/\texttt{SparkSession} is used to create \texttt{H2OContext} (hc). This in turn starts the H2O cloud in the Spark ecosystem. (In Internal backend only. In external backend, the H2O cloud is running outside of the Spark cluster.)
+Once the H2O cluster is up, the H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
 
 PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
 

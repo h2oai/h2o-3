@@ -83,7 +83,7 @@ Sparkling Water provides several primitives (Table~\ref{tab:primitives}), which 
 
 Before using H2O algorithms and data structures, the first step is to create and start the \texttt{H2OContext} instance using the \\
 \texttt{val hc = new H2OContext.getOrCreate(spark)} call.
-The \texttt{H2OContext} contains the necessary information for running H2O services and exposes methods for data transformation between the Spark RDD, \texttt{DataFrame} or \texttt{Dataset} and the \texttt{H2OFrame}.
+\texttt{H2OContext} contains the necessary information for running H2O services and exposes methods for data transformation between the Spark RDD, \texttt{DataFrame} or \texttt{Dataset}, and the \texttt{H2OFrame}.
 Starting \texttt{H2OContext} involves an operation that:
 
 \begin{itemize}
@@ -120,8 +120,7 @@ val h2oFrame = new H2OFrame("iris.hex")
 \end{itemize}
 
 
-\pagebreak
-When the \texttt{H2OContext} is running, any H2O algorithm can be called. Most of the provided algorithms are located in the \texttt{hex} package. Calling an algorithm is composed of two steps:
+When \texttt{H2OContext} is running, any H2O algorithm can be called. Most of the provided algorithms are located in the \texttt{hex} package. Calling an algorithm is composed of two steps:
 
 \begin{itemize}
 	\item Specifying parameters:

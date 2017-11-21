@@ -11,7 +11,11 @@ As a chief air traffic controller, your job is come up with a prediction engine 
 
 One of the many cool features about the Spark project is the ability to initiate a Spark Session(SQL Context) within our application that enables us to write SQL-like queries against an existing \texttt{DataFrame}. Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python, but want to perform complex manipulations of their data.
 
-Within the context of this example, we are going to first read in the airlines dataset and then process a weather file which contains the weather data at the arriving city. Joining the two tables will require a Spark Session(SQL Context) such that we can write an INNER JOIN against the two independent \texttt{DataFrame}s.  Let's get started!
+Within the context of this example, we are going to first read in the airlines dataset and then process a weather file that contains the weather data at the arriving city. Joining the two tables will require a Spark Session(SQL Context) such that we can write an INNER JOIN against the two independent \texttt{DataFrame}s.  
+
+The full source for the application is here: \url{http://bit.ly/1mo3XO2}
+
+Let's get started!
 
 \newpage
 \textbf{Data Ingest}
@@ -94,7 +98,7 @@ val train: H2OFrame = bigTable
 \textbf{H2O Deep Learning}
 
 Now we have our dataset loaded into H2O. Recall this dataset has been filtered to only include the flights and weather data on Chicago O'hare. It's now time to run a machine learning algorithm to predict flight delay in minutes. As always, we start off with the necessary imports, followed by declaring the parameters that we wish to control:
-\pagebreak
+
 \begin{lstlisting}[style=Scala]
 import hex.deeplearning.DeepLearning
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
@@ -119,6 +123,4 @@ val predictionH2OFrame = dlModel.score(bigTable).subframe(Array("predict"))
 val predictionsFromModel = asRDD[DoubleHolder](predictionH2OFrame).collect.map(_.result.getOrElse(Double.NaN))
 println(predictionsFromModel.mkString("\n===> Model predictions: ", ", ", ", ...\n"))
 \end{lstlisting}
-
-The full source for the application is here: \url{http://bit.ly/1mo3XO2}
 

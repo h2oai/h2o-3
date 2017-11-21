@@ -6,12 +6,12 @@
 
 \begin{itemize}
     \item \textbf{Standalone mode}: Spark executor logs are located in the directory {\lstinline[style=Bash]|$SPARK_HOME/work/app-<AppName>|} (where \texttt{<AppName>} is the name of your application). The location contains also stdout/stderr from H2O.
-    \item \textbf{YARN mode}: YARN mode: The executors logs are available via yarn logs -applicationId <appId> command. Driver logs are by default printed to console, however, H2O also writes logs into current\_dir/h2ologs.
+    \item \textbf{YARN mode}: YARN mode: The executor logs are available via the {\lstinline[style=Bash]|$yarn logs -applicationId <appId>|} command. Driver logs are by default printed to console, however, H2O also writes logs into \texttt{current\_dir/h2ologs}.
 \end{itemize}
 
-The location of H2O driver logs can be controlled via Spark property \\ \texttt{spark.ext.h2o.client.log.dir} (pass via \texttt{--conf}) option.
+The location of H2O driver logs can be controlled via the Spark property \\ \texttt{spark.ext.h2o.client.log.dir} (pass via \texttt{--conf}) option.
 
-\textbf{How to display Sparkling Water information in the Spark History Server?}
+\textbf{How can I display Sparkling Water information in the Spark History Server?}
 
 Sparkling Water reports the information already, you just need to add the sparkling-water classes on the classpath of the Spark history server. To see how to configure the spark application for logging into the History Server, please see Spark Monitoring Configuration at
 \url{http://spark.apache.org/docs/latest/monitoring.html}.
@@ -30,7 +30,7 @@ Sparkling Shell accepts common Spark Shell arguments. For example, to increase t
 
 \textbf{How do I change the base port H2O uses to find available ports?}
 
-The H2O accepts \texttt{spark.ext.h2o.port.base} parameter via Spark configuration properties: {\lstinline[style=Bash]|bin/sparkling-shell --conf "spark.ext.h2o.port.base=13431"|}. For a complete list of configuration options, refer to section~\ref{sec:properties}
+H2O accepts the \texttt{spark.ext.h2o.port.base} parameter via Spark configuration properties: {\lstinline[style=Bash]|bin/sparkling-shell --conf "spark.ext.h2o.port.base=13431"|}. For a complete list of configuration options, refer to section~\ref{sec:properties}.
 
 \textbf{How do I use Sparkling Shell to launch a Scala test.script that I created?}
 
@@ -67,23 +67,23 @@ import _root_.hex.tree.gbm.GBM
 java.lang.NoClassDefFoundError: com/sun/jersey/api/client/config/ClientConfig
 \end{lstlisting}
 
-The Yarn time service is not compatible with libraries provided by Spark. Please disable time service via setting \\
+The YARN time service is not compatible with libraries provided by Spark. Please disable time service via setting \\
 \texttt{spark.hadoop.yarn.timeline-service.enabled=false}.
 For more details, please visit \url{https://issues.apache.org/jira/browse/SPARK-15343}.
 
 \textbf{Getting non-deterministic H2O Frames after the Spark Data Frame to H2O Frame conversion}
 
-This is caused by what we think is a bug in Apache Spark. On specific kinds of data combined with higher number of partitions we can see non-determinism in BroadCastHashJoins. This leads to to jumbled rows and columns in the output H2O frame. We recommend to disable broadcast based joins which seem to be non-deterministic as:
+This is caused by what we think is a bug in Apache Spark. When specific kinds of data are combined with higher number of partitions, we can see non-determinism in BroadCastHashJoins. This leads to to jumbled rows and columns in the output H2O frame. We recommend disabling broadcast-based joins, which seem to be non-deterministic as:
 
 \begin{lstlisting}[style=Scala]
 sqlContext.sql("SET spark.sql.autoBroadcastJoinThreshold=-1")
 \end{lstlisting}
 
-The issue can be tracked as PUBDEV-3808 (\url{https://0xdata.atlassian.net/browse/PUBDEV-3808}). On the Spark side, the following issues are related to the problem: Spark-17806 (\url{https://issues.apache.org/jira/browse/SPARK-17806})
+The issue can be tracked as PUBDEV-3808 (\url{https://0xdata.atlassian.net/browse/PUBDEV-3808}). On the Spark side, the following issue is related to the problem: Spark-17806 (\url{https://issues.apache.org/jira/browse/SPARK-17806})
 
-\textbf{How to configure Hive metastore location ?}
+\textbf{How can I configure the Hive metastore location?}
 
-Spark SQL context (in fact Hive) requires the use of metastore which stores metadata about Hive tables. In order to ensure this works correctly, the {\lstinline[style=Bash]|${SPARK_HOME}/conf/hive-site.xml|} needs to contain the following configuration. We provide two examples, how to use MySQL and Derby as the metastore.
+Spark SQL context (in fact Hive) requires the use of metastore, which stores metadata about Hive tables. In order to ensure this works correctly, the {\lstinline[style=Bash]|${SPARK_HOME}/conf/hive-site.xml|} needs to contain the following configuration. We provide two examples, how to use MySQL and Derby as the metastore.
 
 For MySQL, the following configuration needs to be located in the {\lstinline[style=Bash]|${SPARK_HOME}/conf/hive-site.xml|} configuration file:
 
@@ -120,7 +120,7 @@ where:
 \item \{username\} and \{password\} are the username and password to MySQL database with read and write access to the \{metastore\_db\} database.
 \end{itemize}
 
-For Derby, the following configuration needs to be location in the the {\lstinline[style=Bash]|${SPARK_HOME}/conf/hive-site.xml|} configuration file:
+For Derby, the following configuration needs to be located in the {\lstinline[style=Bash]|${SPARK_HOME}/conf/hive-site.xml|} configuration file:
 
 \begin{lstlisting}[style=Bash]
 <property>

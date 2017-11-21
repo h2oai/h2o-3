@@ -161,7 +161,7 @@ conf = H2OConf(spark)
 hc = H2OContext.getOrCreate(spark, conf)
 \end{lstlisting}
 
-There is also less strict configuration \texttt{setClientNetworkMask} in Scala and \texttt{set\_client\_network\_mask} in Python. Instead of it's IP address equivalent, using this method we can force H2O client to use just specific network and let up to the client which IP address from this network to use.
+There is also a less strict configuration \texttt{setClientNetworkMask} in Scala and \texttt{set\_client\_network\_mask} in Python. Instead of its IP address equivalent, using this method we can force the H2O client to use just a specific network and leave up to the client which IP address from this network to use.
 
 The same configuration can be applied when the H2O cluster has been started via multicast discovery.
 
