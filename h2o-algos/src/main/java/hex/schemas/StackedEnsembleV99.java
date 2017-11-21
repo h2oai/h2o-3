@@ -26,12 +26,13 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
 
     // Base models
-    @API(help = "List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
+    @API(level = API.Level.critical,
+            help = "List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
     public KeyV3.ModelKeyV3 base_models[];
 
     
     // Metalearner algorithm
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
             values = {"glm", "gbm", "drf", "deeplearning"},
             help = "Type of algorithm to use as the metalearner. " +
                     "Options include 'glm' (GLM with non negative weights), 'gbm' (GBM with default parameters), " +
@@ -61,7 +62,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     public FrameV3.ColSpecifierV3 metalearner_fold_column;
     */
 
-    @API(help = "Keep level one frame used for metalearner training.")
+    @API(level = API.Level.secondary,
+            help = "Keep level one frame used for metalearner training.")
     public boolean keep_levelone_frame;
   
   }
