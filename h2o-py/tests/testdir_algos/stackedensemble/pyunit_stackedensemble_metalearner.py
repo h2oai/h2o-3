@@ -60,7 +60,7 @@ def stackedensemble_metalearner_test():
     stack0 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf])
     stack0.train(x=x, y=y, training_frame=train)
     # Check that metalearner_algorithm default is GLM w/ non-negative
-    assert(stack0.params['metalearner_algorithm']['actual'] == "glm")
+    assert(stack0.params['metalearner_algorithm']['actual'] == "AUTO")
     # Check that the metalearner is GLM w/ non-negative
     meta0 = h2o.get_model(stack0.metalearner()['name'])
     assert(meta0.algo == "glm")
@@ -77,8 +77,8 @@ def stackedensemble_metalearner_test():
     assert(meta1.algo == "gbm")
     # TO DO: Add a check that no other hyperparams have been set
 
-
-    # Train a stacked ensemble & check that metalearner_algorithm works with CV    
+ 
+    # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
     stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="drf", metalearner_nfolds=3)
     stack2.train(x=x, y=y, training_frame=train)
     # Check that metalearner_algorithm is a default RF
@@ -88,6 +88,26 @@ def stackedensemble_metalearner_test():
     meta2 = h2o.get_model(stack2.metalearner()['name'])
     assert(meta2.algo == "drf")
     assert(meta2.params['nfolds']['actual'] == 3)
+
+
+    # Train a stacked ensemble & check that metalearner_algorithm "glm" works
+    stack3 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="glm")
+    stack3.train(x=x, y=y, training_frame=train)
+    # Check that metalearner_algorithm is a default GLM
+    assert(stack3.params['metalearner_algorithm']['actual'] == "glm")
+    # Check that the metalearner is default GLM
+    meta3 = h2o.get_model(stack3.metalearner()['name'])
+    assert(meta3.algo == "glm")
+
+
+    # Train a stacked ensemble & check that metalearner_algorithm "deeplearning" works
+    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="deeplearning")
+    stack4.train(x=x, y=y, training_frame=train)
+    # Check that metalearner_algorithm is a default DNN
+    assert(stack4.params['metalearner_algorithm']['actual'] == "deeplearning")
+    # Check that the metalearner is default DNN
+    meta4 = h2o.get_model(stack4.metalearner()['name'])
+    assert(meta4.algo == "deeplearning")
 
 
 
