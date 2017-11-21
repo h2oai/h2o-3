@@ -914,20 +914,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return dlJob;
   }
 
-  // Stacked Ensemble job
-  Job<StackedEnsembleModel>stack(Key<Model>[]... modelKeyArrays) {
+  Job<StackedEnsembleModel>stack(String modelName, Key<Model>[]... modelKeyArrays) {
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
-    // Set up Stacked Ensemble
+
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
-    // Add cross-validation args
+    // if using cross-validation, set nfolds
     //stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
     stackedEnsembleParameters._metalearner_nfolds = 4;  //testing
     // TODO: Add fold_assignment and fold_column support
-    Job ensembleJob = trainModel(null, "stackedensemble", stackedEnsembleParameters);
+    Key modelKey = modelKey(modelName);
+
+    Job ensembleJob = trainModel(modelKey, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
 
@@ -1089,8 +1090,27 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           if (!(aModel instanceof StackedEnsembleModel))
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
-        Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
+        Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble", notEnsembles);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
+
+        //Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+        //This will give another ensemble that is smaller than the original which takes all models into consideration.
+        List<Model> models = new ArrayList();
+        Set<String> types = new HashSet();
+
+        for (Model bestM : allModels) {
+          String type = getModelType(bestM);
+          if (types.contains(type)) continue;
+          types.add(type);
+          models.add(bestM);
+        }
+
+        Key<Model>[] bestModelKeys = new Key[models.size()];
+        for (int i = 0; i < models.size(); i++)
+          bestModelKeys[i] = models.get(i)._key;
+
+        Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_topmodel", bestModelKeys);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
 
       }
     }
@@ -1355,5 +1375,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       else
         userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
     }
+  }
+
+  private String getModelType(Model m) {
+    return m._key.toString().startsWith("XRT_") ? "XRT" : m._parms.algoName();
   }
 }
