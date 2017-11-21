@@ -50,7 +50,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "keep_levelone_frame"}
+                      "metalearner_fold_column", "keep_levelone_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -176,6 +176,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def metalearner_fold_assignment(self, metalearner_fold_assignment):
         assert_is_type(metalearner_fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["metalearner_fold_assignment"] = metalearner_fold_assignment
+
+
+    @property
+    def metalearner_fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
+
+        Type: ``str``.
+        """
+        return self._parms.get("metalearner_fold_column")
+
+    @metalearner_fold_column.setter
+    def metalearner_fold_column(self, metalearner_fold_column):
+        assert_is_type(metalearner_fold_column, None, str)
+        self._parms["metalearner_fold_column"] = metalearner_fold_column
 
 
     @property

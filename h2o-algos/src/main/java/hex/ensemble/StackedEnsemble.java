@@ -100,8 +100,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
-
+      // Add response column to level one frame
       levelOneFrame.add(_model.responseColumn, actuals.vec(_model.responseColumn));
+      // Add metalearner_fold_column to level one frame if it exists
+      if (_model._parms._metalearner_fold_column != null) {
+        levelOneFrame.add(_model._parms._metalearner_fold_column, actuals.vec(_model._parms._metalearner_fold_column));
+      }
 
       // TODO: what if we're running multiple in parallel and have a name collision?
 
@@ -251,16 +255,19 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
           metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGLMBuilder._parms._response_column = _model.responseColumn;
-          metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-          if (_model._parms._metalearner_nfolds > 1) {
-            if (_model._parms._metalearner_fold_assignment == null) {
-              metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-            } else {
-              metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+          if (_model._parms._metalearner_fold_column == null) {
+            metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+            if (_model._parms._metalearner_nfolds > 1) {
+              if (_model._parms._metalearner_fold_assignment == null) {
+                metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+              } else {
+                metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+              }
             }
+          } else {
+            metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           }
-          // TODO: Add metalearner_fold_column
-          // metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
+
           // Enable lambda search if a validation frame is passed in to get a better GLM fit.
           // Since we are also using non_negative to true, we should also set early_stopping = false.
           if (metaGLMBuilder._parms._valid != null) {
@@ -312,15 +319,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
         metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-        if (_model._parms._metalearner_nfolds > 1) {
-          if (_model._parms._metalearner_fold_assignment == null) {
-            metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          if (_model._parms._metalearner_fold_column == null) {
+            metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+            if (_model._parms._metalearner_nfolds > 1) {
+              if (_model._parms._metalearner_fold_assignment == null) {
+                metaGLMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+              } else {
+                metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+              }
+            }
           } else {
-            metaGLMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+            metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           }
-        }
-        // TODO: Add metalearner_fold_column
-        // metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
         // TODO: Possibly add this back in and turn on early stopping in all metalearners when a validation frame is present
         // Enable lambda search if a validation frame is passed in to get a better GLM fit.
          /*
@@ -373,15 +383,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           metaGBMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGBMBuilder._parms._response_column = _model.responseColumn;
           metaGBMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-          if (_model._parms._metalearner_nfolds > 1) {
-            if (_model._parms._metalearner_fold_assignment == null) {
-              metaGBMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-            } else {
-              metaGBMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+          if (_model._parms._metalearner_fold_column == null) {
+            metaGBMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+            if (_model._parms._metalearner_nfolds > 1) {
+              if (_model._parms._metalearner_fold_assignment == null) {
+                metaGBMBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+              } else {
+                metaGBMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+              }
             }
+          } else {
+            metaGBMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           }
-          //TO DO: Add metalearner_fold_column
-          //metaGBMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
 
           metaGBMBuilder.init(false);
 
@@ -418,15 +431,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           metaDRFBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaDRFBuilder._parms._response_column = _model.responseColumn;
           metaDRFBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-          if (_model._parms._metalearner_nfolds > 1) {
-            if (_model._parms._metalearner_fold_assignment == null) {
-              metaDRFBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-            } else {
-              metaDRFBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+          if (_model._parms._metalearner_fold_column == null) {
+            metaDRFBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+            if (_model._parms._metalearner_nfolds > 1) {
+              if (_model._parms._metalearner_fold_assignment == null) {
+                metaDRFBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+              } else {
+                metaDRFBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+              }
             }
+          } else {
+            metaDRFBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           }
-          // TO DO: Add metalearner_fold_column
-          //metaDRFBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
 
           metaDRFBuilder.init(false);
 
@@ -463,15 +479,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           metaDeepLearningBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaDeepLearningBuilder._parms._response_column = _model.responseColumn;
           metaDeepLearningBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
-          if (_model._parms._metalearner_nfolds > 1) {
-            if (_model._parms._metalearner_fold_assignment == null) {
-              metaDeepLearningBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-            } else {
-              metaDeepLearningBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+          if (_model._parms._metalearner_fold_column == null) {
+            metaDeepLearningBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
+            if (_model._parms._metalearner_nfolds > 1) {
+              if (_model._parms._metalearner_fold_assignment == null) {
+                metaDeepLearningBuilder._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+              } else {
+                metaDeepLearningBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
+              }
             }
+          } else {
+            metaDeepLearningBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           }
-          // TO DO: Add metalearner_fold_column
-          //metaDeepLearningBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
 
           metaDeepLearningBuilder.init(false);
 

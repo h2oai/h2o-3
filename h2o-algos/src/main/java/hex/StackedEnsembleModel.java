@@ -61,9 +61,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Metalearner params
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
-    // TODO: Add _metalearner_fold_column
-    // https://0xdata.atlassian.net/browse/PUBDEV-5084
-    // public String _metalearner_fold_column;
+    public String _metalearner_fold_column;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
     public enum MetalearnerAlgorithm {
@@ -135,7 +133,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       baseIdx++;
     }
 
+    // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
+    /*
+    // Add metalearner_fold_column to level one frame if it exists
+    if (this._parms._metalearner_fold_column != null) {
+      levelOneFrame.add(this._parms._metalearner_fold_column, adaptFrm.vec(this._parms._metalearner_fold_column));
+    }
+    */
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 

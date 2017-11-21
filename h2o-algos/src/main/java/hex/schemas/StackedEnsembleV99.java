@@ -6,7 +6,7 @@ import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import hex.Model;
-
+import water.api.schemas3.FrameV3;
 
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
@@ -20,7 +20,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_algorithm",
       "metalearner_nfolds",
       "metalearner_fold_assignment",
-      //"metalearner_fold_column",
+      "metalearner_fold_column",
       "keep_levelone_frame",
     };
 
@@ -51,15 +51,13 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
                   " The 'Stratified' option will stratify the folds based on the response variable, for classification problems.")
     public Model.Parameters.FoldAssignmentScheme metalearner_fold_assignment;
 
-    // TODO: Add metalearner_fold_column
-    // also requires: import water.api.schemas3.FrameV3;
-    /*
+    // For ensemble metalearner cross-validation
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
             is_member_of_frames = {"training_frame"},
-            is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column", "offset_column"},
-            help = "Column with cross-validation fold index assignment per observation.")
+            //is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column", "offset_column"},
+            is_mutually_exclusive_with = {"response_column"},
+            help = "Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.")
     public FrameV3.ColSpecifierV3 metalearner_fold_column;
-    */
 
     @API(level = API.Level.secondary,
             help = "Keep level one frame used for metalearner training.")
