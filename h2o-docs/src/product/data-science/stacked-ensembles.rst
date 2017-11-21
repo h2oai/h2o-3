@@ -60,8 +60,8 @@ Before training a stacked ensemble, you will need to train and cross-validate a 
 - The models must be trained on the same ``training_frame``.  The rows must be identical, but you can use different sets of predictor columns, ``x``, across models if you choose.  Using base models trained on different subsets of the feature space will add more randomness/diversity to the set of base models, which in theory can improve ensemble performance.  However, using all available predictor columns for each base model will often still yield the best results (the more data, the better the models).  
 
 
-Defining an Stacked Ensemble Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining a Stacked Ensemble Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  `y <algo-params/y.html>`__: (Required) Specify the index or column name of the column to use as the independent variable (response column). The response column can be numeric (regression) or categorical (classification).  
 
