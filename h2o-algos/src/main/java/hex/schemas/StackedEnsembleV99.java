@@ -54,7 +54,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(level = API.Level.secondary, direction = API.Direction.INOUT,
             help = "Algorithm to use as metalearner. " +
-                    "Should either be 'GLM' (default), 'GBM', 'DRF', or 'DeepLearning'.")
-    public String metalearner_algorithm = "GLM";
+                    "Should either be 'glm_non_negative' (default), 'glm' (glm without non negative weights), 'gbm', 'randomForest', or 'deeplearning'.")
+    public String metalearner_algorithm = "glm";
   }
 }
