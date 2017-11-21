@@ -641,18 +641,6 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *  @return At least as large as the count of non-NAs, but may be significantly smaller than the {@link #_len} */
   public int sparseLenNA() {return _len;}
 
-  // Next non-NA. Analogous to nextNZ()
-  public int nextNNA(int rid){ return rid + 1;}
-
-  /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk. */
-  public int nonnas(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
-  }
-
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
    *  constant and boolean chunks. */
