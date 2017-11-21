@@ -49,7 +49,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "metalearner_nfolds", "metalearner_fold_assignment", "metalearner_algorithm",
+                      "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
                       "keep_levelone_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -111,8 +111,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and folds
-        must be identical across models.
+        List of models (or model ids) to ensemble/stack together. Models must have been cross-validated using nfolds >
+        1, and folds must be identical across models.
 
         Type: ``List[str]``  (default: ``[]``).
         """
@@ -126,6 +126,23 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
          else:
             assert_is_type(base_models, None, [str])
             self._parms["base_models"] = base_models
+
+
+    @property
+    def metalearner_algorithm(self):
+        """
+        Type of algorithm to use as the metalearner. Options include 'glm' (GLM with non negative weights), 'gbm' (GBM
+        with default parameters), 'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with
+        default parameters).
+
+        One of: ``"glm"``, ``"gbm"``, ``"drf"``, ``"deeplearning"``  (default: ``"glm"``).
+        """
+        return self._parms.get("metalearner_algorithm")
+
+    @metalearner_algorithm.setter
+    def metalearner_algorithm(self, metalearner_algorithm):
+        assert_is_type(metalearner_algorithm, None, Enum("glm", "gbm", "drf", "deeplearning"))
+        self._parms["metalearner_algorithm"] = metalearner_algorithm
 
 
     @property
@@ -158,22 +175,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def metalearner_fold_assignment(self, metalearner_fold_assignment):
         assert_is_type(metalearner_fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["metalearner_fold_assignment"] = metalearner_fold_assignment
-
-
-    @property
-    def metalearner_algorithm(self):
-        """
-        Algorithm to use as metalearner. Should either be 'glm' (default, glm with non negative weights), 'gbm (default
-        parameters)', 'randomForest (default parameters)', or 'deeplearning (default parameters)'.
-
-        Type: ``str``.
-        """
-        return self._parms.get("metalearner_algorithm")
-
-    @metalearner_algorithm.setter
-    def metalearner_algorithm(self, metalearner_algorithm):
-        assert_is_type(metalearner_algorithm, None, str)
-        self._parms["metalearner_algorithm"] = metalearner_algorithm
 
 
     @property

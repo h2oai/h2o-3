@@ -66,7 +66,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // public String _metalearner_fold_column;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
-    public String _metalearner_algorithm;
+    public enum MetalearnerAlgorithm {
+      glm,
+      gbm,
+      drf,
+      deeplearning
+    }
+    public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.glm;
+
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
