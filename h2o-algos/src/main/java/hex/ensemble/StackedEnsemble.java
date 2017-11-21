@@ -36,14 +36,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   public StackedEnsemble(StackedEnsembleModel.StackedEnsembleParameters parms) { super(parms); init(false); }
   public StackedEnsemble(boolean startup_once) { super(new StackedEnsembleModel.StackedEnsembleParameters(),startup_once); }
 
-  /*
-  public StackedEnsemble(Key selfKey, StackedEnsembleModel.StackedEnsembleParameters parms, StackedEnsemble job) {
-    super(selfKey, parms, job == null ?
-            new StackedEnsembleModel.StackedEnsembleOutput():
-            new StackedEnsembleModel.StackedEnsembleOutput(job));
-  }
-  */
-
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
             ModelCategory.Regression,
@@ -62,7 +54,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
     if (aModel._output.isBinomialClassifier()) {
-      // GLM uses a different column name than the other algos, yay!
+      // GLM uses a different column name than the other algos
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if(aModel._output.isMultinomialClassifier()) { //Multinomial
@@ -231,15 +223,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                                      _model._parms.valid());
       }
 
-      // TODO: This was removed for metalearner_algorithm enum change, should we add all or some of this back?
-      // Shouldn't it always be non-null now?
-      /*
-      if (_model._parms._metalearner_algorithm == null) {
-        //_model._parms._metalearner_algorithm = "glm";
-        _model._parms._metalearner_algorithm == StackedEnsembleModel.StackedEnsembleParameters._metalearner_algorithm;
-        Log.info("`metalearner_algorithm` is detected to be null. Using default `glm`.");
-      }
-      */
       //Compute metalearner
       computeMetaLearner(levelOneTrainingFrame, levelOneValidationFrame, _model._parms._metalearner_algorithm);
 
@@ -250,20 +233,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         // Train the metalearner model
         // Default Job for just this training
 
-        // TODO: update for metalearner enum
-        /*
-                Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._parms._metalearner_algorithm + "_" + _model._key);
-        Job job = new Job<>(metalearnerKey, _model._parms._metalearner_algorithm,
+        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._parms._metalearner_algorithm + "_" + _model._key);
+        Job job = new Job<>(metalearnerKey, _model._parms._metalearner_algorithm.toString(),
                 "StackingEnsemble metalearner (" + _model._parms._metalearner_algorithm + ")");
-        */
-        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._key);
-        Job job = new Job<>(metalearnerKey, "StackedEnsemble_metalearner",
-              "StackedEnsemble metalearner");
-        GLM metaGLMBuilder = null;
+
+        GLM metaGLMBuilder;
         GBM metaGBMBuilder;
         DRF metaDRFBuilder;
         DeepLearning metaDeepLearningBuilder;
-        
 
         if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm)) {
 
@@ -282,7 +259,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
             }
           }
           // TODO: Add metalearner_fold_column
-          //metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
+          // metaGLMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
           // Enable lambda search if a validation frame is passed in to get a better GLM fit.
           // Since we are also using non_negative to true, we should also set early_stopping = false.
           if (metaGLMBuilder._parms._valid != null) {
@@ -305,22 +282,16 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              // TODO: update for metalearner enum
-              //_job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
-              _job.update(j._work, "training ensemble metalearner");
+              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          // TODO: update for metalearner enum
-          //Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-          Log.info("Finished training ensemble metalearner model");
-
+          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaGLMBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
-          // _model._output._model_summary = createModelSummaryTable(model._output);
           if (_parms._keep_levelone_frame) {
             _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
           } else{
@@ -347,7 +318,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
               metaGBMBuilder._parms._fold_assignment = _model._parms._metalearner_fold_assignment;  //cross-validation of the metalearner
             }
           }
-          // TO DO: Add metalearner_fold_column
+          //TO DO: Add metalearner_fold_column
           //metaGBMBuilder._parms._fold_column = _model._parms._metalearner_fold_column;  //cross-validation of the metalearner
 
           metaGBMBuilder.init(false);
@@ -356,21 +327,16 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              // TODO: update for enum
-              //_job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
-              _job.update(j._work, "training ensemble metalearner");
+              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          // TODO: Update for enum
-          //Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-          Log.info("Finished training ensemble metalearner model");
+          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaGBMBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
-          // _model._output._model_summary = createModelSummaryTable(model._output);
           if (_parms._keep_levelone_frame) {
             _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
           } else{
@@ -406,22 +372,16 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              // TODO: update for metalearner enum
-              //_job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
-              _job.update(j._work, "training ensemble metalearner");
+              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          // TODO: update for metalearner enum
-          //Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-          Log.info("Finished training ensemble metalearner model");
-
+          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaDRFBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
-          // _model._output._model_summary = createModelSummaryTable(model._output);
           if (_parms._keep_levelone_frame) {
             _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
           } else{
@@ -457,22 +417,16 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              // TODO: update for metalearner enum
-              //_job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
-              _job.update(j._work, "training ensemble metalearner");
+              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          // TODO: update for metalearner enum
-          //Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
-          Log.info("Finished training ensemble metalearner model");
-
+          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaDeepLearningBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
-          // _model._output._model_summary = createModelSummaryTable(model._output);
           if (_parms._keep_levelone_frame) {
             _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
           } else{
@@ -484,10 +438,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           _model.update(_job);
           _model.unlock(_job);
         } else {
-          // TODO: update for metalearner enum
-          //throw new H2OIllegalArgumentException("Wrong `metalearner_algorithm`. Passed in " + _model._parms._metalearner_algorithm + " " +
-          //        "but should have been 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
-          throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm` value.  Must be one of 'glm','gbm','randomForest','deeplearning'");
+          throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + _model._parms._metalearner_algorithm + " " +
+                  "but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
         }
       }
     }
