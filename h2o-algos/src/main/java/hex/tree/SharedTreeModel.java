@@ -281,7 +281,10 @@ public abstract class SharedTreeModel<
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
+    if (_output._calib_model == null)
+      return predictFr;
     if (_output.getModelCategory() == Binomial) {
+      Key<Job> jobKey = j != null ? j._key : null;
       Key<Frame> calibInputKey = Key.make();
       Frame calibOutput = null;
       try {
@@ -290,12 +293,12 @@ public abstract class SharedTreeModel<
         assert calibOutput._names.length == 3;
         Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
         // append calibrated probabilities to the prediction frame
-        predictFr.write_lock(j);
+        predictFr.write_lock(jobKey);
         for (int i = 0; i < calPredictions.length; i++)
           predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
-        return predictFr.update(j);
+        return predictFr.update(jobKey);
       } finally {
-        predictFr.unlock(j);
+        predictFr.unlock(jobKey);
         DKV.remove(calibInputKey);
         if (calibOutput != null)
           calibOutput.remove();
