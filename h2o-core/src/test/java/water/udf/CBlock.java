@@ -1,7 +1,10 @@
 package water.udf;
 
+import org.junit.Ignore;
+
 import water.fvec.Chunk;
 
+@Ignore("Support for tests, but no actual tests here")
 public class CBlock {
 
   protected CBlock(Chunk[] c) {

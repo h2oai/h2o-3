@@ -1,8 +1,11 @@
 package water.udf;
 
+import org.junit.Ignore;
+
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
+@Ignore("Support for tests, but no actual tests here")
 public class CFunc1Task extends CFuncTask<CFunc1, CFunc1Task> {
 
   private final int len;
