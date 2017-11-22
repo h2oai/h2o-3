@@ -117,7 +117,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
-    this.leaderboardFrameChecksum = leaderboardFrame.checksum();
+    if (null != this.leaderboardFrame)
+       this.leaderboardFrameChecksum = leaderboardFrame.checksum();
     DKV.put(this);
   }
 
@@ -220,20 +221,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
           }
 
           // If leaderboardFrame is null, use xval metrics instead
-          //leaderboardFrame = null; //testing
           ModelMetrics mm = null;
           if (leaderboardFrame == null) {
             mm = aModel._output._cross_validation_metrics;
-            System.out.println(" @@@@@@@@@@@@@@@@@@@  Using CV Metrics in Leaderboard @@@@@@@@@@@@@@@@@@@ ");  //for testing
           } else {
             mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
-            System.out.println(" @@@@@@@@@@@@@@@@@@@  Added Leaderboard frame for metrics in Leaderboard @@@@@@@@@@@@@@@@@@@ ");  //for testing
             if (mm == null) {
               Frame preds = aModel.score(leaderboardFrame);
               mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             }
           }
-          //ModelMetrics mm = aModel._output._cross_validation_metrics;  //for testing
           updating.leaderboard_set_metrics.put(mm._key, mm);
         }
 
@@ -245,22 +242,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
           } else {
             modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
           }
-          //List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));  //for testing
-          //List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));  //for testing
-          //System.out.println(" @@@@@@@@@@@@@@@@@@@  sortModelsByMetric()  @@@@@@@@@@@@@@@@@@@ ");  //for testing
           updating.models = modelsSorted.toArray(new Key[0]);
         } catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
-        //System.out.println(" @@@@@@@@@@@@@@@@@@@  Sorted Models on sort_metric  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         Model[] updating_models = new Model[updating.models.length];
         modelsForModelKeys(updating.models, updating_models);
-        //System.out.println(" @@@@@@@@@@@@@@@@@@@  Updated Models  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         updating.sort_metrics = getSortMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        //System.out.println(" @@@@@@@@@@@@@@@@@@@  updating.sort_metrics  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         if (sort_metric.equals("auc")) { // Binomial case
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -281,7 +272,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
       } // atomic
     }.invoke(this._key);
 
-    System.out.println(" @@@@@@@@@@@@@@@@@@@  Almost there  @@@@@@@@@@@@@@@@@@@ ");  //for testing
     // We've updated the DKV but not this instance, so:
     Leaderboard updated = DKV.getGet(this._key);
     this.models = updated.models;
@@ -294,8 +284,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
     }
-    System.out.println(" @@@@@@@@@@@@@@@@@@@  Update the Leaderboard metrics (end)  @@@@@@@@@@@@@@@@@@@ ");  //for testing
-
 
     // always
     if (null != newLeader[0]) {
@@ -417,9 +405,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] sort_metrics = new double[models.length];
     int i = 0;
-
     for (Model m : models) {
-      //System.out.println(" @@@@@@@@@@@@@@@@@@@  m is a model  @@@@@@@@@@@@@@@@@@@ ");  //for testing
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
         sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
