@@ -212,6 +212,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // cross-validated base models (rather than a single set of cross-validated base models), which is extremely
     // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
     // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
+    // Need to do DeepClone because otherwise framekey is incorrect (metalearner train is levelone not train)
     this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
   }
 

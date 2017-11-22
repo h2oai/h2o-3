@@ -220,54 +220,47 @@ public class Leaderboard extends Keyed<Leaderboard> {
           }
 
           // If leaderboardFrame is null, use xval metrics instead
-          // for testing only set leaderboardFrame to null always
-          // TODO: Uncomment & fix this code -- commented out for testing
-          /*
-          leaderboardFrame = null;
+          //leaderboardFrame = null; //testing
+          ModelMetrics mm = null;
           if (leaderboardFrame == null) {
-            ModelMetrics mm = aModel._output._cross_validation_metrics;
+            mm = aModel._output._cross_validation_metrics;
             System.out.println(" @@@@@@@@@@@@@@@@@@@  Using CV Metrics in Leaderboard @@@@@@@@@@@@@@@@@@@ ");  //for testing
           } else {
-            ModelMetrics mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
+            mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             System.out.println(" @@@@@@@@@@@@@@@@@@@  Added Leaderboard frame for metrics in Leaderboard @@@@@@@@@@@@@@@@@@@ ");  //for testing
             if (mm == null) {
               Frame preds = aModel.score(leaderboardFrame);
               mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             }
           }
-          */
-          ModelMetrics mm = aModel._output._cross_validation_metrics;
+          //ModelMetrics mm = aModel._output._cross_validation_metrics;  //for testing
           updating.leaderboard_set_metrics.put(mm._key, mm);
-          System.out.println(" @@@@@@@@@@@@@@@@@@@  Added cv metrics to Leaderboard  @@@@@@@@@@@@@@@@@@@ ");  //for testing
         }
 
-        // Sort by metric on the leaderboard/test set.
-        System.out.println(" @@@@@@@@@@@@@@@@@@@  try to sort Leaderboard  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+        // Sort by metric on the leaderboard/test set or cross-validation metrics.
         try {
-          // TODO: Add some code like this (see below)
-          /*
+          List<Key<Model>> modelsSorted = null;
           if (leaderboardFrame == null) {
-            List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));
+            modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));
           } else {
-            List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
-          }*/
-          // TODO (not complete): hardcoded for null leaderboard (and xval metrics) right now
-          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));
-          //List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
-          System.out.println(" @@@@@@@@@@@@@@@@@@@  sortModelsByMetric()  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+            modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
+          }
+          //List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));  //for testing
+          //List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));  //for testing
+          //System.out.println(" @@@@@@@@@@@@@@@@@@@  sortModelsByMetric()  @@@@@@@@@@@@@@@@@@@ ");  //for testing
           updating.models = modelsSorted.toArray(new Key[0]);
         } catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
-        System.out.println(" @@@@@@@@@@@@@@@@@@@  Sorted Models on sort_metric  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+        //System.out.println(" @@@@@@@@@@@@@@@@@@@  Sorted Models on sort_metric  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         Model[] updating_models = new Model[updating.models.length];
         modelsForModelKeys(updating.models, updating_models);
-        System.out.println(" @@@@@@@@@@@@@@@@@@@  Updated Models  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+        //System.out.println(" @@@@@@@@@@@@@@@@@@@  Updated Models  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         updating.sort_metrics = getSortMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        System.out.println(" @@@@@@@@@@@@@@@@@@@  updating.sort_metrics  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+        //System.out.println(" @@@@@@@@@@@@@@@@@@@  updating.sort_metrics  @@@@@@@@@@@@@@@@@@@ ");  //for testing
 
         if (sort_metric.equals("auc")) { // Binomial case
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -406,16 +399,17 @@ public class Leaderboard extends Keyed<Leaderboard> {
     double[] other_metrics = new double[models.length];
     int i = 0;
     for (Model m : models) {
-      // TODO: Change this, because we don't want to always use the leaderboard frame
-      // TODO: Duplicate logic from getSortMetrics()
-      //other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
-      //other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(m._key), other_metric);
-      Key model_key = m._key;
-      long model_checksum = m.checksum();
-      Key frame_key = m._output._cross_validation_metrics.frame()._key;
-      long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-      //other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
-      other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), other_metric);
+      // If leaderboard frame exists, get metrics from there
+      if (leaderboardFrame != null) {
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
+      } else {
+        // otherwise use cross-validation metrics
+        Key model_key = m._key;
+        long model_checksum = m.checksum();
+        Key frame_key = m._output._cross_validation_metrics.frame()._key;
+        long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), other_metric);
+      }
     }
     return other_metrics;
   }
@@ -425,30 +419,19 @@ public class Leaderboard extends Keyed<Leaderboard> {
     int i = 0;
 
     for (Model m : models) {
-      System.out.println(" @@@@@@@@@@@@@@@@@@@  m is a model  @@@@@@@@@@@@@@@@@@@ ");  //for testing
-      // TODO: THIS CAUSES ERROR
-      //sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
-      // it looks likes this:
-      // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_leaderboard_higgs_train_5k.hex@-3332444352254199426
-      // but it needs to be this:
-      // modelmetrics_DRF_0_AutoML_20171120_004519@-139790498266871992_on_automl_training_higgs_train_5k.hex@7684461323186948522
-      // so really we just need to pass the training frame in instead of `leaderboardFrame` but `trainingFrame` is not in scope...
-
-      // Or better yet, can we just figure out what the key (input to leaderboard_set_metrics.get()) should be without passing the trainingFrame
-
-      // what if we try the other version of buildKey(): buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum)
-      // this doesn't seem to be working even though the
-      // ModelMetrics.buildKey(m._key, m._checksum, m._output._cross_validation_metrics._frameKey, m._output._cross_validation_metrics._frame_checksum)
-      // command returns the correct string... ??
-
-      Key model_key = m._key;
-      long model_checksum = m.checksum();
-      Key frame_key = m._output._cross_validation_metrics.frame()._key;
-      long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), sort_metric);
+      //System.out.println(" @@@@@@@@@@@@@@@@@@@  m is a model  @@@@@@@@@@@@@@@@@@@ ");  //for testing
+      // If leaderboard frame exists, get metrics from there
+      if (leaderboardFrame != null) {
+        sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
+      } else {
+        // otherwise use cross-validation metrics
+        Key model_key = m._key;
+        long model_checksum = m.checksum();
+        Key frame_key = m._output._cross_validation_metrics.frame()._key;
+        long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
+        sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), sort_metric);
+      }
     }
-
-    // TODO: Change the logic above to have an if (leaderboardFrame == null), because we don't want to always use the leaderboard frame
     return sort_metrics;
   }
 
