@@ -13,7 +13,7 @@ sed -i '' "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" ../h2o/__init__.py
 conda build h2o
 
 # Convert conda package for other platforms
-conda convert ~/anaconda3/conda-bld/osx-64/h2o-${PROJECT_VERSION}-0.tar.bz2 -p all
+conda convert ~/anaconda/conda-bld/osx-64/h2o-${PROJECT_VERSION}-0.tar.bz2 -p all
 
 # Upload the different builds
 BUILD_NUMBER=h2o-${PROJECT_VERSION}-0.tar.bz2
