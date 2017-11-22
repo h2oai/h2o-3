@@ -18,9 +18,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
-import water.udf.CMetricFunc;
 import water.udf.CFuncRef;
-import water.udf.CFuncTask;
 import water.util.*;
 
 import java.io.*;
@@ -1317,7 +1315,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  protected class BigScore extends CFuncTask<CMetricFunc, BigScore> {
+  protected class BigScore extends CFuncScoringTask<BigScore> {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     final double[] _mean;  // Column means of test frame
@@ -1328,10 +1326,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
-
-    /** Internal parameter to preserve workspace for custom metric computation */
-    private double[] _customMetricWs;
-
+    
     public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
@@ -1395,41 +1390,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
     @Override public void reduce( BigScore bs ) {
+      super.reduce(bs);
       if (_mb != null) _mb.reduce(bs._mb);
-      if (func != null) {
-        if (_customMetricWs == null) {
-          _customMetricWs = bs._customMetricWs;
-        } else if (bs._customMetricWs == null) {
-          // nop
-        } else {
-          _customMetricWs = func.combine(this._customMetricWs, bs._customMetricWs);
-        }
-      }
     }
     
     @Override protected void postGlobal() {
+      super.postGlobal();
       if(_mb != null) {
-        _mb.postGlobal();
-        // Custom metric function was specified - fill the builder
-        if (func != null) {
-          _mb.setCustomMetric(cFuncRef.getName(), _customMetricWs != null ? func.metric(_customMetricWs) : Double.NaN);
-        }
-      }
-    }
-
-    @Override
-    protected Class<CMetricFunc> getFuncType() {
-      return CMetricFunc.class;
-    }
-
-    private void customMetricPerRow(double preds[], float yact[],double weight, double offset,  Model m) {
-      if (func != null) {
-        double[] rowR = func.perRow(preds, yact, weight, offset, m);
-        if (_customMetricWs != null) {
-          _customMetricWs = func.combine(_customMetricWs, rowR);
-        } else {
-          _customMetricWs = rowR;
-        }
+        _mb.postGlobal(getComputedCustomMetric());
       }
     }
   }
