@@ -9,7 +9,7 @@ source:
 
 requirements:
   build:
-    - python >=2.7,<3|>=3.6
+    - python >=2.7,<3|>=3.5
     - pip >=9.0.1
     - setuptools
     - colorama >=0.3.7
@@ -18,7 +18,7 @@ requirements:
     - requests >=2.10
 
   run:
-    - python >=2.7,<3|>=3.6
+    - python >=2.7,<3|>=3.5
     - colorama >=0.3.7
     - future >=0.15.2
     - tabulate >=0.7.5
