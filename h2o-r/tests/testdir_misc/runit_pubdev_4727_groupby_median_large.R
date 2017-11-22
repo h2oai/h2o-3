@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 ##
 
 test <- function(conn) {
-    tot = 1e-12
+    tot = 1e-10
     Log.info("Generateing random dataset ...")
     numrows <- 10000000
     numCols <- 4
