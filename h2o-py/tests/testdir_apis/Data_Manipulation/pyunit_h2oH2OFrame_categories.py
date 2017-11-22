@@ -18,7 +18,8 @@ def h2o_H2OFrame_categories():
     alllevels = [int(i) for i in alllevels]     # convert string into integers for comparison
     truelevels = np.unique(python_lists).tolist()   # categorical levels calculated from Python
     assert alllevels==truelevels, "h2o.H2OFrame.categories() command is not working."
-    pyunit_utils.equal_two_arrays(alllevels, truelevels, 1e-10, 0)
+    assert pyunit_utils.equal_two_arrays(alllevels, truelevels, 1e-10, 0), "h2o.H2OFrame.categories() command is" \
+                                                                           " not working."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2o_H2OFrame_categories())

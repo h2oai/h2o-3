@@ -25,12 +25,12 @@ def h2o_H2OFrame_stats():
     assert_is_type(h2oMean, H2OFrame)
     numpmean = list(np.mean(python_lists, axis=0))
     h2omean = h2oMean.as_data_frame(use_pandas=True, header=False)
-    pyunit_utils.equal_two_arrays(numpmean, h2omean.values.tolist()[0], 1e-12, 1e-6)
+    assert pyunit_utils.equal_two_arrays(numpmean, h2omean.values.tolist()[0], 1e-12, 1e-6), "h2o.H2OFrame.mean() command is not working."
 
     h2oMedian = h2oframe.median(na_rm=True)
     assert_is_type(h2oMedian, list)
     numpmedian = list(np.median(python_lists, axis=0))
-    pyunit_utils.equal_two_arrays(numpmedian, h2oMedian, 1e-12, 1e-6)
+    assert pyunit_utils.equal_two_arrays(numpmedian, h2oMedian, 1e-12, 1e-6), "h2o.H2OFrame.median() command is not working."
 
 
 if __name__ == "__main__":
