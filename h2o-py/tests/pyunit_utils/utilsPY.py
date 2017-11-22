@@ -2973,7 +2973,7 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
             return False
 
 
-def extract_scoring_history_field(aModel, fieldOfInterest):
+def extract_scoring_history_field(aModel, fieldOfInterest, takeFirst=False):
     """
     Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
     of field values for you from the model.
@@ -2989,6 +2989,8 @@ def extract_scoring_history_field(aModel, fieldOfInterest):
         fieldIndex = allFields.index(fieldOfInterest)
         for eachCell in aModel._model_json["output"]["scoring_history"].cell_values:
             cellValues.append(eachCell[fieldIndex])
+            if takeFirst:   # only grab the result from the first iteration.
+                break
         return cellValues
     else:
         return None
