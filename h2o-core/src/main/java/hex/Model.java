@@ -972,7 +972,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (isResponse && computeMetrics)
           throw new IllegalArgumentException("Test/Validation dataset is missing response column '" + response + "'");
         else if (isOffset)
-          throw new IllegalArgumentException(H2O.technote(12, "Test/Validation dataset is missing offset column '" + offset + "'"));
+          throw new IllegalArgumentException(H2O.technote(12, "Test/Validation dataset is missing offset column '" + offset + "'. If your intention is to disable the effect of the offset add a zero offset column."));
         else if (isWeights && computeMetrics) {
           if (expensive) {
             vec = test.anyVec().makeCon(1);
