@@ -3660,7 +3660,7 @@ checkMatch = function(x,y) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="radix") {
+h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="auto") {
   if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
   if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
   if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
