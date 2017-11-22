@@ -125,6 +125,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     handleDatafileParameters(buildSpec);
 
+    if (null != buildSpec.input_spec.fold_column && 5 != buildSpec.build_control.nfolds)
+      throw new H2OIllegalArgumentException("Cannot specify fold_column and a non-default nfolds value at the same time.");
+    if (null != buildSpec.input_spec.fold_column)
+      userFeedback.warn(Stage.Workflow, "Custom fold column, " + buildSpec.input_spec.fold_column + ", will be used. nfolds value will be ignored.");
+
     userFeedback.info(Stage.Workflow, "Build control seed: " +
             buildSpec.build_control.stopping_criteria.seed() +
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
@@ -638,7 +643,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._weights_column = buildSpec.input_spec.weights_column;
 
       if (buildSpec.input_spec.fold_column == null) {
-        //params._nfolds = 5;
         params._nfolds = buildSpec.build_control.nfolds;
         if (buildSpec.build_control.nfolds > 1) {
           // TO DO: below allow the user to specify this (vs Modulo)
@@ -922,6 +926,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    if (buildSpec.input_spec.fold_column != null) {
+      stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
+      stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
+    }
     //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
     Key modelKey = modelKey(modelName);
 

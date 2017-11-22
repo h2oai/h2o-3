@@ -115,6 +115,11 @@ automl.args.test <- function() {
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
   amodel_fold_column <- amodel@parameters$fold_column$column_name
   expect_equal(amodel_fold_column, fold_column)
+  ensemble <- h2o.getModel(grep("StackedEnsemble", model_ids, value = TRUE)[1])
+  ensemble_fold_column <- ensemble@parameters$metalearner_fold_column$column_name
+  expect_equal(ensemble_fold_column, fold_column)
+  ensemble_meta <- h2o.getModel(ensemble@model$metalearner$name)
+  expect_equal(length(ensemble_meta@model$cross_validation_models), 3)
 
   print("Check weights_column")
   aml10 <- h2o.automl(x = x, y = y,

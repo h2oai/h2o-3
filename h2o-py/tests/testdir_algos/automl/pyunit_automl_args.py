@@ -137,6 +137,10 @@ def prostate_automl_args():
     #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
     #aml.train(y="CAPSULE", training_frame=train)
 
+    # TO DO
+    # Add a test that checks fold_column like in runit
+
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl_args)
