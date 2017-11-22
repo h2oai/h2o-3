@@ -1315,7 +1315,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  protected class BigScore extends CFuncScoringTask<BigScore> {
+  protected class BigScore extends CMetricScoringTask<BigScore> {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     final double[] _mean;  // Column means of test frame

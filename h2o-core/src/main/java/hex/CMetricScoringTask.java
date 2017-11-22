@@ -4,14 +4,22 @@ import water.udf.CFuncRef;
 import water.udf.CFuncTask;
 import water.udf.CMetricFunc;
 
-public class CFuncScoringTask<T extends CFuncScoringTask<T>> extends CFuncTask<CMetricFunc, T> {
+/**
+ * Custom metric scoring task.
+ *
+ * The task provides support to load and invoke custom model metric
+ * defined via {@link water.udf.CFunc}. 
+ *
+ * @param <T>  self type
+ */
+public class CMetricScoringTask<T extends CMetricScoringTask<T>> extends CFuncTask<CMetricFunc, T> {
 
   /** Internal parameter to preserve workspace for custom metric computation */
   protected double[] customMetricWs;
 
   transient private CustomMetric result;
 
-  public CFuncScoringTask(CFuncRef cFuncRef) {
+  public CMetricScoringTask(CFuncRef cFuncRef) {
     super(cFuncRef);
   }
 
@@ -22,9 +30,9 @@ public class CFuncScoringTask<T extends CFuncScoringTask<T>> extends CFuncTask<C
 
   protected final void customMetricPerRow(double preds[], float yact[],double weight, double offset,  Model m) {
     if (func != null) {
-      double[] rowR = func.perRow(preds, yact, weight, offset, m);
+      double[] rowR = func.map(preds, yact, weight, offset, m);
       if (customMetricWs != null) {
-        customMetricWs = func.combine(customMetricWs, rowR);
+        customMetricWs = func.reduce(customMetricWs, rowR);
       } else {
         customMetricWs = rowR;
       }
@@ -40,7 +48,7 @@ public class CFuncScoringTask<T extends CFuncScoringTask<T>> extends CFuncTask<C
       } else if (t.customMetricWs == null) {
         // nop
       } else {
-        customMetricWs = func.combine(this.customMetricWs, t.customMetricWs);
+        customMetricWs = func.reduce(this.customMetricWs, t.customMetricWs);
       }
     }
   }
