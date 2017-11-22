@@ -46,15 +46,16 @@ $SPARK_HOME/bin/spark-submit \
   /dev/null
 \end{lstlisting}
 
-Note: The duke library has to be explicitly added when using Sparkling Water via \texttt{--packages} option. The library
-contains pom file which Spark dependency resolver can't properly resolve and therefore this library will be missing if not explicitly
+Note: The duke library has to be explicitly added when using Sparkling Water via the \texttt{--packages} option. The library
+contains a pom file, which the Spark dependency resolver can't properly resolve, and therefore this library will be missing if not explicitly
 specified. This is only required in Sparkling Water 2.2.2 and older, 2.1.16 and older, and 2.0.17 and older. In newer Sparkling Water
-versions, the only dependency which needs to be put into \texttt{--packages} is \texttt{sparkling-water-package\_2.11:\{version\}}.
+versions, the only dependency that needs to be put into \texttt{--packages} is \texttt{sparkling-water-package\_2.11:\{version\}}.
 This package contains all the required dependencies.
 
 
 The Spark option \texttt{--packages} points to coordinate of published Sparkling Water package in Maven repository.
 
+\newpage
 The similar command works for spark-shell:
 
 \begin{lstlisting}[style=Bash]
@@ -64,7 +65,6 @@ $SPARK_HOME/bin/spark-shell \
 
 Note: When you are using Spark packages, you do not need to download Sparkling Water distribution. Spark installation is sufficient.
 
-\newpage
 \subsection{Target Deployment Environments}
 Sparkling Water supports deployments to the following Spark cluster types:
 \begin{itemize}
@@ -122,8 +122,6 @@ $SPARK_HOME/bin/spark-submit \
 
 The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. Master is set to \texttt{yarn}, and together with the deploy mode \texttt{client} option forces the driver to run in the client process.
 
-\newpage
-
 \subsection{DataBricks Cloud}
 This section describes how to use Sparkling Water and PySparkling with DataBricks.
 The first part describes how to create a cluster for Sparkling Water/PySparkling and then discusses how to use Sparkling Water and PySparkling in Databricks.
@@ -143,22 +141,22 @@ be used.
 
 \textbf{Steps}:
 \begin{enumerate}
-\item In Databricks, click "Create Cluster" in the Clusters dashboard.
-\item Select your Databricks Runtime Version. (Note that in our demos, we are using `3.0 (includes Apache Spark 2.2.0, Scala 2.11)`)
+\item In Databricks, click \textbf{Create Cluster} in the Clusters dashboard.
+\item Select your Databricks Runtime Version. (Note that in our demos, we are using `3.0 (includes Apache Spark 2.2.0, Scala 2.11)`.)
 \item Select at least 3 workers.
-\item Select 0 on-demand workers. On demand workers is currently not supported with Sparkling Water.
+\item Select 0 on-demand workers. On demand workers are currently not supported with Sparkling Water.
 \item In the SSH tab, upload your public key.  You can create a public key by running the below command in a terminal session:
 \begin{lstlisting}[style=Bash]
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 \end{lstlisting}
-\item Click `Create Cluster`
-\item Once the cluster has started, run the below command in a terminal session:
+\item Click \textbf{Create Cluster}
+\item Once the cluster has started, run the following command in a terminal session:
 \begin{lstlisting}[style=Bash]
 ssh ubuntu@<ec-2 driver host>.compute.amazonaws.com -p 2200 -i <path to your public/private key> -L 54321:localhost:54321
 \end{lstlisting}
 This will allow you to use the Flow UI.
 
-(You can find the `ec-2 driver host` information in the SSH tab of the cluster)
+(You can find the `ec-2 driver host` information in the SSH tab of the cluster.)
 
 \end{enumerate}
 
@@ -173,7 +171,7 @@ This will allow you to use the Flow UI.
 \textbf{Steps}:
 \begin{enumerate}
 \item Create a new library containing the Sparkling Water jar.
-\item Download the selected Sparkling Water version from \url{https://www.h2o.ai/download/}
+\item Download the selected Sparkling Water version from \url{https://www.h2o.ai/download/}.
 \item The jar file is located in the sparkling water zip file at the following location: `assembly/build/libs/sparkling-water-assembly\_*-all.jar`
 \item Attach the Sparkling Water library to the cluster.
 \item Create a new Scala notebook.
@@ -183,10 +181,10 @@ import org.apache.spark.h2o._
 val h2oConf = new H2OConf(spark).set("spark.ui.enabled", "false")
 val h2oContext = H2OContext.getOrCreate(spark, h2oConf)
 \end{lstlisting}
-You can access Flow by going to `localhost:54321
+You can access Flow by going to localhost:54321.
 \end{enumerate}
 
-
+\newpage
 \subsubsection{Running PySparkling}
 
 \textbf{Requirements}:
@@ -201,9 +199,9 @@ You can access Flow by going to `localhost:54321
 \textbf{Steps}:
 \begin{enumerate}
 \item Create a new Python library containing the PySparkling zip file.
-\item Download the selected Sparkling Water version from \url{https://www.h2o.ai/download/}
-\item The PySparkling zip file is located in the sparkling water zip file at the following location: `py/build/dist/h2o\_pysparkling\_*.zip`
-\item Create libraries for the python modules: request, tabulate, future and colorama
+\item Download the selected Sparkling Water version from \url{https://www.h2o.ai/download/}.
+\item The PySparkling zip file is located in the sparkling water zip file at the following location: `py/build/dist/h2o\_pysparkling\_*.zip.`
+\item Create libraries for the following python modules: request, tabulate, future and colorama.
 \item Attach the PySparkling library and python modules to the cluster.
 \item Create a new python notebook.
 \item Create an H2O cloud inside the Spark cluster:
