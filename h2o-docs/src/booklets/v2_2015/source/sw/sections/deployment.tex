@@ -33,7 +33,7 @@ $SPARK_HOME/bin/spark-submit \
   /dev/null
 \end{lstlisting}
 
-\subsubsection{Using Spark Package}
+\subsubsection{Using the Spark Package}
 
 Sparkling Water is also published as a Spark package. The benefit of using the package is that you can use it directly from your Spark distribution without need to download Sparkling Water.
 
@@ -41,7 +41,7 @@ For example, if you have Spark version 2.2.0 and would like to use Sparkling Wat
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \
-  --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
   /dev/null
 \end{lstlisting}
@@ -52,7 +52,7 @@ The similar command works for spark-shell:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-shell \
- --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2 
+ --packages ai.h2o:sparkling-water-core_2.11:2.2.2,ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2
 \end{lstlisting}
 
 Note: When you are using Spark packages, you do not need to download Sparkling Water distribution. Spark installation is sufficient.
@@ -75,12 +75,12 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master local[*] \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
 
-\subsubsection{On Standalone Cluster}
+\subsubsection{On a Standalone Cluster}
 For AWS deployments or local private clusters, the standalone cluster deployment\footnote{Refer to Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical. Additionally, a Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by the URL \texttt{spark://IP:PORT}.
 
 The following command deploys the \texttt{ChicagoCrimeApp} on a standalone cluster where the master node is exposed on IP \texttt{machine-foo.bar.com} and port \texttt{7077}:
@@ -90,14 +90,14 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master spark://machine-foo.bar.com:7077 \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
 
 In this case, the standalone Spark cluster must be configured to provide the requested 5g of memory per executor node. 
 
-\subsubsection{On YARN Cluster}
+\subsubsection{On a YARN Cluster}
 Because it provides effective resource management and control, most production environments use YARN for cluster deployment.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
 In this case, the environment must contain the shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR} which point to Hadoop configuration directory (e.g., \texttt{/etc/hadoop/conf}).
 
@@ -106,18 +106,19 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --num-executors 5 \
-  --master yarn-client \
-  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2 \
+  --master yarn \
+  --deploy-mode client
+  --packages ai.h2o:sparkling-water-examples_2.11:2.2.2,no.priv.garshol.duke:duke:1.2 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
 
-The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
+The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. Master is set to \texttt{yarn}, and together with the deploy mode \texttt{client} option forces the driver to run in the client process.
 
 \newpage
 
 \subsection{Sparkling Water Configuration Properties}
-
+\label{sec:properties}
 The following configuration properties can be passed to Spark to configure Sparking Water:
 
 \subsubsection{Configuration Properties not Dependent on Selected Backend}
