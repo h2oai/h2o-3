@@ -3,7 +3,7 @@ package water.udf;
 import org.python.core.PySystemState;
 
 /**
- * Custom function loader, which cna instantiate
+ * Custom function loader, which can instantiate
  * functions written in Python.
  *
  * The provider internally uses Jython.
