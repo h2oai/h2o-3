@@ -10,11 +10,10 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.udf.CFuncRef;
-import water.udf.CMetricFunc;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
-public class Score extends CFuncScoringTask<Score> {
+public class Score extends CMetricScoringTask<Score> {
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
