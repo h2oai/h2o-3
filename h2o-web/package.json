@@ -30,7 +30,7 @@
     "htmlparser2": "3.8.2",
     "js-yaml": "3.3.0",
     "lodash": "3.7.0",
-    "marked": "0.3.3",
+    "marked": "0.3.6",
     "minimist": "1.1.1",
     "mkdirp": "0.5.0",
     "request": "2.55.0"
