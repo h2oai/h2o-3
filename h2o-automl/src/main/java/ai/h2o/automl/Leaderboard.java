@@ -17,8 +17,7 @@ import java.util.Set;
 
 import static water.DKV.getGet;
 import static water.Key.make;
-import java.io.*;  //for testing
-import java.util.zip.Checksum;
+
 
 /**
  * Utility to track all the models built for a given dataset type.
@@ -117,8 +116,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
-    if (null != this.leaderboardFrame)
-       this.leaderboardFrameChecksum = leaderboardFrame.checksum();
+    if (null != this.leaderboardFrame) {
+      this.leaderboardFrameChecksum = leaderboardFrame.checksum();
+    } else {
+      this.leaderboardFrameChecksum = 0;
+    }
     DKV.put(this);
   }
 
@@ -127,7 +129,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null != exists) {
       exists.userFeedback = userFeedback;
       exists.leaderboardFrame = leaderboardFrame;
-      exists.leaderboardFrameChecksum = leaderboardFrame.checksum();
+      if (null != leaderboardFrame) {
+        exists.leaderboardFrameChecksum = leaderboardFrame.checksum();
+      } else {
+        exists.leaderboardFrameChecksum = 0;
+      }
+
       DKV.put(exists);
       return exists;
     }
