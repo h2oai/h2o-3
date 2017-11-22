@@ -13,11 +13,14 @@ stackedensemble.nfolds.test <- function() {
                           destination_frame = "higgs_train_5k")
   test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
                          destination_frame = "higgs_test_5k")
+  # Add a fold_column
+  fold_column <- "fold_id"
+  train[,fold_column] <- as.h2o(data.frame(rep(seq(1:3), 2000)[1:nrow(train)]))  #three folds
   y <- "response"
-  x <- setdiff(names(train), y)
+  x <- setdiff(names(train), c(y, fold_column))
   train[,y] <- as.factor(train[,y])
   test[,y] <- as.factor(test[,y])
-  nfolds <- 5  #number of folds for base learners
+  nfolds <- 3  #number of folds for base learners
 
   # Train & Cross-validate a GBM
   my_gbm <- h2o.gbm(x = x,
@@ -109,6 +112,23 @@ stackedensemble.nfolds.test <- function() {
   meta3 <- h2o.getModel(stack3@model$metalearner$name)
   expect_equal(meta3@parameters$fold_assignment, "Modulo")
   expect_equal(meta3@allparameters$fold_assignment, "Modulo")
+
+
+  # Check that metalearner_fold_column works
+  stack4 <- h2o.stackedEnsemble(x = x,
+                                y = y,
+                                training_frame = train,
+                                base_models = list(my_gbm, my_rf),
+                                metalearner_fold_column = fold_column)
+  # Check that metalearner_fold_column is correctly stored in model output
+  expect_equal(stack4@parameters$metalearner_fold_column$column_name, fold_column)
+  expect_equal(stack4@allparameters$metalearner_fold_column$column_name, fold_column)
+  # Check that metalearner_fold_column is passed through to metalearner
+  meta4 <- h2o.getModel(stack4@model$metalearner$name)
+  expect_equal(meta4@parameters$fold_column$column_name, fold_column)
+  expect_equal(meta4@allparameters$fold_column$column_name, fold_column)
+  expect_equal(meta4@allparameters$nfolds, 0)
+  expect_equal(length(meta4@model$cross_validation_models), 3)
 
 }
 

@@ -24,6 +24,7 @@
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
 #'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
+#' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 
@@ -38,6 +39,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_algorithm = c("AUTO", "glm", "gbm", "drf", "deeplearning"),
                                 metalearner_nfolds = 0,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                metalearner_fold_column = NULL,
                                 keep_levelone_frame = FALSE
                                 ) 
 {
@@ -92,6 +94,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$metalearner_nfolds <- metalearner_nfolds
   if (!missing(metalearner_fold_assignment))
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
+  if (!missing(metalearner_fold_column))
+    parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   # Error check and build model

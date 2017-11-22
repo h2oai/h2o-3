@@ -61,9 +61,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Metalearner params
     public int _metalearner_nfolds;
     public Parameters.FoldAssignmentScheme _metalearner_fold_assignment;
-    // TODO: Add _metalearner_fold_column
-    // https://0xdata.atlassian.net/browse/PUBDEV-5084
-    // public String _metalearner_fold_column;
+    public String _metalearner_fold_column;
 
     //What to use as a metalearner (GLM, GBM, DRF, or DeepLearning)
     public enum MetalearnerAlgorithm {
@@ -135,7 +133,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       baseIdx++;
     }
 
+    // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
+    
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
@@ -274,6 +274,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public void checkAndInheritModelProperties() {
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
+
+    if (null != _parms._metalearner_fold_column && 0 != _parms._metalearner_nfolds)
+      throw new H2OIllegalArgumentException("Cannot specify fold_column and nfolds at the same time.");
 
     Model aModel = null;
     boolean beenHere = false;
