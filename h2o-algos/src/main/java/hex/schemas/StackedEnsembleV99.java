@@ -55,7 +55,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
             is_member_of_frames = {"training_frame"},
             //is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column", "offset_column"},
-            is_mutually_exclusive_with = {"response_column"},
+            is_mutually_exclusive_with = {"ignored_columns", "response_column"},
             help = "Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.")
     public FrameV3.ColSpecifierV3 metalearner_fold_column;
 

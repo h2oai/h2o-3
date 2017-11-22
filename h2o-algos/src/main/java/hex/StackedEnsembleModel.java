@@ -135,12 +135,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
-    /*
-    // Add metalearner_fold_column to level one frame if it exists
-    if (this._parms._metalearner_fold_column != null) {
-      levelOneFrame.add(this._parms._metalearner_fold_column, adaptFrm.vec(this._parms._metalearner_fold_column));
-    }
-    */
+    
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
@@ -279,6 +274,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public void checkAndInheritModelProperties() {
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
+
+    if (null != _parms._metalearner_fold_column && 0 != _parms._metalearner_nfolds)
+      throw new H2OIllegalArgumentException("Cannot specify fold_column and nfolds at the same time.");
 
     Model aModel = null;
     boolean beenHere = false;

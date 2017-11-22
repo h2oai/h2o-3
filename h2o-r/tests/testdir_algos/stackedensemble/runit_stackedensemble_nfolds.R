@@ -130,25 +130,6 @@ stackedensemble.nfolds.test <- function() {
   expect_equal(meta4@allparameters$nfolds, 0)
   expect_equal(length(meta4@model$cross_validation_models), 3)
 
-
-  # Check that metalearner_fold_column works (even if nfolds is set -- we should add warning/error if both are set)
-  stack5 <- h2o.stackedEnsemble(x = x,
-                                y = y,
-                                training_frame = train,
-                                base_models = list(my_gbm, my_rf),
-                                metalearner_nfolds = 5,
-                                metalearner_fold_column = fold_column)
-  # Check that metalearner_fold_column is correctly stored in model output
-  expect_equal(stack5@parameters$metalearner_fold_column$column_name, fold_column)
-  expect_equal(stack5@allparameters$metalearner_fold_column$column_name, fold_column)
-  # Check that metalearner_fold_column is passed through to metalearner
-  meta5 <- h2o.getModel(stack5@model$metalearner$name)
-  expect_equal(meta5@parameters$fold_column$column_name, fold_column)
-  expect_equal(meta5@allparameters$fold_column$column_name, fold_column)
-  expect_equal(meta5@allparameters$nfolds, 0)
-  expect_equal(length(meta4@model$cross_validation_models), 3)
-
-
 }
 
 doTest("Stacked Ensemble nfolds & fold_assignment Test", stackedensemble.nfolds.test)

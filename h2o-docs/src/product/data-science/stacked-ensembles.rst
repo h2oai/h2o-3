@@ -81,6 +81,8 @@ Defining a Stacked Ensemble Model
 
 -  `metalearner_fold_assignment <algo-params/fold_assignment.html>`__: (Optional; Applicable only if a value for ``metalearner_nfolds`` is specified) Specify the cross-validation fold assignment scheme for the metalearner. The available options are AUTO (which is Random), Random, Modulo, or Stratified (which will stratify the folds based on the response variable for classification problems).
 
+-  `metalearner_fold_column <algo-params/fold_column.html>`__: (Optional; Cannot be used at the same time as ``nfolds``) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner.  The column can be numeric (e.g. fold index or other integer value) or it can be categorical.  The number of folds is equal to the number of unique values in this column.
+
 -  **keep_levelone_frame**: (Optional) Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__, there will be an additional ``metalearner_params`` argument which allows for full customization of the metalearner algorithm hyperparamters.  

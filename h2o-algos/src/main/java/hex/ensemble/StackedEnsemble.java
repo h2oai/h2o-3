@@ -100,12 +100,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
-      // Add response column to level one frame
-      levelOneFrame.add(_model.responseColumn, actuals.vec(_model.responseColumn));
       // Add metalearner_fold_column to level one frame if it exists
       if (_model._parms._metalearner_fold_column != null) {
         levelOneFrame.add(_model._parms._metalearner_fold_column, actuals.vec(_model._parms._metalearner_fold_column));
       }
+      // Add response column to level one frame
+      levelOneFrame.add(_model.responseColumn, actuals.vec(_model.responseColumn));
 
       // TODO: what if we're running multiple in parallel and have a name collision?
 
