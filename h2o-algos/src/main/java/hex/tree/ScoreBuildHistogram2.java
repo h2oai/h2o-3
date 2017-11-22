@@ -115,11 +115,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  // Pass 1: Score a prior partially-built tree model, and make new Node
-  // assignments to every row.  This involves pulling out the current
-  // assigned DecidedNode, "scoring" the row against that Node's decision
-  // criteria, and assigning the row to a new child UndecidedNode (and
-  // giving it an improved prediction).
   protected int[] score_decide(Chunk chks[], int nnids[]) {
     int [] res = nnids.clone();
     for( int row=0; row<nnids.length; row++ ) { // Over all rows

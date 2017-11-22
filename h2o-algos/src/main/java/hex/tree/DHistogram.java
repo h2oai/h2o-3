@@ -417,7 +417,7 @@ public final class DHistogram extends Iced {
       double y = ys[k];
       assert (!Double.isNaN(y));
       double wy = weight * y;
-      double wyy = wy * y;
+      double wyy = wy * y;  // This is the correct implementation.
       int b = bin(col_data);
       _vals[3*b + 0] += weight;
       _vals[3*b + 1] += wy;
