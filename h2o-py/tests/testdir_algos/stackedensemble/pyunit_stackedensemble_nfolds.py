@@ -25,18 +25,22 @@ def stackedensemble_nfolds_test():
                             destination_frame="higgs_train_5k")
     test = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/higgs_test_5k.csv"),
                             destination_frame="higgs_test_5k")
+    # Add a fold_column
+    fold_column = "fold_id"
+    train[fold_column] = train.kfold_column(n_folds=3, seed=1)
 
     # Identify predictors and response
     x = train.columns
     y = "response"
     x.remove(y)
+    x.remove(fold_column)
 
     # Convert response to a factor
     train[y] = train[y].asfactor()
     test[y] = test[y].asfactor()
 
     # Set number of folds for base learners
-    nfolds = 5
+    nfolds = 3
 
     # Train and cross-validate a GBM
     my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
@@ -101,6 +105,17 @@ def stackedensemble_nfolds_test():
     meta3 = h2o.get_model(stack3.metalearner()['name'])
     assert(meta3.params['fold_assignment']['actual'] == "Modulo")
 
+
+    # Check that metalearner_fold_column works
+    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_fold_column=fold_column)
+    stack4.train(x=x, y=y, training_frame=train)
+    # Check that metalearner_fold_column is correctly stored in model output
+    assert(stack4.params['metalearner_fold_column']['actual']['column_name'] == fold_column)
+    # Check that metalearner_fold_column is passed through to metalearner
+    meta4 = h2o.get_model(stack4.metalearner()['name'])
+    assert(meta4.params['fold_column']['actual']['column_name'] == fold_column)
+    assert(meta4.params['nfolds']['actual'] == 0)
+    assert(len(meta4.cross_validation_models()) == 3)
 
 
 if __name__ == "__main__":
