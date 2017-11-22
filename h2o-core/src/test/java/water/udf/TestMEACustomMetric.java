@@ -9,12 +9,12 @@ import water.util.ArrayUtils;
 public class TestMEACustomMetric implements CMetricFunc {
 
   @Override
-  public double[] perRow(double[] preds, float[] yact, double weight, double offset, Model m) {
+  public double[] map(double[] preds, float[] yact, double weight, double offset, Model m) {
     return new double[] { Math.abs(preds[0] - yact[0]), 1};
   }
 
   @Override
-  public double[] combine(double[] l, double[] r) {
+  public double[] reduce(double[] l, double[] r) {
     ArrayUtils.add(l, r);
     return l;
   }
