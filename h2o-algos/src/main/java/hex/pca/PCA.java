@@ -61,8 +61,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     boolean usePower = _parms._pca_method == PCAParameters.Method.Power;
     boolean useRandomized = _parms._pca_method == PCAParameters.Method.Randomized;
     boolean useGLRM = _parms._pca_method == PCAParameters.Method.GLRM;
+
+    // gets to zero if nChunks=1.  Denote number of reduces to combine results from chunks.  Each chunk will store
+    // its gram matrix using half the memory needed since it is symmetrical.  Hence, total number of of grams
+    // that will be created will be multiplied by the gram matrix size * number of reduces to be done.
     double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
-            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.);
 
     long mem_usage = (useGramSVD || usePower || useRandomized || useGLRM) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
             gramSize) : 1; //one gram per core
