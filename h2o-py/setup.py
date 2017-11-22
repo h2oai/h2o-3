@@ -80,6 +80,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
     ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
