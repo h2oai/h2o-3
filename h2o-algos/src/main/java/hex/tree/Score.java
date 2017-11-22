@@ -5,18 +5,16 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import water.Iced;
 import water.Key;
-import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.udf.CFuncRef;
-import water.udf.CFuncTask;
 import water.udf.CMetricFunc;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
-public class Score extends CFuncTask<CMetricFunc, Score> {
+public class Score extends CFuncScoringTask<Score> {
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
@@ -26,10 +24,7 @@ public class Score extends CFuncTask<CMetricFunc, Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-
-  /** Internal parameter to preserve workspace for custom metric computation */
-  private double[] _customMetricWs;
-
+  
   /** Output parameter: Metric builder */
   ModelMetricsSupervised.MetricBuilderSupervised _mb;
 
@@ -121,43 +116,16 @@ public class Score extends CFuncTask<CMetricFunc, Score> {
     return _sii != null || _preds != null;
   }
 
-  @Override public void reduce(Score t ) {
+  @Override public void reduce(Score t) {
+    super.reduce(t);
     _mb.reduce(t._mb);
-    if (func != null) {
-      if (_customMetricWs == null) {
-        _customMetricWs = t._customMetricWs;
-      } else if (t._customMetricWs == null) {
-        // nop
-      } else {
-        _customMetricWs = func.combine(_customMetricWs, t._customMetricWs);
-      }
-    }
   }
 
   // We need to satsify MB invariant
   @Override protected void postGlobal() {
+    super.postGlobal();
     if(_mb != null) {
-      _mb.postGlobal();
-      // Custom metric function was specified - fill the builder
-      if (func != null) {
-        _mb.setCustomMetric(cFuncRef.getName(), _customMetricWs != null ? func.metric(_customMetricWs) : Double.NaN);
-      }
-    }
-  }
-
-  @Override
-  protected Class<CMetricFunc> getFuncType() {
-    return CMetricFunc.class;
-  }
-
-  private void customMetricPerRow(double preds[], float yact[],double weight, double offset,  Model m) {
-    if (func != null) {
-      double[] rowR = func.perRow(preds, yact, weight, offset, m);
-      if (_customMetricWs != null) {
-        _customMetricWs = func.combine(_customMetricWs, rowR);
-      } else {
-        _customMetricWs = rowR;
-      }
+      _mb.postGlobal(getComputedCustomMetric());
     }
   }
 

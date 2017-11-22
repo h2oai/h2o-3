@@ -425,6 +425,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
 
     public void postGlobal() {
+      postGlobal(null);
+    }
+
+    public void postGlobal(CustomMetric customMetric) {
+      this._customMetric = customMetric;
     }
 
     /**
@@ -438,11 +443,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     /**
      * Set value of custom metric.
-     * @param name  name of metric
-     * @param value  metric value
+     * @param customMetric  computed custom metric outside of this default builder
      */
-    public void setCustomMetric(String name, double value) {
-      _customMetric = CustomMetric.from(name, value);
+    public void setCustomMetric(CustomMetric customMetric) {
+      _customMetric = customMetric;
     }
   }
 }
