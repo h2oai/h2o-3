@@ -2763,7 +2763,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testCatEncoding() {
     for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
       Frame fr2 = null;
@@ -2793,7 +2793,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testCatEncodingCV() {
     for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
 

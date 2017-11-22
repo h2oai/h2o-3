@@ -973,6 +973,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
+    if (p._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
+        p._categorical_encoding != Parameters.CategoricalEncodingScheme.OneHotInternal) {
+      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    }
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
