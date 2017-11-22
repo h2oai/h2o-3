@@ -169,13 +169,13 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb <- aml@leaderboard
     lb
 
-    #                                             model_id      auc  logloss
-    #  1          StackedEnsemble_0_AutoML_20171121_012135 0.788321 0.554019
-    #  2 StackedEnsemble_topmodel_0_AutoML_20171121_012135 0.783099 0.559286
-    #  3         GBM_grid_0_AutoML_20171121_012135_model_1 0.780554 0.560248
-    #  4         GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
-    #  5         GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
-    #  6         GBM_grid_0_AutoML_20171121_012135_model_3 0.771026 0.570270
+    #                                                       model_id      auc  logloss
+    #  1          StackedEnsemble_AllModels_0_AutoML_20171121_012135 0.788321 0.554019
+    #  2       StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135 0.783099 0.559286
+    #  3                   GBM_grid_0_AutoML_20171121_012135_model_1 0.780554 0.560248
+    #  4                   GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
+    #  5                   GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
+    #  6                   GBM_grid_0_AutoML_20171121_012135_model_3 0.771026 0.570270
 
     #  [10 rows x 3 columns] 
 
@@ -224,17 +224,17 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
     lb
 
-    #  model_id                                                auc    logloss
-    #  -------------------------------------------------  --------  ---------
-    #  StackedEnsemble_0_AutoML_20171121_010846           0.786063   0.555833
-    #  StackedEnsemble_topmodel_0_AutoML_20171121_010846  0.783367   0.558511
-    #  GBM_grid_0_AutoML_20171121_010846_model_1          0.779242   0.562157
-    #  GBM_grid_0_AutoML_20171121_010846_model_0          0.778855   0.562648
-    #  GBM_grid_0_AutoML_20171121_010846_model_3          0.769666   0.572165
-    #  GBM_grid_0_AutoML_20171121_010846_model_2          0.769147   0.572064
-    #  XRT_0_AutoML_20171121_010846                       0.744612   0.593885
-    #  DRF_0_AutoML_20171121_010846                       0.733039   0.608609
-    #  GLM_grid_0_AutoML_20171121_010846_model_0          0.685211   0.635138
+    #  model_id                                                    auc    logloss
+    #  ----------------------------------------------------   --------  ---------
+    #  StackedEnsemble_AllModels_0_AutoML_20171121_010846     0.786063   0.555833
+    #  StackedEnsemble_BestOfFamily_0_AutoML_20171121_010846  0.783367   0.558511
+    #  GBM_grid_0_AutoML_20171121_010846_model_1              0.779242   0.562157
+    #  GBM_grid_0_AutoML_20171121_010846_model_0              0.778855   0.562648
+    #  GBM_grid_0_AutoML_20171121_010846_model_3              0.769666   0.572165
+    #  GBM_grid_0_AutoML_20171121_010846_model_2              0.769147   0.572064
+    #  XRT_0_AutoML_20171121_010846                           0.744612   0.593885
+    #  DRF_0_AutoML_20171121_010846                           0.733039   0.608609
+    #  GLM_grid_0_AutoML_20171121_010846_model_0              0.685211   0.635138
 
     #  [9 rows x 3 columns]
 
@@ -262,29 +262,29 @@ The models are ranked by a default metric based on the problem type (the second 
 
 Here is an example leaderboard for a binary classification task:
 
-+---------------------------------------------------+----------+----------+
-|                                          model_id |      auc |  logloss |
-+===================================================+==========+==========+
-| StackedEnsemble_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
-+---------------------------------------------------+----------+----------+
-| StackedEnsemble_topmodel_0_AutoML_20171121_012135 | 0.783099 | 0.559286 |
-+---------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_1         | 0.780554 | 0.560248 |
-+---------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_0         | 0.779713 | 0.562142 |
-+---------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_2         | 0.776206 | 0.564970 |
-+---------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_3         | 0.771026 | 0.570270 |
-+---------------------------------------------------+----------+----------+
-| DRF_0_AutoML_20171121_012135                      | 0.734653 | 0.601520 |
-+---------------------------------------------------+----------+----------+
-| XRT_0_AutoML_20171121_012135                      | 0.730457 | 0.611706 |
-+---------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_4         | 0.727098 | 0.666513 |
-+---------------------------------------------------+----------+----------+
-| GLM_grid_0_AutoML_20171121_012135_model_0         | 0.685211 | 0.635138 |
-+---------------------------------------------------+----------+----------+
++-------------------------------------------------------------+----------+----------+
+|                                                    model_id |      auc |  logloss |
++=============================================================+==========+==========+
+| StackedEnsemble_AllModels_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
++-------------------------------------------------------------+----------+----------+
+| StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135       | 0.783099 | 0.559286 |
++-------------------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_1                   | 0.780554 | 0.560248 |
++-------------------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_0                   | 0.779713 | 0.562142 |
++-------------------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_2                   | 0.776206 | 0.564970 |
++-------------------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_3                   | 0.771026 | 0.570270 |
++-------------------------------------------------------------+----------+----------+
+| DRF_0_AutoML_20171121_012135                                | 0.734653 | 0.601520 |
++-------------------------------------------------------------+----------+----------+
+| XRT_0_AutoML_20171121_012135                                | 0.730457 | 0.611706 |
++-------------------------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20171121_012135_model_4                   | 0.727098 | 0.666513 |
++-------------------------------------------------------------+----------+----------+
+| GLM_grid_0_AutoML_20171121_012135_model_0                   | 0.685211 | 0.635138 |
++-------------------------------------------------------------+----------+----------+
 
 
 FAQ
@@ -292,7 +292,7 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the top performing model from each algorithm class, so it's an ensemble of five base models.  The second "Top Model" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
+  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family, so it's an ensemble of five base models.  The second "Best of Family" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
 
 -  **How do I save AutoML runs?**
 
