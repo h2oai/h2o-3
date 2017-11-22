@@ -46,6 +46,13 @@ $SPARK_HOME/bin/spark-submit \
   /dev/null
 \end{lstlisting}
 
+Note: The duke library has to be explicitly added when using Sparkling Water via \texttt{--packages} option. The library
+contains pom file which Spark dependency resolver can't properly resolve and therefore this library will be missing if not explicitly
+specified. This is only required in Sparkling Water 2.2.2 and older, 2.1.16 and older, and 2.0.17 and older. In newer Sparkling Water
+versions, the only dependency which needs to be put into \texttt{--packages} is \texttt{sparkling-water-package\_2.11:\{version\}}.
+This package contains all the required dependencies.
+
+
 The Spark option \texttt{--packages} points to coordinate of published Sparkling Water package in Maven repository.
 
 The similar command works for spark-shell:
