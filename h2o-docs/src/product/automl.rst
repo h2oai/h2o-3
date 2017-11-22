@@ -170,8 +170,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb
 
     #                                             model_id      auc  logloss
-    #  1          StackedEnsemble_0_AutoML_20171121_012135 0.788321 0.554019
-    #  2 StackedEnsemble_topmodel_0_AutoML_20171121_012135 0.783099 0.559286
+    #  1          StackedEnsemble_AllModels_0_AutoML_20171121_012135 0.788321 0.554019
+    #  2 StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135 0.783099 0.559286
     #  3         GBM_grid_0_AutoML_20171121_012135_model_1 0.780554 0.560248
     #  4         GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
     #  5         GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
@@ -226,8 +226,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     #  model_id                                                auc    logloss
     #  -------------------------------------------------  --------  ---------
-    #  StackedEnsemble_0_AutoML_20171121_010846           0.786063   0.555833
-    #  StackedEnsemble_topmodel_0_AutoML_20171121_010846  0.783367   0.558511
+    #  StackedEnsemble_AllModels_0_AutoML_20171121_010846           0.786063   0.555833
+    #  StackedEnsemble_BestOfFamily_0_AutoML_20171121_010846  0.783367   0.558511
     #  GBM_grid_0_AutoML_20171121_010846_model_1          0.779242   0.562157
     #  GBM_grid_0_AutoML_20171121_010846_model_0          0.778855   0.562648
     #  GBM_grid_0_AutoML_20171121_010846_model_3          0.769666   0.572165
@@ -265,9 +265,9 @@ Here is an example leaderboard for a binary classification task:
 +---------------------------------------------------+----------+----------+
 |                                          model_id |      auc |  logloss |
 +===================================================+==========+==========+
-| StackedEnsemble_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
+| StackedEnsemble_AllModels_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
 +---------------------------------------------------+----------+----------+
-| StackedEnsemble_topmodel_0_AutoML_20171121_012135 | 0.783099 | 0.559286 |
+| StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135 | 0.783099 | 0.559286 |
 +---------------------------------------------------+----------+----------+
 | GBM_grid_0_AutoML_20171121_012135_model_1         | 0.780554 | 0.560248 |
 +---------------------------------------------------+----------+----------+
