@@ -67,9 +67,9 @@ Optional Data Parameters
 
 - `x <data-science/algo-params/x.html>`__: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
 
-- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is is used for early stopping within the training process of the individual models in the AutoML run.  
+- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is used to specify the validation frame used for early stopping within the training process of the individual models, grid search and the AutoML run itself (unless a model or time limit is set).  
 
-- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard. If this option is not specified, then a ``leaderboard_frame`` will be created from the ``training_frame``.
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame use to score & rank models on the leaderboard. This frame will not be used for anything besides leaderboard scoring. If a leaderboard frame is not specified by the user, then the leaderboard will use cross-validation metrics instead.
 
 - `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 
@@ -86,55 +86,19 @@ Optional Miscellaneous Parameters
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
-
-Grid Search Parameters
-~~~~~~~~~~~~~~~~~~~~~~
-
-AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
-
-**GBM Hyperparameters**
-
--  ``score_tree_interval``
--  ``histogram_type``
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``learn_rate``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``min_split_improvement``
-
-**GLM Hyperparameters**
-
--  ``alpha``
--  ``missing_values_handling``
-
-**Deep Learning Hyperparameters**
-
--  ``epochs``
--  ``adaptivate_rate``
--  ``activation``
--  ``rho``
--  ``epsilon``
--  ``input_dropout_ratio``
--  ``hidden``
--  ``hidden_dropout_ratios``
-
-
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
-If the user doesn't specify all three frames (training, validation and leaderboard), then the missing frames will be created automatically from what is provided by the user.  For reference, here are the rules for auto-generating the missing frames.
+If the user doesn't specify a ``validation_frame``, then one will be created automatically using a subset of the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
 
 When the user specifies:
 
-   1. **training**:  The ``training_frame`` is split into training (70%), validation (15%) and leaderboard (15%) sets.
-   2. **training + validation**: The ``validation_frame`` is split into validation (50%) and leaderboard (50%) sets and the original training frame stays as-is.
-   3. **training + leaderboard**: The ``training_frame`` is split into training (70%) and validation (30%) sets and the leaderboard frame stays as-is.
-   4. **training + validation + leaderboard**: Leave all frames as-is.
+   1. **training**: The ``training_frame`` is split into training (80%) and validation (20%).
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).
+   3. **training + validation**: Leave frames as-is.
+   4. **training + validation + leaderboard**: Leave frames as-is.
 
-In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the ``leaderboard_frame`` will be truly optional, as the leaderboard will be created using cross-validation metrics instead (unless the ``leaderboard_frame`` is excplicitly specified by the user).  However, for now, the holdout leaderboard frame must exist for scoring/ranking purposes.
+Unless the ``leaderboard_frame`` is explicitly specified by the user, the leaderboard will be created using cross-validation metrics.  If the user provides a ``leaderboard_frame``, then the leaderboard will score the models on that frame instead. 
 
 Code Examples
 ~~~~~~~~~~~~~
@@ -292,11 +256,48 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family, so it's an ensemble of five base models.  The second "Best of Family" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
+  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.
+
+  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family, so it's an ensemble of five base models.  The second "Best of Family" ensemble is optimized for production use, since it only contains five constituent models.  More details about the hyperparamter settings for the models will be added to this page at a later date.
 
 -  **How do I save AutoML runs?**
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once will be added in a future release.
+
+
+Appendix: Grid Search Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
+
+**GBM Hyperparameters**
+
+-  ``score_tree_interval``
+-  ``histogram_type``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``learn_rate``
+-  ``sample_rate``
+-  ``col_sample_rate``
+-  ``col_sample_rate_per_tree``
+-  ``min_split_improvement``
+
+**GLM Hyperparameters**
+
+-  ``alpha``
+-  ``missing_values_handling``
+
+**Deep Learning Hyperparameters**
+
+-  ``epochs``
+-  ``adaptivate_rate``
+-  ``activation``
+-  ``rho``
+-  ``epsilon``
+-  ``input_dropout_ratio``
+-  ``hidden``
+-  ``hidden_dropout_ratios``
 
 
 Additional Information
