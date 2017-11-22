@@ -215,7 +215,7 @@ def metric_json_check():
                                      u'duration_in_ms',
                                      u'frame_checksum',
                                      u'nobs',
-                                     u'centroid_stats'
+                                     u'centroid_stats',
                                      u'custom_metric_name',
                                      u'custom_metric_value']
     clus_metric_diff = list(set(clus_metric_json_keys_have) - set(clus_metric_json_keys_desired))
