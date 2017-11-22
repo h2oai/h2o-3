@@ -3,11 +3,11 @@ package hex.ensemble;
 import hex.Model;
 import hex.MultiModelMojoWriter;
 import hex.StackedEnsembleModel;
+import water.DKV;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import water.DKV;
 
 public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsembleModel,
         StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleModel.StackedEnsembleOutput> {
@@ -20,7 +20,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
 
     @Override
     public String mojoVersion() {
-        return "1.0";
+        return "1.00";
     }
 
     @Override
