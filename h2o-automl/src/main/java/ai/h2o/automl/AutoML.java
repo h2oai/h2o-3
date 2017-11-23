@@ -74,7 +74,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
-  private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
+  private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
 
   private Vec responseColumn;
   private Vec foldColumn;
@@ -149,6 +149,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
+    // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
     leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame);
 
     /*
@@ -166,22 +167,103 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   /**
-   * If the user hasn't specified validation or leaderboard data split it off for them.
+   * If the user hasn't specified validation data, split it off for them.
    *                                                                  <p>
-   * The user can specify:                                            <p>
+   * For nfolds > 1, the user can specify:                                            <p>
    * 1. training only                                                 <p>
-   * 2. training + validation                                         <p>
-   * 3. training + leaderboard                                        <p>
+   * 2. training + leaderboard                                        <p>
+   * 3. training + validation                                         <p>
    * 4. training + validation + leaderboard                           <p>
    *                                                                  <p>
-   * In the top three cases we auto-split:                            <p>
-   * 1. training -> training:validation:leaderboard 70:15:15          <p>
-   * 2. validation -> validation:leaderboard 50:50                    <p>
-   * 3. training -> training:validation 70:30, leaderboard used as-is <p>
-   *                                                                  <p>
+   * In the top two cases we auto-split:                              <p>
+   * training -> training:validation  80:20                           <p>
+   *
+   * For nfolds = 0, we have different rules:
+   * 5. training only                                                 <p>
+   * 6. training + leaderboard                                        <p>
+   * 7. training + validation                                         <p>
+   * 8. training + validation + leaderboard                           <p>
+   *                                         <p>
    * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
    */
   private void optionallySplitDatasets() {
+     // TODO: Maybe clean this up a bit -- use else if instead of nested if/else
+    // If using cross-validation (via nfolds or fold_column), we can use CV metrics for the Leaderboard
+    // therefore we don't need to auto-gen a leaderboard frame
+    if (this.buildSpec.build_control.nfolds > 1 || null != this.buildSpec.input_spec.fold_column) {
+      if (null == this.validationFrame) {
+        // case 1 and 2: missing validation frame -- need to create validation frame
+        Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+                new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
+                        Key.make("automl_validation_" + origTrainingFrame._key)},
+                new double[] { 0.8, 0.2 },
+                buildSpec.build_control.stopping_criteria.seed());
+        this.trainingFrame = splits[0];
+        this.validationFrame = splits[1];
+        this.didValidationSplit = true;
+        this.didLeaderboardSplit = false;
+        userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation frames in the ratio 80/20");
+      } else {
+        // case 3 and 4: nothing to do here
+        userFeedback.info(Stage.DataImport, "Training and validation were both specified; no auto-splitting.");
+      }
+      if (null == this.leaderboardFrame) {
+        // Extra logging for null leaderboard_frame (case 1 and 3)
+        userFeedback.info(Stage.DataImport, "Leaderboard frame not provided by the user; leaderboard will use cross-validation metrics instead.");
+      }
+    } else {
+      // If not using cross-validation, then we must auto-gen a leaderboard frame (and validation frame if missing)
+      if (null == this.leaderboardFrame) {
+        if (null == this.validationFrame) {
+          // case 5: no CV, missing validation and leaderboard frames -- need to create them both from train
+          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+                  new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
+                          Key.make("automl_validation_" + origTrainingFrame._key),
+                          Key.make("automl_leaderboard_" + origTrainingFrame._key)},
+                  new double[] { 0.8, 0.1, 0.1 },
+                  buildSpec.build_control.stopping_criteria.seed());
+          this.trainingFrame = splits[0];
+          this.validationFrame = splits[1];
+          this.leaderboardFrame = splits[2];
+          this.didValidationSplit = true;
+          this.didLeaderboardSplit = true;
+          userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
+        } else {
+          // case 7: no CV, missing leaderboard frame but validation exists -- need to create leaderboard frame from valid
+          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
+                  new Key[] { Key.make("automl_validation_" + origTrainingFrame._key),
+                          Key.make("automl_leaderboard_" + origTrainingFrame._key)},
+                  new double[] { 0.5, 0.5 },
+                  buildSpec.build_control.stopping_criteria.seed());
+          this.validationFrame = splits[0];
+          this.leaderboardFrame = splits[1];
+          this.didValidationSplit = true;
+          this.didLeaderboardSplit = true;
+          userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and leaderboard frames in the ratio 50/50");
+        }
+      } else {
+        // leaderboard frame is there, so if missing valid, then we just need to do a 80/20 split, else do nothing
+        if (null == this.validationFrame) {
+          // case 6: no CV, missing validation -- need to create it from train
+          Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+                  new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
+                          Key.make("automl_validation_" + origTrainingFrame._key)},
+                  new double[] { 0.8, 0.2 },
+                  buildSpec.build_control.stopping_criteria.seed());
+          this.trainingFrame = splits[0];
+          this.validationFrame = splits[1];
+          this.didValidationSplit = true;
+          this.didLeaderboardSplit = false;
+          userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation frames in the ratio 80/20");
+        } else {
+          // case 8: all frames are there, no need to do anything
+          userFeedback.info(Stage.DataImport, "Training, validation and leaderboard datasets were all specified; not auto-splitting.");
+        }
+      }
+    }
+
+
+    /*
     if (null == this.validationFrame && null == this.leaderboardFrame) {
       // case 1:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
@@ -230,12 +312,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // can't happen
       throw new UnsupportedOperationException("Bad code in handleDatafileParameters");
     }
+    */
   }
 
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-    this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+    if (null != this.leaderboardFrame)
+      this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
@@ -276,7 +360,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     this.userFeedback.info(Stage.DataImport, "training frame: " + this.trainingFrame.toString().replace("\n", " ") + " checksum: " + this.trainingFrame.checksum());
     this.userFeedback.info(Stage.DataImport, "validation frame: " + this.validationFrame.toString().replace("\n", " ") + " checksum: " + this.validationFrame.checksum());
-    this.userFeedback.info(Stage.DataImport, "leaderboard frame: " + this.leaderboardFrame.toString().replace("\n", " ") + " checksum: " + this.leaderboardFrame.checksum());
+    if (null != this.leaderboardFrame) {
+      this.userFeedback.info(Stage.DataImport, "leaderboard frame: " + this.leaderboardFrame.toString().replace("\n", " ") + " checksum: " + this.leaderboardFrame.checksum());
+    } else {
+      this.userFeedback.info(Stage.DataImport, "leaderboard frame: NULL");
+    }
 
     this.userFeedback.info(Stage.DataImport, "response column: " + buildSpec.input_spec.response_column);
     this.userFeedback.info(Stage.DataImport, "fold column: " + this.foldColumn);
@@ -638,15 +726,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
       params._keep_cross_validation_predictions = true;
 
-      // TODO: StackedEnsemble doesn't support weights or xval yet in score0
+      // TODO: StackedEnsemble doesn't support weights yet in score0
       params._fold_column = buildSpec.input_spec.fold_column;
       params._weights_column = buildSpec.input_spec.weights_column;
 
       if (buildSpec.input_spec.fold_column == null) {
         params._nfolds = buildSpec.build_control.nfolds;
         if (buildSpec.build_control.nfolds > 1) {
-          // TO DO: below allow the user to specify this (vs Modulo)
-          // TO DO: also, the docs currently say that we use Random folds... not Modulo
+          // TODO: below allow the user to specify this (vs Modulo)
+          // TODO: also, the docs currently say that we use Random folds... not Modulo
           params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
         }
       }
@@ -922,17 +1010,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
-
+    // Set up Stacked Ensemble
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
       stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
+    } else {
+      stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
     }
-    //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+    // TODO: Add fold_assignment
     Key modelKey = modelKey(modelName);
-
     Job ensembleJob = trainModel(modelKey, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
