@@ -4,6 +4,7 @@ def executeTestStages = null
 def buildConfig = null
 def emailContent = null
 def sendEmail = null
+def result = 'FAILURE'
 
 try {
   ansiColor('xterm') {
@@ -41,10 +42,11 @@ try {
         }
       }
       executeTestStages(buildConfig)
+      result = 'SUCCESS'
     }
   }
 } finally {
   if (emailContent != null && sendEmail != null) {
-    sendEmail(emailContent)
+    sendEmail(result, emailContent)
   }
 }
