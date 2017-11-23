@@ -97,6 +97,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           Log.warn("Failed to find base model " + baseModel + " predictions; skipping: " + baseModelPreds._key);
           continue;
         }
+
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
       // Add metalearner_fold_column to level one frame if it exists
@@ -122,7 +123,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       levelOneFrame.delete_and_lock(_job);
       levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
-      DKV.put(levelOneFrame);
       return levelOneFrame;
     }
 
@@ -303,10 +303,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           if (_parms._keep_levelone_frame) {
             _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
           } else{
-            //DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
+            DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
           }
           if (null != levelOneValidationFrame) {
-            //DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
+            DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
           }
           _model.update(_job);
           _model.unlock(_job);
