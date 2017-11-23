@@ -69,7 +69,7 @@ Optional Data Parameters
 
 - `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is used to specify the validation frame used for early stopping within the training process of the individual models, grid search and the AutoML run itself (unless a model or time limit is set).  
 
-- **leaderboard_frame**: This argument allows the user to specify a particular data frame use to score & rank models on the leaderboard. This frame will not be used for anything besides leaderboard scoring. If a leaderboard frame is not specified by the user, then the leaderboard will use cross-validation metrics instead.
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame use to score & rank models on the leaderboard. This frame will not be used for anything besides leaderboard scoring. If a leaderboard frame is not specified by the user, then the leaderboard will use cross-validation metrics instead or if cross-validation is turned off by setting ``nfolds = 0``, then a leaderboard frame will be generated automatically from the validation frame (if provided) or the training frame.
 
 - `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 
@@ -89,16 +89,25 @@ Optional Miscellaneous Parameters
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
-If the user doesn't specify a ``validation_frame``, then one will be created automatically using a subset of the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
+If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
 
-When the user specifies:
+By default, AutoML uses cross-validation for all models, and therefore we can use cross-validation metrics to generate the leaderboard.  If the ``leaderboard_frame`` is explicitly specified by the user, then that frame will be used to generate the leaderboard metrics, and if not, cross-validation metrics are used instead.
 
-   1. **training**: The ``training_frame`` is split into training (80%) and validation (20%).
-   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).
+For cross-validated AutoML, when the user specifies:
+
+   1. **training**: The ``training_frame`` is split into training (80%) and validation (20%).  
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  
    3. **training + validation**: Leave frames as-is.
    4. **training + validation + leaderboard**: Leave frames as-is.
 
-Unless the ``leaderboard_frame`` is explicitly specified by the user, the leaderboard will be created using cross-validation metrics.  If the user provides a ``leaderboard_frame``, then the leaderboard will score the models on that frame instead. 
+
+If not using cross-validation (by setting ``nfolds = 0``) in AutoML, then we need to make sure there is a test frame (aka. the "leaderboard frame") to score on because cross-validation metrics will not be available.  So when the user specifies:
+
+   1. **training**: The ``training_frame`` is split into training (80%), validation (10%) and leaderboard/test (10%).
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  Leaderboard frame as-is.
+   3. **training + validation**: The ``validation_frame`` is split into validation (50%) and leaderboard/test (50%).  Training frame as-is.
+   4. **training + validation + leaderboard**: Leave frames as-is.
+
 
 Code Examples
 ~~~~~~~~~~~~~
