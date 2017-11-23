@@ -12,7 +12,7 @@ from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type
+from h2o.utils.typechecks import I, assert_is_type, assert_satisfies
 
 
 class ModelBase(backwards_compatible()):
@@ -130,16 +130,24 @@ class ModelBase(backwards_compatible()):
         return h2o.get_frame(j["predictions_frame"]["name"])
 
 
-    def predict(self, test_data):
+    def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.
 
         :param H2OFrame test_data: Data on which to make predictions.
+        :param custom_metric:  custom evaluation function defined as class reference, the class get uploaded
+        into cluster
+        :param custom_metric_func: custom evaluation function reference, e.g, result of upload_custom_metric
 
         :returns: A new H2OFrame of predictions.
         """
+        # Upload evaluation function into DKV
+        if custom_metric:
+            assert_satisfies(custom_metric_func, custom_metric_func is None,
+                             "The argument 'eval_func_ref' cannot be specified when eval_func is specified, ")
+            eval_func_ref = h2o.upload_custom_metric(custom_metric)
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id)),
+        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data = {'custom_metric_func': custom_metric_func}),
                    self._model_json["algo"] + " prediction")
         j.poll()
         return h2o.get_frame(j.dest_key)
