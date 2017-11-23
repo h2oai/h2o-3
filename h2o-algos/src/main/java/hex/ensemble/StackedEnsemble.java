@@ -97,7 +97,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           Log.warn("Failed to find base model " + baseModel + " predictions; skipping: " + baseModelPreds._key);
           continue;
         }
-        // TODO: Add fold_column here
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
       }
       // Add metalearner_fold_column to level one frame if it exists
