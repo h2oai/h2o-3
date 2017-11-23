@@ -1014,6 +1014,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    stackedEnsembleParameters._keep_levelone_frame = true;
     // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
