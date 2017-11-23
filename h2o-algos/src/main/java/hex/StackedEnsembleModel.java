@@ -206,8 +206,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
-    // TODO: Look into whether we should deepClone validation metrics instead
-    //this._output._validation_metrics = this._output._metalearner._output._validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.valid());  #valid or train?
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
     // Cross-validation metrics can be copied from metalearner (may be null).
     // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
@@ -215,9 +213,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // cross-validated base models (rather than a single set of cross-validated base models), which is extremely
     // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
     // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
-    // Need to do DeepClone because otherwise framekey is incorrect (metalearner train is levelone not train)
-    if (null != this._output._metalearner._output._cross_validation_metrics)
-      this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+    this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics;
   }
 
 

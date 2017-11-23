@@ -372,7 +372,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
             new String[rel_imp.length][], sorted_imp);
   }
 
-  public static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+  private static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
