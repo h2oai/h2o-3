@@ -62,7 +62,7 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml5")
 
-  print("Training, validaion & leaderboard frame")
+  print("Training, validation & leaderboard frame")
   aml6 <- h2o.automl(x = x, y = y,
                      training_frame = train,
                      validation_frame = valid,
