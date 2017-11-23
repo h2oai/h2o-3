@@ -30,6 +30,7 @@ public class StackedEnsembleTest extends TestUtil {
             "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay",
             "LateAircraftDelay", "IsDepDelayed"};
 
+    /*
     @Test public void testBasicEnsembleAUTOMetalearner() {
 
         basicEnsemble("./smalldata/junit/cars.csv",
@@ -57,6 +58,7 @@ public class StackedEnsembleTest extends TestUtil {
                 },
                 false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO);
     }
+    */
 
     @Test public void testBasicEnsembleGBMMetalearner() {
 
