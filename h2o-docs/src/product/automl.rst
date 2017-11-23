@@ -91,7 +91,7 @@ Auto-Generated Frames
 
 If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
 
-By default, AutoML uses cross-validation for all models, and therefore we can use cross-validation metrics to generate the leaderboard.  If the ``leaderboard_frame`` is explicitly specified by the user, then that frame will be used to generate the leaderboard metrics, and if not, cross-validation metrics are used instead.
+By default, AutoML uses cross-validation for all models, and therefore we can use cross-validation metrics to generate the leaderboard.  If the ``leaderboard_frame`` is explicitly specified by the user, then that frame will be used to generate the leaderboard metrics (See `JIRA <https://0xdata.atlassian.net/browse/PUBDEV-5115>`__: this is currently not working unless nfolds=0).  
 
 For cross-validated AutoML, when the user specifies:
 
