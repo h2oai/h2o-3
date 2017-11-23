@@ -396,9 +396,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (Model m : models) {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
+        //System.out.println("@@@@@@@@@@@@@ Leaderboard frame metrics @@@@@@@@@@@@@");
         other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
       } else {
         // otherwise use cross-validation metrics
+        //System.out.println("@@@@@@@@@@@@@ Cross-validation frame metrics @@@@@@@@@@@@@");
         Key model_key = m._key;
         long model_checksum = m.checksum();
         Key frame_key = m._output._cross_validation_metrics.frame()._key;
@@ -415,9 +417,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (Model m : models) {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
+        //System.out.println("@@@@@@@@@@@@@ Leaderboard frame metrics (other) @@@@@@@@@@@@@");
         sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
       } else {
         // otherwise use cross-validation metrics
+        //System.out.println("@@@@@@@@@@@@@ Cross-validation frame metrics (other) @@@@@@@@@@@@@");
         Key model_key = m._key;
         long model_checksum = m.checksum();
         Key frame_key = m._output._cross_validation_metrics.frame()._key;
