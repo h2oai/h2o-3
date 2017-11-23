@@ -47,10 +47,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4985'>PUBDEV-4985</a>] - Fixed an issue that caused H2O to "forget" that a column is of factor type if it contains only NA values.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4994'>PUBDEV-4994</a>] - The Aggregator Function is now exposed in the R client.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4995'>PUBDEV-4995</a>] - The Aggregator Function now works in the Python client.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4996'>PUBDEV-4996</a>] - The download instructions for Python now indicate that version 3.6 is supported.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5002'>PUBDEV-5002</a>] - In Flow, fixed an issue with retaining logs from the client node.
@@ -99,12 +95,18 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/inde
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3877'>PUBDEV-3877</a>] - MOJOs are now supported for Stacked Ensembles.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3743'>PUBDEV-3743</a>] - User can now specify the metalearner algorithm type that StackedEnsemble should use. This can be AUTO, GLM, GBM, DRF, or Deep Learning.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3971'>PUBDEV-3971</a>] - Added a metalearner_folds option in Stacked Ensembles, enabling cross validation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4085'>PUBDEV-4085</a>] - In GBM, endpoints are now exposed that allow for custom evaluation metrics. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4882'>PUBDEV-4882</a>] - When running AutoML through the Python or R clients, users can now specify the nfolds argument.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4891'>PUBDEV-4891</a>] - Add another Stacked Ensemble (top model for each algo) to AutoML
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5071'>PUBDEV-5071</a>] - The AutoML leaderboard now uses cross-validation metrics (new default). 
+</li> 
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4914'>PUBDEV-4914</a>] - K-Means POJOs and MOJOs now expose distances to cluster centers.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4957'>PUBDEV-4957</a>] - Multiclass stacking is now supported in AutoML. Removed the check that caused AutoML to skip stacking for multiclass.
@@ -112,6 +114,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/inde
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5043'>PUBDEV-5043</a>] - Users can now specify a number of folds when running AutoML in Flow.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5084'>PUBDEV-5084</a>] - Added a metalearner_fold_column option in Stacked Ensembles, allowing for custom folds during cross validation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4994'>PUBDEV-4994</a>] - The Aggregator Function is now exposed in the R client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4995'>PUBDEV-4995</a>] - The Aggregator Function is now available in the Python client.
 </li>
 </ul>
     
@@ -127,9 +133,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/inde
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4803'>PUBDEV-4803</a>] - The current version of h2o-py is now published into PyPi.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4891'>PUBDEV-4891</a>] - Stacked Ensembles now produces the top model for each algorithm (based on CV performance) to create a lean Stacked Ensemble.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4896'>PUBDEV-4896</a>] - H2O automatically use cross-validation on all the models in an AutoML run, and the early stopping is performed based on CV metrics (even if a validation_frame is provided). The same is now also true of early stopping in a grid. As a result, the validation_frame is not needed, and parts of the training data are no longer chopped to auto-generate this frame. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4896'>PUBDEV-4896</a>] - Change behavior of auto-generation of validation and leaderboard frames in AutoML
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4931'>PUBDEV-4931</a>] - Updated the download site and the end user documentation to indicate that Python3.6 is now supported.
 </li>
@@ -140,19 +144,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/inde
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3743'>PUBDEV-3743</a>] - User can now specify the metalearner type that StackedEnsemble should allow. This can be AUTO, GLM, GBM, DRF, or Deep Learning.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4791'>PUBDEV-4791</a>] - Enabled the lambda search for the GLM metalearner in Stacked Ensembles. This is set to TRUE and early_stopping is set to FALSE. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4831'>PUBDEV-4831</a>] - Running `pip install` now installs the latest version of H2O-3.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4963'>PUBDEV-4963</a>] - In EasyPredictModelWrapper, preamble(), predict(), and fillRawData() are now protected rather than private.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5071'>PUBDEV-5071</a>] - The AutoML leaderboard now uses cross-validation metrics by default. 
-</li> 
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5082'>PUBDEV-5082</a>] - MOJOs/POJOs will not be created for unsupported categorical_encoding values.
 </li> 
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5109'>PUBDEV-5109</a>] - A Stacked Ensemble run now outputs two StackedEnsemble model IDs. These are labeled StackedEnsemble_AllModels and StackedEnsemble_BestOfFamily.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5109'>PUBDEV-5109</a>] - An AutoML run now outputs two StackedEnsemble model IDs. These are labeled StackedEnsemble_AllModels and StackedEnsemble_BestOfFamily.
 </li> 
 </ul>
     
