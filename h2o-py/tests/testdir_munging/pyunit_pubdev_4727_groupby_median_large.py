@@ -31,6 +31,7 @@ def group_by_all():
     numpMean = []  # store the python mean calculated for each groupby class for column2
     numpMedian2 = []
     numpMean2 = []
+    tot = 1e-10
     colFac = 1.1
     for index in range(enumVals):
         rowNum = randint(row_num_min, row_num_max)
@@ -78,13 +79,13 @@ def group_by_all():
     print("Numpy mean is numerics2 {0}".format(numpMean2))
 
     # compare the h2o groupby medians, means with numpy medians and means.
-    assert pyunit_utils.equal_two_arrays(groupbyMedian, numpMedian, 1e-12, 1e-12), "H2O groupby median and numpy " \
+    assert pyunit_utils.equal_two_arrays(groupbyMedian, numpMedian, tot, tot), "H2O groupby median and numpy " \
                                                                                    "median is different."
-    assert pyunit_utils.equal_two_arrays(groupbyMean, numpMean, 1e-12, 1e-12), "H2O groupby mean and numpy " \
+    assert pyunit_utils.equal_two_arrays(groupbyMean, numpMean, tot, tot), "H2O groupby mean and numpy " \
                                                                                    "mean is different."
-    assert pyunit_utils.equal_two_arrays(groupbyMedian2, numpMedian2, 1e-12, 1e-12), "H2O groupby median and numpy " \
+    assert pyunit_utils.equal_two_arrays(groupbyMedian2, numpMedian2, tot, tot), "H2O groupby median and numpy " \
                                                                                    "median is different."
-    assert pyunit_utils.equal_two_arrays(groupbyMean2, numpMean2, 1e-12, 1e-12), "H2O groupby mean and numpy " \
+    assert pyunit_utils.equal_two_arrays(groupbyMean2, numpMean2, tot, tot), "H2O groupby mean and numpy " \
                                                                             "mean is different."
 
 if __name__ == "__main__":
