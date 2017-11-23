@@ -9,6 +9,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 import water.util.TwoDimTable;
 
@@ -243,7 +244,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return f;
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     return reconstruct(orig, adaptedFr, Key.<Frame>make(destination_key), true, _parms._impute_original);
   }
 

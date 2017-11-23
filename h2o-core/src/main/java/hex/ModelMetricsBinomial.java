@@ -20,8 +20,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
-  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, AUC2 auc, double logloss, GainsLift gainsLift) {
-    super(model, frame,  nobs, mse, domain, sigma);
+  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain,
+                              double sigma, AUC2 auc, double logloss, GainsLift gainsLift,
+                              CustomMetric customMetric) {
+    super(model, frame,  nobs, mse, domain, sigma, customMetric);
     _auc = auc;
     _logloss = logloss;
     _gainsLift = gainsLift;
@@ -198,7 +200,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         logloss = _logloss / _wcount;
         auc = new AUC2(_auc);
       }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl);
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }

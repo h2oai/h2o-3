@@ -129,6 +129,8 @@ class MetricsBase(backwards_compatible()):
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
+        if self.custom_metric_name():
+            print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
 
 
     def r2(self):
@@ -218,13 +220,18 @@ class MetricsBase(backwards_compatible()):
         """The mean per class error."""
         return self._metric_json['mean_per_class_error']
 
+    def custom_metric_name(self):
+        """Name of custom metric or None."""
+        return self._metric_json['custom_metric_name']
+
+    def custom_metric_value(self):
+        """Name of custom metric or None."""
+        return self._metric_json['custom_metric_value']
 
     # Deprecated functions; left here for backward compatibility
     _bcim = {
         "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     }
-
-
 
 
 class H2ORegressionModelMetrics(MetricsBase):

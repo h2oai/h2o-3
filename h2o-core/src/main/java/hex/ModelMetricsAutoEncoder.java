@@ -4,11 +4,11 @@ import water.H2O;
 import water.fvec.Frame;
 
 public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
-  public ModelMetricsAutoEncoder(Model model, Frame frame) {
-    super(model, frame, 0, Double.NaN);
+  public ModelMetricsAutoEncoder(Model model, Frame frame, CustomMetric customMetric) {
+    super(model, frame, 0, Double.NaN, customMetric);
   }
-  public ModelMetricsAutoEncoder(Model model, Frame frame, long nobs, double mse) {
-    super(model, frame, nobs, mse);
+  public ModelMetricsAutoEncoder(Model model, Frame frame, long nobs, double mse, CustomMetric customMetric) {
+    super(model, frame, nobs, mse, customMetric);
   }
 
   public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised<MetricBuilderAutoEncoder> {
@@ -22,7 +22,7 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
-      return m.addModelMetrics(new ModelMetricsAutoEncoder(m, f));
+      return m.addModelMetrics(new ModelMetricsAutoEncoder(m, f, _customMetric));
     }
   }
 }

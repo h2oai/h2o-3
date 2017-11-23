@@ -10,6 +10,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
+import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -89,12 +90,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    * For StackedEnsemble we call score on all the base_models and then combine the results
    * with the metalearner to create the final predictions frame.
    *
-   * @see Model#predictScoreImpl(Frame, Frame, String, Job, boolean)
+   * @see Model#predictScoreImpl(Frame, Frame, String, Job, boolean, CFuncRef)
    * @param adaptFrm Already adapted frame
    * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+  @Override
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
@@ -118,7 +120,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       base.adaptTestForTrain(adaptedFrame, true, computeMetrics);
 
       // TODO: parallel scoring for the base_models
-      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
+      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame,
+                                                         computeMetrics, true,
+                                                         j, customMetricFunc).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
       //Need to remove 'predict' column from multinomial since it contains outcome
       if (base._output.isMultinomialClassifier()) {
@@ -149,7 +153,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     String[][] metaDomains = new String[metaNames.length][];
     metaDomains[0] = metaNames.length == 1 ? null : !computeMetrics ? metalearner._output._domains[metalearner._output._domains.length-1] : levelOneAdapted.lastVec().domain();
 
-    BigScore metaBs = (BigScore)metalearner.makeBigScoreTask(metaDomains, metaNames, levelOneAdapted, computeMetrics, true, j).
+    BigScore metaBs = (BigScore) metalearner.makeBigScoreTask(metaDomains,
+                                                              metaNames,
+                                                              levelOneAdapted,
+                                                              computeMetrics,
+                                                              true,
+                                                              j,
+                                                              CFuncRef.from(_parms._custom_metric_func)).
             doAll(metaNames.length, Vec.T_NUM, levelOneAdapted);
 
     if (computeMetrics) {
@@ -177,19 +187,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    switch (_output.getModelCategory()) {
-      case Binomial:
-        return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      // case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
-      case Regression:
-        return new ModelMetricsRegression.MetricBuilderRegression();
-      default:
-        throw H2O.unimpl();
-    }
+    throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
   public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
-      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true);
+      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }

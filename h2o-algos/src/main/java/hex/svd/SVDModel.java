@@ -5,6 +5,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
@@ -120,8 +121,8 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
   }
 
   public static class ModelMetricsSVD extends ModelMetricsUnsupervised {
-    public ModelMetricsSVD(Model model, Frame frame) {
-      super(model, frame, 0, Double.NaN);
+    public ModelMetricsSVD(Model model, Frame frame, CustomMetric customMetric) {
+      super(model, frame, 0, Double.NaN, customMetric);
     }
 
     // SVD currently does not have any model metrics to compute during scoring
@@ -133,12 +134,12 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
       @Override public double[] perRow(double[] preds, float[] dataRow, Model m) { return preds; }
 
       @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
-        return m.addModelMetrics(new ModelMetricsSVD(m, f));
+        return m.addModelMetrics(new ModelMetricsSVD(m, f, _customMetric));
       }
     }
   }
-
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
+  
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());

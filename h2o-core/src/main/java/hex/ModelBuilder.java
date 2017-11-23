@@ -6,6 +6,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.ast.prims.advmath.AstKFold;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.lang.reflect.Method;
@@ -526,7 +527,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               _parms._keep_cross_validation_predictions ||
               (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         DKV.put(cvModel);
       }
       // free resources as early as possible

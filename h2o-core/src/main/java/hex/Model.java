@@ -18,6 +18,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.*;
@@ -287,6 +288,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * can be used to initialize the weights and biases (excluding the output layer).
      */
     public Key<? extends Model> _pretrained_autoencoder;
+
+    /**
+     * Reference to custom metric function.
+     */
+    public String _custom_metric_func = null;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -1085,13 +1091,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Vec is the prediction value.  The result is in the DKV; caller is
    *  responsible for deleting.
    *
-   * @param fr frame which should be scored
+   * @param fr  frame which should be scored
+   * @param destination_key  store prediction frame under give key
+   * @param customMetricFunc  function to produce adhoc scoring metrics if actuals are presented
    * @return A new frame containing a predicted values. For classification it
    *         contains a column with prediction and distribution for all
    *         response classes. For regression it contains only one column with
    *         predicted values.
    * @throws IllegalArgumentException
    */
+  public Frame score(Frame fr, String destination_key, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    return score(fr, destination_key, null, true, customMetricFunc);
+  }
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     return score(fr, destination_key, null, true);
   }
@@ -1115,6 +1126,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
+    return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
+  }
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
@@ -1128,7 +1142,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics, customMetricFunc); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -1230,15 +1244,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /** Allow subclasses to define their own BigScore class. */
-  protected BigScore makeBigScoreTask(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j) {
+  protected BigScore makeBigScoreTask(String[][] domains, String[] names ,
+                                      Frame adaptFrm, boolean computeMetrics,
+                                      boolean makePrediction, Job j,
+                                      CFuncRef customMetricFunc) {
     return new BigScore(domains[0],
                         names != null ? names.length : 0,
                         adaptFrm.means(),
                         _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
                         computeMetrics,
                         makePrediction,
-                        j);
-        //.doAll(names.length, Vec.T_NUM, adaptFrm);
+                        j,
+                        customMetricFunc);
   }
 
   /** Score an already adapted frame.  Returns a new Frame with new result
@@ -1250,23 +1267,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = makeBigScoreTask(domains, names, adaptFrm, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = makeBigScoreTask(domains,
+                                   names,
+                                   adaptFrm,
+                                   computeMetrics,
+                                   true,
+                                   j,
+                                   customMetricFunc).doAll(names.length, Vec.T_NUM, adaptFrm);
 
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     Frame predictFr = bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
-    return postProcessPredictions(predictFr);
+    return postProcessPredictions(adaptFrm, predictFr, j);
   }
 
-  protected Frame postProcessPredictions(Frame predictFr) {
-    // nothing by default
+  /**
+   * Post-process prediction frame.
+   * 
+   * @param adaptFrm
+   * @param predictFr
+   * @return
+   */
+  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {
     return predictFr;
   }
 
@@ -1282,21 +1311,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null).doAll(adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null, CFuncRef.from(_parms._custom_metric_func)).doAll(adaptFrm);
     return bs._mb;
   }
 
-  protected class BigScore extends MRTask<BigScore> {
+  protected class BigScore extends CMetricScoringTask<BigScore> {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
-    public ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
     final public boolean _computeMetrics;  // Column means of test frame
     final public boolean _hasWeights;
     final public boolean _makePreds;
     final public Job _j;
 
-    public BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+    /** Output parameter: Metric builder */
+    public ModelMetrics.MetricBuilder _mb;
+    
+    public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
+                    boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
+      super(customMetricFunc);
       _j = j;
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
@@ -1344,6 +1377,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 actual[i] = (float) data(chks, row, i);
             }
             _mb.perRow(preds, actual, weight, offset, Model.this);
+            // Handle custom metric
+            customMetricPerRow(preds, actual, weight, offset, Model.this);
           }
           if (_makePreds) {
             for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
@@ -1354,8 +1389,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         closeBigScorePredict();
       }
     }
-    @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
-    @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+    @Override public void reduce( BigScore bs ) {
+      super.reduce(bs);
+      if (_mb != null) _mb.reduce(bs._mb);
+    }
+    
+    @Override protected void postGlobal() {
+      super.postGlobal();
+      if(_mb != null) {
+        _mb.postGlobal(getComputedCustomMetric());
+      }
+    }
   }
 
   protected void setupBigScorePredict() {}

@@ -5,38 +5,42 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import water.Iced;
 import water.Key;
-import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.udf.CFuncRef;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
-public class Score extends MRTask<Score> {
+public class Score extends CMetricScoringTask<Score> {
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
   final Key<Vec> _kresp;        // Response vector key (might be either train or validation)
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
-  ModelMetricsSupervised.MetricBuilderSupervised _mb;
+
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
+  
+  /** Output parameter: Metric builder */
+  ModelMetricsSupervised.MetricBuilderSupervised _mb;
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean is_train, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
-    this(bldr, is_train, null, oob, kresp, mcat, computeGainsLift, preds);
+  public Score(SharedTree bldr, boolean is_train, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
+    this(bldr, is_train, null, oob, kresp, mcat, computeGainsLift, preds, customMetricFunc);
   }
 
-  public Score(SharedTree bldr, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
-    this(bldr, false, sii, oob, kresp, mcat, computeGainsLift, preds);
+  public Score(SharedTree bldr, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
+    this(bldr, false, sii, oob, kresp, mcat, computeGainsLift, preds, customMetricFunc);
   }
 
-  private Score(SharedTree bldr, boolean is_train, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
+  private Score(SharedTree bldr, boolean is_train, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
+  super(customMetricFunc);
     _bldr = bldr; _is_train = is_train; _sii = sii; _oob = oob; _kresp = kresp._key; _mcat = mcat; _computeGainsLift = computeGainsLift;
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert (! _is_train) || (_sii == null);
@@ -88,8 +92,12 @@ public class Score extends MRTask<Score> {
       if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
+
       if (_preds != null)
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
+
+      // Compute custom metric if necessary
+      customMetricPerRow(cdists, val, weight, offset, m);
     }
   }
 
@@ -107,8 +115,17 @@ public class Score extends MRTask<Score> {
     return _sii != null || _preds != null;
   }
 
-  @Override public void reduce(Score t ) {
+  @Override public void reduce(Score t) {
+    super.reduce(t);
     _mb.reduce(t._mb);
+  }
+
+  // We need to satsify MB invariant
+  @Override protected void postGlobal() {
+    super.postGlobal();
+    if(_mb != null) {
+      _mb.postGlobal(getComputedCustomMetric());
+    }
   }
 
   ModelMetricsSupervised scoreAndMakeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, boolean buildTreeOneNode) {
@@ -155,5 +172,4 @@ public class Score extends MRTask<Score> {
       _predsAryOffset = predsAryOffset;
     }
   }
-
 }
