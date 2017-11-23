@@ -1323,11 +1323,11 @@ def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_nam
     _CFUNC_CODE_TEMPLATE = """# Generated code
 import water.udf.CMetricFunc as MetricFunc
 
-# User given metric function as a class implementing 
+# User given metric function as a class implementing
 # 3 methods defined by interface CMetricFunc
-{}    
+{}
 
-# Generated user metric which satisfies the interface 
+# Generated user metric which satisfies the interface
 # of Java MetricFunc
 class {}Wrapper({}, MetricFunc, object):
     pass
@@ -1357,7 +1357,7 @@ class {}Wrapper({}, MetricFunc, object):
         code = str
     else:
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
-        for method in ['perRow', 'combine', 'metric']:
+        for method in ['map', 'reduce', 'metric']:
             assert_satisfies(func, method in func.__dict__, "The class `func` needs to define method `{}`".format(method))
 
         assert_satisfies(class_name, class_name is None,
@@ -1377,7 +1377,7 @@ class {}Wrapper({}, MetricFunc, object):
     dest_key = _put_key(func_arch_file, dest_key=func_name)
     # Reference
     return "python:{}={}".format(dest_key, class_name)
-        
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
