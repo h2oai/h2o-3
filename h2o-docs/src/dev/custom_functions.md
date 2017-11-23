@@ -57,9 +57,9 @@ The loaders `water.udf.CFuncLoader` are registered via Java Service Provider Int
 The custom metrics is a function which implements `water.udf.CMetricFunc` interface.
 The interface follows design of `hex.MetricBuilder` and contains three methods to support
 distributed invocation:
-  - `perRow` : the method which maps a row into array of doubles. The method is designed to be called as
-  part of `water.MRTask#map` call and it corresponds to  `hex.MetricBuilder#perRow` call.
-  - `combine` : the method combines 2 row results. It is called as part of `water.MRTask#map` and `water.MRTask#reduce` calls.
+  - `map` : the method which maps a row into array of doubles. The method is designed to be called as
+  part of `water.MRTask#map` call and it corresponds to  `hex.MetricBuilder#map` call.
+  - `reduce` : the method combines 2 row results. It is called as part of `water.MRTask#map` and `water.MRTask#reduce` calls.
   - `metric` : the method computes the final metric value from given array of doubles. The method
   is called in the context of `water.MRtask#postGlobal` and corresponds to `hex.MetricBuilder#postGlobal` call.
 
@@ -72,22 +72,77 @@ distributed invocation:
       - missing transpiler from Python into Rapids (we have limited transpiler for Lambdas)
 
 ## Python Client
-TBD
+The idea is to pass definition of custom metric directly from Python in the form of Python code.
+That needs:
+  - an API which represents a custom metric function at caller side
+  - backend support to interpret Python code
 
 ### Public API
-TBD
 
-# todo
-  - tests in python
-  - dkv should use proper url classloader
-  - remove uneccessary parts
-  - remove Jython factory
-  - jython run tests via testMultiNode
+#### Custom Metric Function
+The custom metric function is defined in Python as a class which provides
+3 methods following the semantics of Java API above:
+  - `map`
+  - `reduce`
+  - `metric`
 
+For example, custom RMSE model metric:
 
-### Example: user defined metrics
-TBD
+```python
+class CustomRmseFunc:
+    def map(self, pred, act, w, o, model):
+        idx = int(act[0])
+        err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
+        return [err * err, 1]
 
-### Example: library of metrics
-TBD
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
 
+    def metric(self, l):
+        # Use Java API directly
+        import java.lang.Math as math
+        return math.sqrt(l[0] / l[1])
+```
+
+> Note: please mention, that code above is also referencing a java class `java.lang.Math`
+
+#### Publishing custom metric function in cluster
+The client local custom function represented as a class can be uploaded into running
+H2O cluster by calling method `h2o.upload_custom_metric(klazz, func_name, func_file)`:
+  - `klazz` represent custom function as described above
+  - `func_name` assigns a name with uploaded custom functions, the name corresponds to name of key in K/V
+  - `func_file` name of file to store function in uploaded jar. The source code of given class is saved into a file,
+  the file is zipped, and uploaded as zip-archive, and saved into K/V store.
+
+The call returns a reference to uploaded custom metric function. The internal form of reference
+is constructed based on passed parameters and follows the following structure: `<language>:<func_name>:<func_file>.<klazz-name>Wrapper`.
+
+> Note: The parameters `func_name` and `func_file` need to be unique for each uploaded custom metric!
+
+For example:
+```python
+custom_mm_func = h2o.upload_custom_metric(CustomRmseFunc, func_name="rmse", func_file="mm_rmse.py")
+```
+
+returns a function reference which has the following value:
+
+```
+> print(custom_mm_func)
+python:rmse=mm_rmse.CustomRmseFuncWrapper
+```
+
+#### Using custom model metric functions
+An algorithm model builder interface can expose parameter `custom_metric_func`
+which accepts a reference to uploaded custom metric function:
+
+```python
+model = H2OGradientBoostingEstimator(ntrees=3, max_depth=5,
+                  score_each_iteration=True,
+                  custom_metric_func=custom_mm_func)
+model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+```
+
+> Note: Currently, only GBM and RandomForest expose the parameter.
+
+The computed custom model metric is part of model metric object and available
+via methods `custom_metric_name()` and `custom_metric_value()`.

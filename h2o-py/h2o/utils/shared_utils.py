@@ -14,6 +14,8 @@ import itertools
 import os
 import re
 import sys
+import zipfile
+import io
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
@@ -375,3 +377,31 @@ def deprecated(message):
         return decorator_invisible
 
     return deprecated_decorator
+
+
+class InMemoryZipArch(object):
+    def __init__(self, file_name = None, compression = zipfile.ZIP_DEFLATED):
+        self._data = io.BytesIO()
+        self._arch = zipfile.ZipFile(self._data, "w", compression, False)
+        self._file_name = file_name
+
+    def append(self, filename_in_zip, file_contents):
+        self._arch.writestr(filename_in_zip, file_contents)
+        return self
+
+    def write_to_file(self, filename):
+        # Mark the files as having been created on Windows so that
+        # Unix permissions are not inferred as 0000
+        for zfile in self._arch.filelist:
+            zfile.create_system = 0
+        self._arch.close()
+        with open(filename, 'wb') as f:
+            f.write(self._data.getvalue())
+
+    def __enter__(self):
+            return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._file_name is None:
+            return
+        self.write_to_file(self._file_name)

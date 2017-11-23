@@ -129,6 +129,8 @@ class MetricsBase(backwards_compatible()):
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
+        if self.custom_metric_name():
+            print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
 
 
     def r2(self):
