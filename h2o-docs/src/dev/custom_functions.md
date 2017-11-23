@@ -57,9 +57,9 @@ The loaders `water.udf.CFuncLoader` are registered via Java Service Provider Int
 The custom metrics is a function which implements `water.udf.CMetricFunc` interface.
 The interface follows design of `hex.MetricBuilder` and contains three methods to support
 distributed invocation:
-  - `perRow` : the method which maps a row into array of doubles. The method is designed to be called as
-  part of `water.MRTask#map` call and it corresponds to  `hex.MetricBuilder#perRow` call.
-  - `combine` : the method combines 2 row results. It is called as part of `water.MRTask#map` and `water.MRTask#reduce` calls.
+  - `map` : the method which maps a row into array of doubles. The method is designed to be called as
+  part of `water.MRTask#map` call and it corresponds to  `hex.MetricBuilder#map` call.
+  - `reduce` : the method combines 2 row results. It is called as part of `water.MRTask#map` and `water.MRTask#reduce` calls.
   - `metric` : the method computes the final metric value from given array of doubles. The method
   is called in the context of `water.MRtask#postGlobal` and corresponds to `hex.MetricBuilder#postGlobal` call.
 
@@ -82,20 +82,20 @@ That needs:
 #### Custom Metric Function
 The custom metric function is defined in Python as a class which provides
 3 methods following the semantics of Java API above:
-  - `perRow`
-  - `combine`
+  - `map`
+  - `reduce`
   - `metric`
 
 For example, custom RMSE model metric:
 
 ```python
 class CustomRmseFunc:
-    def perRow(self, pred, act, w, o, model):
+    def map(self, pred, act, w, o, model):
         idx = int(act[0])
         err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
         return [err * err, 1]
 
-    def combine(self, l, r):
+    def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
 
     def metric(self, l):
@@ -146,13 +146,3 @@ model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fva
 
 The computed custom model metric is part of model metric object and available
 via methods `custom_metric_name()` and `custom_metric_value()`.
-
-# todo
-  - tests in python
-  - dkv should use proper url classloader
-  - remove uneccessary parts
-  - remove Jython factory
-  - jython run tests via testMultiNode
-  - force multi-chunk tests
-  - move CFunc and and JTasks into tests
-

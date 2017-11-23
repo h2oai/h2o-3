@@ -3,10 +3,10 @@ from . import locate
 
 
 class CustomMaeFunc:
-    def perRow(self, pred, act, w, o, model):
+    def map(self, pred, act, w, o, model):
         return [abs(act[0] - pred[0]), 1]
 
-    def combine(self, l, r):
+    def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
 
     def metric(self, l):
@@ -14,12 +14,12 @@ class CustomMaeFunc:
 
 
 class CustomRmseFunc:
-    def perRow(self, pred, act, w, o, model):
+    def map(self, pred, act, w, o, model):
         idx = int(act[0])
         err = 1 - pred[idx + 1] if idx + 1 < len(pred) else 1
         return [err * err, 1]
 
-    def combine(self, l, r):
+    def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
 
     def metric(self, l):
