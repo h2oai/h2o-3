@@ -147,8 +147,10 @@ public class StackedEnsembleTest extends TestUtil {
     }
     */
 
-    /*
+
     @Test public void testBasicEnsembleGLMMetalearner() {
+        // TODO: Fix this (doing nothing right now)
+    /*
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
@@ -206,8 +208,9 @@ public class StackedEnsembleTest extends TestUtil {
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
                 false, DistributionFamily.multinomial, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
-    }
     */
+    }
+
 
     // ==========================================================================
     public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String training_file, String validation_file, StackedEnsembleTest.PrepData prep, boolean dupeTrainingFrameToValidationFrame, DistributionFamily family, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo) {
