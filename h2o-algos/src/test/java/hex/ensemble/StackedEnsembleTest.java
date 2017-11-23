@@ -30,9 +30,6 @@ public class StackedEnsembleTest extends TestUtil {
             "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay",
             "LateAircraftDelay", "IsDepDelayed"};
 
-    // TODO: Fix these tests -- we have a levelone leaked key causing them all to fail
-    // The unit test logic is duplicated in R and Python (where they all pass)
-    /*
     @Test public void testBasicEnsembleAUTOMetalearner() {
 
         basicEnsemble("./smalldata/junit/cars.csv",
@@ -145,12 +142,11 @@ public class StackedEnsembleTest extends TestUtil {
                 },
                 false, DistributionFamily.bernoulli, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.deeplearning);
     }
-    */
+
 
 
     @Test public void testBasicEnsembleGLMMetalearner() {
-        // TODO: Fix this (doing nothing right now)
-    /*
+
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
@@ -208,7 +204,6 @@ public class StackedEnsembleTest extends TestUtil {
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
                 },
                 false, DistributionFamily.multinomial, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm);
-    */
     }
 
 
