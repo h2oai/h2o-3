@@ -169,7 +169,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   /**
    * If the user hasn't specified validation data, split it off for them.
    *                                                                  <p>
-   * For nfolds > 1, the user can specify:                                            <p>
+   * For nfolds > 1, the user can specify:                            <p>
    * 1. training only                                                 <p>
    * 2. training + leaderboard                                        <p>
    * 3. training + validation                                         <p>
@@ -177,13 +177,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    *                                                                  <p>
    * In the top two cases we auto-split:                              <p>
    * training -> training:validation  80:20                           <p>
-   *
-   * For nfolds = 0, we have different rules:
+   *                                                                  <p>
+   * For nfolds = 0, we have different rules:                         <p>
    * 5. training only                                                 <p>
    * 6. training + leaderboard                                        <p>
    * 7. training + validation                                         <p>
    * 8. training + validation + leaderboard                           <p>
-   *                                         <p>
+   *                                                                  <p>
    * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
    */
   private void optionallySplitDatasets() {
@@ -1014,6 +1014,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    stackedEnsembleParameters._keep_levelone_frame = true;
     // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
