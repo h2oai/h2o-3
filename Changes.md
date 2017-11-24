@@ -2,6 +2,215 @@
 
 ## H2O
 
+### Wheeler (3.16.0.1) - 11/24/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/index.html</a>
+
+
+<h4>Technical Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5087'>PUBDEV-5087</a>] - A backend Java API is now available for custom evaluation metrics. 
+</li>
+</ul>
+        
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1465'>PUBDEV-1465</a>] - Users can now save models to and download models from S3. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3567'>PUBDEV-3567</a>] - When running h2o.merge in the R client, the status line indicator will no longer return quickly. Users can no longer enter new commands until the merge process is completed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4172'>PUBDEV-4172</a>] - In the R client strings, training_frame says no longer states that it is an optional parameter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4672'>PUBDEV-4672</a>] - The H2OFrame.mean method now works in Python 3.6.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4697'>PUBDEV-4697</a>] - Early stopping now works with perfectly predictive data.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4727'>PUBDEV-4727</a>] - h2o.group_by now works correctly when specifying a median() value.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4778'>PUBDEV-4778</a>] - In XGBoost fixed an issue that caused prediction on a dataset without a response column to return an error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4853'>PUBDEV-4853</a>] - When running AutoML in Flow, users can now specify a project name.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4857'>PUBDEV-4857</a>] - h2odriver in proxy mode now correctly forwards the authentication headers to the H2O node.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4900'>PUBDEV-4900</a>] - H2O can ingest Parquet 1.8 files created by Spark.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4906'>PUBDEV-4906</a>] - Loading models and exporting models to/from AWS S3 now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4907'>PUBDEV-4907</a>] - Fixed an issue that caused  binary model imports and exports from/to S3 to fail. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4930'>PUBDEV-4930</a>] - Users can now load data from s3n resources after setting core-site.xml correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4953'>PUBDEV-4953</a>] - Fixed an error that occurred when exporting data to s3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4985'>PUBDEV-4985</a>] - Fixed an issue that caused H2O to "forget" that a column is of factor type if it contains only NA values.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4996'>PUBDEV-4996</a>] - The download instructions for Python now indicate that version 3.6 is supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5002'>PUBDEV-5002</a>] - In Flow, fixed an issue with retaining logs from the client node.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5003'>PUBDEV-5003</a>] - H2O can now handle the case where I'm the Client and the md5 should be ignored.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5005'>PUBDEV-5005</a>] - h2o.residual_deviance now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5017'>PUBDEV-5017</a>] - h2o.predict no longer returns an error when the user does not specify an offset_column. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5033'>PUBDEV-5033</a>] - Fixed an issue with Spark string chunks. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5037'>PUBDEV-5037</a>] - Logs now display correctly on HADOOP, and downloaded logs no longer give an empty folder when the cluster is up.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5038'>PUBDEV-5038</a>] - Added an option for handling empty strings. If compare_empty if set to FALSE, empty strings will be handled as NaNs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5040'>PUBDEV-5040</a>] - HTTP logs can now be obtained in Flow UI.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5048'>PUBDEV-5048</a>] - Fixed an issue with the progress bar that occurred when running PySparkling + DataBricks.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5067'>PUBDEV-5067</a>] - Fixed reporting of clients with the wrong md5.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5070'>PUBDEV-5070</a>] - In the R and Python clients, updated the strings for max_active_predictors to indicate that the default is now 5000. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5072'>PUBDEV-5072</a>] - h2o.merge now works correctly for one-to-many when all.x=TRUE. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5074'>PUBDEV-5074</a>] - Fixed an issue that caused GLM predict to fail when a weights column was not specified.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5081'>PUBDEV-5081</a>] - Reduced the number of URLs that get sent to google analytics.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5095'>PUBDEV-5095</a>] - When building a Stacked Ensemble model, the fold_column from AutoML is now piped through to the stacked ensemble.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5096'>PUBDEV-5096</a>] - Fixed an issue that cause GLM scoring to produce incorrect results for sparse data.
+</li>
+</ul>
+    
+<h4>Epic</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4684'>PUBDEV-4684</a>] - This version of H2O includes support for Python 3.6.
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3877'>PUBDEV-3877</a>] - MOJOs are now supported for Stacked Ensembles.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3743'>PUBDEV-3743</a>] - User can now specify the metalearner algorithm type that StackedEnsemble should use. This can be AUTO, GLM, GBM, DRF, or Deep Learning.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3971'>PUBDEV-3971</a>] - Added a metalearner_folds option in Stacked Ensembles, enabling cross validation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4085'>PUBDEV-4085</a>] - In GBM, endpoints are now exposed that allow for custom evaluation metrics. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4882'>PUBDEV-4882</a>] - When running AutoML through the Python or R clients, users can now specify the nfolds argument.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4891'>PUBDEV-4891</a>] - Add another Stacked Ensemble (top model for each algo) to AutoML
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5071'>PUBDEV-5071</a>] - The AutoML leaderboard now uses cross-validation metrics (new default). 
+</li> 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4914'>PUBDEV-4914</a>] - K-Means POJOs and MOJOs now expose distances to cluster centers.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4957'>PUBDEV-4957</a>] - Multiclass stacking is now supported in AutoML. Removed the check that caused AutoML to skip stacking for multiclass.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5043'>PUBDEV-5043</a>] - Users can now specify a number of folds when running AutoML in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5084'>PUBDEV-5084</a>] - Added a metalearner_fold_column option in Stacked Ensembles, allowing for custom folds during cross validation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4994'>PUBDEV-4994</a>] - The Aggregator Function is now exposed in the R client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4995'>PUBDEV-4995</a>] - The Aggregator Function is now available in the Python client.
+</li>
+</ul>
+    
+<h4>Story</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5044'>PUBDEV-5044</a>] - Fixed a Jaro-Winkler Dependency.
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4803'>PUBDEV-4803</a>] - The current version of h2o-py is now published into PyPi.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4896'>PUBDEV-4896</a>] - Change behavior of auto-generation of validation and leaderboard frames in AutoML
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4931'>PUBDEV-4931</a>] - Updated the download site and the end user documentation to indicate that Python3.6 is now supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4935'>PUBDEV-4935</a>] - PyPi/Anaconda descriptors now indicate support for Python 3.6.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4791'>PUBDEV-4791</a>] - Enabled the lambda search for the GLM metalearner in Stacked Ensembles. This is set to TRUE and early_stopping is set to FALSE. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4831'>PUBDEV-4831</a>] - Running `pip install` now installs the latest version of H2O-3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4963'>PUBDEV-4963</a>] - In EasyPredictModelWrapper, preamble(), predict(), and fillRawData() are now protected rather than private.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5082'>PUBDEV-5082</a>] - MOJOs/POJOs will not be created for unsupported categorical_encoding values.
+</li> 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5109'>PUBDEV-5109</a>] - An AutoML run now outputs two StackedEnsemble model IDs. These are labeled StackedEnsemble_AllModels and StackedEnsemble_BestOfFamily.
+</li> 
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4298'>PUBDEV-4298</a>] - In the Data Manipulation chapter, added a topic for pivoting tables.  
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4662'>PUBDEV-4662</a>] - Added a topic to the Data Manipulation chapter describing the h2o.fillna function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4747'>PUBDEV-4747</a>] - Added MOJO and POJO Quick Start sections directly into the Productionizing H2O chapter. Previously, this chapter included links to quick start files.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4810'>PUBDEV-4810</a>] - In the GBM booklet when describing nbins_cat, clarified that factors rather than columns get grouped together. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4816'>PUBDEV-4816</a>] - The description for the GLM lambda_max option now states that this is the smallest lambda that drives all coefficients to zero. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4833'>PUBDEV-4833</a>] - Updated the installation instructions for PySparkling. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4864'>PUBDEV-4864</a>] - Clarified that in H2O-3, sampling is without replacement.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4878'>PUBDEV-4878</a>] - Updated documentation to state that multiclass classification is now supported in Stacked Ensembles.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4879'>PUBDEV-4879</a>] - Updated documentation to state that multiclass stacking is now supported in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4895'>PUBDEV-4895</a>] - Added an Early Stopping section the Algorithms > Common chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4945'>PUBDEV-4945</a>] - Added a note in Word2vec stating that binary format is not supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4946'>PUBDEV-4946</a>] - In the Parameters Appendix, updated the description for histogram_type=random.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4958'>PUBDEV-4958</a>] - In the Using Flow > Models > Run AutoML section, updated the AutoML screenshot to show the new Project Name field. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4971'>PUBDEV-4971</a>] - Added a Sorting Columns data munging topic describing how to sort a data frame by column or columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5000'>PUBDEV-5000</a>] - In KMeans, updated the list of model summary statistics and training metrics that are outputted. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5011'>PUBDEV-5011</a>] - Removed SortByResponse from the list of categorical_encoding options for Aggregator and K-Means.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5026'>PUBDEV-5026</a>] - Updated the Sparkling Water links on docs.h2o.ai to point to the latest release.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5032'>PUBDEV-5032</a>] - Added a section in the Algorithms chapter for Aggregator.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5056'>PUBDEV-5056</a>] - Updated the description for Save and Loading Models to indicate that H2O binary models are not compatible across H2O versions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5057'>PUBDEV-5057</a>] - Added ignored_columns and 'x' parameters to AutoML section. Also added the 'x' parameter to the Parameters Appendix. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5062'>PUBDEV-5062</a>] - In DRF, add FAQs describing splitting criteria. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5085'>PUBDEV-5085</a>] - Added the new metalearner_folds and metalearner_fold_assignment parameters to the Defining a Stacked Ensemble Model section in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5089'>PUBDEV-5089</a>] - Updated the Sparking Water booklet. (Also PUBDEV-5004.)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5092'>PUBDEV-5092</a>] - Added the new metalearner_algorithm parameter to Defining a Stacked Ensemble Model section in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5097'>PUBDEV-5097</a>] - The User Guide and the POJO/MOJO Javadoc have been updated to indicate that MOJOs are supported for Stacked Ensembles.
+</li>
+</ul>
+
 ### Weierstrass (3.14.0.7) - 10/20/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/7/index.html</a>
