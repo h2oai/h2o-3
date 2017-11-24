@@ -7,6 +7,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import java.util.*;
 
@@ -157,7 +158,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     String[] names = { s.column };
     Frame new_frame = new Frame(names, vecs);
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new_frame);
+    s.frames[0] = new FrameV3(new_frame);
     ((FrameV3)s.frames[0]).clearBinsField();
     return s;
   }
@@ -187,7 +188,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
+    s.frames[0] = new FrameV3(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
     return s;
   }
 
@@ -206,12 +207,24 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     return frames;
   }
 
+  public FramesV3 fetchLight(int version, FramesV3 s) {
+    FramesV3 frames = doFetch(version, s, false);
+    for (FrameBaseV3 a_frame: frames.frames) {
+      ((FrameV3)a_frame).clearBinsField();
+    }
+
+    return frames;
+  }
+
   private FramesV3 doFetch(int version, FramesV3 s) {
+    return doFetch(version, s, true);
+  }
+  private FramesV3 doFetch(int version, FramesV3 s, boolean expensive) {
     s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBaseV3
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, expensive);
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Model.fetchAll());

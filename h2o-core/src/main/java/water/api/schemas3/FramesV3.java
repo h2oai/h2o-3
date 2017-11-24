@@ -17,13 +17,13 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   public long row_offset;
 
   @API(help="Number of rows to return", direction=API.Direction.INOUT)
-  public int row_count;
+  public int row_count = -1;
 
   @API(help="Column offset to return", direction=API.Direction.INOUT)
   public int column_offset;
 
   @API(help="Number of columns to return", direction=API.Direction.INOUT)
-  public int column_count;
+  public int column_count = -1;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
