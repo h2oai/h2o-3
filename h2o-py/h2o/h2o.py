@@ -749,7 +749,7 @@ def get_grid(grid_id):
     return gs
 
 
-def get_frame(frame_id):
+def get_frame(frame_id, **kwargs):
     """
     Obtain a handle to the frame in H2O with the frame_id key.
 
@@ -757,7 +757,7 @@ def get_frame(frame_id):
     :returns: an :class:`H2OFrame` object
     """
     assert_is_type(frame_id, str)
-    return H2OFrame.get_frame(frame_id)
+    return H2OFrame.get_frame(frame_id, kwargs)
 
 
 def no_progress():

@@ -187,17 +187,21 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def get_frame(frame_id):
+    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, cols_offset=0):
         """
         Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
 
         :param str frame_id: id of the frame to retrieve
+        :param int rows: number of rows to fetch for preview (10 by default)
+        :param int rows_offset: offset to fetch rows from (0 by default)
+        :param int cols: number of columns to fetch (all by default)
+        :param int cols_offset: offset to fetch rows from (0 by default)
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
         """
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
-            fr._ex._cache.fill()
+            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset)
         except EnvironmentError:
             return None
         return fr
