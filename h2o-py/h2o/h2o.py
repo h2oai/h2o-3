@@ -757,7 +757,7 @@ def get_frame(frame_id, **kwargs):
     :returns: an :class:`H2OFrame` object
     """
     assert_is_type(frame_id, str)
-    return H2OFrame.get_frame(frame_id, kwargs)
+    return H2OFrame.get_frame(frame_id, **kwargs)
 
 
 def no_progress():
