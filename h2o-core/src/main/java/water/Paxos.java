@@ -40,7 +40,7 @@ public abstract class Paxos {
     // mismatched jars.
     if(!H2O.ARGS.client && !h2o._heartbeat._client) {
       // don't check md5 for client nodes
-      if (!h2o._heartbeat.check_jar_md5()) {
+      if (!h2o._heartbeat.check_jar_md5(true)) {
         if (H2O.CLOUD.size() > 1) {
           Log.warn("Killing " + h2o + " because of H2O version mismatch (md5 differs).");
           UDPRebooted.T.mismatch.send(h2o);
@@ -50,7 +50,7 @@ public abstract class Paxos {
         return 0;
       }
     }else{
-      if (!h2o._heartbeat.check_jar_md5()) {
+      if (!h2o._heartbeat.check_jar_md5(false)) { // we do not want to disturb the user in this case
         // Just report that client with different md5 tried to connect
         ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
       }

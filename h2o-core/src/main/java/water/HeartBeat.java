@@ -60,10 +60,12 @@ public class HeartBeat extends Iced<HeartBeat> {
   void set_max_disk (long n) {  _max_disk = (int)(n>>20); }
   public long get_max_disk ()  { return  ((long)_max_disk)<<20 ; }
 
-  boolean check_jar_md5() {
+  boolean check_jar_md5(boolean print) {
     if( H2O.ARGS.md5skip || Arrays.equals(JarHash.JARHASH, _jar_md5) ) return true;
-    System.out.println("Jar check fails; my hash="+Arrays.toString(JarHash.JARHASH));
-    System.out.println("Jar check fails; received hash="+Arrays.toString(_jar_md5));
+    if(print) {
+      System.out.println("Jar check fails; my hash=" + Arrays.toString(JarHash.JARHASH));
+      System.out.println("Jar check fails; received hash=" + Arrays.toString(_jar_md5));
+    }
     return false;
   }
 
