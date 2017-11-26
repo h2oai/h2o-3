@@ -267,12 +267,8 @@ def invokeStage(buildConfig, body) {
   }
 
   node(config.nodeLabel) {
-    echo "###### Pulling scripts. ######"
-    step ([$class: 'CopyArtifact',
-      projectName: env.JOB_NAME,
-      filter: "h2o-3/scripts/jenkins/groovy/*",
-      selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID]
-    ])
+    echo "###### Unstash scripts. ######"
+    unstash name: buildConfig.PIPELINE_SCRIPTS_STASH_NAME
 
     def script = load(config.executionScript)
     script(buildConfig, config)
