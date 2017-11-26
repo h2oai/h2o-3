@@ -1,4 +1,4 @@
-def call(final String mode, final boolean overrideDetectionChange) {
+def call(final scmEnv, final String mode, final boolean overrideDetectionChange) {
 
   def findCmd = "find . -maxdepth 1 -not -name 'h2o-3' -not -name h2o-3@tmp -not -name '.'"
   def deleteCmd = " -exec rm -rf '{}' ';'"
@@ -10,7 +10,8 @@ def call(final String mode, final boolean overrideDetectionChange) {
 
   // get commit message
   def commitMessage = sh(script: 'cd h2o-3 && git log -1 --pretty=%B', returnStdout: true).trim()
-  env.GIT_SHA = "${sh(script: 'cd h2o-3 && git rev-parse HEAD', returnStdout: true).trim()}"
+  env.BRANCH_NAME = scmEnv['GIT_BRANCH']
+  env.GIT_SHA = scmEnv['GIT_COMMIT']
   env.GIT_DATE = "${sh(script: 'cd h2o-3 && git show -s --format=%ci', returnStdout: true).trim()}"
 
   // get changes between merge base and this commit

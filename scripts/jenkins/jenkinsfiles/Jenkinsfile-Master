@@ -5,6 +5,7 @@ def buildConfig = null
 def emailContent = null
 def sendEmail = null
 def result = 'FAILURE'
+def scmEnv = null
 
 try {
   ansiColor('xterm') {
@@ -19,7 +20,7 @@ try {
             retry(3) {
               timeout(time: 1, unit: 'MINUTES') {
                 echo "###### Checkout H2O-3 ######"
-                checkout scm
+                scmEnv = checkout scm
               }
             }
           }
@@ -31,7 +32,7 @@ try {
           setBuildDesc()
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3('MODE_MASTER', true)
+          buildConfig = prepareH2O3(scmEnv, 'MODE_MASTER', true)
           buildConfig.setDefaultOverrideRerun(true)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
