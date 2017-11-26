@@ -49,15 +49,15 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
+      timeoutValue: 60, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
+      timeoutValue: 60, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
+      timeoutValue: 60, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
@@ -93,7 +93,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 90, lang: buildConfig.LANG_PY
+      timeoutValue: 120, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
@@ -131,7 +131,7 @@ def call(buildConfig) {
   def MASTER_STAGES = [
     [
       stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-      timeoutValue: 90, lang: buildConfig.LANG_PY
+      timeoutValue: 120, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
@@ -139,7 +139,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
-      timeoutValue: 20, lang: buildConfig.LANG_R
+      timeoutValue: 40, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
