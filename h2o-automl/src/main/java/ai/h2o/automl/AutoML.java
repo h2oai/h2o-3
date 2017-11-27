@@ -856,12 +856,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  public Job<Grid> defaultSearchGLM() {
+  public Job<Grid> defaultSearchGLM(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GLM
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("GLM_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -873,13 +871,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     glmParameters._family = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMModel.GLMParameters.Family.binomial :
             getResponseColumn().isCategorical() ? GLMModel.GLMParameters.Family.multinomial :
                     GLMModel.GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
-
+    glmParameters._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation;
     Map<String, Object[]> searchParams = new HashMap<>();
-    glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!
-    // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
-    searchParams.put("_missing_values_handling", new DeepLearningModel.DeepLearningParameters.MissingValuesHandling[] {DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation /* , DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip */});
-
-    Job<Grid>glmJob = hyperparameterSearch("GLM", glmParameters, searchParams);
+    searchParams.put("_alpha", new Double[][] {{0.0}, {0.2}, {0.4}, {0.6}, {0.8}, {1.0}});
+    Job<Grid>glmJob = hyperparameterSearch(gridKey,"GLM", glmParameters, searchParams);
     return glmJob;
   }
 
@@ -1075,7 +1070,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build GLMs with the default search parameters
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>glmJob = defaultSearchGLM();
+    Key<Grid> glmGridKey = gridKey("GLM");
+    Job<Grid>glmJob = defaultSearchGLM(glmGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 50, this.job(), glmJob, JobType.HyperparamSearch);
 
 
