@@ -3,7 +3,6 @@ import groovy.text.markup.MarkupTemplateEngine
 import groovy.text.markup.TemplateConfiguration
 import groovy.text.Template
 
-@NonCPS
 def call(final String result) {
     def LOGO_URL = 'https://pbs.twimg.com/profile_images/501572396810129408/DTgFCs-n.png'
     def REPO_URL = 'https://github.com/h2oai/h2o-3'
