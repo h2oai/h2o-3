@@ -49,15 +49,15 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 60, lang: buildConfig.LANG_PY
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 60, lang: buildConfig.LANG_PY
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 60, lang: buildConfig.LANG_PY
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
@@ -135,7 +135,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 90, lang: buildConfig.LANG_PY
+      timeoutValue: 120, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
