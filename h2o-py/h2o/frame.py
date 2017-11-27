@@ -406,7 +406,7 @@ class H2OFrame(object):
                 self.show()
         return ""
 
-    def show(self, use_pandas=False):
+    def show(self, use_pandas=False, rows=10, cols=200):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
 
@@ -419,12 +419,12 @@ class H2OFrame(object):
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(fill_cache=True))
+                IPython.display.display(self.head(rows=rows, cols=cols).as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))  # no keyword fill_cache
+                print(self.head(rows=rows, cols=cols).as_data_frame(True))  # no keyword fill_cache
             else:
                 s = self.__unicode__()
                 stk = traceback.extract_stack()
@@ -477,10 +477,10 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, rows=10, fill_cache=False):
+    def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill(rows=rows)
+            self._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset)
         return self
 
 
@@ -498,7 +498,7 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         newdt = self[:nrows, :ncols]
-        return newdt._frame(rows=nrows, fill_cache=True)
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -516,7 +516,7 @@ class H2OFrame(object):
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
         newdt = self[start_idx:start_idx + nrows, :ncols]
-        return newdt._frame(rows=nrows, fill_cache=True)
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def logical_negation(self):
