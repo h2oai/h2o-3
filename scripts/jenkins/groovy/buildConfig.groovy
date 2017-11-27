@@ -54,6 +54,7 @@ class BuildConfig {
   }
 
   public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
+  public static final String PIPELINE_SCRIPTS_STASH_NAME = 'pipeline_scripts'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
   private static final String DEFAULT_IMAGE_VERSION_TAG = '102'
