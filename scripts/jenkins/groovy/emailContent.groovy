@@ -36,7 +36,7 @@ def call(final String result) {
         }"""
     }
 
-    testResultsAction = build.getAction(AbstractTestResultAction.class)
+    def testResultsAction = build.getAction(AbstractTestResultAction.class)
     def testsContent = "p('No tests were run.')"
     def failedTests = null
     if (testResultsAction != null) {

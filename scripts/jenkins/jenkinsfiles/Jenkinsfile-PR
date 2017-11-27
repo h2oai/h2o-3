@@ -2,6 +2,7 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
+def scmEnv = null
 
 ansiColor('xterm') {
   timestamps {
@@ -20,7 +21,7 @@ ansiColor('xterm') {
           retry(3) {
             timeout(time: 1, unit: 'MINUTES') {
               echo "###### Checkout H2O-3 ######"
-              checkout scm
+              scmEnv = checkout scm
             }
           }
         }
@@ -29,7 +30,7 @@ ansiColor('xterm') {
         setBuildDesc()
 
         def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-        buildConfig = prepareH2O3('MODE_PR', false)
+        buildConfig = prepareH2O3(scmEnv, 'MODE_PR', false)
 
         def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
         setJobProperties(buildConfig)
