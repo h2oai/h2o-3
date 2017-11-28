@@ -270,6 +270,12 @@ def invokeStage(buildConfig, body) {
     echo "###### Unstash scripts. ######"
     unstash name: buildConfig.PIPELINE_SCRIPTS_STASH_NAME
 
+    if (config.stageDir == null) {
+      def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
+      config.stageDir = stageNameToDirName(config.stageName)
+    }
+    sh "rm -rf ${config.stageDir}"
+
     def script = load(config.executionScript)
     script(buildConfig, config)
   }
