@@ -88,7 +88,7 @@ automl.args.test <- function() {
                      max_models = 1,
                      project_name = "aml8")
   nrow_aml8_lb <- nrow(aml8@leaderboard)
-  expect_equal(nrow_aml8_lb, 3)
+  expect_equal(nrow_aml8_lb, 4)
 
   print("Check max_models > 1; leaderboard continuity/growth")
   aml8 <- h2o.automl(x = x, y = y,
@@ -175,7 +175,7 @@ automl.args.test <- function() {
                       project_name = "aml14")
   # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
   model_ids <- as.character(as.data.frame(aml14@leaderboard[,"model_id"])[,1])
-  expect_equal(sum(grepl("StackedEnsemble", model_ids)), 2)
+  expect_equal(sum(grepl("StackedEnsemble", model_ids)), 3)
 
 }
 
