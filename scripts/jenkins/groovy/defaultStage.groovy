@@ -32,6 +32,7 @@ def call(buildConfig, stageConfig) {
           echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
 
           def stageDir = stageNameToDirName(stageConfig.stageName)
+          sh "rm -r -f ${stageDir}"
           def h2oFolder = stageDir + '/h2o-3'
 
           // pull the test package unless this is a LANG_NONE stage
