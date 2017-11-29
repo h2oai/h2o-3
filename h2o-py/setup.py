@@ -11,6 +11,11 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Get the version from the relevant file
+with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
+    version = f.read()
+
+
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
 
@@ -29,17 +34,13 @@ elif os.path.exists(h2o_jar_dst):
 else:
     raise RuntimeError("Cannot locate %s to bundle with the h2o package (pwd: %s)." % (h2o_jar_src, here))
 
-
-if h2o.__version__ == "SUBST_PROJECT_VERSION":
-    h2o.__version__ = "3.14.15.92653"
-
 setup(
     name='h2o',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=h2o.__version__,
+    version = version,
 
     description='H2O, Fast Scalable Machine Learning, for python ',
     long_description=long_description,

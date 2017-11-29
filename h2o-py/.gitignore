@@ -66,3 +66,7 @@ docs/docs/.buildinfo
 docs/docs/.doctrees/*
 docs/docs/_modules/*
 docs/docs/objects.inv
+
+# version files
+buildinfo.txt
+version.txt
