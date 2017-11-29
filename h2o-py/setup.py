@@ -3,7 +3,6 @@ from setuptools import setup, find_packages
 from codecs import open
 import os
 import shutil
-import h2o
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -12,7 +11,7 @@ with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get the version from the relevant file
-with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
+with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
     version = f.read()
 
 
@@ -90,6 +89,8 @@ setup(
     package_data={"h2o": [
         "h2o_data/*.*",     # several small datasets used in demos/examples
         "backend/bin/*.*",  # h2o.jar core Java library
+        "version.txt",      # version file
+        "buildinfo.txt"     # buildinfo file
     ]},
 
     # run-time dependencies

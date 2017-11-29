@@ -1,5 +1,5 @@
 # include additional files which are not fetched by default by setuptools
 include DESCRIPTION.rst
-include version.txt
-include buildinfo.txt
+include h2o/version.txt
+include h2o/buildinfo.txt
 

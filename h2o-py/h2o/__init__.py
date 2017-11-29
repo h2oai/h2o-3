@@ -26,7 +26,7 @@ from h2o.frame import H2OFrame  # NOQA
 
 import os
 from codecs import open
-here = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+here = os.path.abspath(os.path.dirname(__file__))
 
 with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
     __buildinfo__ = f.read()

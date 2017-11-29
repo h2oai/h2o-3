@@ -22,10 +22,10 @@ ext {
 //
 task createVersionFiles() {
     doLast {
-        File version_file = new File(projectDir, "version.txt")
+        File version_file = new File("${projectDir.toString()}/h2o", "version.txt")
         version_file.write(PROJECT_VERSION)
 
-        File build_file = new File(projectDir, "buildinfo.txt")
+        File build_file = new File("${projectDir.toString()}/h2o", "buildinfo.txt")
         build_file.write(buildVersion.toString())
     }
 }
