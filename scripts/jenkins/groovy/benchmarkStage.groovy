@@ -28,7 +28,7 @@ def call(buildConfig, stageConfig) {
   }
 
   def prepareBenchmarkDirStruct = load("${ML_BENCHMARK_ROOT}/jenkins/groovy/prepareBenchmarkDirStruct.groovy")
-  def benchmarkFolderConfig = prepareBenchmarkDirStruct(stageConfig.model, env.GIT_SHA)
+  def benchmarkFolderConfig = prepareBenchmarkDirStruct(stageConfig.model, env.GIT_SHA, env.BRANCH_NAME)
   GString outputPath = "${env.workspace}/${stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getOutputDir()}"
   sh "rm -rf ${outputPath} && mkdir -p ${outputPath}"
 

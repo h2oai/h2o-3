@@ -2,7 +2,6 @@ def call(buildConfig, stageConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-  def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
   def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
 
@@ -31,17 +30,16 @@ def call(buildConfig, stageConfig) {
         if(runAllStages(buildConfig) || !wasStageSuccessful(stageConfig.stageName)) {
           echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
 
-          def stageDir = stageNameToDirName(stageConfig.stageName)
-          def h2oFolder = stageDir + '/h2o-3'
+          def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
           // pull the test package unless this is a LANG_NONE stage
           if (stageConfig.lang != buildConfig.LANG_NONE) {
-            unpackTestPackage(stageConfig.lang, stageDir)
+            unpackTestPackage(stageConfig.lang, stageConfig.stageDir)
           }
           // pull aditional test packages
           for (additionalPackage in stageConfig.additionalTestPackages) {
             echo "Pulling additional test-package-${additionalPackage}.zip"
-            unpackTestPackage(additionalPackage, stageDir)
+            unpackTestPackage(additionalPackage, stageConfig.stageDir)
           }
 
           if (stageConfig.lang == buildConfig.LANG_PY || stageConfig.additionalTestPackages.contains(buildConfig.LANG_PY)) {
