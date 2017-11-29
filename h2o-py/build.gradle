@@ -72,7 +72,7 @@ task cleanCoverageData(type: Delete) {
     delete file("${testsPath}/results/jacoco")
 }
 
-task cleaner(type: Delete) {
+task cleanBuild(type: Delete) {
     doFirst {
         println "Cleaning..."
     }
