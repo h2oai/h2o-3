@@ -68,5 +68,5 @@ docs/docs/_modules/*
 docs/docs/objects.inv
 
 # version files
-buildinfo.txt
-version.txt
+h2o/buildinfo.txt
+h2o/version.txt

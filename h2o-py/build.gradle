@@ -76,8 +76,8 @@ task cleanBuild(type: Delete) {
     doFirst {
         println "Cleaning..."
     }
-    delete file("version.txt")
-    delete file("buildinfo.txt")
+    delete file("h2o/version.txt")
+    delete file("h2o/buildinfo.txt")
     delete file("dist/")
     delete file("h2o.egg-info/")
     delete file("build/")
