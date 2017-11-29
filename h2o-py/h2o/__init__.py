@@ -24,8 +24,16 @@ from h2o.h2o import (connect, init, api, connection,
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
 
-__version__ = "SUBST_PROJECT_VERSION"
-__buildinfo__ = "SUBST_PROJECT_BUILDINFO"
+import os
+from codecs import open
+here = os.path.abspath(os.path.dirname(__file__))
+
+with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
+    __buildinfo__ = f.read()
+
+__version__ = "0.0.local"
+with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
+    __version__ = f.read()
 
 if (__version__.endswith("99999")):
     print(__buildinfo__)
