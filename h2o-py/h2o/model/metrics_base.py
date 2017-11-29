@@ -222,11 +222,17 @@ class MetricsBase(backwards_compatible()):
 
     def custom_metric_name(self):
         """Name of custom metric or None."""
-        return self._metric_json['custom_metric_name']
+        if MetricsBase._has(self._metric_json, "custom_metric_name"):
+            return self._metric_json['custom_metric_name']
+        else:
+            return None
 
     def custom_metric_value(self):
-        """Name of custom metric or None."""
-        return self._metric_json['custom_metric_value']
+        """Value of custom metric or None."""        
+        if MetricsBase._has(self._metric_json, "custom_metric_value"):
+            return self._metric_json['custom_metric_value']
+        else:
+            return None
 
     # Deprecated functions; left here for backward compatibility
     _bcim = {
