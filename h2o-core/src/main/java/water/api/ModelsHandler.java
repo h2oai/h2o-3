@@ -128,7 +128,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       ((ModelSchemaV3)s.models[0]).compatible_frames = new String[compatible.length];
       int i = 0;
       for (Frame f : compatible) {
-        s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBaseV3
+        s.compatible_frames[i] = new FrameV3(f);
         ((ModelSchemaV3)s.models[0]).compatible_frames[i] = f._key.toString();
         i++;
       }
