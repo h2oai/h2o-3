@@ -31,6 +31,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
     __buildinfo__ = f.read()
 
+__version__ = "0.0.local"
 with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
     __version__ = f.read()
 

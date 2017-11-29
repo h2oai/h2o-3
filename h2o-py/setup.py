@@ -10,6 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+version = "0.0.local"
 # Get the version from the relevant file
 with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
     version = f.read()
