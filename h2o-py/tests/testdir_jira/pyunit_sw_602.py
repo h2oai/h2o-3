@@ -12,12 +12,12 @@ def test_sw_602_endpoints_equality():
     full = H2OFrame.get_frame(fr.frame_id)
     light = H2OFrame.get_frame(fr.frame_id, light=True)
 
-assert full._ex._cache._id == light._ex._cache._id
-assert full._ex._cache._nrows == light._ex._cache._nrows
-assert full._ex._cache._ncols == light._ex._cache._ncols
-assert full._ex._cache._names == light._ex._cache._names
-assert full._ex._cache._data == light._ex._cache._data
-assert full._ex._cache._l == light._ex._cache._l
+    assert full._ex._cache._id == light._ex._cache._id
+    assert full._ex._cache._nrows == light._ex._cache._nrows
+    assert full._ex._cache._ncols == light._ex._cache._ncols
+    assert full._ex._cache._names == light._ex._cache._names
+    assert full._ex._cache._data == light._ex._cache._data
+    assert full._ex._cache._l == light._ex._cache._l
 
 __TESTS__ = [test_sw_602_endpoints_equality]
 
