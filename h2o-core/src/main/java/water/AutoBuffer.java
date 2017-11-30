@@ -13,6 +13,8 @@ import water.util.Log;
 import water.util.StringUtils;
 import water.util.TwoDimTable;
 
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
+
 /** A ByteBuffer backed mixed Input/Output streaming class, using Iced serialization.
  *
  *  Reads/writes empty/fill the ByteBuffer as needed.  When it is empty/full it
@@ -42,6 +44,8 @@ public final class AutoBuffer {
   // Maximum size of an array we allow to allocate (the value is designed
   // to mimic the behavior of OpenJDK libraries)
   private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+  private static String H2O_SYSTEM_SERIALIZATION_IGNORE_VERSION = SYSTEM_PROP_PREFIX + "serialization.ignore.version";
 
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
@@ -281,15 +285,23 @@ public final class AutoBuffer {
     if( b==0 ) return;          // No persistence info
     int magic = get1U();
     if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
-    String version = getStr();
-    if( !version.equals(H2O.ABV.projectVersion()) )
-      throw new IllegalArgumentException("Found version "+version+", but running version "+H2O.ABV.projectVersion());
+    checkVersion(getStr());
     String[] typeMap = getAStr();
     _typeMap = new short[typeMap.length];
     for( int i=0; i<typeMap.length; i++ )
       _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
   }
 
+  private void checkVersion(String version) {
+    final boolean ignoreVersion = Boolean.getBoolean(H2O_SYSTEM_SERIALIZATION_IGNORE_VERSION);
+    if (! version.equals(H2O.ABV.projectVersion())) {
+      String msg = "Found version " + version + ", but running version " + H2O.ABV.projectVersion();
+      if (ignoreVersion)
+        Log.warn("Loading data from a different version! " + msg);
+      else
+        throw new IllegalArgumentException(msg);
+    }
+  }
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
