@@ -420,6 +420,11 @@ public class RequestServer extends HttpServlet {
           parms.put("frame_id", url.substring(10, url.length()-8));
           route = findRouteByApiName("frameSummary");
         }
+        // /3/Frames/{frame_id}/light
+        else if (url.endsWith("/light")) {
+          parms.put("frame_id", url.substring(10, url.length()-"/light".length()));
+          route = findRouteByApiName("lightFrame");
+        }
         // /3/Frames/{frame_id}/columns
         else if (url.endsWith("/columns")) {
           parms.put("frame_id", url.substring(10, url.length()-8));
