@@ -168,6 +168,10 @@ public class RegisterV3Api extends AbstractRegister {
             "GET /3/Frames/{frame_id}/summary", FramesHandler.class, "summary",
             "Return a Frame, including the histograms, after forcing computation of rollups.");
 
+    context.registerEndpoint("lightFrame",
+            "GET /3/Frames/{frame_id}/light", FramesHandler.class, "fetchLight",
+            "Return a basic info about Frame to fill client Rapid expression cache.");
+
     context.registerEndpoint("frame",
             "GET /3/Frames/{frame_id}", FramesHandler.class, "fetch",
             "Return the specified Frame.");
