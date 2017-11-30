@@ -7,10 +7,10 @@ from h2o.frame import H2OFrame
 import numpy
 
 def test_sw_602_endpoints_equality():
-data = [numpy.arange(0, 50000).tolist() for x in numpy.arange(0, 99).tolist()]
-fr = h2o.H2OFrame(data)
-full = H2OFrame.get_frame(fr.frame_id)
-light = H2OFrame.get_frame(fr.frame_id, light=True)
+    data = [numpy.arange(0, 50000).tolist() for x in numpy.arange(0, 99).tolist()]
+    fr = h2o.H2OFrame(data)
+    full = H2OFrame.get_frame(fr.frame_id)
+    light = H2OFrame.get_frame(fr.frame_id, light=True)
 
 assert full._ex._cache._id == light._ex._cache._id
 assert full._ex._cache._nrows == light._ex._cache._nrows
