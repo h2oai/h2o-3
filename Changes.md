@@ -2,6 +2,29 @@
 
 ## H2O
 
+### Wheeler (3.16.0.2) - 11/30/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/2/index.html</a>
+
+<h4>Bug</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5115'>PUBDEV-5115</a>] - In AutoML, fixed an issue that caused the leaderboard_frame to be ignored when nfolds > 1. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5117'>PUBDEV-5117</a>] - Improved the warning that displays when mismatched jars exist. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5126'>PUBDEV-5126</a>] - The correct H2O version now displays in setup.py for sdist.
+</li>
+
+<h4>Improvement</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5111'>PUBDEV-5111</a>] - Incorporated final improvements to the Sparkling Water booklet.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5127'>PUBDEV-5127</a>] - Automated Anaconda releases.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5131'>PUBDEV-5131</a>] - This version of H2O introduces light rest endpoints for obtaining frames in the python client.
+</li>
+
+
 ### Wheeler (3.16.0.1) - 11/24/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/1/index.html</a>
