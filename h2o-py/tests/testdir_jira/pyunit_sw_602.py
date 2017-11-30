@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from tests import pyunit_utils
+import h2o
 from h2o.frame import H2OFrame
 import numpy
 
