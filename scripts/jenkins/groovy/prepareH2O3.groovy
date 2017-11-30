@@ -10,7 +10,7 @@ def call(final scmEnv, final String mode, final boolean overrideDetectionChange)
 
   // get commit message
   def commitMessage = sh(script: 'cd h2o-3 && git log -1 --pretty=%B', returnStdout: true).trim()
-  env.BRANCH_NAME = scmEnv['GIT_BRANCH']
+  env.BRANCH_NAME = scmEnv['GIT_BRANCH'].replaceAll('origin/', '')
   env.GIT_SHA = scmEnv['GIT_COMMIT']
   env.GIT_DATE = "${sh(script: 'cd h2o-3 && git show -s --format=%ci', returnStdout: true).trim()}"
 
