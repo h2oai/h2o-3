@@ -187,17 +187,22 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def get_frame(frame_id):
+    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, cols_offset=0, light=False):
         """
         Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
 
         :param str frame_id: id of the frame to retrieve
+        :param int rows: number of rows to fetch for preview (10 by default)
+        :param int rows_offset: offset to fetch rows from (0 by default)
+        :param int cols: number of columns to fetch (all by default)
+        :param int cols_offset: offset to fetch rows from (0 by default)
+        :param bool light: wether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
         """
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
-            fr._ex._cache.fill()
+            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset, light=light)
         except EnvironmentError:
             return None
         return fr
@@ -402,7 +407,7 @@ class H2OFrame(object):
                 self.show()
         return ""
 
-    def show(self, use_pandas=False):
+    def show(self, use_pandas=False, rows=10, cols=200):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
 
@@ -415,12 +420,12 @@ class H2OFrame(object):
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(fill_cache=True))
+                IPython.display.display(self.head(rows=rows, cols=cols).as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))  # no keyword fill_cache
+                print(self.head(rows=rows, cols=cols).as_data_frame(True))  # no keyword fill_cache
             else:
                 s = self.__unicode__()
                 stk = traceback.extract_stack()
@@ -473,10 +478,10 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, rows=10, fill_cache=False):
+    def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill(rows=rows)
+            self._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset)
         return self
 
 
@@ -494,7 +499,7 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         newdt = self[:nrows, :ncols]
-        return newdt._frame(rows=nrows, fill_cache=True)
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -512,7 +517,7 @@ class H2OFrame(object):
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
         newdt = self[start_idx:start_idx + nrows, :ncols]
-        return newdt._frame(rows=nrows, fill_cache=True)
+        return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
 
     def logical_negation(self):
