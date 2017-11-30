@@ -207,31 +207,39 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   public FrameV3(Key<Frame> frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   public FrameV3(Frame fr) {
-    this(fr, 1, (int) fr.numRows(), 0, 0); // NOTE: possible row len truncation
+    this(fr, 1, (int) fr.numRows(), 0, -1, true); // NOTE: possible row len truncation
   }
 
   public FrameV3(Frame f, long row_offset, int row_count) {
-    this(f, row_offset, row_count, 0, 0);
+    this(f, row_offset, row_count, 0, -1, true);
   }
 
   public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
-    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count);
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, true);
+  }
+
+  public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count, boolean expensive) {
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, expensive);
   }
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, 1, (int)f.numRows(), 0, 0);
+    return fillFromImpl(f, 1, (int)f.numRows(), 0, -1, false);
   }
 
-  public FrameV3 fillFromImpl(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
-    if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
-    if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
+  private FrameV3 fillFromImpl(Frame f, long row_offset, int row_count,
+                              int column_offset, int column_count,
+                              boolean expensive) {
+    if( row_count < 0 ) row_count = 100;                                 // 100 rows by default
+    if( column_count < 0 ) column_count = f.numCols() - column_offset; // full width by default
 
     row_count    = (int) Math.min(row_count, row_offset + f.numRows());
     column_count = Math.min(column_count, column_offset + f.numCols());
 
     this.frame_id = new FrameKeyV3(f._key);
-    this.checksum = f.checksum();
-    this.byte_size = f.byteSize();
+    if (expensive) {
+      this.checksum = f.checksum();
+      this.byte_size = f.byteSize();
+    }
 
     this.row_offset = row_offset;
     this.rows = f.numRows();
@@ -263,10 +271,12 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
 
-    ChunkSummary cs = FrameUtils.chunkSummary(f);
+    if (expensive) {
+      ChunkSummary cs = FrameUtils.chunkSummary(f);
 
-    this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
-    this.distribution_summary = new TwoDimTableV3(cs.toTwoDimTableDistribution());
+      this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
+      this.distribution_summary = new TwoDimTableV3(cs.toTwoDimTableDistribution());
+    }
 
     this._fr = f;
 

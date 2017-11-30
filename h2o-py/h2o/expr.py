@@ -317,18 +317,28 @@ class H2OCache(object):
 
     def is_valid(self):
         return (  # self._id is not None and
-                not self.is_empty() and \
+                not self.is_empty() and
                 self.nrows_valid() and
                 self.ncols_valid() and
                 self.names_valid() and
                 self.types_valid())
 
-    def fill(self, rows=10):
+    def fill(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, light=False):
         assert self._id is not None
         if self._data is not None:
             if rows <= len(self):
                 return
-        res = h2o.api("GET /3/Frames/%s" % self._id, data={"row_count": rows})["frames"][0]
+        req_params = {
+            "row_count": rows,
+            "row_offset": rows_offset,
+            "column_count" : cols,
+            "column_offset" : cols_offset
+        }
+        if light:
+            endpoint = "/3/Frames/%s/light"
+        else:
+            endpoint = "/3/Frames/%s"
+        res = h2o.api("GET " + endpoint % self._id, data=req_params)["frames"][0]
         self._l = rows
         self._nrows = res["rows"]
         self._ncols = res["total_column_count"]
