@@ -75,7 +75,7 @@ class BuildConfig {
   public static final String LANG_NONE = 'none'
 
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
-  public static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
+  private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
 
   private String mode
   private String nodeLabel
@@ -207,6 +207,10 @@ class BuildConfig {
         this.buildVersion = versionString.split('\\.')[3..-1].join('.')
       }
     }
+  }
+
+  public GString getGitHubCommitStateContext(final String stageName) {
+    return "${COMMIT_STATE_PREFIX} » ${stageName}"
   }
 
 }

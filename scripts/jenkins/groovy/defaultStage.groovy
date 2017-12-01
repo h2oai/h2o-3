@@ -2,70 +2,67 @@ def call(buildConfig, stageConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-  def withCustomCommitStates = load('h2o-3/scripts/jenkins/groovy/withCustomCommitStates.groovy')
-  withCustomCommitStates(scm, buildConfig.H2O_OPS_TOKEN, "${buildConfig.COMMIT_STATE_PREFIX}/${stageConfig.stageName}") {
 
-    def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
+  def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
 
-    insideDocker(buildEnv, stageConfig.image, buildConfig.DOCKER_REGISTRY, stageConfig.timeoutValue, 'MINUTES') {
-      // NOTES regarding changes detection and rerun:
-      // An empty stage is a stage which is created, but does not execute any tests.
-      // Consider following scenario:
-      //  commit 1 - only Py files are changed -> only Py stages are created
-      //           - if we have created the empty R stages as well,
-      //             they are marked as SUCCESFUL (no tests -> (almost) nothing to fail)
-      //  commit 2 - we add some R changes and we use rerun -> Py stages are skipped, they were successful in previous build
-      //           - however, if we had created the empty R stages,
-      //             they will be skipped as well, because they are marked as SUCESSFUL in previous build
-      // This is why the stages for not changed langs must NOT be created.
-      // On the other hand, empty stages for those being reran must be created.
-      // Otherwise the rerun mechanism will not be able to distinguish if the
-      // stage is missing in previous build  because it was skipped due to the
-      // change detection (and it should be run in this build) or because it was
-      // skipped due to the rerun (and it shouldn't be run in this build either).
+  insideDocker(buildEnv, stageConfig.image, buildConfig.DOCKER_REGISTRY, stageConfig.timeoutValue, 'MINUTES') {
+    // NOTES regarding changes detection and rerun:
+    // An empty stage is a stage which is created, but does not execute any tests.
+    // Consider following scenario:
+    //  commit 1 - only Py files are changed -> only Py stages are created
+    //           - if we have created the empty R stages as well,
+    //             they are marked as SUCCESFUL (no tests -> (almost) nothing to fail)
+    //  commit 2 - we add some R changes and we use rerun -> Py stages are skipped, they were successful in previous build
+    //           - however, if we had created the empty R stages,
+    //             they will be skipped as well, because they are marked as SUCESSFUL in previous build
+    // This is why the stages for not changed langs must NOT be created.
+    // On the other hand, empty stages for those being reran must be created.
+    // Otherwise the rerun mechanism will not be able to distinguish if the
+    // stage is missing in previous build  because it was skipped due to the
+    // change detection (and it should be run in this build) or because it was
+    // skipped due to the rerun (and it shouldn't be run in this build either).
 
-      // run stage only if there is something changed for this or relevant lang.
-      if (buildConfig.langChanged(stageConfig.lang)) {
-        echo "###### Changes for ${stageConfig.lang} detected, starting ${stageConfig.stageName} ######"
-        stage(stageConfig.stageName) {
-          // run tests only if all stages should be run or if this stage was FAILED in previous build
-          if (runAllStages(buildConfig) || !wasStageSuccessful(stageConfig.stageName)) {
-            echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
+    // run stage only if there is something changed for this or relevant lang.
+    if (buildConfig.langChanged(stageConfig.lang)) {
+      echo "###### Changes for ${stageConfig.lang} detected, starting ${stageConfig.stageName} ######"
+      stage(stageConfig.stageName) {
+        // run tests only if all stages should be run or if this stage was FAILED in previous build
+        if (runAllStages(buildConfig) || !wasStageSuccessful(stageConfig.stageName)) {
+          echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
 
-            def h2oFolder = stageConfig.stageDir + '/h2o-3'
+          def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
-            // pull the test package unless this is a LANG_NONE stage
-            if (stageConfig.lang != buildConfig.LANG_NONE) {
-              unpackTestPackage(stageConfig.lang, stageConfig.stageDir)
-            }
-            // pull aditional test packages
-            for (additionalPackage in stageConfig.additionalTestPackages) {
-              echo "Pulling additional test-package-${additionalPackage}.zip"
-              unpackTestPackage(additionalPackage, stageConfig.stageDir)
-            }
-
-            if (stageConfig.lang == buildConfig.LANG_PY || stageConfig.additionalTestPackages.contains(buildConfig.LANG_PY)) {
-              installPythonPackage(h2oFolder)
-            }
-
-            if (stageConfig.lang == buildConfig.LANG_R || stageConfig.additionalTestPackages.contains(buildConfig.LANG_R)) {
-              installRPackage(h2oFolder)
-            }
-
-            buildTarget {
-              target = stageConfig.target
-              hasJUnit = stageConfig.hasJUnit
-              h2o3dir = h2oFolder
-              archiveAdditionalFiles = stageConfig.archiveAdditionalFiles
-              makefilePath = stageConfig.makefilePath
-            }
-          } else {
-            echo "###### ${stageConfig.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled. ######"
+          // pull the test package unless this is a LANG_NONE stage
+          if (stageConfig.lang != buildConfig.LANG_NONE) {
+            unpackTestPackage(stageConfig.lang, stageConfig.stageDir)
           }
+          // pull aditional test packages
+          for (additionalPackage in stageConfig.additionalTestPackages) {
+            echo "Pulling additional test-package-${additionalPackage}.zip"
+            unpackTestPackage(additionalPackage, stageConfig.stageDir)
+          }
+
+          if (stageConfig.lang == buildConfig.LANG_PY || stageConfig.additionalTestPackages.contains(buildConfig.LANG_PY)) {
+            installPythonPackage(h2oFolder)
+          }
+
+          if (stageConfig.lang == buildConfig.LANG_R || stageConfig.additionalTestPackages.contains(buildConfig.LANG_R)) {
+            installRPackage(h2oFolder)
+          }
+
+          buildTarget {
+            target = stageConfig.target
+            hasJUnit = stageConfig.hasJUnit
+            h2o3dir = h2oFolder
+            archiveAdditionalFiles = stageConfig.archiveAdditionalFiles
+            makefilePath = stageConfig.makefilePath
+          }
+        } else {
+          echo "###### ${stageConfig.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled. ######"
         }
-      } else {
-        echo "###### Changes for ${stageConfig.lang} NOT detected, skipping ${stageConfig.stageName}. ######"
       }
+    } else {
+      echo "###### Changes for ${stageConfig.lang} NOT detected, skipping ${stageConfig.stageName}. ######"
     }
   }
 }

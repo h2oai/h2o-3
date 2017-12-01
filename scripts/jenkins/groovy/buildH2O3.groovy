@@ -7,9 +7,8 @@ def call(buildConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-  def withCustomCommitStates = load('h2o-3/scripts/jenkins/groovy/withCustomCommitStates.groovy')
 
-  withCustomCommitStates(scm, buildConfig.H2O_OPS_TOKEN, "${buildConfig.COMMIT_STATE_PREFIX}/Build H2O-3") {
+  withCustomCommitStates(scm, buildConfig.H2O_OPS_TOKEN, "${buildConfig.getGitHubCommitStateContext('Build H2O-3')}") {
     // Launch docker container, build h2o-3, create test packages and archive artifacts
     def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
     insideDocker(buildEnv, buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 30, 'MINUTES') {
