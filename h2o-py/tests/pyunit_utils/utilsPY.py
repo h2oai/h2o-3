@@ -2982,12 +2982,25 @@ def extract_scoring_history_field(aModel, fieldOfInterest, takeFirst=False):
     :param fieldOfInterest: string representing a field of interest.
     :return: List of field values or None if it cannot be found
     """
+    extract_from_twoDimTable(aModel._model_json["output"]["scoring_history"], fieldOfInterest, takeFirst)
 
-    allFields = aModel._model_json["output"]["scoring_history"]._col_header
+
+
+def extract_from_twoDimTable(metricOfInterest, fieldOfInterest, takeFirst=False):
+    """
+    Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
+    of field values for you from the model.
+
+    :param aModel: H2O model where you want to extract a list of fields from the scoring history
+    :param fieldOfInterest: string representing a field of interest.
+    :return: List of field values or None if it cannot be found
+    """
+
+    allFields = metricOfInterest._col_header
     if fieldOfInterest in allFields:
         cellValues = []
         fieldIndex = allFields.index(fieldOfInterest)
-        for eachCell in aModel._model_json["output"]["scoring_history"].cell_values:
+        for eachCell in metricOfInterest.cell_values:
             cellValues.append(eachCell[fieldIndex])
             if takeFirst:   # only grab the result from the first iteration.
                 break

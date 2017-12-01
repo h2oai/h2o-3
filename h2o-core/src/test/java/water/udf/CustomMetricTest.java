@@ -44,10 +44,10 @@ public class CustomMetricTest extends TestUtil {
       model = new NullModelBuilder(params).trainModel().get();
       pred = model.score(f, null, null, true, func);
       Assert.assertEquals("Null model generates only a single model metrics",
-                          1, model._output.getModelMetrics().length);
+              1, model._output.getModelMetrics().length);
       ModelMetrics mm = model._output.getModelMetrics()[0].get();
       Assert.assertEquals("Custom model metrics should compute mean of response column",
-                          f.vec("sepal_len").mean(), mm._custom_metric.value, 1e-8);
+              f.vec("sepal_len").mean(), mm._custom_metric.value, 1e-8);
     } finally {
       FrameUtils.delete(f, pred, model);
       DKV.remove(func.getKey());
@@ -120,10 +120,10 @@ class NullModelBuilder extends ModelBuilder<NullModel, NullModelParameters, Null
   @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
-        ModelCategory.Regression,
-        ModelCategory.Binomial,
-        ModelCategory.Multinomial,
-        };
+            ModelCategory.Regression,
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
+    };
   }
 
   @Override
@@ -131,5 +131,3 @@ class NullModelBuilder extends ModelBuilder<NullModel, NullModelParameters, Null
     return true;
   }
 }
-
-

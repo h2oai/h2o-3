@@ -1,11 +1,8 @@
 package hex.tree;
 
 import hex.*;
-
-import static hex.ModelCategory.Binomial;
-import static hex.genmodel.GenModel.createAuxKey;
-
 import hex.glm.GLMModel;
+import hex.tree.gbm.GBMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -21,6 +18,10 @@ import water.util.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static hex.ModelCategory.Binomial;
+import static hex.genmodel.GenModel.createAuxKey;
+import static java.lang.Math.round;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -120,11 +121,42 @@ public abstract class SharedTreeModel<
 
   @Override public ModelMetricsSupervised.MetricBuilderSupervised makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, setAUCWorkingBinSize(_parms.train()==null?1:_parms.train().anyVec().nChunks()));
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
+  }
+
+  // current AUC2.NBINS = 400 only.  During mergeOneBin operation, depending on the chunking situation, we
+  // can get different final results.  Per Michal K suggestion, we will be allowing merge within a chunk but
+  // not across chunks.  For the reduce function across chunks, we will concatecate the two histograms of
+  // AUC2.NBINs size.  The only merge will happen at the end after histograms of all NBINs are calculated for
+  // each chunk.  This will ensure reproducibility across same cluster runs with exactly the same machines,
+  // same memory allocations.
+  public int setAUCWorkingBinSize(long numChunks) {
+    if (!(_parms instanceof GBMModel.GBMParameters)   // only care about GBMModel here
+            || (numChunks <= 1)   // if no early stopping is needed and finalScoring is false
+            || (_parms instanceof GBMModel.GBMParameters && _output._ntrees == 0)
+            || (_parms instanceof GBMModel.GBMParameters &&  (_parms._stopping_rounds<=0) && (_parms._ntrees>_output._ntrees)))
+      return AUC2.NBINS;  // don't care about reproducibility here
+
+    int nBinsAUC2;
+    HeartBeat hb= H2O.SELF._heartbeat;
+    long max_mem = H2O.SELF._heartbeat.get_free_mem();
+    if (numChunks*2*AUC2.NBINS > Integer.MAX_VALUE)
+      nBinsAUC2 = Integer.MAX_VALUE/2-1;   // maximum bin size needed.
+    else
+      nBinsAUC2 = (int) numChunks*AUC2.NBINS;
+
+    int overEstimate = 4; // overEstimate true memory need by 4 times
+    long mem_per_bin = 2*4*hb._cpus_allowed*8*overEstimate;
+    long tot_mem_estimate = nBinsAUC2*mem_per_bin; // 4 arrays _ths, _fps, _tps, _sqe
+
+    if (tot_mem_estimate > max_mem)
+      nBinsAUC2 = round(max_mem/mem_per_bin);
+
+    return nBinsAUC2;
   }
 
   public abstract static class SharedTreeOutput extends Model.Output {

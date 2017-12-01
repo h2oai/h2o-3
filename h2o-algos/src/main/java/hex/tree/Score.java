@@ -23,7 +23,7 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  
+
   /** Output parameter: Metric builder */
   ModelMetricsSupervised.MetricBuilderSupervised _mb;
 
