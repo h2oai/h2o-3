@@ -25,7 +25,7 @@ public class CoxPHTest extends TestUtil {
       parms._stop_column     = "stop";
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
-      parms.ties             = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -61,7 +61,7 @@ public class CoxPHTest extends TestUtil {
       parms._stop_column     = "stop";
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
-      parms.ties             = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -97,7 +97,7 @@ public class CoxPHTest extends TestUtil {
       parms._stop_column     = "stop";
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "start"};
-      parms.ties             = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -133,7 +133,7 @@ public class CoxPHTest extends TestUtil {
       parms._stop_column     = "stop";
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "start"};
-      parms.ties             = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();

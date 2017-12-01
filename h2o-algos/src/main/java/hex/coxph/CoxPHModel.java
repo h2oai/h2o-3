@@ -19,18 +19,18 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String fullName() { return "Cox Proportional Hazards"; }
     public String javaName() { return CoxPHModel.class.getName(); }
 
-    @Override public long progressUnits() { return iter_max; }
+    @Override public long progressUnits() { return _iter_max; }
 
     public String _start_column;
     public String _stop_column;
 
     public enum CoxPHTies { efron, breslow }
 
-    public CoxPHTies ties = CoxPHTies.efron;
+    public CoxPHTies _ties = CoxPHTies.efron;
 
-    public double init = 0;
-    public double lre_min = 9;
-    public int iter_max = 20;
+    public double _init = 0;
+    public double _lre_min = 9;
+    public int _iter_max = 20;
 
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
@@ -40,6 +40,10 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public CoxPHOutput( CoxPH b ) { super(b); }
 
     DataInfo data_info;
+    // FIXME: these should most likely not be in the model output
+    double[] gradient;
+    double[][] hessian;
+
     String[] coef_names;
     double[] coef;
     double[] exp_coef;
@@ -54,8 +58,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double score_test;
     double rsq;
     double maxrsq;
-    double[] gradient;
-    double[][] hessian;
     double lre;
     int iter;
     double[] x_mean_cat;
@@ -89,18 +91,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   public CoxPHModel(final Key destKey, final CoxPHParameters parms, final CoxPHOutput output) {
     super(destKey, parms, output);
-  }
-
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("CoxPHModel toString() UNIMPLEMENTED");
-    return sb.toString();
-  }
-
-  public String toStringAll() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("CoxPHModel toStringAll() UNIMPLEMENTED");
-    return sb.toString();
   }
 
   /**
