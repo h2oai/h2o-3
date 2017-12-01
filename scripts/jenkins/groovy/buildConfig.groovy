@@ -74,6 +74,9 @@ class BuildConfig {
   // always run
   public static final String LANG_NONE = 'none'
 
+  public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
+  public static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
+
   private String mode
   private String nodeLabel
   private String commitMessage
