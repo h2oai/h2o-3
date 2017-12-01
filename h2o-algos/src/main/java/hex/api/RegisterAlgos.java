@@ -24,6 +24,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.deepwater   .DeepWater   (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
+            new hex.coxph       .CoxPH       (true),
     };
 
     // "Word2Vec", "Example", "Grep"

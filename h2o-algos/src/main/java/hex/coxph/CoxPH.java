@@ -20,6 +20,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   @Override public boolean isSupervised() { return true; }
 
+  public CoxPH(boolean startup_once) {
+    super(new CoxPHModel.CoxPHParameters(), startup_once);
+  }
+
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super(parms); init(false); }
   @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
 
@@ -32,28 +36,30 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public void init(boolean expensive) {
     super.init(expensive);
 
-    if ((_parms._start_column != null) && ! _parms.startVec().isInt())
-      error("start_column", "start time must be null or of type integer");
+    if (_parms._train != null) {
+      if ((_parms._start_column != null) && !_parms.startVec().isInt())
+        error("start_column", "start time must be null or of type integer");
 
-    if (! _parms.stopVec().isInt())
-      error("stop_column", "stop time must be of type integer");
+      if (!_parms.stopVec().isInt())
+        error("stop_column", "stop time must be of type integer");
 
-    if (! _response.isInt() && (! _response.isCategorical()))
-      error("response_column", "response/event column must be of type integer or factor");
+      if (!_response.isInt() && (!_response.isCategorical()))
+        error("response_column", "response/event column must be of type integer or factor");
 
-    if (Double.isNaN(_parms.lre_min) || _parms.lre_min <= 0)
+      final int MAX_TIME_BINS = 10000;
+      final long min_time = (_parms.startVec() == null) ? (long) _parms.stopVec().min() : (long) _parms.startVec().min() + 1;
+      final int n_time = (int) (_parms.stopVec().max() - min_time + 1);
+      if (n_time < 1)
+        error("start_column", "start times must be strictly less than stop times");
+      if (n_time > MAX_TIME_BINS)
+        error("stop_column", "number of distinct stop times is " + n_time + "; maximum number allowed is " + MAX_TIME_BINS);
+    }
+
+    if (Double.isNaN(_parms._lre_min) || _parms._lre_min <= 0)
       error("lre_min", "lre_min must be a positive number");
 
-    if (_parms.iter_max < 1)
+    if (_parms._iter_max < 1)
       error("iter_max", "iter_max must be a positive integer");
-
-    final int MAX_TIME_BINS = 10000;
-    final long min_time = (_parms.startVec() == null) ? (long) _parms.stopVec().min() : (long) _parms.startVec().min() + 1;
-    final int n_time = (int) (_parms.stopVec().max() - min_time + 1);
-    if (n_time < 1)
-      error("start_column", "start times must be strictly less than stop times");
-    if (n_time > MAX_TIME_BINS)
-      error("stop_column", "number of distinct stop times is " + n_time + "; maximum number allowed is " + MAX_TIME_BINS);
   }
 
   public class CoxPHDriver extends Driver {
@@ -173,7 +179,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int k = 0; k < n_coef; ++k)
           o.hessian[j][k] = 0;
 
-      switch (p.ties) {
+      switch (p._ties) {
         case efron:
           final double[]   newLoglik_t = MemoryManager.malloc8d(n_time);
           final double[][]  gradient_t = malloc2DArray(n_time, n_coef);
@@ -246,7 +252,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           }
           break;
         default:
-          throw new IllegalArgumentException("ties method must be either efron or breslow");
+          throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
       return newLoglik;
     }
@@ -289,8 +295,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       for (int j = 0; j < n_coef; ++j) {
         double sum = 0;
         for (int k = 0; k < n_coef; ++k)
-          sum -= o.hessian[j][k] * (o.coef[k] - p.init);
-        o.wald_test += (o.coef[j] - p.init) * sum;
+          sum -= o.hessian[j][k] * (o.coef[k] - p._init);
+        o.wald_test += (o.coef[j] - p._init) * sum;
       }
     }
 
@@ -300,7 +306,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       final int n_coef = o.coef.length;
       int nz = 0;
-      switch (p.ties) {
+      switch (p._ties) {
         case efron:
           for (int t = 0; t < coxMR.sizeEvents.length; ++t) {
             final double sizeEvents_t   = coxMR.sizeEvents[t];
@@ -344,7 +350,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           }
           break;
         default:
-          throw new IllegalArgumentException("ties method must be either efron or breslow");
+          throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
 
       for (int t = 1; t < o.cumhaz_0.length; ++t) {
@@ -382,12 +388,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Arrays.fill(step, Double.NaN);
         Arrays.fill(oldCoef, Double.NaN);
         for (int j = 0; j < n_coef; ++j)
-          newCoef[j] = model._parms.init;
+          newCoef[j] = model._parms._init;
         double oldLoglik = -Double.MAX_VALUE;
         final int n_time = (int) (model._output.max_time - model._output.min_time + 1);
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
-        for (int i = 0; i <= model._parms.iter_max; ++i) {
+        for (int i = 0; i <= model._parms._iter_max; ++i) {
           model._output.iter = i;
 
           final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
@@ -405,7 +411,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               model._output.lre = -Math.log10(Math.abs(oldLoglik - newLoglik));
             else
               model._output.lre = -Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
-            if (model._output.lre >= model._parms.lre_min)
+            if (model._output.lre >= model._parms._lre_min)
               break;
 
             Arrays.fill(step, 0);
