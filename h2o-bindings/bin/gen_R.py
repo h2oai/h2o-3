@@ -142,6 +142,15 @@ def gen_module(schema, algo, module):
             yield "    beta_constraints <- as.h2o(beta_constraints)"
             yield "  }"
     yield ""
+    if algo == "coxph":
+        yield "  # If x is missing, then assume user wants to use all columns as features."
+        yield "  if (missing(x)) {"
+        yield "     if (is.numeric(event_column)) {"
+        yield "         x <- setdiff(col(training_frame), event_column)"
+        yield "     } else {"
+        yield "         x <- setdiff(colnames(training_frame), event_column)"
+        yield "     }"
+        yield "  }"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
@@ -167,7 +176,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec", "aggregator"]:
+    if algo not in ["word2vec", "aggregator", "coxph"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -182,9 +191,11 @@ def gen_module(schema, algo, module):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "coxph"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
+        elif algo == "coxph":
+            yield "  args <- .verify_dataxy(training_frame, x, event_column)"
         else:
             yield "  args <- .verify_dataxy(training_frame, x, y)"
         if any(param["name"] == "offset_column" for param in schema["parameters"]):
@@ -192,7 +203,11 @@ def gen_module(schema, algo, module):
         if any(param["name"] == "weights_column" for param in schema["parameters"]):
             yield "  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]"
         if algo != "stackedensemble":
-            yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
+            if algo == "coxph":
+                yield "  if( !missing(start_column) && !is.null(start_column)) args$x_ignore <- args$x_ignore[!( start_column == args$x_ignore )]"
+                yield "  if( !missing(stop_column) && !is.null(stop_column)) args$x_ignore <- args$x_ignore[!( stop_column == args$x_ignore )]"
+            else:
+                yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
             yield "  parms$ignored_columns <- args$x_ignore"
         yield "  parms$response_column <- args$y\n"
     elif algo == "word2vec":
@@ -338,6 +353,10 @@ def help_preamble_for(algo):
     if algo == "word2vec":
         return """
         Trains a word2vec model on a String column of an H2O data frame.
+    """
+    if algo == "coxph":
+        return """
+        Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
     """
 
 def help_details_for(algo):
@@ -497,6 +516,8 @@ def get_extra_params_for(algo):
         return "training_frame, x, destination_key"
     elif algo == "word2vec":
         return "training_frame = NULL"
+    elif algo == "coxph":
+        return "x, event_column, training_frame"
     else:
         return "training_frame, x"
 
@@ -506,6 +527,10 @@ def help_extra_params_for(algo):
     elif algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes"]:
         x_string = """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing, then all columns except y are used."""
+    elif algo == "coxph":
+        return """#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+            #'        If x is missing, then all columns except event_column, start_column and stop_column are used.
+            #' @param event_column The name of binary data column in the training frame indicating the occurrence of an event."""
     elif algo == "stackedensemble":
         x_string = """#' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
             #'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. """

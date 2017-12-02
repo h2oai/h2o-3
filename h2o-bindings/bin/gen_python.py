@@ -516,7 +516,8 @@ def main():
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
                ("grid_search", "H2OGridSearch", "Miscellaneous"),
                ("automl", "H2OAutoML", "Miscellaneous")]
-    for name, mb in bi.model_builders().items():
+    builders = filter(lambda b: b[0] != 'coxph', bi.model_builders().items()) # CoxPH is not supported in Python yet
+    for name, mb in builders:
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"

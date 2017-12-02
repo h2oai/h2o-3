@@ -1,6 +1,5 @@
 package hex.coxph;
 
-
 import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
@@ -13,41 +12,38 @@ import water.MemoryManager;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Vec;
 
-/**
- * The Deep Learning model
- * It contains a DeepLearningModelInfo with the most up-to-date model,
- * a scoring history, as well as some helpers to indicate the progress
- */
-
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   public static class CoxPHParameters extends Model.Parameters {
     public String algoName() { return "CoxPH"; }
     public String fullName() { return "Cox Proportional Hazards"; }
     public String javaName() { return CoxPHModel.class.getName(); }
-    @Override public long progressUnits() { return iter_max; }
-    // get destination_key  from SupervisedModel.SupervisedParameters from Model.Parameters
-    // get training_frame   from SupervisedModel.SupervisedParameters from Model.Parameters
-    // get validation_frame from SupervisedModel.SupervisedParameters from Model.Parameters
-    // get "response_column" from SupervisedModel.SupervisedParameters
-    // get "ignored_columns" from SupervisedModel.SupervisedParameters from Model.Parameters
 
-    public Vec start_column;
-    public Vec stop_column;
-    public Vec event_column;
-    public Vec weights_column;
-    public Vec[] offset_columns;
-    public static enum CoxPHTies { efron, breslow }
-    public CoxPHTies ties = CoxPHTies.efron;
-    public double init = 0;
-    public double lre_min = 9;
-    public int iter_max = 20;
+    @Override public long progressUnits() { return _iter_max; }
+
+    public String _start_column;
+    public String _stop_column;
+
+    public enum CoxPHTies { efron, breslow }
+
+    public CoxPHTies _ties = CoxPHTies.efron;
+
+    public double _init = 0;
+    public double _lre_min = 9;
+    public int _iter_max = 20;
+
+    Vec startVec() { return train().vec(_start_column); }
+    Vec stopVec() { return train().vec(_stop_column); }
   }
 
   public static class CoxPHOutput extends Model.Output {
     public CoxPHOutput( CoxPH b ) { super(b); }
 
     DataInfo data_info;
+    // FIXME: these should most likely not be in the model output
+    double[] gradient;
+    double[][] hessian;
+
     String[] coef_names;
     double[] coef;
     double[] exp_coef;
@@ -62,8 +58,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double score_test;
     double rsq;
     double maxrsq;
-    double[] gradient;
-    double[][] hessian;
     double lre;
     int iter;
     double[] x_mean_cat;
@@ -99,18 +93,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     super(destKey, parms, output);
   }
 
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("CoxPHModel toString() UNIMPLEMENTED");
-    return sb.toString();
-  }
-
-  public String toStringAll() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("CoxPHModel toStringAll() UNIMPLEMENTED");
-    return sb.toString();
-  }
-
   /**
    * Predict from raw double values representing the data
    * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
@@ -118,7 +100,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
    * @return preds, can contain NaNs
    */
   @Override public double[] score0(double[] data, double[] preds) {
-    final int n_offsets = (_parms.offset_columns == null) ? 0 : _parms.offset_columns.length;
+    final int n_offsets = _parms._offset_column == null ? 0 : 1;
     final int n_time    = _output.time.length;
     final int n_coef    = _output.coef.length;
     final int n_cats    = _output.data_info._cats;
