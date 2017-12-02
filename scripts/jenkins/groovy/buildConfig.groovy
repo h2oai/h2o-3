@@ -77,6 +77,8 @@ class BuildConfig {
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
   private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
 
+  public static final String AWS_CREDENTIALS_ID = 'AWS S3 Credentials'
+
   private String mode
   private String nodeLabel
   private String commitMessage

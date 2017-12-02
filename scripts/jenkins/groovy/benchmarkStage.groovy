@@ -1,5 +1,7 @@
 def call(buildConfig, stageConfig) {
 
+  def H2O_OPS_CREDS_ID = 'd57016f6-d172-43ea-bea1-1d6c7c1747a0'
+
   def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
   def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
@@ -23,7 +25,7 @@ def call(buildConfig, stageConfig) {
   }
 
   dir (ML_BENCHMARK_ROOT) {
-    checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'd57016f6-d172-43ea-bea1-1d6c7c1747a0', url: 'https://github.com/h2oai/ml-benchmark']]]
+    checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
     sh "sed 's/s3:\\/\\/h2o-benchmark/\\/datasets/g' h2oR/accuracy_datasets_h2o.csv > h2oR/accuracy_datasets_docker.csv"
   }
 
@@ -52,6 +54,9 @@ def call(buildConfig, stageConfig) {
       persistBenchmarkResults(benchmarkFolderConfig, "${stageNameToDirName(stageConfig.stageName)}")
     }
   }
+
+  def compareBenchmarksStage = load("h2o-3/scripts/jenkins/groovy/compareBenchmarksStage.groovy")
+  compareBenchmarksStage(buildConfig, stageConfig, benchmarkFolderConfig)
 }
 
 return this
