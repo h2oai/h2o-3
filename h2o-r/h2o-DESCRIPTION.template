@@ -47,6 +47,7 @@ Collate:
          'export.R'
          'edicts.R'
          'models.R'
+         'coxph.R'
          'kmeans.R'
          'gbm.R'
          'glm.R'
