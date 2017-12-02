@@ -4,7 +4,8 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
-def emailContent = null
+def pipelineEmailContent = null
+def emailContentHelpers = null
 def sendEmail = null
 def result = 'FAILURE'
 def scmEnv = null
@@ -27,8 +28,9 @@ try {
             }
           }
 
-          emailContent = load('h2o-3/scripts/jenkins/groovy/emailContent.groovy')
+          pipelineEmailContent = load('h2o-3/scripts/jenkins/groovy/pipelineEmailContent.groovy')
           sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
+          emailContentHelpers = load('h2o-3/scripts/jenkins/groovy/emailContentHelpers.groovy')
 
           def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
           setBuildDesc()
@@ -38,7 +40,13 @@ try {
           buildConfig.setDefaultOverrideRerun(true)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-          setJobProperties(buildConfig)
+          // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
+          // for rel- branches at 21:XX
+          def scheduleString = 'H 22,0,2,4,6 * * *'
+          if (env.BRANCH_NAME.startsWith('rel-')) {
+            scheduleString = 'H 21 * * *'
+          }
+          setJobProperties(buildConfig, pipelineTriggers([cron(scheduleString)]))
 
           // Load the executeTestStages script
           executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
@@ -49,7 +57,8 @@ try {
     }
   }
 } finally {
-  if (emailContent != null && sendEmail != null) {
-    sendEmail(result, emailContent)
+  if (pipelineEmailContent != null && sendEmail != null && emailContentHelpers != null) {
+    def emailBody = pipelineEmailContent(result, emailContentHelpers)
+    sendEmail(result, emailBody)
   }
 }
