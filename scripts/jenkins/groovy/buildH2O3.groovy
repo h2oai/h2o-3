@@ -8,48 +8,47 @@ def call(buildConfig) {
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
 
-  withCustomCommitStates(scm, buildConfig.H2O_OPS_TOKEN, "${buildConfig.getGitHubCommitStateContext('Build H2O-3')}") {
-    // Launch docker container, build h2o-3, create test packages and archive artifacts
-    def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
-    insideDocker(buildEnv, buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 30, 'MINUTES') {
-      stage('Build H2O-3') {
-        try {
+  // Launch docker container, build h2o-3, create test packages and archive artifacts
+  def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
+  insideDocker(buildEnv, buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 30, 'MINUTES') {
+    stage ('Build H2O-3') {
+      try {
+        buildTarget {
+          target = 'build-h2o-3'
+          hasJUnit = false
+          archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
+        }
+        buildTarget {
+          target = 'test-package-py'
+          hasJUnit = false
+          archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
+        }
+        buildTarget {
+          target = 'test-package-r'
+          hasJUnit = false
+          archiveFiles = false
+          makefilePath = 'docker/Makefile.jenkins'
+        }
+        if (buildConfig.langChanged(buildConfig.LANG_JS)) {
           buildTarget {
-            target = 'build-h2o-3'
+            target = 'test-package-js'
             hasJUnit = false
             archiveFiles = false
             makefilePath = 'docker/Makefile.jenkins'
           }
+        }
+        if (buildConfig.langChanged(buildConfig.LANG_JAVA)) {
           buildTarget {
-            target = 'test-package-py'
+            target = 'test-package-java'
             hasJUnit = false
             archiveFiles = false
             makefilePath = 'docker/Makefile.jenkins'
           }
-          buildTarget {
-            target = 'test-package-r'
-            hasJUnit = false
-            archiveFiles = false
-            makefilePath = 'docker/Makefile.jenkins'
-          }
-          if (buildConfig.langChanged(buildConfig.LANG_JS)) {
-            buildTarget {
-              target = 'test-package-js'
-              hasJUnit = false
-              archiveFiles = false
-              makefilePath = 'docker/Makefile.jenkins'
-            }
-          }
-          if (buildConfig.langChanged(buildConfig.LANG_JAVA)) {
-            buildTarget {
-              target = 'test-package-java'
-              hasJUnit = false
-              archiveFiles = false
-              makefilePath = 'docker/Makefile.jenkins'
-            }
-          }
-        } finally {
-          archiveArtifacts """
+        }
+      } finally {
+        archiveArtifacts """
           h2o-3/docker/Makefile.jenkins,
           h2o-3/h2o-py/dist/*.whl,
           h2o-3/build/h2o.jar,
@@ -58,7 +57,6 @@ def call(buildConfig) {
           h2o-3/test-package-*.zip,
           **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
         """
-        }
       }
     }
   }

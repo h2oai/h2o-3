@@ -1,5 +1,3 @@
-@Library('test-shared-library') _
-
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
