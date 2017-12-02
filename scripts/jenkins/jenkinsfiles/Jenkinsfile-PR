@@ -1,50 +1,46 @@
-@Library('test-shared-library') _
-
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
 def scmEnv = null
 
-withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
-  ansiColor('xterm') {
-    timestamps {
+ansiColor('xterm') {
+  timestamps {
 
-      cancelPreviousBuilds()
+    cancelPreviousBuilds()
 
-      // Checkout and build H2O-3, create test packages and archive the scripts;
-      // run this on H2O-3 usable docker node, because we don't want to overload
-      // master
-      node(DEFAULT_NODE_LABEL) {
+    // Checkout and build H2O-3, create test packages and archive the scripts;
+    // run this on H2O-3 usable docker node, because we don't want to overload
+    // master
+    node(DEFAULT_NODE_LABEL) {
 
-        stage('Prepare and Build') {
-          dir('h2o-3') {
-            // clear the folder
-            deleteDir()
-            // checkout H2O-3
-            retry(3) {
-              timeout(time: 1, unit: 'MINUTES') {
-                echo "###### Checkout H2O-3 ######"
-                scmEnv = checkout scm
-              }
+      stage('Prepare and Build') {
+        dir('h2o-3') {
+          // clear the folder
+          deleteDir()
+          // checkout H2O-3
+          retry(3) {
+            timeout(time: 1, unit: 'MINUTES') {
+              echo "###### Checkout H2O-3 ######"
+              scmEnv = checkout scm
             }
           }
-
-          def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
-          setBuildDesc()
-
-          def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_PR', false)
-
-          def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-          setJobProperties(buildConfig)
-
-          // Load the executeTestStages script
-          executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
         }
+
+        def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
+        setBuildDesc()
+
+        def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
+        buildConfig = prepareH2O3(scmEnv, 'MODE_PR', false)
+
+        def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+        setJobProperties(buildConfig)
+
+        // Load the executeTestStages script
+        executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
       }
-      executeTestStages(buildConfig)
     }
+    executeTestStages(buildConfig)
   }
 }
 
