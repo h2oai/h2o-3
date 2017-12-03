@@ -137,3 +137,5 @@ h2o-docs/src/booklets/source/PythonBooklet.tui
 *.tui
 
 *.gz(busy)
+
+h2o-web/package-lock.json
