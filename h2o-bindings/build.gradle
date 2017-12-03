@@ -9,7 +9,14 @@ def srcGenBindingsDir = file("src-gen/main") // TODO: this setting is not proper
 configurations {
   srcGenCompile
 }
-
+ext{
+    pythonexe = findProperty("pythonExec") ?: "python"
+    pipexe = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
+    }
+}
 dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.0.1'
     compile 'com.squareup.retrofit2:converter-gson:2.0.1'  
@@ -56,7 +63,7 @@ test {
 task runGenerateRESTAPIBindingsSrc(type: Exec) {
     workingDir binDir
     // Note: by default the generated sources get written to ./h2o-bindings/src-gen/*
-    commandLine 'python', "gen_all.py"
+    commandLine getOsSpecificCommandLine([pythonexe, "gen_all.py"])
 }
 
 task cleanGenerateRESTAPIBindings(type: Delete) {
