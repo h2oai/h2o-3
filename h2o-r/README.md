@@ -11,10 +11,11 @@ Alternatively, you can build the h2o R package from source (see below), or insta
 
 ## Building it yourself
 
-The R package is built as part of the normal build process.
-In the top-level h2o-3 directory, use `$ ./gradlew build`.
+The R package is built as part of the normal build process. Please following [this instruction](https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start) to build H2O-3.
 
-To build the R component by itself, first type `$ cd h2o-r` and then type `$ ../gradlew build`.
+If you want to build the R component by itself, instead of executing `./gradlew build`, you can execute the following: `$ cd h2o-r; ../gradlew build`.
+
+The output of the build is a CRAN-like layout in the R directory.
 
 The output of the build is a CRAN-like layout in the R directory.
 
