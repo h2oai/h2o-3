@@ -24,9 +24,9 @@
 #' @export
 h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javaoptions) {
 	java <- "java"
-    # Windows require different Java classpath separator and quoting
-    iswindows <- .Platform$OS.type == "windows"
-    separator <- if (iswindows) ";" else ":"
+  # Windows require different Java classpath separator and quoting
+  iswindows <- .Platform$OS.type == "windows"
+  separator <- if (iswindows) ";" else ":"
 	fileseparator <- if (iswindows) "\\" else "/"
 	# for now gson lib is the large h2o-genmodel-all.jar lib but should be moved to the small one
 	# default to genmodel being in the same dir as mojo
@@ -55,7 +55,7 @@ h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javao
 		# JSON returned -- it must start with { or [
 	} else  {
 	    # An error message was returned: make json
-		res = paste0("{ \"error\": ", toJSON(res), " }")
+		res <- paste0("{ \"error\": ", toJSON(res), " }")
 	}
     json <- fromJSON(paste0(res, collapse=""))
     return(json)
