@@ -35,7 +35,7 @@ public class PCAJMHTraining extends PCAJMH {
   @Setup(Level.Iteration)
   public void setup() {
   	super.setup();
-    paramsQuasar.setSvdImplementation(PCAImplementation);
+    paramsQuasar._pca_implementation = PCAImplementation;
   }
   
   @TearDown(Level.Iteration)

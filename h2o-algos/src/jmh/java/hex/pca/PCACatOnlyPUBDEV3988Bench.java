@@ -73,7 +73,7 @@ public class PCACatOnlyPUBDEV3988Bench {
       paramsCatOnlyPUBDEV3988._k = 4;
       paramsCatOnlyPUBDEV3988._transform = DataInfo.TransformType.NONE;
       paramsCatOnlyPUBDEV3988._pca_method = GramSVD;
-      paramsCatOnlyPUBDEV3988.setSvdImplementation(PCAImplementation);
+      paramsCatOnlyPUBDEV3988._pca_implementation = PCAImplementation;
       paramsCatOnlyPUBDEV3988._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       paramsCatOnlyPUBDEV3988._seed = seed;
 

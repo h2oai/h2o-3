@@ -458,7 +458,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   
   
       } catch (Exception e) {
-        e.printStackTrace();
         throw new RuntimeException(e);
       } finally {
         if (model != null) {

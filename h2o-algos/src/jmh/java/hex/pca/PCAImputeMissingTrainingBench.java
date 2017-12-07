@@ -70,7 +70,7 @@ public class PCAImputeMissingTrainingBench {
 			paramsImputeMissing._k = 4;
 			paramsImputeMissing._transform = DataInfo.TransformType.NONE;
 			paramsImputeMissing._pca_method = GramSVD;
-			paramsImputeMissing.setSvdImplementation(PCAImplementation);
+			paramsImputeMissing._pca_implementation = PCAImplementation;
 			paramsImputeMissing._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
 			paramsImputeMissing._seed = seed;
 			
