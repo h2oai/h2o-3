@@ -86,7 +86,6 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
                                      proxy=proxy,cookies=cookies,
                                      verbose=verbose)
-        # h2oconn.cluster.timezone = "UTC"  It's now set to UTC by default
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
