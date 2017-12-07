@@ -18,6 +18,8 @@
 #'        Defaults to NONE.
 #' @param pca_method Method for computing PCA (Caution: GLRM is currently experimental and unstable) Must be one of: "GramSVD",
 #'        "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_implementation Implementation for computing PCA (via SVD or EVD) Must be one of: "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX",
+#'        "MTJ_SVD_DENSEMATRIX", "JAMA". Defaults to MTJ_EVD_SYMMMATRIX.
 #' @param k Rank of matrix approximation Defaults to 1.
 #' @param max_iterations Maximum training iterations Defaults to 1000.
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
@@ -45,6 +47,7 @@ h2o.prcomp <- function(training_frame, x,
                        score_each_iteration = FALSE,
                        transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                        pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                       pca_implementation = c("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"),
                        k = 1,
                        max_iterations = 1000,
                        use_all_factor_levels = FALSE,
@@ -88,6 +91,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$transform <- transform
   if (!missing(pca_method))
     parms$pca_method <- pca_method
+  if (!missing(pca_implementation))
+    parms$pca_implementation <- pca_implementation
   if (!missing(k))
     parms$k <- k
   if (!missing(max_iterations))

@@ -24,8 +24,8 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "transform", "pca_method", "k", "max_iterations", "use_all_factor_levels",
-                      "compute_metrics", "impute_missing", "seed", "max_runtime_secs"}
+                      "score_each_iteration", "transform", "pca_method", "pca_implementation", "k", "max_iterations",
+                      "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -140,6 +140,22 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def pca_method(self, pca_method):
         assert_is_type(pca_method, None, Enum("gram_s_v_d", "power", "randomized", "glrm"))
         self._parms["pca_method"] = pca_method
+
+
+    @property
+    def pca_implementation(self):
+        """
+        Implementation for computing PCA (via SVD or EVD)
+
+        One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default:
+        ``"mtj_evd_symmmatrix"``).
+        """
+        return self._parms.get("pca_implementation")
+
+    @pca_implementation.setter
+    def pca_implementation(self, pca_implementation):
+        assert_is_type(pca_implementation, None, Enum("mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"))
+        self._parms["pca_implementation"] = pca_implementation
 
 
     @property

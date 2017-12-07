@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.DataInfo;
 import hex.pca.PCA;
 import hex.pca.PCAModel.PCAParameters;
+import hex.pca.PCAImplementation;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 
@@ -35,7 +36,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
     public PCAParameters.Method pca_method;
   
     @API(help = "Implementation for computing PCA (via SVD or EVD)", values = { "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA" })
-    public PCAParameters.Method pca_implementation;
+    public PCAImplementation pca_implementation;
     
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true)
     public int k;

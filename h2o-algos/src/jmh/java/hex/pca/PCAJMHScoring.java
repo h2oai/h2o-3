@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAJMHScoring extends PCAJMH {
-  
-  @Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
+
+  @Param({"JAMA", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX"})
   private PCAImplementation PCAImplementation;
   private boolean isTrained;
   

@@ -27,7 +27,7 @@ public class PCAWideDataSetsScoringBench {
 	private PCAWideDataSets pcaWideDataSetsBench;
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
-	@Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
+	@Param({"JAMA", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX"})
 	private PCAImplementation PCAImplementation;
 
 	public static void main(String[] args) throws RunnerException {
