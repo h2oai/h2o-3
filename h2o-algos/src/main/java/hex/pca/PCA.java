@@ -1,7 +1,5 @@
 package hex.pca;
 
-import Jama.Matrix;
-import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -144,7 +142,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       String[] colHeaders = new String[_parms._k];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-
+  
       assert rowNames.length == pca._output._eigenvectors_raw.length;
       for (int i = 0; i < colHeaders.length; i++) {
         colHeaders[i] = "PC" + String.valueOf(i + 1);
@@ -249,12 +247,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
       buildTables(pca, dinfo.coefNames());
     }
-
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
-                                         long nobs) {
-      computeStatsFillModel(pca, dinfo, svd.getSingularValues(), svd.getV().getArray(), gram, nobs);
-    }
-
+  
     // Main worker thread
     @Override
     public void computeImpl() {
@@ -338,30 +331,31 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
           }
 
-          // Compute SVD of Gram A'A/n using JAMA library
-          // Note: Singular values ordered in weakly descending order by algorithm
+          // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
           _job.update(1, "Calculating SVD of Gram matrix locally");
-          Matrix gramJ = _wideDataset ? new Matrix(ogtsk._gram.getXX()) : new Matrix(gtsk._gram.getXX());
-          SingularValueDecomposition svdJ = gramJ.svd();
-          _job.update(1, "Computing stats from SVD");
-          // correct for the eigenvector by t(A)*eigenvector for wide dataset
-          if (_wideDataset) {
-            double[][] eigenVecs = transformEigenVectors(dinfo, svdJ.getV().getArray());
-            computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), eigenVecs, gram, model._output._nobs);
-          } else {
-            computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
+          double[][] gramMatrix;
+          gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
+          PCAInterface svd = null;
+          svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms._pca_implementation);
+          assert svd != null;
+          double[][] rightEigenvectors = svd.getPrincipalComponents();
+          if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
+            rightEigenvectors = getTransformedEigenvectors(dinfo, rightEigenvectors);
           }
+          double[] variances = svd.getVariances();
+          PCA.this._job.update(1, "Computing stats from SVD using "
+              + _parms._pca_implementation.toString());
+          computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
-
           // generate variables for scoring_history generation
-          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
-                  _job.start_time());
-        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
+              _job.start_time());
+          //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
-                _parms._pca_method == PCAParameters.Method.Randomized) {
+            _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -461,8 +455,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(_job);
-
-
+  
+  
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       } finally {
         if (model != null) {
           model.unlock(_job);

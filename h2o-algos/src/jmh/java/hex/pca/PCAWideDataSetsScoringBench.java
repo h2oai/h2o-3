@@ -8,6 +8,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static water.TestUtil.stall_till_cloudsize;
 
 /**
@@ -16,16 +17,19 @@ import static water.TestUtil.stall_till_cloudsize;
 @Fork(1)
 @Threads(1)
 @State(Scope.Thread)
-@Warmup(iterations = 3)
-@Measurement(iterations = 10)
+@Warmup(iterations = JMHConfiguration.WARM_UP_ITERATIONS)
+@Measurement(iterations = JMHConfiguration.MEASUREMENT_ITERATIONS)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAWideDataSetsScoringBench {
 	
-	private PCAWideDataSetsBenchModel pcaWideDataSetsBench;
+	private PCAWideDataSets pcaWideDataSetsBench;
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
-	
+	@Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
+	private PCAImplementation PCAImplementation;
+
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder()
 			.include(PCAWideDataSetsScoringBench.class.getSimpleName())
@@ -36,9 +40,11 @@ public class PCAWideDataSetsScoringBench {
 	
 	@Setup(Level.Invocation)
 	public void setup() {
+		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
 		
-		pcaWideDataSetsBench = new PCAWideDataSetsBenchModel(dataSetCase);
+		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase);
+		pcaWideDataSetsBench.setPCAImplementation(PCAImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
 	}

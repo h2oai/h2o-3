@@ -56,6 +56,26 @@ jar {
   }
 }
 
+
+// Run a single small JVM under heavy memory load, and confirm spilling works
+task testOOM(type: Exec) {
+    dependsOn cpLibs, jar, testJar
+    String iceRoot = project.projectDir.toString() + File.separator + "OOMsandbox" + File.separator + "iceRoot"
+            commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp',
+            'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*'+File.pathSeparator+'../h2o-genmodel/build/libs/h2o-genmodel.jar',
+            'water.OOMTest', '-ice_root', iceRoot
+    // This is first action for Exec task
+    doFirst {
+      File sandbox = new File(project.projectDir, "OOMsandbox")
+      if (sandbox.exists()) { sandbox.deleteDir() }
+      sandbox.mkdir()
+      FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "OOMsandbox" + File.separator +
+              "water.OOMTest.out"))
+      standardOutput = fos
+      errorOutput = fos
+    }
+}
+
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -72,7 +92,7 @@ test {
   exclude '**'
 }
 
-def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java");
+def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java")
 
 task generateBuildVersionJava {
   doLast {
