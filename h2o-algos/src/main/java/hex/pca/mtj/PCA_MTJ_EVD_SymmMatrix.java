@@ -8,10 +8,6 @@ import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.UpperSymmDenseMatrix;
 import water.util.ArrayUtils;
 
-/**
- * @author mathemage <ha@h2o.ai>
- * created on 1.5.17
- */
 public class PCA_MTJ_EVD_SymmMatrix implements PCAInterface {
   private UpperSymmDenseMatrix symmGramMatrix;
   private no.uib.cipr.matrix.SymmDenseEVD symmDenseEVD;

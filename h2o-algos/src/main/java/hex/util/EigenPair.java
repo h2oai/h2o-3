@@ -1,9 +1,5 @@
 package hex.util;
 
-/**
- * @author mathemage <ha@h2o.ai>
- * created on 18.5.17
- */
 public class EigenPair implements Comparable<EigenPair> {
   public double eigenvalue;
   public double[] eigenvector;
@@ -14,7 +10,6 @@ public class EigenPair implements Comparable<EigenPair> {
   }
 
   /**
-   * @author mathemage <ha@h2o.ai>
    * Compare an eigenPair = (eigenvalue, eigenVector) against otherEigenPair based on respective eigenValues
    */
   @Override

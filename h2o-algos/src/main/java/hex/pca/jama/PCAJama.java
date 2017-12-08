@@ -4,10 +4,6 @@ import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import hex.pca.PCAInterface;
 
-/**
- * @author mathemage <ha@h2o.ai>
- * created on 1.5.17
- */
 public class PCAJama implements PCAInterface {
   private Matrix gramMatrix;
   private SingularValueDecomposition svd;

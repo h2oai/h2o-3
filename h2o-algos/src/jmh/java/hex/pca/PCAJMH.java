@@ -11,10 +11,6 @@ import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
 import static water.TestUtil.stall_till_cloudsize;
 
-/**
- * @author mathemage <ha@h2o.ai>
- *     created on 24.6.17
- */
 public class PCAJMH {
   
   PCAModel.PCAParameters paramsQuasar;
