@@ -68,6 +68,12 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
   @API(help="cloud_uptime_millis", direction=API.Direction.OUTPUT)
   public long cloud_uptime_millis;
 
+  @API(help="Cloud internal timezone", direction= API.Direction.OUTPUT)
+  public String cloud_internal_timezone;
+
+  @API(help="Timezone used for parsing datetime columns", direction= API.Direction.OUTPUT)
+  public String datafile_parser_timezone;
+
   @API(help="cloud_healthy", direction=API.Direction.OUTPUT)
   public boolean cloud_healthy;
 
