@@ -14,7 +14,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
-import water.parser.ParseTime;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
@@ -2038,10 +2037,6 @@ final public class H2O {
     long time11 = System.currentTimeMillis();
     if (GA != null)
       startGAStartupReport();
-
-    // Set parser timezone to UTC by default
-    ParseTime.setTimezone("UTC");
-    Log.info("Set default timezone for parsing of datetime datafile columns to UTC. You can change this from your client by using h2o.setTimezone() or similar.");
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));

@@ -1,13 +1,15 @@
 package water.api;
 
-import java.util.Date;
-
+import org.joda.time.DateTimeZone;
 import water.H2O;
 import water.H2ONode;
 import water.H2OSecurityManager;
 import water.Paxos;
 import water.api.schemas3.CloudV3;
+import water.parser.ParseTime;
 import water.util.PrettyPrint;
+
+import java.util.Date;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
@@ -29,6 +31,8 @@ class CloudHandler extends Handler {
     cloud.is_client  = H2O.ARGS.client;
     cloud.cloud_size = H2O.CLOUD.size();
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
+    cloud.cloud_internal_timezone = DateTimeZone.getDefault().toString();
+    cloud.datafile_parser_timezone = ParseTime.getTimezone().toString();
     cloud.consensus = Paxos._commonKnowledge;
     cloud.locked = Paxos._cloudLocked;
     cloud.internal_security_enabled = H2OSecurityManager.instance().securityEnabled;

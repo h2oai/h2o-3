@@ -93,6 +93,14 @@ class H2OCluster(object):
         return self._props["cloud_uptime_millis"]
 
     @property
+    def cloud_internal_timezone(self):
+        return self._props["cloud_internal_timezone"]
+
+    @property
+    def datafile_parser_timezone(self):
+        return self._props["datafile_parser_timezone"]
+
+    @property
     def consensus(self):
         return self._props["consensus"]
 
@@ -222,6 +230,8 @@ class H2OCluster(object):
         api_extensions = self.list_api_extensions()
         H2ODisplay([
             ["H2O cluster uptime:",        get_human_readable_time(self.cloud_uptime_millis)],
+            ["H2O cluster timezone:",      self.cloud_internal_timezone],
+            ["H2O data parsing timezone:", self.datafile_parser_timezone],
             ["H2O cluster version:",       self.version],
             ["H2O cluster version age:",   "{} {}".format(self.build_age, ("!!!" if self.build_too_old else ""))],
             ["H2O cluster name:",          self.cloud_name],
@@ -307,5 +317,5 @@ class H2OCluster(object):
 
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
-                        "version", "cloud_uptime_millis", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
+                        "version", "cloud_uptime_millis", "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
                         "nodes", "build_age", "build_too_old", "internal_security_enabled"}
