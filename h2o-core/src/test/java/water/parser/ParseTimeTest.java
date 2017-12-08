@@ -9,7 +9,10 @@ import water.TestUtil;
 import water.fvec.*;
 
 public class ParseTimeTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() {
+    stall_till_cloudsize(1);
+    ParseTime.setTimezone("America/Los_Angeles"); // by default, we now parse in UTC
+  }
   private double[] d(double... ds) { return ds; }
 
   // Parse click & query times from a subset of kaggle bestbuy data
