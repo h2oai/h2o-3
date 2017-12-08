@@ -23,8 +23,8 @@ test.pca.implementations <- function() {
   
   # Compare to see if they are fundamentally the same
   invisible(lapply(names(eigenvectors[[1]]), function(pc_ind) {
-    eigenvector_standard <- abs(eigenvectors[[1]][[pc_ind]])
-    lapply(eigenvectors, function(x) expect_equal(abs(x[[pc_ind]]), eigenvector_standard))
+    eigenvectors_standard <- abs(eigenvectors[[1]][[pc_ind]])
+    lapply(eigenvectors, function(x) expect_equal(abs(x[[pc_ind]]), eigenvectors_standard))
   }))
 }
 
