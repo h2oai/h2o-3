@@ -13,6 +13,7 @@ class H2OPCA(H2OEstimator):
                  transform="NONE",
                  use_all_factor_levels=False,
                  pca_method="GramSVD",
+                 pca_implementation="mtj_evd_symmmatrix",
                  ignore_const_cols=True,
                  impute_missing=False,
                  compute_metrics=True):
@@ -45,7 +46,10 @@ class H2OPCA(H2OEstimator):
             - ``"GLRM"``: fit a generalized low rank model with an l2 loss function (no regularization) and solve for
               the SVD using local matrix algebra.
             - ``"Randomized"``: computation of the SVD using the randomized method from thesis of Nathan P. Halko,
-                Randomized methods for computing low-rank approximation of matrices,
+                Randomized methods for computing low-rank approximation of matrices.
+        :param str pca_implementation: A character string that indicates the implementation to use for
+            computing PCA (via SVD or EVD). One of the following implementations are available: ``"mtj_evd_densematrix"``,
+            ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default: ``"mtj_evd_symmmatrix"``).
         :param bool ignore_const_cols: If true, will ignore constant columns.  Default is True.
         :param bool impute_missing:  whether to impute NA/missing values.
         :param bool compute_metrics: whether to compute metrics on training data.  Default to True
@@ -58,9 +62,11 @@ class H2OPCA(H2OEstimator):
         self._parms = {k: v for k, v in self._parms.items() if k != "self"}
 
         assert_is_type(pca_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))
-        self._parms["pca_method"]=pca_method
+        self._parms["pca_method"] = pca_method
+        assert_is_type(pca_implementation, Enum("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"))
+        self._parms["pca_implementation"] = pca_implementation
         assert_is_type(transform, Enum("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"))
-        self._parms["transform"]=transform
+        self._parms["transform"] = transform
 
     def fit(self, X, y=None, **params):
         return super(H2OPCA, self).fit(X)
