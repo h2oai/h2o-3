@@ -344,7 +344,7 @@ public abstract class ParseTime {
     else return true;
   }
 
-  private static DateTimeZone _timezone;
+  private static DateTimeZone _timezone = DateTimeZone.forID("UTC");
 
   /**
    * Set the Time Zone on the H2O Cloud

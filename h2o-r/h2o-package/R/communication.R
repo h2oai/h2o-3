@@ -692,6 +692,8 @@ h2o.clusterInfo <- function() {
 
   cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
+  cat("    H2O cluster timezone:      ", res$cloud_internal_timezone, "\n")
+  cat("    H2O data parsing timezone: ", res$datafile_parser_timezone, "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
   cat("    H2O cluster version age:   ", res$build_age, if (res$build_too_old) "!!!" else "", "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
