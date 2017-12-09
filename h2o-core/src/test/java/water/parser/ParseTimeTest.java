@@ -1,76 +1,61 @@
 package water.parser;
 
-import org.junit.*;
-
-import org.joda.time.DateTimeZone;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.Key;
 import water.TestUtil;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
 public class ParseTimeTest extends TestUtil {
-  @BeforeClass static public void setup() {
-    stall_till_cloudsize(1);
-    ParseTime.setTimezone("America/Los_Angeles"); // by default, we now parse in UTC
-  }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private double[] d(double... ds) { return ds; }
 
   // Parse click & query times from a subset of kaggle bestbuy data
   @Test public void testTimeParse1() {
-    //File items will be converted to ms for local timezone
+    // File items will be converted to ms in UTC
     Frame fr = parse_test_file("smalldata/junit/test_time.csv");
     Frame fr2 = fr.subframe(new String[]{"click_time","query_time"});
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
-    double[][] exp = new double[][] {  // These ms counts all presume PST
-      d(1314945892533L, 1314945839752L ),
-      d(1315250737042L, 1315250701187L ),
-      d(1314215818091L, 1314215713012L ),
-      d(1319552294722L, 1319552211759L ),
-      d(1319552391697L, 1319552211759L ),
-      d(1315436087956L, 1315436004353L ),
-      d(1316974022603L, 1316973926996L ),
-      d(1316806820871L, 1316806814845L ),
-      d(1314650252903L, 1314650003249L ),
-      d(1319608558683L, 1319608485926L ),
-      d(1315770524139L, 1315770378466L ),
-      d(1318983693919L, 1318983686057L ),
-      d(1315158920427L, 1315158910874L ),
-      d(1319844389203L, 1319844380358L ),
-      d(1318232126858L, 1318232070708L ),
-      d(1316841248965L, 1316841217043L ),
-      d(1315681493645L, 1315681470805L ),
-      d(1319395475074L, 1319395407011L ),
-      d(1319395524416L, 1319395407011L ),
+    double[][] exp = new double[][] {  // These ms counts all presume UTC
+      d(1314920692533L, 1314920639752L ),
+      d(1315225537042L, 1315225501187L ),
+      d(1314190618091L, 1314190513012L ),
+      d(1319527094722L, 1319527011759L ),
+      d(1319527191697L, 1319527011759L ),
+      d(1315410887956L, 1315410804353L ),
+      d(1316948822603L, 1316948726996L ),
+      d(1316781620871L, 1316781614845L ),
+      d(1314625052903L, 1314624803249L ),
+      d(1319583358683L, 1319583285926L ),
+      d(1315745324139L, 1315745178466L ),
+      d(1318958493919L, 1318958486057L ),
+      d(1315133720427L, 1315133710874L ),
+      d(1319819189203L, 1319819180358L ),
+      d(1318206926858L, 1318206870708L ),
+      d(1316816048965L, 1316816017043L ),
+      d(1315656293645L, 1315656270805L ),
+      d(1319370275074L, 1319370207011L ),
+      d(1319370324416L, 1319370207011L ),
     };
 
-    for (int i=0; i < exp.length; i++ ) // Adjust exp[][] to local time
-      for (int j=0; j < exp[i].length; j++)
-        exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
     ParserTest.testParsed(fr2,exp,exp.length);
     fr.delete();
   }
 
   @Test public void testTimeParse2() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
-    double[][] exp = new double[][] {  // These ms counts all presume PST
-      d(1     ,     115200000L, 1136275200000L, 1136275200000L, 1 ),
-      d(1500  ,  129625200000L, 1247641200000L, 1247641200000L, 0 ),
-      d(15000 , 1296028800000L, 1254294000000L, 1254294000000L, 2 ),
-      d(15000 , 1296028800000L, 1254294000000L, 1254294000000L, 2 ),
+    double[][] exp = new double[][] {  // These ms counts all presume UTC
+      d(1     ,      86400000L, 1136246400000L, 1136246400000L, 1 ),
+      d(1500  ,  129600000000L, 1247616000000L, 1247616000000L, 0 ),
+      d(15000 , 1296000000000L, 1254268800000L, 1254268800000L, 2 ),
+      d(15000 , 1296000000000L, 1254268800000L, 1254268800000L, 2 ),
     };
 
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
-      for (int j=1; j < 4; j++)
-        exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
-    //File items will be converted to ms for local timezone
+    // File items will be converted to ms in UTC
     ParserTest.testParsed(parse_test_file("smalldata/junit/ven-11.csv"),exp,exp.length);
   }
 
   @Test public void testTimeParse3() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
     String[] data = new String[] {
         "12Jun10:10:00:00",
         "12JUN2010:10:00:00",
@@ -97,30 +82,30 @@ public class ParseTimeTest extends TestUtil {
         "20151203-15:43:21.654",         // No dash '-' separator between yyyyMMdd, and then one between dd-HH
     };
 
-    double[][] exp = new double[][] {  // These ms counts all presume PST
-        d(1276362000000L ),
-        d(1276362000000L ),
-        d(1276362000000L ),
-        d(1276362000000L ),
-        d(1276405200000L ),
-        d(1276405200000L ),
-        d(1276362000123L ),
-        d(1276405200123L ),
-        d(1276326000000L ),
-        d(1395709848000L ),
-        d(1395709848000L ),
-        d(1395709848000L ),
-        d(1395666648123L ),
-        d(1395666648123L ),
-        d(1395666648000L ),
-        d(1395709848000L ),
-        d(1395709848000L ),
-        d(1393985448000L ),
-        d(259639848000L  ),
-        d(-55892952000L  ),
-        d(1449186201654L ),
-        d(1449186201654L ),
-        d(1449186201654L ),
+    double[][] exp = new double[][] {  // These ms counts all presume UTC
+        d(1276336800000L ),
+        d(1276336800000L ),
+        d(1276336800000L ),
+        d(1276336800000L ),
+        d(1276380000000L ),
+        d(1276380000000L ),
+        d(1276336800123L ),
+        d(1276380000123L ),
+        d(1276300800000L ),
+        d(1395684648000L ),
+        d(1395684648000L ),
+        d(1395684648000L ),
+        d(1395641448123L ),
+        d(1395641448123L ),
+        d(1395641448000L ),
+        d(1395684648000L ),
+        d(1395684648000L ),
+        d(1393956648000L ),
+        d(259611048000L  ),
+        d(-55921752000L  ),
+        d(1449157401654L ),
+        d(1449157401654L ),
+        d(1449157401654L ),
     };
 
     StringBuilder sb1 = new StringBuilder();
@@ -132,16 +117,11 @@ public class ParseTimeTest extends TestUtil {
     ps._number_columns = 1;
     Frame dataFrame = ParseDataset.parse(r1, k1, true, ps);
 
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
-      for (int j=0; j < 1; j++)
-        exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
-    //File items will be converted to ms for local timezone
+    //File items will be converted to ms in UTC
     ParserTest.testParsed(dataFrame, exp, exp.length);
   }
 
   @Test public void testDayParseNoTime1() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
     // Just yyyy-mm-dd, no time
     String data = "Date\n"+
       "2014-1-23\n"+
@@ -153,13 +133,11 @@ public class ParseTimeTest extends TestUtil {
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
     long[] exp = new long[] {  // Date, note: these ms counts all presume PST
-      1390464000000L,
-      1390550400000L,
-      1390464000000L,
-      1390550400000L,
+      1390435200000L,
+      1390521600000L,
+      1390435200000L,
+      1390521600000L,
     };
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
-      exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
     Vec vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
@@ -167,8 +145,6 @@ public class ParseTimeTest extends TestUtil {
   }
 
   @Test public void testDayParseNoTime2() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
     // Just mm/dd/yyyy, no time
     String data = "Date\n"+
       "1/23/2014  \n"+ // Note evil trailing blanks
@@ -179,14 +155,12 @@ public class ParseTimeTest extends TestUtil {
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
-    long[] exp = new long[] {  // Date, note: these ms counts all presume PST
-            1390464000000L,
-            1390550400000L,
-            1390464000000L,
-            1390550400000L,
+    long[] exp = new long[] {  // Date, note: these ms counts all presume UTC
+            1390435200000L,
+            1390521600000L,
+            1390435200000L,
+            1390521600000L,
     };
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
-      exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
     Vec vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
@@ -194,8 +168,6 @@ public class ParseTimeTest extends TestUtil {
   }
 
   @Test public void testDayParseNoTime3() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
     // Just yyyy-mm, no time no day
     String data = "Date\n"+
       "2014-1\n"+
@@ -206,14 +178,12 @@ public class ParseTimeTest extends TestUtil {
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
-    long[] exp = new long[] {  // Date, note: these ms counts all presume PST
-      1388563200000L,
-      1391241600000L,
-      1393660800000L,
-      1396335600000L,
+    long[] exp = new long[] {  // Date, note: these ms counts all presume UTC
+      1388534400000L,
+      1391212800000L,
+      1393632000000L,
+      1396310400000L,
     };
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
-      exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
     Vec vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
@@ -221,8 +191,6 @@ public class ParseTimeTest extends TestUtil {
   }
 
   @Test public void testMonthParseNoDay() {
-    DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
     // Just mmmyy, no time no day
     // Just yy-mmm, no time no day
     String data = "Date\n"+
@@ -237,17 +205,15 @@ public class ParseTimeTest extends TestUtil {
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
     long[] exp = new long[] {  // Date, note: these ms counts all presume PST
-      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
-      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
-      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
-      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
-      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
-      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
-      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
-      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+      1388534400000L, 1391212800000L, 1393632000000L, 1396310400000L, // jan, feb, mar, apr 2014
+      1398902400000L, 1401580800000L, 1404172800000L, 1406851200000L, // may, jun, jul, aug 2014
+      1409529600000L, 1412121600000L, 1414800000000L, 1417392000000L, // sep, oct, nov, dec 2014
+      1451606400000L, 1488326400000L, 1527811200000L, 1567296000000L, 1606780800000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+      1388534400000L, 1391212800000L, 1393632000000L, 1396310400000L, // jan, feb, mar, apr 2014
+      1398902400000L, 1401580800000L, 1404172800000L, 1406851200000L, // may, jun, jul, aug 2014
+      1409529600000L, 1412121600000L, 1414800000000L, 1417392000000L, // sep, oct, nov, dec 2014
+      1451606400000L, 1488326400000L, 1527811200000L, 1567296000000L, 1606780800000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
     };
-    for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
-      exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
     Vec vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
