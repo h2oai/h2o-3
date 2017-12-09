@@ -27,8 +27,9 @@ public class PCAWideDataSets {
 	private Frame pcaScore;
 	private PCAImplementation PCAImplementation;
 
-	PCAWideDataSets(int dataSetCase) {
+	PCAWideDataSets(int dataSetCase, PCAImplementation pcaImplementation) {
 		setDataSetCase(dataSetCase);
+		setPCAImplementation(pcaImplementation);
 		setup();
 	}
 	
@@ -115,7 +116,7 @@ public class PCAWideDataSets {
 		return pcaParametersWide;
 	}
 	
-	public void tearDown() {
+	public void tearDown() throws Exception {
 		if (trainingFrame != null) {
 			trainingFrame.delete();
 		}
@@ -125,6 +126,7 @@ public class PCAWideDataSets {
 		if (pcaScore != null) {
 			pcaScore.delete();
 		}
+		water.H2O.getJetty().stop();
 	}
 	
 	public boolean train() {

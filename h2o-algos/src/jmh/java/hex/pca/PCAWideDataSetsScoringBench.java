@@ -43,8 +43,7 @@ public class PCAWideDataSetsScoringBench {
 		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
 		
-		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase);
-		pcaWideDataSetsBench.setPCAImplementation(PCAImplementation);
+		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase, PCAImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
 	}
@@ -58,7 +57,7 @@ public class PCAWideDataSetsScoringBench {
 	}
 	
 	@TearDown(Level.Invocation)
-	public void tearDown() {
+	public void tearDown() throws Exception {
 		pcaWideDataSetsBench.tearDown();
 	}
 	
