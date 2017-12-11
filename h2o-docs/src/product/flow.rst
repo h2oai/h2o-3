@@ -552,7 +552,7 @@ There are multiple ways to import data in H2O flow:
    ``path/filename.format`` represents the complete file path to the
    file, including the full file name. The file path can be a local file
    path or a website address. **Note**: For S3 file locations, use the
-   format ``importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]``
+   format ``importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]``
 
   **Note**: For an example of how to import a single file or a directory in R, refer to the following `example <https://github.com/h2oai/h2o-2/blob/master/R/tests/testdir_hdfs/runit_s3n_basic.R>`__.
 
