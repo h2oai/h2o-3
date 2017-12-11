@@ -604,19 +604,19 @@ Then import the data with the S3 URL path:
 
    ::
 
-       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]
+       importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 
    ::
 
-       h2o.importFile(path = "s3n://bucket/path/to/file.csv")
+       h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
 -  To import the data from the Python API:
 
    ::
 
-       h2o.import_frame(path = "s3n://bucket/path/to/file.csv")
+       h2o.import_frame(path = "s3://bucket/path/to/file.csv")
 
 YARN Best Practices
 ~~~~~~~~~~~~~~~~~~~
