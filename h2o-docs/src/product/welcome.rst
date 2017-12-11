@@ -467,6 +467,7 @@ Supported Versions
 -  CDH 5.7
 -  CDH 5.8
 -  CDH 5.10
+-  CDH 5.13
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
