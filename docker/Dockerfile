@@ -63,7 +63,9 @@ RUN \
   tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
   rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
   ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
-  apt-get clean
+  apt-get clean && \
+  apt-get autoremove && \
+  apt-get autoclean
 
 # Copy required scripts
 COPY scripts/install_R_version scripts/install_R_versions scripts/install_python_versions /usr/sbin/
@@ -118,6 +120,17 @@ RUN \
   tar xvzf s3cmd-${S3_CMD_VERSION}.tar.gz && \
   cd s3cmd-${S3_CMD_VERSION} && \
   python setup.py install
+
+# Install conda
+RUN \
+  curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
+  bash /tmp/miniconda.sh -bfp /usr/local && \
+  rm -rf /tmp/miniconda.sh && \
+  conda install -y anaconda-client conda-build && \
+  conda update conda && \
+  conda config --append channels conda-forge && \
+  conda clean --all --yes
+ENV PATH /opt/conda/bin:$PATH
 
 # Expose ports for services
 EXPOSE 54321

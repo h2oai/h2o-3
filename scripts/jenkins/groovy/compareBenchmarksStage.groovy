@@ -168,7 +168,7 @@ def sendBenchmarksWarningMail(final failures) {
 
     def emailBody = benchmarksEmailContent(failures, emailContentHelpers)
 
-    sendEmail('warning', emailBody)
+    sendEmail('warning', emailBody, emailContentHelpers.getRelevantPipelineRecipients(result))
 }
 
 return this

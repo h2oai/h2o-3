@@ -1,0 +1,369 @@
+def NODE_LABEL = 'docker'
+// FIXME
+def S3_ROOT = 's3://test.0xdata.com/release-test/h2o'
+
+def buildConfig = null
+def insideDocker = null
+def result = 'FAILURE'
+def sendEmail = null
+def emailContentHelpers = null
+def releasePipelineEmailContent = null
+
+try {
+    ansiColor('xterm') {
+        timestamps {
+
+            node(NODE_LABEL) {
+
+                env.BUILT_ON_NODE = env.NODE_NAME
+
+                env.BRANCH_NAME = env.BRANCH_NAME.replaceAll('/', '_')
+                env.BUILD_NUMBER_DIR = "${env.WORKSPACE}/${currentBuild.number}"
+                env.DATA_DIR = "/home/0xdiag"
+
+                env.BUILD_LOG_FILE = "${env.BUILD_NUMBER_DIR}/log.txt"
+
+                env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
+
+                env.PYTHON_VERSION = '2.7'
+                env.R_VERSION = '3.4.1'
+
+                sh 'printenv'
+
+                stage('Checkout') {
+                    dir(env.BUILD_NUMBER_DIR) {
+                        deleteDir()
+                        retry(5) {
+                            timeout(1) {
+                                def scmEnv = checkout scm
+                                env.GIT_SHA = scmEnv['GIT_COMMIT']
+                            }
+                        }
+
+                        emailContentHelpers = load("${env.BUILD_NUMBER_DIR}/scripts/jenkins/groovy/emailContentHelpers.groovy")
+                        releasePipelineEmailContent = load("${env.BUILD_NUMBER_DIR}/scripts/jenkins/groovy/releasePipelineEmailContent.groovy")
+                        sendEmail = load("${env.BUILD_NUMBER_DIR}/scripts/jenkins/groovy/sendEmail.groovy")
+
+                        env.THIS_BUILD_GIT_HASH_LONG = sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
+                        env.THIS_BUILD_GIT_HASH_SHORT = sh(script: 'git describe --always', returnStdout: true).trim()
+
+                        insideDocker = load('scripts/jenkins/groovy/insideDocker.groovy')
+                        def getChanges = load('scripts/jenkins/groovy/getChanges.groovy')
+                        buildConfig = load('scripts/jenkins/groovy/buildConfig.groovy')
+                        buildConfig.initialize(this, 'MODE_RELEASE', env.CHANGE_TITLE, getChanges(), true)
+                    }
+                }
+
+                setReleaseJobProperties(buildConfig)
+
+                stage('Build') {
+                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                            sh """
+                                # Log commands.
+                                set -x
+                                # Stop on error.
+                                set -e
+    
+                                export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+                                echo "Activating Python ${env.PYTHON_VERSION}"
+                                . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+                                echo "Activating R ${env.R_VERSION}"
+                                activate_R_${env.R_VERSION}
+    
+                                mkdir -p ${env.BUILD_NUMBER_DIR}
+                                cd ${env.BUILD_NUMBER_DIR}
+    
+                                # Log some stuff for debug purposes.
+                                date
+                                pwd
+                                env
+                                echo \$PATH
+                                which java
+                                java -version
+                                du -h
+    
+                                # Update the build number.
+                                mkdir -p ci
+                                echo "BUILD_NUMBER=${currentBuild.number}" > gradle/buildnumber.properties
+                                echo "BUILD_BRANCH_NAME=${env.BRANCH_NAME}" > gradle/git.properties
+                                echo "BUILD_HASH=${env.THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
+                                echo "BUILD_HASH_SHORT=${env.THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
+    
+                                # Log some git stuff for debug purposes.
+                                echo
+                                echo GIT INFO
+                                echo
+                                git branch | grep '*' | sed 's/* //'
+                                git log -1 --format="%H"
+                                git describe --always --dirty
+                                git status
+    
+                                # Do the build.
+                                if [ -n "${env.DATA_DIR}" ]; then
+                                    rm -f -r smalldata
+                                    ln -s "${env.DATA_DIR}/smalldata"
+                                    rm -f -r bigdata
+                                    ln -s "${env.DATA_DIR}/bigdata"
+                                else
+                                    ./gradlew syncSmalldata
+                                fi
+                                if [ \$DO_RELEASE ]; then
+                                    echo 'Copy gradle properties and modify gradle.properties'
+                                    cp ${GRADLE_PROPERTIES_PATH} \$GRADLE_USER_HOME/gradle.properties
+                                    chmod +w \$GRADLE_USER_HOME/gradle.properties
+                                    echo "signing.secretKeyRingFile=${RING_FILE_PATH}" >> \$GRADLE_USER_HOME/gradle.properties
+                                    chmod -w \$GRADLE_USER_HOME/gradle.properties
+                                fi
+                                ./gradlew build -x test
+                                ./gradlew buildH2oDevDist
+                            """
+                        }
+                    }
+                }
+
+                env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
+                env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
+
+                // FIXME pushing git tags won't work on mr-0xb4
+//                stage('Create Git Tag') {
+//                    sh """
+//                        cd ${env.BUILD_NUMBER_DIR}
+//                        git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+//                        git push --tags
+//                    """
+//                }
+
+                stage('Publish to S3') {
+                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                        sh """
+                            cd ${env.BUILD_NUMBER_DIR}
+
+                            # Publish the output to S3.
+                            s3cmd --rexclude='target/maven' --acl-public sync target/ ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
+
+                            # This is really awful.  This old version of s3cmd does not set Content-Encoding metadata in S3.
+                            # The newer version of s3cmd sets the Content-Encoding to UTF-8 and gradle fails.
+                            # Alternately, we could strip off the Content-Encoding metadata tag for every file underneath maven.
+
+                            # Puts latest R pacakge of h2o-3 into latest_R dir on s3
+                            s3cmd del ${S3_ROOT}/latest_stable_R/h2o_*.tar.gz
+                            s3cmd --acl-public -r put target/R/ ${S3_ROOT}/latest_stable_R/
+
+                            # Puts latest Py pacakge of h2o-3 into latest_Py dir on s3
+                            s3cmd del ${S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
+                            s3cmd --acl-public -r put target/Python/ ${S3_ROOT}/latest_stable_Py/
+
+                            s3cmd --acl-public sync target/maven/ ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
+                            s3cmd --acl-public put target/sha256.txt ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
+
+                            echo EXPLICITLY SET MIME TYPES AS NEEDED
+                            list_of_html_files=`find target -name '*.html' | sed 's/target\\///g'`
+                            echo \${list_of_html_files}
+                            for f in \${list_of_html_files}
+                            do
+                                s3cmd --acl-public --mime-type text/html put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                            done
+
+                            list_of_js_files=`find target -name '*.js' | sed 's/target\\///g'`
+                            echo \${list_of_js_files}
+                            for f in \${list_of_js_files}
+                            do
+                                s3cmd --acl-public --mime-type text/javascript put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                            done
+
+                            list_of_css_files=`find target -name '*.css' | sed 's/target\\///g'`
+                            echo \${list_of_css_files}
+                            for f in \${list_of_css_files}
+                            do
+                                s3cmd --acl-public --mime-type text/css put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                            done
+
+                            echo UPDATE LATEST POINTER
+                            tmpdir=./buildh2odev.tmp
+                            mkdir -p \${tmpdir}
+                            echo ${currentBuild.number} > \${tmpdir}/latest
+                            echo "<head>" > \${tmpdir}/latest.html
+                            echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
+                            echo "</head>" >> \${tmpdir}/latest.html
+
+                            s3cmd --acl-public put \${tmpdir}/latest ${S3_ROOT}/${env.BRANCH_NAME}/latest
+                            s3cmd --acl-public put \${tmpdir}/latest.html ${S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                            s3cmd --acl-public put \${tmpdir}/latest.html ${S3_ROOT}/${env.BRANCH_NAME}/index.html
+                        """
+                    }
+                }
+
+                if (env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
+                    prepareH2OVersionCheckScript(env.PROJECT_VERSION)
+
+                    if (params.UPLOAD_PYPI) {
+                        // create and upload PyPI package
+                        stage('Upload to PyPI') {
+                            withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                    echo 'Upload to PyPI'
+                                    sh """
+                                        cd ${env.BUILD_NUMBER_DIR}/h2o-py
+                                        python setup.py sdist
+
+                                        # FIXME
+                                        # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                    """
+                                }
+                            }
+                        }
+                        // check that pip package for each Python version reports correct H2O version
+                        for (pyVersion in buildConfig.PYTHON_VERSIONS) {
+                            stage("Check Py${pyVersion} PyPI Package") {
+                                insideDocker(["PYTHON_VERSION=${pyVersion}"], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                    echo "Check PyPI package for Python ${pyVersion}"
+                                    sh """
+                                        export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+                                        echo "Activating Python ${env.PYTHON_VERSION}"
+                                        . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+                                        pip install h2o
+                                        python --version
+                                        python h2o_test.py
+                                    """
+                                }
+                            }
+                        }
+                    }
+
+                    if (params.UPLOAD_CONDA) {
+                        // build for all Python versions
+                        for (pyVersion in buildConfig.PYTHON_VERSIONS) {
+                            stage("Upload Py${pyVersion} to Conda") {
+                                withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
+                                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                        sh """
+                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py/conda
+                                            # Create conda package for current platform
+                                            conda config --append channels conda-forge
+                                            conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
+                                            # Get name of the package
+                                            CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
+                                            PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
+                                            # Convert conda package for all other platforms
+                                            conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+
+                                            # Right now packages for all platforms are in the current directory
+                                            # upload all distribution packages
+                                            # FIXME
+                                            # anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                            # anaconda upload osx-64/\${PKG_NAME}
+                                            # anaconda upload linux-32/\${PKG_NAME}
+                                            # anaconda upload linux-64/\${PKG_NAME}
+                                            # anaconda upload win-32/\${PKG_NAME}
+                                            # anaconda upload win-64/\${PKG_NAME}
+                                        """
+                                    }
+                                }
+                            }
+                        }
+                        // check that Conda package for each Python version reports correct H2O version
+                        for (pyVersion in buildConfig.PYTHON_VERSIONS) {
+                            stage("Check Py${pyVersion} Conda Package") {
+                                insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                    echo "Check Conda package for Python ${pyVersion}"
+                                    sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
+                                    sh """
+                                        bash -c \"\"\"
+                                            source activate py${pyVersion}
+                                            conda config --append channels conda-forge
+
+                                            conda install -y -c h2oai h2o
+                                            python --version
+                                            python h2o_test.py
+                                        \"\"\"
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    result = 'SUCCESS'
+} finally {
+    if (sendEmail != null && emailContentHelpers != null && releasePipelineEmailContent != null) {
+        def emailBody = releasePipelineEmailContent(result, emailContentHelpers)
+        sendEmail(result, emailBody, getRelevantRecipients(result, emailContentHelpers))
+    }
+}
+
+/**
+ * Sets the required properties. For all jobs the concurrent builds are disabled and three parameters are defined.
+ * For nightly master builds a schedule and build discarder is added. For release jobs the
+ * DO_RELEASE env var is set, if UPLOAD_MAVEN is set.
+ * @param buildConfig buildConfig object for this build
+ */
+private setReleaseJobProperties(buildConfig) {
+    def jobProperties = [
+        disableConcurrentBuilds(),
+        parameters([
+            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to PyPI', name: 'UPLOAD_PYPI'),
+            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to Conda', name: 'UPLOAD_CONDA')
+        ])
+    ]
+
+    if (env.BRANCH_NAME == 'master') {
+        // in case of master branch enable the periodical builds and buildDiscarder
+        env.NIGHTLY_BUILD = true
+        jobProperties += pipelineTriggers(
+                [cron('30 23 * * *')]
+        )
+        jobProperties += buildDiscarder(
+                logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')
+        )
+
+    } else if (env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
+        // in case of release branch and enabled upload to Maven, we have to set DO_RELEASE
+        if (params.UPLOAD_NEXUS) {
+            env.DO_RELEASE = true
+        }
+    }
+    properties(jobProperties)
+}
+
+/**
+ * Creates Python script which checks if h2o module is of expected version. Script is saved in $(pwd)/h2o_test.py
+ * @param projectVersion expected h2o module version, like 3.16.0.2
+ */
+private prepareH2OVersionCheckScript(final String projectVersion) {
+    sh """
+echo '
+import h2o
+actual_version = h2o.__version__
+expected_version = "${projectVersion}"
+assert actual_version == expected_version, "Version should be %s but was %s" % (expected_version, actual_version)
+' > h2o_test.py
+"""
+}
+
+/**
+ * @param result result of the build
+ * @param helpers emailContentHelpers script
+ * @return list of relevant recipients for summary email of this build
+ */
+private getRelevantRecipients(result, helpers) {
+    def RELEASE_NIGHTLY_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
+    def RELEASE_NIGHTLY_FAILURE_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai'] + RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
+    def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai']
+    def RELEASE_FAILURE_RECIPIENTS = [] + RELEASE_ALWAYS_RECIPIENTS
+
+    if (result.toLowerCase() == helpers.RESULT_SUCCESS) {
+        if (env.NIGHTLY_BUILD) {
+            return RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
+        }
+        return RELEASE_ALWAYS_RECIPIENTS\
+    }
+    if (env.NIGHTLY_BUILD) {
+        return RELEASE_NIGHTLY_FAILURE_RECIPIENTS
+    }
+    return RELEASE_FAILURE_RECIPIENTS
+}

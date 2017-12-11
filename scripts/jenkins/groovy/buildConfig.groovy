@@ -57,7 +57,7 @@ class BuildConfig {
   public static final String PIPELINE_SCRIPTS_STASH_NAME = 'pipeline_scripts'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
-  private static final String DEFAULT_IMAGE_VERSION_TAG = '102'
+  private static final String DEFAULT_IMAGE_VERSION_TAG = '105'
   // This is the default image used for tests, build, etc.
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
 
@@ -77,7 +77,10 @@ class BuildConfig {
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
   private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
 
-  public static final String AWS_CREDENTIALS_ID = 'AWS S3 Credentials'
+  public static final String RELEASE_BRANCH_PREFIX = 'rel-'
+
+  public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
+  public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
   private String mode
   private String nodeLabel
