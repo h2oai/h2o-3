@@ -27,7 +27,7 @@ def call(buildConfig, stageConfig) {
       echo "###### Changes for ${stageConfig.lang} detected, starting ${stageConfig.stageName} ######"
       stage(stageConfig.stageName) {
         // run tests only if all stages should be run or if this stage was FAILED in previous build
-        if(runAllStages(buildConfig) || !wasStageSuccessful(stageConfig.stageName)) {
+        if (runAllStages(buildConfig) || !wasStageSuccessful(stageConfig.stageName)) {
           echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
 
           def h2oFolder = stageConfig.stageDir + '/h2o-3'
