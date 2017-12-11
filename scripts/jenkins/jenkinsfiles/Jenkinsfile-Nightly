@@ -36,7 +36,8 @@ try {
           buildConfig.setDefaultOverrideRerun(true)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-          setJobProperties(buildConfig)
+          // Execute at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
+          setJobProperties(buildConfig, pipelineTriggers([cron('H 22,0,2,4,6 * * *')]))
 
           // Load the executeTestStages script
           executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
