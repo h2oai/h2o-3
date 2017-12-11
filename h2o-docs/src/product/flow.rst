@@ -44,7 +44,7 @@ providing input prompts, interactive help, and example flows.
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.8.2.5)
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.16.0.2):
 
   ::
 
@@ -53,11 +53,11 @@ Download Flow
 
 2. Next in your terminal, enter the following command lines one at a time:
 
-  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.8.2.3 folder, and the fourth line runs your jar file.)*::
+  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.16.0.2 folder, and the fourth line runs your jar file.)*::
 
     cd ~/Downloads
-    unzip h2o-3.8.2.3.zip
-    cd h2o-3.8.2.3
+    unzip h2o-3.16.0.2.zip
+    cd h2o-3.16.0.2
     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
@@ -552,7 +552,7 @@ There are multiple ways to import data in H2O flow:
    ``path/filename.format`` represents the complete file path to the
    file, including the full file name. The file path can be a local file
    path or a website address. **Note**: For S3 file locations, use the
-   format ``importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]``
+   format ``importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]``
 
   **Note**: For an example of how to import a single file or a directory in R, refer to the following `example <https://github.com/h2oai/h2o-2/blob/master/R/tests/testdir_hdfs/runit_s3n_basic.R>`__.
 
