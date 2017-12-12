@@ -416,6 +416,9 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
+        if self.nrows == 0:
+            print("This H2OFrame is empty.")
+            return
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if H2ODisplay._in_ipy():
             import IPython.display
