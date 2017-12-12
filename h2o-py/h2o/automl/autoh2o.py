@@ -154,7 +154,7 @@ class H2OAutoML(object):
         >>> # Get the best model in the AutoML Leaderboard
         >>> aml.leader
         """
-        return h2o.get_model(self._leader_id)
+        return None if self._leader_id is None else h2o.get_model(self._leader_id)
 
     @property
     def leaderboard(self):
@@ -172,7 +172,7 @@ class H2OAutoML(object):
         >>> # Get the AutoML Leaderboard
         >>> aml.leaderboard
         """
-        return self._leaderboard
+        return H2OFrame([]) if self._leaderboard is None else self._leaderboard
 
     #---------------------------------------------------------------------------
     # Training AutoML
