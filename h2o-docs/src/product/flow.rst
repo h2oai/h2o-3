@@ -1255,8 +1255,8 @@ At a minimum, specify the training frame and the response column. (Note that by 
 
 .. figure:: images/Flow_RunAutoML.png
    :alt: Configure the AutoML run
-   :height: 423
-   :width: 800
+   :height: 781
+   :width: 611
 
 Click the **View** button to view the Leaderboard and/or monitor the current AutoML run.
 
