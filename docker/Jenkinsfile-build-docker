@@ -1,7 +1,7 @@
 #! /usr/bin/groovy
 
 def AGENT_LABEL = 'docker && !mr-0xc8'
-def DOCKER_FILE_PATH = 'docker/Dockerfile'
+GString IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}"
 
 pipeline {
 
@@ -38,7 +38,7 @@ pipeline {
           if (params.noCache) {
             dockerBuildCMD += ' --no-cache'
           }
-          dockerBuildCMD += " -t h2o-3-runtime:${currentBuild.number} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) ."
+          dockerBuildCMD += " -t ${IMAGE_NAME} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) ."
           sh """
           printenv
           cd docker
@@ -56,10 +56,9 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
           sh """
           docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-          docker tag h2o-3-runtime:${currentBuild.number} ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
-          docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
+          docker push ${IMAGE_NAME}
           """
-          echo "###### Docker image h2o-3-runtime:${currentBuild.number} built and pushed. ######"
+          echo "###### Docker image ${IMAGE_NAME} built and pushed. ######"
         }
       }
     }
@@ -76,8 +75,8 @@ pipeline {
     }
     success {
       emailext (
-        subject: "New h2o-3-runtime docker image READY!",
-        body: """<p>The new h2o-3-runtime docker image is ready.</p>
+        subject: "New ${IMAGE_NAME} docker image READY!",
+        body: """<p>The new ${IMAGE_NAME} docker image is ready.</p>
         <p>Check the build at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
         to: "michalr@h2o.ai"
       )
