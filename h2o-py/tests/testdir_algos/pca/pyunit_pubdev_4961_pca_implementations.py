@@ -17,7 +17,7 @@ def pca_arrests():
   eigenvector_standard = None
   for impl in ["MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"]:
     print("Run PCA with implementation: " + impl)
-    model = H2OPCA(k = 4, pca_implementation=impl, seed=1234)
+    model = H2OPCA(k = 4, pca_impl=impl, seed=1234)
     model.train(x=list(range(4)), training_frame=arrestsH2O)
     eigenvectors = model._model_json["output"]["eigenvectors"]
     if eigenvector_standard is not None:

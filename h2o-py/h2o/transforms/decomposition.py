@@ -13,7 +13,7 @@ class H2OPCA(H2OEstimator):
                  transform="NONE",
                  use_all_factor_levels=False,
                  pca_method="GramSVD",
-                 pca_implementation="mtj_evd_symmmatrix",
+                 pca_impl="mtj_evd_symmmatrix",
                  ignore_const_cols=True,
                  impute_missing=False,
                  compute_metrics=True):
@@ -47,8 +47,19 @@ class H2OPCA(H2OEstimator):
               the SVD using local matrix algebra.
             - ``"Randomized"``: computation of the SVD using the randomized method from thesis of Nathan P. Halko,
                 Randomized methods for computing low-rank approximation of matrices.
-        :param str pca_implementation: A character string that indicates the implementation to use for
-            computing PCA (via SVD or EVD). One of the following implementations are available: ``"mtj_evd_densematrix"``,
+        :param str pca_impl: A character string that indicates the implementation to use for
+            computing PCA (via SVD or EVD).
+
+            - ``"mtj_evd_densematrix"``: eigenvalue decompositions for dense matrix using MTJ
+            - ``"mtj_evd_symmmatrix"``: eigenvalue decompositions for symmetric matrix using MTJ
+            - ``"mtj_svd_densematrix"``: singular-value decompositions for dense matrix using MTJ
+            - ``"jama"``: eigenvalue decompositions for dense matrix using JAMA
+
+              References:
+              - JAMA: http://math.nist.gov/javanumerics/jama/
+              - MTJ: https://github.com/fommil/matrix-toolkits-java/
+
+            One of the following implementations are available: ``"mtj_evd_densematrix"``,
             ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default: ``"mtj_evd_symmmatrix"``).
         :param bool ignore_const_cols: If true, will ignore constant columns.  Default is True.
         :param bool impute_missing:  whether to impute NA/missing values.
@@ -63,8 +74,8 @@ class H2OPCA(H2OEstimator):
 
         assert_is_type(pca_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))
         self._parms["pca_method"] = pca_method
-        assert_is_type(pca_implementation, Enum("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"))
-        self._parms["pca_implementation"] = pca_implementation
+        assert_is_type(pca_impl, Enum("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"))
+        self._parms["pca_impl"] = pca_impl
         assert_is_type(transform, Enum("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"))
         self._parms["transform"] = transform
 

@@ -16,7 +16,7 @@ test.pca.implementations <- function() {
       model <- h2o.prcomp(
         arrestsH2O,
         k = 4,
-        pca_implementation = impl,
+        pca_impl = impl,
         seed = 1234)
       model@model$eigenvectors
     })
