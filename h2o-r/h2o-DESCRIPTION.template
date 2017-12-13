@@ -4,6 +4,7 @@ Type: Package
 Title: R Interface for H2O
 Date: SUBST_PROJECT_DATE
 Author: The H2O.ai team
+Authors@R: c(person("The H2O.ai team", role = c("aut", "cre", "cph")))
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: R scripting functionality for H2O, the open source
   math engine for big data that computes parallel distributed

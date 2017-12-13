@@ -4,6 +4,7 @@ Type: Backend
 Title: h2o-3 project build R dependencies
 Date: SUBST_PROJECT_DATE
 Author: The H2O.ai team
+Authors@R: c(person("The H2O.ai team", role = c("aut", "cre", "cph")))
 Maintainer: The H2O.ai team
 Description: Standalone R DESCRIPTION file which defines R dependencies for
   h2o-3 java project build and tests.
