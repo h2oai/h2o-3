@@ -130,7 +130,10 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     @property
     def pca_method(self):
         """
-        Method for computing PCA (Caution: GLRM is currently experimental and unstable)
+        Specify the algorithm to use for computing the principal components: GramSVD - uses a distributed computation of
+        the Gram matrix, followed by a local SVD; Power - computes the SVD using the power iteration method
+        (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank model
+        with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
         """
@@ -145,7 +148,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     @property
     def pca_implementation(self):
         """
-        Implementation for computing PCA (via SVD or EVD)
+        Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
+        decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
+        using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+        decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
+        https://github.com/fommil/matrix-toolkits-java/
 
         One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default:
         ``"mtj_evd_symmmatrix"``).

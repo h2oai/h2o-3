@@ -32,10 +32,25 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing PCA (Caution: GLRM is currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized", "GLRM" })   // TODO: pull out of categorical class
+    @API(
+            help =  "Specify the algorithm to use for computing the principal components: " +
+                    "GramSVD - uses a distributed computation of the Gram matrix, followed by a local SVD; " +
+                    "Power - computes the SVD using the power iteration method (experimental); " +
+                    "Randomized - uses randomized subspace iteration method; " +
+                    "GLRM - fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)",
+            values = { "GramSVD", "Power", "Randomized", "GLRM" })   // TODO: pull out of categorical class
     public PCAParameters.Method pca_method;
   
-    @API(help = "Implementation for computing PCA (via SVD or EVD)", values = { "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA" })
+    @API(
+            help =  "Specify the implementation to use for computing PCA (via SVD or EVD): " +
+                    "MTJ_EVD_DENSEMATRIX - eigenvalue decompositions for dense matrix using MTJ; " +
+                    "MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix using MTJ; " +
+                    "MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; " +
+                    "JAMA - eigenvalue decompositions for dense matrix using JAMA. " +
+                    "References: " +
+                    "JAMA - http://math.nist.gov/javanumerics/jama/; " +
+                    "MTJ - https://github.com/fommil/matrix-toolkits-java/",
+            values = { "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA" })
     public PCAImplementation pca_implementation;
     
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true)
