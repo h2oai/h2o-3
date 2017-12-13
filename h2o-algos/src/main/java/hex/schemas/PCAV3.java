@@ -19,7 +19,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
       "score_each_iteration",
       "transform",
       "pca_method",
-      "pca_implementation",
+      "pca_impl",
       "k",
       "max_iterations",
       "use_all_factor_levels",
@@ -51,7 +51,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
                     "JAMA - http://math.nist.gov/javanumerics/jama/; " +
                     "MTJ - https://github.com/fommil/matrix-toolkits-java/",
             values = { "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA" })
-    public PCAImplementation pca_implementation;
+    public PCAImplementation pca_impl;
     
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true)
     public int k;

@@ -24,7 +24,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "transform", "pca_method", "pca_implementation", "k", "max_iterations",
+                      "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
                       "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -146,7 +146,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
 
     @property
-    def pca_implementation(self):
+    def pca_impl(self):
         """
         Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
         decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
@@ -154,15 +154,14 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
         https://github.com/fommil/matrix-toolkits-java/
 
-        One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default:
-        ``"mtj_evd_symmmatrix"``).
+        One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``.
         """
-        return self._parms.get("pca_implementation")
+        return self._parms.get("pca_impl")
 
-    @pca_implementation.setter
-    def pca_implementation(self, pca_implementation):
-        assert_is_type(pca_implementation, None, Enum("mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"))
-        self._parms["pca_implementation"] = pca_implementation
+    @pca_impl.setter
+    def pca_impl(self, pca_impl):
+        assert_is_type(pca_impl, None, Enum("mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"))
+        self._parms["pca_impl"] = pca_impl
 
 
     @property
