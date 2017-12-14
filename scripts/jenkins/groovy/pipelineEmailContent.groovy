@@ -1,10 +1,9 @@
 import hudson.tasks.test.AbstractTestResultAction
 import groovy.text.markup.MarkupTemplateEngine
-import groovy.text.markup.TemplateConfiguration
 import groovy.text.Template
+import groovy.text.markup.MarkupTemplateEngine
 
-def call(final String result) {
-    def LOGO_URL = 'https://pbs.twimg.com/profile_images/501572396810129408/DTgFCs-n.png'
+def call(final String result, helpers) {
     def REPO_URL = 'https://github.com/h2oai/h2o-3'
     
     def TR_EVEN_STYLE = 'background: #fff'
@@ -58,7 +57,7 @@ def call(final String result) {
         it.getTypeDisplayName() == STAGE_START_TYPE_DISPLAY_NAME
     }
     buildNodes.each {
-        stages << ['name': it.getStartNode().getDisplayName(), 'result': boolToSuccess(it.getError() == null).toLowerCase()]
+        stages << ['name': it.getStartNode().getDisplayName(), 'result': helpers.boolToSuccess(it.getError() == null).toLowerCase()]
     }
     stagesContent = ''
     stages.eachWithIndex { stage, index ->
@@ -70,77 +69,40 @@ def call(final String result) {
             }"""
     }
 
-    TemplateConfiguration config = new TemplateConfiguration()
-    config.setAutoNewLine(true)
-    config.setAutoIndent(true)
-    MarkupTemplateEngine engine = new MarkupTemplateEngine(config)
-    String templateString = """
-html {
-    body {
-        div('style':'box-shadow: 0px 5px 5px #aaaaaa;background-color: #424242;color: white;') {
-            div('style':'display: table;overflow: hidden;height: 150px;') {
-                div('style':'display: table-cell;vertical-align: middle;padding-left: 1em;') {
-                    div {
-                        img('width':'80', 'height':'80', 'alt':'H2O.ai', 'title':'H2O.ai', 'style':'vertical-align:middle;', 'src':'${LOGO_URL}')
-                        a('style':'vertical-align:middle;color: white;font-size: 20pt;font-weight: bolder;margin-left: 20px;', 'href':'${build.getAbsoluteUrl()}', "${URLDecoder.decode(env.JOB_NAME, "UTF-8")} #${build.number} - ${result}")
-                    }
+    MarkupTemplateEngine engine = helpers.getDefaultTemplateEngine()
+
+    String bodyContent = """
+${helpers.headerDiv(build, result)}
+div('style':'border: 1px solid gray;padding: 1em 1em 1em 1em;') {
+    ${helpers.detailsSection(SECTION_HEADER_STYLE, SECTION_CONTENT_STYLE, build)}
+    ${changesSection}
+    p('style':'${SECTION_HEADER_STYLE}', 'Stages Overview')
+    div('style':'${SECTION_CONTENT_STYLE}') {
+        table('style':'width: 80%;border-collapse: collapse;') {
+            thead {
+                tr {
+                    th('style':'${TD_TH_STYLE}')
+                    th('style':'${TD_TH_STYLE}', 'Stage')
+                    th('style':'${TD_TH_STYLE}', 'Result')
                 }
             }
-            div('style':'height: 15px; ${result.toLowerCase() == 'success' ? 'background-color: #84e03e;': 'color: white;background-color: #f8433c;'}') {
-            }
-        }
-        div('style':'border: 1px solid gray;padding: 1em 1em 1em 1em;') {
-            p('style':'${SECTION_HEADER_STYLE}', 'Details')
-            div('style':'${SECTION_CONTENT_STYLE}') {
-                ul {
-                    li('Duration: Started at <strong>${new Date(build.getStartTimeInMillis())}</strong>')
-                    li('Branch: <strong>${env.BRANCH_NAME}</strong>')
-                    li('SHA: <strong>${env.GIT_SHA}</strong>')
-                }
-            }
-            ${changesSection}
-            p('style':'${SECTION_HEADER_STYLE}', 'Stages Overview')
-            div('style':'${SECTION_CONTENT_STYLE}') {
-                table('style':'width: 80%;border-collapse: collapse;') {
-                    thead {
-                        tr {
-                            th('style':'${TD_TH_STYLE}')
-                            th('style':'${TD_TH_STYLE}', 'Stage')
-                            th('style':'${TD_TH_STYLE}', 'Result')
-                        }
-                    }
-                    tbody {
-                        ${stagesContent}
-                    }
-                }
-            }
-            p('style':'${SECTION_HEADER_STYLE}', 'Tests Overview')
-            div('style':'${SECTION_CONTENT_STYLE}') {
-                ${testsContent}
+            tbody {
+                ${stagesContent}
             }
         }
     }
+    p('style':'${SECTION_HEADER_STYLE}', 'Tests Overview')
+    div('style':'${SECTION_CONTENT_STYLE}') {
+        ${testsContent}
+    }
 }"""
+    String templateString = helpers.getTemplateTextForBody(bodyContent)
     Map<String, Object> model = new HashMap<>([:])
     model['failedTests'] = failedTests
     model['stages'] = stages
 
     Template template = engine.createTemplate(templateString)
     return template.make(model).toString()
-}
-
-def boolToSuccess(final boolean value) {
-    if (value) {
-        return 'SUCCESS'
-    }
-    return 'FAILURE'
-}
-
-def boolToColor(final boolean value) {
-    if (value) {
-        return ''
-    }
-    return ''
 }
 
 return this

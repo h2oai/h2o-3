@@ -4,7 +4,8 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
-def emailContent = null
+def pipelineEmailContent = null
+def emailContentHelpers = null
 def sendEmail = null
 def result = 'FAILURE'
 def scmEnv = null
@@ -27,8 +28,9 @@ try {
             }
           }
 
-          emailContent = load('h2o-3/scripts/jenkins/groovy/emailContent.groovy')
+          pipelineEmailContent = load('h2o-3/scripts/jenkins/groovy/pipelineEmailContent.groovy')
           sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
+          emailContentHelpers = load('h2o-3/scripts/jenkins/groovy/emailContentHelpers.groovy')
 
           def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
           setBuildDesc()
@@ -49,7 +51,8 @@ try {
     }
   }
 } finally {
-  if (emailContent != null && sendEmail != null) {
-    sendEmail(result, emailContent)
+  if (pipelineEmailContent != null && sendEmail != null && emailContentHelpers != null) {
+    def emailBody = pipelineEmailContent(result, emailContentHelpers)
+    sendEmail(result, emailBody)
   }
 }
