@@ -111,13 +111,20 @@ Install on Anaconda Cloud
 
 This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
 
-Open a terminal window and run the following command to install H2O on the Anaconda Cloud. 
+Open a terminal window and run the following command to install H2O on the Anaconda Cloud. The H2O version in this command should match the version that you want to download. If you leave the h2o version blank and specify just ``h2o``, then the latest version will be installed.
       
    ::
 
-     user$ conda install -c h2oai h2o=3.14.0.3
+     user$ conda install -c h2oai h2o=3.16.0.2
 
-**Note**: The H2O version in the above command should match the version that you want to download. 
+**Note**: For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
+
+ ::
+
+   conda create -n py36 python=3.6 anaconda
+   source activate py36
+   conda config --append channels conda-forge
+   conda install -c h2oai h2o 
 
 After H2O is installed, refer to the `Starting H2O from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O and to view a GBM example run in Jupyter Notebook. 
 
