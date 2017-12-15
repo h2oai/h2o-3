@@ -9,6 +9,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -34,6 +35,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public int _target_num_exemplars = 5000;
     public double _rel_tol_num_exemplars = 0.5;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
+    public boolean _save_mapping_frame = false;
   }
 
   public static class AggregatorOutput extends Model.Output {
@@ -42,12 +44,15 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     @Override public ModelCategory getModelCategory() { return ModelCategory.Clustering; }
 
     public Key<Frame> _output_frame;
+    public Key<Frame> _mapping_frame;
+
   }
 
 
   public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
   public Key<Vec> _exemplar_assignment_vec_key;
+
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
 
@@ -82,14 +87,14 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     // preserve the original row order
     Vec booleanCol = new MRTask() {
       @Override
-      public void map(Chunk c, Chunk c2) {
+      public void map(Chunk c2) {
         for (int i=0;i<keep.length;++i) {
-          if (keep[i] < c.start()) continue;
-          if (keep[i] >= c.start()+c._len) continue;
-          c2.set((int)(keep[i]-c.start()), 1);
+          if (keep[i] < c2.start()) continue;
+          if (keep[i] >= c2.start()+c2._len) continue;
+          c2.set((int)(keep[i]-c2.start()), 1);
         }
       }
-    }.doAll(new Frame(new Vec[]{exAssignment, exAssignment.makeZero()}))._fr.vec(1);
+    }.doAll(new Frame(new Vec[]{exAssignment.makeZero()}))._fr.vec(0);
 
     Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
     vecs[vecs.length-1] = booleanCol;
@@ -109,6 +114,27 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     res.add("counts", cnts);
     DKV.put(destination_key, res);
     return res;
+  }
+
+  public Frame createMappingOfExemplars(Key destinationKey){
+    final long[] keep = new long[_exemplars.length];
+    for (int i=0;i<keep.length;++i)
+      keep[i]=_exemplars[i].gid;
+
+    Vec exAssignment = _exemplar_assignment_vec_key.get();
+    Arrays.sort(keep);
+    Vec exemplarAssignment = new MRTask() {
+      @Override
+      public void map(Chunk c1, Chunk c2) {
+        for (int i = 0; i < c1._len; i++) {
+          long gid = c1.at8(i);
+          c2.set(i, ArrayUtils.find(keep, gid));
+        }
+      }
+    }.doAll(new Vec[] { exAssignment, exAssignment.makeZero()})._fr.vec(1);
+    Frame mapping = new Frame(destinationKey,new String[]{"exemplar_assignment"}, new Vec[]{exemplarAssignment});
+    DKV.put(mapping);
+    return mapping;
   }
 
   @Override
