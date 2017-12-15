@@ -25,7 +25,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 10, lang: buildConfig.LANG_JS
+      timeoutValue: 20, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'Java8 Smoke', target: 'test-junit-smoke',
@@ -89,7 +89,7 @@ def call(buildConfig) {
     ],
     [
       stageName: 'PhantomJS', target: 'test-phantom-js',
-      timeoutValue: 45, lang: buildConfig.LANG_JS
+      timeoutValue: 75, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
@@ -143,11 +143,11 @@ def call(buildConfig) {
     ],
     [
       stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
-      timeoutValue: 45, lang: buildConfig.LANG_JS
+      timeoutValue: 75, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
-      timeoutValue: 45, lang: buildConfig.LANG_JS
+      timeoutValue: 75, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
