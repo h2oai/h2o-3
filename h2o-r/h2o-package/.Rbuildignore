@@ -4,12 +4,10 @@
 ^images/
 ^internal/
 ^man-roxygen/
-^mnist-data/
 ^scripts/
 ^travis/
 ^.*\.csv$
 ^\.travis\.yml$
 ^index.*$
 ^pkgdown$
-
-^docs$
+^vignettes/

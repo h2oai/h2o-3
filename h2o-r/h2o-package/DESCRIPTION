@@ -1,8 +1,8 @@
 Package: h2o
-Version: SUBST_PROJECT_VERSION
+Version: 3.17.0.99999
 Type: Package
 Title: R Interface for H2O
-Date: SUBST_PROJECT_DATE
+Date: 2017-12-15
 Author: The H2O.ai team
 Authors@R: c(person("The H2O.ai team", role = c("aut", "cre", "cph"), email = "tomk@0xdata.com"))
 Description: R scripting functionality for H2O, the open source
@@ -66,3 +66,4 @@ Collate:
          'grid.R'
          'predict.R'
          'zzz.R'
+RoxygenNote: 6.0.1

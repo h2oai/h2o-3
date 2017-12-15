@@ -1,8 +1,8 @@
 Package: h2o-3
-Version: SUBST_PROJECT_VERSION
+Version: 3.17.0.99999
 Type: Backend
 Title: h2o-3 project build R dependencies
-Date: SUBST_PROJECT_DATE
+Date: 2017-12-15
 Author: The H2O.ai team
 Authors@R: c(person("The H2O.ai team", role = c("aut", "cre", "cph"), email = "tomk@0xdata.com"))
 Description: Standalone R DESCRIPTION file which defines R dependencies for
