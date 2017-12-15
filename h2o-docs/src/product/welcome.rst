@@ -289,23 +289,23 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 1.6 or later. Recommended Sparkling Water 2.0 or later. 
+**Note**: PySparkling requires Sparkling Water 2.0 or later. We recommended Sparkling Water 2.2. 
 
-PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. Note that the steps below describe how to install with Sparkling Water 2.1. Follow similar instructions on the `Download page <http://h2o.ai/download>`__ for a different version of Sparkling Water.
+PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. Note that the steps below describe how to install with Sparkling Water 2.2. Follow similar instructions on the `Download page <http://h2o.ai/download>`__ for a different version of Sparkling Water.
 
 Running the PySparkling Shell
 '''''''''''''''''''''''''''''
 
 Perform the following steps to install H2O's PySparkling package. 
 
-1. Download `Spark 2.1.1 <https://spark.apache.org/downloads.html>`__.
+1. Download `Spark 2.2.0 <https://spark.apache.org/downloads.html>`__.
 2. Point SPARK_HOME to the existing installation of Spark, and export the variable MASTER. For example:
 
   ::
 
     export SPARK_HOME="/path/to/spark/installation"
     # To launch a local Spark cluster with 3 worker nodes with 2 cores and 1g per node.
-    export MASTER="local-cluster[3,2,1024]" 
+    export MASTER="local" 
 
 3. Download and unpack the Sparkling Water distribution.
 
@@ -331,7 +331,7 @@ PySparkling Installed from PyPi Repository
 
   ::
 
-    pip install pysparkling_2.1
+    pip install h2o_pysparkling_2.2
 
 2. In your Python client, create a SparkSession. Note that for this step, you must have the PySpark package installed.
 
