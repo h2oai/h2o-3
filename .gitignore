@@ -54,7 +54,7 @@ h2o-r/h2o-package/inst/java/
 h2o-r/h2o-package/inst/source_code_repository_info.txt
 h2o-r/h2o-package/man/h2o-package.Rd
 h2o-r/h2o-package/NAMESPACE
-h2o-r/h2o-package/docs/*.zip
+h2o-r/h2o-package/docs/*
 py2/testdir_single_jvm/h2o_fc-nodes.json
 h2o-py/demos/.ipynb_checkpoints
 Rplots.pdf
