@@ -121,7 +121,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="Prevent AutoML from trying these algos; ignored if you use the model_searches parameter", values = {"DL","GLRM","KMEANS","RF","GBM","GLM"}, direction=API.Direction.INPUT)
+    @API(help="Prevent AutoML from trying these algos; ignored if you use the model_searches parameter", values = {"GLM", "XRT", "DRF", "GBM", "XGBoost", "DeepLearning", "DeepWater"}, direction=API.Direction.INPUT)
     public AutoML.algo[] exclude_algos;
 
     @API(help="Optional model build parameter sets, including base hyperparameters and optional hyperparameter search.")

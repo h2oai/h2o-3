@@ -179,10 +179,30 @@ h2o.automl <- function(x, y, training_frame,
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+
+  print("leaderboard: ")
+  print(leaderboard)
+  print("dim(leaderboard): ")
+  print(dim(leaderboard))
+
   row.names(leaderboard) <- seq(nrow(leaderboard))
+
   leaderboard <- as.h2o(leaderboard)
+
+  print("leaderboard: ")
+  print(leaderboard)
+  print("dim(leaderboard): ")
+  print(dim(leaderboard))
+
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
-  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  if (nrow(leaderboard) > 1) {
+      leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  } else {
+      # create a phony leader
+      Class <- paste0("H2OBinomialModel")
+      leader <- .newH2OModel(Class         = Class,
+                             model_id      = "dummy")
+  }
 
   # Make AutoML object
   new("H2OAutoML",
