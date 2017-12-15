@@ -1,5 +1,5 @@
-Using H2O with Nimbix - BETA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using H2O with Nimbix
+~~~~~~~~~~~~~~~~~~~~~
 
 The Nimbix Cloud is a high performance computing (HPC) platform. Through either a portal or a processing API, the Nimbix Cloud runs compute-intensive applications on bare-metal machines. These applications can include CPU, GPU, FPGA systems, or a supercomputing cluster.
 
