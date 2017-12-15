@@ -1,5 +1,5 @@
-Using H2O with IBM Data Science Experience - BETA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using H2O with IBM Data Science Experience
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The IBM Data Science Experience (DSX) provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes.
 

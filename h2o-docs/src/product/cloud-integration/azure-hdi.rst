@@ -1,4 +1,4 @@
-Using H2O with Microsoft Azure HDInsight - BETA
+Using H2O with Microsoft Azure HDInsight - Beta
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Microsoft Azure provides an important collection of cloud services, such as serverless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O.

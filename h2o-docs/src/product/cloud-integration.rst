@@ -4,7 +4,9 @@ Cloud Integration
 H2O is supported on a number of cloud environments, including
 
 - EC2 Instances and S3 Storage (RedHat AMI, Amazon Linux AMI, and Ubuntu AMI)
+- Amazon AWS
 - Microsoft Azure
+- Databricks
 - IBM DSX
 - Nimbix Cloud
 
@@ -14,6 +16,7 @@ Refer to the following topics:
    :maxdepth: 1
 
    cloud-integration/ec2-and-s3
+   cloud-integration/aws
    cloud-integration/azure-hdi
    cloud-integration/azure-dsvm
    cloud-integration/databricks
