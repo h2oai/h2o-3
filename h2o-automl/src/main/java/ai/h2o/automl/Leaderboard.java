@@ -88,6 +88,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean sort_decreasing;
 
   /**
+   * Have we set the sort_metric based on a model in the leadboard?
+   */
+  private boolean have_set_sort_metric = false;
+
+  /**
    * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
    * Right now this is a "new leader" message.
    */
@@ -111,7 +116,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
     this._key = make(idForProject(project_name));
     this.project_name = project_name;
     this.userFeedback = userFeedback;
@@ -121,6 +126,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     } else {
       this.leaderboardFrameChecksum = 0;
     }
+
+    this.sort_metric = "auc";
+    this.other_metrics = new String[] { "logloss" };
+    this.sort_decreasing = true;
+
     DKV.put(this);
   }
 
@@ -162,12 +172,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.sort_metric = metric;
     this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
+    this.have_set_sort_metric = true;
     DKV.put(this);
   }
 
   public void setMetricAndDirection(String metric,boolean sortDecreasing){
     this.sort_metric = metric;
     this.sort_decreasing = sortDecreasing;
+    this.have_set_sort_metric = true;
     DKV.put(this);
   }
 
@@ -195,7 +207,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return;
     }
 
-    if (this.sort_metric == null) {
+    if (! this.have_set_sort_metric) {
       // lazily set to default for this model category
       setDefaultMetricAndDirection(newModels[0].get());
     }
@@ -571,10 +583,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
       // empty TwoDimTable
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
-              new String[0],
-              new String[0],
-              new String[0],
-              new String[0],
+              rowHeaders,
+              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colTypesBinomial,
+              Leaderboard.colFormatsBinomial,
               "-");
     } else if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
       return new TwoDimTable(tableHeader,

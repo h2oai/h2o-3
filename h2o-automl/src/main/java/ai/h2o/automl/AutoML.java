@@ -103,11 +103,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
 
+  private static List<String> skipAlgosList = new ArrayList();
+
 
   // TODO: UGH: this should be dynamic, and it's easy to make it so
+  // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
   public enum algo {
-    RF, GBM, GLM, GLRM, DL, KMEANS
-  }  // consider EnumSet
+    GLM, XRT, DRF, GBM, XGBoost, DeepLearning, DeepWater;
+  }
 
   public AutoML() {
     super(null);
@@ -151,16 +154,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
     leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame);
-
-    /*
-    TODO
-    if( excludeAlgos!=null ) {
-      HashSet<algo> m = new HashSet<>();
-      Collections.addAll(m,excludeAlgos);
-      _excludeAlgos = m.toArray(new algo[m.size()]);
-    } else _excludeAlgos =null;
-    _allowMutations=tryMutations;
-    */
 
     this.jobs = new ArrayList<>();
     this.tempFrames = new ArrayList<>();
@@ -651,6 +644,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return the started hyperparameter search job
    */
   public Job<Grid> hyperparameterSearch(Key<Grid> gridKey, String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+    if (skipAlgosList.contains(algoName)) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + algoName + " hyperparameter search");
+      return null;
+    }
+
     setCommonModelBuilderParams(baseParms);
 
     if (remainingModels() <= 0) {
@@ -742,6 +740,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private boolean exceededSearchLimits(String whatWeAreSkipping) {
+    if (skipAlgosList.contains(whatWeAreSkipping)) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + whatWeAreSkipping + " build");
+      return true;
+    }
+
     if (timeRemainingMs() <= 0.001) {
       userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + whatWeAreSkipping);
       return true;
@@ -1054,6 +1057,27 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public void learn() {
     userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
 
+
+    // This is useful during debugging.
+    skipAlgosList.addAll(Arrays.asList(new String[] {
+            /*
+            "GLM",
+            "XRT",
+            "DRF",
+            "GBM",
+            "XGBoost",
+            "DeepLearning",
+            "DeepWater"
+             */
+            }));
+
+    // Inform the user about skipped algos.
+    // Note: to make the keys short we use "DL" for the "DeepLearning" searches:
+    for (String skippedAlgo : skipAlgosList)
+      userFeedback.info(Stage.ModelTraining, "Disabling algo: " + skippedAlgo + " as requested by the user.");
+    if (skipAlgosList.contains("DeepLearning")) skipAlgosList.add("DL");
+    if (skipAlgosList.contains("GBM")) skipAlgosList.add("default GBMs");
+
     ///////////////////////////////////////////////////////////
     // gather initial frame metadata and guess the problem type
     ///////////////////////////////////////////////////////////
@@ -1189,21 +1213,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
-        //Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
-        //This will give another ensemble that is smaller than the original which takes all models into consideration.
-        List<Model> models = new ArrayList();
-        Set<String> types = new HashSet();
+        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+        // This will give another ensemble that is smaller than the original which takes all models into consideration.
+        List<Model> bestModelsOfEachType = new ArrayList();
+        Set<String> typesOfGatheredModels = new HashSet();
 
-        for (Model bestM : allModels) {
-          String type = getModelType(bestM);
-          if (types.contains(type)) continue;
-          types.add(type);
-          models.add(bestM);
+        for (Model aModel : allModels) {
+          String type = getModelType(aModel);
+          if (typesOfGatheredModels.contains(type)) continue;
+          typesOfGatheredModels.add(type);
+          bestModelsOfEachType.add(aModel);
         }
 
-        Key<Model>[] bestModelKeys = new Key[models.size()];
-        for (int i = 0; i < models.size(); i++)
-          bestModelKeys[i] = models.get(i)._key;
+        Key<Model>[] bestModelKeys = new Key[bestModelsOfEachType.size()];
+        for (int i = 0; i < bestModelsOfEachType.size(); i++)
+          bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
         Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
@@ -1211,34 +1235,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
-    Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
-    Log.info();
+    Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
+    for (UserFeedbackEvent event : userFeedback.feedbackEvents)
+      Log.info(event);
 
+    if (0 < this.leaderboard().getModelKeys().length) {
+      // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
+      AutoML dummyAutoML = new AutoML();
+      UserFeedback dummyUF = new UserFeedback(dummyAutoML);
+      dummyAutoML.userFeedback = dummyUF;
 
+      Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
+      trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
+      Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
+      Log.info();
 
-    // TODO: Look into adding optionally adding these back in
-    // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
-    // Commenting out for now
+      // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
+      Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
+      validationLeaderboard.addModels(this.leaderboard().getModelKeys());
+      Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
+      Log.info();
 
-    /*
-    // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
-    AutoML dummyAutoML = new AutoML();
-    UserFeedback dummyUF = new UserFeedback(dummyAutoML);
-    dummyAutoML.userFeedback = dummyUF;
-
-    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
-    trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
-    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
-    Log.info();
-
-    // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
-    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
-    validationLeaderboard.addModels(this.leaderboard().getModelKeys());
-    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
-    Log.info();
-    */
-
-    Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+      Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+    }
 
     possiblyVerifyImmutability();
 
