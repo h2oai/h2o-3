@@ -1,6 +1,4 @@
 def NODE_LABEL = 'docker'
-// FIXME
-def S3_ROOT = 's3://test.0xdata.com/release-test/h2o'
 
 def buildConfig = null
 def insideDocker = null
@@ -55,10 +53,12 @@ try {
                 }
 
                 setReleaseJobProperties(buildConfig)
+                setReleaseJobDescription()
 
                 stage('Build') {
                     insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
                         withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                            printReleaseConfiguration(buildConfig)
                             sh """
                                 # Log commands.
                                 set -x
@@ -140,43 +140,43 @@ try {
                             cd ${env.BUILD_NUMBER_DIR}
 
                             # Publish the output to S3.
-                            s3cmd --rexclude='target/maven' --acl-public sync target/ ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
+                            s3cmd --rexclude='target/maven' --acl-public sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
 
                             # This is really awful.  This old version of s3cmd does not set Content-Encoding metadata in S3.
                             # The newer version of s3cmd sets the Content-Encoding to UTF-8 and gradle fails.
                             # Alternately, we could strip off the Content-Encoding metadata tag for every file underneath maven.
 
                             # Puts latest R pacakge of h2o-3 into latest_R dir on s3
-                            s3cmd del ${S3_ROOT}/latest_stable_R/h2o_*.tar.gz
-                            s3cmd --acl-public -r put target/R/ ${S3_ROOT}/latest_stable_R/
+                            s3cmd del ${env.S3_ROOT}/latest_stable_R/h2o_*.tar.gz
+                            s3cmd --acl-public -r put target/R/ ${env.S3_ROOT}/latest_stable_R/
 
                             # Puts latest Py pacakge of h2o-3 into latest_Py dir on s3
-                            s3cmd del ${S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
-                            s3cmd --acl-public -r put target/Python/ ${S3_ROOT}/latest_stable_Py/
+                            s3cmd del ${env.S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
+                            s3cmd --acl-public -r put target/Python/ ${env.S3_ROOT}/latest_stable_Py/
 
-                            s3cmd --acl-public sync target/maven/ ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
-                            s3cmd --acl-public put target/sha256.txt ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
+                            s3cmd --acl-public sync target/maven/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
+                            s3cmd --acl-public put target/sha256.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
 
                             echo EXPLICITLY SET MIME TYPES AS NEEDED
                             list_of_html_files=`find target -name '*.html' | sed 's/target\\///g'`
                             echo \${list_of_html_files}
                             for f in \${list_of_html_files}
                             do
-                                s3cmd --acl-public --mime-type text/html put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                s3cmd --acl-public --mime-type text/html put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
                             done
 
                             list_of_js_files=`find target -name '*.js' | sed 's/target\\///g'`
                             echo \${list_of_js_files}
                             for f in \${list_of_js_files}
                             do
-                                s3cmd --acl-public --mime-type text/javascript put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                s3cmd --acl-public --mime-type text/javascript put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
                             done
 
                             list_of_css_files=`find target -name '*.css' | sed 's/target\\///g'`
                             echo \${list_of_css_files}
                             for f in \${list_of_css_files}
                             do
-                                s3cmd --acl-public --mime-type text/css put target/\${f} ${S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
                             done
 
                             echo UPDATE LATEST POINTER
@@ -187,9 +187,9 @@ try {
                             echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
                             echo "</head>" >> \${tmpdir}/latest.html
 
-                            s3cmd --acl-public put \${tmpdir}/latest ${S3_ROOT}/${env.BRANCH_NAME}/latest
-                            s3cmd --acl-public put \${tmpdir}/latest.html ${S3_ROOT}/${env.BRANCH_NAME}/latest.html
-                            s3cmd --acl-public put \${tmpdir}/latest.html ${S3_ROOT}/${env.BRANCH_NAME}/index.html
+                            s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                            s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                            s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
                         """
                     }
                 }
@@ -206,19 +206,24 @@ try {
                                     sh """
                                         cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                         python setup.py sdist
-
-                                        # FIXME
-                                        # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                        
+                                        if [ "\$TEST_RELEASE" = true ]; then
+                                            echo '****** WARNING! Upload to PyPI suppressed ******'
+                                        else
+                                            # FIXME
+                                            # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                        fi
                                     """
                                 }
                             }
                         }
                         // check that pip package for each Python version reports correct H2O version
-                        for (pyVersion in buildConfig.PYTHON_VERSIONS) {
-                            stage("Check Py${pyVersion} PyPI Package") {
-                                insideDocker(["PYTHON_VERSION=${pyVersion}"], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                    echo "Check PyPI package for Python ${pyVersion}"
-                                    sh """
+                        if (!params.TEST_RELEASE) {
+                            for (pyVersion in buildConfig.PYTHON_VERSIONS) {
+                                stage("Check Py${pyVersion} PyPI Package") {
+                                    insideDocker(["PYTHON_VERSION=${pyVersion}"], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                        echo "Check PyPI package for Python ${pyVersion}"
+                                        sh """
                                         export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                         echo "Activating Python ${env.PYTHON_VERSION}"
                                         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -227,6 +232,7 @@ try {
                                         python --version
                                         python h2o_test.py
                                     """
+                                    }
                                 }
                             }
                         }
@@ -248,28 +254,35 @@ try {
                                             PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
                                             # Convert conda package for all other platforms
                                             conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+                                            
+                                            if [ "\$TEST_RELEASE" = true ]; then
+                                                echo '****** WARNING! Upload to Conda suppressed ******'
+                                            else
+                                                # Right now packages for all platforms are in the current directory
+                                                # upload all distribution packages
+                                                # FIXME
+                                                # anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                                # anaconda upload osx-64/\${PKG_NAME}
+                                                # anaconda upload linux-32/\${PKG_NAME}
+                                                # anaconda upload linux-64/\${PKG_NAME}
+                                                # anaconda upload win-32/\${PKG_NAME}
+                                                # anaconda upload win-64/\${PKG_NAME}
+                                            fi
 
-                                            # Right now packages for all platforms are in the current directory
-                                            # upload all distribution packages
-                                            # FIXME
-                                            # anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
-                                            # anaconda upload osx-64/\${PKG_NAME}
-                                            # anaconda upload linux-32/\${PKG_NAME}
-                                            # anaconda upload linux-64/\${PKG_NAME}
-                                            # anaconda upload win-32/\${PKG_NAME}
-                                            # anaconda upload win-64/\${PKG_NAME}
+                                            
                                         """
                                     }
                                 }
                             }
                         }
                         // check that Conda package for each Python version reports correct H2O version
-                        for (pyVersion in buildConfig.PYTHON_VERSIONS) {
-                            stage("Check Py${pyVersion} Conda Package") {
-                                insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                    echo "Check Conda package for Python ${pyVersion}"
-                                    sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
-                                    sh """
+                        if (!params.TEST_RELEASE) {
+                            for (pyVersion in buildConfig.PYTHON_VERSIONS) {
+                                stage("Check Py${pyVersion} Conda Package") {
+                                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                        echo "Check Conda package for Python ${pyVersion}"
+                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
+                                        sh """
                                         bash -c \"\"\"
                                             source activate py${pyVersion}
                                             conda config --append channels conda-forge
@@ -279,6 +292,7 @@ try {
                                             python h2o_test.py
                                         \"\"\"
                                     """
+                                    }
                                 }
                             }
                         }
@@ -296,20 +310,33 @@ try {
 }
 
 /**
- * Sets the required properties. For all jobs the concurrent builds are disabled and three parameters are defined.
+ * Sets the required properties. For all jobs the concurrent builds are disabled and four parameters are defined.
  * For nightly master builds a schedule and build discarder is added. For release jobs the
- * DO_RELEASE env var is set, if UPLOAD_MAVEN is set.
+ * DO_RELEASE env var is set, if UPLOAD_NEXUS is set.
  * @param buildConfig buildConfig object for this build
  */
 private setReleaseJobProperties(buildConfig) {
+
+    def TEST_RELEASE_BUCKET = 's3://test.0xdata.com/test-release/h2o'
+    // FIXME
+    def RELEASE_BUCKET = 's3://test.0xdata.com/release/h2o' // s3://h2o-release/h2o
+
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
-            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to Nexus', name: 'UPLOAD_NEXUS'),
-            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to PyPI', name: 'UPLOAD_PYPI'),
-            booleanParam(defaultValue: false, description: 'If true and building rel-* branch, publish to Conda', name: 'UPLOAD_CONDA')
+            booleanParam(defaultValue: true, description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to PyPI', name: 'UPLOAD_PYPI'),
+            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to Conda', name: 'UPLOAD_CONDA')
         ])
     ]
+
+    if (params.TEST_RELEASE) {
+        env.S3_ROOT = TEST_RELEASE_BUCKET
+    } else {
+        env.S3_ROOT = RELEASE_BUCKET
+    }
+    echo "Release will be pushed to ${env.S3_ROOT}"
 
     if (env.BRANCH_NAME == 'master') {
         // in case of master branch enable the periodical builds and buildDiscarder
@@ -328,6 +355,27 @@ private setReleaseJobProperties(buildConfig) {
         }
     }
     properties(jobProperties)
+}
+
+private setReleaseJobDescription() {
+    currentBuild.description = "SHA: ${env.GIT_SHA}<br/>TEST_RELEASE: ${params.TEST_RELEASE}<br/>Nexus: ${params.UPLOAD_NEXUS}<br/>PyPI: ${params.UPLOAD_PYPI}<br/>Conda: ${params.UPLOAD_CONDA}"
+}
+
+private printReleaseConfiguration(final buildConfig) {
+    echo """
+=======================================
+Configuration:
+---------------------------------------
+    SHA:                | ${env.GIT_SHA}
+    Branch:             | ${env.BRANCH_NAME}
+    Docker Image:       | ${buildConfig.DEFAULT_IMAGE}
+    Test Release:       | ${params.TEST_RELEASE}
+    S3 Bucket:          | ${env.S3_ROOT}
+    Publish to Nexus:   | ${params.UPLOAD_NEXUS}
+    Publish to PyPI:    | ${params.UPLOAD_PYPI}
+    Publish to Conda:   | ${params.UPLOAD_CONDA}
+=======================================
+"""
 }
 
 /**
