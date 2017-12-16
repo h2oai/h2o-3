@@ -65,6 +65,7 @@ try {
                                 # Stop on error.
                                 set -e
     
+                                export BUILD_HADOOP=true
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -194,7 +195,7 @@ try {
                     }
                 }
 
-                if (env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
+                if (params.TEST_RELEASE || env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
                     if (params.UPLOAD_PYPI) {
@@ -202,7 +203,6 @@ try {
                         stage('Upload to PyPI') {
                             withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
                                 insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                    echo 'Upload to PyPI'
                                     sh """
                                         cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                         python setup.py sdist
@@ -210,6 +210,7 @@ try {
                                         if [ "\$TEST_RELEASE" = true ]; then
                                             echo '****** WARNING! Upload to PyPI suppressed ******'
                                         else
+                                            echo '****** Upload to PyPI ******'
                                             # FIXME
                                             # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
                                         fi
@@ -235,6 +236,8 @@ try {
                                     }
                                 }
                             }
+                        } else {
+                            echo 'Marked as TEST_RELEASE, don\'t check uploaded PyPI packages'
                         }
                     }
 
@@ -258,6 +261,7 @@ try {
                                             if [ "\$TEST_RELEASE" = true ]; then
                                                 echo '****** WARNING! Upload to Conda suppressed ******'
                                             else
+                                                echo '****** Upload to Conda ******'
                                                 # Right now packages for all platforms are in the current directory
                                                 # upload all distribution packages
                                                 # FIXME
@@ -295,6 +299,8 @@ try {
                                     }
                                 }
                             }
+                        } else {
+                            echo 'Marked as TEST_RELEASE, don\'t check uploaded Conda packages'
                         }
                     }
                 }
@@ -348,7 +354,7 @@ private setReleaseJobProperties(buildConfig) {
                 logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')
         )
 
-    } else if (env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
+    } else if (params.TEST_RELEASE || env.BRANCH_NAME.startsWith(buildConfig.RELEASE_BRANCH_PREFIX)) {
         // in case of release branch and enabled upload to Maven, we have to set DO_RELEASE
         if (params.UPLOAD_NEXUS) {
             env.DO_RELEASE = true

@@ -57,7 +57,7 @@ class BuildConfig {
   public static final String PIPELINE_SCRIPTS_STASH_NAME = 'pipeline_scripts'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
-  private static final String DEFAULT_IMAGE_VERSION_TAG = '105'
+  private static final String DEFAULT_IMAGE_VERSION_TAG = '106'
   // This is the default image used for tests, build, etc.
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
 
