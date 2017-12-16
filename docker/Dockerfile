@@ -128,7 +128,6 @@ RUN \
   rm -rf /tmp/miniconda.sh && \
   conda install -y anaconda-client conda-build && \
   conda update conda && \
-  conda config --append channels conda-forge && \
   conda clean --all --yes
 ENV PATH /opt/conda/bin:$PATH
 
