@@ -61,6 +61,8 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
     insideDocker(customEnv(), stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
         String csvFilePath = benchmarkFolderConfig.getCSVPath()
 
+
+
         def csvData = parseCsvFile(csvFilePath)
         List failures = []
         for (column in TESTED_COLUMNS) {
@@ -112,7 +114,7 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
 }
 
 def parseCsvFile(final String filePath, final String separator=',') {
-    final String text = readFile(filePath)
+    final String text = readFile(sh(script: "ls ${filePath}", returnStdout: true).trim())
     if (text == null) {
         return null
     }
