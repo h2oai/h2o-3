@@ -51,7 +51,7 @@ def call(buildConfig, stageConfig) {
   } finally {
     insideDocker(benchmarkEnv, stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
       def persistBenchmarkResults = load("${ML_BENCHMARK_ROOT}/jenkins/groovy/persistBenchmarkResults.groovy")
-      persistBenchmarkResults(benchmarkFolderConfig, "${stageNameToDirName(stageConfig.stageName)}")
+      persistBenchmarkResults(benchmarkFolderConfig, stageNameToDirName(stageConfig.stageName))
     }
   }
 
