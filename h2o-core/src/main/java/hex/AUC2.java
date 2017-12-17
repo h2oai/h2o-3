@@ -240,6 +240,7 @@ public class AUC2 extends Iced {
     // Merging this bin with the next gives the least increase in squared
     // error, or -1 if not known.  Requires a linear scan to find.
     int    _ssx;
+    private boolean _useFastPath = true; // only used for unit tests to check that the
     public AUCBuilder(int nBins) {
       _nBins = nBins;
       _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
@@ -247,6 +248,12 @@ public class AUC2 extends Iced {
       _tps = new double[nBins<<1]; // True  positives
       _fps = new double[nBins<<1]; // False positives
       _ssx = -1;                   // Unknown best merge bin
+    }
+
+    // Intended for unit tests only
+    AUCBuilder(int nBins, boolean useFastPath) {
+      this(nBins);
+      _useFastPath = useFastPath;
     }
 
     public void perRow(double pred, int act, double w ) {
@@ -263,22 +270,25 @@ public class AUC2 extends Iced {
       idx = -idx-1;             // Get index to insert at
 
       // If already full bins, try to instantly merge into an existing bin
-      if( _n > _nBins ) {       // Need to merge to shrink things
+      if (_n == _nBins &&
+              _useFastPath &&              // Optimization enabled
+              idx > 0 && idx < _n &&       // Give up for the corner cases
+              _ths[idx - 1] != _ths[idx])  // Histogram has duplicates (mergeOneBin will get rid of them)
+      {       // Need to merge to shrink things
         final int ssx = find_smallest();
-        double dssx = compute_delta_error(_ths[ssx+1],k(ssx+1),_ths[ssx],k(ssx));
-
+        double dssx = _sqe[ssx] + _sqe[ssx+1] + compute_delta_error(_ths[ssx+1], k(ssx+1), _ths[ssx], k(ssx));
         // See if this point will fold into either the left or right bin
         // immediately.  This is the desired fast-path.
-        double d0 = compute_delta_error(pred,w,_ths[idx  ],k(idx  ));
-        double d1 = compute_delta_error(_ths[idx+1],k(idx+1),pred,w);
-        if( d0 < dssx || d1 < dssx ) {
-          if( d1 < d0 ) idx++; else d0 = d1; // Pick correct bin
-          double oldk = k(idx);
-          if( act==0 ) _fps[idx]+=w;
-          else         _tps[idx]+=w;
-          _ths[idx] = _ths[idx] + (pred-_ths[idx])/oldk;
-          _sqe[idx] = _sqe[idx] + d0;
-          assert ssx == find_smallest();
+        double d0 = _sqe[idx-1] + compute_delta_error(pred,w,_ths[idx-1],k(idx-1));
+        double d1 = _sqe[idx] + compute_delta_error(_ths[idx],k(idx),pred,w);
+        if (d0 < dssx || d1 < dssx) {
+          if (d0 <= d1) idx--; // Pick correct bin
+          if (ssx == idx-1 || ssx == idx)
+            _ssx = -1;         // We don't know the minimum anymore
+          double k = k(idx);
+          if (act == 0) _fps[idx] += w; else _tps[idx] += w;
+          _sqe[idx] = _sqe[idx] + compute_delta_error(pred, w, _ths[idx], k);
+          _ths[idx] = (_ths[idx] * k + pred * w) / (k + w);
           return;
         }
       }
@@ -286,7 +296,8 @@ public class AUC2 extends Iced {
       // Must insert this point as it's own threshold (which is not insertion
       // point), either because we have too few bins or because we cannot
       // instantly merge the new point into an existing bin.
-      if( idx == _ssx ) _ssx = -1;  // Smallest error becomes one of the splits
+      if (idx == 0 || idx == _n ||     // Just because we didn't bother to deal with the corner cases ^^^
+              idx == _ssx) _ssx = -1;  // Smallest error becomes one of the splits
       else if( idx < _ssx ) _ssx++; // Smallest error will slide right 1
 
       // Slide over to do the insert.  Horrible slowness.
@@ -340,8 +351,8 @@ public class AUC2 extends Iced {
       // centers based on counts.
       double k0 = k(ssx);
       double k1 = k(ssx+1);
-      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
       _sqe[ssx] = _sqe[ssx]+_sqe[ssx+1]+compute_delta_error(_ths[ssx+1],k1,_ths[ssx],k0);
+      _ths[ssx] = (_ths[ssx]*k0 + _ths[ssx+1]*k1) / (k0+k1);
       _tps[ssx] += _tps[ssx+1];
       _fps[ssx] += _fps[ssx+1];
       // Slide over to crush the removed bin at index (ssx+1)
@@ -362,7 +373,7 @@ public class AUC2 extends Iced {
     // centers.  Same problem for sorted data.
     private int find_smallest() {
       if( _ssx == -1 ) return (_ssx = find_smallest_impl());
-      assert _ssx == find_smallest_impl();
+      //assert _ssx == find_smallest_impl();
       return _ssx;
     }
     private int find_smallest_impl() {
