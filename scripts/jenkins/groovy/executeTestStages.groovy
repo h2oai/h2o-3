@@ -15,21 +15,27 @@ def call(buildConfig) {
 
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
+//    [
+//      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
+//      timeoutValue: 8, lang: buildConfig.LANG_PY
+//    ],
+//    [
+//      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
+//      timeoutValue: 8, lang: buildConfig.LANG_R
+//    ],
+//    [
+//      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
+//      timeoutValue: 20, lang: buildConfig.LANG_JS
+//    ],
+//    [
+//      stageName: 'Java8 Smoke', target: 'test-junit-smoke',
+//      timeoutValue: 20, lang: buildConfig.LANG_JAVA
+//    ],
     [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-      timeoutValue: 8, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 20, lang: buildConfig.LANG_JS
-    ],
-    [
-      stageName: 'Java8 Smoke', target: 'test-junit-smoke',
-      timeoutValue: 20, lang: buildConfig.LANG_JAVA
+            stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+            timeoutValue: 120, target: 'benchmark', lang: buildConfig.LANG_NONE,
+            additionalTestPackages: [buildConfig.LANG_R], image: buildConfig.BENCHMARK_IMAGE,
+            nodeLabel: buildConfig.getBenchmarkNodeLabel(), model: 'gbm', makefilePath: BENCHMARK_MAKEFILE_PATH
     ]
   ]
 
