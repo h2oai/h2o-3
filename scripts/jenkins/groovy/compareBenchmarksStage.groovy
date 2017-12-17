@@ -57,13 +57,12 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
 
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
     def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
+    def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
     insideDocker(customEnv(), stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
-        String csvFilePath = benchmarkFolderConfig.getCSVPath()
-
-
-
+        String csvFilePath = "${stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getCSVPath()}"
         def csvData = parseCsvFile(csvFilePath)
+
         List failures = []
         for (column in TESTED_COLUMNS) {
             for (line in csvData) {
