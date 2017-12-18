@@ -1,0 +1,62 @@
+#! /usr/bin/groovy
+import groovy.json.JsonSlurper
+
+// FIXME
+def final NODE_LABEL = 'mr-0xg4' //'docker && !mr-0xc8'
+final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
+
+
+properties(
+    [
+        parameters(
+            [
+                string(defaultValue: 'mr/ita/149-hadoop-dockers', description: 'Branch to checkout', name: 'gitBranch'),
+                string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
+            ]
+        )
+    ]
+)
+
+final GString IMAGE_NAME_PREFIX = "${params.dockerRegistry}/opsh2oai/h2o-3-hadoop"
+
+def distributionsToBuild = []
+
+node (NODE_LABEL) {
+    stage ('Checkout') {
+        git credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea',
+                poll: false,
+                url: 'https://github.com/h2oai/h2o-3',
+                branch: params.gitBranch
+        stash name: DOCKER_STASH, includes: 'docker/hadoop/**,docker/scripts/*', allowEmpty: false
+    }
+
+
+    stage ('Read Supported Hadoop Versions') {
+        def readSupportedHadoopVersions = load('scripts/jenkins/groovy/readSupportedHadoopVersions.groovy')
+        distributionsToBuild = readSupportedHadoopVersions('h2o-dist/buildinfo.json')
+    }
+}
+
+parallel(distributionsToBuild.collectEntries{distribution ->
+    [
+        "Build ${distribution.name.toUpperCase()} ${distribution.version}", {
+            node (NODE_LABEL) {
+                stage("Build ${distribution.name.toUpperCase()} ${distribution.version}") {
+                    withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        unstash DOCKER_STASH
+                        sh """
+                        cd docker
+                        pwd
+                        ls -alh
+                        docker build \
+                            -t ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${currentBuild.number} \
+                            -f hadoop/${distribution.name}/Dockerfile \
+                            --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                            --build-arg VERSION=${distribution.version} .
+                    """
+                    }
+                }
+            }
+        }
+    ]
+})

@@ -59,7 +59,7 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
     def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
     def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
-    insideDocker(customEnv(), stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
+    insideDocker(customEnv(buildConfig), stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
         String csvFilePath = "${stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getCSVPath()}"
         def csvData = parseCsvFile(csvFilePath)
 

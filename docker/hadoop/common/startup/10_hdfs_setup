@@ -1,0 +1,9 @@
+#! /bin/bash
+
+su -m - hdfs -c 'hadoop fs -mkdir -p /tmp/hadoop-yarn/staging/history/done_intermediate'
+su -m - hdfs -c 'hadoop fs -chown -R mapred:mapred /tmp/hadoop-yarn/staging'
+su -m - hdfs -c 'hadoop fs -chmod -R 1777 /tmp'
+su -m - hdfs -c 'hadoop fs -mkdir -p /var/log/hadoop-yarn'
+su -m - hdfs -c 'hadoop fs -chown yarn:mapred /var/log/hadoop-yarn'
+
+chown mapred /var/log/hadoop-mapreduce

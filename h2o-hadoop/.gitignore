@@ -1,4 +1,4 @@
 # Tests
 tests/results
 tests/testsfile.txt
-!scripts/docker/common/bin
+!../docker/hadoop/docker/common/bin

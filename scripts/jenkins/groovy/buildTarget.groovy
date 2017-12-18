@@ -24,8 +24,40 @@ def call(body) {
     config.h2o3dir = 'h2o-3'
   }
 
+
+  def buildAction = """
+    echo "Activating Python ${env.PYTHON_VERSION}"
+    . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+    echo "Activating R ${env.R_VERSION}"
+    activate_R_${env.R_VERSION}
+
+    echo "Running Make"
+    make -f ${config.makefilePath} ${config.target}
+  """
+  if (config.customBuildAction != null) {
+    buildAction = config.customBuildAction
+  }
+
   try {
-    execMake(config.makefilePath, config.target, config.h2o3dir)
+    sh """
+      export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    
+      # The Gradle fails if there is a special character, in these variables
+      unset CHANGE_AUTHOR_DISPLAY_NAME
+      unset CHANGE_TITLE
+  
+      locale
+  
+      cd ${config.h2o3dir}
+      echo "Linking small and bigdata"
+      rm -f smalldata
+      ln -s -f /home/0xdiag/smalldata
+      rm -f bigdata
+      ln -s -f /home/0xdiag/bigdata
+
+      ${buildAction}
+    """
   } finally {
     if (config.hasJUnit) {
       def findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
@@ -44,33 +76,6 @@ def call(body) {
       }
     }
   }
-}
-
-def execMake(makefilePath, target, String h2o3dir) {
-  sh """
-    export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-    locale
-
-    echo "Activating Python ${env.PYTHON_VERSION}"
-    . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-
-    echo "Activating R ${env.R_VERSION}"
-    activate_R_${env.R_VERSION}
-
-    cd ${h2o3dir}
-    echo "Linking small and bigdata"
-    rm -f smalldata
-    ln -s -f /home/0xdiag/smalldata
-    rm -f bigdata
-    ln -s -f /home/0xdiag/bigdata
-
-    # The Gradle fails if there is a special character, in these variables
-    unset CHANGE_AUTHOR_DISPLAY_NAME
-    unset CHANGE_TITLE
-
-    echo "Running Make"
-    make -f ${makefilePath} ${target}
-  """
 }
 
 def archiveStageFiles(h2o3dir, files) {

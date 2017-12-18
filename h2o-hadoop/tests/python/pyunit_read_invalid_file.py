@@ -8,7 +8,7 @@ import h2o
 
 def read_invalid_file():
   try:
-      hdfs_path = 'hdfs:///user/h2o/tests/invalid'
+      hdfs_path = 'hdfs:///user/jenkins/tests/invalid'
       h2o.import_file(hdfs_path)
       assert False, "Read of file, which does not exists was sucessfull. This is impossible"
   except ValueError:

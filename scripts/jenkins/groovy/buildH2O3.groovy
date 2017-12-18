@@ -15,7 +15,7 @@ def call(buildConfig) {
     buildConfig.setStageNode(this, stageName, env.NODE_NAME)
     try {
       // Launch docker container, build h2o-3, create test packages and archive artifacts
-      def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
+      def buildEnv = customEnv(buildConfig) + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
       insideDocker(buildEnv, buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 30, 'MINUTES') {
         stage(stageName) {
           try {
@@ -37,6 +37,14 @@ def call(buildConfig) {
               archiveFiles = false
               makefilePath = 'docker/Makefile.jenkins'
             }
+            if (buildConfig.getBuildHadoop()) {
+              buildTarget {
+                target = 'test-package-hadoop'
+                hasJUnit = false
+                archiveFiles = false
+                makefilePath = 'docker/Makefile.jenkins'
+              }
+            }
             if (buildConfig.langChanged(buildConfig.LANG_JS)) {
               buildTarget {
                 target = 'test-package-js'
@@ -55,14 +63,14 @@ def call(buildConfig) {
             }
           } finally {
             archiveArtifacts """
-          h2o-3/docker/Makefile.jenkins,
-          h2o-3/h2o-py/dist/*.whl,
-          h2o-3/build/h2o.jar,
-          h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
-          h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-          h2o-3/test-package-*.zip,
-          **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
-        """
+              h2o-3/docker/Makefile.jenkins,
+              h2o-3/h2o-py/dist/*.whl,
+              h2o-3/build/h2o.jar,
+              h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
+              h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
+              h2o-3/test-package-*.zip,
+              **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
+            """
           }
         }
       }

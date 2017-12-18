@@ -36,7 +36,7 @@ try {
           setBuildDesc()
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_MASTER', true)
+          buildConfig = buildConfig = prepareH2O3(scmEnv, 'MODE_MASTER', false, false)
           buildConfig.setDefaultOverrideRerun(true)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')

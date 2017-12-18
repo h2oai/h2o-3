@@ -13,6 +13,20 @@ def call(buildConfig) {
 
   def BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
+
+  def HADOOP_STAGES = []
+  if (buildConfig.getBuildHadoop()) {
+    for (distribution in buildConfig.getSupportedHadoopDistributions()) {
+      HADOOP_STAGES += [
+        stageName: "${distribution.name.toUpperCase()} ${distribution.version} Smoke", target: 'test-hadoop-smoke', timeoutValue: 5, lang: buildConfig.LANG_NONE,
+        additionalTestPackages: [buildConfig.LANG_HADOOP, buildConfig.LANG_PY], distribution: distribution.name, version: distribution.version, pythonVersion: '2.7',
+        executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+        //FIXME
+        nodeLabel: 'mr-0xg4'
+      ]
+    }
+  }
+
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
@@ -32,6 +46,8 @@ def call(buildConfig) {
       timeoutValue: 20, lang: buildConfig.LANG_JAVA
     ]
   ]
+  // FIXME
+  SMOKE_STAGES += HADOOP_STAGES
 
   // Stages executed after each push to PR branch.
   def PR_STAGES = [
@@ -219,6 +235,9 @@ def executeInParallel(jobs, buildConfig) {
           image = c['image']
           model = c['model']
           makefilePath = c['makefilePath']
+          customBuildAction = c['customBuildAction']
+          distribution = c['distribution']
+          version = c['version']
         }
       }
     ]

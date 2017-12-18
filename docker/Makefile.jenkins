@@ -204,3 +204,10 @@ test-junit-smoke:
 
 benchmark:
 	Rscript ml-benchmark/h2oR/benchmark.R -d $$DATASETS_PATH -t $$TEST_CASES_PATH -o $$OUTPUT_PREFIX --git-sha $$GIT_SHA --git-date "$$GIT_DATE" --model $$BENCHMARK_MODEL --build-id $$BUILD_ID
+
+test-package-hadoop:
+	zip -q -r test-package-hadoop \
+		h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
+
+test-hadoop-smoke:
+	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT"

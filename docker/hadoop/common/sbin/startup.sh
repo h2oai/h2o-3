@@ -27,16 +27,6 @@ for x in $(ls . | sort -n); do
   ./${x}
 done
 
-if [[ ${ACTIVATE_SPARK} != '' ]]; then
-  if [[ ! -e /usr/bin/activate_spark_${ACTIVATE_SPARK} ]]; then
-    echo "Cannot find activation script for Spark ${ACTIVATE_SPARK}. Should be under /opt/activate_spark_${ACTIVATE_SPARK}"
-    exit 1
-  fi
-  chmod 755 /usr/bin/activate_spark_${ACTIVATE_SPARK}
-  sync
-  /usr/bin/activate_spark_${ACTIVATE_SPARK}
-fi
-
 if [[ $(echo ${ENTER_BASH} | tr -s '[:upper:]' '[:lower:]') == 'true' ]]; then
   cd /home/h2o
   set +e

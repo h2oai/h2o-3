@@ -34,7 +34,8 @@ withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
           setBuildDesc()
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_PR', false)
+          // FIXME
+          buildConfig = prepareH2O3(scmEnv, 'MODE_PR', false, true) // prepareH2O3(scmEnv, 'MODE_PR', false, false)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
           setJobProperties(buildConfig)

@@ -1,9 +1,10 @@
 def call(buildConfig, stageConfig) {
+
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
 
-  def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
+  def buildEnv = customEnv(buildConfig) + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
 
   insideDocker(buildEnv, stageConfig.image, buildConfig.DOCKER_REGISTRY, stageConfig.timeoutValue, 'MINUTES') {
     // NOTES regarding changes detection and rerun:
@@ -51,6 +52,7 @@ def call(buildConfig, stageConfig) {
           }
 
           buildTarget {
+            customBuildAction = stageConfig.customBuildAction
             target = stageConfig.target
             hasJUnit = stageConfig.hasJUnit
             h2o3dir = h2oFolder

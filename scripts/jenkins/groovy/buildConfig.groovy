@@ -66,10 +66,14 @@ class BuildConfig {
   // Use this image for benchmark stages
   public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
+  private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '45'
+
   public static final String LANG_PY = 'py'
   public static final String LANG_R = 'r'
   public static final String LANG_JS = 'js'
   public static final String LANG_JAVA = 'java'
+  public static final String LANG_HADOOP = 'hadoop'
   // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
   // always run
   public static final String LANG_NONE = 'none'
@@ -84,6 +88,8 @@ class BuildConfig {
   private String commitMessage
   private buildSummary
   private boolean defaultOverrideRerun = false
+  private boolean buildHadoop
+  private List hadoopDistributionsToBuild
   private String majorVersion
   private String buildVersion
   private JenkinsMaster master
@@ -96,11 +102,13 @@ class BuildConfig {
     (LANG_NONE): true
   ]
 
-  def initialize(final Script context, final String mode, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange, final buildSummary) {
+  def initialize(final Script context, final String mode, final String commitMessage, final List<String> changes,
+                 final boolean overrideDetectionChange, final buildSummary, final boolean buildHadoop) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
     this.buildSummary = buildSummary
+    this.buildHadoop = buildHadoop
     if (overrideDetectionChange) {
       markAllLangsForTest()
     } else {
@@ -152,6 +160,18 @@ class BuildConfig {
 
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
+  }
+
+  boolean getBuildHadoop() {
+    return buildHadoop
+  }
+
+  void setSupportedHadoopDistributions(final List distributionsToBuild) {
+    this.hadoopDistributionsToBuild = distributionsToBuild
+  }
+
+  List getSupportedHadoopDistributions() {
+    return hadoopDistributionsToBuild
   }
 
   String toString() {
@@ -215,6 +235,10 @@ class BuildConfig {
 
   public GString getGitHubCommitStateContext(final String stageName) {
     return "${COMMIT_STATE_PREFIX} » ${stageName}"
+  }
+
+  String getSmokeHadoopImage(final String distribution, final String version) {
+    return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}:${HADOOP_IMAGE_VERSION_TAG}"
   }
 
   void addStageSummary(final context, final String stageName) {

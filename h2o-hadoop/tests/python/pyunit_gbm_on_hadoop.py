@@ -8,8 +8,8 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def gbm_on_hadoop():
-  local_frame = h2o.import_file('https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/prostate.csv')
-  hdfs_path = 'hdfs:///user/h2o/tests/prostate_export'
+  local_frame = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+  hdfs_path = 'hdfs:///user/jenkins/tests/prostate_export'
   h2o.export_file(local_frame, hdfs_path, force=True)
   df = h2o.import_file(hdfs_path)
   train = df.drop("ID")

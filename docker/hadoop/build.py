@@ -12,13 +12,6 @@ SUPPORTED_DISTRIBUTIONS = [DISTRIBUTION_CDH, DISTRIBUTION_HDP]
 SUPPORTED_CDH_VERSIONS = ['5.4', '5.5', '5.6', '5.7', '5.8', '5.10']
 SUPPORTED_HDP_VERSIONS = ['2.2', '2.3', '2.4', '2.5', '2.6']
 
-SUPPORTED_SPARK_VERSIONS = [
-    '1.6.0', '1.6.1', '1.6.2', '1.6.3',
-    '2.0.0', '2.0.1', '2.0.2',
-    '2.1.0', '2.1.1',
-    '2.2.0'
-]
-
 
 def pretty_print_array(array_to_print):
     if array_to_print is None or len(array_to_print) == 0:
@@ -38,9 +31,6 @@ def init_args_parser():
     args_parser.add_argument('-v', '--version', type=str,
                              help='Version of the Hadoop distribution.', required=True
                              )
-    args_parser.add_argument('-s', '--spark-version',
-                             choices=SUPPORTED_SPARK_VERSIONS,
-                             action='append', help="Version of Spark which should be installed.")
     args_parser.add_argument('-t', '--tag', type=str, help="Image tag.")
     args_parser.add_argument('-u', '--uid', type=int, help="UID of user h2o. Default is the uid of user invoking this script.")
     return args_parser
@@ -63,26 +53,18 @@ if __name__ == '__main__':
     args = parser.parse_args()
     validate_version(args.distribution, args.version)
     print("Building Docker image for %s version %s" % (args.distribution, args.version))
-    spark_versions_argument = ''
 
     if args.tag:
         tag = args.tag
-    elif args.spark_version:
-        args.spark_version.sort()
-        spark_versions_argument = '--build-arg SPARK_VERSIONS=%s ' % (",".join(args.spark_version))
-        tag = "h2o-%s-spark" % args.distribution.lower()
-        for spark_version in args.spark_version:
-            tag += '-%s' % spark_version
-        tag += ":%s" % args.version
     else:
-        tag = "h2o-%s:%s" % (args.distribution.lower(), args.version)
+        tag = "h2o-%s-%s:latest" % (args.distribution.lower(), args.version)
 
     uid = os.getuid()
     if args.uid:
         uid = args.uid
 
-    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s --build-arg DEFAULT_USER_UID=%s %s-f %s/Dockerfile ." % (
-        tag, args.version, args.distribution.lower(), uid, spark_versions_argument, args.distribution.lower())
+    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s --build-arg DEFAULT_USER_UID=%s -f %s/Dockerfile ." % (
+        tag, args.version, args.distribution.lower(), uid, args.distribution.lower())
     print("Building image with cmd: %s" % cmd)
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     for line in iter(process.stdout.readline, ''):
