@@ -7,7 +7,7 @@ whitelist = list(
   "CRAN incoming feasibility" = c("Maintainer:",
                                   "New maintainer:",
                                   "The H2O.ai team <tomk@0xdata.com>",
-                                  "Old maintainer(s):",
+                                  "Old maintainer",
                                   "Tom Kraljevic <tomk@0xdata.com>",
                                   "Checking URLs requires 'libcurl' support in the R build",
                                   "Package has FOSS license, installs .class/.jar but has no 'java' directory",
