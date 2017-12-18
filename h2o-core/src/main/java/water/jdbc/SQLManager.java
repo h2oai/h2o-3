@@ -13,11 +13,16 @@ import java.util.concurrent.ArrayBlockingQueue;
 import static water.fvec.Vec.makeCon;
 
 public class SQLManager {
-  
-  final static String TEMP_TABLE_NAME = "table_for_h2o_import";
+
+  private final static String TEMP_TABLE_NAME = "table_for_h2o_import";
   //upper bound on number of connections to database
-  final static int MAX_CONNECTIONS = 100;
-  
+  private final static int MAX_CONNECTIONS = 100;
+  private static final String NETEZZA_DB_TYPE = "netezza";
+  private static final String ORACLE_DB_TYPE = "oracle";
+  private static final String SQL_SERVER_DB_TYPE = "sqlserver";
+
+  private static final String NETEZZA_JDBC_DRIVER_CLASS = "org.netezza.Driver";
+
   /**
    * @param connection_url (Input) 
    * @param table (Input)
@@ -43,11 +48,12 @@ public class SQLManager {
      SELECT * FROM (
         SELECT ROW_NUMBER() OVER () AS RowNum_, <table>.* FROM <table>
      ) QUALIFY RowNum_ BETWEEN x and x+y;
-    */
-    String db_sys = connection_url.split(":",3)[1];
-    final boolean needFetchClause = db_sys.equals("oracle") || db_sys.equals("sqlserver");
-    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0; 
-    final int numCol; 
+     */
+    String databaseType = connection_url.split(":", 3)[1];
+    initializeDatabaseDriver(databaseType);
+    final boolean needFetchClause = ORACLE_DB_TYPE.equals(databaseType) || SQL_SERVER_DB_TYPE.equals(databaseType);
+    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0;
+    final int numCol;
     long numRow = 0;
     final String[] columnNames;
     final byte[] columnH2OTypes;
@@ -73,6 +79,7 @@ public class SQLManager {
         rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
         rs.next();
         numRow = rs.getLong(1);
+        rs.close();
       }
       //get H2O column names and types 
       if (needFetchClause)
@@ -195,6 +202,22 @@ public class SQLManager {
     j.start(work, _v.nChunks());
     
     return j;
+  }
+
+  /**
+   * Initializes database driver for databases with JDBC driver version lower than 4.0
+   *
+   * @param databaseType Name of target database from JDBC connection string
+   */
+  private static void initializeDatabaseDriver(String databaseType) {
+    switch (databaseType) {
+      case NETEZZA_DB_TYPE:
+        try {
+          Class.forName(NETEZZA_JDBC_DRIVER_CLASS);
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("Connection to Netezza database is not possible due to missing JDBC driver.");
+        }
+    }
   }
 
   private static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
