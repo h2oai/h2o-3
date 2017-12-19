@@ -82,6 +82,7 @@ class BuildConfig {
   private String mode
   private String nodeLabel
   private String commitMessage
+  private buildSummary
   private boolean defaultOverrideRerun = false
   private String majorVersion
   private String buildVersion
@@ -95,10 +96,11 @@ class BuildConfig {
     (LANG_NONE): true
   ]
 
-  def initialize(final Script context, final String mode, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange) {
+  def initialize(final Script context, final String mode, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange, final buildSummary) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
+    this.buildSummary = buildSummary
     if (overrideDetectionChange) {
       markAllLangsForTest()
     } else {
@@ -213,6 +215,89 @@ class BuildConfig {
 
   public GString getGitHubCommitStateContext(final String stageName) {
     return "${COMMIT_STATE_PREFIX} » ${stageName}"
+  }
+
+  void addStageSummary(final context, final String stageName) {
+    buildSummary.addStageSummary(stageName)
+    updateJobDescription(context)
+  }
+
+  void markStageSuccessful(final context, final String stageName) {
+    buildSummary.setStageResult(stageName, buildSummary.RESULT_SUCCESS)
+    updateJobDescription(context)
+  }
+
+  void markStageFailed(final context, final String stageName) {
+    buildSummary.setStageResult(stageName, buildSummary.RESULT_FAILURE)
+    updateJobDescription(context)
+  }
+
+  void setStageNode(final context, final String stageName, final String nodeName) {
+    buildSummary.setStageNode(stageName, nodeName)
+    updateJobDescription(context)
+  }
+
+  def getBuildSummary() {
+    return buildSummary
+  }
+
+  void updateJobDescription(final context) {
+
+    def stagesTable = ''
+    if (!buildSummary.getStageSummaries().isEmpty()) {
+      def stagesTableBody = ''
+      for (stageSummary in buildSummary.getStageSummaries()) {
+        def nodeName = stageSummary['nodeName'] == null ? 'Not yet allocated' : stageSummary['nodeName']
+        def result = stageSummary['result'] == null ? 'Pending' : stageSummary['result']
+        stagesTableBody += """
+          <tr style="background-color: ${stageResultToBgColor(stageSummary['result'])}">
+            <td style="border: 1px solid black; padding: 0.2em 1em">${stageSummary['stageName']}</td>
+            <td style="border: 1px solid black; padding: 0.2em 1em">${nodeName}</td>
+            <td style="border: 1px solid black; padding: 0.2em 1em">${result.capitalize()}</td>
+          </tr>
+        """
+      }
+
+      stagesTable = """
+        <table style="margin-left: 1em; border-collapse: collapse">
+          <thead>
+            <tr>
+              <th style="border: 1px solid black; padding: 0.5em">Name</th>
+              <th style="border: 1px solid black; padding: 0.5em">Node</th>
+              <th style="border: 1px solid black; padding: 0.5em">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stagesTableBody}
+          </tbody>
+        </table>
+      """
+    }
+
+    context.currentBuild.description = """
+      <div>
+        <h3>
+          Details
+        </h3>
+        <p style="margin-left: 1em"><strong>Commit Message:</strong> ${commitMessage}</p>
+        <p style="margin-left: 1em"><strong>SHA:</strong> ${context.env.GIT_SHA}</p>
+        ${stagesTable}  
+      </div>
+    """
+  }
+
+  private String stageResultToBgColor(final String result) {
+    def BG_COLOR_SUCCESS = '#7fce67'
+    def BG_COLOR_FAILURE = '#d56060'
+    def BG_COLOR_OTHER = '#fbf78b'
+
+    if (result == buildSummary.RESULT_SUCCESS) {
+      return BG_COLOR_SUCCESS
+    }
+    if (result == buildSummary.RESULT_FAILURE) {
+      return BG_COLOR_FAILURE
+    }
+    return BG_COLOR_OTHER
   }
 
 }
