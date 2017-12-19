@@ -266,19 +266,28 @@ def invokeStage(buildConfig, body) {
     config.makefilePath = DEFAULT_MAKEFILE_PATH
   }
 
+  buildConfig.addStageSummary(this, config.stageName)
   withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${buildConfig.getGitHubCommitStateContext(config.stageName)}") {
-    node(config.nodeLabel) {
-      echo "###### Unstash scripts. ######"
-      unstash name: buildConfig.PIPELINE_SCRIPTS_STASH_NAME
+    try {
+      node(config.nodeLabel) {
+        buildConfig.setStageNode(this, config.stageName, env.NODE_NAME)
+        echo "###### Unstash scripts. ######"
+        unstash name: buildConfig.PIPELINE_SCRIPTS_STASH_NAME
 
-      if (config.stageDir == null) {
-        def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
-        config.stageDir = stageNameToDirName(config.stageName)
+        if (config.stageDir == null) {
+          def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
+          config.stageDir = stageNameToDirName(config.stageName)
+        }
+        sh "rm -rf ${config.stageDir}"
+
+        def script = load(config.executionScript)
+        script(buildConfig, config)
       }
-      sh "rm -rf ${config.stageDir}"
-
-      def script = load(config.executionScript)
-      script(buildConfig, config)
+      buildConfig.markStageSuccessful(this, config.stageName)
+      echo "Build Summary: ${buildConfig.getBuildSummary().toString()}"
+    } catch (Exception e) {
+      buildConfig.markStageFailed(this, config.stageName)
+      throw e
     }
   }
 }
