@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^docs/
+^images/
+^internal/
+^man-roxygen/
+^scripts/
+^index.*$
+^pkgdown$
+^vignettes/
