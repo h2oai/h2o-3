@@ -5,9 +5,6 @@
 ^internal/
 ^man-roxygen/
 ^scripts/
-^travis/
-^.*\.csv$
-^\.travis\.yml$
 ^index.*$
 ^pkgdown$
 ^vignettes/
