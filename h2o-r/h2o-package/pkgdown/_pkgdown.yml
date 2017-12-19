@@ -1,0 +1,26 @@
+template:
+  params:
+    bootswatch: cosmo
+
+navbar:
+  title: "h2o"
+  type: inverse
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Using"
+      menu:
+        - text: "Getting Started"
+        - text: "H2O Basics"
+          href: articles/basics.html
+    - text: "Reference"
+      href: reference/index.html
+  right:
+   - icon: fa-github
+     href: https://github.com/h2oai/h2o-3
+
+reference:
+
+  - title: "Models"
+    contents:
+      - h2o.randomForest

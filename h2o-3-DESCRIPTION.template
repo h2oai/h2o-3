@@ -3,8 +3,7 @@ Version: SUBST_PROJECT_VERSION
 Type: Backend
 Title: h2o-3 project build R dependencies
 Date: SUBST_PROJECT_DATE
-Author: The H2O.ai team
-Maintainer: The H2O.ai team
+Authors@R: c(person("The H2O.ai team", role = c("aut", "cre", "cph"), email = "tomk@0xdata.com"))
 Description: Standalone R DESCRIPTION file which defines R dependencies for
   h2o-3 java project build and tests.
 License: Apache License (== 2.0)
