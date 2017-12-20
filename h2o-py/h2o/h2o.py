@@ -425,7 +425,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
     Also see :func:`import_sql_select`.
-    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL
+    Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Support for Oracle 12g and Microsoft SQL
     Server is forthcoming.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
