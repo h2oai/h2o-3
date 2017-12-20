@@ -178,8 +178,8 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_select.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Support for Oracle 12g 
+#' and Microsoft SQL Server is forthcoming.
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -222,8 +222,8 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
 #'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
 #' Also see h2o.import_sql_table.
-#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
-#  is forthcoming.   
+#' Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Support for Oracle 12g and 
+#' Microsoft SQL Server is forthcoming.   
 #'
 #' For example, 
 #'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
