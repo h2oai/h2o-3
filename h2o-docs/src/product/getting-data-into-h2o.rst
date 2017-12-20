@@ -190,7 +190,7 @@ core-site.xml must be configured for at least the following properties (class, p
 JDBC Databases
 ~~~~~~~~~~~~~~
 
-Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
+Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
 
 Refer to the following articles for examples about using JDBC data sources with H2O.
 

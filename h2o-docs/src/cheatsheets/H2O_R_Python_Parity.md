@@ -196,7 +196,7 @@ Similarly, model accessor methods are members of their respective classes.
 |`h2o.getModel` |`get_model` | Returns the specified model. |
 |`h2o.grid` | `H2OGridSearch` | Provides a set of functions to launch a grid search of a hyper-parameter space for a model get its results. |
 |`h2o.importFile`|`import_file`| Imports files into an H2O cloud. The default behavior is to pass-through to the parse phase automatically.|
-|`h2o.import_sql_select` | `import_sql_select` | Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. |
+|`h2o.import_sql_select` | `import_sql_select` | Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. |
 |`h2o.import_sql_table` | `import_sql_table` | Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB.|
 |`h2o.init`|`h2o.init`| Initiates an H2O connection to the specified IP address and port.|
 |`h2o.logAndEcho`|`log_and_echo`| Sends a message to H2O for logging and/or debugging purposes. |
