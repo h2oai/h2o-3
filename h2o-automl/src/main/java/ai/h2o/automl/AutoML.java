@@ -318,8 +318,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-    if (null != this.leaderboardFrame)
-      this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+    this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
@@ -1214,6 +1214,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info();
 
+
+
+    // TODO: Look into adding optionally adding these back in
+    // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
+    // Commenting out for now
+
+    /*
     // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
     AutoML dummyAutoML = new AutoML();
     UserFeedback dummyUF = new UserFeedback(dummyAutoML);
@@ -1229,6 +1236,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     validationLeaderboard.addModels(this.leaderboard().getModelKeys());
     Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
+    */
 
     Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
 
