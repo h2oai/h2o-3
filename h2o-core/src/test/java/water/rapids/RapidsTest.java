@@ -619,6 +619,17 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test public void test_frameKeyStartsWithNumber() {
+    Frame fr = parse_test_file(Key.make("123STARTSWITHDIGITS"), "smalldata/logreg/prostate.csv");
+    try {
+      Val val = Rapids.exec("(cols_py 123STARTSWITHDIGITS 'ID')");
+      Assert.assertNotNull(val);
+      val.getFrame().delete();
+    } finally {
+      fr.delete();
+    }
+  }
+
   private static void astNumList_ok(String expr, double[] expected) {
     AstRoot res = Rapids.parse(expr);
     assertTrue(res instanceof AstNumList);

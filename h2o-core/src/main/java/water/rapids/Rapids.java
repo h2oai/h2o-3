@@ -1,5 +1,6 @@
 package water.rapids;
 
+import org.apache.commons.lang.math.NumberUtils;
 import water.H2O;
 import water.fvec.Frame;
 import water.rapids.ast.AstExec;
@@ -116,8 +117,8 @@ public class Rapids {
   // Set of characters that cannot appear inside a token
   private static Set<Character> invalidTokenCharacters = StringUtils.toCharacterSet("({[]}) \t\r\n\\\"\'");
 
-  // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
-  private static Set<Character> validNumberCharacters = StringUtils.toCharacterSet("0123456789.-+eEnNaA");
+  // Set of characters that cannot appear inside a number. Note that "NaN" or "nan" is also a number.
+  private static Set<Character> invalidNumberCharacters = StringUtils.toCharacterSet(":,({[]}) \t\r\n\\\"\'");
 
   // List of all "simple" backslash-escape sequences (i.e. those that are only 2-characters long, i.e. '\n')
   private static Map<Character, Character> simpleEscapeSequences =
@@ -150,13 +151,10 @@ public class Rapids {
       case '(':  return parseFunctionApplication();
       case '{':  return parseFunctionDefinition();
       case '[':  return parseList();
-      case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-        return new AstNum(number());
-      case '-':  return (peek(1)>='0' && peek(1) <='9') ? new AstNum(number()) : new AstId(token());
       case '\"': case '\'':
         return new AstStr(string());
       case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
-      default:  return new AstId(token());
+      default :  return parseNumberOrId();
     }
   }
 
@@ -275,6 +273,18 @@ public class Rapids {
     return new AstNumList(bases, strides, counts);
   }
 
+  private AstParameter parseNumberOrId() {
+    String t = token();
+    if (NumberUtils.isNumber(t))
+      try {
+        return new AstNum(parseDouble(t));
+      } catch (NumberFormatException e) {
+        throw new IllegalASTException(e.toString());
+      }
+    else
+      return new AstId(t);
+  }
+
   /**
    * Return the character at the current parse position (or `offset` chars in the future), without advancing it.
    * If there are no more characters to peek, return ' '.
@@ -309,8 +319,12 @@ public class Rapids {
    * NOTE: our notion of "token" is very permissive. We may want to restrict it in the future...
    */
   private String token() {
+    return token(invalidTokenCharacters);
+  }
+
+  private String token(Set<Character> invalidCharacters) {
     int start = _x;
-    while (!invalidTokenCharacters.contains(peek(0))) _x++;
+    while (!invalidCharacters.contains(peek(0))) _x++;
     if (start == _x) throw new IllegalASTException("Missing token");
     return _str.substring(start, _x);
   }
@@ -319,10 +333,10 @@ public class Rapids {
    * Parse a number from the token stream.
    */
   private double number() {
-    int start = _x;
-    while (validNumberCharacters.contains(peek(0))) _x++;
-    if (start == _x) throw new IllegalASTException("Missing a number");
-    String s = _str.substring(start, _x);
+    return parseDouble(token(invalidNumberCharacters));
+  }
+
+  private double parseDouble(String s) {
     if (s.toLowerCase().equals("nan")) return Double.NaN;
     try {
       return Double.valueOf(s);
