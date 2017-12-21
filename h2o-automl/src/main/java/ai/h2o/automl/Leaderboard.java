@@ -121,6 +121,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
+
     if (null != this.leaderboardFrame) {
       this.leaderboardFrameChecksum = leaderboardFrame.checksum();
     } else {
@@ -130,8 +131,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.sort_metric = "auc";
     this.other_metrics = new String[] { "logloss" };
     this.sort_decreasing = true;
-
-    DKV.put(this);
   }
 
   public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
@@ -149,7 +148,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return exists;
     }
 
-    return new Leaderboard(project_name, userFeedback, leaderboardFrame);
+    Leaderboard newLeaderboard = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+    DKV.put(newLeaderboard);
+    return newLeaderboard;
   }
 
   // satisfy typing for job return type...
@@ -218,7 +219,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard updating) {
-        if (updating == null) updating = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+        if (updating == null) {
+          Log.err("trying to update null leaderboard!");
+          throw new H2OIllegalArgumentException("Trying to update a null leaderboard.");
+        }
 
         final Key<Model>[] oldModels = updating.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -575,7 +579,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
         "sort_metrics needs to be always not-null for non-empty array!";
-    
+
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
@@ -584,7 +588,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metric),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "-");
@@ -600,7 +604,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metric),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "#");
@@ -608,7 +612,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metric),
               Leaderboard.colTypesRegression,
               Leaderboard.colFormatsRegression,
               "#");

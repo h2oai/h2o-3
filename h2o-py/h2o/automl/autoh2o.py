@@ -63,7 +63,8 @@ class H2OAutoML(object):
                  stopping_tolerance=None,
                  stopping_rounds=3,
                  seed=None,
-                 project_name=None):
+                 project_name=None,
+                 exclude_algos=None):
 
         # Check if H2O jar contains AutoML
         try:
@@ -81,6 +82,12 @@ class H2OAutoML(object):
             'stopping_criteria': {
                 'max_runtime_secs': max_runtime_secs,
             }
+        }
+
+        # Make bare minimum build_models
+        self.build_models = {
+            'exclude_algos': None
+            #                [ "GLM", "XRT", "DRF", "GBM", "XGBoost", "DeepLearning", "DeepWater", "StackedEnsemble"]
         }
 
         # nfolds must be an non-negative integer and not equal to 1:
@@ -129,7 +136,12 @@ class H2OAutoML(object):
             self.project_name = project_name
         else:
             self.project_name = None
-    
+
+        if exclude_algos is not None:
+            assert_is_type(exclude_algos,list)
+            for elem in exclude_algos:
+                assert_is_type(elem,str)
+            self.build_models['exclude_algos'] = exclude_algos
 
         self._job = None
         self._automl_key = None
@@ -269,6 +281,7 @@ class H2OAutoML(object):
         # NOTE: if the user hasn't specified some block of parameters don't send them!
         # This lets the back end use the defaults.
         automl_build_params['build_control'] = self.build_control
+        automl_build_params['build_models']  = self.build_models
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
@@ -295,7 +308,7 @@ class H2OAutoML(object):
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch H2OAutoML
+        >>> # Launch an H2OAutoML run
         >>> aml.train(y=y, training_frame=training_frame)
         >>> # Predict with #1 model from AutoML Leaderboard
         >>> aml.predict(test_data)
@@ -317,6 +330,7 @@ class H2OAutoML(object):
             self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
+
         self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())[1:]
         return self._leader_id is not None
 

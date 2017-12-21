@@ -52,7 +52,8 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_tolerance = NULL,
                        stopping_rounds = 3,
                        seed = NULL,
-                       project_name = NULL)
+                       project_name = NULL,
+                       exclude_algos = NULL)
 {
 
   tryCatch({
@@ -158,7 +159,13 @@ h2o.automl <- function(x, y, training_frame,
   } else {
     build_control$project_name <- project_name
   }
-  
+
+  if (! is.null(exclude_algos)) {
+      build_models <- list(exclude_algos = exclude_algos)
+  } else {
+      build_models <- list()
+  }
+
   # Update build_control with nfolds
   if (nfolds < 0) {
     stop("nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
@@ -169,7 +176,11 @@ h2o.automl <- function(x, y, training_frame,
   build_control$nfolds <- nfolds
   
   # Create the parameter list to POST to the AutoMLBuilder 
-  params <- list(input_spec = input_spec, build_control = build_control)
+  if (length(build_models) == 0) {
+      params <- list(input_spec = input_spec, build_control = build_control)
+  } else {
+      params <- list(input_spec = input_spec, build_control = build_control, build_models = build_models)
+  }
 
   # POST call to AutoMLBuilder
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
@@ -179,11 +190,6 @@ h2o.automl <- function(x, y, training_frame,
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
-
-  print("leaderboard: ")
-  print(leaderboard)
-  print("dim(leaderboard): ")
-  print(dim(leaderboard))
 
   row.names(leaderboard) <- seq(nrow(leaderboard))
 

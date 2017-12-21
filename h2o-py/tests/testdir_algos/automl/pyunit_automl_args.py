@@ -24,8 +24,15 @@ def prostate_automl_args():
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
+    print("Check that exclude_algos implementation is complete, and empty leaderboard works")
+    aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["GLM", "XRT", "DRF", "GBM", "DeepLearning", "DeepWater", "StackedEnsemble"])
+    aml.train(y="CAPSULE", training_frame=train)
+    print("Check leaderboard to ensure that it only has a header")
+    print(aml.leaderboard)
+    assert aml.leaderboard.nrows == 0, "with all algos excluded, leaderboard is not empty"
+
     print("Check arguments to H2OAutoML class")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["DeepLearning", "DeepWater"])
     aml.train(y="CAPSULE", training_frame=train)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml0", "Project name is not set"
@@ -111,7 +118,7 @@ def prostate_automl_args():
     print("Check predictions")
     print(aml.predict(train))
 
-    # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
+    # TODO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
@@ -132,12 +139,12 @@ def prostate_automl_args():
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
 
-    # TO DO
+    # TODO
     #print("Check that exactly two ensembles are trained")
     #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
     #aml.train(y="CAPSULE", training_frame=train)
 
-    # TO DO
+    # TODO
     # Add a test that checks fold_column like in runit
 
 

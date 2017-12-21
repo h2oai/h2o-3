@@ -7,6 +7,7 @@ import hex.ModelBuilder;
 import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
 import hex.deepwater.DeepWater;
+import hex.deepwater.DeepWaterModel;
 import hex.deepwater.DeepWaterParameters;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
@@ -16,7 +17,6 @@ import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
-import hex.deepwater.DeepWaterModel;
 import water.*;
 import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
@@ -27,6 +27,7 @@ import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -82,12 +83,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private FrameMetadata frameMetadata;           // metadata for trainingFrame
 
-  // TODO: remove dead code
   private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
   private boolean isClassification;
 
   private Date startTime;
-  static private Date lastStartTime; // protect against two runs with the same second in the timestamp
+  private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
 
@@ -103,13 +103,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
 
-  private static List<String> skipAlgosList = new ArrayList();
+  private String[] skipAlgosList = new String[0];
 
 
   // TODO: UGH: this should be dynamic, and it's easy to make it so
   // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
   public enum algo {
-    GLM, XRT, DRF, GBM, XGBoost, DeepLearning, DeepWater;
+    GLM, XRT, DRF, GBM, XGBoost, DeepLearning, DeepWater, StackedEnsemble;
   }
 
   public AutoML() {
@@ -644,7 +644,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return the started hyperparameter search job
    */
   public Job<Grid> hyperparameterSearch(Key<Grid> gridKey, String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
-    if (skipAlgosList.contains(algoName)) {
+    if (ArrayUtils.contains(skipAlgosList, algoName)) {
       userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + algoName + " hyperparameter search");
       return null;
     }
@@ -740,7 +740,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private boolean exceededSearchLimits(String whatWeAreSkipping) {
-    if (skipAlgosList.contains(whatWeAreSkipping)) {
+    if (ArrayUtils.contains(skipAlgosList, whatWeAreSkipping)) {
       userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + whatWeAreSkipping + " build");
       return true;
     }
@@ -1057,9 +1057,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public void learn() {
     userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
 
+    if (buildSpec.build_models.exclude_algos != null)
+      for (AutoML.algo algo : buildSpec.build_models.exclude_algos)
+        skipAlgosList = ArrayUtils.append(skipAlgosList, algo.toString());
 
     // This is useful during debugging.
-    skipAlgosList.addAll(Arrays.asList(new String[] {
+    skipAlgosList = ArrayUtils.append(skipAlgosList, new String[] {
             /*
             "GLM",
             "XRT",
@@ -1067,16 +1070,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             "GBM",
             "XGBoost",
             "DeepLearning",
-            "DeepWater"
+            "DeepWater",
+            "StackedEnsemble"
              */
-            }));
+            });
 
     // Inform the user about skipped algos.
     // Note: to make the keys short we use "DL" for the "DeepLearning" searches:
     for (String skippedAlgo : skipAlgosList)
       userFeedback.info(Stage.ModelTraining, "Disabling algo: " + skippedAlgo + " as requested by the user.");
-    if (skipAlgosList.contains("DeepLearning")) skipAlgosList.add("DL");
-    if (skipAlgosList.contains("GBM")) skipAlgosList.add("default GBMs");
+    if (ArrayUtils.contains(skipAlgosList, "DeepLearning"))
+      skipAlgosList = ArrayUtils.append(skipAlgosList,"DL");
+    if (ArrayUtils.contains(skipAlgosList, "GBM"))
+      skipAlgosList = ArrayUtils.append(skipAlgosList, "default GBMs");
 
     ///////////////////////////////////////////////////////////
     // gather initial frame metadata and guess the problem type
@@ -1184,9 +1190,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     Model[] allModels = leaderboard().getModels();
 
-    if (allModels.length == 0){
-      this.job.update(50, "No models built; StackedEnsemble build skipped");
-      userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts.");
+    if (allModels.length == 0) {
+      this.job.update(50, "No models built; StackedEnsemble builds skipped");
+      userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
+    } else if (ArrayUtils.contains(skipAlgosList, "StackedEnsemble")) {
+      this.job.update(50, "StackedEnsemble builds skipped");
+      userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
     } else {
       Model m = allModels[0];
       // If nfolds == 0, then skip the Stacked Ensemble
@@ -1231,7 +1240,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
         Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
-
       }
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
@@ -1283,10 +1291,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 lastStartTime.getHours() == startTime.getHours() &&
                 lastStartTime.getMinutes() == startTime.getMinutes() &&
                 lastStartTime.getSeconds() == startTime.getSeconds())
+/*
+          // Sleep is causing a deadlock; busy-wait instead.
           try {
-            Thread.sleep(1000);
+            Thread.currentThread().sleep(1000);
           }
-          catch (InterruptedException e) {}
+          catch (InterruptedException e) {
+          }
+*/
           startTime = new Date();
       }
       lastStartTime = startTime;

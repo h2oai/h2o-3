@@ -3,6 +3,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.Leaderboard;
 import ai.h2o.automl.UserFeedback;
+import water.DKV;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
@@ -68,13 +69,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
       leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame());
-    }
-    if (0 == leaderboard.getModelCount()) {
-      leaderboard.setMetricAndDirection("auc",new String[] {"logloss"}, true); // NOTE: this should never be used, so fake it
+      DKV.put(leaderboard);
     }
     this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
     this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
-    leaderboard.remove();
 
     UserFeedback userFeedback = autoML.userFeedback();
     if (null == userFeedback) {
