@@ -337,13 +337,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
-
+        _model._output._nTrainChunks = _train.anyVec().nChunks();
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
           _validPredsCache = Score.makePredictionCache(_model, vresponse());
         }
         _trainPredsCache = Score.makePredictionCache(_model, response());
-
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
         _rand = RandomUtils.getRNG(_parms._seed);

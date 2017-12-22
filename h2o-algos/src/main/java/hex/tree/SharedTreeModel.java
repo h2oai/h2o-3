@@ -121,7 +121,7 @@ public abstract class SharedTreeModel<
 
   @Override public ModelMetricsSupervised.MetricBuilderSupervised makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, setAUCWorkingBinSize(_parms.train()==null?1:_parms.train().anyVec().nChunks()));
+      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, setAUCWorkingBinSize(Math.max(1,_output._nTrainChunks)));
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
@@ -138,7 +138,8 @@ public abstract class SharedTreeModel<
     if (!(_parms instanceof GBMModel.GBMParameters)   // only care about GBMModel here
             || (numChunks <= 1)   // if no early stopping is needed and finalScoring is false
             || (_parms instanceof GBMModel.GBMParameters && _output._ntrees == 0)
-            || (_parms instanceof GBMModel.GBMParameters &&  (_parms._stopping_rounds<=0) && (_parms._ntrees>_output._ntrees)))
+            || (_parms instanceof GBMModel.GBMParameters &&  (_parms._stopping_rounds<=0)
+               && (((GBMModel.GBMParameters) _parms)._max_runtime_secs<=0) && (_parms._ntrees>_output._ntrees)))
       return AUC2.NBINS;  // don't care about reproducibility here
 
     int nBinsAUC2;
@@ -174,6 +175,7 @@ public abstract class SharedTreeModel<
 
     /** Number of trees actually in the model (as opposed to requested) */
     public int _ntrees;
+    public int _nTrainChunks; // number of training frame chunks
 
     /** More indepth tree stats */
     public final TreeStats _treeStats;
