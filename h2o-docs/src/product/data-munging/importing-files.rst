@@ -11,7 +11,12 @@ The ``importFolder`` (R)/``import_file`` (Python) function can be used to import
 **Notes**: 
 
 - All files that are specified to be included must have the same number and set of columns. 
-- The Python example below assumes that the H2O-3 GitHub repository has been cloned, and that the following command was run in the **h2o** folder to retrieve the **smalldata** datasets. 
+- When parsing a data file containing timestamps that do not include a timezone, the timestamps will be interpreted as UTC (GMT). You can override the parsing timezone using the following:
+
+  - R: ``h2o.setTimezone("America/Los Angeles")``
+  - Python: ``h2o.cluster().timezone = "America/Los Angeles"``
+
+- The Python example below assumes that the H2O-3 GitHub repository has been cloned, and that the following command was run in the **h2o-3** folder to retrieve the **smalldata** datasets. 
 
   :: 
 

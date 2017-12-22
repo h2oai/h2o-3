@@ -25,6 +25,9 @@
 #' will be relative to the start location of the H2O instance. The default
 #' behavior is to pass-through to the parse phase automatically.
 #'
+#' Note that when parsing a data file containing timestamps that do not include a timezone, the timestamps 
+#' will be interpreted as UTC (GMT). You can override the parsing timezone using \code{h2o.setTimezone}.
+#'
 #' \code{h2o.importHDFS} is deprecated. Instead, use \code{h2o.importFile}.
 #'
 #' @param path The complete URL or normalized file path of the file to be
