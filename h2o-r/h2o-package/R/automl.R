@@ -27,6 +27,7 @@
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
+#' @param exclude_algos List of character strings naming model algorithms to skip during the model-building phase.  An example use is exclude_algos = list("GLM", "DeepLearning", "XRT", "DRF"). Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that a
 #'          Stacked Ensemble will be trained for regression and binary classification problems only since multiclass stacking is not yet supported.
