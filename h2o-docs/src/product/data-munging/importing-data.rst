@@ -5,6 +5,11 @@ Unlike the `upload <uploading-data.html>`__ function, which is a push from the c
 
 Refer to the `Supported File Formats <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/getting-data-into-h2o.html#supported-file-formats>`__ topic to ensure that you are using a supported file type.
 
+**Note**: When parsing a data file containing timestamps that do not include a timezone, the timestamps will be interpreted as UTC (GMT). You can override the parsing timezone using the following:
+
+  - R: ``h2o.setTimezone("America/Los Angeles")``
+  - Python: ``h2o.cluster().timezone = "America/Los Angeles"``
+
 .. example-code::
    .. code-block:: r
 	

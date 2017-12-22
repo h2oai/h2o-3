@@ -4,7 +4,7 @@
 Data In H2O
 ===========
 
-A H2OFrame represents a 2D array of data where each column is uniformly typed.
+An H2OFrame represents a 2D array of data where each column is uniformly typed.
 
 The data may be local or it may be in an H2O cluster. The data are loaded from a CSV file
 or from a native Python data structure, and is either a Python client-relative file, a
@@ -23,26 +23,35 @@ H2O's parser supports data of various formats from multiple sources.
 The following formats are supported:
 
 * ARFF
-* CSV (data may delimited by any of the 128 ASCII characters)
+* CSV (data may delimited by any of the 128 ASCII characters; includes support for GZipped CSV)
 * SVMLight
 * XLS
 * XLSX
+* ORC (for Hadoop jobs; includes support for Hive files saved in ORC format)
+* Avro version 1.8.0 (without multifile parsing or column type modification)
+* Parquet
 
 
 The following data sources are supported:
 
- * NFS / Local File / List of Files
- * HDFS
- * URL
- * A Directory (with many data files inside at the *same* level -- no support for recursive import of data)
- * S3/S3N
- * Native Language Data Structure (c.f. the subsequent section)
+* NFS / Local File / List of Files
+* HDFS
+* URL
+* A Directory (with many data files inside at the *same* level -- no support for recursive import of data)
+* S3/S3N
+* Native Language Data Structure (c.f. the subsequent section)
 
-  .. code-block:: python
+.. code-block:: python
 
     >>> trainFrame = h2o.import_file(path="hdfs://192.168.1.10/user/data/data_test.csv")
     #or
     >>> trainFrame = h2o.import_file(path="~/data/data_test.csv")
+
+**Note**: When parsing a data file containing timestamps that do not include a timezone, the timestamps will be interpreted as UTC (GMT). You can override the parsing timezone using ``h2o.cluster().timezone``. For example:
+
+.. code-block:: python
+
+    h2o.cluster().timezone = "America/Los Angeles"
 
 Loading Data From A Python Object
 ---------------------------------

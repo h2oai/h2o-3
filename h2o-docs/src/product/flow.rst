@@ -655,15 +655,13 @@ To change the column type, select the drop-down list to the right of the column 
 -  String
 -  Invalid
 
-You can search for a column by entering it in the *Search by column
-name...* entry field above the first column name entry field. As you
-type, H2O displays the columns that match the specified search terms.
+**Note**: When parsing a data file containing timestamps that do not include a timezone, the timestamps will be interpreted as UTC (GMT). 
 
-**Note**: Only custom column names are searchable. Default column names
-cannot be searched.
+You can search for a column by entering it in the *Search by column name...* entry field above the first column name entry field. As you type, H2O displays the columns that match the specified search terms.
 
-To navigate the data preview, click the **<- Previous page** or **->
-Next page** buttons.
+**Note**: Only custom column names are searchable. Default column names cannot be searched.
+
+To navigate the data preview, click the **<- Previous page** or **-> Next page** buttons. 
 
 .. figure:: images/Flow_PageButtons.png
    :alt: Flow - Pagination buttons
