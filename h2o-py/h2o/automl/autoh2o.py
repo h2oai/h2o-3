@@ -36,6 +36,7 @@ class H2OAutoML(object):
       a project name will be auto-generated based on the training frame ID.  More models can be trained on an
       existing AutoML project by specifying the same project name in muliple calls to the AutoML function
       (as long as the same training frame is used in subsequent runs).
+    :param exclude_algos: List of character strings naming model algorithms to skip during the model-building phase.  An example use is exclude_algos = ["GLM", "DeepLearning", "XRT", "DRF"]. Defaults to None, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
 
     :examples:
     >>> import h2o
