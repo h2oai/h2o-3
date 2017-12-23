@@ -13,6 +13,7 @@ import gc
 import math
 import sys
 import time
+import numbers
 
 import tabulate
 
@@ -78,7 +79,7 @@ class ExprNode(object):
     # Flag to control application of local expression tree optimizations
     __ENABLE_EXPR_OPTIMIZATIONS__ = True
 
-    def __init__(self, op="", *args):
+    def __init__(self, op="", *args):      
         # assert isinstance(op, str), op
         self._op = op  # Base opcode string
         self._children = tuple(
@@ -168,6 +169,9 @@ class ExprNode(object):
                 return "[%d:%s:%d]" % (start, str((stop - start + step - 1) // step), step)
         if isinstance(arg, ModelBase):
             return arg.model_id
+        # Number representation without Py2 L suffix enforced
+        if isinstance(arg, numbers.Integral):
+            return repr2(arg).strip('L')
         return repr2(arg)
 
     def __del__(self):
