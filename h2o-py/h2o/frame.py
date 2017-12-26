@@ -1167,7 +1167,10 @@ class H2OFrame(object):
         :returns: An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
         """
         if is_type(item, list, tuple, set):
-            return functools.reduce(H2OFrame.__or__, (self == i for i in item))
+            if self.ncols == 1 and (self.type(0) == 'str' or self.type(0) == 'enum'):
+                return self.match(item)
+            else:
+                return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
             return self == item
 
