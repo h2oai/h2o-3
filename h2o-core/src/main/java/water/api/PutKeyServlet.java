@@ -33,7 +33,7 @@ public class PutKeyServlet extends HttpServlet {
     
     try {
       String destKey = paramDestinationKey(request, response);
-      Boolean overwrite = paramOverwrite(request, response);
+      Boolean overwrite = paramOverwrite(request, response, true);
       if (!validate(destKey, overwrite, response)) {
         return;
       }
@@ -46,14 +46,18 @@ public class PutKeyServlet extends HttpServlet {
       //
       // Note: this is necessary since we are saving data into local K/V.
       //
-      byte[] ba = IOUtils.toByteArray(is);
-      // Save the binary data into K/V
       Key key = Key.make(destKey);
-      DKV.put(key, new Value(key, ba));
+      int bytesStored = -1;
+      if (DKV.get(key) == null || overwrite) {
+        byte[] ba = IOUtils.toByteArray(is);
+        // Save the binary data into K/V
+        DKV.put(key, new Value(key, ba));
+        bytesStored = ba.length;
+      }
       
       String responsePayload = "{ " +
           "\"destination_key\": \"" + destKey + "\", " +
-          "\"total_bytes\": " + ba.length + " " +
+          "\"total_bytes\": " + bytesStored + " " +
           "}\n";
       response.setContentType("application/json");
       response.getWriter().write(responsePayload);
@@ -69,9 +73,9 @@ public class PutKeyServlet extends HttpServlet {
     return keyName != null ? keyName : "func_" + Key.rand();
   }
 
-  private Boolean paramOverwrite(HttpServletRequest request, HttpServletResponse response) {
+  private Boolean paramOverwrite(HttpServletRequest request, HttpServletResponse response, boolean defaultValue) {
     String val = request.getParameter("overwrite");
-    return val != null ? Boolean.valueOf(val) : null;
+    return val != null ? Boolean.valueOf(val) : defaultValue;
   }
 
   private boolean validate(String destKey, Boolean overwrite, HttpServletResponse response) throws IOException {
