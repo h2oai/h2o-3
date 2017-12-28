@@ -28,7 +28,8 @@ try {
 
                 sh 'printenv'
 
-                stage('Checkout') {
+                def CHECKOUT_STAGE_NAME = 'Checkout'
+                stage(CHECKOUT_STAGE_NAME) {
                     dir(env.BUILD_NUMBER_DIR) {
                         deleteDir()
                         retry(5) {
@@ -45,21 +46,33 @@ try {
                         env.THIS_BUILD_GIT_HASH_LONG = sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
                         env.THIS_BUILD_GIT_HASH_SHORT = sh(script: 'git describe --always', returnStdout: true).trim()
 
+                        def commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+
+
                         insideDocker = load('scripts/jenkins/groovy/insideDocker.groovy')
                         def getChanges = load('scripts/jenkins/groovy/getChanges.groovy')
+                        def buildSummary = load('scripts/jenkins/groovy/buildSummary.groovy')
                         buildConfig = load('scripts/jenkins/groovy/buildConfig.groovy')
-                        buildConfig.initialize(this, 'MODE_RELEASE', env.CHANGE_TITLE, getChanges(), true)
+                        buildConfig.initialize(this, 'MODE_RELEASE', commitMessage, getChanges('.'), true, buildSummary)
+
+                        buildConfig.addStageSummary(this, CHECKOUT_STAGE_NAME)
+                        buildConfig.setStageDetails(this, CHECKOUT_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        buildConfig.markStageSuccessful(this, CHECKOUT_STAGE_NAME)
                     }
                 }
 
                 setReleaseJobProperties(buildConfig)
                 setReleaseJobDescription()
 
-                stage('Build') {
-                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
-                            printReleaseConfiguration(buildConfig)
-                            sh """
+                def BUILD_STAGE_NAME = 'Build'
+                stage(BUILD_STAGE_NAME) {
+                    try {
+                        buildConfig.addStageSummary(this, BUILD_STAGE_NAME)
+                        buildConfig.setStageDetails(this, BUILD_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                            withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                                printReleaseConfiguration(buildConfig)
+                                sh """
                                 # Log commands.
                                 set -x
                                 # Stop on error.
@@ -119,79 +132,104 @@ try {
                                 ./gradlew build -x test
                                 ./gradlew buildH2oDevDist
                             """
+                            }
                         }
+                        buildConfig.markStageSuccessful(this, BUILD_STAGE_NAME)
+                    } catch (Exception e) {
+                        buildConfig.markStageFailed(this, BUILD_STAGE_NAME)
+                        throw e
                     }
                 }
 
                 env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
                 env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
 
-                // FIXME pushing git tags won't work on mr-0xb4
-//                stage('Create Git Tag') {
-//                    sh """
-//                        cd ${env.BUILD_NUMBER_DIR}
-//                        git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
-//                        git push --tags
-//                    """
+//                // FIXME pushing git tags won't work on mr-0xb4
+//                def TAG_STAGE_NAME = 'Create Git Tag'
+//                stage(TAG_STAGE_NAME) {
+//                    try {
+//                        buildConfig.addStageSummary(this, TAG_STAGE_NAME)
+//                        buildConfig.setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+//                        sh """
+//                            cd ${env.BUILD_NUMBER_DIR}
+//                            git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${
+//                                env.BRANCH_NAME
+//                            } build_number ${env.PROJECT_VERSION}"
+//                            git push --tags
+//                        """
+//                        buildConfig.markStageSuccessful(this, TAG_STAGE_NAME)
+//                    } catch (Exception e) {
+//                        buildConfig.markStageFailed(this, TAG_STAGE_NAME)
+//                        throw e
+//                    }
 //                }
 
-                stage('Publish to S3') {
-                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                        sh """
-                            cd ${env.BUILD_NUMBER_DIR}
-
-                            # Publish the output to S3.
-                            s3cmd --rexclude='target/maven' --acl-public sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
-
-                            # This is really awful.  This old version of s3cmd does not set Content-Encoding metadata in S3.
-                            # The newer version of s3cmd sets the Content-Encoding to UTF-8 and gradle fails.
-                            # Alternately, we could strip off the Content-Encoding metadata tag for every file underneath maven.
-
-                            # Puts latest R pacakge of h2o-3 into latest_R dir on s3
-                            s3cmd del ${env.S3_ROOT}/latest_stable_R/h2o_*.tar.gz
-                            s3cmd --acl-public -r put target/R/ ${env.S3_ROOT}/latest_stable_R/
-
-                            # Puts latest Py pacakge of h2o-3 into latest_Py dir on s3
-                            s3cmd del ${env.S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
-                            s3cmd --acl-public -r put target/Python/ ${env.S3_ROOT}/latest_stable_Py/
-
-                            s3cmd --acl-public sync target/maven/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
-                            s3cmd --acl-public put target/sha256.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
-
-                            echo EXPLICITLY SET MIME TYPES AS NEEDED
-                            list_of_html_files=`find target -name '*.html' | sed 's/target\\///g'`
-                            echo \${list_of_html_files}
-                            for f in \${list_of_html_files}
-                            do
-                                s3cmd --acl-public --mime-type text/html put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
-                            done
-
-                            list_of_js_files=`find target -name '*.js' | sed 's/target\\///g'`
-                            echo \${list_of_js_files}
-                            for f in \${list_of_js_files}
-                            do
-                                s3cmd --acl-public --mime-type text/javascript put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
-                            done
-
-                            list_of_css_files=`find target -name '*.css' | sed 's/target\\///g'`
-                            echo \${list_of_css_files}
-                            for f in \${list_of_css_files}
-                            do
-                                s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
-                            done
-
-                            echo UPDATE LATEST POINTER
-                            tmpdir=./buildh2odev.tmp
-                            mkdir -p \${tmpdir}
-                            echo ${currentBuild.number} > \${tmpdir}/latest
-                            echo "<head>" > \${tmpdir}/latest.html
-                            echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
-                            echo "</head>" >> \${tmpdir}/latest.html
-
-                            s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
-                            s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
-                            s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
-                        """
+                def PUBLISH_STAGE_NAME = 'Publish to S3'
+                stage(PUBLISH_STAGE_NAME) {
+                    try {
+                        buildConfig.addStageSummary(this, PUBLISH_STAGE_NAME)
+                        buildConfig.setStageDetails(this, PUBLISH_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}
+    
+                                # Publish the output to S3.
+                                s3cmd --rexclude='target/maven' --acl-public sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
+    
+                                # This is really awful.  This old version of s3cmd does not set Content-Encoding metadata in S3.
+                                # The newer version of s3cmd sets the Content-Encoding to UTF-8 and gradle fails.
+                                # Alternately, we could strip off the Content-Encoding metadata tag for every file underneath maven.
+    
+                                # Puts latest R pacakge of h2o-3 into latest_R dir on s3
+                                s3cmd del ${env.S3_ROOT}/latest_stable_R/h2o_*.tar.gz
+                                s3cmd --acl-public -r put target/R/ ${env.S3_ROOT}/latest_stable_R/
+    
+                                # Puts latest Py pacakge of h2o-3 into latest_Py dir on s3
+                                s3cmd del ${env.S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
+                                s3cmd --acl-public -r put target/Python/ ${env.S3_ROOT}/latest_stable_Py/
+    
+                                s3cmd --acl-public sync target/maven/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
+                                s3cmd --acl-public put target/sha256.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
+    
+                                echo EXPLICITLY SET MIME TYPES AS NEEDED
+                                list_of_html_files=`find target -name '*.html' | sed 's/target\\///g'`
+                                echo \${list_of_html_files}
+                                for f in \${list_of_html_files}
+                                do
+                                    s3cmd --acl-public --mime-type text/html put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                done
+    
+                                list_of_js_files=`find target -name '*.js' | sed 's/target\\///g'`
+                                echo \${list_of_js_files}
+                                for f in \${list_of_js_files}
+                                do
+                                    s3cmd --acl-public --mime-type text/javascript put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                done
+    
+                                list_of_css_files=`find target -name '*.css' | sed 's/target\\///g'`
+                                echo \${list_of_css_files}
+                                for f in \${list_of_css_files}
+                                do
+                                    s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                done
+    
+                                echo UPDATE LATEST POINTER
+                                tmpdir=./buildh2odev.tmp
+                                mkdir -p \${tmpdir}
+                                echo ${currentBuild.number} > \${tmpdir}/latest
+                                echo "<head>" > \${tmpdir}/latest.html
+                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
+                                echo "</head>" >> \${tmpdir}/latest.html
+    
+                                s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
+                            """
+                        }
+                        buildConfig.markStageSuccessful(this, PUBLISH_STAGE_NAME)
+                    } catch (Exception e) {
+                        buildConfig.markStageFailed(this, PUBLISH_STAGE_NAME)
+                        throw e
                     }
                 }
 
@@ -200,39 +238,57 @@ try {
 
                     if (params.UPLOAD_PYPI) {
                         // create and upload PyPI package
-                        stage('Upload to PyPI') {
-                            withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
-                                insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                    sh """
-                                        cd ${env.BUILD_NUMBER_DIR}/h2o-py
-                                        python setup.py sdist
-                                        
-                                        if [ "\$TEST_RELEASE" = true ]; then
-                                            echo '****** WARNING! Upload to PyPI suppressed ******'
-                                        else
-                                            echo '****** Upload to PyPI ******'
-                                            # FIXME
-                                            # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
-                                        fi
-                                    """
+                        def UPLOAD_TO_PYPI_STAGE_NAME = 'Upload to PyPI'
+                        stage(UPLOAD_TO_PYPI_STAGE_NAME) {
+                            try {
+                                buildConfig.addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                buildConfig.setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                        sh """
+                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py
+                                            python setup.py sdist
+                                            
+                                            if [ "\$TEST_RELEASE" = true ]; then
+                                                echo '****** WARNING! Upload to PyPI suppressed ******'
+                                            else
+                                                echo '****** Upload to PyPI ******'
+                                                # FIXME
+                                                # twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                            fi
+                                        """
+                                    }
                                 }
+                                buildConfig.markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                            } catch (Exception e) {
+                                buildConfig.markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                throw e
                             }
                         }
                         // check that pip package for each Python version reports correct H2O version
                         if (!params.TEST_RELEASE) {
                             for (pyVersion in buildConfig.PYTHON_VERSIONS) {
-                                stage("Check Py${pyVersion} PyPI Package") {
-                                    insideDocker(["PYTHON_VERSION=${pyVersion}"], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                        echo "Check PyPI package for Python ${pyVersion}"
-                                        sh """
-                                        export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-                                        echo "Activating Python ${env.PYTHON_VERSION}"
-                                        . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-
-                                        pip install h2o
-                                        python --version
-                                        python h2o_test.py
-                                    """
+                                def checkPyPIStageName = "Check Py${pyVersion} PyPI Package"
+                                stage(checkPyPIStageName) {
+                                    try {
+                                        buildConfig.addStageSummary(this, checkPyPIStageName)
+                                        buildConfig.setStageDetails(this, checkPyPIStageName, env.NODE_NAME, env.WORKSPACE)
+                                        insideDocker(["PYTHON_VERSION=${pyVersion}"], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                            echo "Check PyPI package for Python ${pyVersion}"
+                                            sh """
+                                            export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+                                            echo "Activating Python ${env.PYTHON_VERSION}"
+                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+    
+                                            pip install h2o
+                                            python --version
+                                            python h2o_test.py
+                                        """
+                                        }
+                                        buildConfig.markStageSuccessful(this, checkPyPIStageName)
+                                    } catch (Exception e) {
+                                        buildConfig.markStageFailed(this, checkPyPIStageName)
+                                        throw e
                                     }
                                 }
                             }
@@ -244,37 +300,44 @@ try {
                     if (params.UPLOAD_CONDA) {
                         // build for all Python versions
                         for (pyVersion in buildConfig.PYTHON_VERSIONS) {
-                            stage("Upload Py${pyVersion} to Conda") {
+                            def uploadToCondaStageName = "Upload Py${pyVersion} to Conda"
+                            stage(uploadToCondaStageName) {
                                 withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
-                                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                        sh """
-                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py/conda
-                                            # Create conda package for current platform
-                                            conda config --append channels conda-forge
-                                            conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
-                                            # Get name of the package
-                                            CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
-                                            PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
-                                            # Convert conda package for all other platforms
-                                            conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
-                                            
-                                            if [ "\$TEST_RELEASE" = true ]; then
-                                                echo '****** WARNING! Upload to Conda suppressed ******'
-                                            else
-                                                echo '****** Upload to Conda ******'
-                                                # Right now packages for all platforms are in the current directory
-                                                # upload all distribution packages
-                                                # FIXME
-                                                # anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
-                                                # anaconda upload osx-64/\${PKG_NAME}
-                                                # anaconda upload linux-32/\${PKG_NAME}
-                                                # anaconda upload linux-64/\${PKG_NAME}
-                                                # anaconda upload win-32/\${PKG_NAME}
-                                                # anaconda upload win-64/\${PKG_NAME}
-                                            fi
-
-                                            
-                                        """
+                                    buildConfig.addStageSummary(this, uploadToCondaStageName)
+                                    buildConfig.setStageDetails(this, uploadToCondaStageName, env.NODE_NAME, env.WORKSPACE)
+                                    try {
+                                        insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                            sh """
+                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/conda
+                                                # Create conda package for current platform
+                                                conda config --append channels conda-forge
+                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
+                                                # Get name of the package
+                                                CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
+                                                PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
+                                                # Convert conda package for all other platforms
+                                                conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+                                                
+                                                if [ "\$TEST_RELEASE" = true ]; then
+                                                    echo '****** WARNING! Upload to Conda suppressed ******'
+                                                else
+                                                    echo '****** Upload to Conda ******'
+                                                    # Right now packages for all platforms are in the current directory
+                                                    # upload all distribution packages
+                                                    anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                                    # FIXME
+                                                    # anaconda upload osx-64/\${PKG_NAME}
+                                                    # anaconda upload linux-32/\${PKG_NAME}
+                                                    # anaconda upload linux-64/\${PKG_NAME}
+                                                    # anaconda upload win-32/\${PKG_NAME}
+                                                    # anaconda upload win-64/\${PKG_NAME}
+                                                fi 
+                                            """
+                                        }
+                                        buildConfig.markStageSuccessful(this, uploadToCondaStageName)
+                                    } catch (Exception e) {
+                                        buildConfig.markStageFailed(this, uploadToCondaStageName)
+                                        throw e
                                     }
                                 }
                             }
@@ -282,20 +345,29 @@ try {
                         // check that Conda package for each Python version reports correct H2O version
                         if (!params.TEST_RELEASE) {
                             for (pyVersion in buildConfig.PYTHON_VERSIONS) {
-                                stage("Check Py${pyVersion} Conda Package") {
-                                    insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
-                                        echo "Check Conda package for Python ${pyVersion}"
-                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
-                                        sh """
-                                        bash -c \"\"\"
-                                            source activate py${pyVersion}
-                                            conda config --append channels conda-forge
-
-                                            conda install -y -c h2oai h2o
-                                            python --version
-                                            python h2o_test.py
-                                        \"\"\"
-                                    """
+                                def checkCondaStageName = "Check Py${pyVersion} Conda Package"
+                                stage(checkCondaStageName) {
+                                    buildConfig.addStageSummary(this, checkCondaStageName)
+                                    buildConfig.setStageDetails(this, checkCondaStageName, env.NODE_NAME, env.WORKSPACE)
+                                    try {
+                                        insideDocker([], buildConfig.DEFAULT_IMAGE, buildConfig.DOCKER_REGISTRY, 2, 'HOURS') {
+                                            echo "Check Conda package for Python ${pyVersion}"
+                                            sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
+                                            sh """
+                                                bash -c \"\"\"
+                                                    source activate py${pyVersion}
+                                                    conda config --append channels conda-forge
+        
+                                                    conda install -y -c h2oai h2o
+                                                    python --version
+                                                    python h2o_test.py
+                                                \"\"\"
+                                            """
+                                        }
+                                        buildConfig.markStageSuccessful(this, checkCondaStageName)
+                                    } catch (Exception e) {
+                                        buildConfig.markStageFailed(this, checkCondaStageName)
+                                        throw e
                                     }
                                 }
                             }
@@ -330,10 +402,10 @@ private setReleaseJobProperties(buildConfig) {
     def jobProperties = [
         disableConcurrentBuilds(),
         parameters([
-            booleanParam(defaultValue: true, description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
-            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to Nexus', name: 'UPLOAD_NEXUS'),
-            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to PyPI', name: 'UPLOAD_PYPI'),
-            booleanParam(defaultValue: false, description: 'If set and building rel-* branch, publish to Conda', name: 'UPLOAD_CONDA')
+            booleanParam(defaultValue: false, description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: true, description: 'If set and building rel-* branch, publish to Nexus', name: 'UPLOAD_NEXUS'),
+            booleanParam(defaultValue: true, description: 'If set and building rel-* branch, publish to PyPI', name: 'UPLOAD_PYPI'),
+            booleanParam(defaultValue: true, description: 'If set and building rel-* branch, publish to Conda', name: 'UPLOAD_CONDA')
         ])
     ]
 
@@ -414,7 +486,7 @@ private getRelevantRecipients(result, helpers) {
         if (env.NIGHTLY_BUILD) {
             return RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
         }
-        return RELEASE_ALWAYS_RECIPIENTS\
+        return RELEASE_ALWAYS_RECIPIENTS
     }
     if (env.NIGHTLY_BUILD) {
         return RELEASE_NIGHTLY_FAILURE_RECIPIENTS
