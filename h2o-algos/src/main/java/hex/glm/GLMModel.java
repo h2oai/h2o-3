@@ -846,12 +846,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double l = mins[0];
         double u = maxs[0];
         if(!(l<u))
-          throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values");
+          throw new IllegalArgumentException("quasibinomial family expects response to have two distinct values");
         for(int i = 0; i < mins.length; ++i){
           if((mins[i]-l)*(mins[i]-u) != 0)
-            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+            throw new IllegalArgumentException("quasibinomial family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
           if((maxs[i]-l)*(maxs[i]-u) != 0)
-            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+            throw new IllegalArgumentException("quasibinomial family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
         }
         domains[domains.length-1] = new String[]{Double.toString(l),Double.toString(u)};
       }
