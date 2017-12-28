@@ -2718,7 +2718,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testDeviances() {
     for (DistributionFamily dist : DistributionFamily.values()) {
-      if (dist == modified_huber) continue;
+      if (dist == modified_huber || dist == quasibinomial) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
@@ -3097,6 +3097,86 @@ public class GBMTest extends TestUtil {
         model.delete();
       }
     }
+  }
+
+  // PUBDEV-3482
+  @Test public void testQuasibinomial(){
+    // test it behaves like binomial on binary data
+    GBMModel model = null;
+    GBMModel model2 = null;
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    // turn numeric response 0/1 into a categorical factor
+    Frame preds=null, preds2=null;
+    Vec r = fr.vec("CAPSULE").toCategoricalVec();
+    fr.remove("CAPSULE").remove();
+    fr.add("CAPSULE", r);
+    DKV.put(fr);
+
+    // same dataset, but keep numeric response 0/1
+    Frame fr2 = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+
+    try {
+      Scope.enter();
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._seed = 12345;
+      params._ntrees = 84;
+      params._nfolds = 3;
+      params._learn_rate = 0.01;
+      params._stopping_rounds = 10;
+      params._stopping_tolerance = 0;
+
+      // binomial - categorical response, optimize logloss
+      params._train = fr._key;
+      params._distribution = DistributionFamily.bernoulli;
+      params._stopping_metric = ScoreKeeper.StoppingMetric.logloss;
+      GBM gbm = new GBM(params);
+      model = gbm.trainModel().get();
+      preds = model.score(fr);
+
+      // quasibinomial - numeric response, minimize deviance (negative log-likelihood)
+      params._distribution = DistributionFamily.quasibinomial;
+      params._stopping_metric = ScoreKeeper.StoppingMetric.deviance;
+      params._train = fr2._key;
+      GBM gbm2 = new GBM(params);
+      model2 = gbm2.trainModel().get();
+      preds2 = model2.score(fr2);
+
+      Log.info(preds.toTwoDimTable());
+      Log.info(preds2.toTwoDimTable());
+
+      // compare training metrics of both models
+      assertEquals(
+          ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
+          ((ModelMetricsRegression)model2._output._training_metrics).residual_deviance() * 0.5, 1e-10);
+
+      // compare CV metrics of both models
+      assertEquals(
+          ((ModelMetricsBinomial)model._output._cross_validation_metrics).logloss(),
+          ((ModelMetricsRegression)model2._output._cross_validation_metrics).residual_deviance() * 0.5, 1e-10);
+
+      // compare predictions of both models
+      preds.remove(new int[]{0, 1});
+      preds.setNames(new String[]{"predict"});
+      assertTrue(isIdenticalUpToRelTolerance(preds, preds2, 1e-10));
+
+    } finally {
+      preds.delete();
+      preds2.delete();
+      fr.delete();
+      fr2.delete();
+      if(model != null){
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
+      if(model2 != null){
+        model2.deleteCrossValidationModels();
+        model2.delete();
+      }
+      Scope.exit();
+    }
+
   }
 
 }

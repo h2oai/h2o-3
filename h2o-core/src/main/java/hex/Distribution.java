@@ -67,7 +67,6 @@ public class Distribution extends Iced<Distribution> {
    * @return deviance
    */
   public double deviance(double w, double y, double f) {
-    f = link(f); //bring back f to link space
     switch (distribution) {
       case AUTO:
       case gaussian:
@@ -83,12 +82,23 @@ public class Distribution extends Iced<Distribution> {
       case quantile:
         return y > f ? w*quantileAlpha*(y-f) : w*(1-quantileAlpha)*(f-y);
       case bernoulli:
-        return -2 * w * (y * f - log(1 + exp(f)));
+        return -2 * w * (y * log(f) + (1 - y) * log(1 - f));
+      case quasibinomial:
+        if (y==f) return 0;
+        if (f > 1)
+          return - 2 * w * y * log(f);
+        else if (f < 0)
+          return - 2 * w * (1 - y) * log(1 - f);
+        else
+          return -2 * w * (y * log(f) + (1 - y) * log(1 - f));
       case poisson:
+        f = link(f); //bring back f to link space
         return -2 * w * (y * f - exp(f));
       case gamma:
+        f = link(f); //bring back f to link space
         return 2 * w * (y * exp(-f) + f);
       case tweedie:
+        f = link(f); //bring back f to link space
         assert (tweediePower > 1 && tweediePower < 2);
         return 2 * w * (Math.pow(y, 2 - tweediePower) / ((1 - tweediePower) * (2 - tweediePower)) - y * exp(f * (1 - tweediePower)) / (1 - tweediePower) + exp(f * (2 - tweediePower)) / (2 - tweediePower));
       case modified_huber:
@@ -118,6 +128,16 @@ public class Distribution extends Iced<Distribution> {
       case bernoulli:
       case poisson:
         return y - linkInv(f);
+      case quasibinomial:
+        double ff = linkInv(f);
+        if (ff==y)
+          return 0;
+        else if (ff > 1)
+          return y/ff;
+        else if (ff < 0)
+          return (1-y)/(ff-1);
+        else
+          return y - ff;
       case gamma:
         return y * exp(-f) - 1;
       case tweedie:
@@ -186,6 +206,7 @@ public class Distribution extends Iced<Distribution> {
       case AUTO:
       case gaussian:
       case bernoulli:
+      case quasibinomial:
       case multinomial:
         return w*(y-o);
       case poisson:
@@ -213,6 +234,7 @@ public class Distribution extends Iced<Distribution> {
       case AUTO:
       case gaussian:
       case bernoulli:
+      case quasibinomial:
       case multinomial:
       case gamma:
         return w;
@@ -239,6 +261,7 @@ public class Distribution extends Iced<Distribution> {
     switch (distribution) {
       case gaussian:
       case bernoulli:
+      case quasibinomial:
       case multinomial:
         return w * z;
       case poisson:
@@ -271,6 +294,7 @@ public class Distribution extends Iced<Distribution> {
       case gamma:
         return w;
       case bernoulli:
+      case quasibinomial:
         double ff = y-z;
         return w * ff*(1-ff);
       case multinomial:

@@ -98,6 +98,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
+    case quasibinomial:
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be numeric."));
+      break;
     case modified_huber:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", H2O.technote(2, "Modified Huber requires the response to be a 2-class categorical."));
@@ -169,7 +172,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
       DistributionFamily distr = _parms._distribution;
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
-      if (distr == DistributionFamily.bernoulli) {
+      if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())
           _initialPrediction = getInitialValueBernoulliOffset(_train);
       } else if (distr == DistributionFamily.laplace || distr == DistributionFamily.huber) {
