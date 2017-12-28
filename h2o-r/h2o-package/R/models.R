@@ -2938,7 +2938,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   pp.plot <- function(pp) {
     if(!all(is.na(pp))) {
       type = col_types[which(col_names == names(pp)[1])]
-      if(type == "enum") pp[,1] = as.factor( pp[,1])
+      if(type == "enum") pp[,1] = factor( pp[,1], levels=pp[,1])
       
       ## Plot one standard deviation above and below the mean
       if( plot_stddev) {
