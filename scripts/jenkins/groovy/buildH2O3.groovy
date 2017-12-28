@@ -12,7 +12,7 @@ def call(buildConfig) {
   
   withCustomCommitStates(scm, buildConfig.H2O_OPS_TOKEN, "${buildConfig.getGitHubCommitStateContext(stageName)}") {
     buildConfig.addStageSummary(this, stageName)
-    buildConfig.setStageNode(this, stageName, env.NODE_NAME)
+    buildConfig.setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
     try {
       // Launch docker container, build h2o-3, create test packages and archive artifacts
       def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"

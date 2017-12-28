@@ -232,8 +232,8 @@ class BuildConfig {
     updateJobDescription(context)
   }
 
-  void setStageNode(final context, final String stageName, final String nodeName) {
-    buildSummary.setStageNode(stageName, nodeName)
+  void setStageDetails(final context, final String stageName, final String nodeName, final String workspacePath) {
+    buildSummary.setStageDetails(stageName, nodeName, workspacePath)
     updateJobDescription(context)
   }
 
@@ -253,6 +253,7 @@ class BuildConfig {
           <tr style="background-color: ${stageResultToBgColor(stageSummary['result'])}">
             <td style="border: 1px solid black; padding: 0.2em 1em">${stageSummary['stageName']}</td>
             <td style="border: 1px solid black; padding: 0.2em 1em">${nodeName}</td>
+            <td style="border: 1px solid black; padding: 0.2em 1em">${stageSummary['workspacePath']}</td>
             <td style="border: 1px solid black; padding: 0.2em 1em">${result.capitalize()}</td>
           </tr>
         """
@@ -264,6 +265,7 @@ class BuildConfig {
             <tr>
               <th style="border: 1px solid black; padding: 0.5em">Name</th>
               <th style="border: 1px solid black; padding: 0.5em">Node</th>
+              <th style="border: 1px solid black; padding: 0.5em">Workspace</th>
               <th style="border: 1px solid black; padding: 0.5em">Result</th>
             </tr>
           </thead>

@@ -270,7 +270,7 @@ def invokeStage(buildConfig, body) {
   withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${buildConfig.getGitHubCommitStateContext(config.stageName)}") {
     try {
       node(config.nodeLabel) {
-        buildConfig.setStageNode(this, config.stageName, env.NODE_NAME)
+        buildConfig.setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
         echo "###### Unstash scripts. ######"
         unstash name: buildConfig.PIPELINE_SCRIPTS_STASH_NAME
 
