@@ -16,9 +16,10 @@ class BuildSummary {
         return summary
     }
 
-    def setStageNode(final String stageName, final String nodeName) {
+    def setStageDetails(final String stageName, final String nodeName, final String workspacePath) {
         def summary = findOrThrowForName(stageName)
         summary['nodeName'] = nodeName
+        summary['workspacePath'] = workspacePath
         return summary
     }
 
