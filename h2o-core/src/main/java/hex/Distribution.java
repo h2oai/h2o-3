@@ -81,9 +81,9 @@ public class Distribution extends Iced<Distribution> {
         return w * Math.abs(y-f); // same as wMAE
       case quantile:
         return y > f ? w*quantileAlpha*(y-f) : w*(1-quantileAlpha)*(f-y);
-      case bernoulli:
+      case bernoulli:  // unused
         return -2 * w * (y * log(f) + (1 - y) * log(1 - f));
-      case quasibinomial:
+      case quasibinomial:  // unused
         if (y==f) return 0;
         if (f > 1)
           return - 2 * w * y * log(f);

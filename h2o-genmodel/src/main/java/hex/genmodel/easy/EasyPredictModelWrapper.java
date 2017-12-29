@@ -393,6 +393,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
+    if (domainValues == null && m.getNumResponseClasses() == 2)
+      domainValues = new String[]{"0", "1"}; // quasibinomial
     p.label = domainValues[p.labelIndex];
     p.classProbabilities = new double[m.getNumResponseClasses()];
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);

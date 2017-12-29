@@ -1272,6 +1272,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
+      domains[0] = new String[]{"0", "1"};
+    }
 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains,
@@ -1309,6 +1312,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     //String[] names = makeScoringNames();
     String[][] domains = new String[1][];
     domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    if (domains[0] == null && _parms._distribution == DistributionFamily.quasibinomial) {
+      domains[0] = new String[]{"0", "1"};
+    }
 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null, CFuncRef.from(_parms._custom_metric_func)).doAll(adaptFrm);

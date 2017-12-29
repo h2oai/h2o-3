@@ -57,6 +57,8 @@ public class Score extends CMetricScoringTask<Score> {
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
     String[] domain = _kresp.get().domain();
+    if (domain == null && m._parms._distribution == DistributionFamily.quasibinomial)
+      domain = new String[]{"0", "1"};
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
@@ -155,7 +157,10 @@ public class Score extends CMetricScoringTask<Score> {
   }
 
   static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
-    ModelMetricsSupervised.MetricBuilderSupervised mb = model.makeMetricBuilder(resp.domain());
+    String[] domain = resp.domain();
+    if (domain == null && model._parms._distribution == DistributionFamily.quasibinomial)
+      domain = new String[]{"0", "1"};
+    ModelMetricsSupervised.MetricBuilderSupervised mb = model.makeMetricBuilder(domain);
     return mb.makePredictionCache(model, resp);
   }
 
