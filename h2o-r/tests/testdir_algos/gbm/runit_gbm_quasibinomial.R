@@ -71,48 +71,68 @@ test.GBM.quasi_binomial <- function() {
 
   l0 = LogLikelihood(beta,Y.tilde,X)
   l1 = LogLikelihood(beta_h2o_1,Y.tilde,X)
+  #l0 = LogLikelihood(beta,Y,X)
+  #l1 = LogLikelihood(beta_h2o_1,Y,X)
   expect_equal(mean(h2o_glm_pred), mean(Y.tilde), tolerance=1e-4)
   expect_equal(l0,l1,tolerance=1e-4)
 
+
+  # H2O GBM
+  hf1 = as.h2o(cbind(Y,X))
+  hf1['Y'] = as.factor(hf1['Y'])
+  m_gbm0 = h2o.gbm(training_frame = hf1, x=x, y=y, distribution='bernoulli', ntrees=1000,
+                  seed=12345, col_sample_rate=0.7, learn_rate=0.01, nfolds=10,
+                  stopping_rounds=10,stopping_tolerance=0)
+  # compute negative log-likelihood for h2o gbm predictions
+  h2o_gbm_pred0 = as.data.frame(h2o.predict(m_gbm0, as.h2o(X))[,3])
+  h2o_gbm_pred0[h2o_gbm_pred0==0] <- .Machine$double.neg.eps
+  h2o_gbm_pred0[h2o_gbm_pred0==1] <- 1-.Machine$double.neg.eps
+  l2 <- -sum( Y.tilde*log(h2o_gbm_pred0)  + (1-Y.tilde)*log(1-h2o_gbm_pred0) )
+  #l2 <- -sum( Y*log(h2o_gbm_pred0)  + (1-Y)*log(1-h2o_gbm_pred0) )
+
+  # H2O GBM, but with weighted rows (class 0: weight 1, class 1: weight 15.38)
   weight = Y.tilde
   weight[weight==0] <- 1
-  weight <- 1
   hf2 = as.h2o(cbind(Y,X,weight))
   hf2['Y'] = as.factor(hf2['Y'])
   print(hf2)
   m_gbm1 = h2o.gbm(training_frame = hf2, x=x, y=y, distribution='bernoulli', ntrees=1000,
-                  seed=1234, col_sample_rate=0.7, learn_rate=0.01, nfolds=10,
+                  seed=12345, col_sample_rate=0.7, learn_rate=0.01, nfolds=10,
                   weights_column="weight",
                   stopping_rounds=10,stopping_tolerance=0)
-  # compute log-likelihood for h2o gbm predictions
+  # compute negative log-likelihood for h2o gbm predictions
   h2o_gbm_pred1 = as.data.frame(h2o.predict(m_gbm1, as.h2o(X))[,3])
   h2o_gbm_pred1[h2o_gbm_pred1==0] <- .Machine$double.neg.eps
   h2o_gbm_pred1[h2o_gbm_pred1==1] <- 1-.Machine$double.neg.eps
-  l2 <- -sum( Y*log(h2o_gbm_pred1)  + (1-Y)*log(1-h2o_gbm_pred1)  )
+  l3 <- -sum( Y.tilde*log(h2o_gbm_pred1)  + (1-Y.tilde)*log(1-h2o_gbm_pred1) )
+  #l3 <- -sum( Y*log(h2o_gbm_pred1)  + (1-Y)*log(1-h2o_gbm_pred1) )
 
-  # fit h2o gbm model
+  # H2O GBM with quasibinomial
   m_gbm = h2o.gbm(training_frame = hf, x=x, y=y, distribution='quasibinomial', ntrees=1000,
-                  seed=1234, col_sample_rate=0.7, learn_rate=0.01, nfolds=10,
+                  seed=12345, col_sample_rate=0.7, learn_rate=0.01, nfolds=10,
                   stopping_rounds=10,stopping_tolerance=0)
 
-  # compute log-likelihood for h2o gbm predictions
-  h2o_gbm_pred = as.data.frame(h2o.predict(m_gbm, as.h2o(X)))
+  # compute negative log-likelihood for h2o gbm predictions
+  h2o_gbm_pred = as.data.frame(h2o.predict(m_gbm, as.h2o(X))[,3])
   h2o_gbm_pred[h2o_gbm_pred==0] <- .Machine$double.neg.eps
   h2o_gbm_pred[h2o_gbm_pred==1] <- 1-.Machine$double.neg.eps
-  l3 <- -sum( Y.tilde*log(h2o_gbm_pred)  + (1-Y.tilde)*log(1-h2o_gbm_pred)  )
+  l4 <- -sum( Y.tilde*log(h2o_gbm_pred)  + (1-Y.tilde)*log(1-h2o_gbm_pred)  )
+  #l4 <- -sum( Y*log(h2o_gbm_pred)  + (1-Y)*log(1-h2o_gbm_pred)  )
 
-  ls = c(l0,l1,l2,l3)
-  names(ls) <- c(colnames(betas), "H2O GBM weighted Bernoulli", "H2O GBM QuasiBinomial")
+  ls = c(l0,l1,l2,l3,l4)
+  names(ls) <- c(colnames(betas), "H2O GBM Bernoulli", "H2O GBM weighted Bernoulli", "H2O GBM QuasiBinomial")
   print(ls)
 
-  preds = cbind(h2o_gbm_pred1, h2o_gbm_pred, h2o_glm_pred, Y.tilde)
-  names(preds) <- c("weighted bernoulli", "quasibinomial", "glm", "Y")
+  preds = cbind(h2o_gbm_pred0, h2o_gbm_pred1, h2o_gbm_pred, h2o_glm_pred, Y.tilde)
+  names(preds) <- c("bernoulli", "weighted bernoulli", "quasibinomial", "glm", "Y")
   print(head(preds, 100))
   print(summary(preds))
 
-  expect_equal(mean(h2o_gbm_pred[,1]), mean(Y.tilde), tolerance=2.5e-3)  # distribution means match
-  expect_true(l0 > l3)  # should fit better than GLM (on training data)
-  expect_true(l2 > l3)  # should fit better than GBM bernoulli with class weights
+  expect_equal(mean(h2o_gbm_pred[,1]), mean(Y.tilde), tolerance=5e-3)  # distribution means match
+
+  expect_true(l4 < l1)  # quasibinomial should fit better than GLM
+  expect_true(l4 < l2)  # quasibinomial should fit better than bernoulli
+  expect_true(l4 < l3)  # quasibinomial should fit better than bernoulli with class weights
 }
 
 doTest("GBM Test: quasi binomial", test.GBM.quasi_binomial)

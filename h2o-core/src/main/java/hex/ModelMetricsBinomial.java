@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.utils.DistributionFamily;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
@@ -142,20 +143,32 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
       if(w == 0 || Double.isNaN(w)) return ds;
-      final int iact = (int)yact[0];
-      if( iact != 0 && iact != 1 ) return ds; // The actual is effectively a NaN
+      int iact = (int)yact[0];
+      boolean quasibinomial = (m!=null && m._parms._distribution == DistributionFamily.quasibinomial);
+      if (quasibinomial) {
+        if (yact[0] != 0)
+          iact = 1;  // actual response index needed for confusion matrix, AUC, etc.
+        _wY += w * yact[0];
+        _wYY += w * yact[0] * yact[0];
+        // Compute error
+        double err = yact[0] - ds[iact + 1];
+        _sumsqe += w * err * err;           // Squared error
+        // Compute negative loglikelihood loss, according to https://0xdata.atlassian.net/secure/attachment/30135/30135_TMLErare.pdf Appendix C
+        _logloss += - w * (yact[0] * Math.log(Math.max(1e-15, ds[2])) + (1-yact[0]) * Math.log(Math.max(1e-15, ds[1])));
+      } else {
+        if (iact != 0 && iact != 1) return ds; // The actual is effectively a NaN
+        _wY += w * iact;
+        _wYY += w * iact * iact;
+        // Compute error
+        double err = iact + 1 < ds.length ? 1 - ds[iact + 1] : 1;  // Error: distance from predicting ycls as 1.0
+        _sumsqe += w * err * err;           // Squared error
+        // Compute log loss
+        _logloss += w * MathUtils.logloss(err);
+      }
       _count++;
       _wcount += w;
-      _wY += w*iact;
-      _wYY += w*iact*iact;
-      // Compute error
-      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
-      _sumsqe += w*err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
-
-      // Compute log loss
-      _logloss += w*MathUtils.logloss(err);
-      _auc.perRow(ds[2],iact,w);
+      _auc.perRow(ds[2], iact, w);
       return ds;                // Flow coding
     }
 
