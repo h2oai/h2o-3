@@ -1,10 +1,11 @@
 package hex.schemas;
 
+import com.google.gson.JsonSyntaxException;
 import hex.Model;
 import hex.grid.Grid;
 import water.H2O;
 import water.Key;
-import water.api.*;
+import water.api.API;
 import water.api.schemas3.JobV3;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
@@ -59,13 +60,20 @@ public class GridSearchSchema<G extends Grid<MP>,
 
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
-      Map<String,Object> m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
-      // Convert lists and singletons into arrays
-      for (Map.Entry<String, Object> e : m.entrySet()) {
-        Object o = e.getValue();
-        Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+      Map<String, Object> m;
+      try {
+        m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
 
-        hyper_parameters.put(e.getKey(),o2);
+        // Convert lists and singletons into arrays
+        for (Map.Entry<String, Object> e : m.entrySet()) {
+          Object o = e.getValue();
+          Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+
+          hyper_parameters.put(e.getKey(),o2);
+        }
+      }
+      catch (JsonSyntaxException e) {
+        throw new H2OIllegalArgumentException("Can't parse the hyper_parameters dictionary; got error: " + e.getMessage() + " for raw value: " + parms.getProperty("hyper_parameters"));
       }
       parms.remove("hyper_parameters");
     }
