@@ -2,11 +2,13 @@ def call(buildConfig) {
 
   def MODE_PR_TESTING_CODE = -1
   def MODE_PR_CODE = 0
-  def MODE_MASTER_CODE = 1
-  def MODE_NIGHTLY_CODE = 2
+  def MODE_BENCHMARK_CODE = 1
+  def MODE_MASTER_CODE = 2
+  def MODE_NIGHTLY_CODE = 3
   def MODES = [
     [name: 'MODE_PR_TESTING', code: MODE_PR_TESTING_CODE],
     [name: 'MODE_PR', code: MODE_PR_CODE],
+    [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
@@ -127,6 +129,15 @@ def call(buildConfig) {
         (k['lang'] == buildConfig.LANG_JAVA)
   }
 
+  def BENCHMARK_STAGES = [
+    [
+      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', lang: buildConfig.LANG_NONE,
+      additionalTestPackages: [buildConfig.LANG_R], image: buildConfig.BENCHMARK_IMAGE,
+      nodeLabel: buildConfig.getBenchmarkNodeLabel(), model: 'gbm', makefilePath: BENCHMARK_MAKEFILE_PATH
+    ]
+  ]
+
   // Stages executed in addition to PR_STAGES after merge to master.
   def MASTER_STAGES = [
     [
@@ -148,14 +159,9 @@ def call(buildConfig) {
     [
       stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
       timeoutValue: 75, lang: buildConfig.LANG_JS
-    ],
-    [
-      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark', lang: buildConfig.LANG_NONE,
-      additionalTestPackages: [buildConfig.LANG_R], image: buildConfig.BENCHMARK_IMAGE,
-      nodeLabel: buildConfig.getBenchmarkNodeLabel(), model: 'gbm', makefilePath: BENCHMARK_MAKEFILE_PATH
     ]
   ]
+  MASTER_STAGES += BENCHMARK_STAGES
 
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
@@ -182,23 +188,27 @@ def call(buildConfig) {
   ]
 
   // run smoke tests, the tests relevant for this mode
-  executeInParallel(SMOKE_STAGES, buildConfig)
 
   def modeCode = MODES.find{it['name'] == buildConfig.getMode()}['code']
-  // FIXME: Remove the if and KEEP only the else once the initial PR tests in real environment are completed
-  def jobs = null
-  if (modeCode == MODE_PR_TESTING_CODE) {
-    jobs = PR_TESTING_STAGES
+  if (modeCode == MODE_BENCHMARK_CODE) {
+    executeInParallel(BENCHMARK_STAGES, buildConfig)
   } else {
-    jobs = PR_STAGES
-    if (modeCode >= MODE_MASTER_CODE) {
-      jobs += MASTER_STAGES
+    executeInParallel(SMOKE_STAGES, buildConfig)
+    // FIXME: Remove the if and KEEP only the else once the initial PR tests in real environment are completed
+    def jobs = null
+    if (modeCode == MODE_PR_TESTING_CODE) {
+      jobs = PR_TESTING_STAGES
+    } else {
+      jobs = PR_STAGES
+      if (modeCode >= MODE_MASTER_CODE) {
+        jobs += MASTER_STAGES
+      }
+      if (modeCode >= MODE_NIGHTLY_CODE) {
+        jobs += NIGHTLY_STAGES
+      }
     }
-    if (modeCode >= MODE_NIGHTLY_CODE) {
-      jobs += NIGHTLY_STAGES
-    }
+    executeInParallel(jobs, buildConfig)
   }
-  executeInParallel(jobs, buildConfig)
 }
 
 def executeInParallel(jobs, buildConfig) {
