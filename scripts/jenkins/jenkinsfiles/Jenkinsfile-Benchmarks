@@ -2,8 +2,8 @@
 
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
-def executeTestStages = null
-def buildConfig = null
+def defineTestStages = null
+def pipelineContext = null
 def scmEnv = null
 
 withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
@@ -30,20 +30,16 @@ withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
             }
           }
 
-          def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
-          setBuildDesc()
-
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_BENCHMARK', false)
+          pipelineContext = prepareH2O3(scmEnv, 'MODE_BENCHMARK', false)
 
-          def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-          setJobProperties(buildConfig)
+          pipelineContext.getBuildConfig().setJobProperties(this)
 
-          // Load the executeTestStages script
-          executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
+          // Load the defineTestStages script
+          defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
         }
       }
-      executeTestStages(buildConfig)
+      defineTestStages(pipelineContext)
     }
   }
 }

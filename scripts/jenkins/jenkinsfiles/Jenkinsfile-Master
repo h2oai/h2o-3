@@ -2,11 +2,8 @@
 
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
-def executeTestStages = null
-def buildConfig = null
-def pipelineEmailContent = null
-def emailContentHelpers = null
-def sendEmail = null
+def defineTestStages = null
+def pipelineContext = null
 def result = 'FAILURE'
 def scmEnv = null
 
@@ -28,31 +25,22 @@ try {
             }
           }
 
-          pipelineEmailContent = load('h2o-3/scripts/jenkins/groovy/pipelineEmailContent.groovy')
-          sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
-          emailContentHelpers = load('h2o-3/scripts/jenkins/groovy/emailContentHelpers.groovy')
-
-          def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
-          setBuildDesc()
-
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_MASTER', true)
-          buildConfig.setDefaultOverrideRerun(true)
+          pipelineContext = prepareH2O3(scmEnv, 'MODE_MASTER', true)
+          pipelineContext.getBuildConfig().setIgnoreRerun(true)
 
-          def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-          setJobProperties(buildConfig)
+          pipelineContext.getBuildConfig().setJobProperties(this)
 
-          // Load the executeTestStages script
-          executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
+          // Load the defineTestStages script
+          defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
         }
       }
-      executeTestStages(buildConfig)
+      defineTestStages(pipelineContext)
       result = 'SUCCESS'
     }
   }
 } finally {
-  if (pipelineEmailContent != null && sendEmail != null && emailContentHelpers != null) {
-    def emailBody = pipelineEmailContent(result, emailContentHelpers)
-    sendEmail(result, emailBody, emailContentHelpers.getRelevantPipelineRecipients(result))
+  if (pipelineContext != null) {
+    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
   }
 }
