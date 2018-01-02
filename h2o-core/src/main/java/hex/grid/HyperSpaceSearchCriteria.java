@@ -14,14 +14,20 @@ public class HyperSpaceSearchCriteria extends Iced {
   public final Strategy _strategy;
   public final Strategy strategy() { return _strategy; }
 
+  private int _max_saved_models = -1;
+
   public ScoreKeeper.StoppingMetric stopping_metric() { return ScoreKeeper.StoppingMetric.AUTO; }
 
-
-// TODO: add a factory which accepts a Strategy and calls the right constructor
+  // TODO: add a factory which accepts a Strategy and calls the right constructor
 
   public HyperSpaceSearchCriteria(Strategy strategy) {
     this._strategy = strategy;
   }
+
+  /** Max number of models to keep. The worst ones, as measured by the stopping_metric, will be deleted automatically as new models are trained. */
+  public int max_saved_models() { return _max_saved_models; }
+  public void set_max_saved_models(int max_saved_models) { _max_saved_models = max_saved_models; }
+
 
   /**
    * Search criteria for an exhaustive Cartesian hyperparameter search.

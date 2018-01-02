@@ -150,7 +150,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame);
+    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, this.buildSpec.build_control.max_saved_models);
 
     /*
     TODO
@@ -675,6 +675,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else
       searchCriteria.set_max_models(Math.min(searchCriteria.max_models(),
               remainingModels()));
+
+    // NOTE: this search can replace all the models in the Leaderboard, so we can't limit this further.
+    searchCriteria.set_max_saved_models(this.getBuildSpec().build_control.max_saved_models);
 
     userFeedback.info(Stage.ModelTraining, "AutoML: starting " + algoName + " hyperparameter search");
 
@@ -1219,6 +1222,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: Look into adding optionally adding these back in
     // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
     // Commenting out for now
+    //
+    // These are useful for debugging, and are only computed once, at the end. - rpeck
 
     /*
     // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
@@ -1226,13 +1231,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     UserFeedback dummyUF = new UserFeedback(dummyAutoML);
     dummyAutoML.userFeedback = dummyUF;
 
-    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
+    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame, -1);
     trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
     Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
     // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
-    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
+    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame, -1);
     validationLeaderboard.addModels(this.leaderboard().getModelKeys());
     Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();

@@ -1,6 +1,9 @@
 package hex.grid;
 
-import hex.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelParametersBuilderFactory;
+import hex.ScoringInfo;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -10,8 +13,6 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -72,6 +73,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
+
+  /**
+   * Optional Leaderboard.  For now, we allow the client to pass one in or we create one iff HyperSpaceSearchCriteria.max_saved_models > -1.
+   */
+  private final transient Leaderboard _leaderboard = null;
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";

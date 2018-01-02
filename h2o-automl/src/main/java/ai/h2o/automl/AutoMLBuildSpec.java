@@ -49,6 +49,7 @@ public class AutoMLBuildSpec extends Iced {
     public String project_name = null;
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
+    public int max_saved_models = -1;
 
     // Cross-validation fold construction
     public int nfolds = 5; 

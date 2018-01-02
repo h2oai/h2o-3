@@ -88,6 +88,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean sort_decreasing;
 
   /**
+   * Max number of models to keep. The worst ones, as measured by the stopping_metric, will be deleted automatically as new models are added.
+   */
+  private int max_saved_models = -1;
+
+
+  /**
    * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
    * Right now this is a "new leader" message.
    */
@@ -111,7 +117,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, int max_saved_models) {
     this._key = make(idForProject(project_name));
     this.project_name = project_name;
     this.userFeedback = userFeedback;
@@ -124,9 +130,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     DKV.put(this);
   }
 
-  public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+  public static synchronized Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, int max_saved_models) {
     Leaderboard exists = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != exists) {
+      // update the one in the DKV
       exists.userFeedback = userFeedback;
       exists.leaderboardFrame = leaderboardFrame;
       if (null != leaderboardFrame) {
@@ -134,12 +141,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
       } else {
         exists.leaderboardFrameChecksum = 0;
       }
+      exists.max_saved_models = max_saved_models;
 
       DKV.put(exists);
       return exists;
     }
 
-    return new Leaderboard(project_name, userFeedback, leaderboardFrame);
+    return new Leaderboard(project_name, userFeedback, leaderboardFrame, max_saved_models);
   }
 
   // satisfy typing for job return type...
@@ -206,7 +214,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard updating) {
-        if (updating == null) updating = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+        if (updating == null) updating = new Leaderboard(project_name, userFeedback, leaderboardFrame, max_saved_models);
 
         final Key<Model>[] oldModels = updating.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -273,6 +281,23 @@ public class Leaderboard extends Keyed<Leaderboard> {
         if (oldLeader == null || !oldLeader.equals(updating.models[0])) {
           newLeader[0] = updating.models[0];
           newLeaderSortMetric[0] = updating.sort_metrics[0];
+        }
+
+        // optionally limit the number of models we keep
+        if (max_saved_models > -1 && updating.models.length > max_saved_models) {
+          for (int index = max_saved_models; index < updating.models.length; index++)
+            DKV.remove(updating.models[index]);
+
+          updating.models = Arrays.copyOf(updating.models, max_saved_models);
+          updating.sort_metrics = Arrays.copyOf(updating.sort_metrics, max_saved_models);
+
+          if (sort_metric.equals("auc")) { // Binomial case
+            updating.logloss = Arrays.copyOf(updating.logloss, max_saved_models);
+          } else if (sort_metric.equals("mean_residual_deviance")) { // Regression case
+            updating.rmse = Arrays.copyOf(updating.rmse, max_saved_models);
+            updating.mae = Arrays.copyOf(updating.mae, max_saved_models);
+            updating.rmsle = Arrays.copyOf(updating.rmsle, max_saved_models);
+          }
         }
 
         return updating;
@@ -375,6 +400,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /** Return the number of models in this Leaderboard. */
   public int getModelCount() { return getModelKeys().length; }
+
+  /** Return the limit, if any, of the number of models we should keep.  If there's a limit we delete the worst models as we add new ones. */
+  public int getMaxSavedModels() { return max_saved_models; }
 
   /*
   public long[] getTimestamps(Model[] models) {
@@ -563,7 +591,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
         "sort_metrics needs to be always not-null for non-empty array!";
-    
+
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
