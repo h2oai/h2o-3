@@ -468,4 +468,25 @@ public class AggregatorTest extends TestUtil {
     checkNumExemplars(agg);
     agg.remove();
   }
+
+  @Test public void testCovtypeMapping() {
+    Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
+
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._target_num_exemplars = 500;
+    parms._rel_tol_num_exemplars = 0.05;
+    parms._save_mapping_frame = true;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.179
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
+    frame.delete();
+    Frame output = agg._output._output_frame.get();
+    Log.info("Exemplars: " + output.toString());
+    output.remove();
+    Frame mapping = agg._output._mapping_frame.get();
+    mapping.remove();
+    checkNumExemplars(agg);
+    agg.remove();
+  }
 }

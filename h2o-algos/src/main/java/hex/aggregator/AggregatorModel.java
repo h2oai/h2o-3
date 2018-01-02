@@ -133,6 +133,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       }
     }.doAll(new Vec[] { exAssignment, exAssignment.makeZero()})._fr.vec(1);
     Frame mapping = new Frame(destinationKey,new String[]{"exemplar_assignment"}, new Vec[]{exemplarAssignment});
+    assert(mapping.numRows()==exAssignment.length());
     DKV.put(mapping);
     return mapping;
   }
