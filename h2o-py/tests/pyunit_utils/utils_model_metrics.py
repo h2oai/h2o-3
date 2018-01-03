@@ -28,10 +28,47 @@ class CustomRmseFunc:
         return math.sqrt(l[0] / l[1])
 
 
+class CustomNullFunc:
+    def map(self, pred, act, w, o, model):
+        return []
+
+    def reduce(self, l, r):
+        return []
+
+    def metric(self, l):
+        return 0
+
+
+class CustomOneFunc:
+    def map(self, pred, act, w, o, model):
+        return  []
+
+    def reduce(self, l, r):
+        return []
+
+    def metric(self, l):
+        return 1
+
 def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
     metric_name1 = metric_name1 if metric_name1 in metric._metric_json else metric_name1.upper()
     metric_name2 = metric_name2 if metric_name2 in metric._metric_json else metric_name2.upper()
     assert metric._metric_json[metric_name1] == metric._metric_json[metric_name2], msg
+
+
+def assert_all_metrics_equal(model, f_test, metric_name, value):
+    mm_train = model.model_performance(train=True)
+    print(mm_train._metric_json)
+    assert mm_train._metric_json["custom_metric_value"] == value, \
+        "{} metric on training data should be {}".format(metric_name, value)
+
+    mm_valid = model.model_performance(valid=True)
+    assert mm_valid._metric_json["custom_metric_value"] == value, \
+        "{} metric on validation data should be {}".format(metric_name, value)
+
+    # Make a new model metric
+    mm_test = model.model_performance(test_data=f_test)
+    assert mm_test._metric_json["custom_metric_value"] == value, \
+        "{} metric on validation data should be {}".format(metric_name, value)
 
 
 def assert_scoring_history(model, metric_name1, metric_name2, msg=None):
