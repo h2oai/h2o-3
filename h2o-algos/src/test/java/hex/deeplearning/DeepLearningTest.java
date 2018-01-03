@@ -1984,9 +1984,9 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-3);
-      Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
-      Assert.assertEquals(0.93152165, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.97329, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-3);
+      Assert.assertEquals(0.97329, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
+      Assert.assertEquals(0.93152, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-3);
 
     } finally {
       if (tfr != null) tfr.delete();
