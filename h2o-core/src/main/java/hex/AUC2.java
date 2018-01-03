@@ -319,8 +319,6 @@ public class AUC2 extends Iced {
       // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
       // half of the double-sized array is unused, but the front half is
       // probably a source.  Merge into the back.
-      //assert sorted();
-      //assert bldr.sorted();
       int x=     _n-1;
       int y=bldr._n-1;
       while( x+y+1 >= 0 ) {
@@ -334,7 +332,6 @@ public class AUC2 extends Iced {
         if( self_is_larger ) x--; else y--;
       }
       _n += bldr._n;
-      //assert sorted();
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
@@ -373,7 +370,6 @@ public class AUC2 extends Iced {
     // centers.  Same problem for sorted data.
     private int find_smallest() {
       if( _ssx == -1 ) return (_ssx = find_smallest_impl());
-      //assert _ssx == find_smallest_impl();
       return _ssx;
     }
     private int find_smallest_impl() {
@@ -413,16 +409,6 @@ public class AUC2 extends Iced {
     }
 
     private double k( int idx ) { return _tps[idx]+_fps[idx]; }
-
-    //private boolean sorted() {
-    //  double t = _ths[0];
-    //  for( int i=1; i<_n; i++ ) {
-    //    if( _ths[i] < t )
-    //      return false;
-    //    t = _ths[i];
-    //  }
-    //  return true;
-    //}
   }
 
 
