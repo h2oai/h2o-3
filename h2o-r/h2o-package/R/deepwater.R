@@ -54,8 +54,8 @@
 #' @param momentum_start Initial momentum at the beginning of training (try 0.5). Defaults to 0.9.
 #' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 10000.
 #' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.9.
-#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian",
+#'        "poisson", "gamma", "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.
 #' @param score_training_samples Number of training set samples for scoring (0 for all). Defaults to 10000.
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all). Defaults to 0.
@@ -128,7 +128,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           momentum_start = 0.9,
                           momentum_ramp = 10000,
                           momentum_stable = 0.9,
-                          distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                          distribution = c("AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                           score_interval = 5,
                           score_training_samples = 10000,
                           score_validation_samples = 0,
