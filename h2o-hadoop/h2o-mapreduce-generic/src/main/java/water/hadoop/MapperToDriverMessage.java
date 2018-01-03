@@ -1,8 +1,5 @@
 package water.hadoop;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 
 /**
@@ -21,6 +18,8 @@ class MapperToDriverMessage extends AbstractMessage {
 
   private String _embeddedWebServerIp = "";
   private int _embeddedWebServerPort = -1;
+  private String _leaderWebServerIp = "";
+  private int _leaderWebServerPort = -1;
   private int _cloudSize = -1;
   private int _exitStatus = -1;
 
@@ -32,6 +31,8 @@ class MapperToDriverMessage extends AbstractMessage {
   public char getType() { return _type; }
   public String getEmbeddedWebServerIp() { return _embeddedWebServerIp; }
   public int getEmbeddedWebServerPort() { return _embeddedWebServerPort; }
+  public String getLeaderWebServerIp() { return _leaderWebServerIp; }
+  public int getLeaderWebServerPort() { return _leaderWebServerPort; }
   public int getCloudSize() { return _cloudSize; }
   public int getExitStatus() { return _exitStatus; }
 
@@ -49,6 +50,8 @@ class MapperToDriverMessage extends AbstractMessage {
     else if (_type == TYPE_CLOUD_SIZE) {
       _embeddedWebServerIp = readString(s);
       _embeddedWebServerPort = readInt(s);
+      _leaderWebServerIp = readString(s);
+      _leaderWebServerPort = readInt(s);
       _cloudSize = readInt(s);
     }
     else if (_type == TYPE_EXIT) {
@@ -85,10 +88,12 @@ class MapperToDriverMessage extends AbstractMessage {
     _embeddedWebServerPort = port;
   }
 
-  public void setMessageCloudSize(String ip, int port, int cloudSize) {
+  public void setMessageCloudSize(String ip, int port, String leaderIp, int leaderPort, int cloudSize) {
     _type = TYPE_CLOUD_SIZE;
     _embeddedWebServerIp = ip;
     _embeddedWebServerPort = port;
+    _leaderWebServerIp = leaderIp;
+    _leaderWebServerPort = leaderPort;
     _cloudSize = cloudSize;
   }
 
@@ -139,6 +144,8 @@ class MapperToDriverMessage extends AbstractMessage {
     writeType(s, TYPE_CLOUD_SIZE);
     writeString(s, _embeddedWebServerIp);
     writeInt(s, _embeddedWebServerPort);
+    writeString(s, _leaderWebServerIp);
+    writeInt(s, _leaderWebServerPort);
     writeInt(s, _cloudSize);
   }
 

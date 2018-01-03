@@ -408,14 +408,15 @@ public class h2odriver extends Configured implements Tool {
         }
         else if (type == MapperToDriverMessage.TYPE_CLOUD_SIZE) {
           _s.close();
-          System.out.println("H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() + " reports H2O cluster size " + msg.getCloudSize());
+          System.out.println("H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() +
+                  " reports H2O cluster size " + msg.getCloudSize() + " [leader is " + msg.getLeaderWebServerIp() + ":" + msg.getLeaderWebServerPort() + "]");
           if (msg.getCloudSize() == numNodes) {
             // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
             synchronized (h2odriver.class) {
               if (! clusterIsUp) {
                 int n = numNodesReportingFullCloudSize.incrementAndGet();
                 if (n == numNodes) {
-                  reportClusterReady(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
+                  reportClusterReady(msg.getLeaderWebServerIp(), msg.getLeaderWebServerPort());
                   clusterIsUp = true;
                 }
               }

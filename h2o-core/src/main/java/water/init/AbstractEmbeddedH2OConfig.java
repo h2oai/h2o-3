@@ -39,15 +39,30 @@ public abstract class AbstractEmbeddedH2OConfig {
   public abstract String fetchFlatfile() throws Exception;
 
   /**
+   * @deprecated please override version of this method that has leader information.
+   */
+  @Deprecated
+  public void notifyAboutCloudSize(InetAddress ip, int port, int size) {
+    throw new IllegalStateException("Please override method new version of the method notifyAboutCloudSize(..).");
+  }
+
+  /**
    * Tell the embedding software that this H2O instance belongs to
    * a cloud of a certain size.
    * This may be nonblocking.
    *
+   * Note: this method will be made abstract in a future stable release. User is expected to override the method
+   * in the implementation.
+   *
    * @param ip IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
+   * @param leaderIp IP address of the leader H2O node of the cloud.
+   * @param leaderPort Port of the leader H2O node (for REST API and browser).
    * @param size Number of H2O instances in the cloud.
    */
-  public abstract void notifyAboutCloudSize(InetAddress ip, int port, int size);
+  public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
+    notifyAboutCloudSize(ip, port, size);
+  }
 
   /**
    * Tell the embedding software that H2O wants the process to exit.
