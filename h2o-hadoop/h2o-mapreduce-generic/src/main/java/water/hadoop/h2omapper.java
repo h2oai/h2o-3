@@ -127,14 +127,14 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
 
     @Override
-    public void notifyAboutCloudSize (InetAddress ip, int port, int size) {
+    public void notifyAboutCloudSize (InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
       _embeddedWebServerIp = ip.getHostAddress();
       _embeddedWebServerPort = port;
 
       try {
         MapperToDriverMessage msg = new MapperToDriverMessage();
         msg.setDriverCallbackIpPort(_driverCallbackIp, _driverCallbackPort);
-        msg.setMessageCloudSize(ip.getHostAddress(), port, size);
+        msg.setMessageCloudSize(ip.getHostAddress(), port, leaderIp.getHostAddress(), port, size);
         BackgroundWriterThread bwt = new BackgroundWriterThread();
         System.out.printf("EmbeddedH2OConfig: notifyAboutCloudSize called (%s, %d, %d)\n", ip.getHostAddress(), port, size);
         bwt.setMessage(msg);
