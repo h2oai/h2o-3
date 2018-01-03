@@ -57,7 +57,6 @@ def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
 
 def assert_all_metrics_equal(model, f_test, metric_name, value):
     mm_train = model.model_performance(train=True)
-    print(mm_train._metric_json)
     assert mm_train._metric_json["custom_metric_value"] == value, \
         "{} metric on training data should be {}".format(metric_name, value)
 
