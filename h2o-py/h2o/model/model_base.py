@@ -1014,7 +1014,7 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(y=0.5)
+            ax.margins(None, 0.5)
 
         else:
             plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
@@ -1108,7 +1108,7 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks([0], feature_labels[0])
-            ax.margins(y=0.5)
+            ax.margins(None, 0.5)
 
         else:
             plt.barh(pos[0:num_of_features], val[0:num_of_features],
@@ -1122,7 +1122,7 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(y=0.05)
+            ax.margins(None, 0.05)
 
         # generate custom fake lines that will be used as legend entries:
         # check if positive and negative values exist
