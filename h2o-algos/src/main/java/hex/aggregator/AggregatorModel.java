@@ -11,6 +11,7 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -133,6 +134,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       }
     }.doAll(new Vec[] { exAssignment, exAssignment.makeZero()})._fr.vec(1);
     Frame mapping = new Frame(destinationKey,new String[]{"exemplar_assignment"}, new Vec[]{exemplarAssignment});
+    final long[] uniqueExemplars = new VecUtils.CollectIntegerDomain().doAll(mapping.vecs()).domain();
+    assert(uniqueExemplars.length==_exemplars.length);
     assert(mapping.numRows()==exAssignment.length());
     DKV.put(mapping);
     return mapping;
