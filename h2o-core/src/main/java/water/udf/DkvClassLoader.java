@@ -1,5 +1,7 @@
 package water.udf;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,17 +110,7 @@ class DkvClassLoader extends ClassLoader {
 
   static byte[] readJarEntry(JarInputStream jis, JarEntry entry) throws IOException {
     int len = (int) entry.getSize();
-    byte[] content = new byte[len > 0 ? len : 4096];
-    int actLen = 0;
-    for (int r = jis.read(content); r > 0; r = jis.read(content, actLen, content.length - actLen)) {
-      if (content.length == (actLen += r)) {
-        content = Arrays.copyOf(content, content.length * 2);
-      }
-    }
-    if (actLen != content.length) {
-      content = Arrays.copyOf(content, actLen);
-    }
-    return content;
+    return len > 0 ? IOUtils.toByteArray(jis, len) : IOUtils.toByteArray(jis);
   }
 
   final class DkvUrlStreamHandler extends URLStreamHandler {

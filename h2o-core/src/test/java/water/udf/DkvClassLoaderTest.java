@@ -45,11 +45,10 @@ public class DkvClassLoaderTest extends TestUtil {
           String klazzName = entryName.replace('/', '.').substring(0, entryName.length() - ".class".length());
           assertLoadableClass(cl, klazzName);
           classCnt++;
-        } else {
-          byte[] exptectedContent = readJarEntry(jis, entry);
-          assertLoadableResource(cl, entryName, exptectedContent);
-          resourceCnt++;
         }
+        byte[] exptectedContent = readJarEntry(jis, entry);
+        assertLoadableResource(cl, entryName, exptectedContent);
+        resourceCnt++;
       }
       // Just make sure, that we tested at least one class file and one resource
       Assert.assertTrue("The file " + testJar +" needs to contain at least one classfile",
