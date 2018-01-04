@@ -1128,21 +1128,21 @@ class ModelBase(backwards_compatible()):
         # check if positive and negative values exist
         # if positive create positive legend
         if "#1F77B4" in signage[0:num_of_features] and "#FF7F0E" not in signage[0:num_of_features]:
-            color_ids = {"Positive": "#1F77B4"}
+            color_ids = ("Positive",)
             markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
                        for color in signage[0:num_of_features]]
             lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
             lgnd.legendHandles[0]._legmarker.set_markersize(10)
         # if neg create neg legend
         elif "#FF7F0E" in signage[0:num_of_features] and "#1F77B4" not in signage[0:num_of_features]:
-            color_ids = {"Negative": "#FF7F0E"}
+            color_ids = ("Negative",)
             markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
                        for color in set(signage[0:num_of_features])]
             lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
             lgnd.legendHandles[0]._legmarker.set_markersize(10)
         # if both provide both colors in legend
         else:
-            color_ids = {"Positive": "#1F77B4", "Negative": "#FF7F0E"}
+            color_ids = ("Positive", "Negative")
             markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
                        for color in set(signage[0:num_of_features])]
             lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
