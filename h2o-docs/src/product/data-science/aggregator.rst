@@ -4,11 +4,17 @@ Aggregagtor
 Introduction
 ~~~~~~~~~~~~
 
-The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. Aggregator maintains outliers as outliers, but lumps together dense clusters into exemplars with an attached count column showing the member points.
+The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. If the dataset has categorical columns, then for each categorical column, Aggregator will:
+
+ 1. Accumulate the category frequencies.
+ 2. For the top 1,000 or fewer categories (by frequency), generate dummy variables (called one-hot encoding by ML people, called dummy coding by statisticians).
+ 3. Calculate the first eigenvector of the covariance matrix of these dummy variables.
+ 4. Replace the row values on the categorical column with the value from the eigenvector corresponding to the dummy values.
+
+Aggregator maintains outliers as outliers, but lumps together dense clusters into exemplars with an attached count column showing the member points.
 
 The Aggregator method behaves just any other unsupervised model. You can ignore columns, which will then be dropped for distance computation. Training itself creates the aggregated H2O Frame, which also includes the count of members for every row/exemplar. The aggregated frame always includes the full original content of the training frame, even if some columns were ignored for the distance computation. Scoring/prediction is overloaded with a function that returns the members of a given exemplar row index from 0...Nexemplars (this time without a count). 
 
-**Note**: The Aggregator implementation uses L2 distance computation based on numerical data only. Categorical columns are ignored for the distance computation.
 
 Defining an Aggregator Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
