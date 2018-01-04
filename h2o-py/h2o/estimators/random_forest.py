@@ -26,13 +26,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
                       "keep_cross_validation_fold_assignment", "score_each_iteration", "score_tree_interval",
                       "fold_assignment", "fold_column", "response_column", "ignored_columns", "ignore_const_cols",
-                      "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
-                      "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth",
-                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
-                      "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
+                      "weights_column", "balance_classes", "class_sampling_factors", "max_after_balance_size",
+                      "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth", "min_rows", "nbins",
+                      "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds", "stopping_metric",
+                      "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "sample_rate",
+                      "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
+                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame",
                       "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -224,21 +224,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
-
-    @property
-    def offset_column(self):
-        """
-        Offset column. This will be added to the combination of columns before applying the link function.
-
-        Type: ``str``.
-        """
-        return self._parms.get("offset_column")
-
-    @offset_column.setter
-    def offset_column(self, offset_column):
-        assert_is_type(offset_column, None, str)
-        self._parms["offset_column"] = offset_column
 
 
     @property
@@ -720,22 +705,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def calibration_frame(self, calibration_frame):
         assert_is_type(calibration_frame, None, H2OFrame)
         self._parms["calibration_frame"] = calibration_frame
-
-
-    @property
-    def distribution(self):
-        """
-        Distribution function
-
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
-        """
-        return self._parms.get("distribution")
-
-    @distribution.setter
-    def distribution(self, distribution):
-        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
-        self._parms["distribution"] = distribution
 
 
     @property
