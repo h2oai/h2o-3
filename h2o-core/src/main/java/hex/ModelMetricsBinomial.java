@@ -129,9 +129,17 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     protected double _logloss;
-    protected AUC2.AUCBuilder _auc;
+    public AUC2.AUCBuilder _auc;
 
-    public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
+    public MetricBuilderBinomial( String[] domain ) {
+      super(2,domain);
+      _auc = new AUC2.AUCBuilder(AUC2.NBINS);
+    }
+
+    public MetricBuilderBinomial( String[] domain, int workingAUCBins ) {
+      super(2,domain);
+      _auc = new AUC2.AUCBuilder(AUC2.NBINS, workingAUCBins);
+    }
 
     public double auc() {return new AUC2(_auc)._auc;}
 
