@@ -92,10 +92,13 @@ def random_grid_model_seeds_PUBDEV_4090():
     metric_list2 = pyunit_utils.extract_scoring_history_field(air_grid2.models[index2], "training_rmse", False)
     print(metric_list1)
     print(metric_list2)
-    len_list = min(len(metric_list1), len(metric_list2))
-    assert pyunit_utils.equal_two_arrays(metric_list1[0:len_list], metric_list2[0:len_list], 1e-5, 1e-6, False), \
-        "Training_rmse are different between the two grid search models.  Tests are supposed to be repeatable in " \
-        "this case.  Make sure model seeds are actually set correctly in the Java backend."
+
+    if (metric_list1 != None) and (metric_list2 != None):
+        len_list = min(len(metric_list1)-1, len(metric_list2)-1)
+        if (len_list > 0):
+            assert pyunit_utils.equal_two_arrays(metric_list1[0:len_list], metric_list2[0:len_list], 1e-5, 1e-6, False), \
+                "Training_rmse are different between the two grid search models.  Tests are supposed to be repeatable in " \
+                "this case.  Make sure model seeds are actually set correctly in the Java backend."
 
 
 if __name__ == "__main__":
