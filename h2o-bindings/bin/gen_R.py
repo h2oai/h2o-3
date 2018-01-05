@@ -66,6 +66,8 @@ def gen_module(schema, algo, module):
             phelp = "\code{Logical}. " + phelp
         if param["values"]:
             phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in param["values"])
+        if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
+            phelp=phelp.replace(' "quasibinomial",',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
@@ -109,7 +111,11 @@ def gen_module(schema, algo, module):
             if param["name"] == "eps_prob":
                 list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
-        list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+        if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
+            temp = normalize_value(param).replace(' "quasibinomial",',"")
+            list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
+        else:
+            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
     yield ",\n".join(list)
