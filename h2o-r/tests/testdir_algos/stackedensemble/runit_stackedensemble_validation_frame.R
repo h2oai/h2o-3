@@ -69,7 +69,7 @@ stackedensemble.validation_frame.test <- function() {
   perf2 <- h2o.performance(model = stack2, newdata = test)
   cat("\nstack 2 perf metrics(validation)\n")
   print(perf2)
-  expect_true(h2o.auc(perf2) >= h2o.auc(perf1)) #Validation frame
+  expect_true(h2o.auc(perf2) >= h2o.auc(perf1) - 1e-6) # Validation frame (>= comparison needs to consider precision)
   cat("\nstack1 (no validation) auc\n")
   print(h2o.auc(perf1))
   cat("\nstack2 (validation) auc\n")
