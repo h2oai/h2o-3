@@ -1531,7 +1531,10 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
                 compare_val_h2o_Py = abs(array1[ind] - array2[ind])
 
                 if compare_val_h2o_Py > tolerance:    # difference is too high, return false
-                    return False
+                    if throwError:
+                        assert False, "The two arrays are not equal in value."
+                    else:
+                        return False
 
         return True                                     # return True, elements of two arrays are close enough
     else:
