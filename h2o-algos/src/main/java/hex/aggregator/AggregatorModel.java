@@ -118,7 +118,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   }
 
   public Frame createMappingOfExemplars(Key destinationKey){
-    final long[] keep = new long[_exemplars.length];
+    final long[] keep = MemoryManager.malloc8(_exemplars.length);
     for (int i=0;i<keep.length;++i)
       keep[i]=_exemplars[i].gid;
 
@@ -126,13 +126,13 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     Arrays.sort(keep);
     Vec exemplarAssignment = new MRTask() {
       @Override
-      public void map(Chunk c1, Chunk c2) {
+      public void map(Chunk c1, NewChunk nc) {
         for (int i = 0; i < c1._len; i++) {
           long gid = c1.at8(i);
-          c2.set(i, ArrayUtils.find(keep, gid));
+          nc.addNum(ArrayUtils.find(keep, gid));
         }
       }
-    }.doAll(new Vec[] { exAssignment, exAssignment.makeZero()})._fr.vec(1);
+    }.doAll(exAssignment)._fr.vec(0);
     Frame mapping = new Frame(destinationKey,new String[]{"exemplar_assignment"}, new Vec[]{exemplarAssignment});
     final long[] uniqueExemplars = new VecUtils.CollectIntegerDomain().doAll(mapping.vecs()).domain();
     assert(uniqueExemplars.length==_exemplars.length);
