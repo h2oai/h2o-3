@@ -805,8 +805,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    @Override public String[] interactions() { return _dinfo._interactionColumns; }
-    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+    @Override public InteractionSpec interactions() { return _dinfo._interactionSpec; }
+    public static Frame expand(Frame fr, InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 

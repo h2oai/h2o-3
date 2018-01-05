@@ -2,6 +2,7 @@ package hex.api;
 
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
+import hex.Model;
 import hex.genmodel.utils.ArrayUtils;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
@@ -58,12 +59,12 @@ public class MakeGLMModelHandler extends Handler {
   public DataInfoFrameV3 getDataInfoFrame(int version, DataInfoFrameV3 args) {
     Frame fr = DKV.getGet(args.frame.key());
     if( null==fr ) throw new IllegalArgumentException("no frame found");
-    args.result = new KeyV3.FrameKeyV3(oneHot(fr, args.interactions, args.use_all, args.standardize, args.interactions_only, true)._key);
+    args.result = new KeyV3.FrameKeyV3(oneHot(fr, new Model.InteractionSpec(args.interactions), args.use_all, args.standardize, args.interactions_only, true)._key);
     return args;
   }
 
-  public static Frame oneHot(Frame fr, String[] interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
-    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false,interactions);
+  public static Frame oneHot(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
+    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false, interactions);
     Frame res;
     if( interactionsOnly ) {
       if( null==dinfo._interactionVecs ) throw new IllegalArgumentException("no interactions");
