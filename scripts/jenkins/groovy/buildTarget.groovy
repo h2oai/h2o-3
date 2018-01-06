@@ -4,6 +4,10 @@ def call(body) {
   body.delegate = config
   body()
 
+  def FILES_TO_EXCLUDE = [
+    '**/rest.log'
+  ]
+
   def FILES_TO_ARCHIVE = [
     "**/*.log", "**/out.*", "**/*py.out.txt", "**/java*out.txt", "**/*ipynb.out.txt",
     "**/results/*", "**/*tmp_model*",
@@ -36,17 +40,17 @@ def call(body) {
       junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
     }
     if (config.archiveFiles) {
-      archiveStageFiles(config.h2o3dir, FILES_TO_ARCHIVE)
+      archiveStageFiles(config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
       if (config.archiveAdditionalFiles) {
         echo "###### Archiving additional files: ######"
         echo "${config.archiveAdditionalFiles}"
-        archiveStageFiles(config.h2o3dir, config.archiveAdditionalFiles)
+        archiveStageFiles(config.h2o3dir, config.archiveAdditionalFiles, config.excludeAdditionalFiles)
       }
     }
   }
 }
 
-def execMake(makefilePath, target, String h2o3dir) {
+private void execMake(makefilePath, target, String h2o3dir) {
   sh """
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
     locale
@@ -73,8 +77,8 @@ def execMake(makefilePath, target, String h2o3dir) {
   """
 }
 
-def archiveStageFiles(h2o3dir, files) {
-  archiveArtifacts artifacts: files.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true
+private void archiveStageFiles(final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {
+  archiveArtifacts artifacts: archiveFiles.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true, excludes: excludeFiles.collect{"${h2o3dir}/${it}"}.join(', ')
 }
 
 return this
