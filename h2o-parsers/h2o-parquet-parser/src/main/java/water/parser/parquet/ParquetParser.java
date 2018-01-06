@@ -2,6 +2,7 @@ package water.parser.parquet;
 
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
 
+import com.google.common.collect.Lists;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -22,6 +23,7 @@ import water.util.Log;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Parquet parser for H2O distributed parsing subsystem.
@@ -191,7 +193,10 @@ public class ParquetParser extends Parser {
 
   private static ParquetPreviewParseWriter readFirstRecords(ParquetParseSetup initSetup, ByteVec vec, int cnt) {
     ParquetMetadata metadata = VecParquetReader.readFooter(initSetup.parquetMetadata);
-    ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), Collections.singletonList(findFirstBlock(metadata)));
+    final BlockMetaData firstBlock = findFirstBlock(metadata);
+    List<BlockMetaData> blockMetaData = firstBlock == null ?
+        Collections.<BlockMetaData>emptyList() : Collections.singletonList(firstBlock);
+    ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), blockMetaData);
     ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(initSetup);
     VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes);
     try {
@@ -239,9 +244,11 @@ public class ParquetParser extends Parser {
   }
 
   private static BlockMetaData findFirstBlock(ParquetMetadata metadata) {
+    if (metadata.getBlocks().isEmpty()) return null;
+
     BlockMetaData firstBlockMeta = metadata.getBlocks().get(0);
     for (BlockMetaData meta : metadata.getBlocks()) {
-      if (firstBlockMeta.getStartingPos() < firstBlockMeta.getStartingPos()) {
+      if (meta.getStartingPos() < firstBlockMeta.getStartingPos()) {
         firstBlockMeta = meta;
       }
     }
