@@ -20,10 +20,6 @@ def call(buildConfig, stageConfig) {
     stageConfig.makefilePath = "${ML_BENCHMARK_ROOT}/jenkins/Makefile.jenkins"
   }
 
-  if (stageConfig.archiveAdditionalFiles == null) {
-    stageConfig.archiveAdditionalFiles = []
-  }
-
   dir (ML_BENCHMARK_ROOT) {
     checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
     sh "sed 's/s3:\\/\\/h2o-benchmark/\\/datasets/g' h2oR/accuracy_datasets_h2o.csv > h2oR/accuracy_datasets_docker.csv"

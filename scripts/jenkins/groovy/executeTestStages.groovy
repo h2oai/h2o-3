@@ -229,6 +229,8 @@ def executeInParallel(jobs, buildConfig) {
           image = c['image']
           model = c['model']
           makefilePath = c['makefilePath']
+          archiveAdditionalFiles = c['archiveAdditionalFiles']
+          excludeAdditionalFiles = c['excludeAdditionalFiles']
         }
       }
     ]
@@ -274,6 +276,14 @@ def invokeStage(buildConfig, body) {
   }
   if (config.makefilePath == null) {
     config.makefilePath = DEFAULT_MAKEFILE_PATH
+  }
+
+  if (config.archiveAdditionalFiles == null) {
+    config.archiveAdditionalFiles = []
+  }
+
+  if (config.excludeAdditionalFiles == null) {
+    config.excludeAdditionalFiles = []
   }
 
   buildConfig.addStageSummary(this, config.stageName)
