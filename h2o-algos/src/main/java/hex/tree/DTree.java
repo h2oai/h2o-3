@@ -146,7 +146,6 @@ public class DTree extends Iced {
       _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
-//      Log.info(this);
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
@@ -744,7 +743,10 @@ public class DTree extends Iced {
   }
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {
-    if(hs._vals == null) return null; // TODO: there are empty leafs?
+    if(hs._vals == null) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
+      return null; // TODO: there are empty leafs?
+    }
     final int nbins = hs.nbins();
     assert nbins > 1;
 
@@ -795,16 +797,20 @@ public class DTree extends Iced {
     double wNA = hs.wNA();
     double tot = wlo[nbins] + wNA; //total number of (weighted) rows
     // Is any split possible with at least min_obs?
-    if( tot < 2*min_rows )
+    if( tot < 2*min_rows ) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": min_rows: total number of observations is " + tot);
       return null;
+    }
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
     double wYNA = hs.wYNA();
     double wYYNA = hs.wYYNA();
     double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
-    if( ((float)var) == 0f )
+    if( ((float)var) == 0f ) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": var = 0.");
       return null;
+    }
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double   whi[] = MemoryManager.malloc8d(nbins+1);
@@ -952,7 +958,7 @@ public class DTree extends Iced {
       }
 
       if (bs.cardinality()==0 || bs.cardinality()==bs.size()) {
-//        Log.info("Not splitting: no separation of categoricals possible");
+        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no separation of categoricals possible");
         return null;
       }
 
@@ -960,13 +966,13 @@ public class DTree extends Iced {
     }
 
     if( best==0 && nasplit== DHistogram.NASplitDir.None) {
-//      Log.info("Not splitting: no optimal split point found:\n" + hs);
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no optimal split found:\n" + hs);
       return null;
     }
 
     //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
     if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
-//      Log.info("Not splitting: not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
       return null;
     }
 
@@ -991,12 +997,12 @@ public class DTree extends Iced {
     assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
 
     if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
-//      Log.info("Not splitting: Predictions for left/right are the same:\n" + this);
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": Predictions for left/right are the same.");
       return null;
     }
 
     if (nLeft < min_rows || nRight < min_rows) {
-//      Log.info("Not splitting: split would violate min_rows limit:\n" + this);
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate min_rows limit.");
       return null;
     }
 
@@ -1004,6 +1010,8 @@ public class DTree extends Iced {
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
-    return new Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
+    Split split = new Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
+    if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
+    return split;
   }
 }

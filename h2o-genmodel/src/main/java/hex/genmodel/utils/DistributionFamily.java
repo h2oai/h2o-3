@@ -11,6 +11,11 @@ public enum DistributionFamily {
     @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
     @Override public String linkInvString(String f) { return "1./(1. + " + expString("-("+f+")") + ")"; }
   },
+  quasibinomial {
+    @Override public double link(double f) { return log(f/(1 - f)); }
+    @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
+    @Override public String linkInvString(String f) { return "1./(1. + " + expString("-("+f+")") + ")"; }
+  },
   modified_huber {
     // FIXME
     @Override public double link(double f) { return log(f/(1 - f)); }

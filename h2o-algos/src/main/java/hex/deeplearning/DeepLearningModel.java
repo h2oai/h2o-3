@@ -1891,6 +1891,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             break;
         }
       }
+
+      if (_distribution == DistributionFamily.quasibinomial)
+        dl.error("_distribution", "Quasibinomial is not supported for deeplearning in current H2O.");
       if (expensive) dl.checkDistributions();
 
       if (_score_training_samples < 0)

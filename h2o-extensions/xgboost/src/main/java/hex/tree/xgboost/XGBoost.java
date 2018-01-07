@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -378,6 +379,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU(_parms._gpu_id)) {
       error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
     }
+
+    if (_parms._distribution == DistributionFamily.quasibinomial)
+      error("_distribution", "Quasibinomial is not supported for XGBoost in current H2O.");
 
     switch( _parms._distribution) {
     case bernoulli:
