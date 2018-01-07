@@ -38,7 +38,7 @@ def runGBM(seedV, nt):
     url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
     h2oframe_csv = h2o.import_file(url_csv)
     gbm = H2OGradientBoostingEstimator(distribution='bernoulli', ntrees=nt, seed=seedV, max_depth=4,
-                                       min_rows=7, score_tree_interval=nt)
+                                       min_rows=7, score_tree_interval=nt,nfolds=2)
     gbm.train(x=list(range(2, 365)), y="response", training_frame=h2oframe_csv)
     print("Model run time (ms) is {0}".format(gbm._model_json["output"]["run_time"]))
     auc = pyunit_utils.extract_from_twoDimTable(
