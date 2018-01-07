@@ -19,12 +19,12 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
 
 
     /**
-     * Corresponds to `hex.tree.drf.DrfMojoModel.score0()`
+     * Corresponds to `hex.tree.gbm.GbmMojoModel.score0()`
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
         super.scoreAllTrees(row, preds);
-        if (_family == bernoulli || _family == modified_huber) {
+        if (_family == bernoulli || _family == quasibinomial || _family == modified_huber) {
             double f = preds[1] + _init_f + offset;
             preds[2] = _family.linkInv(f);
             preds[1] = 1.0 - preds[2];

@@ -222,6 +222,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Compute the response domain; makes for nicer printouts
         String[] domain = _response.domain();
+        if (_parms._distribution == DistributionFamily.quasibinomial) {
+          domain = new String[]{"0", "1"};
+        }
         assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
         if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
 
@@ -330,7 +333,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         final int [] cons = new int[_nclass];
         for( int i=0; i<_nclass; i++ ) {
           names[i] = "NIDs_" + domain[i];
-          cons[i] = (_model._output._distribution[i]==0?-1:0);
+          cons[i] = (_parms._distribution == DistributionFamily.quasibinomial || _model._output._distribution[i]==0 ?-1:0);
         }
         Vec [] vs = _response.makeVolatileInts(cons);
         _train.add(names, vs);

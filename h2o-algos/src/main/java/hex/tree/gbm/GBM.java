@@ -98,6 +98,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
+    case quasibinomial:
+      if ( !_response.isNumeric() )
+        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be numeric."));
+      if ( _nclass != 2)
+        error("_distribution", H2O.technote(2, "Quasibinomial requires the response to be binary."));
+      break;
     case modified_huber:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
         error("_distribution", H2O.technote(2, "Modified Huber requires the response to be a 2-class categorical."));
@@ -169,7 +175,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
       DistributionFamily distr = _parms._distribution;
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
-      if (distr == DistributionFamily.bernoulli) {
+      if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())
           _initialPrediction = getInitialValueBernoulliOffset(_train);
       } else if (distr == DistributionFamily.laplace || distr == DistributionFamily.huber) {
@@ -1123,7 +1129,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
     double f = chks[treeIdx].atd(row) + offset;
     double p = dist.linkInv(f);
-    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli) {
+    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli || dist.distribution == DistributionFamily.quasibinomial) {
       fs[2] = p;
       fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0

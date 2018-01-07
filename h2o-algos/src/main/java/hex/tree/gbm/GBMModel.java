@@ -37,8 +37,25 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
-    public GBMOutput(GBM b) { super(b); }
+    boolean _quasibinomial;
+    int _nclasses;
+    public int nclasses() {
+      return _nclasses;
+    }
+    public GBMOutput(GBM b) {
+      super(b);
+      _quasibinomial = b._parms._distribution == DistributionFamily.quasibinomial;
+      _nclasses = b.nclasses();
+    }
+    @Override
+    public String[] classNames() {
+      String [] res = super.classNames();
+      if(res == null && _quasibinomial)
+        return new String[]{"0", "1"};
+      return res;
+    }
   }
+
 
   public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
     super(selfKey,parms,output);
@@ -76,7 +93,9 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
   }
 
   private double[] score0Probabilities(double preds[/*nclasses+1*/], double offset) {
-    if (_parms._distribution == DistributionFamily.bernoulli || _parms._distribution == DistributionFamily.modified_huber) {
+    if (_parms._distribution == DistributionFamily.bernoulli
+        || _parms._distribution == DistributionFamily.quasibinomial
+        || _parms._distribution == DistributionFamily.modified_huber) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = new Distribution(_parms).linkInv(f);
       preds[1] = 1.0 - preds[2];
@@ -97,7 +116,10 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if( _parms._distribution == DistributionFamily.bernoulli || _parms._distribution == DistributionFamily.modified_huber) {
+    if( _parms._distribution == DistributionFamily.bernoulli
+        || _parms._distribution == DistributionFamily.quasibinomial
+        || _parms._distribution == DistributionFamily.modified_huber
+        ) {
       body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = " + new Distribution(_parms).linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
