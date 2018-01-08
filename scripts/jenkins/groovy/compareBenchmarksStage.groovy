@@ -1,4 +1,4 @@
-def call(buildConfig, stageConfig, benchmarkFolderConfig) {
+def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) {
 
     def EXPECTED_VALUES = [
             'paribas': [
@@ -56,11 +56,9 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
     def TESTED_COLUMNS = ['train_time']
 
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
-    def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-    def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
-    insideDocker(customEnv(), stageConfig.image, buildConfig.DOCKER_REGISTRY, 5, 'MINUTES') {
-        String csvFilePath = "${stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getCSVPath()}"
+    insideDocker(pipelineContext.getBuildConfig().getBuildEnv(), stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 5, 'MINUTES') {
+        String csvFilePath = "${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getCSVPath()}"
         def csvData = parseCsvFile(csvFilePath)
 
         List failures = []
@@ -103,7 +101,7 @@ def call(buildConfig, stageConfig, benchmarkFolderConfig) {
         }
         if (!failures.isEmpty()) {
             echo failuresToText(failures)
-            sendBenchmarksWarningMail(failures)
+            sendBenchmarksWarningMail(pipelineContext, failures)
             error "One or more checks failed"
 
         } else {
@@ -161,14 +159,43 @@ def failuresToText(final failures, final String joinStr='\n') {
     return result.join(joinStr)
 }
 
-def sendBenchmarksWarningMail(final failures) {
-    def sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
-    def emailContentHelpers = load('h2o-3/scripts/jenkins/groovy/emailContentHelpers.groovy')
-    def benchmarksEmailContent = load('h2o-3/scripts/jenkins/groovy/benchmarksEmailContent.groovy')
+def sendBenchmarksWarningMail(final pipelineContext, final failures) {
+    final def benchmarksSummary = pipelineContext.getBuildSummary().newInstance(false)
+    final def buildSummary = pipelineContext.getBuildSummary()
 
-    def emailBody = benchmarksEmailContent(failures, emailContentHelpers)
+    benchmarksSummary.addSection(this, buildSummary.findSectionOrThrow(buildSummary.DETAILS_SECTION_ID))
 
-    sendEmail('warning', emailBody, emailContentHelpers.getRelevantPipelineRecipients('failure'))
+    String rowsHTML = ''
+    for (failure in failures) {
+        rowsHTML += """
+            <tr>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.column}</td>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.dataset.capitalize()} ${failure.ntrees} Trees</td>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.value}</td>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.min}</td>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.max}</td>
+            </tr>
+        """
+    }
+    final String warningsTable = """
+        <table style="${benchmarksSummary.TABLE_STYLE}">
+            <thead>
+                <tr>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">Column</th>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">Test Case</th>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">Value</th>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">Min</th>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">max</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHTML}
+            </tbody>
+        </table>
+    """
+    benchmarksSummary.addSection(this, 'warnings', 'Warnings', warningsTable)
+
+    pipelineContext.getEmailer().sendEmail(this, benchmarksSummary.RESULT_WARNING, benchmarksSummary.getSummaryHTML(this))
 }
 
 return this

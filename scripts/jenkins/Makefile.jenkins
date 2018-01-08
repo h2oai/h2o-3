@@ -1,6 +1,7 @@
 .NOTPARALLEL: all
 SHELL:=/bin/bash
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
+JENKINS_MAKEFILE_PATH := scripts/jenkins/Makefile.jenkins
 
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
@@ -30,14 +31,14 @@ test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
+	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -q -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
 		h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-		docker/Makefile.jenkins tests/runitSmokeTestList \
+		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList \
 		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
 		scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
 
@@ -119,7 +120,7 @@ test-r-demos-medium-large:
 
 test-package-js:
 	zip -q -r test-package-js \
-		docker/Makefile.jenkins tests/ignoreFlowSmokeTestList scripts/run.py \
+		$(JENKINS_MAKEFILE_PATH) tests/ignoreFlowSmokeTestList scripts/run.py \
 		h2o-web/lib/h2o-flow/build/js/headless-test.js
 
 test-phantom-js-smoke:
@@ -148,7 +149,7 @@ test-demos:
 
 test-package-java:
 	zip -q -r test-package-java \
-		docker/Makefile.jenkins \
+		$(JENKINS_MAKEFILE_PATH) \
 		gradlew \
 		gradle.properties \
 		gradle/ \
