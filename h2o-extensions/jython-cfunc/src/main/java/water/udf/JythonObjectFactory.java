@@ -17,6 +17,9 @@ public class JythonObjectFactory {
     this.interfaceType = interfaceType;
     PyObject importer = state.getBuiltins().__getitem__(Py.newString("__import__"));
     PyObject module = importer.__call__(new PyObject[] {Py.newString(moduleName),  PyArray.zeros(1, String.class)}, new String[] {"fromlist"} );
+    // Reload module definition - this is important to enable iterative updates of function definitions
+    // from interactive environments
+    module = org.python.core.__builtin__.reload(module);
     klass = module.__getattr__(className);
   }
 

@@ -1279,7 +1279,7 @@ def flow():
     webbrowser.open(connection().base_url, new = 1)
 
 
-def _put_key(file_path, dest_key=None):
+def _put_key(file_path, dest_key=None, overwrite=True):
     """
     Upload given file into DKV and save it under give key as raw object.
 
@@ -1287,7 +1287,7 @@ def _put_key(file_path, dest_key=None):
     :param file_path:  path to file to upload
     :return: key name if object was uploaded successfully
     """
-    ret = api("POST /3/PutKey?destination_key={}".format(dest_key if dest_key else ''),
+    ret = api("POST /3/PutKey?destination_key={}&overwrite={}".format(dest_key if dest_key else '', overwrite),
               filename=file_path)
     return ret["destination_key"]
 
@@ -1300,7 +1300,25 @@ def _create_zip_file(dest_filename, *content_list):
     return dest_filename
 
 
-def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None):
+def _default_source_provider(obj):
+    import inspect
+    # First try to get source code via inspect
+    try:
+        return '    '.join(inspect.getsourcelines(obj)[0])
+    except (OSError, TypeError):
+        # It seems like we are in interactive shell and
+        # we do not have access to class source code directly
+        # At this point we can:
+        # (1) get IPython history and find class definition, or
+        # (2) compose body of class from methods, since it is still possible to get
+        #     method body
+        class_def = "class {}:\n".format(obj.__name__)
+        for name, member in inspect.getmembers(obj):
+            if inspect.ismethod(member):
+                class_def += inspect.getsource(member)
+        return class_def
+
+def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_name=None, source_provider=None):
     """
     Upload given metrics function into H2O cluster.
 
@@ -1314,10 +1332,15 @@ def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_nam
     :param func_file:  internal name of file to save given metrics representation
     :param func_name:  name for h2o key under which the given metric is saved
     :param class_name: name of class wrapping the metrics function
+    :param source_provider: a function which provides a source code for given function
     :return: reference to uploaded metrics function
     """
-    import inspect
     import tempfile
+    import inspect
+
+    # Use default source provider
+    if not source_provider:
+        source_provider = _default_source_provider
 
     # The template wraps given metrics representation
     _CFUNC_CODE_TEMPLATE = """# Generated code
@@ -1333,12 +1356,6 @@ class {}Wrapper({}, MetricFunc, object):
     pass
 
 """
-
-    # Give me source of give object - poorman version
-    def get_source(o):
-        # TODO: in interpreter mode, we cannot get source code
-        # of class. But we can get source code of individual methods
-        return '    '.join(inspect.getsourcelines(o)[0])
 
     assert_satisfies(func, inspect.isclass(func) or isinstance(func, str),
                      "The argument func needs to be string or class !")
@@ -1365,7 +1382,7 @@ class {}Wrapper({}, MetricFunc, object):
 
         class_name = "{}.{}Wrapper".format(module_name, func.__name__)
         derived_func_name = "metrics_{}".format(func.__name__)
-        code = _CFUNC_CODE_TEMPLATE.format(get_source(func), func.__name__, func.__name__)
+        code = _CFUNC_CODE_TEMPLATE.format(source_provider(func), func.__name__, func.__name__)
 
     # If the func name is not given, use whatever we can derived from given definition
     if not func_name:
