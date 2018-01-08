@@ -22,6 +22,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 //            "radius_scale",
             "transform",
             "categorical_encoding",
+            "save_mapping_frame"
 //            "pca_method",
 //            "k",
 //            "max_iterations",
@@ -55,5 +56,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 
     @API(help = "Whether first factor level is included in each categorical expansion", direction = API.Direction.INOUT, level= API.Level.expert)
     public boolean use_all_factor_levels;
+
+    @API(help = "Whether to export the mapping of the aggregated frame", direction = API.Direction.INOUT, level= API.Level.expert)
+    public boolean save_mapping_frame;
   }
 }
