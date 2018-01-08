@@ -13,7 +13,8 @@ By default, the loss function method performs AUTO distribution. In this case, t
 
 Certain cases can exist, however, in which the median starting value for this loss function can lead to poor results (for example, if the median is the lowest or highest value in a tree node). The ``distribution`` option allows you to specify a different method. Available methods include AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, and tweedie.
 
-- If the distribution is ``bernoulli``, the response column must be 2-class categorical
+- If the distribution is ``bernoulli``, the response column must be 2-class categorical.
+- If the distribution is ``quasibinomial``, the response column must be numeric and binary. (Available in GBM only.)
 - If the distribution is ``multinomial``, the response column must be categorical.
 - If the distribution is ``gaussian``, the response column must be numeric.
 - If the distribution is ``poisson``, the response column must be numeric.
@@ -29,7 +30,7 @@ The following general guidelines apply when selecting a distribution:
 
  For Classification problems:
 
- - A Bernoulli distribution is used for binary outcomes.
+ - Bernoulli and Quasibinomial distributions are used for binary outcomes.
  - A Multinomial distribution can handle multiple discrete outcomes.
 
  For Regression problems:
@@ -41,6 +42,8 @@ The following general guidelines apply when selecting a distribution:
  - A Laplacian loss function (absolute L1-loss function) can predict the median percentile.
  - A Quantile regression loss function can predict a specified percentile.
  - A Huber loss function, a combination of squared error and absolute error, is more robust to outliers than L2 squared-loss function. 
+
+When ``quasibinomial`` is specified, the response must be numeric and binary. The response must also have a low value of 0 (negative class). Note that this option is available in GBM only.
 
 When ``tweedie`` is specified, users must also specify a ``tweedie_power`` value. Users can tune over this option with values > 1.0 and < 2.0. More information is available `here <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.	
 
