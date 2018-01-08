@@ -4,17 +4,19 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
-def pipelineEmailContent = null
-def emailContentHelpers = null
-def sendEmail = null
-def result = 'FAILURE'
 def scmEnv = null
 
-try {
+withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
   ansiColor('xterm') {
     timestamps {
 
+      cancelPreviousBuilds()
+
+      // Checkout and build H2O-3, create test packages and archive the scripts;
+      // run this on H2O-3 usable docker node, because we don't want to overload
+      // master
       node(DEFAULT_NODE_LABEL) {
+
         stage('Prepare and Build') {
           dir('h2o-3') {
             // clear the folder
@@ -28,16 +30,11 @@ try {
             }
           }
 
-          pipelineEmailContent = load('h2o-3/scripts/jenkins/groovy/pipelineEmailContent.groovy')
-          sendEmail = load('h2o-3/scripts/jenkins/groovy/sendEmail.groovy')
-          emailContentHelpers = load('h2o-3/scripts/jenkins/groovy/emailContentHelpers.groovy')
-
           def setBuildDesc = load('h2o-3/scripts/jenkins/groovy/setBuildDescription.groovy')
           setBuildDesc()
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-          buildConfig = prepareH2O3(scmEnv, 'MODE_MASTER', true)
-          buildConfig.setDefaultOverrideRerun(true)
+          buildConfig = prepareH2O3(scmEnv, 'MODE_BENCHMARK', false)
 
           def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
           setJobProperties(buildConfig)
@@ -47,12 +44,21 @@ try {
         }
       }
       executeTestStages(buildConfig)
-      result = 'SUCCESS'
     }
   }
-} finally {
-  if (pipelineEmailContent != null && sendEmail != null && emailContentHelpers != null) {
-    def emailBody = pipelineEmailContent(result, emailContentHelpers)
-    sendEmail(result, emailBody, emailContentHelpers.getRelevantPipelineRecipients(result))
+}
+
+def cancelPreviousBuilds() {
+  echo "###### Cancelling all previous builds ######"
+  def hi = Hudson.instance
+  def pname = env.JOB_NAME.split('/')[0]
+
+  hi.getItem(pname).getItem(env.JOB_BASE_NAME).getBuilds().each{ build ->
+    def exec = build.getExecutor()
+
+    if (build.number != currentBuild.number && exec != null) {
+      exec.doStop()
+      println("Aborted previous running build #${build.number}")
+    }
   }
 }

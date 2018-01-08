@@ -16,6 +16,9 @@ RESULT_INDICATOR_WARNING_STYLE = 'width: 10px; background-color: rgb(244, 146, 6
 SECTION_HEADER_STYLE = 'font-weight:bold; font-size:16pt;'
 SECTION_CONTENT_STYLE = 'margin-left: 15px; padding-bottom: 15px;'
 
+PIPELINE_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
+PIPELINE_FAILURE_RECIPIENTS = ['michalk@h2o.ai'] + PIPELINE_ALWAYS_RECIPIENTS
+
 GString headerDiv(build, result) {
     def LOGO_URL = 'https://pbs.twimg.com/profile_images/501572396810129408/DTgFCs-n.png'
     def DEFAULT_BACKGROUND_COLOR = '#f8433c'
@@ -45,20 +48,27 @@ div('style':'box-shadow: 0px 5px 5px #aaaaaa;background-color: #424242;color: wh
 """
 }
 
-GString detailsSection(build) {
+GString createSection(final title, final content) {
     return """
-p('style':'${SECTION_HEADER_STYLE}', 'Details')
-div('style':'${SECTION_CONTENT_STYLE}') {
-    ul {
-        li('Duration: Started at <strong>${new Date(build.getStartTimeInMillis())}</strong>')
-        li('Branch: <strong>${env.BRANCH_NAME}</strong>')
-        li('SHA: <strong>${env.GIT_SHA}</strong>')
-    }
-}
-"""
+        p('style':'${SECTION_HEADER_STYLE}', '${title}')
+        div('style':'${SECTION_CONTENT_STYLE}') {
+            ${content}
+        }
+    """
 }
 
-GString changesSection(build) {
+GString detailsSection(build) {
+    def content =  """
+        ul {
+            li('Duration: Started at <strong>${new Date(build.getStartTimeInMillis())}</strong>')
+            li('Branch: <strong>${env.BRANCH_NAME}</strong>')
+            li('SHA: <strong>${env.GIT_SHA}</strong>')
+        }
+    """
+    return createSection('Details', content)
+}
+
+String changesSection(build) {
     def REPO_URL = 'https://github.com/h2oai/h2o-3'
 
     def changesContent = ''
@@ -71,14 +81,32 @@ GString changesSection(build) {
     }
     def changesSection = ''
     if (changesContent != '') {
-        changesSection = """p('style':'${SECTION_HEADER_STYLE}', 'Changes')
-        div('style':'${SECTION_CONTENT_STYLE}') {
+        def content = """
             ul {
                 ${changesContent}
             }
-        }"""
+        """
+        changesSection = createSection('Changes', content)
     }
     return changesSection
+}
+
+GString stagesSection(build) {
+    GString content =  """
+        table('style':'width: 80%;border-collapse: collapse;') {
+            thead {
+                tr {
+                    th('style':'${TD_TH_STYLE}')
+                    th('style':'${TD_TH_STYLE}', 'Stage')
+                    th('style':'${TD_TH_STYLE}', 'Result')
+                }
+            }
+            tbody {
+                ${getStagesContent(build)}
+            }
+        }
+    """
+    return createSection('Stages Overview', content)
 }
 
 GString commonSections(build) {
@@ -104,12 +132,40 @@ MarkupTemplateEngine getDefaultTemplateEngine() {
     return new MarkupTemplateEngine(config)
 }
 
-def boolToSuccess(final boolean value) {
-    if (value) {
-        return 'SUCCESS'
+List getRelevantPipelineRecipients(result) {
+    if (result.toLowerCase() == RESULT_SUCCESS) {
+        return PIPELINE_ALWAYS_RECIPIENTS
     }
-    return 'FAILURE'
+    return PIPELINE_FAILURE_RECIPIENTS
 }
 
+private String getStagesContent(build) {
+    def stages = []
+    def STAGE_START_TYPE_DISPLAY_NAME = 'Stage : Body : End'
+    def buildNodes = build.getAction(org.jenkinsci.plugins.workflow.job.views.FlowGraphAction.class).getNodes().findAll {
+        it.getTypeDisplayName() == STAGE_START_TYPE_DISPLAY_NAME
+    }
+    buildNodes.each {
+        stages << ['name': it.getStartNode().getDisplayName(), 'result': boolToSuccess(it.getError() == null).toLowerCase().capitalize()]
+    }
+    def stagesContent = ''
+    stages.eachWithIndex { stage, index ->
+        echo stage.result
+        stagesContent += """
+            tr('style':'${index % 2 == 0 ? TR_EVEN_STYLE : TR_ODD_STYLE}') {
+                td('style':'${TD_TH_STYLE}${stage.result.toLowerCase() == RESULT_SUCCESS ? RESULT_INDICATOR_SUCCESS_STYLE : RESULT_INDICATOR_FAILURE_STYLE}')
+                td('style':'${TD_TH_STYLE}', '${stage.name}')
+                td('style':'${TD_TH_STYLE}', '${stage.result}')
+            }"""
+    }
+    return stagesContent
+}
+
+private def boolToSuccess(final boolean value) {
+    if (value) {
+        return RESULT_SUCCESS
+    }
+    return RESULT_FAILURE
+}
 
 return this

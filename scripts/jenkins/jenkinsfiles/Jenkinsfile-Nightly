@@ -59,6 +59,6 @@ try {
 } finally {
   if (pipelineEmailContent != null && sendEmail != null && emailContentHelpers != null) {
     def emailBody = pipelineEmailContent(result, emailContentHelpers)
-    sendEmail(result, emailBody)
+    sendEmail(result, emailBody, emailContentHelpers.getRelevantPipelineRecipients(result))
   }
 }
