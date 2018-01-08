@@ -88,7 +88,8 @@ Defining a GBM Model
 
 -  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
 
-  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical.
+  - If the distribution is ``quasibinomial``, the response column must be numeric and binary. 
   - If the distribution is ``multinomial``, the response column must be categorical.
   - If the distribution is ``poisson``, the response column must be numeric.
   - If the distribution is ``laplace``, the response column must be numeric.

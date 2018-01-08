@@ -17,11 +17,9 @@ with the exception of the following changes:
 -  Minor changes in histogramming logic for some corner cases
 -  By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as :math:`1.0 - p0`.  For multiclass problems, a tree is used to estimate the probability of each class separately.
 
-There was some code cleanup and refactoring to support the following
-features:
+There was some code cleanup and refactoring to support the following features:
 
 -  Per-row observation weights
--  Per-row offsets
 -  N-fold cross-validation
 
 DRF no longer has a special-cased histogram for classification (class
@@ -83,10 +81,6 @@ Defining a DRF Model
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
    training columns, since no information can be gained from them. This
    option is enabled by default.
-
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset. 
-
-    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
