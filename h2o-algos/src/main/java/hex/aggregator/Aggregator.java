@@ -213,12 +213,14 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           model._counts[i] = aggTask._exemplars[i]._cnt;
         model._exemplar_assignment_vec_key = assignment._key;
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
-
         msg = "Creating output frame.";
         Log.info(msg);
         _job.update(1, msg);
         model.createFrameOfExemplars(_parms._train.get(), model._output._output_frame);
-
+        if(model._parms._save_mapping_frame){
+          model._output._mapping_frame = Key.make("aggregated_mapping_" + _parms._train.toString() + "_by_" + model._key);
+          model.createMappingOfExemplars(model._output._mapping_frame);
+        }
         _job.update(1, "Done.");
         model.update(_job);
       } catch (Throwable t){
@@ -227,9 +229,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       } finally {
         if (model != null) {
           model.unlock(_job);
-          Scope.untrack(Collections.singletonList(model._exemplar_assignment_vec_key));
+          Scope.untrack(model._exemplar_assignment_vec_key);
           Frame outFrame = model._output._output_frame != null ? model._output._output_frame.get() : null;
-          if (outFrame != null) Scope.untrack(outFrame.keysList());
+          if (outFrame != null) Scope.untrack(outFrame.keys());
+          Frame mappingFrame = model._output._mapping_frame != null ? model._output._mapping_frame.get() : null;
+          if (mappingFrame != null) Scope.untrack(mappingFrame.keys());
         }
         if (di!=null) di.remove();
       }

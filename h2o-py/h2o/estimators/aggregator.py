@@ -24,7 +24,8 @@ class H2OAggregatorEstimator(H2OEstimator):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding"}
+                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
+                      "save_mapping_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -156,6 +157,21 @@ class H2OAggregatorEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def save_mapping_frame(self):
+        """
+        Whether to export the mapping of the aggregated frame
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("save_mapping_frame")
+
+    @save_mapping_frame.setter
+    def save_mapping_frame(self, save_mapping_frame):
+        assert_is_type(save_mapping_frame, None, bool)
+        self._parms["save_mapping_frame"] = save_mapping_frame
 
 
 
