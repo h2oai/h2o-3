@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Script for installing all java versions specified as comma separated list
+# in ${1} or in ${JAVA_VERSIONS}.
+
+# exit on error
+set -e
+
+VERSIONS_TO_INSTALL=${1}
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  VERSIONS_TO_INSTALL=${JAVA_VERSIONS}
+fi
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  echo "Either JAVA_VERSIONS must be set or provide and argument containing required versions"
+  exit 1
+fi
+
+chmod a+w /usr/lib/jvm/
+
+IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
+for java_version in "${array[@]}"; do
+  install_java_version ${java_version}
+done

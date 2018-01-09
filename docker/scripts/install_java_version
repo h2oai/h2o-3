@@ -1,0 +1,50 @@
+#! /bin/bash
+
+set -e
+
+case $1 in
+8)
+    JAVA_INSTALL_VERSION_MAJOR='8'
+    JAVA_INSTALL_VERSION=152
+    MAGIC_B_NUM=16
+    JAVA_INSTALL_LINK_HASH=aa0333dd3019491ca4f6ddbe78cdb6d0
+    JAVA_INSTALL_PATH=/usr/opt/java-8-${JAVA_INSTALL_VERSION}/
+    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u${JAVA_INSTALL_VERSION}-b${MAGIC_B_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
+    echo "Installing Java 8u${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
+    ;;
+9)
+    JAVA_INSTALL_VERSION_MAJOR='9'
+    JAVA_INSTALL_VERSION='9.0.1'
+    MAGIC_NUM=11
+    JAVA_INSTALL_PATH=/usr/opt/java-9-${JAVA_INSTALL_VERSION}/
+    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/9.0.1+${MAGIC_NUM}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
+    echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
+    ;;
+*)
+    echo "Java version '$1' not supported"
+    exit 1
+    ;;
+esac
+
+mkdir -p ${JAVA_INSTALL_PATH}
+cd ${JAVA_INSTALL_PATH}
+
+curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" ${DOWNLOAD_URL} > jdk-linux-x64.tar.gz
+
+tar zxvf jdk-linux-x64.tar.gz
+rm jdk-linux-x64.tar.gz
+
+cd jdk*
+mkdir -p /usr/lib/jvm/
+SYMLINK_TARGET="/usr/lib/jvm/java-${JAVA_INSTALL_VERSION_MAJOR}-oracle"
+echo "Symlinking ${SYMLINK_TARGET} -> $(pwd)"
+ln -s -f $(pwd) ${SYMLINK_TARGET}
+
+echo "Creating activation script"
+echo """ #! /bin/bash
+
+rm -f /usr/lib/jvm/java-current-oracle
+ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle """ > /usr/opt/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+chmod a+x /usr/opt/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+
+

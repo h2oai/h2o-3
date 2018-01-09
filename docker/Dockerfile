@@ -19,6 +19,7 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG R_VERSIONS='3.4.1,3.3.3'
 ARG PYTHON_VERSIONS='3.6,3.5,2.7'
+ARG JAVA_VERSIONS='8,9'
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='master'
@@ -49,14 +50,20 @@ RUN \
   apt-get update -q -y
 
 # Set required env vars and install Java 8
-COPY scripts/install_java /usr/sbin
+COPY scripts/install_java_versions scripts/install_java_version /usr/sbin/
 RUN \
-  chmod 700 /usr/sbin/install_java && \
+  chmod 700 /usr/sbin/install_java_versions && \
+  chmod 700 /usr/sbin/install_java_version && \
   sync && \
-  /usr/sbin/install_java
+  /usr/sbin/install_java_versions
 ENV \
-  JAVA_HOME=/usr/lib/jvm/java-8-oracle \
-  PATH=/usr/lib/jvm/java-8-oracle/bin:${PATH}
+  JAVA_HOME=/usr/lib/jvm/java-current-oracle \
+  PATH=/usr/lib/jvm/java-current-oracle/bin:${PATH}
+
+# Add the Jenkins user
+RUN \
+  groupadd -g ${JENKINS_GID} jenkins && \
+  adduser --uid ${JENKINS_UID} -gid ${JENKINS_GID} --disabled-password --gecos "" jenkins
 
 # Install from source dependencies
 RUN \
@@ -88,10 +95,6 @@ RUN \
   /usr/sbin/install_R_versions
 ENV PATH ${PATH}:/usr/local/R/current/bin/
 
-# Add the Jenkins user
-RUN \
-  groupadd -g ${JENKINS_GID} jenkins && \
-  adduser --uid ${JENKINS_UID} -gid ${JENKINS_GID} --disabled-password --gecos "" jenkins
 
 # Copy H2O-3 build script and create required folders
 COPY scripts/build-h2o-3 /tmp

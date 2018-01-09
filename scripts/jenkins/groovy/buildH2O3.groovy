@@ -1,11 +1,12 @@
 def call(final pipelineContext) {
 
-    def PYTHON_VERSION = '3.5'
-    def R_VERSION = '3.4.1'
+  final String PYTHON_VERSION = '3.5'
+  final String R_VERSION = '3.4.1'
+  final String JAVA_VERSION = '8'
 
-    // Load required scripts
-    def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
-    def makeTarget = load('h2o-3/scripts/jenkins/groovy/makeTarget.groovy')
+  // Load required scripts
+  def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
+  def makeTarget = load('h2o-3/scripts/jenkins/groovy/makeTarget.groovy')
 
     def stageName = 'Build H2O-3'
 
