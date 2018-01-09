@@ -31,11 +31,9 @@ try {
 
           // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
           // for rel- branches at 21:XX
-          final String scheduleString
+          String scheduleString = 'H 22,0,2,4,6 * * *'
           if (env.BRANCH_NAME.startsWith('rel-')) {
             scheduleString = 'H 21 * * *'
-          } else {
-            scheduleString = 'H 22,0,2,4,6 * * *'
           }
           pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
 
