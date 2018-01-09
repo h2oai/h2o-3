@@ -4400,3 +4400,7 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
   method <- match.arg(method)
   .newExpr("strDistance", x, y, .quote(method), compare_empty)
 }
+
+h2o.strconcat <- function(x) {
+  .newExpr("strconcat", x)
+}
