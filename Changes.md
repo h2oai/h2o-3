@@ -2,6 +2,65 @@
 
 ## H2O
 
+### Wheeler (3.16.0.3) - 1/8/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html</a>
+
+<h4>Technical task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5184'>PUBDEV-5184</a>] - H2O-3 now allows definition of custom function directly in Python notebooks and enables iterative updates on defined functions. 
+</li>
+</ul>
+        
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4863'>PUBDEV-4863</a>] - When a frame name includes numbers followed by alphabetic characters (for example, "250ML"), Rapids no longer parses the frame name as two tokens. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4897'>PUBDEV-4897</a>] - Fixed an issue that caused Partial Dependence Plots to a use different order of categorical values after calling as.factor.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5148'>PUBDEV-5148</a>] - Added support for CDH 5.13.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5180'>PUBDEV-5180</a>] - Fixed an issue that caused a Python 2 timestamp to be interpreted as two tokens.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5196'>PUBDEV-5196</a>] - Aggregator supports categorial features. Fixed a discrepency in the Aggregator documentation. 
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4622'>PUBDEV-4622</a>] - In GBM, users can now specify quasibinomial distribution.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4965'>PUBDEV-4965</a>] - H2O-3 now supports the Netezza JDBC driver.
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5171'>PUBDEV-5171</a>] -  Users can now optionally export the mapping of rows in an aggregated frame to that of the original raw data.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5120'>PUBDEV-5120</a>] - When using S3/S3N, revised the documentation to recommend that S3 should be used for data ingestion, and S3N should be used for data export. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5150'>PUBDEV-5150</a>] - The H2O User Guide has been updated to indicate support for CDH 5.13.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5162'>PUBDEV-5162</a>] - Updated the Anaconda section with information specifically for Python 3.6 users.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5178'>PUBDEV-5178</a>] - The H2O User Guide has been updated to indicate support for the Netezza JDBC driver.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5190'>PUBDEV-5190</a>] - Added "quasibinomial" to the list of `distribution` options in GBM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5192'>PUBDEV-5192</a>] - Added the new `save_mapping_frame` option to the Aggregator documentation.
+</li>
+</ul>
+
+
 ### Wheeler (3.16.0.2) - 11/30/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/2/index.html</a>
