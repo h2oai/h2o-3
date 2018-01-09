@@ -31,6 +31,11 @@ def call(final pipelineContext, final Closure body) {
 
   if (config.customBuildAction == null) {
     config.customBuildAction = """
+      echo "Activating Java ${env.JAVA_VERSION}"
+      . /usr/opt/activate_java_${env.JAVA_VERSION}
+      java -version 
+      javac -version
+
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -70,7 +75,7 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    export JAVA_HOME=/usr/lib/jvm/java-current-oracle
     export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}

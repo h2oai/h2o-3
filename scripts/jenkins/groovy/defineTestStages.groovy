@@ -36,8 +36,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java8 Smoke', target: 'test-junit-smoke',timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      stageName: 'Java8 Smoke', target: 'test-junit-smoke', javaVersion: 8, timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java9 Smoke', target: 'test-junit-smoke', javaVersion: 9,timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
@@ -140,7 +142,11 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7',
+      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'Java 9 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 9,
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
@@ -353,6 +359,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           target = c['target']
           pythonVersion = c['pythonVersion']
           rVersion = c['rVersion']
+          javaVersion = c['javaVersion']
           timeoutValue = c['timeoutValue']
           hasJUnit = c['hasJUnit']
           component = c['component']
@@ -375,6 +382,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
 
 private void invokeStage(final pipelineContext, final body) {
 
+  final String DEFAULT_JAVA = '8'
   final String DEFAULT_PYTHON = '3.5'
   final String DEFAULT_R = '3.4.1'
   final int DEFAULT_TIMEOUT = 60
@@ -391,6 +399,7 @@ private void invokeStage(final pipelineContext, final body) {
 
   config.pythonVersion = config.pythonVersion ?: DEFAULT_PYTHON
   config.rVersion = config.rVersion ?: DEFAULT_R
+  config.javaVersion = config.javaVersion ?: DEFAULT_JAVA
   config.timeoutValue = config.timeoutValue ?: DEFAULT_TIMEOUT
   if (config.hasJUnit == null) {
     config.hasJUnit = true
