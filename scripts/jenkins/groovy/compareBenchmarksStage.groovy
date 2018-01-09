@@ -27,8 +27,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                             'train_time_max': 33.5
                     ],
                     200: [
-                            'train_time_min': 132.5,
-                            'train_time_max': 139.5
+                            'train_time_min': 129.0,
+                            'train_time_max': 134.5
                     ]
             ],
             'springleaf': [
@@ -43,12 +43,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                     50: [
-                            'train_time_min': 92.0,
-                            'train_time_max': 100.0
+                            'train_time_min': 89.0,
+                            'train_time_max': 95.0
                     ],
                     200: [
-                            'train_time_min': 510.0,
-                            'train_time_max': 559.0
+                            'train_time_min': 502.0,
+                            'train_time_max': 549.0
                     ]
             ]
     ]
