@@ -125,7 +125,7 @@ def test_module(mod, min_version, installed_modules):
 
 
 def main(metayaml_file):
-    installed = pip.get_installed_distributions()
+    installed = pip.get_installed_distributions(skip=())
     msgs = test_requirements("build", metayaml_file, installed)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)
