@@ -1534,7 +1534,6 @@ public class h2odriver extends Configured implements Tool {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
 
-    FileInputFormat.addInputPath(job, new Path("ignored"));
     if (outputPath != null)
       FileOutputFormat.setOutputPath(job, new Path(outputPath));
     else
