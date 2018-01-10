@@ -8,6 +8,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -1534,16 +1535,10 @@ public class h2odriver extends Configured implements Tool {
     job.setOutputValueClass(Text.class);
 
     FileInputFormat.addInputPath(job, new Path("ignored"));
-
-    // If the user didn't specify an outputPath, create one on the fly because MapReduce badly wants one.
-    boolean autoOutputPath = false;
-    if (outputPath == null) {
-      String timestampPortion = Long.toString(System.currentTimeMillis());
-      String randomPortion = Long.toString(Math.round((Math.random() * 1000000)));
-      outputPath = "h2o-mapred-tmp-output/" + timestampPortion + "-" + randomPortion;
-      autoOutputPath = true;
-    }
-    FileOutputFormat.setOutputPath(job, new Path(outputPath));
+    if (outputPath != null)
+      FileOutputFormat.setOutputPath(job, new Path(outputPath));
+    else
+      job.setOutputFormatClass(NullOutputFormat.class);
 
     // Run job.  We are running a zero combiner and zero reducer configuration.
     // ------------------------------------------------------------------------
@@ -1560,19 +1555,6 @@ public class h2odriver extends Configured implements Tool {
 
     System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
-
-    // The MapReduce outputPath is not useful for H2O.
-    // So if the driver created it automatically, go ahead and remove it right away.
-    if (autoOutputPath) {
-      try {
-        org.apache.hadoop.fs.FileSystem fs = org.apache.hadoop.fs.FileSystem.get(conf);
-        fs.delete(new Path(outputPath), true);
-      }
-      catch (Exception e) {
-        System.out.println("WARNING: Unable to delete temporary HDFS output path (" + outputPath + ")");
-        e.printStackTrace();
-      }
-    }
 
     if ((rv == CLUSTER_ERROR_TIMEOUT) ||
         (rv == CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY)) {
