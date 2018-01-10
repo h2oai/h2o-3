@@ -6,8 +6,6 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
-import hex.deepwater.DeepWater;
-import hex.deepwater.DeepWaterParameters;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -16,7 +14,6 @@ import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
-import hex.deepwater.DeepWaterModel;
 import water.*;
 import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
@@ -1028,18 +1025,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return ensembleJob;
   }
 
-  Job<DeepWaterModel> defaultDeepWater() {
-    if (exceededSearchLimits("DeepWater")) return null;
-
-    DeepWaterParameters deepWaterParameters = new DeepWaterParameters();
-    setCommonModelBuilderParams(deepWaterParameters);
-
-    deepWaterParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
-
-    Job deepWaterJob = trainModel(null, "deepwater", deepWaterParameters);
-    return deepWaterJob;
-  }
-
   // manager thread:
   //  1. Do extremely cursory pass over data and gather only the most basic information.
   //
@@ -1144,15 +1129,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: run for only part of the remaining time?
     Job<Grid>dlJob3 = defaultSearchDL3(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3, JobType.HyperparamSearch);
-
-
-    ///////////////////////////////////////////////////////////
-    // build a DeepWater model
-    ///////////////////////////////////////////////////////////
-    if (DeepWater.haveBackend()) {
-      Job<DeepWaterModel> defaultDeepWaterJob = defaultDeepWater();
-      pollAndUpdateProgress(Stage.ModelTraining, "Default DeepWater build", 50, this.job(), defaultDeepWaterJob, JobType.ModelBuild);
-    }
 
 
     ///////////////////////////////////////////////////////////
