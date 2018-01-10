@@ -8,6 +8,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -556,6 +557,8 @@ public class h2odriver extends Configured implements Tool {
             "\n" +
                     "Usage: h2odriver\n" +
                     "          [generic Hadoop ToolRunner options]\n" +
+                    "          -n | -nodes <number of H2O nodes (i.e. mappers) to create>\n" +
+                    "          -mapperXmx <per mapper Java Xmx heap size>\n" +
                     "          [-h | -help]\n" +
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
@@ -567,18 +570,16 @@ public class h2odriver extends Configured implements Tool {
                     "          [-timeout <seconds>]\n" +
                     "          [-disown]\n" +
                     "          [-notify <notification file name>]\n" +
-                    "          -mapperXmx <per mapper Java Xmx heap size>\n" +
                     "          [-extramempercent <0 to 20>]\n" +
-                    "          -n | -nodes <number of H2O nodes (i.e. mappers) to create>\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-context_path <context_path> the context path for jetty]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
-                    "          [-flow_dir <server side directory or hdfs directory>]\n " +
+                    "          [-flow_dir <server side directory or hdfs directory>]\n" +
                     "          [-ea]\n" +
                     "          [-verbose:gc]\n" +
                     "          [-XX:+PrintGCDetails]\n" +
                     "          [-license <license file name (local filesystem, not hdfs)>]\n" +
-                    "          -o | -output <hdfs output dir>\n" +
+                    "          [-o | -output <hdfs output dir>]\n" +
                     "\n" +
                     "Notes:\n" +
                     "          o  Each H2O node runs as a mapper.\n" +
@@ -613,8 +614,8 @@ public class h2odriver extends Configured implements Tool {
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
-                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDir\n" +
-                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -notify notify.txt -disown -output hdfsOutputDir\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -notify notify.txt -disown\n" +
                     "\n" +
                     "Exit value:\n" +
                     "          0 means the cluster exited successfully with an orderly Shutdown.\n" +
@@ -961,9 +962,6 @@ public class h2odriver extends Configured implements Tool {
     // Check for mandatory arguments.
     if (numNodes < 1) {
       error("Number of H2O nodes must be greater than 0 (must specify -n)");
-    }
-    if (outputPath == null) {
-      error("Missing required option -output");
     }
     if (mapperXmx == null) {
       error("Missing required option -mapperXmx");
@@ -1536,10 +1534,10 @@ public class h2odriver extends Configured implements Tool {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
 
-    FileInputFormat.addInputPath(job, new Path("ignored"));
-    if (outputPath != null) {
+    if (outputPath != null)
       FileOutputFormat.setOutputPath(job, new Path(outputPath));
-    }
+    else
+      job.setOutputFormatClass(NullOutputFormat.class);
 
     // Run job.  We are running a zero combiner and zero reducer configuration.
     // ------------------------------------------------------------------------
@@ -1556,6 +1554,7 @@ public class h2odriver extends Configured implements Tool {
 
     System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
+
     if ((rv == CLUSTER_ERROR_TIMEOUT) ||
         (rv == CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY)) {
       // Try to print YARN diagnostics.
