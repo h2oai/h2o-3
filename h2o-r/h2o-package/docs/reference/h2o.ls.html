@@ -52,7 +52,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -61,14 +61,13 @@
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
     <li>
-      <a href="../articles/basics.html">H2O Basics</a>
+      <a href="../articles/getting_started.html">Getting Started</a>
+    </li>
+    <li>
+      <a href="../reference/index.html">R Reference</a>
     </li>
   </ul>
-</li>
-<li>
-  <a href="../reference/index.html">Reference</a>
 </li>
       </ul>
       
@@ -105,11 +104,13 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>library</span>(<span class='no'>h2o</span>)
-<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()</div><div class='output co'>#&gt; Reading in config file: ./../../../../.h2oconfig
-#&gt; 
-#&gt; H2O is not running yet, starting it now...</div><div class='output co'>#&gt; <span class='warning'>Warning: cannot open file '/Users/terrytangyuan/h2o-3/h2o-r/h2o/branch.txt': No such file or directory</span></div><div class='output co'>#&gt; <span class='error'>Error in file(con, "r"): cannot open the connection</span></div><div class='input'><span class='no'>prosPath</span> <span class='kw'>&lt;-</span> <span class='fu'>system.file</span>(<span class='st'>"extdata"</span>, <span class='st'>"prostate.csv"</span>, <span class='kw'>package</span><span class='kw'>=</span><span class='st'>"h2o"</span>)
-<span class='no'>prostate.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.importFile.html'>h2o.uploadFile</a></span>(<span class='kw'>path</span> <span class='kw'>=</span> <span class='no'>prosPath</span>)</div><div class='output co'>#&gt; <span class='error'>Error in h2o.getConnection(): No active connection to an H2O cluster. Did you run `h2o.init()` ?</span></div><div class='input'><span class='fu'>h2o.ls</span>()</div><div class='output co'>#&gt; <span class='error'>Error in h2o.getConnection(): No active connection to an H2O cluster. Did you run `h2o.init()` ?</span></div></pre>
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'>library</span>(<span class='no'>h2o</span>)
+<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
+<span class='no'>prosPath</span> <span class='kw'>&lt;-</span> <span class='fu'>system.file</span>(<span class='st'>"extdata"</span>, <span class='st'>"prostate.csv"</span>, <span class='kw'>package</span><span class='kw'>=</span><span class='st'>"h2o"</span>)
+<span class='no'>prostate.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.importFile.html'>h2o.uploadFile</a></span>(<span class='kw'>path</span> <span class='kw'>=</span> <span class='no'>prosPath</span>)
+<span class='fu'>h2o.ls</span>()
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

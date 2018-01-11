@@ -1,5 +1,5 @@
 ---
-title: "Welcome to H2O R Package"
+title: "Basics of H2O"
 output: html_document
 ---
 
@@ -7,22 +7,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## About H2O
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+H2O.ai is focused on bringing AI to businesses through software.  Its flagship product is H2O, the leading open source platform that makes it easy for financial services, insurance companies, and healthcare companies to deploy AI and deep learning to solve complex problems.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Using in-memory compression, H2O handles billions of data rows in-memory, even with a small cluster.  To make it easier for non-engineers to create complete analytic workflows, H2O’s platform includes interfaces for R, Python, Scala, Java, JSON, and CoffeeScript/JavaScript, as well as a built-in web interface, Flow.  H2O is designed to run in standalone mode, on Hadoop, or within a Spark Cluster, and typically deploys within minutes.
 
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+H2O includes many common machine learning algorithms, such as generalized linear modeling (linear regression, logistic regression, etc.), Naïve Bayes, principal components analysis, k-means clustering, and word2vec.  H2O implements best-in-class algorithms at scale, such as distributed random forest, gradient boosting, and deep learning.  H2O also includes a Stacked Ensembles method, which finds the optimal combination of a collection of prediction algorithms using a process known as ”stacking.” With H2O, customers canbuild thousands of models and compare the results to get the best predictions.

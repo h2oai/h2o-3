@@ -52,7 +52,7 @@
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -61,14 +61,13 @@
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
     <li>
-      <a href="../articles/basics.html">H2O Basics</a>
+      <a href="../articles/getting_started.html">Getting Started</a>
+    </li>
+    <li>
+      <a href="../reference/index.html">R Reference</a>
     </li>
   </ul>
-</li>
-<li>
-  <a href="../reference/index.html">Reference</a>
 </li>
       </ul>
       
@@ -121,9 +120,9 @@ control behavior of the function by global option.</p>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>We use this function to control csv read/write with optional data.table package.
+    <p>We use this function to control csv read/write with optional <a href='http://www.rdocumentation.org/packages/data.table/topics/data.table'>data.table</a> package.
 Currently data.table is disabled by default, to enable it set <code>options("h2o.use.data.table"=TRUE)</code>.
-It is possible to control just <code>fread</code> or <code>fwrite</code> with <code>options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)</code>.
+It is possible to control just <code><a href='http://www.rdocumentation.org/packages/data.table/topics/fread'>fread</a></code> or <code><a href='http://www.rdocumentation.org/packages/data.table/topics/fwrite'>fwrite</a></code> with <code>options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)</code>.
 <code>h2o.fread</code> and <code>h2o.fwrite</code> options are not handled in this function but next to <em>fread</em> and <em>fwrite</em> calls.</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
@@ -132,12 +131,15 @@ It is possible to control just <code>fread</code> or <code>fwrite</code> with <c
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>op</span> <span class='kw'>&lt;-</span> <span class='fu'>options</span>(<span class='st'>"h2o.use.data.table"</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='no'>op</span> <span class='kw'>&lt;-</span> <span class='fu'>options</span>(<span class='st'>"h2o.use.data.table"</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='kw'>if</span> (<span class='fu'>use.package</span>(<span class='st'>"data.table"</span>)) {
   <span class='fu'>cat</span>(<span class='st'>"optional package data.table 1.9.8+ is available\n"</span>)
 } <span class='kw'>else</span> {
   <span class='fu'>cat</span>(<span class='st'>"optional package data.table 1.9.8+ is not available\n"</span>)
-}</div><div class='output co'>#&gt; optional package data.table 1.9.8+ is not available</div><div class='input'><span class='fu'>options</span>(<span class='no'>op</span>)</div></pre>
+}
+<span class='fu'>options</span>(<span class='no'>op</span>)
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

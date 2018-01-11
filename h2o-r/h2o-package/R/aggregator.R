@@ -15,7 +15,6 @@
 #'        Defaults to NORMALIZE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param save_mapping_frame \code{Logical}. Whether to export the mapping of the aggregated frame Defaults to FALSE.
 #' @export
 h2o.aggregator <- function(training_frame, x,
                            model_id = NULL,
@@ -23,8 +22,7 @@ h2o.aggregator <- function(training_frame, x,
                            target_num_exemplars = 5000,
                            rel_tol_num_exemplars = 0.5,
                            transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                           categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                           save_mapping_frame = FALSE
+                           categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
                            ) 
 {
 
@@ -53,8 +51,6 @@ h2o.aggregator <- function(training_frame, x,
     parms$transform <- transform
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
-  if (!missing(save_mapping_frame))
-    parms$save_mapping_frame <- save_mapping_frame
 
   m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
   m@model$aggregated_frame_id <- m@model$output_frame$name
