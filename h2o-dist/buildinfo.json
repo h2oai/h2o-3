@@ -134,7 +134,7 @@
         {
             "name" : "Sparkling Water Readme",
             "id"   : "doc-sparkling-water",
-            "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.md"
+            "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.rst"
         },
         {
             "name" : "Migrating to H2O 3",
