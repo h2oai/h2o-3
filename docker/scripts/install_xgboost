@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -e
+set -x
+
+DEFAULT_REVISION='h2oai'
+
+if [ ! ${XGBOOST_REVISION} ]; then
+	echo "No revision supplied, will checkout ${DEFAULT_REVISION}. If you wish to set XGBoost revision manually set the XGBOOST_REVISION"
+	XGBOOST_REVISION=${DEFAULT_REVISION}
+fi
+if [ ! ${PYTHON_VERSION} ]; then
+	echo "PYTHON_VERSION version not set."
+	exit 1
+fi
+cd ~
+
+rm -rf xgboost-py${PYTHON_VERSION}
+git clone https://github.com/h2oai/xgboost xgboost-py${PYTHON_VERSION}
+
+cd xgboost-py${PYTHON_VERSION}
+
+git checkout ${XGBOOST_REVISION}
+
+git submodule
+git submodule init
+git submodule update
+
+make clean
+
+mkdir build
+cd build
+cmake ..
+make -j
+cd ..
+
+cd python-package
+python setup.py bdist_wheel
+pip install dist/xgboost*.whl
+cd ..
+
+mkdir build/test-reports
+python -m nose --with-xunit --xunit-file=build/test-reports/xgboost.xml tests/python
+
+cd ..
+rm -rf xgboost-py${PYTHON_VERSION}
