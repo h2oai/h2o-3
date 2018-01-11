@@ -182,13 +182,9 @@ test-package-java:
 		buildSrc/ \
 		multiNodeUtils.sh \
 		h2o-app/ \
-		h2o-core/src/main/java/ \
-		h2o-core/src/test/java/ \
-		h2o-core/src/test/resources/*.jks \
-		h2o-core/build/resources/main \
-		h2o-core/build/resources/test \
-		h2o-core/build/classes/test \
-		h2o-core/build/classes/main \
+		h2o-core/src/ \
+		h2o-core/build/resources/ \
+		h2o-core/build/classes/java/ \
 		h2o-core/build/libs/h2o-core.jar \
 		h2o-genmodel/src/ \
 		h2o-genmodel/build/libs/h2o-genmodel.jar \
@@ -209,10 +205,9 @@ test-package-java:
 		h2o-extensions/xgboost/ \
 		h2o-genmodel-extensions/ \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
-		h2o-core/build/classes/main \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
-		scripts/run.py py scripts/test-xgb-gpu-smoke.sh\
+		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh\
 		sort_crash.csv tests/doOnlyJunitSmokeTestList
 	find . -name "*.gradle" | zip -q -r test-package-java \
 	    -x h2o-web/* \
