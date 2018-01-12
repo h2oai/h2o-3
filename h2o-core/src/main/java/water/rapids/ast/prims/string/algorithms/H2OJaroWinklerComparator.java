@@ -6,7 +6,7 @@
  * fixed class in, we can remove this class.
  *
  */
-package water.rapids.ast.prims.string;
+package water.rapids.ast.prims.string.algorithms;
 
 import no.priv.garshol.duke.Comparator;
 
