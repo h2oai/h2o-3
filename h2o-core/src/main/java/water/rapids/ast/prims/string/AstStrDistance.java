@@ -10,6 +10,8 @@ import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.string.algorithms.H2OJaroWinklerComparator;
+import water.rapids.ast.prims.string.algorithms.LevenshteinDistanceComparator;
 import water.rapids.vals.ValFrame;
 
 import no.priv.garshol.duke.Comparator;
@@ -118,7 +120,7 @@ public class AstStrDistance extends AstPrimitive {
         return new H2OJaroWinklerComparator();
       case "lv":
       case "Levenshtein":
-        return new Levenshtein();
+        return new LevenshteinDistanceComparator();
       case "lcs":
       case "LongestCommonSubstring":
         return new LongestCommonSubstring();
