@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@mr/ita/190-build-summary-emailer') _
 
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'

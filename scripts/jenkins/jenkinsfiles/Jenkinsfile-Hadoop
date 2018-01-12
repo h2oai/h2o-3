@@ -1,10 +1,12 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@0.0.1') _
+
+import ai.h2o.ci.BuildResult
 
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def defineTestStages = null
 def pipelineContext = null
-def result = 'FAILURE'
+BuildResult result = BuildResult.FAILURE
 def scmEnv = null
 
 try {
@@ -36,11 +38,12 @@ try {
         }
       }
       defineTestStages(pipelineContext)
-      result = 'SUCCESS'
+      result = BuildResult.SUCCESS
     }
   }
 } finally {
   if (pipelineContext != null) {
-    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
+    final List<String> recipients = pipelineContext.getUtils().getRelevantRecipients(result)
+    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this), recipients)
   }
 }

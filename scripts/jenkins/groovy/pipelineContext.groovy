@@ -1,18 +1,18 @@
+import ai.h2o.ci.buildsummary.BuildSummary
+import ai.h2o.ci.Emailer
+
 def call(final String h2o3Root, final String mode, final scmEnv, final boolean ignoreChanges) {
-    final String BUILD_SUMMARY_SCRIPT_NAME = 'buildSummary.groovy'
     final String BUILD_CONFIG_SCRIPT_NAME = 'buildConfig.groovy'
     final String PIPELINE_UTILS_SCRIPT_NAME = 'pipelineUtils.groovy'
-    final String EMAILER_SCRIPT_NAME = 'emailer.groovy'
 
     env.COMMIT_MESSAGE = sh(script: "cd ${h2o3Root} && git log -1 --pretty=%B", returnStdout: true).trim()
     env.BRANCH_NAME = scmEnv['GIT_BRANCH'].replaceAll('origin/', '')
     env.GIT_SHA = scmEnv['GIT_COMMIT']
     env.GIT_DATE = sh(script: "cd ${h2o3Root} && git show -s --format=%ci", returnStdout: true).trim()
 
-    def final buildSummaryFactory = load("${h2o3Root}/scripts/jenkins/groovy/${BUILD_SUMMARY_SCRIPT_NAME}")
     def final buildConfigFactory = load("${h2o3Root}/scripts/jenkins/groovy/${BUILD_CONFIG_SCRIPT_NAME}")
     def final pipelineUtilsFactory = load("${h2o3Root}/scripts/jenkins/groovy/${PIPELINE_UTILS_SCRIPT_NAME}")
-    def final emailerFactory = load("${h2o3Root}/scripts/jenkins/groovy/${EMAILER_SCRIPT_NAME}")
+    def final pipelineUtils = pipelineUtilsFactory()
 
     def final buildinfoPath = "${h2o3Root}/h2o-dist/buildinfo.json"
 
@@ -22,9 +22,9 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
             buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
                     pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath)
             ),
-            buildSummaryFactory(true),
+            new BuildSummary(true),
             pipelineUtils,
-            emailerFactory()
+            new Emailer()
     )
 }
 
@@ -40,11 +40,11 @@ private List<String> getChanges(final String h2o3Root) {
 class PipelineContext{
 
     private final buildConfig
-    private final buildSummary
+    private final BuildSummary buildSummary
     private final pipelineUtils
-    private final emailer
+    private final Emailer emailer
 
-    private PipelineContext(final buildConfig, final buildSummary, final pipelineUtils, final emailer) {
+    private PipelineContext(final buildConfig, final BuildSummary buildSummary, final pipelineUtils, final Emailer emailer) {
         this.buildConfig = buildConfig
         this.buildSummary = buildSummary
         this.pipelineUtils = pipelineUtils
@@ -55,7 +55,7 @@ class PipelineContext{
         return buildConfig
     }
 
-    def getBuildSummary() {
+    BuildSummary getBuildSummary() {
         return buildSummary
     }
 
@@ -63,7 +63,7 @@ class PipelineContext{
         return pipelineUtils
     }
 
-    def getEmailer() {
+    Emailer getEmailer() {
         return emailer
     }
 

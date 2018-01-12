@@ -1,7 +1,10 @@
-def NODE_LABEL = 'master'
+@Library('test-shared-library@0.0.1') _
 
+import ai.h2o.ci.BuildResult
+
+def NODE_LABEL = 'master'
 def pipelineContext = null
-def result = 'FAILURE'
+BuildResult result = BuildResult.FAILURE
 
 try {
     ansiColor('xterm') {
@@ -441,7 +444,7 @@ EOF
             }
         }
     }
-    result = 'SUCCESS'
+    result = BuildResult.SUCCESS
 } finally {
     if (pipelineContext != null) {
         pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this), getRelevantRecipients(pipelineContext, result))
@@ -523,13 +526,13 @@ assert actual_version == expected_version, "Version should be %s but was %s" % (
 """
 }
 
-private getRelevantRecipients(final pipelineContext, final String result) {
+private getRelevantRecipients(final pipelineContext, final BuildResult result) {
     def RELEASE_NIGHTLY_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
     def RELEASE_NIGHTLY_FAILURE_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai'] + RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
     def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai']
     def RELEASE_FAILURE_RECIPIENTS = [] + RELEASE_ALWAYS_RECIPIENTS
 
-    if (result.toLowerCase() == pipelineContext.getBuildSummary().RESULT_SUCCESS) {
+    if (result == BuildResult.SUCCESS) {
         if (env.NIGHTLY_BUILD != null && env.NIGHTLY_BUILD.toLowerCase() == 'true') {
             return RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
         }

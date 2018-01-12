@@ -1,3 +1,6 @@
+import ai.h2o.ci.BuildSummary
+import ai.h2o.ci.BuildResult
+
 def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) {
 
     def EXPECTED_VALUES = [
@@ -160,7 +163,7 @@ def failuresToText(final failures, final String joinStr='\n') {
 }
 
 def sendBenchmarksWarningMail(final pipelineContext, final failures) {
-    final def benchmarksSummary = pipelineContext.getBuildSummary().newInstance(false)
+    final def benchmarksSummary = new BuildSummary(false)
     final def buildSummary = pipelineContext.getBuildSummary()
 
     benchmarksSummary.addSection(this, buildSummary.findSectionOrThrow(buildSummary.DETAILS_SECTION_ID))
@@ -195,7 +198,8 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
     """
     benchmarksSummary.addSection(this, 'warnings', 'Warnings', warningsTable)
 
-    pipelineContext.getEmailer().sendEmail(this, benchmarksSummary.RESULT_WARNING, benchmarksSummary.getSummaryHTML(this))
+    final List<String> recipients = pipelineContext.getUtils().getRelevantRecipients(result)
+    pipelineContext.getEmailer().sendEmail(this, BuildResult.WARNING, benchmarksSummary.getSummaryHTML(this), recipients)
 }
 
 return this

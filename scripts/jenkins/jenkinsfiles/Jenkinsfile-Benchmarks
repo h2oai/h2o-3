@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@0.0.1') _
 
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
