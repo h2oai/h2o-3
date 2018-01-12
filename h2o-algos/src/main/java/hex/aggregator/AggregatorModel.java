@@ -137,6 +137,9 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     final long[] uniqueExemplars = new VecUtils.CollectIntegerDomain().doAll(mapping.vecs()).domain();
     assert(uniqueExemplars.length==_exemplars.length);
     assert(mapping.numRows()==exAssignment.length());
+    for(long exmp: uniqueExemplars){
+      assert(exmp <= _exemplars.length);
+    }
     DKV.put(mapping);
     return mapping;
   }
