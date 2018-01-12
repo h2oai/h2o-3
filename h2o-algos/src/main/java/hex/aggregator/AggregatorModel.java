@@ -132,7 +132,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
           nc.addNum(ArrayUtils.find(keep, gid));
         }
       }
-    }.doAll(exAssignment)._fr.vec(0);
+    }.doAll(Vec.T_NUM,exAssignment).outputFrame().vec(0);
     Frame mapping = new Frame(destinationKey,new String[]{"exemplar_assignment"}, new Vec[]{exemplarAssignment});
     final long[] uniqueExemplars = new VecUtils.CollectIntegerDomain().doAll(mapping.vecs()).domain();
     assert(uniqueExemplars.length==_exemplars.length);
