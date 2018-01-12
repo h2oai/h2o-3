@@ -6,6 +6,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -281,13 +282,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       // There is a single rabit tracker per job
       // The RabitTracker is a python process for monitoring slaves.
-      RabitTracker rt = null;
+      IRabitTracker rt = null;
       try {
         // Create a temporary storage for user files
         featureMapFile = createFeatureMapFile();
 
         // Prepare Rabit tracker for this job
-        rt = new RabitTracker(H2O.getCloudSize());
+        rt = new RabitTrackerH2O(H2O.getCloudSize());
 
         if (!startRabitTracker(rt)) {
           throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
@@ -304,10 +305,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               getWorkerEnvs(rt),
               new String[]{""}).doAll(_train).getBooster(featureMapFile));
           // Wait for results
-          waitOnRabitWorkers(rt);
         } catch (Throwable e) {
-          // On exception we kill the tracker manually to avoid Python zombies
-          stopTracker(rt);
           // And propagate exception
           throw e;
         }
@@ -321,6 +319,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
         H2O.fail("XGBoost failure", xgBoostError);
+      } catch (IOException e) {
+        H2O.fail("XGBoost failure", e);
       } finally {
         // Unlock & save results
         model.unlock(_job);
@@ -338,17 +338,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       return null;
     }
 
-    private void stopTracker(RabitTracker rt) {
-      AtomicReference<Process> rabitTrackerProcessRef = ReflectionUtils.getFieldValue(rt, "trackerProcess");
-      if (rabitTrackerProcessRef != null) {
-        Process p = rabitTrackerProcessRef.get();
-        if (p != null) {
-          p.destroy();
-        }
-      }
-    }
-
-    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
+    protected final void scoreAndBuildTrees(XGBoostModel model, IRabitTracker rt) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, model.model_info().getBooster(), false);
@@ -370,9 +360,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               getWorkerEnvs(rt),
               null).doAll(_train).getBooster());
           // Wait for succesful completion
-          waitOnRabitWorkers(rt);
         } catch (Throwable e) {
-          stopTracker(rt);
           throw e;
         }
 
@@ -398,23 +386,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
-    private boolean startRabitTracker(RabitTracker rt) {
+    private boolean startRabitTracker(IRabitTracker rt) {
       if (H2O.CLOUD.size() > 1) {
         return rt.start(0);
       }
       return true;
     }
 
-    // RT should not be started for 1 node clouds
-    private void waitOnRabitWorkers(RabitTracker rt) {
-      if(H2O.CLOUD.size() > 1) {
-        rt.waitFor(0);
-      }
-    }
-
     // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
     // Therefore don't use RabitTracker envs for 1 node
-    private Map<String, String> getWorkerEnvs(RabitTracker rt) {
+    private Map<String, String> getWorkerEnvs(IRabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
         return rt.getWorkerEnvs();
       } else {
