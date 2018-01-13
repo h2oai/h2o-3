@@ -27,6 +27,7 @@
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
+#' @param exclude_algos List of character strings naming model algorithms to skip during the model-building phase.  An example use is exclude_algos = list("GLM", "DeepLearning", "XRT", "DRF"). Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that a
 #'          Stacked Ensemble will be trained for regression and binary classification problems only since multiclass stacking is not yet supported.
@@ -52,7 +53,8 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_tolerance = NULL,
                        stopping_rounds = 3,
                        seed = NULL,
-                       project_name = NULL)
+                       project_name = NULL,
+                       exclude_algos = NULL)
 {
 
   tryCatch({
@@ -158,7 +160,13 @@ h2o.automl <- function(x, y, training_frame,
   } else {
     build_control$project_name <- project_name
   }
-  
+
+  if (! is.null(exclude_algos)) {
+      build_models <- list(exclude_algos = exclude_algos)
+  } else {
+      build_models <- list()
+  }
+
   # Update build_control with nfolds
   if (nfolds < 0) {
     stop("nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
@@ -169,7 +177,11 @@ h2o.automl <- function(x, y, training_frame,
   build_control$nfolds <- nfolds
   
   # Create the parameter list to POST to the AutoMLBuilder 
-  params <- list(input_spec = input_spec, build_control = build_control)
+  if (length(build_models) == 0) {
+      params <- list(input_spec = input_spec, build_control = build_control)
+  } else {
+      params <- list(input_spec = input_spec, build_control = build_control, build_models = build_models)
+  }
 
   # POST call to AutoMLBuilder
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
@@ -179,10 +191,25 @@ h2o.automl <- function(x, y, training_frame,
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+
   row.names(leaderboard) <- seq(nrow(leaderboard))
+
   leaderboard <- as.h2o(leaderboard)
+
+  print("leaderboard: ")
+  print(leaderboard)
+  print("dim(leaderboard): ")
+  print(dim(leaderboard))
+
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
-  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  if (nrow(leaderboard) > 1) {
+      leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  } else {
+      # create a phony leader
+      Class <- paste0("H2OBinomialModel")
+      leader <- .newH2OModel(Class         = Class,
+                             model_id      = "dummy")
+  }
 
   # Make AutoML object
   new("H2OAutoML",
