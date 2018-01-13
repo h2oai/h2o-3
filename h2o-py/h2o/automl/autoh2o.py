@@ -88,7 +88,7 @@ class H2OAutoML(object):
         # Make bare minimum build_models
         self.build_models = {
             'exclude_algos': None
-            #                [ "GLM", "XRT", "DRF", "GBM", "XGBoost", "DeepLearning", "DeepWater", "StackedEnsemble"]
+            #                [ "GLM", "XRT", "DRF", "GBM", "XGBoost", "DeepLearning", "StackedEnsemble"]
         }
 
         # nfolds must be an non-negative integer and not equal to 1:

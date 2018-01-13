@@ -11,7 +11,7 @@ automl.leaderboard.test <- function() {
 
     #regression
     fr2 = h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
-    h = h2o.automl(y=55,training_frame = fr2, max_runtime_secs = 5, exclude_algos = list("GBM", "DeepWater"))
+    h = h2o.automl(y=55,training_frame = fr2, max_runtime_secs = 5, exclude_algos = list("GBM", "DeepLearning"))
     h@leaderboard
     expect_equal(names(h@leaderboard),c("model_id", "mean_residual_deviance","rmse", "mae", "rmsle"))
 
@@ -25,7 +25,7 @@ automl.leaderboard.test <- function() {
     #test of exclude_algos, should yield an empty leaderboard
     fr4 = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
     fr4["CAPSULE"] = as.factor(fr4["CAPSULE"])
-    f = h2o.automl(y=2,training_frame = fr4, max_runtime_secs = 5, exclude_algos = list("GLM", "XRT", "DRF", "GBM", "DeepLearning", "DeepWater", "StackedEnsemble"))
+    f = h2o.automl(y=2,training_frame = fr4, max_runtime_secs = 5, exclude_algos = list("GLM", "XRT", "DRF", "GBM", "DeepLearning", "StackedEnsemble"))
     f@leaderboard
 
     expect_equal(names(f@leaderboard),c( "model_id","auc","logloss"))

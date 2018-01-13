@@ -32,7 +32,7 @@ def prostate_automl_args():
     assert aml.leaderboard.nrows == 0, "with all algos excluded, leaderboard is not empty"
 
     print("Check arguments to H2OAutoML class")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["DeepLearning", "DeepWater"])
+    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["DeepLearning"])
     aml.train(y="CAPSULE", training_frame=train)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml0", "Project name is not set"
