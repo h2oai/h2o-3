@@ -26,6 +26,8 @@ test.GBM.quasi_binomial <- function() {
   # First calculate paper version
   # From TLMSE paper (Estimating Effects on Rare Outcomes: Knowledge is Power, Laura B. Balzer, Mark J. van der Laan)
   # Example: Data generating experiment for Simulation 1
+  print("double neg eps on this machine is")
+  print(.Machine$double.neg.eps)
   set.seed(123)
   n=2500
   W1<- rnorm(n, 0, .25)
