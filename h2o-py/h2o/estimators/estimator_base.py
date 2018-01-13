@@ -102,7 +102,8 @@ class H2OEstimator(ModelBase):
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
-        assert_is_type(training_frame, H2OFrame)
+
+        assert_is_type(training_frame, None, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
@@ -113,6 +114,14 @@ class H2OEstimator(ModelBase):
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
         assert_is_type(verbose,bool)
+
+        if self._requires_training_frame() and training_frame is None:
+            raise H2OValueError("Training frame required for %s algorithm, but none was given.", self.algo)
+
+        training_frame_exists = training_frame is None
+        if training_frame_exists:
+            self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
+
         algo = self.algo
         if verbose and algo not in ["drf","gbm","deeplearning","xgboost"]:
             raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
@@ -121,8 +130,10 @@ class H2OEstimator(ModelBase):
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec"})
-        ncols = training_frame.ncols
-        names = training_frame.names
+        if not training_frame_exists:
+            names = training_frame.names
+            ncols = training_frame.ncols
+
         if is_supervised:
             if y is None: y = "response"
             if is_type(y, int):
@@ -135,40 +146,43 @@ class H2OEstimator(ModelBase):
             self._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         elif y is not None:
             raise H2OValueError("y should not be provided for an unsupervised model")
-        assert_is_type(y, str, None)
-        ignored_columns_set = set()
-        if ignored_columns is not None:
-            if x is not None:
-                raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
-            for ic in ignored_columns:
-                if is_type(ic, int):
-                    if not (-ncols <= ic < ncols):
-                        raise H2OValueError("Column %d does not exist in the training frame" % ic)
-                    ignored_columns_set.add(names[ic])
-                else:
-                    if ic not in names:
-                        raise H2OValueError("Column %s not in the training frame" % ic)
-                    ignored_columns_set.add(ic)
-        if x is None:
-            xset = set(names) - {y} - ignored_columns_set
-        else:
-            xset = set()
-            if is_type(x, int, str): x = [x]
-            for xi in x:
-                if is_type(xi, int):
-                    if not (-ncols <= xi < ncols):
-                        raise H2OValueError("Column %d does not exist in the training frame" % xi)
-                    xset.add(names[xi])
-                else:
-                    if xi not in names:
-                        raise H2OValueError("Column %s not in the training frame" % xi)
-                    xset.add(xi)
-        x = list(xset)
 
-        parms["offset_column"] = offset_column
-        parms["fold_column"] = fold_column
-        parms["weights_column"] = weights_column
-        parms["max_runtime_secs"] = max_runtime_secs
+        if not training_frame_exists:
+            assert_is_type(y, str, None)
+            ignored_columns_set = set()
+            if ignored_columns is not None:
+                if x is not None:
+                    raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
+                for ic in ignored_columns:
+                    if is_type(ic, int):
+                        if not (-ncols <= ic < ncols):
+                            raise H2OValueError("Column %d does not exist in the training frame" % ic)
+                        ignored_columns_set.add(names[ic])
+                    else:
+                        if ic not in names:
+                            raise H2OValueError("Column %s not in the training frame" % ic)
+                        ignored_columns_set.add(ic)
+            if x is None:
+                xset = set(names) - {y} - ignored_columns_set
+            else:
+                xset = set()
+                if is_type(x, int, str): x = [x]
+                for xi in x:
+                    if is_type(xi, int):
+                        if not (-ncols <= xi < ncols):
+                            raise H2OValueError("Column %d does not exist in the training frame" % xi)
+                        xset.add(names[xi])
+                    else:
+                        if xi not in names:
+                            raise H2OValueError("Column %s not in the training frame" % xi)
+                        xset.add(xi)
+            x = list(xset)
+
+            parms["offset_column"] = offset_column
+            parms["fold_column"] = fold_column
+            parms["weights_column"] = weights_column
+            parms["max_runtime_secs"] = max_runtime_secs
+
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
             parms["model_id"] = model_id
@@ -180,18 +194,21 @@ class H2OEstimator(ModelBase):
         if not is_unsupervised and y is None: raise ValueError("Missing response")
 
         # Step 3
-        parms["training_frame"] = training_frame
+        if not training_frame_exists:
+            parms["training_frame"] = training_frame
+            offset = parms["offset_column"]
+            folds = parms["fold_column"]
+            weights = parms["weights_column"]
+
         if validation_frame is not None: parms["validation_frame"] = validation_frame
         if is_type(y, int): y = training_frame.names[y]
         if y is not None: parms["response_column"] = y
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
             x = [training_frame.names[i] for i in x]
-        offset = parms["offset_column"]
-        folds = parms["fold_column"]
-        weights = parms["weights_column"]
-        ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
-        parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
+        if not training_frame_exists:
+            ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
+            parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
                                  [quoted(col) for col in parms["interactions"]])
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
@@ -334,6 +351,18 @@ class H2OEstimator(ModelBase):
         """
         self._parms.update(parms)
         return self
+
+    def _verify_training_frame_params(self, *args):
+        for param in args:
+            if param is not None:
+                raise H2OValueError("No training frame defined, yet the parameter %d is has been specified.", param)
+
+    def _requires_training_frame(self):
+        """
+        Determines if a training frame is required for given algorithm.
+        :return: True as a default value. Can be overridden by any specific algorithm.
+        """
+        return True
 
 
     @staticmethod
