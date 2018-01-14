@@ -56,4 +56,42 @@ public class AstStrConcatTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testStrConcatWithNAs() {
+    try {
+      Scope.enter();
+      final Frame input = new TestFrameBuilder()
+              .withName("input")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_STR)
+              .withDataForCol(0, ar(null, "1", "2", "3", "4", "5", "6"))
+              .withDataForCol(1, ar("A", "B", "C", null, "E", "F", "G"))
+              .withDataForCol(2, ar("a", "b", "c", "d", "e", "f", null))
+              .withChunkLayout(2, 5)
+              .build();
+      Scope.track(input);
+
+      final Frame expected = new TestFrameBuilder()
+              .withName("expected")
+              .withColNames("C1")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, ar("Aa", "1Bb", "2Cc", "3d", "4Ee", "5Ff", "6G"))
+              .withChunkLayout(2, 5)
+              .build();
+      Scope.track(expected);
+
+      Val val = Rapids.exec("(tmp= output (strconcat input))");
+
+      assertTrue(val instanceof ValFrame);
+      Frame output = val.getFrame();
+      Scope.track(output);
+
+      assertEquals(1, output.numCols());
+
+      assertStringVecEquals(expected.anyVec(), output.anyVec());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

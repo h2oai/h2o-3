@@ -8,6 +8,29 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 
+/**
+ * Accepts a frame with multiple columns with the elements of type String.
+ * Returns a frame with a single column which contains the concatenation of
+ * all strings in a given row
+ * Note: If a value of an element is NA then empty string is appended
+ *
+ * Example:
+ *
+ * Request Frame:
+ * "1", "2", "3", "4", "5", "6", "7"
+ * "A", "B", "C", "D", "E", "F", "G"
+ * "a", "b", "c", "d", "e", "f", "g"
+ * Response:
+ * "0Aa", "1Bb", "2Cc", "3Dd", "4Ee", "5Ff", "6Gg"
+ *
+ * Request Frame:
+ * null(NA), "1", "2", "3", "4", "5", "6"
+ * "A", "B", "C", null(NA), "E", "F", "G"
+ * "a", "b", "c", "d",      "e", "f", null(NA)
+ * Response:
+ * "Aa", "1Bb", "2Cc", "3d", "4Ee", "5Ff", "6G"
+ *
+ */
 public class AstStrConcat extends AstPrimitive {
 
   @Override
@@ -32,7 +55,7 @@ public class AstStrConcat extends AstPrimitive {
     // Type check
     for (Vec v : fr.vecs())
       if (! v.isString())
-        throw new IllegalArgumentException("length() requires a string column. "
+        throw new IllegalArgumentException("strconcat() requires a string column. "
                 + "Received " + fr.anyVec().get_type_str()
                 + ". Please convert column to a string first.");
 
@@ -51,9 +74,14 @@ public class AstStrConcat extends AstPrimitive {
             // Working with rows
             StringBuilder sb = new StringBuilder();
             for  (int j = 0; j < cs.length; j++) {
-              // FIXME: this code doesn't handle NAs
-              BufferedString bs = cs[j].atStr(tmpStr, i);
-              String s = bs.toString();
+              String s;
+              if(cs[j].isNA(i)) {
+                s = "";
+              }
+              else {
+                BufferedString bs = cs[j].atStr(tmpStr, i);
+                s = bs.toString();
+              }
               sb.append(s);
             }
             String result = sb.toString();
