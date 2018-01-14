@@ -1274,6 +1274,12 @@ public final class AutoBuffer {
     return len == -1 ? null : new String(getA1(len), UTF_8);
   }
 
+  // Used to communicate with external frameworks, for example XGBoost
+  public String getExternalStr( ) {
+    int len = get4();
+    return len == -1 ? null : new String(getA1(len), UTF_8);
+  }
+
   public <E extends Enum> E getEnum(E[] values ) {
     int idx = get1();
     return idx == -1 ? null : values[idx];
@@ -1499,6 +1505,13 @@ public final class AutoBuffer {
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
     return putA1(StringUtils.bytesOf(s));
+  }
+
+  // Used to communicate with external frameworks, for example XGBoost
+  public AutoBuffer putExternalStr( String s ) {
+    put4(s.length());
+    byte[] a = StringUtils.bytesOf(s);
+    return putA1(a, a.length);
   }
 
   @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {

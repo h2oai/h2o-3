@@ -9,9 +9,9 @@ import java.util.*;
  */
 public class LinkMap {
     private int numWorkers;
-    public Map<Integer, List<Integer>> treeMap;
-    public Map<Integer, Integer> parentMap;
-    public Map<Integer, Pair<Integer, Integer>> ringMap;
+    public Map<Integer, List<Integer>> treeMap = new LinkedHashMap<>();
+    public Map<Integer, Integer> parentMap = new LinkedHashMap<>();
+    public Map<Integer, Pair<Integer, Integer>> ringMap = new LinkedHashMap<>();
 
     public LinkMap(int numWorkers) {
         this.numWorkers = numWorkers;

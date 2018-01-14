@@ -19,6 +19,7 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.network.SecurityUtils;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -81,8 +82,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if (H2O.CLOUD.size() > 1 && Platform.geOSType() == Platform.OSX) {
-      throw new H2OIllegalArgumentException("Cannot run XGBoost on clusters larger than 1");
+    if (H2O.CLOUD.size() > 1) {
+      if(Platform.geOSType() == Platform.OSX) {
+        throw new H2OIllegalArgumentException("Cannot run XGBoost on OSX clusters larger than 1 node.");
+      }
+      if(H2O.SELF.getSecurityManager().securityEnabled) {
+        throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
+      }
     }
     if (expensive) {
       if (_response.naCnt() > 0)
@@ -305,6 +311,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               getWorkerEnvs(rt),
               new String[]{""}).doAll(_train).getBooster(featureMapFile));
           // Wait for results
+          waitOnRabitWorkers(rt);
         } catch (Throwable e) {
           // And propagate exception
           throw e;
@@ -360,6 +367,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               getWorkerEnvs(rt),
               null).doAll(_train).getBooster());
           // Wait for succesful completion
+          waitOnRabitWorkers(rt);
         } catch (Throwable e) {
           throw e;
         }
@@ -391,6 +399,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         return rt.start(0);
       }
       return true;
+    }
+
+    // RT should not be started for 1 node clouds
+    private void waitOnRabitWorkers(IRabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        rt.waitFor(0);
+      }
     }
 
     // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
