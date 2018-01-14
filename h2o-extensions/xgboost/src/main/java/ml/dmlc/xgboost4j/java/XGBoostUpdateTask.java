@@ -45,6 +45,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     @Override
     protected void setupLocal() {
+        if(H2O.ARGS.client) {
+            return;
+        }
+
         // We need to verify that the xgboost is available on the remove node
         if (!ExtensionManager.getInstance().isCoreExtensionEnabled(XGBoostExtension.NAME)) {
             throw new IllegalStateException("XGBoost is not available on the node " + H2O.SELF);
