@@ -1,7 +1,7 @@
 #! /usr/bin/groovy
 
 final String AGENT_LABEL = 'docker && !mr-0xc8'
-final String IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}"
+final String IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime"
 def pipelineContext = null
 
 pipeline {
@@ -101,11 +101,13 @@ pipeline {
                         pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
 
+                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
+
                         def dockerBuildCMD = 'docker build'
                         if (params.noCache) {
                             dockerBuildCMD += ' --no-cache'
                         }
-                        dockerBuildCMD += " -t ${IMAGE_NAME} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) ."
+                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) ."
                         sh """
                             printenv
                             cd docker
@@ -126,17 +128,19 @@ pipeline {
             }
             steps {
                 script {
-                    final String stageName = 'Checkout Sources'
+                    final String stageName = 'Publish Docker Image'
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
                         pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
 
+                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
+
                         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             sh """
-                        docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                        docker push ${IMAGE_NAME}
-                    """
-                            echo "###### Docker image ${IMAGE_NAME} built and pushed. ######"
+                                docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+                                docker push ${IMAGE_NAME}:${version}
+                            """
+                            echo "###### Docker image ${IMAGE_NAME}:${version} built and pushed. ######"
                         }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
                     } catch (Exception e) {
