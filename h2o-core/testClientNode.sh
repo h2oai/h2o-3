@@ -44,7 +44,7 @@ else
     COVERAGE=""
 fi
 
-JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp build/classes/main${SEP}build/resources/main${SEP}build/resources/test${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar"
+JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp ${JVM_CLASSPATH}"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

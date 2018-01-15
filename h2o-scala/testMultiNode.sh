@@ -69,7 +69,7 @@ fi
 
 
 # Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp build/${PROJECT_NAME}/libs/${PROJECT_NAME}.jar${SEP}build/${PROJECT_NAME}/libs/${PROJECT_NAME}-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp ${JVM_CLASSPATH}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner
