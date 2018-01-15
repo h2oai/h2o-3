@@ -122,6 +122,10 @@ class BuildConfig {
     )
   }
 
+  String getDefaultImageVersion() {
+    return DEFAULT_IMAGE_VERSION_TAG
+  }
+
   private void detectChanges(List<String> changes) {
     // clear the changes map
     markAllComponentsForSkip()
