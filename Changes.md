@@ -2,6 +2,34 @@
 
 ## H2O
 
+### Wheeler (3.16.0.4) - 1/15/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html</a>
+
+<h4>Bug</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5206'>PUBDEV-5206</a>] - Fixed several client deadlock issues.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5212'>PUBDEV-5212</a>] - When verifying that a supported version of Java is available, H2O no longer checks for version 1.6. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5216'>PUBDEV-5216</a>] - The H2O-3 download site has an updated link for the Sparkling Water README.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5220'>PUBDEV-5220</a>] - In Aggregator, fixed the way that a created mapping frame is populated. 
+</li>
+
+<h4>New Feature</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5209'>PUBDEV-5209</a>] - XGBoost can now be used in H2O on Hadoop with a single node.
+</li>
+
+<h4>Improvement</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5210'>PUBDEV-5210</a>] - Deep Water is disabled in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5211'>PUBDEV-5211</a>] - This release of H2O includes an upgraded XGBoost version.
+</li>
+
+
 ### Wheeler (3.16.0.3) - 1/8/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html</a>
@@ -9,13 +37,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/inde
 <h4>Technical task</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5184'>PUBDEV-5184</a>] - H2O-3 now allows definition of custom function directly in Python notebooks and enables iterative updates on defined functions.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5184'>PUBDEV-5184</a>] - H2O-3 now allows definition of custom function directly in Python notebooks and enables iterative updates on defined functions. 
 </li>
 </ul>
-
+        
 <h4>Bug</h4>
+
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4863'>PUBDEV-4863</a>] - When a frame name includes numbers followed by alphabetic characters (for example, "250ML"), Rapids no longer parses the frame name as two tokens.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4863'>PUBDEV-4863</a>] - When a frame name includes numbers followed by alphabetic characters (for example, "250ML"), Rapids no longer parses the frame name as two tokens. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4897'>PUBDEV-4897</a>] - Fixed an issue that caused Partial Dependence Plots to a use different order of categorical values after calling as.factor.
 </li>
@@ -23,10 +52,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5180'>PUBDEV-5180</a>] - Fixed an issue that caused a Python 2 timestamp to be interpreted as two tokens.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5196'>PUBDEV-5196</a>] - Aggregator supports categorial features. Fixed a discrepency in the Aggregator documentation.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5196'>PUBDEV-5196</a>] - Aggregator supports categorial features. Fixed a discrepency in the Aggregator documentation. 
 </li>
 </ul>
-
+        
 <h4>New Feature</h4>
 
 <ul>
@@ -35,18 +64,18 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/inde
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4965'>PUBDEV-4965</a>] - H2O-3 now supports the Netezza JDBC driver.
 </li>
 </ul>
-
+            
 <h4>Improvement</h4>
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5171'>PUBDEV-5171</a>] -  Users can now optionally export the mapping of rows in an aggregated frame to that of the original raw data.
 </li>
 </ul>
-
+    
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5120'>PUBDEV-5120</a>] - When using S3/S3N, revised the documentation to recommend that S3 should be used for data ingestion, and S3N should be used for data export.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5120'>PUBDEV-5120</a>] - When using S3/S3N, revised the documentation to recommend that S3 should be used for data ingestion, and S3N should be used for data export. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5150'>PUBDEV-5150</a>] - The H2O User Guide has been updated to indicate support for CDH 5.13.
 </li>
