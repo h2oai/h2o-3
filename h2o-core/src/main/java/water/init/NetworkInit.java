@@ -158,7 +158,7 @@ public class NetworkInit {
     // Read a flatfile of allowed nodes
     if (embeddedConfigFlatfile != null)
       H2O.setFlatfile(parseFlatFileFromString(embeddedConfigFlatfile));
-    else 
+    else
       H2O.setFlatfile(parseFlatFile(H2O.ARGS.flatfile));
 
     // All the machines has to agree on the same multicast address (i.e., multicast group)
@@ -256,7 +256,7 @@ public class NetworkInit {
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
 
-      HashSet<H2ONode> nodes = H2O.getFlatfile();
+      Set<H2ONode> nodes = H2O.getFlatfile();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
