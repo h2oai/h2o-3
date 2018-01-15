@@ -68,8 +68,7 @@ public abstract class Paxos {
     if (H2O.isFlatfileEnabled()) {
       if (!H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
         // A new client was reported to this node so we propagate this information to all nodes in the cluster, to this
-        // as well. H2O client is always reported in case of flatfile to just a single H2O node so we can be sure
-        // there are no concurrent messages like this
+        // as well
         UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
       } else if (H2O.ARGS.client && !H2O.isNodeInFlatfile(h2o)) {
         // This node is a client and using a flatfile to figure out a topology of the cluster. The flatfile passed to the
