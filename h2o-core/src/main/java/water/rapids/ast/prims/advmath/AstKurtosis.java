@@ -26,11 +26,12 @@ public class AstKurtosis extends AstPrimitive {
         double[] ds = new double[fr.numCols()];
         Vec[] vecs = fr.vecs();
         for (int i = 0; i < fr.numCols(); i++)
-            ds[i] = (!vecs[i].isNumeric() || vecs[i].length() == 0 || (!narm && vecs[i].naCnt() > 0)) ? Double.NaN : kurtosis(vecs[i]);
+            ds[i] = kurtosis(vecs[i], narm);
         return new ValNums(ds);
     }
 
-    public static double kurtosis(Vec v) {
-        return AstHist.fourth_moment(v);
+    public static double kurtosis(Vec v, boolean narm) {
+        return !v.isNumeric() || v.length() == 0 || (!narm && v.naCnt() > 0) ?
+                Double.NaN : AstHist.fourth_moment(v);
     }
 }

@@ -9,6 +9,8 @@ import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.rapids.ast.prims.advmath.AstKurtosis;
+import water.rapids.ast.prims.advmath.AstSkewness;
 import water.rapids.ast.prims.mungers.AstNaOmit;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -677,26 +679,9 @@ public class FrameMetadata extends Iced {
         _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
       }
 
-      //skewness, kurtosis using rapids call
-      Key<Frame> key = Key.make("keyW");
-      String[] names= new String[1];
-      names[0] = "num1";
-      Vec[] vecs = new  Vec[1];
-      vecs[0] = v;
-      Frame vec_tofr = new Frame(key,names, vecs);
-      DKV.put(vec_tofr);
-      //Skewness
-      String x = String.format("(skewness %s %s )",vec_tofr._key,true);
-      Val res1 = Rapids.exec(x);
-      double[] darray1 = res1.getNums();
-      _colMeta._skew = darray1[0];
-      //Kurtosis
-      String y = String.format("(kurtosis %s %s )",vec_tofr._key,true);
-      Val res2 = Rapids.exec(y);
-      double[] darray2 = res2.getNums();
-      _colMeta._kurtosis = darray2[0];
-      DKV.remove(vec_tofr._key);
-      //vec_tofr.remove();
+      // Skewness & Kurtosis
+      _colMeta._skew = AstSkewness.skewness(v, true);
+      _colMeta._kurtosis = AstKurtosis.kurtosis(v, true);
     }
 
     public ColMeta meta() { return _colMeta; }
