@@ -331,9 +331,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // Convert to expected output structure and optionally calculate metrics
     Frame predFrame;
     ModelMetrics mm = null;
-    Vec resp = computeMetrics ? Vec.makeVec(data.getLabel(), Vec.newKey()) : null;
+    Vec resp = null;
     float[] weights = data.getWeight();
     if (_output.nclasses()==1) {
+      // Regression
+      resp = computeMetrics ? Vec.makeVec(data.getLabel(), Vec.newKey()) : null;
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j) {
         dpreds[j] = preds[j][0];
@@ -348,6 +350,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{pred});
     }
     else if (_output.nclasses()==2) {
+      // Binomial
+      resp = computeMetrics ? Vec.makeVec(data.getLabel(), _output.classNames(), Vec.newKey()) : null;
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
@@ -373,6 +377,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         mm = ModelMetricsBinomial.make(p1, resp);
       predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{partPreds.vec(0), partPreds.vec(1), p1});
     } else {
+      // Multinomial
+      resp = computeMetrics ? Vec.makeVec(data.getLabel(), _output.classNames(), Vec.newKey()) : null;
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
       domains[0] = _output.classNames();

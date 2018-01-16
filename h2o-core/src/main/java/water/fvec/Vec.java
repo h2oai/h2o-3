@@ -523,6 +523,21 @@ public class Vec extends Keyed<Vec> {
   }
 
   // allow missing (NaN) categorical values
+  public static Vec makeVec(float [] vals, String [] domain, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(float d:vals) {
+      assert(Float.isNaN(d) || (long)d == d);
+      nc.addNum(d);
+    }
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
     NewChunk nc = new NewChunk(v,0);
@@ -536,6 +551,7 @@ public class Vec extends Keyed<Vec> {
     fs.blockForPending();
     return v;
   }
+
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
