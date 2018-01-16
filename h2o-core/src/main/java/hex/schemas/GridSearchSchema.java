@@ -4,7 +4,7 @@ import hex.Model;
 import hex.grid.Grid;
 import water.H2O;
 import water.Key;
-import water.api.*;
+import water.api.API;
 import water.api.schemas3.JobV3;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
@@ -59,42 +59,58 @@ public class GridSearchSchema<G extends Grid<MP>,
 
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
-      Map<String,Object> m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
-      // Convert lists and singletons into arrays
-      for (Map.Entry<String, Object> e : m.entrySet()) {
-        Object o = e.getValue();
-        Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+      Map<String, Object> m;
+      try {
+        m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
 
-        hyper_parameters.put(e.getKey(),o2);
+        // Convert lists and singletons into arrays
+        for (Map.Entry<String, Object> e : m.entrySet()) {
+          Object o = e.getValue();
+          Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+
+          hyper_parameters.put(e.getKey(),o2);
+        }
+      }
+      catch (Exception e) {
+        // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
+        throw new H2OIllegalArgumentException("Can't parse the hyper_parameters dictionary; got error: " + e.getMessage() + " for raw value: " + parms.getProperty("hyper_parameters"));
       }
       parms.remove("hyper_parameters");
     }
 
     if( parms.containsKey("search_criteria") ) {
-      Properties p = water.util.JSONUtils.parseToProperties(parms.getProperty("search_criteria"));
+      Properties p;
+      try {
+        p = water.util.JSONUtils.parseToProperties(parms.getProperty("search_criteria"));
 
-      if (! p.containsKey("strategy")) {
-        throw new H2OIllegalArgumentException("search_criteria.strategy", "null");
+        if (! p.containsKey("strategy")) {
+          throw new H2OIllegalArgumentException("search_criteria.strategy", "null");
+        }
+
+        // TODO: move this into a factory method in HyperSpaceSearchCriteriaV99
+        String strategy = (String)p.get("strategy");
+        if ("Cartesian".equals(strategy)) {
+          search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
+        } else if ("RandomDiscrete".equals(strategy)) {
+          search_criteria = new HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99();
+          if (p.containsKey("max_runtime_secs") && Double.parseDouble((String) p.get("max_runtime_secs"))<0) {
+            throw new H2OIllegalArgumentException("max_runtime_secs must be >= 0 (0 for unlimited time)", strategy);
+          }
+          if (p.containsKey("max_models") && Integer.parseInt((String) p.get("max_models"))<0) {
+            throw new H2OIllegalArgumentException("max_models must be >= 0 (0 for all models)", strategy);
+          }
+        } else {
+          throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
+        }
+
+        search_criteria.fillWithDefaults();
+        search_criteria.fillFromParms(p);
+      }
+      catch (Exception e) {
+        // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
+        throw new H2OIllegalArgumentException("Can't parse the search_criteria dictionary; got error: " + e.getMessage() + " for raw value: " + parms.getProperty("search_criteria"));
       }
 
-      // TODO: move this into a factory method in HyperSpaceSearchCriteriaV99
-      String strategy = (String)p.get("strategy");
-      if ("Cartesian".equals(strategy)) {
-        search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
-      } else if ("RandomDiscrete".equals(strategy)) {
-        search_criteria = new HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99();
-        if (p.containsKey("max_runtime_secs") && Double.parseDouble((String) p.get("max_runtime_secs"))<0) {
-          throw new H2OIllegalArgumentException("max_runtime_secs must be >= 0 (0 for unlimited time)", strategy);
-        }
-        if (p.containsKey("max_models") && Integer.parseInt((String) p.get("max_models"))<0) {
-          throw new H2OIllegalArgumentException("max_models must be >= 0 (0 for all models)", strategy);
-        }
-      } else {
-        throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
-      }
-
-      search_criteria.fillWithDefaults();
-      search_criteria.fillFromParms(p);
       parms.remove("search_criteria");
     } else {
       // Fall back to Cartesian if there's no search_criteria specified.
