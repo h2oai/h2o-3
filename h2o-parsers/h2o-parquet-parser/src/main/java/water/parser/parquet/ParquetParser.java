@@ -218,6 +218,9 @@ public class ParquetParser extends Parser {
         case DOUBLE:
           types[i] = Vec.T_NUM;
           break;
+        case INT96:
+          types[i] = Vec.T_TIME;
+          break;
         case INT64:
           types[i] = OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) ? Vec.T_TIME : Vec.T_NUM;
           break;
