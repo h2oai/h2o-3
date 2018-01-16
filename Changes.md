@@ -2,6 +2,34 @@
 
 ## H2O
 
+### Wheeler (3.16.0.4) - 1/15/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html</a>
+
+<h4>Bug</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5206'>PUBDEV-5206</a>] - Fixed several client deadlock issues.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5212'>PUBDEV-5212</a>] - When verifying that a supported version of Java is available, H2O no longer checks for version 1.6. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5216'>PUBDEV-5216</a>] - The H2O-3 download site has an updated link for the Sparkling Water README.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5220'>PUBDEV-5220</a>] - In Aggregator, fixed the way that a created mapping frame is populated. 
+</li>
+
+<h4>New Feature</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5209'>PUBDEV-5209</a>] - XGBoost can now be used in H2O on Hadoop with a single node.
+</li>
+
+<h4>Improvement</h4>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5210'>PUBDEV-5210</a>] - Deep Water is disabled in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5211'>PUBDEV-5211</a>] - This release of H2O includes an upgraded XGBoost version.
+</li>
+
+
 ### Wheeler (3.16.0.3) - 1/8/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/index.html</a>
@@ -14,6 +42,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/3/inde
 </ul>
         
 <h4>Bug</h4>
+
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4863'>PUBDEV-4863</a>] - When a frame name includes numbers followed by alphabetic characters (for example, "250ML"), Rapids no longer parses the frame name as two tokens. 
 </li>
