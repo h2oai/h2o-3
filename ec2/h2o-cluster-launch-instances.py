@@ -170,7 +170,7 @@ else:
         instance_ids=fulfilled,
     )
 
-instances = reservation[0].instances
+instances = reservation.instances
 
 for i, instance in enumerate(instances):
     print 'Waiting for instance', i+1, 'of', numInstancesToLaunch, '...'
