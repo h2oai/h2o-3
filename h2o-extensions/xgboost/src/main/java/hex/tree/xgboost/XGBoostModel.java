@@ -283,6 +283,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return score0(data, preds, 0.0);
   }
 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    ab.putKey(model_info._dataInfoKey);
+    return super.writeAll_impl(ab);
+  }
+
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    ab.getKey(model_info._dataInfoKey, fs);
+    return super.readAll_impl(ab, fs);
+  }
 
   @Override
   public XGBoostMojoWriter getMojo() {
