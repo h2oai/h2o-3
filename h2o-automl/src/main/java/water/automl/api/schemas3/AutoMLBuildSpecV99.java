@@ -121,11 +121,14 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="Prevent AutoML from trying these algos; ignored if you use the model_searches parameter", values = {"GLM", "XRT", "DRF", "GBM", "XGBoost", "DeepLearning", "StackedEnsemble"}, direction=API.Direction.INPUT)
+    @API(help="A list algorithms to skip during the model-building phase.", values = {"GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"}, direction=API.Direction.INPUT)
     public AutoML.algo[] exclude_algos;
 
+    // Disabling until we use/need this
+    /*
     @API(help="Optional model build parameter sets, including base hyperparameters and optional hyperparameter search.")
     public GridSearchSchema[] model_searches;
+    */
   } // class AutoMLBuildModels
 
   static final public class AutoMLEnsembleParametersV99 extends Schema<AutoMLBuildSpec.AutoMLEnsembleParameters, AutoMLEnsembleParametersV99> {

@@ -25,7 +25,7 @@ def prostate_automl_args():
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     print("Check that exclude_algos implementation is complete, and empty leaderboard works")
-    aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["GLM", "XRT", "DRF", "GBM", "DeepLearning", "DeepWater", "StackedEnsemble"])
+    aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"])
     aml.train(y="CAPSULE", training_frame=train)
     print("Check leaderboard to ensure that it only has a header")
     print(aml.leaderboard)
@@ -118,7 +118,7 @@ def prostate_automl_args():
     print("Check predictions")
     print(aml.predict(train))
 
-    # TODO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
+    # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
@@ -139,12 +139,12 @@ def prostate_automl_args():
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
 
-    # TODO
+    # TO DO
     #print("Check that exactly two ensembles are trained")
     #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
     #aml.train(y="CAPSULE", training_frame=train)
 
-    # TODO
+    # TO DO
     # Add a test that checks fold_column like in runit
 
 

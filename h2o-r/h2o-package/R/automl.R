@@ -27,10 +27,11 @@
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
-#' @param exclude_algos List of character strings naming model algorithms to skip during the model-building phase.  An example use is exclude_algos = list("GLM", "DeepLearning", "XRT", "DRF"). Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
+#' @param exclude_algos Vector of character strings naming algorithms to skip during the model-building phase.  An example use is exclude_algos = list("GLM", "DeepLearning", "DRF"), 
+#'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
+#'        all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that a
-#'          Stacked Ensemble will be trained for regression and binary classification problems only since multiclass stacking is not yet supported.
+#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
 #' @examples
 #' \donttest{
@@ -161,7 +162,10 @@ h2o.automl <- function(x, y, training_frame,
     build_control$project_name <- project_name
   }
 
-  if (! is.null(exclude_algos)) {
+  if (!is.null(exclude_algos)) {
+    if (length(exclude_algos) == 1) {
+      exclude_algos <- as.list(exclude_algos)
+    }
       build_models <- list(exclude_algos = exclude_algos)
   } else {
       build_models <- list()
@@ -191,24 +195,17 @@ h2o.automl <- function(x, y, training_frame,
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
-
   row.names(leaderboard) <- seq(nrow(leaderboard))
-
-  leaderboard <- as.h2o(leaderboard)
-
-  print("leaderboard: ")
-  print(leaderboard)
-  print("dim(leaderboard): ")
-  print(dim(leaderboard))
-
-  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
+  leaderboard <- as.h2o(leaderboard)  # Convert to H2OFrame
+  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+  # If leaderboard is empty, create a "dummy" leader
   if (nrow(leaderboard) > 1) {
       leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
   } else {
       # create a phony leader
       Class <- paste0("H2OBinomialModel")
-      leader <- .newH2OModel(Class         = Class,
-                             model_id      = "dummy")
+      leader <- .newH2OModel(Class = Class,
+                             model_id = "dummy")
   }
 
   # Make AutoML object

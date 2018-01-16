@@ -2,35 +2,83 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.leaderboard.test <- function() {
-    #binomial
-    fr = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
-    fr["CAPSULE"] = as.factor(fr["CAPSULE"])
-    f = h2o.automl(y=2,training_frame = fr, max_runtime_secs = 5, exclude_algos = list("GLM", "DeepLearning", "XRT", "DRF"))
-    f@leaderboard
-    expect_equal(names(f@leaderboard),c( "model_id","auc","logloss"))
+  
+    # Test each ML task to make sure the leaderboard is working as expected:
+    # Leaderboard columns are correct for each ML task 
+    # Check that correct algos are in the leaderboard
+  
+    all_algos <- c("GLM", "DeepLearning", "GBM", "DRF", "StackedEnsemble")
+  
+    # Binomial:
+    fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+    fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
+    exclude_algos <- c("GLM", "DeepLearning", "DRF")  #Expect GBM + StackedEnsemble
+    aml1 <- h2o.automl(y = 2, training_frame = fr1, max_models = 2,
+                       project_name = "lb_test_aml1",
+                       exclude_algos = exclude_algos)
+    aml1@leaderboard
+    expect_equal(names(aml1@leaderboard), c("model_id", "auc", "logloss"))
+    model_ids <- as.vector(aml1@leaderboard$model_id)
+    exclude_algo_count <- sum(sapply(exclude_algos, function(i) sum(grepl(i, model_ids))))
+    expect_equal(exclude_algo_count, 0)
+    include_algos <- setdiff(all_algos, exclude_algos)
+    for (a in include_algos) {
+      expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
+    }
 
-    #regression
-    fr2 = h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
-    h = h2o.automl(y=55,training_frame = fr2, max_runtime_secs = 5, exclude_algos = list("GBM", "DeepLearning"))
-    h@leaderboard
-    expect_equal(names(h@leaderboard),c("model_id", "mean_residual_deviance","rmse", "mae", "rmsle"))
+    # Regression:
+    fr2 <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
+    exclude_algos <- c("GBM", "DeepLearning")  #Expect GLM, DRF (and XRT), StackedEnsemble
+    aml2 <- h2o.automl(y = 55, training_frame = fr2, max_models = 4,
+                       project_name = "lb_test_aml5",
+                       exclude_algos = exclude_algos)
+    aml2@leaderboard
+    expect_equal(names(aml2@leaderboard), c("model_id", "mean_residual_deviance","rmse", "mae", "rmsle"))
+    model_ids <- as.vector(aml2@leaderboard$model_id)
+    exclude_algo_count <- sum(sapply(exclude_algos, function(i) sum(grepl(i, model_ids))))
+    expect_equal(exclude_algo_count, 0)
+    include_algos <- c(setdiff(all_algos, exclude_algos), "XRT")
+    for (a in include_algos) {
+      expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
+    }
 
-    #multinomial
-    fr3 = as.h2o(iris)
-    g = h2o.automl(y=5,training_frame = fr3, max_runtime_secs = 5)
-    g@leaderboard
-    expect_equal(names(g@leaderboard),c( "model_id","mean_per_class_error"))
+    # Multinomial:
+    fr3 <- as.h2o(iris)
+    exclude_algos <- c("GBM")
+    aml3 <- h2o.automl(y = 5, training_frame = fr3, max_models = 6,
+                       project_name = "lb_test_aml3",
+                       exclude_algos = exclude_algos)
+    aml3@leaderboard
+    expect_equal(names(aml3@leaderboard),c("model_id", "mean_per_class_error"))
+    model_ids <- as.vector(aml3@leaderboard$model_id)
+    exclude_algo_count <- sum(sapply(exclude_algos, function(i) sum(grepl(i, model_ids))))
+    expect_equal(exclude_algo_count, 0)
+    include_algos <- c(setdiff(all_algos, exclude_algos), "XRT")
+    for (a in include_algos) {
+      expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
+    }
 
-
-    #test of exclude_algos, should yield an empty leaderboard
-    fr4 = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
-    fr4["CAPSULE"] = as.factor(fr4["CAPSULE"])
-    f = h2o.automl(y=2,training_frame = fr4, max_runtime_secs = 5, exclude_algos = list("GLM", "XRT", "DRF", "GBM", "DeepLearning", "StackedEnsemble"))
-    f@leaderboard
-
-    expect_equal(names(f@leaderboard),c( "model_id","auc","logloss"))
-    # TODO: for empty leaderboards there's a dummy row for some reason.
-    expect_equal(nrow(f@leaderboard), 1)
+    # Exclude all the algorithms, check for empty leaderboard
+    fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
+    fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
+    exclude_algos <- c("GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble")
+    aml4 <- h2o.automl(y = 2, training_frame = fr1, max_runtime_secs = 5, 
+                       project_name = "lb_test_aml4",
+                       exclude_algos = exclude_algos)
+    aml4@leaderboard
+    expect_equal(names(aml4@leaderboard), c("model_id","auc","logloss"))
+    # TO DO: for empty leaderboards there's a dummy row for some reason.
+    expect_equal(nrow(aml4@leaderboard), 1)
+    
+    # Include all algorithms (all should be there, given large enough max_models)
+    aml5 <- h2o.automl(y = 5, training_frame = fr3, max_models = 10, 
+                       project_name = "lb_test_aml5")
+    model_ids <- as.vector(aml5@leaderboard$model_id)
+    include_algos <- c(all_algos, "XRT")
+    for (a in include_algos) {
+      expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
+    }
+    
 }
 
 doTest("AutoML Leaderboard Test", automl.leaderboard.test)

@@ -106,7 +106,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   // TODO: UGH: this should be dynamic, and it's easy to make it so
   // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
   public enum algo {
-    GLM, XRT, DRF, GBM, XGBoost, DeepLearning, StackedEnsemble;
+    GLM, DRF, GBM, DeepLearning, StackedEnsemble;  //removed XGBoost until we add that
   }
 
   public AutoML() {
@@ -768,7 +768,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   Job<DRFModel>defaultExtremelyRandomTrees() {
-    if (exceededSearchLimits("XRT")) return null;
+    if (exceededSearchLimits("DRF (XRT)")) return null;
 
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     setCommonModelBuilderParams(drfParameters);
@@ -1050,10 +1050,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     skipAlgosList = ArrayUtils.append(skipAlgosList, new String[] {
             /*
             "GLM",
-            "XRT",
             "DRF",
             "GBM",
-            "XGBoost",
             "DeepLearning",
             "StackedEnsemble"
              */
@@ -1067,6 +1065,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       skipAlgosList = ArrayUtils.append(skipAlgosList,"DL");
     if (ArrayUtils.contains(skipAlgosList, "GBM"))
       skipAlgosList = ArrayUtils.append(skipAlgosList, "default GBMs");
+    if (ArrayUtils.contains(skipAlgosList, "DRF"))
+      skipAlgosList = ArrayUtils.append(skipAlgosList, "DRF (XRT)");
 
     ///////////////////////////////////////////////////////////
     // gather initial frame metadata and guess the problem type
@@ -1097,7 +1097,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // ... and another with "XRT" / extratrees settings
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob, JobType.ModelBuild);
+    pollAndUpdateProgress(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", 50, this.job(), defaultExtremelyRandomTreesJob, JobType.ModelBuild);
 
 
     ///////////////////////////////////////////////////////////

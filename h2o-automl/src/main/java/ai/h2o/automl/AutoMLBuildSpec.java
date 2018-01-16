@@ -93,7 +93,7 @@ public class AutoMLBuildSpec extends Iced {
    */
   static final public class AutoMLBuildModels extends Iced {
     public AutoML.algo[] exclude_algos;
-    public GridSearchSchema[] model_searches;
+    //public GridSearchSchema[] model_searches;  //disable until used
   }
 
   /**
