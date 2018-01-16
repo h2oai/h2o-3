@@ -364,6 +364,7 @@ public class XGBoostTest extends TestUtil {
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
+      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
@@ -427,6 +428,7 @@ public class XGBoostTest extends TestUtil {
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
+      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
