@@ -6,6 +6,11 @@
 # exit on error
 set -e
 
+if [[ ! ${H2O_BRANCH} ]]; then
+ echo "H2O_BRANCH must be set"
+ exit 1
+fi
+
 VERSIONS_TO_INSTALL=${1}
 if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
   VERSIONS_TO_INSTALL=${PYTHON_VERSIONS}
@@ -16,7 +21,7 @@ if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
 fi
 
 # Download requirements.txt file from GitHub
-wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/requirements.txt
+wget https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/requirements.txt
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
