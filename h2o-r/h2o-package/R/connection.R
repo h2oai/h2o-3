@@ -470,25 +470,27 @@ h2o.clusterStatus <- function() {
 }
 
 .onDetach <- function(libpath) {
-  ip_   <- "127.0.0.1"
-  port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
-  myURL <- paste0("http://", ip_, ":", port_)
-  print("A shutdown has been triggered. ")
-  if( url.exists(myURL) ) {
-    tryCatch(h2o.shutdown(prompt = FALSE), error = function(e) {
-      msg = paste(
-        "\n",
-        "----------------------------------------------------------------------\n",
-            "\n",
-            "Could not shut down the H2O Java Process!\n",
-            "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
-            "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
-            "For more information visit http://docs.h2o.ai\n",
-            "\n",
-            "----------------------------------------------------------------------\n",
-            sep = "")
-      warning(msg)
-    })
+  if (! getOption("h2o.dev.shutdown.disable", default = FALSE)) { # we can disable shutdown in dev (good with devtools)
+    ip_   <- "127.0.0.1"
+    port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
+    myURL <- paste0("http://", ip_, ":", port_)
+    print("A shutdown has been triggered. ")
+    if( url.exists(myURL) ) {
+      tryCatch(h2o.shutdown(prompt = FALSE), error = function(e) {
+        msg = paste(
+          "\n",
+          "----------------------------------------------------------------------\n",
+              "\n",
+              "Could not shut down the H2O Java Process!\n",
+              "Please shutdown H2O manually by navigating to `http://localhost:54321/Shutdown`\n\n",
+              "Windows requires the shutdown of h2o before re-installing -or- updating the h2o package.\n",
+              "For more information visit http://docs.h2o.ai\n",
+              "\n",
+              "----------------------------------------------------------------------\n",
+              sep = "")
+        warning(msg)
+      })
+    }
   }
   try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)
 }
