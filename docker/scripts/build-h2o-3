@@ -2,6 +2,11 @@
 
 set -e
 
+if [[ ! ${H2O_BRANCH} ]]; then
+ echo "H2O_BRANCH must be set"
+ exit 1
+fi
+
 # cd home
 cd
 
@@ -11,10 +16,11 @@ echo '###### Activate virtualenv ######'
 echo '###### Clone H2O-3 ######'
 git clone https://github.com/h2oai/h2o-3
 cd h2o-3
+git checkout ${H2O_BRANCH}
 
 echo '###### Build H2O-3 ######'
 printenv
-make -f docker/Makefile.jenkins warmup-caches
+make -f scripts/jenkins/Makefile.jenkins warmup-caches
 
 echo '###### Cleanup ######'
 rm -rf ~/h2o-3
