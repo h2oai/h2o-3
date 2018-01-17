@@ -7,10 +7,13 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or index of the response variable in the model. For classification, the y column must be a factor, otherwise regression will be performed. Indexes are 1-based in R.
-#' @param training_frame Training data frame (or ID).
-#' @param validation_frame Validation data frame (or ID); Optional.
-#' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
+#' @param y The name or index of the response variable in the model. For classification, the y column must be a 
+#'        factor, otherwise regression will be performed. Indexes are 1-based in R.
+#' @param training_frame Training frame (H2OFrame or ID).
+#' @param validation_frame Validation frame (H2OFrame or ID); Optional.  This frame is used for early stopping 
+#'        of individual models and early stopping of the grid searches (unless max_models or max_runtimes_secs overrides metric-based early stopping).
+#' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using 
+#'       this data frame intead of using cross-validation metrics, which is the default.
 #' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
@@ -27,9 +30,9 @@
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
-#' @param exclude_algos Vector of character strings naming algorithms to skip during the model-building phase.  An example use is exclude_algos = list("GLM", "DeepLearning", "DRF"), 
+#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"), 
 #'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
-#'        all appropriate H2O algorithms will be used, if the search stopping criteria allow; Optional.
+#'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -37,7 +40,7 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package="h2o")
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
 #' }
