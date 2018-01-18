@@ -17,7 +17,7 @@ In [61]: params = {"standardize__center":    [True, False],
 In [62]: custom_cv = H2OKFold(iris_df, n_folds=5, seed=42)
 
 In [63]: pipeline = Pipeline([("standardize", H2OScaler()),
-   ....:                      ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
+   ....:                      ("pca", H2OPCA(k=2)),
    ....:                      ("gbm", H2OGradientBoostingEstimator(distribution="gaussian"))])
 
 In [64]: random_search = RandomizedSearchCV(pipeline, params,
