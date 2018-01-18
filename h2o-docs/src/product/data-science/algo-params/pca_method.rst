@@ -107,13 +107,13 @@ Example
 
     import(h2o)
     h2o.init()
-    from h2o.transforms.decomposition import H2OPCA
+    from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
 
     # Load the Birds dataset
     birds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
 
     # Train with the Power pca_method
-    birds.pca = H2OPCA(k = 3, transform = "STANDARDIZE", pca_method="Power", 
+    birds.pca = H2OPrincipalComponentAnalysisEstimator(k = 3, transform = "STANDARDIZE", pca_method="Power", 
                        use_all_factor_levels=True, impute_missing=True)
     birds.pca.train(x=list(range(4)), training_frame=birds)
 
@@ -144,7 +144,7 @@ Example
 
     # Train again with the GLRM pca_method
     birds2 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
-    birds2.pca = H2OPCA(k = 3, transform = "STANDARDIZE", 
+    birds2.pca = H2OPrincipalComponentAnalysisEstimator(k = 3, transform = "STANDARDIZE", 
                         pca_method="GLRM", use_all_factor_levels=True, 
                         impute_missing=True)
     birds2.pca.train(x=list(range(4)), training_frame=birds2)

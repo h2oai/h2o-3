@@ -11,7 +11,7 @@ In [45]: h2o.no_progress()
 In [46]: # build transformation pipeline using sklearn's Pipeline and H2O transforms
 
 In [47]: pipeline = Pipeline([("standardize", H2OScaler()),
-   ....:                  ("pca", H2OPCA(k=2)),
+   ....:                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
    ....:                  ("gbm", H2OGradientBoostingEstimator(distribution="multinomial"))])
 
 In [48]: pipeline.fit(iris_df[:4],iris_df[4])
