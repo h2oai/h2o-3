@@ -29,8 +29,11 @@ for python_version in "${array[@]}"; do
 
   echo "###### Installing dependencies for Python ${python_version} ######"
   source /envs/h2o_env_python${python_version}/bin/activate
-  pip install --upgrade pip
+  # install nose, it's required by XGBoost tests which are executed when installing XGBoost
+  pip install --upgrade pip nose
   pip install -r requirements.txt
+  PYTHON_VERSION=${python_version} /usr/sbin/install_xgboost
+  pip uninstall nose -y
   deactivate
 done
 
