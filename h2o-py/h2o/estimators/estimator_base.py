@@ -113,7 +113,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
-        assert_is_type(verbose,bool)
+        assert_is_type(verbose, bool)
 
         if self._requires_training_frame() and training_frame is None:
             raise H2OValueError("Training frame required for %s algorithm, but none was given.", self.algo)
@@ -123,7 +123,7 @@ class H2OEstimator(ModelBase):
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
 
         algo = self.algo
-        if verbose and algo not in ["drf","gbm","deeplearning","xgboost"]:
+        if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
             raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
@@ -144,8 +144,11 @@ class H2OEstimator(ModelBase):
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
             self._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
-        elif y is not None:
-            raise H2OValueError("y should not be provided for an unsupervised model")
+        else:
+            # If `y` is provided for an unsupervised model we'll simply ignore
+            # it. This way an unsupervised model can be used as a step in
+            # sklearn's pipeline.
+            y = None
 
         if not training_frame_exists:
             assert_is_type(y, str, None)
@@ -259,7 +262,7 @@ class H2OEstimator(ModelBase):
                             metrics_class(model_json["output"][metric], metric, model_json["algo"])
 
             #if m._is_xvalidated:
-            if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None: 
+            if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
             # build a useful dict of the params
