@@ -22,6 +22,7 @@ ARG PYTHON_VERSIONS='3.6,3.5,2.7'
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='master'
+ARG XGBOOST_REVISION='9dfabf5'
 
 # Initialize apt sources
 RUN \
@@ -64,16 +65,21 @@ RUN \
   tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
   rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
   ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
+  wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz && \
+  tar -xvzf cmake-3.5.2.tar.gz && \
+  cd cmake-3.5.2/ && ./configure && make && make install && cd ../ && \
+  rm -rf cmake-3.5.2/ && rm -rf cmake-3.5.2.tar.gz && \
   apt-get clean && \
   apt-get autoremove && \
   apt-get autoclean
 
 # Copy required scripts
-COPY scripts/install_R_version scripts/install_R_versions scripts/install_python_versions /usr/sbin/
+COPY scripts/install_R_version scripts/install_R_versions scripts/install_python_versions scripts/install_xgboost /usr/sbin/
 RUN \
   chmod 700 /usr/sbin/install_R_version && \
   chmod 700 /usr/sbin/install_R_versions && \
-  chmod 700 /usr/sbin/install_python_versions
+  chmod 700 /usr/sbin/install_python_versions && \
+  chmod 700 /usr/sbin/install_xgboost
 
 # Install Python
 RUN \

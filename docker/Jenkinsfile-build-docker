@@ -9,11 +9,12 @@ pipeline {
     agent { label AGENT_LABEL }
 
     parameters {
-        string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
-        booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
-        booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
-        string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
-        booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
+      string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
+      booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
+      booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
+      string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
+      booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
+      string(name: 'XGBoostRevision', defaultValue: '9dfabf5', description: 'XGBoost revision to install in h2o_xgboost_env_python virtualenvs')
     }
 
     environment {
@@ -107,7 +108,7 @@ pipeline {
                         if (params.noCache) {
                             dockerBuildCMD += ' --no-cache'
                         }
-                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} ."
+                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} --build-arg XGBOOST_REVISION=${XGBoostRevision} ."
                         sh """
                             printenv
                             cd docker
