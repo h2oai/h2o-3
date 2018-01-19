@@ -18,12 +18,14 @@ def call(final pipelineContext) {
       insideDocker(buildEnv, pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 30, 'MINUTES') {
         stage(stageName) {
           try {
+            echo "BREAK 1"
             makeTarget {
               target = 'build-h2o-3'
               hasJUnit = false
               archiveFiles = false
               makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
             }
+            echo "BREAK 2"
             makeTarget {
               target = 'test-package-py'
               hasJUnit = false

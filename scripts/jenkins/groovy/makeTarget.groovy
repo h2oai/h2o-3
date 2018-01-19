@@ -11,11 +11,13 @@ def call(body) {
     "**/*.code", "**/package_version_check_out.txt"
   ]
 
+  echo "BREAK 3"
   def config = [:]
   body.resolveStrategy = Closure.DELEGATE_FIRST
   body.delegate = config
   body()
 
+  echo "BREAK 4"
   if (config.archiveFiles == null) {
     config.archiveFiles = true
   }
@@ -25,6 +27,7 @@ def call(body) {
   }
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
+  echo "BREAK 5"
   try {
     execMake(config.makefilePath, config.target, config.h2o3dir)
   } finally {
