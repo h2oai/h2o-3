@@ -3,7 +3,7 @@
 #'
 # -------------------------- KMeans Model in H2O -------------------------- #
 #' 
-#' Performs k-means clustering on an H2O dataset.
+#' Performs k-means clustering on an H2O dataset
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.

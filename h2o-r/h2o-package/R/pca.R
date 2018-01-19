@@ -2,7 +2,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Principal Components Analysis -------------------------- #
-#'
+#' 
 #' Principal component analysis of an H2O data frame
 #' 
 #' Principal components analysis of an H2O data frame using the power method

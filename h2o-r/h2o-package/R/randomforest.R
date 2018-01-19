@@ -3,7 +3,9 @@
 #'
 # -------------------------- Random Forest Model in H2O -------------------------- #
 #' 
-#' Builds a Random Forest Model on an H2OFrame
+#' Build a Random Forest model
+#' 
+#' Builds a Random Forest model on an H2OFrame.
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -22,7 +24,6 @@
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
@@ -77,8 +78,6 @@
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
-#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -95,7 +94,6 @@ h2o.randomForest <- function(x, y, training_frame,
                              fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                              fold_column = NULL,
                              ignore_const_cols = TRUE,
-                             offset_column = NULL,
                              weights_column = NULL,
                              balance_classes = FALSE,
                              class_sampling_factors = NULL,
@@ -126,7 +124,6 @@ h2o.randomForest <- function(x, y, training_frame,
                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              calibrate_model = FALSE,
                              calibration_frame = NULL,
-                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                              custom_metric_func = NULL,
                              verbose = FALSE 
                              ) 
@@ -160,7 +157,6 @@ h2o.randomForest <- function(x, y, training_frame,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
@@ -186,8 +182,6 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$fold_column <- fold_column
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
-  if (!missing(offset_column))
-    parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(balance_classes))
@@ -248,8 +242,6 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
-  if (!missing(distribution))
-    parms$distribution <- distribution
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   # Error check and build model

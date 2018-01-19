@@ -3,9 +3,9 @@
 #'
 # -------------------------- Deep Water - Neural Network -------------------------- #
 #' 
-#' Build a Deep Learning model using multiple native GPU backends.
+#' Build a Deep Learning model using multiple native GPU backends
 #' 
-#' Builds a deep neural network on an H2OFrame containing various data sources
+#' Builds a deep neural network on an H2OFrame containing various data sources.
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -320,9 +320,9 @@ h2o.deepwater <- function(x, y, training_frame,
   .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }
 
-#' Determines whether Deep Water is available.
+#' Determines whether Deep Water is available
 #'
-#' Asks the H2O server whether a Deep Water model can be built (depends on availability of native backends)
+#' Ask the H2O server whether a Deep Water model can be built. (Depends on availability of native backends.)
 #' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
 #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
 #' @export

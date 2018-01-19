@@ -2,9 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- H2O Stacked Ensemble -------------------------- #
-#'
-#' Build a stacked ensemble 
-#'
+#' 
+#' Builds a Stacked Ensemble
+#' 
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 

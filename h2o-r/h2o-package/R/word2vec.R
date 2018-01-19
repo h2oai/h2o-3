@@ -3,7 +3,7 @@
 #'
 # -------------------------- word2vec -------------------------- #
 #' 
-#' Trains a word2vec model on a String column of an H2O data frame.
+#' Trains a word2vec model on a String column of an H2O data frame
 #' 
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.

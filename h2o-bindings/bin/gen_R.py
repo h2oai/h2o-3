@@ -290,52 +290,67 @@ def gen_module(schema, algo, module):
 def help_preamble_for(algo):
     if algo == "aggregator":
         return """
-            Builds an Aggregated Frame of an H2OFrame
+            Build an Aggregated Frame
+
+            Builds an Aggregated Frame of an H2OFrame.
         """
     if algo == "deeplearning":
         return """
             Build a Deep Neural Network model using CPUs
-            Builds a feed-forward multilayer artificial neural network on an H2OFrame
+
+            Builds a feed-forward multilayer artificial neural network on an H2OFrame.
         """
     if algo == "stackedensemble":
         return """
+            Builds a Stacked Ensemble
+
             Build a stacked ensemble (aka. Super Learner) using the H2O base
             learning algorithms specified by the user.
         """
     if algo == "deepwater":
         return """
             Build a Deep Learning model using multiple native GPU backends
-            Builds a deep neural network on an H2OFrame containing various data sources
+
+            Builds a deep neural network on an H2OFrame containing various data sources.
         """
     if algo == "xgboost":
         return """
-            Builds a eXtreme Gradient Boosting model using the native XGBoost backend
+            Build an eXtreme Gradient Boosting model
+
+            Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
         """
     if algo == "drf":
         return """
-            Builds a Random Forest Model on an H2OFrame
-    """
+            Build a Random Forest model
+
+            Builds a Random Forest model on an H2OFrame.
+        """
     if algo == "gbm":
         return """
-            Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
+            Build gradient boosted classification or regression trees
 
+            Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
             The default distribution function will guess the model type based on the response column type.
             In order to run properly, the response column must be an numeric for "gaussian" or an
             enum for "bernoulli" or "multinomial".
         """
     if algo == "glm":
         return """
+            Fit a generalized linear model
+
             Fits a generalized linear model, specified by a response variable, a set of predictors, and a
             description of the error distribution.
         """
     if algo == "glrm":
         return """
-        Generalized low rank decomposition of an H2O data frame.
-    """
+            Generalized low rank decomposition of an H2O data frame
+
+            Builds a generalized low rank decomposition of an H2O data frame
+        """
     if algo == "kmeans":
         return """
-        Performs k-means clustering on an H2O dataset.
-    """
+             Performs k-means clustering on an H2O dataset
+        """
     if algo == "naivebayes":
         return """
             Compute naive Bayes probabilities on an H2O dataset.
@@ -349,21 +364,23 @@ def help_preamble_for(algo):
         """
     if algo == "pca":
         return """
+            Principal component analysis of an H2O data frame
+
             Principal components analysis of an H2O data frame using the power method
             to calculate the singular value decomposition of the Gram matrix.
         """
     if algo == "svd":
         return """
-        Singular value decomposition of an H2O data frame using the power method.
-    """
+            Singular value decomposition of an H2O data frame using the power method
+       """
     if algo == "word2vec":
         return """
-        Trains a word2vec model on a String column of an H2O data frame.
-    """
+            Trains a word2vec model on a String column of an H2O data frame
+        """
     if algo == "coxph":
         return """
-        Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
-    """
+            Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":
@@ -416,6 +433,20 @@ def help_references_for(algo):
         return """N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011."""
 
 def help_example_for(algo):
+    if algo == "aggregator":
+        return """\donttest{
+            library(h2o)
+            h2o.init()
+            df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+                                  binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+            target_num_exemplars=1000
+            rel_tol_num_exemplars=0.5
+            encoding="Eigen"
+            agg <- h2o.aggregator(training_frame=df,
+                                 target_num_exemplars=target_num_exemplars,
+                                 rel_tol_num_exemplars=rel_tol_num_exemplars,
+                                 categorical_encoding=encoding)
+            }"""
     if algo == "deeplearning":
         return """\donttest{
             library(h2o)
@@ -656,9 +687,27 @@ def help_extra_checks_for(algo):
 def help_afterword_for(algo):
     if algo == "aggregator":
         return """
-            #' Retrieve an aggregated frame from the Aggregator model
+            #' Retrieve an aggregated frame from an Aggregator model
+            #'
+            #' Retrieve an aggregated frame from the Aggregator model and use it to create a new frame.
             #'
             #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+            #' @examples
+            #' \donttest{
+            #' library(h2o)
+            #' h2o.init()
+            #' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+            #'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+            #' target_num_exemplars=1000
+            #' rel_tol_num_exemplars=0.5
+            #' encoding="Eigen"
+            #' agg <- h2o.aggregator(training_frame=df,
+            #'                      target_num_exemplars=target_num_exemplars,
+            #'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
+            #'                      categorical_encoding=encoding)
+            #' # Use the aggregated frame to create a new dataframe
+            #' new_df <- h2o.aggregated_frame(agg)
+            #' }
             #' @export
             h2o.aggregated_frame <- function(model) {
               key <- model@model$aggregated_frame_id
@@ -702,7 +751,9 @@ def help_afterword_for(algo):
         """
     if algo == "deepwater":
         return """
-            #' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
+            #' Determines whether Deep Water is available
+            #'
+            #' Ask the H2O server whether a Deep Water model can be built. (Depends on availability of native backends.)
             #' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
             #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
             #' @export
@@ -722,7 +773,9 @@ def help_afterword_for(algo):
         """
     if algo == "xgboost":
         return """
-            #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
+            #' Determines whether an XGBoost model can be built
+            #'
+            #' Ask the H2O server whether a XGBoost model can be built. (Depends on availability of native backend.)
             #' Returns True if a XGBoost model can be built, or False otherwise.
             #' @export
             h2o.xgboost.available <- function() {
@@ -750,7 +803,9 @@ def help_afterword_for(algo):
                m
             }
 
-            #' Extract full regularization path from glm model (assuming it was run with lambda search option)
+            #' Extract full regularization path from a GLM model
+            #'
+            #' Extract the full regularization path from a GLM model (assuming it was run with the lambda search option).
             #'
             #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
             #' @export

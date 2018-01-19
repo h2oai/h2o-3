@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Builds an Aggregated Frame of an H2OFrame — h2o.aggregator • h2o</title>
+<title>Build an Aggregated Frame — h2o.aggregator • h2o</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -80,18 +80,19 @@
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Builds an Aggregated Frame of an H2OFrame</h1>
+    <h1>Build an Aggregated Frame</h1>
     </div>
 
     
-    <p>Builds an Aggregated Frame of an H2OFrame</p>
+    <p>Builds an Aggregated Frame of an H2OFrame.</p>
     
 
     <pre class="usage"><span class='fu'>h2o.aggregator</span>(<span class='no'>training_frame</span>, <span class='no'>x</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ignore_const_cols</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>target_num_exemplars</span> <span class='kw'>=</span> <span class='fl'>5000</span>, <span class='kw'>rel_tol_num_exemplars</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
   <span class='kw'>transform</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"NONE"</span>, <span class='st'>"STANDARDIZE"</span>, <span class='st'>"NORMALIZE"</span>, <span class='st'>"DEMEAN"</span>, <span class='st'>"DESCALE"</span>),
   <span class='kw'>categorical_encoding</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"Enum"</span>, <span class='st'>"OneHotInternal"</span>, <span class='st'>"OneHotExplicit"</span>,
-  <span class='st'>"Binary"</span>, <span class='st'>"Eigen"</span>, <span class='st'>"LabelEncoder"</span>, <span class='st'>"SortByResponse"</span>, <span class='st'>"EnumLimited"</span>))</pre>
+  <span class='st'>"Binary"</span>, <span class='st'>"Eigen"</span>, <span class='st'>"LabelEncoder"</span>, <span class='st'>"SortByResponse"</span>, <span class='st'>"EnumLimited"</span>),
+  <span class='kw'>save_mapping_frame</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -130,21 +131,26 @@ Defaults to NORMALIZE.</p></td>
       <td><p>Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.</p></td>
     </tr>
+    <tr>
+      <th>save_mapping_frame</th>
+      <td><p><code>Logical</code>. Whether to export the mapping of the aggregated frame Defaults to FALSE.</p></td>
+    </tr>
     </table>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'>library</span>(<span class='no'>h2o</span>)
 <span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
 <span class='no'>df</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.createFrame.html'>h2o.createFrame</a></span>(<span class='kw'>rows</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>cols</span><span class='kw'>=</span><span class='fl'>5</span>, <span class='kw'>categorical_fraction</span><span class='kw'>=</span><span class='fl'>0.6</span>, <span class='kw'>integer_fraction</span><span class='kw'>=</span><span class='fl'>0</span>,
-                      <span class='kw'>binary_fraction</span><span class='kw'>=</span><span class='fl'>0</span>, <span class='kw'>real_range</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>integer_range</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>missing_fraction</span><span class='kw'>=</span><span class='fl'>0</span>)
+<span class='kw'>binary_fraction</span><span class='kw'>=</span><span class='fl'>0</span>, <span class='kw'>real_range</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>integer_range</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>missing_fraction</span><span class='kw'>=</span><span class='fl'>0</span>)
 <span class='no'>target_num_exemplars</span><span class='kw'>=</span><span class='fl'>1000</span>
 <span class='no'>rel_tol_num_exemplars</span><span class='kw'>=</span><span class='fl'>0.5</span>
 <span class='no'>encoding</span><span class='kw'>=</span><span class='st'>"Eigen"</span>
 <span class='no'>agg</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.aggregator</span>(<span class='kw'>training_frame</span><span class='kw'>=</span><span class='no'>df</span>,
-                     <span class='kw'>target_num_exemplars</span><span class='kw'>=</span><span class='no'>target_num_exemplars</span>,
-                     <span class='kw'>rel_tol_num_exemplars</span><span class='kw'>=</span><span class='no'>rel_tol_num_exemplars</span>,
-                     <span class='kw'>categorical_encoding</span><span class='kw'>=</span><span class='no'>encoding</span>)
+<span class='kw'>target_num_exemplars</span><span class='kw'>=</span><span class='no'>target_num_exemplars</span>,
+<span class='kw'>rel_tol_num_exemplars</span><span class='kw'>=</span><span class='no'>rel_tol_num_exemplars</span>,
+<span class='kw'>categorical_encoding</span><span class='kw'>=</span><span class='no'>encoding</span>)
 <span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

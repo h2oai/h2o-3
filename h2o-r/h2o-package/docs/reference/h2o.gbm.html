@@ -84,7 +84,10 @@
     </div>
 
     
-    <p>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.</p>
+    <p>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
+The default distribution function will guess the model type based on the response column type.
+In order to run properly, the response column must be an numeric for "gaussian" or an
+enum for "bernoulli" or "multinomial".</p>
     
 
     <pre class="usage"><span class='fu'>h2o.gbm</span>(<span class='no'>x</span>, <span class='no'>y</span>, <span class='no'>training_frame</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>validation_frame</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -102,8 +105,8 @@
   <span class='st'>"misclassification"</span>, <span class='st'>"mean_per_class_error"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0.001</span>,
   <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>build_tree_one_node</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>learn_rate</span> <span class='kw'>=</span> <span class='fl'>0.1</span>, <span class='kw'>learn_rate_annealing</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>distribution</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>,
-  <span class='st'>"bernoulli"</span>, <span class='st'>"multinomial"</span>, <span class='st'>"gaussian"</span>, <span class='st'>"poisson"</span>, <span class='st'>"gamma"</span>, <span class='st'>"tweedie"</span>,
-  <span class='st'>"laplace"</span>, <span class='st'>"quantile"</span>, <span class='st'>"huber"</span>), <span class='kw'>quantile_alpha</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='st'>"bernoulli"</span>, <span class='st'>"quasibinomial"</span>, <span class='st'>"multinomial"</span>, <span class='st'>"gaussian"</span>, <span class='st'>"poisson"</span>, <span class='st'>"gamma"</span>,
+  <span class='st'>"tweedie"</span>, <span class='st'>"laplace"</span>, <span class='st'>"quantile"</span>, <span class='st'>"huber"</span>), <span class='kw'>quantile_alpha</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
   <span class='kw'>tweedie_power</span> <span class='kw'>=</span> <span class='fl'>1.5</span>, <span class='kw'>huber_alpha</span> <span class='kw'>=</span> <span class='fl'>0.9</span>, <span class='kw'>checkpoint</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>sample_rate</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>sample_rate_per_class</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>col_sample_rate</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>col_sample_rate_change_per_level</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>col_sample_rate_per_tree</span> <span class='kw'>=</span> <span class='fl'>1</span>,
@@ -279,8 +282,8 @@ Defaults to FALSE.</p></td>
     </tr>
     <tr>
       <th>distribution</th>
-      <td><p>Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-"tweedie", "laplace", "quantile", "huber". Defaults to AUTO.</p></td>
+      <td><p>Distribution function Must be one of: "AUTO", "bernoulli", "quasibinomial", "multinomial", "gaussian",
+"poisson", "gamma", "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.</p></td>
     </tr>
     <tr>
       <th>quantile_alpha</th>
@@ -360,12 +363,6 @@ accurate estimates of class probabilities. Defaults to FALSE.</p></td>
     </tr>
     </table>
     
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
-
-    <p>The default distribution function will guess the model type based on the response column type.
-In order to run properly, the response column must be an numeric for "gaussian" or an
-enum for "bernoulli" or "multinomial".</p>
-    
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <p><code><a href='predict.H2OModel.html'>predict.H2OModel</a></code> for prediction</p>
@@ -391,8 +388,6 @@ enum for "bernoulli" or "multinomial".</p>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       
-      <li><a href="#details">Details</a></li>
-
       <li><a href="#see-also">See also</a></li>
       
       <li><a href="#examples">Examples</a></li>
