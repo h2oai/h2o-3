@@ -47,28 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
-    <li>
-      <a href="../articles/basics.html">H2O Basics</a>
-    </li>
-  </ul>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li>
-  <a href="../reference/index.html">Reference</a>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -147,13 +137,16 @@ row in y, and vice-versa for all.y.</p></td>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()</div><div class='output co'>#&gt; Reading in config file: ./../../../../.h2oconfig
-#&gt; 
-#&gt; H2O is not running yet, starting it now...</div><div class='output co'>#&gt; <span class='warning'>Warning: cannot open file '/Users/terrytangyuan/h2o-3/h2o-r/h2o/branch.txt': No such file or directory</span></div><div class='output co'>#&gt; <span class='error'>Error in file(con, "r"): cannot open the connection</span></div><div class='input'><span class='no'>left</span> <span class='kw'>&lt;-</span> <span class='fu'>data.frame</span>(<span class='kw'>fruit</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>'apple'</span>, <span class='st'>'orange'</span>, <span class='st'>'banana'</span>, <span class='st'>'lemon'</span>, <span class='st'>'strawberry'</span>, <span class='st'>'blueberry'</span>),
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
+<span class='no'>left</span> <span class='kw'>&lt;-</span> <span class='fu'>data.frame</span>(<span class='kw'>fruit</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>'apple'</span>, <span class='st'>'orange'</span>, <span class='st'>'banana'</span>, <span class='st'>'lemon'</span>, <span class='st'>'strawberry'</span>, <span class='st'>'blueberry'</span>),
 <span class='no'>color</span> <span class='kw'>&lt;-</span> <span class='fu'>c</span>(<span class='st'>'red'</span>, <span class='st'>'orange'</span>, <span class='st'>'yellow'</span>, <span class='st'>'yellow'</span>, <span class='st'>'red'</span>, <span class='st'>'blue'</span>))
 <span class='no'>right</span> <span class='kw'>&lt;-</span> <span class='fu'>data.frame</span>(<span class='kw'>fruit</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>'apple'</span>, <span class='st'>'orange'</span>, <span class='st'>'banana'</span>, <span class='st'>'lemon'</span>, <span class='st'>'strawberry'</span>, <span class='st'>'watermelon'</span>),
 <span class='no'>citrus</span> <span class='kw'>&lt;-</span> <span class='fu'>c</span>(<span class='fl'>FALSE</span>, <span class='fl'>TRUE</span>, <span class='fl'>FALSE</span>, <span class='fl'>TRUE</span>, <span class='fl'>FALSE</span>, <span class='fl'>FALSE</span>))
-<span class='no'>l.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='no'>left</span>)</div><div class='output co'>#&gt; <span class='error'>Error in h2o.getConnection(): No active connection to an H2O cluster. Did you run `h2o.init()` ?</span></div><div class='input'><span class='no'>r.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='no'>right</span>)</div><div class='output co'>#&gt; <span class='error'>Error in h2o.getConnection(): No active connection to an H2O cluster. Did you run `h2o.init()` ?</span></div><div class='input'><span class='no'>left.hex</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.merge</span>(<span class='no'>l.hex</span>, <span class='no'>r.hex</span>, <span class='kw'>all.x</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in as.vector(y): object 'r.hex' not found</span></div></pre>
+<span class='no'>l.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='no'>left</span>)
+<span class='no'>r.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='no'>right</span>)
+<span class='no'>left.hex</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.merge</span>(<span class='no'>l.hex</span>, <span class='no'>r.hex</span>, <span class='kw'>all.x</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

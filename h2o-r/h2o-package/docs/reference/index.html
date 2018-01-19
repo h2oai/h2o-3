@@ -47,28 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
-    <li>
-      <a href="../articles/basics.html">H2O Basics</a>
-    </li>
-  </ul>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li>
-  <a href="../reference/index.html">Reference</a>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -107,16 +97,1751 @@
       <tbody>
         <tr>
           <th colspan="2">
-            <h2 id="section-models" class="hasAnchor"><a href="#section-models" class="anchor"></a>Models</h2>
+            <h2 id="section-reference" class="hasAnchor"><a href="#section-reference" class="anchor"></a>Reference</h2>
             <p class="section-desc"></p>
           </th>
         </tr>
         <tr>
           <!--  -->
           <td>
+            <p><code><a href="apply.html">apply</a></code> </p>
+          </td>
+          <td><p>Apply on H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.character.H2OFrame.html">as.character</a></code> </p>
+          </td>
+          <td><p>Convert an H2OFrame to a String</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.data.frame.H2OFrame.html">as.data.frame</a></code> </p>
+          </td>
+          <td><p>Converts parsed H2O data into an R data frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.factor.html">as.factor</a></code> </p>
+          </td>
+          <td><p>Convert H2O Data to Factors</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.h2o.html">as.h2o</a></code> </p>
+          </td>
+          <td><p>Create H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.matrix.H2OFrame.html">as.matrix</a></code> </p>
+          </td>
+          <td><p>Convert an H2OFrame to a matrix</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.numeric.html">as.numeric</a></code> </p>
+          </td>
+          <td><p>Convert H2O Data to Numeric</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="as.vector.H2OFrame.html">as.vector</a></code> </p>
+          </td>
+          <td><p>Convert an H2OFrame to a vector</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="australia.html">australia</a></code> </p>
+          </td>
+          <td><p>Australia Coastal Data</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="colnames.html">colnames</a></code> </p>
+          </td>
+          <td><p>Returns the column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="dim.H2OFrame.html">dim</a></code> </p>
+          </td>
+          <td><p>Returns the Dimensions of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="dimnames.H2OFrame.html">dimnames</a></code> </p>
+          </td>
+          <td><p>Column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.abs.html">h2o.abs</a></code> </p>
+          </td>
+          <td><p>Compute the absolute value of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.acos.html">h2o.acos</a></code> </p>
+          </td>
+          <td><p>Compute the arc cosine of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.aggregated_frame.html">h2o.aggregated_frame</a></code> </p>
+          </td>
+          <td><p>Retrieve an aggregated frame from an Aggregator model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.aggregator.html">h2o.aggregator</a></code> </p>
+          </td>
+          <td><p>Build an Aggregated Frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.aic.html">h2o.aic</a></code> </p>
+          </td>
+          <td><p>Retrieve the Akaike information criterion (AIC) value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.all.html">h2o.all</a></code> </p>
+          </td>
+          <td><p>Given a set of logical vectors, are all of the values true?</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.anomaly.html">h2o.anomaly</a></code> </p>
+          </td>
+          <td><p>Anomaly Detection via H2O Deep Learning Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.any.html">h2o.any</a></code> </p>
+          </td>
+          <td><p>Given a set of logical vectors, is at least one of the values true?</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.anyFactor.html">h2o.anyFactor</a></code> </p>
+          </td>
+          <td><p>Check H2OFrame columns for factors</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.arrange.html">h2o.arrange</a></code> </p>
+          </td>
+          <td><p>Sorts an H2O frame by columns</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.as_date.html">h2o.as_date</a></code> </p>
+          </td>
+          <td><p>Convert between character representations and objects of Date class</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ascharacter.html">h2o.ascharacter</a></code> </p>
+          </td>
+          <td><p>Convert H2O Data to Characters</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.asfactor.html">h2o.asfactor</a></code> </p>
+          </td>
+          <td><p>Convert H2O Data to Factors</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.asnumeric.html">h2o.asnumeric</a></code> </p>
+          </td>
+          <td><p>Convert H2O Data to Numerics</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.assign.html">h2o.assign</a></code> </p>
+          </td>
+          <td><p>Rename an H2O object.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.auc.html">h2o.auc</a></code> </p>
+          </td>
+          <td><p>Retrieve the AUC</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.automl.html">h2o.automl</a></code> </p>
+          </td>
+          <td><p>Automatic Machine Learning</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.betweenss.html">h2o.betweenss</a></code> </p>
+          </td>
+          <td><p>Get the between cluster sum of squares</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.biases.html">h2o.biases</a></code> </p>
+          </td>
+          <td><p>Return the respective bias vector</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.bottomN.html">h2o.bottomN</a></code> </p>
+          </td>
+          <td><p>H2O bottomN</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cbind.html">h2o.cbind</a></code> </p>
+          </td>
+          <td><p>Combine H2O Datasets by Columns</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ceiling.html">h2o.ceiling</a></code> </p>
+          </td>
+          <td><p>Take a single numeric argument and return a numeric vector with the smallest integers</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.centers.html">h2o.centers</a></code> </p>
+          </td>
+          <td><p>Retrieve the Model Centers</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.centersSTD.html">h2o.centersSTD</a></code> </p>
+          </td>
+          <td><p>Retrieve the Model Centers STD</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.centroid_stats.html">h2o.centroid_stats</a></code> </p>
+          </td>
+          <td><p>Retrieve centroid statistics</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.clearLog.html">h2o.clearLog</a></code> </p>
+          </td>
+          <td><p>Delete All H2O R Logs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cluster_sizes.html">h2o.cluster_sizes</a></code> </p>
+          </td>
+          <td><p>Retrieve the cluster sizes</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.clusterInfo.html">h2o.clusterInfo</a></code> </p>
+          </td>
+          <td><p>Print H2O cluster info</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.clusterIsUp.html">h2o.clusterIsUp</a></code> </p>
+          </td>
+          <td><p>Determine if an H2O cluster is up or not</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.clusterStatus.html">h2o.clusterStatus</a></code> </p>
+          </td>
+          <td><p>Return the status of the cluster</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.coef.html">h2o.coef</a></code> </p>
+          </td>
+          <td><p>Return the coefficients that can be applied to the non-standardized data.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.colnames.html">h2o.colnames</a></code> </p>
+          </td>
+          <td><p>Return column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.columns_by_type.html">h2o.columns_by_type</a></code> </p>
+          </td>
+          <td><p>Obtain a list of columns that are specified by `coltype`</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.computeGram.html">h2o.computeGram</a></code> </p>
+          </td>
+          <td><p>Compute weighted gram matrix.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.confusionMatrix.html">h2o.confusionMatrix</a></code> </p>
+          </td>
+          <td><p>Access H2O Confusion Matrices</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.connect.html">h2o.connect</a></code> </p>
+          </td>
+          <td><p>Connect to a running H2O instance.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cor.html">h2o.cor</a></code> <code><a href="h2o.cor.html">cor</a></code> </p>
+          </td>
+          <td><p>Correlation of columns.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cos.html">h2o.cos</a></code> </p>
+          </td>
+          <td><p>Compute the cosine of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cosh.html">h2o.cosh</a></code> </p>
+          </td>
+          <td><p>Compute the hyperbolic cosine of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.coxph.html">h2o.coxph</a></code> </p>
+          </td>
+          <td><p>Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.createFrame.html">h2o.createFrame</a></code> </p>
+          </td>
+          <td><p>Data H2OFrame Creation in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cross_validation_fold_assignment.html">h2o.cross_validation_fold_assignment</a></code> </p>
+          </td>
+          <td><p>Retrieve the cross-validation fold assignment</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cross_validation_holdout_predictions.html">h2o.cross_validation_holdout_predictions</a></code> </p>
+          </td>
+          <td><p>Retrieve the cross-validation holdout predictions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cross_validation_models.html">h2o.cross_validation_models</a></code> </p>
+          </td>
+          <td><p>Retrieve the cross-validation models</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cross_validation_predictions.html">h2o.cross_validation_predictions</a></code> </p>
+          </td>
+          <td><p>Retrieve the cross-validation predictions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cummax.html">h2o.cummax</a></code> </p>
+          </td>
+          <td><p>Return the cumulative max over a column or across a row</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cummin.html">h2o.cummin</a></code> </p>
+          </td>
+          <td><p>Return the cumulative min over a column or across a row</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cumprod.html">h2o.cumprod</a></code> </p>
+          </td>
+          <td><p>Return the cumulative product over a column or across a row</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cumsum.html">h2o.cumsum</a></code> </p>
+          </td>
+          <td><p>Return the cumulative sum over a column or across a row</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.cut.html">h2o.cut</a></code> <code><a href="h2o.cut.html">cut</a></code> </p>
+          </td>
+          <td><p>Cut H2O Numeric Data to Factor</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.day.html">h2o.day</a></code> <code><a href="h2o.day.html">day</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Day of Month in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.dayOfWeek.html">h2o.dayOfWeek</a></code> <code><a href="h2o.dayOfWeek.html">dayOfWeek</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Day of Week in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.dct.html">h2o.dct</a></code> </p>
+          </td>
+          <td><p>Compute DCT of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ddply.html">h2o.ddply</a></code> </p>
+          </td>
+          <td><p>Split H2O Dataset, Apply Function, and Return Results</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.decryptionSetup.html">h2o.decryptionSetup</a></code> </p>
+          </td>
+          <td><p>Setup a Decryption Tool</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.deepfeatures.html">h2o.deepfeatures</a></code> </p>
+          </td>
+          <td><p>Feature Generation via H2O Deep Learning or DeepWater Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.deeplearning.html">h2o.deeplearning</a></code> </p>
+          </td>
+          <td><p>Build a Deep Neural Network model using CPUs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.deepwater.available.html">h2o.deepwater.available</a></code> </p>
+          </td>
+          <td><p>Determines whether Deep Water is available</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.deepwater.html">h2o.deepwater</a></code> </p>
+          </td>
+          <td><p>Build a Deep Learning model using multiple native GPU backends</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.describe.html">h2o.describe</a></code> </p>
+          </td>
+          <td><p>H2O Description of A Dataset</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.diff.html">h2o.difflag1</a></code> </p>
+          </td>
+          <td><p>Conduct a lag 1 transform on a numeric H2OFrame column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.dim.html">h2o.dim</a></code> </p>
+          </td>
+          <td><p>Returns the number of rows and columns for an H2OFrame object.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.dimnames.html">h2o.dimnames</a></code> </p>
+          </td>
+          <td><p>Column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.distance.html">h2o.distance</a></code> </p>
+          </td>
+          <td><p>Compute a pairwise distance measure between all rows of two numeric H2OFrames.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.download_mojo.html">h2o.download_mojo</a></code> </p>
+          </td>
+          <td><p>Download the model in MOJO format.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.download_pojo.html">h2o.download_pojo</a></code> </p>
+          </td>
+          <td><p>Download the Scoring POJO (Plain Old Java Object) of an H2O Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.downloadAllLogs.html">h2o.downloadAllLogs</a></code> </p>
+          </td>
+          <td><p>Download H2O Log Files to Disk</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.downloadCSV.html">h2o.downloadCSV</a></code> </p>
+          </td>
+          <td><p>Download H2O Data to Disk</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.entropy.html">h2o.entropy</a></code> </p>
+          </td>
+          <td><p>Shannon entropy</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.exp.html">h2o.exp</a></code> </p>
+          </td>
+          <td><p>Compute the exponential function of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.exportFile.html">h2o.exportFile</a></code> </p>
+          </td>
+          <td><p>Export an H2O Data Frame (H2OFrame) to a File or to a collection of Files.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.exportHDFS.html">h2o.exportHDFS</a></code> </p>
+          </td>
+          <td><p>Export a Model to HDFS</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.fillna.html">h2o.fillna</a></code> </p>
+          </td>
+          <td><p>fillNA</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.filterNACols.html">h2o.filterNACols</a></code> </p>
+          </td>
+          <td><p>Filter NA Columns</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.find_row_by_threshold.html">h2o.find_row_by_threshold</a></code> </p>
+          </td>
+          <td><p>Find the threshold, give the max metric. No duplicate thresholds allowed</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.find_threshold_by_max_metric.html">h2o.find_threshold_by_max_metric</a></code> </p>
+          </td>
+          <td><p>Find the threshold, give the max metric</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.findSynonyms.html">h2o.findSynonyms</a></code> </p>
+          </td>
+          <td><p>Find synonyms using a word2vec model.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.floor.html">h2o.floor</a></code> </p>
+          </td>
+          <td><p>Take a single numeric argument and return a numeric vector with the largest integers</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.flow.html">h2o.flow</a></code> </p>
+          </td>
+          <td><p>Open H2O Flow</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.gainsLift.html">h2o.gainsLift</a></code> </p>
+          </td>
+          <td><p>Access H2O Gains/Lift Tables</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.gbm.html">h2o.gbm</a></code> </p>
+          </td>
+          <td><p>Build gradient boosted classification or regression trees</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getConnection.html">h2o.getConnection</a></code> </p>
+          </td>
+          <td><p>Retrieve an H2O Connection</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getFrame.html">h2o.getFrame</a></code> </p>
+          </td>
+          <td><p>Get an R Reference to an H2O Dataset, that will NOT be GC'd by default</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getFutureModel.html">h2o.getFutureModel</a></code> </p>
+          </td>
+          <td><p>Get future model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getGLMFullRegularizationPath.html">h2o.getGLMFullRegularizationPath</a></code> </p>
+          </td>
+          <td><p>Extract full regularization path from a GLM model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getGrid.html">h2o.getGrid</a></code> </p>
+          </td>
+          <td><p>Get a grid object from H2O distributed K/V store.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getId.html">h2o.getId</a></code> </p>
+          </td>
+          <td><p>Get back-end distributed key/value store id from an H2OFrame.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getModel.html">h2o.getModel</a></code> </p>
+          </td>
+          <td><p>Get an R reference to an H2O model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getTimezone.html">h2o.getTimezone</a></code> </p>
+          </td>
+          <td><p>Get the Time Zone on the H2O Cloud
+Returns a string</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getTypes.html">h2o.getTypes</a></code> </p>
+          </td>
+          <td><p>Get the types-per-column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.getVersion.html">h2o.getVersion</a></code> </p>
+          </td>
+          <td><p>Get h2o version</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.giniCoef.html">h2o.giniCoef</a></code> </p>
+          </td>
+          <td><p>Retrieve the GINI Coefficcient</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.glm.html">h2o.glm</a></code> </p>
+          </td>
+          <td><p>Fit a generalized linear model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.glrm.html">h2o.glrm</a></code> </p>
+          </td>
+          <td><p>Generalized low rank decomposition of an H2O data frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.grep.html">h2o.grep</a></code> </p>
+          </td>
+          <td><p>Search for matches to an argument pattern</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.grid.html">h2o.grid</a></code> </p>
+          </td>
+          <td><p>H2O Grid Support</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.group_by.html">h2o.group_by</a></code> </p>
+          </td>
+          <td><p>Group and Apply by Column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.gsub.html">h2o.gsub</a></code> </p>
+          </td>
+          <td><p>String Global Substitute</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.head.html">h2o.head</a></code> <code><a href="h2o.head.html">head</a></code> <code><a href="h2o.head.html">h2o.tail</a></code> <code><a href="h2o.head.html">tail</a></code> </p>
+          </td>
+          <td><p>Return the Head or Tail of an H2O Dataset.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.hist.html">h2o.hist</a></code> </p>
+          </td>
+          <td><p>Compute A Histogram</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.hit_ratio_table.html">h2o.hit_ratio_table</a></code> </p>
+          </td>
+          <td><p>Retrieve the Hit Ratios</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.hour.html">h2o.hour</a></code> <code><a href="h2o.hour.html">hour</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Hour of Day in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ifelse.html">h2o.ifelse</a></code> <code><a href="h2o.ifelse.html">ifelse</a></code> </p>
+          </td>
+          <td><p>H2O Apply Conditional Statement</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.import_sql_select.html">h2o.import_sql_select</a></code> </p>
+          </td>
+          <td><p>Import SQL table that is result of SELECT SQL query into H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.importFile.html">h2o.importFile</a></code> <code><a href="h2o.importFile.html">h2o.importFolder</a></code> <code><a href="h2o.importFile.html">h2o.importHDFS</a></code> <code><a href="h2o.importFile.html">h2o.uploadFile</a></code> </p>
+          </td>
+          <td><p>Import Files into H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.impute.html">h2o.impute</a></code> </p>
+          </td>
+          <td><p>Basic Imputation of H2O Vectors</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.insertMissingValues.html">h2o.insertMissingValues</a></code> </p>
+          </td>
+          <td><p>Insert Missing Values into an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.interaction.html">h2o.interaction</a></code> </p>
+          </td>
+          <td><p>Categorical Interaction Feature Creation in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.is_client.html">h2o.is_client</a></code> </p>
+          </td>
+          <td><p>Check Client Mode Connection</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.isax.html">h2o.isax</a></code> </p>
+          </td>
+          <td><p>iSAX</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ischaracter.html">h2o.ischaracter</a></code> </p>
+          </td>
+          <td><p>Check if character</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.isfactor.html">h2o.isfactor</a></code> </p>
+          </td>
+          <td><p>Check if factor</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.isnumeric.html">h2o.isnumeric</a></code> </p>
+          </td>
+          <td><p>Check if numeric</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.kfold_column.html">h2o.kfold_column</a></code> </p>
+          </td>
+          <td><p>Produce a k-fold column vector.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.killMinus3.html">h2o.killMinus3</a></code> </p>
+          </td>
+          <td><p>Dump the stack into the JVM's stdout.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.kmeans.html">h2o.kmeans</a></code> </p>
+          </td>
+          <td><p>Performs k-means clustering on an H2O dataset</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.kurtosis.html">h2o.kurtosis</a></code> <code><a href="h2o.kurtosis.html">kurtosis.H2OFrame</a></code> </p>
+          </td>
+          <td><p>Kurtosis of a column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.levels.html">h2o.levels</a></code> </p>
+          </td>
+          <td><p>Return the levels from the column requested column.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.list_all_extensions.html">h2o.list_all_extensions</a></code> </p>
+          </td>
+          <td><p>List all H2O registered extensions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.list_api_extensions.html">h2o.list_api_extensions</a></code> </p>
+          </td>
+          <td><p>List registered API extensions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.list_core_extensions.html">h2o.list_core_extensions</a></code> </p>
+          </td>
+          <td><p>List registered core extensions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.listTimezones.html">h2o.listTimezones</a></code> </p>
+          </td>
+          <td><p>List all of the Time Zones Acceptable by the H2O Cloud.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.loadModel.html">h2o.loadModel</a></code> </p>
+          </td>
+          <td><p>Load H2O Model from HDFS or Local Disk</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.log.html">h2o.log</a></code> </p>
+          </td>
+          <td><p>Compute the logarithm of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.log1p.html">h2o.log1p</a></code> </p>
+          </td>
+          <td><p>Compute the log1p of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.log2.html">h2o.log2</a></code> </p>
+          </td>
+          <td><p>Compute the log2 of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.log10.html">h2o.log10</a></code> </p>
+          </td>
+          <td><p>Compute the log10 of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.logAndEcho.html">h2o.logAndEcho</a></code> </p>
+          </td>
+          <td><p>Log a message on the server-side logs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.logloss.html">h2o.logloss</a></code> </p>
+          </td>
+          <td><p>Retrieve the Log Loss Value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ls.html">h2o.ls</a></code> </p>
+          </td>
+          <td><p>List Keys on an H2O Cluster</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.lstrip.html">h2o.lstrip</a></code> </p>
+          </td>
+          <td><p>Strip set from left</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mae.html">h2o.mae</a></code> </p>
+          </td>
+          <td><p>Retrieve the Mean Absolute Error Value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.make_metrics.html">h2o.make_metrics</a></code> </p>
+          </td>
+          <td><p>Create Model Metrics from predicted and actual values in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.makeGLMModel.html">h2o.makeGLMModel</a></code> </p>
+          </td>
+          <td><p>Set betas of an existing H2O GLM Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.match.html">h2o.match</a></code> <code><a href="h2o.match.html">match.H2OFrame</a></code> <code><a href="h2o.match.html">%in%</a></code> </p>
+          </td>
+          <td><p>Value Matching in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.max.html">h2o.max</a></code> </p>
+          </td>
+          <td><p>Returns the maxima of the input values.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mean_per_class_error.html">h2o.mean_per_class_error</a></code> </p>
+          </td>
+          <td><p>Retrieve the mean per class error</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mean_residual_deviance.html">h2o.mean_residual_deviance</a></code> </p>
+          </td>
+          <td><p>Retrieve the Mean Residual Deviance value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mean.html">h2o.mean</a></code> <code><a href="h2o.mean.html">mean</a></code> </p>
+          </td>
+          <td><p>Compute the frame's mean by-column (or by-row).</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.median.html">h2o.median</a></code> <code><a href="h2o.median.html">median</a></code> </p>
+          </td>
+          <td><p>H2O Median</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.merge.html">h2o.merge</a></code> </p>
+          </td>
+          <td><p>Merge Two H2O Data Frames</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.metric.html">h2o.metric</a></code> <code><a href="h2o.metric.html">h2o.F0point5</a></code> <code><a href="h2o.metric.html">h2o.F1</a></code> <code><a href="h2o.metric.html">h2o.F2</a></code> <code><a href="h2o.metric.html">h2o.accuracy</a></code> <code><a href="h2o.metric.html">h2o.error</a></code> <code><a href="h2o.metric.html">h2o.maxPerClassError</a></code> <code><a href="h2o.metric.html">h2o.mean_per_class_accuracy</a></code> <code><a href="h2o.metric.html">h2o.mcc</a></code> <code><a href="h2o.metric.html">h2o.precision</a></code> <code><a href="h2o.metric.html">h2o.tpr</a></code> <code><a href="h2o.metric.html">h2o.fpr</a></code> <code><a href="h2o.metric.html">h2o.fnr</a></code> <code><a href="h2o.metric.html">h2o.tnr</a></code> <code><a href="h2o.metric.html">h2o.recall</a></code> <code><a href="h2o.metric.html">h2o.sensitivity</a></code> <code><a href="h2o.metric.html">h2o.fallout</a></code> <code><a href="h2o.metric.html">h2o.missrate</a></code> <code><a href="h2o.metric.html">h2o.specificity</a></code> </p>
+          </td>
+          <td><p>H2O Model Metric Accessor Functions</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.min.html">h2o.min</a></code> </p>
+          </td>
+          <td><p>Returns the minima of the input values.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mktime.html">h2o.mktime</a></code> </p>
+          </td>
+          <td><p>Compute msec since the Unix Epoch</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.month.html">h2o.month</a></code> <code><a href="h2o.month.html">month</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Months in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.mse.html">h2o.mse</a></code> </p>
+          </td>
+          <td><p>Retrieves Mean Squared Error Value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.na_omit.html">h2o.na_omit</a></code> </p>
+          </td>
+          <td><p>Remove Rows With NAs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.nacnt.html">h2o.nacnt</a></code> </p>
+          </td>
+          <td><p>Count of NAs per column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.naiveBayes.html">h2o.naiveBayes</a></code> </p>
+          </td>
+          <td><p>Compute naive Bayes probabilities on an H2O dataset.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.names.html">h2o.names</a></code> </p>
+          </td>
+          <td><p>Column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.nchar.html">h2o.nchar</a></code> </p>
+          </td>
+          <td><p>String length</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.ncol.html">h2o.ncol</a></code> </p>
+          </td>
+          <td><p>Return the number of columns present in x.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.networkTest.html">h2o.networkTest</a></code> </p>
+          </td>
+          <td><p>View Network Traffic Speed</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.nlevels.html">h2o.nlevels</a></code> </p>
+          </td>
+          <td><p>Get the number of factor levels for this frame.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.no_progress.html">h2o.no_progress</a></code> </p>
+          </td>
+          <td><p>Disable Progress Bar</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.nrow.html">h2o.nrow</a></code> </p>
+          </td>
+          <td><p>Return the number of rows present in x.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.null_deviance.html">h2o.null_deviance</a></code> </p>
+          </td>
+          <td><p>Retrieve the null deviance</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.null_dof.html">h2o.null_dof</a></code> </p>
+          </td>
+          <td><p>Retrieve the null degrees of freedom</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.num_iterations.html">h2o.num_iterations</a></code> </p>
+          </td>
+          <td><p>Retrieve the number of iterations.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.num_valid_substrings.html">h2o.num_valid_substrings</a></code> </p>
+          </td>
+          <td><p>Count of substrings &gt;= 2 chars that are contained in file</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.openLog.html">h2o.openLog</a></code> </p>
+          </td>
+          <td><p>View H2O R Logs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.parseRaw.html">h2o.parseRaw</a></code> </p>
+          </td>
+          <td><p>H2O Data Parsing</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.parseSetup.html">h2o.parseSetup</a></code> </p>
+          </td>
+          <td><p>Get a parse setup back for the staged data.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.partialPlot.html">h2o.partialPlot</a></code> </p>
+          </td>
+          <td><p>Partial Dependence Plots</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.performance.html">h2o.performance</a></code> </p>
+          </td>
+          <td><p>Model Performance Metrics in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.pivot.html">h2o.pivot</a></code> </p>
+          </td>
+          <td><p>Pivot a frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.prcomp.html">h2o.prcomp</a></code> </p>
+          </td>
+          <td><p>Principal component analysis of an H2O data frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.predict_json.html">h2o.predict_json</a></code> </p>
+          </td>
+          <td><p>H2O Prediction from R without having H2O running</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.print.html">h2o.print</a></code> </p>
+          </td>
+          <td><p>Print An H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.prod.html">h2o.prod</a></code> </p>
+          </td>
+          <td><p>Return the product of all the values present in its arguments.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.proj_archetypes.html">h2o.proj_archetypes</a></code> </p>
+          </td>
+          <td><p>Convert Archetypes to Features from H2O GLRM Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.quantile.html">h2o.quantile</a></code> <code><a href="h2o.quantile.html">quantile</a></code> </p>
+          </td>
+          <td><p>Quantiles of H2O Frames.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.r2.html">h2o.r2</a></code> </p>
+          </td>
+          <td><p>Retrieve the R2 value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
             <p><code><a href="h2o.randomForest.html">h2o.randomForest</a></code> </p>
           </td>
-          <td><p>Builds a Random Forest Model on an H2OFrame</p></td>
+          <td><p>Build a Random Forest model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.range.html">h2o.range</a></code> </p>
+          </td>
+          <td><p>Returns a vector containing the minimum and maximum of all the given arguments.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rbind.html">h2o.rbind</a></code> </p>
+          </td>
+          <td><p>Combine H2O Datasets by Rows</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.reconstruct.html">h2o.reconstruct</a></code> </p>
+          </td>
+          <td><p>Reconstruct Training Data via H2O GLRM Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.relevel.html">h2o.relevel</a></code> </p>
+          </td>
+          <td><p>Reorders levels of an H2O factor, similarly to standard R's relevel.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.removeAll.html">h2o.removeAll</a></code> </p>
+          </td>
+          <td><p>Remove All Objects on the H2O Cluster</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.removeVecs.html">h2o.removeVecs</a></code> </p>
+          </td>
+          <td><p>Delete Columns from an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rep_len.html">h2o.rep_len</a></code> </p>
+          </td>
+          <td><p>Replicate Elements of Vectors or Lists into H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.residual_deviance.html">h2o.residual_deviance</a></code> </p>
+          </td>
+          <td><p>Retrieve the residual deviance</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.residual_dof.html">h2o.residual_dof</a></code> </p>
+          </td>
+          <td><p>Retrieve the residual degrees of freedom</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rm.html">h2o.rm</a></code> </p>
+          </td>
+          <td><p>Delete Objects In H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rmse.html">h2o.rmse</a></code> </p>
+          </td>
+          <td><p>Retrieves Root Mean Squared Error Value</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rmsle.html">h2o.rmsle</a></code> </p>
+          </td>
+          <td><p>Retrieve the Root Mean Squared Log Error</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.round.html">h2o.round</a></code> <code><a href="h2o.round.html">round</a></code> </p>
+          </td>
+          <td><p>Round doubles/floats to the given number of decimal places.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.rstrip.html">h2o.rstrip</a></code> </p>
+          </td>
+          <td><p>Strip set from right</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.runif.html">h2o.runif</a></code> </p>
+          </td>
+          <td><p>Produce a Vector of Random Uniform Numbers</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.saveModel.html">h2o.saveModel</a></code> </p>
+          </td>
+          <td><p>Save an H2O Model Object to Disk</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.saveModelDetails.html">h2o.saveModelDetails</a></code> </p>
+          </td>
+          <td><p>Save an H2O Model Details</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.saveMojo.html">h2o.saveMojo</a></code> </p>
+          </td>
+          <td><p>Save an H2O Model Object as Mojo to Disk</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.scale.html">h2o.scale</a></code> <code><a href="h2o.scale.html">scale</a></code> </p>
+          </td>
+          <td><p>Scaling and Centering of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.scoreHistory.html">h2o.scoreHistory</a></code> </p>
+          </td>
+          <td><p>Retrieve Model Score History</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sd.html">h2o.sd</a></code> <code><a href="h2o.sd.html">sd</a></code> </p>
+          </td>
+          <td><p>Standard Deviation of a column of data.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sdev.html">h2o.sdev</a></code> </p>
+          </td>
+          <td><p>Retrieve the standard deviations of principal components</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.setLevels.html">h2o.setLevels</a></code> </p>
+          </td>
+          <td><p>Set Levels of H2O Factor Column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.setTimezone.html">h2o.setTimezone</a></code> </p>
+          </td>
+          <td><p>Set the Time Zone on the H2O Cloud</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.show_progress.html">h2o.show_progress</a></code> </p>
+          </td>
+          <td><p>Enable Progress Bar</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.shutdown.html">h2o.shutdown</a></code> </p>
+          </td>
+          <td><p>Shut Down H2O Instance</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.signif.html">h2o.signif</a></code> <code><a href="h2o.signif.html">signif</a></code> </p>
+          </td>
+          <td><p>Round doubles/floats to the given number of significant digits.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sin.html">h2o.sin</a></code> </p>
+          </td>
+          <td><p>Compute the sine of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.skewness.html">h2o.skewness</a></code> <code><a href="h2o.skewness.html">skewness.H2OFrame</a></code> </p>
+          </td>
+          <td><p>Skewness of a column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.splitFrame.html">h2o.splitFrame</a></code> </p>
+          </td>
+          <td><p>Split an H2O Data Set</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sqrt.html">h2o.sqrt</a></code> </p>
+          </td>
+          <td><p>Compute the square root of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.stackedEnsemble.html">h2o.stackedEnsemble</a></code> </p>
+          </td>
+          <td><p>Builds a Stacked Ensemble</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.startLogging.html">h2o.startLogging</a></code> </p>
+          </td>
+          <td><p>Start Writing H2O R Logs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.std_coef_plot.html">h2o.std_coef_plot</a></code> </p>
+          </td>
+          <td><p>Plot Standardized Coefficient Magnitudes</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.stopLogging.html">h2o.stopLogging</a></code> </p>
+          </td>
+          <td><p>Stop Writing H2O R Logs</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.str.html">h2o.str</a></code> </p>
+          </td>
+          <td><p>Display the structure of an H2OFrame object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.stringdist.html">h2o.stringdist</a></code> </p>
+          </td>
+          <td><p>Compute element-wise string distances between two H2OFrames</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.strsplit.html">h2o.strsplit</a></code> </p>
+          </td>
+          <td><p>String Split</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sub.html">h2o.sub</a></code> </p>
+          </td>
+          <td><p>String Substitute</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.substring.html">h2o.substring</a></code> <code><a href="h2o.substring.html">h2o.substr</a></code> </p>
+          </td>
+          <td><p>Substring</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.sum.html">h2o.sum</a></code> </p>
+          </td>
+          <td><p>Compute the frame's sum by-column (or by-row).</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.summary.html">h2o.summary</a></code> <code><a href="h2o.summary.html">summary</a></code> </p>
+          </td>
+          <td><p>Summarizes the columns of an H2OFrame.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.svd.html">h2o.svd</a></code> </p>
+          </td>
+          <td><p>Singular value decomposition of an H2O data frame using the power method</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.table.html">h2o.table</a></code> <code><a href="h2o.table.html">table.H2OFrame</a></code> </p>
+          </td>
+          <td><p>Cross Tabulation and Table Creation in H2O</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tabulate.html">h2o.tabulate</a></code> </p>
+          </td>
+          <td><p>Tabulation between Two Columns of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tan.html">h2o.tan</a></code> </p>
+          </td>
+          <td><p>Compute the tangent of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tanh.html">h2o.tanh</a></code> </p>
+          </td>
+          <td><p>Compute the hyperbolic tangent of x</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.toFrame.html">h2o.toFrame</a></code> </p>
+          </td>
+          <td><p>Convert a word2vec model into an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tokenize.html">h2o.tokenize</a></code> </p>
+          </td>
+          <td><p>Tokenize String</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tolower.html">h2o.tolower</a></code> </p>
+          </td>
+          <td><p>Convert strings to lowercase</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.topN.html">h2o.topN</a></code> </p>
+          </td>
+          <td><p>H2O topN</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.tot_withinss.html">h2o.tot_withinss</a></code> </p>
+          </td>
+          <td><p>Get the total within cluster sum of squares.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.totss.html">h2o.totss</a></code> </p>
+          </td>
+          <td><p>Get the total sum of squares.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.toupper.html">h2o.toupper</a></code> </p>
+          </td>
+          <td><p>Convert strings to uppercase</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.transform.html">h2o.transform</a></code> </p>
+          </td>
+          <td><p>Transform words (or sequences of words) to vectors using a word2vec model.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.trim.html">h2o.trim</a></code> </p>
+          </td>
+          <td><p>Trim Space</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.trunc.html">h2o.trunc</a></code> </p>
+          </td>
+          <td><p>Truncate values in x toward 0</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.unique.html">h2o.unique</a></code> </p>
+          </td>
+          <td><p>H2O Unique</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.var.html">h2o.var</a></code> <code><a href="h2o.var.html">var</a></code> </p>
+          </td>
+          <td><p>Variance of a column or covariance of columns.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.varimp_plot.html">h2o.varimp_plot</a></code> </p>
+          </td>
+          <td><p>Plot Variable Importances</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.varimp.html">h2o.varimp</a></code> </p>
+          </td>
+          <td><p>Retrieve the variable importance.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.week.html">h2o.week</a></code> <code><a href="h2o.week.html">week</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Week of Week Year in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.weights.html">h2o.weights</a></code> </p>
+          </td>
+          <td><p>Retrieve the respective weight matrix</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.which_max.html">h2o.which_max</a></code> <code><a href="h2o.which_max.html">which.max.H2OFrame</a></code> <code><a href="h2o.which_max.html">which.min.H2OFrame</a></code> </p>
+          </td>
+          <td><p>Which indice contains the max value?</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.which_min.html">h2o.which_min</a></code> </p>
+          </td>
+          <td><p>Which index contains the min value?</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.which.html">h2o.which</a></code> </p>
+          </td>
+          <td><p>Which indices are TRUE?</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.withinss.html">h2o.withinss</a></code> </p>
+          </td>
+          <td><p>Get the Within SS</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.word2vec.html">h2o.word2vec</a></code> </p>
+          </td>
+          <td><p>Trains a word2vec model on a String column of an H2O data frame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.xgboost.available.html">h2o.xgboost.available</a></code> </p>
+          </td>
+          <td><p>Determines whether an XGBoost model can be built</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.xgboost.html">h2o.xgboost</a></code> </p>
+          </td>
+          <td><p>Build an eXtreme Gradient Boosting model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="h2o.year.html">h2o.year</a></code> <code><a href="h2o.year.html">year</a></code> </p>
+          </td>
+          <td><p>Convert Milliseconds to Years in H2O Datasets</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OAutoML-class.html">H2OAutoML-class</a></code> </p>
+          </td>
+          <td><p>The H2OAutoML class</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OClusteringModel-class.html">H2OClusteringModel-class</a></code> </p>
+          </td>
+          <td><p>The H2OClusteringModel object.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OConnection-class.html">show</a></code> </p>
+          </td>
+          <td><p>The H2OConnection class.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OConnectionMutableState.html">H2OConnectionMutableState</a></code> </p>
+          </td>
+          <td><p>The H2OConnectionMutableState class</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OFrame-class.html">H2OFrame-class</a></code> </p>
+          </td>
+          <td><p>The H2OFrame class</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OFrame-Extract.html">H2OFrame-Extract</a></code> </p>
+          </td>
+          <td><p>Extract or Replace Parts of an H2OFrame Object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OGrid-class.html">show</a></code> </p>
+          </td>
+          <td><p>H2O Grid</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OModel-class.html">show</a></code> </p>
+          </td>
+          <td><p>The H2OModel object.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OModelFuture-class.html">H2OModelFuture-class</a></code> </p>
+          </td>
+          <td><p>H2O Future Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="H2OModelMetrics-class.html">show</a></code> </p>
+          </td>
+          <td><p>The H2OModelMetrics Object.</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="housevotes.html">housevotes</a></code> </p>
+          </td>
+          <td><p>United States Congressional Voting Records 1984</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="iris.html">iris</a></code> </p>
+          </td>
+          <td><p>Edgar Anderson's Iris Data</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="is.character.html">is.character</a></code> </p>
+          </td>
+          <td><p>Check if character</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="is.factor.html">is.factor</a></code> </p>
+          </td>
+          <td><p>Check if factor</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="is.h2o.html">is.h2o</a></code> </p>
+          </td>
+          <td><p>Is H2O Frame object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="is.numeric.html">is.numeric</a></code> </p>
+          </td>
+          <td><p>Check if numeric</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="Logical-or.html">||</a></code> </p>
+          </td>
+          <td><p>Logical or for H2OFrames</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="ModelAccessors.html">getParms</a></code> <code><a href="ModelAccessors.html">getCenters</a></code> <code><a href="ModelAccessors.html">getCentersStd</a></code> <code><a href="ModelAccessors.html">getWithinSS</a></code> <code><a href="ModelAccessors.html">getTotWithinSS</a></code> <code><a href="ModelAccessors.html">getBetweenSS</a></code> <code><a href="ModelAccessors.html">getTotSS</a></code> <code><a href="ModelAccessors.html">getIterations</a></code> <code><a href="ModelAccessors.html">getClusterSizes</a></code> </p>
+          </td>
+          <td><p>Accessor Methods for H2OModel Object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="names.H2OFrame.html">names</a></code> </p>
+          </td>
+          <td><p>Column names of an H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="plot.H2OModel.html">plot</a></code> </p>
+          </td>
+          <td><p>Plot an H2O Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="plot.H2OTabulate.html">plot</a></code> </p>
+          </td>
+          <td><p>Plot an H2O Tabulate Heatmap</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="predict.H2OAutoML.html">predict</a></code> </p>
+          </td>
+          <td><p>Predict on an AutoML object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="predict.H2OModel.html">predict</a></code> <code><a href="predict.H2OModel.html">h2o.predict</a></code> </p>
+          </td>
+          <td><p>Predict on an H2O Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="predict_leaf_node_assignment.H2OModel.html">predict_leaf_node_assignment.H2OModel</a></code> <code><a href="predict_leaf_node_assignment.H2OModel.html">h2o.predict_leaf_node_assignment</a></code> </p>
+          </td>
+          <td><p>Predict the Leaf Node Assignment on an H2O Model</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="print.H2OFrame.html">print</a></code> </p>
+          </td>
+          <td><p>Print An H2OFrame</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="print.H2OTable.html">print</a></code> </p>
+          </td>
+          <td><p>Print method for H2OTable objects</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="prostate.html">prostate</a></code> </p>
+          </td>
+          <td><p>Prostate Cancer Study</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="range.H2OFrame.html">range</a></code> </p>
+          </td>
+          <td><p>Range of an H2O Column</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="str.H2OFrame.html">str</a></code> </p>
+          </td>
+          <td><p>Display the structure of an H2OFrame object</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="summary-H2OGrid-method.html">summary</a></code> </p>
+          </td>
+          <td><p>Format grid object in user-friendly way</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="summary-H2OModel-method.html">summary</a></code> </p>
+          </td>
+          <td><p>Print the Model Summary</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="use.package.html">use.package</a></code> </p>
+          </td>
+          <td><p>Use optional package</p></td>
+        </tr><tr>
+          <!--  -->
+          <td>
+            <p><code><a href="walking.html">walking</a></code> </p>
+          </td>
+          <td><p>Muscular Actuations for Walking Subject</p></td>
         </tr>
       </tbody>
       </table>
@@ -126,7 +1851,7 @@
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-models">Models</a></li>
+      <li><a href="#section-reference">Reference</a></li>
     </ul>
   </div>
 </div>

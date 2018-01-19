@@ -47,28 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
-    <li>
-      <a href="../articles/basics.html">H2O Basics</a>
-    </li>
-  </ul>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li>
-  <a href="../reference/index.html">Reference</a>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -135,12 +125,11 @@ from R.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>library</span>(<span class='no'>h2o</span>)
-<span class='fu'>h2o.predict_json</span>(<span class='st'>'~/GBM_model_python_1473313897851_6.zip'</span>, <span class='st'>'{"C7":1}'</span>)</div><div class='output co'>#&gt; <span class='warning'>Warning: running command ''java'  -Xmx4g -cp .:/Users/terrytangyuan/h2o-genmodel.jar:/Users/terrytangyuan:genmodel.jar:/ water.util.H2OPredictor  ~/GBM_model_python_1473313897851_6.zip '{"C7":1}' 2&gt;&amp;1' had status 1</span></div><div class='output co'>#&gt; $error
-#&gt; [1] "Error: Could not find or load main class water.util.H2OPredictor"
-#&gt; </div><div class='input'><span class='fu'>h2o.predict_json</span>(<span class='st'>'~/GBM_model_python_1473313897851_6.zip'</span>, <span class='st'>'{"C7":1}'</span>, <span class='fu'>c</span>(<span class='st'>"."</span>, <span class='st'>"lib"</span>))</div><div class='output co'>#&gt; <span class='warning'>Warning: running command ''java'  -Xmx4g -cp .:.:lib water.util.H2OPredictor  ~/GBM_model_python_1473313897851_6.zip '{"C7":1}' 2&gt;&amp;1' had status 1</span></div><div class='output co'>#&gt; $error
-#&gt; [1] "Error: Could not find or load main class water.util.H2OPredictor"
-#&gt; </div></pre>
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'>library</span>(<span class='no'>h2o</span>)
+<span class='fu'>h2o.predict_json</span>(<span class='st'>'~/GBM_model_python_1473313897851_6.zip'</span>, <span class='st'>'{"C7":1}'</span>)
+<span class='fu'>h2o.predict_json</span>(<span class='st'>'~/GBM_model_python_1473313897851_6.zip'</span>, <span class='st'>'{"C7":1}'</span>, <span class='fu'>c</span>(<span class='st'>"."</span>, <span class='st'>"lib"</span>))
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

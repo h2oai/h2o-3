@@ -3,7 +3,7 @@
 #'
 # -------------------------- coxph -------------------------- #
 #' 
-#' Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
+#' Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except event_column, start_column and stop_column are used.

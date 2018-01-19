@@ -4,7 +4,8 @@
 # -------------------------- Deep Learning - Neural Network -------------------------- #
 #' 
 #' Build a Deep Neural Network model using CPUs
-#' Builds a feed-forward multilayer artificial neural network on an H2OFrame
+#' 
+#' Builds a feed-forward multilayer artificial neural network on an H2OFrame.
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.

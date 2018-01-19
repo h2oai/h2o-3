@@ -47,28 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
-    <li>
-      <a href="../articles/basics.html">H2O Basics</a>
-    </li>
-  </ul>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li>
-  <a href="../reference/index.html">Reference</a>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -139,11 +129,12 @@ available in the scoring history for a particular type of model.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fu'>requireNamespace</span>(<span class='st'>"mlbench"</span>, <span class='kw'>quietly</span><span class='kw'>=</span><span class='fl'>TRUE</span>)) {
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='kw'>if</span> (<span class='fu'>requireNamespace</span>(<span class='st'>"mlbench"</span>, <span class='kw'>quietly</span><span class='kw'>=</span><span class='fl'>TRUE</span>)) {
     <span class='fu'>library</span>(<span class='no'>h2o</span>)
     <span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
 
-    <span class='no'>df</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='kw pkg'>mlbench</span><span class='kw ns'>::</span><span class='fu'>mlbench.friedman1</span>(<span class='fl'>10000</span>,<span class='fl'>1</span>))
+    <span class='no'>df</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='kw pkg'>mlbench</span><span class='kw ns'>::</span><span class='fu'><a href='http://www.rdocumentation.org/packages/mlbench/topics/mlbench.friedman1'>mlbench.friedman1</a></span>(<span class='fl'>10000</span>,<span class='fl'>1</span>))
     <span class='no'>rng</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.runif.html'>h2o.runif</a></span>(<span class='no'>df</span>, <span class='kw'>seed</span><span class='kw'>=</span><span class='fl'>1234</span>)
     <span class='no'>train</span> <span class='kw'>&lt;-</span> <span class='no'>df</span>[<span class='no'>rng</span><span class='kw'>&lt;</span><span class='fl'>0.8</span>,]
     <span class='no'>valid</span> <span class='kw'>&lt;-</span> <span class='no'>df</span>[<span class='no'>rng</span><span class='kw'>&gt;=</span><span class='fl'>0.8</span>,]
@@ -155,7 +146,8 @@ available in the scoring history for a particular type of model.</p>
     <span class='fu'>plot</span>(<span class='no'>gbm</span>, <span class='kw'>timestep</span> <span class='kw'>=</span> <span class='st'>"number_of_trees"</span>, <span class='kw'>metric</span> <span class='kw'>=</span> <span class='st'>"deviance"</span>)
     <span class='fu'>plot</span>(<span class='no'>gbm</span>, <span class='kw'>timestep</span> <span class='kw'>=</span> <span class='st'>"number_of_trees"</span>, <span class='kw'>metric</span> <span class='kw'>=</span> <span class='st'>"rmse"</span>)
     <span class='fu'>plot</span>(<span class='no'>gbm</span>, <span class='kw'>timestep</span> <span class='kw'>=</span> <span class='st'>"number_of_trees"</span>, <span class='kw'>metric</span> <span class='kw'>=</span> <span class='st'>"mae"</span>)
-}</div></pre>
+}
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

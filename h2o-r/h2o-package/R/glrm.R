@@ -3,7 +3,9 @@
 #'
 # -------------------------- Generalized Low Rank Model -------------------------- #
 #' 
-#' Generalized low rank decomposition of an H2O data frame.
+#' Generalized low rank decomposition of an H2O data frame
+#' 
+#' Builds a generalized low rank decomposition of an H2O data frame
 #' 
 #' @param cols (Optional) A vector containing the data columns on which k-means operates.
 #' @param model_id Destination id for this model; auto-generated if not specified.

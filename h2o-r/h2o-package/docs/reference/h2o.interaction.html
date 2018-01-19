@@ -47,28 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="../index.html">Home</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li class="dropdown-header">Getting Started</li>
-    <li>
-      <a href="../articles/basics.html">H2O Basics</a>
-    </li>
-  </ul>
+  <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
 <li>
-  <a href="../reference/index.html">Reference</a>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -135,10 +125,10 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>library</span>(<span class='no'>h2o</span>)
-<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()</div><div class='output co'>#&gt; Reading in config file: ./../../../../.h2oconfig
-#&gt; 
-#&gt; H2O is not running yet, starting it now...</div><div class='output co'>#&gt; <span class='warning'>Warning: cannot open file '/Users/terrytangyuan/h2o-3/h2o-r/h2o/branch.txt': No such file or directory</span></div><div class='output co'>#&gt; <span class='error'>Error in file(con, "r"): cannot open the connection</span></div><div class='input'>
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'>library</span>(<span class='no'>h2o</span>)
+<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
+
 <span class='co'># Create some random data</span>
 <span class='no'>myframe</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.createFrame.html'>h2o.createFrame</a></span>(<span class='kw'>rows</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>cols</span> <span class='kw'>=</span> <span class='fl'>5</span>,
                          <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>12301283</span>, <span class='kw'>randomize</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>value</span> <span class='kw'>=</span> <span class='fl'>0</span>,
@@ -146,21 +136,36 @@
                          <span class='kw'>integer_fraction</span> <span class='kw'>=</span> <span class='fl'>0.2</span>, <span class='kw'>integer_range</span> <span class='kw'>=</span> <span class='fl'>10</span>,
                          <span class='kw'>binary_fraction</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>binary_ones_fraction</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
                          <span class='kw'>missing_fraction</span> <span class='kw'>=</span> <span class='fl'>0.2</span>,
-                         <span class='kw'>response_factors</span> <span class='kw'>=</span> <span class='fl'>1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in h2o.getConnection(): No active connection to an H2O cluster. Did you run `h2o.init()` ?</span></div><div class='input'><span class='co'># Turn integer column into a categorical</span>
-<span class='no'>myframe</span>[,<span class='fl'>5</span>] <span class='kw'>&lt;-</span> <span class='fu'><a href='as.factor.html'>as.factor</a></span>(<span class='no'>myframe</span>[,<span class='fl'>5</span>])</div><div class='output co'>#&gt; <span class='error'>Error in is.H2OFrame(x): object 'myframe' not found</span></div><div class='input'><span class='fu'>head</span>(<span class='no'>myframe</span>, <span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(myframe, 20): object 'myframe' not found</span></div><div class='input'>
+                         <span class='kw'>response_factors</span> <span class='kw'>=</span> <span class='fl'>1</span>)
+<span class='co'># Turn integer column into a categorical</span>
+<span class='no'>myframe</span>[,<span class='fl'>5</span>] <span class='kw'>&lt;-</span> <span class='fu'><a href='as.factor.html'>as.factor</a></span>(<span class='no'>myframe</span>[,<span class='fl'>5</span>])
+<span class='fu'>head</span>(<span class='no'>myframe</span>, <span class='fl'>20</span>)
+
 <span class='co'># Create pairwise interactions</span>
 <span class='no'>pairwise</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.interaction</span>(<span class='no'>myframe</span>, <span class='kw'>destination_frame</span> <span class='kw'>=</span> <span class='st'>'pairwise'</span>,
                             <span class='kw'>factors</span> <span class='kw'>=</span> <span class='fu'>list</span>(<span class='fu'>c</span>(<span class='fl'>1</span>,<span class='fl'>2</span>),<span class='fu'>c</span>(<span class='st'>"C2"</span>,<span class='st'>"C3"</span>,<span class='st'>"C4"</span>)),
-                            <span class='kw'>pairwise</span><span class='kw'>=</span><span class='fl'>TRUE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in is.H2OFrame(fr): object 'myframe' not found</span></div><div class='input'><span class='fu'>head</span>(<span class='no'>pairwise</span>, <span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(pairwise, 20): object 'pairwise' not found</span></div><div class='input'><span class='fu'><a href='h2o.levels.html'>h2o.levels</a></span>(<span class='no'>pairwise</span>,<span class='fl'>2</span>)</div><div class='output co'>#&gt; <span class='error'>Error in is.H2OFrame(fr): object 'pairwise' not found</span></div><div class='input'>
+                            <span class='kw'>pairwise</span><span class='kw'>=</span><span class='fl'>TRUE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>1</span>)
+<span class='fu'>head</span>(<span class='no'>pairwise</span>, <span class='fl'>20</span>)
+<span class='fu'><a href='h2o.levels.html'>h2o.levels</a></span>(<span class='no'>pairwise</span>,<span class='fl'>2</span>)
+
 <span class='co'># Create 5-th order interaction</span>
 <span class='no'>higherorder</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.interaction</span>(<span class='no'>myframe</span>, <span class='kw'>destination_frame</span> <span class='kw'>=</span> <span class='st'>'higherorder'</span>, <span class='kw'>factors</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>1</span>,<span class='fl'>2</span>,<span class='fl'>3</span>,<span class='fl'>4</span>,<span class='fl'>5</span>),
-                               <span class='kw'>pairwise</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>10000</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in is.H2OFrame(fr): object 'myframe' not found</span></div><div class='input'><span class='fu'>head</span>(<span class='no'>higherorder</span>, <span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(higherorder, 20): object 'higherorder' not found</span></div><div class='input'>
+                               <span class='kw'>pairwise</span><span class='kw'>=</span><span class='fl'>FALSE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>10000</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>1</span>)
+<span class='fu'>head</span>(<span class='no'>higherorder</span>, <span class='fl'>20</span>)
+
 <span class='co'># Limit the number of factors of the "categoricalized" integer column</span>
 <span class='co'># to at most 3 factors, and only if they occur at least twice</span>
-<span class='fu'>head</span>(<span class='no'>myframe</span>[,<span class='fl'>5</span>], <span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(myframe[, 5], 20): object 'myframe' not found</span></div><div class='input'><span class='no'>trim_integer_levels</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.interaction</span>(<span class='no'>myframe</span>, <span class='kw'>destination_frame</span> <span class='kw'>=</span> <span class='st'>'trim_integers'</span>, <span class='kw'>factors</span> <span class='kw'>=</span> <span class='st'>"C5"</span>,
-                                       <span class='kw'>pairwise</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>2</span>)</div><div class='output co'>#&gt; <span class='error'>Error in is.H2OFrame(fr): object 'myframe' not found</span></div><div class='input'><span class='fu'>head</span>(<span class='no'>trim_integer_levels</span>, <span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(trim_integer_levels, 20): object 'trim_integer_levels' not found</span></div><div class='input'>
+<span class='fu'>head</span>(<span class='no'>myframe</span>[,<span class='fl'>5</span>], <span class='fl'>20</span>)
+<span class='no'>trim_integer_levels</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.interaction</span>(<span class='no'>myframe</span>, <span class='kw'>destination_frame</span> <span class='kw'>=</span> <span class='st'>'trim_integers'</span>, <span class='kw'>factors</span> <span class='kw'>=</span> <span class='st'>"C5"</span>,
+                                       <span class='kw'>pairwise</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max_factors</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>min_occurrence</span> <span class='kw'>=</span> <span class='fl'>2</span>)
+<span class='fu'>head</span>(<span class='no'>trim_integer_levels</span>, <span class='fl'>20</span>)
+
 <span class='co'># Put all together</span>
-<span class='no'>myframe</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.cbind.html'>h2o.cbind</a></span>(<span class='no'>myframe</span>, <span class='no'>pairwise</span>, <span class='no'>higherorder</span>, <span class='no'>trim_integer_levels</span>)</div><div class='output co'>#&gt; <span class='error'>Error in unlist(list(...)): object 'myframe' not found</span></div><div class='input'><span class='no'>myframe</span></div><div class='output co'>#&gt; <span class='error'>Error in eval(expr, envir, enclos): object 'myframe' not found</span></div><div class='input'><span class='fu'>head</span>(<span class='no'>myframe</span>,<span class='fl'>20</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(myframe, 20): object 'myframe' not found</span></div><div class='input'><span class='fu'>summary</span>(<span class='no'>myframe</span>)</div><div class='output co'>#&gt; <span class='error'>Error in summary(myframe): object 'myframe' not found</span></div></pre>
+<span class='no'>myframe</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.cbind.html'>h2o.cbind</a></span>(<span class='no'>myframe</span>, <span class='no'>pairwise</span>, <span class='no'>higherorder</span>, <span class='no'>trim_integer_levels</span>)
+<span class='no'>myframe</span>
+<span class='fu'>head</span>(<span class='no'>myframe</span>,<span class='fl'>20</span>)
+<span class='fu'>summary</span>(<span class='no'>myframe</span>)
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

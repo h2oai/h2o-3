@@ -3,7 +3,7 @@
 #'
 # -------------------------- Singular Value Decomposition -------------------------- #
 #' 
-#' Singular value decomposition of an H2O data frame using the power method.
+#' Singular value decomposition of an H2O data frame using the power method
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param destination_key (Optional) The unique hex key assigned to the resulting model.

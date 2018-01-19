@@ -3,6 +3,8 @@
 #'
 # -------------------------- H2O Stacked Ensemble -------------------------- #
 #' 
+#' Builds a Stacked Ensemble
+#' 
 #' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 

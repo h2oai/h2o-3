@@ -1110,6 +1110,8 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @export
 range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
+#' Pivot a frame
+#'
 #' Pivot the frame designated by the three columns: index, column, and value. Index and column should be
 #' of type enum, int, or time.
 #' For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
@@ -1321,6 +1323,8 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
   .newExpr("mktime", year,month,day,hour,minute,second,msec)
 }
 
+#' Convert between character representations and objects of Date class
+#'
 #' Functions to convert between character representations and objects of class "Date" representing calendar dates.
 #'
 #' @param x H2OFrame column of strings or factors to be converted
@@ -1720,7 +1724,21 @@ nrow.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x), "nrow") 
 ncol.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x), "ncol") }
 
 #' Column names of an H2OFrame
+#'
+#' Set column names of an H2O Frame
 #' @param x An H2OFrame
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' n <- 2000
+#' #  Generate variables V1, ... V10
+#' X <- matrix(rnorm(10*n), n, 10)
+#' #  y = +1 if sum_i x_{ij}^2 > chisq median on 10 df
+#' y <- rep(-1, n)
+#' y[apply(X*X, 1, sum) > qchisq(.5, 10)] <- 1
+#' #  Assign names to the columns of X:
+#' dimnames(X)[[2]] <- c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10")
+#' }
 #' @export
 dimnames.H2OFrame <- function(x) .Primitive("dimnames")(.fetch.data(x,1L))
 
@@ -1734,6 +1752,12 @@ names.H2OFrame <- function(x) .Primitive("names")(.fetch.data(x,1L))
 #' @param x An H2OFrame object.
 #' @param do.NULL logical. If FALSE and names are NULL, names are created.
 #' @param prefix for created names.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' colnames(iris)  # Returns "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"
+#' }
 #' @export
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
   if (is.data.frame(x)) {
@@ -2630,7 +2654,8 @@ h2o.log1p <- function(x) {
   log1p(x)
 }
 
-#'
+#' Truncate values in x toward 0
+#' 
 #' trunc takes a single numeric argument x and returns a numeric vector containing the integers
 #' formed by truncating the values in x toward 0.
 #'
@@ -2801,6 +2826,13 @@ h2o.sin <- function(x) {
 #' @name h2o.acos
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{acos}} for the base R implementation.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.acos(prostate.hex[,2])
+#' }
 #' @export
 h2o.acos <- function(x) {
   acos(x)
@@ -2879,11 +2911,24 @@ h2o.sqrt <- function(x) {
 #' @name h2o.abs
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{abs}} for the base R implementation.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' smtreesH2O <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
+#' smtreesR <- read.csv("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
+#' fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, distribution="gaussian", 
+#'                  min_rows=2, learn_rate=.1, training_frame=smtreesH2O)
+#' pred <- as.data.frame(predict(fith2o, newdata=smtreesH2O))
+#' diff <- pred-smtreesR[,4]
+#' diff_abs <- abs(diff)
+#' print(diff_abs)
+#' }
 #' @export
 h2o.abs <- function(x) {
   abs(x)
 }
 
+#' Take a single numeric argument and return a numeric vector with the smallest integers
 #'
 #' ceiling takes a single numeric argument x and returns a
 #' numeric vector containing the smallest integers not less than the
@@ -2897,6 +2942,7 @@ h2o.ceiling <- function(x) {
   ceiling(x)
 }
 
+#' Take a single numeric argument and return a numeric vector with the largest integers
 #'
 #' floor takes a single numeric argument x and returns a numeric
 #' vector containing the largest integers not greater than the
@@ -3410,6 +3456,16 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #'
 #' @param x An H2OFrame object
 #' @param ... Further arguments to be passed down from other methods.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris.csv", package="h2o")
+#' iris <- h2o.uploadFile(path = irisPath)
+#' iris.hex <- as.h2o(iris)
+#' describe <- h2o.describe(iris.hex)
+#' mins = as.matrix(apply(iris.hex, 2, min))
+#' print(mins)
+#' }
 #' @export
 as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
 
@@ -3419,6 +3475,18 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
 #' @param mode Mode to coerce vector to
 #' @usage \method{as.vector}{H2OFrame}(x,mode)
 #' @method as.vector H2OFrame
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' irisPath <- system.file("extdata", "iris.csv", package="h2o")
+#' iris <- h2o.uploadFile(path = irisPath)
+#' cor_R <- cor(as.matrix(iris[,1]))
+#' cor_h2o <- cor(hex[,1])
+#' iris_Rcor <- cor(iris[,1:4])
+#' iris_H2Ocor <- as.data.frame(cor(hex[,1:4]))
+#' h2o_vec <- as.vector(unlist(iris_H2Ocor))
+#' r_vec <- as.vector(unlist(iris_Rcor))
+#' }
 #' @export
 as.vector.H2OFrame <- function(x, mode="any") base::as.vector(as.matrix.H2OFrame(x), mode=mode)
 
@@ -3469,6 +3537,16 @@ as.factor <- function(x) {
 #'
 #' @param x An H2OFrame object
 #' @param ... Further arguments to be passed from or to other methods.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' pretrained.frame <- as.h2o(data.frame(
+#'        C1 = c("a", "b"), C2 = c(0, 1), C3 = c(1, 0), C4 = c(0.2, 0.8),
+#'        stringsAsFactors = FALSE))
+#' pretrained.w2v <- h2o.word2vec(pre_trained = pretrained.frame, vec_size = 3)
+#' words <- as.character(as.h2o(c("b", "a", "c", NA, "a")))
+#' vecs <- h2o.transform(pretrained.w2v, words = words)
+#' }
 #' @export
 as.character.H2OFrame <- function(x, ...) {
   if( is.H2OFrame(x) ) .newExpr("as.character",x)
@@ -3674,6 +3752,8 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
+#' Sorts an H2O frame by columns
+#'
 #' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will
 #'  be thrown.  To sort column c1 in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.
 #'
@@ -4181,7 +4261,8 @@ h2o.tolower <- function(x) .newExpr("tolower", x)
 #' @export
 h2o.toupper <- function(x) .newExpr("toupper", x)
 
-#'
+#' Search for matches to an argument pattern
+#' 
 #' Searches for matches to argument `pattern` within each element
 #'  of a string column.
 #'
@@ -4372,6 +4453,7 @@ h2o.entropy <- function(x) .newExpr("entropy", x)
 #' @export
 h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x, .quote(path))
 
+#' Compute element-wise string distances between two H2OFrames
 #'
 #' Compute element-wise string distances between two H2OFrames. Both frames need to have the same
 #' shape (N x M) and only contain string/factor columns. Return a matrix (H2OFrame) of shape N x M.

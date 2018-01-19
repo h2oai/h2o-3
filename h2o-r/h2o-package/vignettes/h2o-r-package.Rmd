@@ -1,5 +1,5 @@
 ---
-title: "Basics of H2O"
+title: "The H2O-R Package"
 output: html_document
 ---
 
@@ -7,7 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## H2O Package
+## Overview
 
 This is a package for running H2O via its REST API from within R. To communicate with a H2O instance, the version of the R package must match the version of H2O. When connecting to a new H2O cluster, it is necessary to re-run the initializer
 
@@ -16,4 +16,3 @@ This package allows the user to run basic H2O commands using R commands. In orde
 H2O supports a number of standard statistical models, such as GLM, K-means, and Random Forest. For example, to run GLM, call `h2o.glm` with the H2O parsed data and parameters (response variable, error distribution, etc...)  as arguments. (The operation will be done on the server associated with the data object where H2O is running, not within the R environment).
 
 Note that no actual data is stored in the R workspace; and no actual work is carried out by R. R only saves the named objects, which uniquely identify the data set, model, etc on the server.  When the user makes a request, R queries the server via the REST API, which returns a JSON file with the relevant information that R then displays in the console.
-

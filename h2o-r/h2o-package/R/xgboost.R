@@ -3,7 +3,9 @@
 #'
 # -------------------------- XGBoost -------------------------- #
 #' 
-#' Builds a eXtreme Gradient Boosting model using the native XGBoost backend
+#' Build an eXtreme Gradient Boosting model
+#' 
+#' Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -288,7 +290,9 @@ h2o.xgboost <- function(x, y, training_frame,
   .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
-#' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
+#' Determines whether an XGBoost model can be built
+#'
+#' Ask the H2O server whether a XGBoost model can be built. (Depends on availability of native backend.)
 #' Returns True if a XGBoost model can be built, or False otherwise.
 #' @export
 h2o.xgboost.available <- function() {

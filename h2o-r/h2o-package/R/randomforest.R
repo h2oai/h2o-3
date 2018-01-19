@@ -3,7 +3,9 @@
 #'
 # -------------------------- Random Forest Model in H2O -------------------------- #
 #' 
-#' Builds a Random Forest Model on an H2OFrame
+#' Build a Random Forest model
+#' 
+#' Builds a Random Forest model on an H2OFrame.
 #' 
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
