@@ -62,8 +62,18 @@ class BuildSummary {
     }
 
     Section addDetailsSection(final context) {
+        return addDetailsSection(context, null)
+    }
+
+
+    Section addDetailsSection(final context, final String mode) {
+        String modeItem = ""
+        if (mode != null) {
+            modeItem = "<li><strong>Mode:</strong> ${mode}</li>\n"
+        }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
+              ${modeItem}
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>
               <li><strong>Git SHA:</strong> ${context.env.GIT_SHA}</li>
