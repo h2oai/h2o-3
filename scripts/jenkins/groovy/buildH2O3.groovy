@@ -36,6 +36,14 @@ def call(final pipelineContext) {
               archiveFiles = false
               makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
             }
+            if (pipelineContext.getBuildConfig().getBuildHadoop()) {
+              makeTarget {
+                target = 'test-package-hadoop'
+                hasJUnit = false
+                archiveFiles = false
+                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+              }
+            }
             if (pipelineContext.getBuildConfig().componentChanged(pipelineContext.getBuildConfig().COMPONENT_JS)) {
               makeTarget {
                 target = 'test-package-js'
@@ -54,14 +62,14 @@ def call(final pipelineContext) {
             }
           } finally {
             archiveArtifacts """
-          h2o-3/${pipelineContext.getBuildConfig().MAKEFILE_PATH},
-          h2o-3/h2o-py/dist/*.whl,
-          h2o-3/build/h2o.jar,
-          h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
-          h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-          h2o-3/test-package-*.zip,
-          **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
-        """
+              h2o-3/${pipelineContext.getBuildConfig().MAKEFILE_PATH},
+              h2o-3/h2o-py/dist/*.whl,
+              h2o-3/build/h2o.jar,
+              h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
+              h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
+              h2o-3/test-package-*.zip,
+              **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
+            """
           }
         }
       }
