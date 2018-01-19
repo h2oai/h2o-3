@@ -25,8 +25,21 @@ def call(body) {
   }
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
+  if (config.customBuildAction == null) {
+    config.customBuildAction = """
+      echo "Activating Python ${env.PYTHON_VERSION}"
+      . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+      echo "Activating R ${env.R_VERSION}"
+      activate_R_${env.R_VERSION}
+
+      echo "Running Make"
+      make -f ${config.makefilePath} ${config.target}
+    """
+  }
+
   try {
-    execMake(config.makefilePath, config.target, config.h2o3dir)
+    execMake(config.customBuildAction, config.h2o3dir)
   } finally {
     if (config.hasJUnit) {
       final GString findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
@@ -47,16 +60,9 @@ def call(body) {
   }
 }
 
-private void execMake(final String makefilePath, final String target, final String h2o3dir) {
+private void execMake(final String buildAction, final String h2o3dir) {
   sh """
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-    locale
-
-    echo "Activating Python ${env.PYTHON_VERSION}"
-    . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-
-    echo "Activating R ${env.R_VERSION}"
-    activate_R_${env.R_VERSION}
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"
@@ -69,8 +75,8 @@ private void execMake(final String makefilePath, final String target, final Stri
     unset CHANGE_AUTHOR_DISPLAY_NAME
     unset CHANGE_TITLE
 
-    echo "Running Make"
-    make -f ${makefilePath} ${target}
+    printenv
+    ${buildAction}
   """
 }
 
