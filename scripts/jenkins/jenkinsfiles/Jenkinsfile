@@ -2,7 +2,6 @@
 
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'
-final String MODE_NIGHTLY = 'MODE_NIGHTLY'
 final String DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def defineTestStages = null
@@ -11,9 +10,7 @@ String result = 'FAILURE'
 def scmEnv = null
 
 final boolean prJob = env.CHANGE_BRANCH != null && env.CHANGE_BRANCH != ''
-final boolean startedByTimer = currentBuild.rawBuild.getAction(CauseAction.class).findCause(hudson.triggers.TimerTrigger.TimerTriggerCause.class) != null
 def mode = null
-def additionalProperties = null
 
 try {
   ansiColor('xterm') {
@@ -24,18 +21,8 @@ try {
         cancelPreviousBuilds()
         mode = MODE_PR
       } else {
-        if (startedByTimer) {
-          echo "********* USING NIGHTLY PIPELINE CONFIGURATION *********"
-          mode = MODE_NIGHTLY
-        } else {
-          echo "********* USING MASTER PIPELINE CONFIGURATION *********"
-          String scheduleString = 'H 22,0,2,4,6 * * *'
-          if (env.BRANCH_NAME.startsWith('rel-')) {
-            scheduleString = 'H 21 * * *'
-          }
-          additionalProperties = pipelineTriggers([cron(scheduleString)])
-          mode = MODE_MASTER
-        }
+        echo "********* USING MASTER PIPELINE CONFIGURATION *********"
+        mode = MODE_MASTER
       }
 
       node(DEFAULT_NODE_LABEL) {
@@ -57,7 +44,7 @@ try {
           pipelineContext = prepareH2O3(scmEnv, mode, !prJob)
           pipelineContext.getBuildConfig().setIgnoreRerun(!prJob)
 
-          pipelineContext.getBuildConfig().setJobProperties(this, additionalProperties)
+          pipelineContext.getBuildConfig().setJobProperties(this)
 
           // Load the defineTestStages script
           defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
