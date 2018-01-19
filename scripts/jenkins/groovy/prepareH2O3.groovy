@@ -5,7 +5,7 @@ def call(final scmEnv, final String mode, final boolean ignoreChanges) {
   def pipelineContextFactory = load('h2o-3/scripts/jenkins/groovy/pipelineContext.groovy')
   def final pipelineContext = pipelineContextFactory('h2o-3', mode, scmEnv, ignoreChanges)
 
-  pipelineContext.getBuildSummary().addDetailsSection(this)
+  pipelineContext.getBuildSummary().addDetailsSection(this, mode)
   pipelineContext.getBuildSummary().addChangesSectionIfNecessary(this)
 
   // Archive scripts so we don't have to do additional checkouts when changing node
