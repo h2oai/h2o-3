@@ -14,10 +14,16 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     def final pipelineUtilsFactory = load("${h2o3Root}/scripts/jenkins/groovy/${PIPELINE_UTILS_SCRIPT_NAME}")
     def final emailerFactory = load("${h2o3Root}/scripts/jenkins/groovy/${EMAILER_SCRIPT_NAME}")
 
+    def final buildinfoPath = "${h2o3Root}/h2o-dist/buildinfo.json"
+
+    def final pipelineUtils = pipelineUtilsFactory()
+
     return new PipelineContext(
-            buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges),
+            buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
+                    pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath)
+            ),
             buildSummaryFactory(true),
-            pipelineUtilsFactory(),
+            pipelineUtils,
             emailerFactory()
     )
 }

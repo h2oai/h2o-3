@@ -1,0 +1,53 @@
+#! /bin/bash
+
+HDP_VERSION=$(ls /usr/hdp/ | grep 2)
+echo "Generating mapred-site.xml for HDP ${HDP_VERSION}"
+echo -e """<configuration>
+  <property>
+    <name>mapreduce.admin.map.child.java.opts</name>
+    <value>-server -Djava.net.preferIPv4Stack=true -Dhdp.version=${HDP_VERSION}</value>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>mapred.job.tracker</name>
+    <value>localhost:8021</value>
+  </property>
+
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+
+  <property>
+    <name>mapreduce.jobhistory.address</name>
+    <value>localhost:10020</value>
+  </property>
+  <property>
+    <name>mapreduce.jobhistory.webapp.address</name>
+    <value>localhost:19888</value>
+  </property>
+
+  <property>
+    <description>To set the value of tmp directory for map and reduce tasks.</description>
+    <name>mapreduce.task.tmp.dir</name>
+    <value>/var/lib/hadoop-mapreduce/cache/\${user.name}/tasks</value>
+  </property>
+
+  <property>
+    <name>mapreduce.admin.user.env</name>
+    <value>LD_LIBRARY_PATH=/usr/hdp/${HDP_VERSION}/hadoop/lib/native:/usr/hdp/${HDP_VERSION}/hadoop/lib/native/Linux-amd64-64</value>
+  </property>
+
+  <property>
+    <name>mapreduce.application.framework.path</name>
+    <value>hdfs:///hdp/apps/${HDP_VERSION}/mapreduce/mapreduce.tar.gz#mr-framework</value>
+  </property>
+
+  <property>
+    <name>mapreduce.application.classpath</name>
+    <value>\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/*:\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/common/*:\$PWD/mr-framework/hadoop/share/hadoop/common/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/lib/*:/usr/hdp/2.2.9.0/hadoop/lib/hadoop-lzo-0.6.0.${HDP_VERSION}.jar:/etc/hadoop/conf/secure</value>
+  </property>
+
+  </configuration>
+""" > ${HADOOP_CONF_DIR}/mapred-site.xml
