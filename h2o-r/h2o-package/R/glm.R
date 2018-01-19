@@ -2,7 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- H2O Generalized Linear Models -------------------------- #
-#' 
+#'
+#' Build a Generalized Linear Model 
+#'
 #' Fits a generalized linear model, specified by a response variable, a set of predictors, and a
 #' description of the error distribution.
 #' 
@@ -339,7 +341,9 @@ names(m@model$coefficients) <- m@model$coefficients_table[,1]
 m
 }
 
-#' Extract full regularization path from glm model (assuming it was run with lambda search option)
+#' Retrieve the full regularization path from a GLM model
+#'
+#' Extract full regularization path from glm model (assuming it was run with the lambda search option).
 #'
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
 #' @export

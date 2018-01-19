@@ -47,27 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
   <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
-    </li>
-    <li>
-      <a href="../reference/index.html">R Reference</a>
-    </li>
-  </ul>
+<li>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -113,12 +104,24 @@
     </table>
     
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
+<span class='no'>pretrained.frame</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='fu'>data.frame</span>(
+       <span class='kw'>C1</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"a"</span>, <span class='st'>"b"</span>), <span class='kw'>C2</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0</span>, <span class='fl'>1</span>), <span class='kw'>C3</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>1</span>, <span class='fl'>0</span>), <span class='kw'>C4</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0.2</span>, <span class='fl'>0.8</span>),
+       <span class='kw'>stringsAsFactors</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>))
+<span class='no'>pretrained.w2v</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.word2vec.html'>h2o.word2vec</a></span>(<span class='kw'>pre_trained</span> <span class='kw'>=</span> <span class='no'>pretrained.frame</span>, <span class='kw'>vec_size</span> <span class='kw'>=</span> <span class='fl'>3</span>)
+<span class='no'>words</span> <span class='kw'>&lt;-</span> <span class='fu'>as.character</span>(<span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='fu'>c</span>(<span class='st'>"b"</span>, <span class='st'>"a"</span>, <span class='st'>"c"</span>, <span class='fl'>NA</span>, <span class='st'>"a"</span>)))
+<span class='no'>vecs</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.transform.html'>h2o.transform</a></span>(<span class='no'>pretrained.w2v</span>, <span class='kw'>words</span> <span class='kw'>=</span> <span class='no'>words</span>)
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-                </ul>
+            
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

@@ -3,6 +3,8 @@
 #'
 # -------------------------- Gradient Boosting Machine -------------------------- #
 #' 
+#' Build gradient boosted classification or regression trees
+#'
 #' Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
 #' 
 #' The default distribution function will guess the model type based on the response column type.

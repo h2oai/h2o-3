@@ -6,8 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Searches for matches to argument `pattern` within each element
- of a string column. — h2o.grep • h2o</title>
+<title>Search for matches to an argument pattern — h2o.grep • h2o</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -48,27 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
   <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
-    </li>
-    <li>
-      <a href="../reference/index.html">R Reference</a>
-    </li>
-  </ul>
+<li>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -90,16 +80,12 @@
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Searches for matches to argument `pattern` within each element
- of a string column.</h1>
+    <h1>Search for matches to an argument pattern</h1>
     </div>
 
     
-    <p>This function has similar semantics as R's native grep function
-and it supports a subset of its parameters. Default behavior is
-to return indices of the elements matching the pattern. Parameter
-`output.logical` can be used to return a logical vector indicating
-if the element matches the pattern (1) or not (0).</p>
+    <p>Searches for matches to argument `pattern` within each element
+ of a string column.</p>
     
 
     <pre class="usage"><span class='fu'>h2o.grep</span>(<span class='no'>pattern</span>, <span class='no'>x</span>, <span class='kw'>ignore.case</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>invert</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
@@ -135,6 +121,14 @@ if the element matches the pattern (1) or not (0).</p>
     <p>H2OFrame holding the matching positions or a logical vector
 if `output.logical` is enabled.</p>
     
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>This function has similar semantics as R's native grep function
+and it supports a subset of its parameters. Default behavior is
+to return indices of the elements matching the pattern. Parameter
+`output.logical` can be used to return a logical vector indicating
+if the element matches the pattern (1) or not (0).</p>
+    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
@@ -150,6 +144,8 @@ if `output.logical` is enabled.</p>
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#details">Details</a></li>
       
       <li><a href="#examples">Examples</a></li>
     </ul>

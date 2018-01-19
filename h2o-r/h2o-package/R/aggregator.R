@@ -15,6 +15,19 @@
 #'        Defaults to NORMALIZE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+#'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+#' target_num_exemplars=1000
+#' rel_tol_num_exemplars=0.5
+#' encoding="Eigen"
+#' agg <- h2o.aggregator(training_frame=df,
+#'                      target_num_exemplars=target_num_exemplars,
+#'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
+#'                      categorical_encoding=encoding)
+#' }
 #' @export
 h2o.aggregator <- function(training_frame, x,
                            model_id = NULL,
@@ -57,10 +70,26 @@ h2o.aggregator <- function(training_frame, x,
   m
 }
         
-
-#' Retrieve an aggregated frame from the Aggregator model
+#' Retrieve an aggregated frame
+#'
+#' Retrieve an aggregated frame from the Aggregator model and use it to create a new frame.
 #'
 #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+#'                       binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+#' target_num_exemplars=1000
+#' rel_tol_num_exemplars=0.5
+#' encoding="Eigen"
+#' agg <- h2o.aggregator(training_frame=df,
+#'                      target_num_exemplars=target_num_exemplars,
+#'                      rel_tol_num_exemplars=rel_tol_num_exemplars,
+#'                      categorical_encoding=encoding)
+#' # Use the aggregated frame to create a new dataframe
+#' new_df <- h2o.aggregated_frame(agg)
+#' }
 #' @export
 h2o.aggregated_frame <- function(model) {
 key <- model@model$aggregated_frame_id

@@ -288,6 +288,8 @@ h2o.xgboost <- function(x, y, training_frame,
   .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
+#' Determines whether an XGBoost model can be built
+#'
 #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
 #' Returns True if a XGBoost model can be built, or False otherwise.
 #' @export

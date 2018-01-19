@@ -3,17 +3,15 @@ template:
     bootswatch: cosmo
 
 navbar:
-  title: "h2o"
+  title: "H2O.ai"
   type: inverse
   left:
     - text: "The H2O-R Package"
       href: articles/h2o-r-package.html
-    - text: "Using"
-      menu:
-        - text: "Getting Started"
-          href: articles/getting_started.html
-        - text: "R Reference"
-          href: reference/index.html
+    - text: "Getting Started"
+      href: articles/getting_started.html
+    - text: "R Reference Guide"
+      href: reference/index.html
   right:
    - icon: fa-github
      href: https://github.com/h2oai/h2o-3
@@ -22,7 +20,6 @@ reference:
 
   - title: "Reference"
     contents:
-      - aaa
       - apply
       - as.character.H2OFrame
       - as.data.frame.H2OFrame
@@ -313,4 +310,3 @@ reference:
       - summary,H2OModel-method
       - use.package
       - walking
-      - zzz

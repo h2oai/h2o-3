@@ -6,10 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Retrieve the AIC.
-If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
-than one parameter is set to TRUE, then a named vector of AICs are returned, where the names are "train", "valid"
-or "xval". — h2o.aic • h2o</title>
+<title>Retrieve the Akaike information criterion (AIC) value — h2o.aic • h2o</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -50,27 +47,18 @@ or "xval". — h2o.aic • h2o</title>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
   <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
-    </li>
-    <li>
-      <a href="../reference/index.html">R Reference</a>
-    </li>
-  </ul>
+<li>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -92,14 +80,11 @@ or "xval". — h2o.aic • h2o</title>
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Retrieve the AIC.
-If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
-than one parameter is set to TRUE, then a named vector of AICs are returned, where the names are "train", "valid"
-or "xval".</h1>
+    <h1>Retrieve the Akaike information criterion (AIC) value</h1>
     </div>
 
     
-    <p>Retrieve the AIC.
+    <p>Retrieves the AIC value.
 If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
 than one parameter is set to TRUE, then a named vector of AICs are returned, where the names are "train", "valid"
 or "xval".</p>
@@ -129,12 +114,25 @@ or "xval".</p>
     </table>
     
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><span class='co'># NOT RUN {</span>
+<span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
+<span class='no'>prosPath</span> <span class='kw'>&lt;-</span> <span class='fu'>system.file</span>(<span class='st'>"extdata"</span>, <span class='st'>"prostate.csv"</span>, <span class='kw'>package</span><span class='kw'>=</span><span class='st'>"h2o"</span>)
+<span class='no'>prostate.hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.importFile.html'>h2o.uploadFile</a></span>(<span class='kw'>path</span> <span class='kw'>=</span> <span class='no'>prosPath</span>)
+<span class='no'>p.sid</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.runif.html'>h2o.runif</a></span>(<span class='no'>prostate.hex</span>)
+<span class='no'>prostate.train</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.assign.html'>h2o.assign</a></span>(<span class='no'>prostate.hex</span>[<span class='no'>p.sid</span> <span class='kw'>&gt;</span> <span class='fl'>.2</span>,], <span class='st'>"prostate.train"</span>)
+<span class='no'>prostate.glm</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.glm.html'>h2o.glm</a></span>(<span class='kw'>x</span><span class='kw'>=</span><span class='fl'>3</span>:<span class='fl'>7</span>, <span class='kw'>y</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>training_frame</span><span class='kw'>=</span><span class='no'>prostate.train</span>)
+<span class='no'>aic.basic</span> <span class='kw'>&lt;-</span> <span class='fu'>h2o.aic</span>(<span class='no'>prostate.glm</span>)
+<span class='fu'>print</span>(<span class='no'>aic.basic</span>)
+<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-                </ul>
+            
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

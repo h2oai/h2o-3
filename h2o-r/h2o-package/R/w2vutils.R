@@ -58,8 +58,9 @@ h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE
     h2o.getFrame(key)
 }
 
+#' Convert a word2vec model into an H2OFrame
 #'
-#' Converts a given word2vec model into H2OFrame. The frame represents learned word embeddings
+#' Converts a given word2vec model into an H2OFrame. The frame represents learned word embeddings
 #'
 #' @param word2vec A word2vec model.
 #' @examples

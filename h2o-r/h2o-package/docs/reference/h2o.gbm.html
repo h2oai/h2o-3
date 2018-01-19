@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set. — h2o.gbm • h2o</title>
+<title>Build gradient boosted classification or regression trees — h2o.gbm • h2o</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -47,27 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
   <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
-    </li>
-    <li>
-      <a href="../reference/index.html">R Reference</a>
-    </li>
-  </ul>
+<li>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -89,13 +80,11 @@
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.</h1>
+    <h1>Build gradient boosted classification or regression trees</h1>
     </div>
 
     
-    <p>The default distribution function will guess the model type based on the response column type.
-In order to run properly, the response column must be an numeric for "gaussian" or an
-enum for "bernoulli" or "multinomial".</p>
+    <p>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.</p>
     
 
     <pre class="usage"><span class='fu'>h2o.gbm</span>(<span class='no'>x</span>, <span class='no'>y</span>, <span class='no'>training_frame</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>validation_frame</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -371,6 +360,12 @@ accurate estimates of class probabilities. Defaults to FALSE.</p></td>
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>The default distribution function will guess the model type based on the response column type.
+In order to run properly, the response column must be an numeric for "gaussian" or an
+enum for "bernoulli" or "multinomial".</p>
+    
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <p><code><a href='predict.H2OModel.html'>predict.H2OModel</a></code> for prediction</p>
@@ -396,6 +391,8 @@ accurate estimates of class probabilities. Defaults to FALSE.</p></td>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       
+      <li><a href="#details">Details</a></li>
+
       <li><a href="#see-also">See also</a></li>
       
       <li><a href="#examples">Examples</a></li>

@@ -47,27 +47,18 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="../index.html">h2o</a>
+      <a class="navbar-brand" href="../index.html">H2O.ai</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
   <a href="../articles/h2o-r-package.html">The H2O-R Package</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Using
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
-    </li>
-    <li>
-      <a href="../reference/index.html">R Reference</a>
-    </li>
-  </ul>
+<li>
+  <a href="../articles/getting_started.html">Getting Started</a>
+</li>
+<li>
+  <a href="../reference/index.html">R Reference Guide</a>
 </li>
       </ul>
       
@@ -111,12 +102,6 @@
           </th>
         </tr>
         <tr>
-          <!--  -->
-          <td>
-            <p><code><a href="aaa.html">aaa</a></code> </p>
-          </td>
-          <td><p>Starting H2O For examples</p></td>
-        </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="apply.html">apply</a></code> </p>
@@ -205,7 +190,7 @@
           <td>
             <p><code><a href="h2o.aggregated_frame.html">h2o.aggregated_frame</a></code> </p>
           </td>
-          <td><p>Retrieve an aggregated frame from the Aggregator model</p></td>
+          <td><p>Retrieve an aggregated frame</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -217,10 +202,7 @@
           <td>
             <p><code><a href="h2o.aic.html">h2o.aic</a></code> </p>
           </td>
-          <td><p>Retrieve the AIC.
-If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
-than one parameter is set to TRUE, then a named vector of AICs are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the Akaike information criterion (AIC) value</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -250,14 +232,13 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.arrange.html">h2o.arrange</a></code> </p>
           </td>
-          <td><p>Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will
- be thrown.  To sort column c1 in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.</p></td>
+          <td><p>Sorts an H2O frame by columns</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.as_date.html">h2o.as_date</a></code> </p>
           </td>
-          <td><p>Functions to convert between character representations and objects of class "Date" representing calendar dates.</p></td>
+          <td><p>Convert between character representations and objects of Date class</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -323,9 +304,7 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.ceiling.html">h2o.ceiling</a></code> </p>
           </td>
-          <td><p>ceiling takes a single numeric argument x and returns a
-numeric vector containing the smallest integers not less than the
-corresponding elements of x.</p></td>
+          <td><p>Take a single numeric argument and return a numeric vector with the smallest integers</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -343,10 +322,7 @@ corresponding elements of x.</p></td>
           <td>
             <p><code><a href="h2o.centroid_stats.html">h2o.centroid_stats</a></code> </p>
           </td>
-          <td><p>Retrieve the centroid statistics
-If "train", "valid", and "xval" parameters are FALSE (default), then the training centroid stats value is returned. If more
-than one parameter is set to TRUE, then a named list of centroid stats data frames are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve centroid statistics</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -358,10 +334,7 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.cluster_sizes.html">h2o.cluster_sizes</a></code> </p>
           </td>
-          <td><p>Retrieve the cluster sizes
-If "train", "valid", and "xval" parameters are FALSE (default), then the training cluster sizes value is returned. If more
-than one parameter is set to TRUE, then a named list of cluster size vectors are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the cluster sizes</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -541,22 +514,19 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.deeplearning.html">h2o.deeplearning</a></code> </p>
           </td>
-          <td><p>Build a Deep Neural Network model using CPUs
-Builds a feed-forward multilayer artificial neural network on an H2OFrame</p></td>
+          <td><p>Build a Deep Neural Network model using CPUs</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.deepwater.available.html">h2o.deepwater.available</a></code> </p>
           </td>
-          <td><p>Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-Returns TRUE if a Deep Water model can be built, or FALSE otherwise.</p></td>
+          <td><p>Determines whether Deep Water is available.</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.deepwater.html">h2o.deepwater</a></code> </p>
           </td>
-          <td><p>Build a Deep Learning model using multiple native GPU backends
-Builds a deep neural network on an H2OFrame containing various data sources</p></td>
+          <td><p>Build a Deep Learning model using multiple native GPU backends.</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -670,9 +640,7 @@ Builds a deep neural network on an H2OFrame containing various data sources</p><
           <td>
             <p><code><a href="h2o.floor.html">h2o.floor</a></code> </p>
           </td>
-          <td><p>floor takes a single numeric argument x and returns a numeric
-vector containing the largest integers not greater than the
-corresponding elements of x.</p></td>
+          <td><p>Take a single numeric argument and return a numeric vector with the largest integers</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -690,7 +658,7 @@ corresponding elements of x.</p></td>
           <td>
             <p><code><a href="h2o.gbm.html">h2o.gbm</a></code> </p>
           </td>
-          <td><p>Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.</p></td>
+          <td><p>Build gradient boosted classification or regression trees</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -714,7 +682,7 @@ corresponding elements of x.</p></td>
           <td>
             <p><code><a href="h2o.getGLMFullRegularizationPath.html">h2o.getGLMFullRegularizationPath</a></code> </p>
           </td>
-          <td><p>Extract full regularization path from glm model (assuming it was run with lambda search option)</p></td>
+          <td><p>Retrieve the full regularization path from a GLM model</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -763,8 +731,7 @@ Returns a string</p></td>
           <td>
             <p><code><a href="h2o.glm.html">h2o.glm</a></code> </p>
           </td>
-          <td><p>Fits a generalized linear model, specified by a response variable, a set of predictors, and a
-description of the error distribution.</p></td>
+          <td><p>Build a Generalized Linear Model</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -776,8 +743,7 @@ description of the error distribution.</p></td>
           <td>
             <p><code><a href="h2o.grep.html">h2o.grep</a></code> </p>
           </td>
-          <td><p>Searches for matches to argument `pattern` within each element
- of a string column.</p></td>
+          <td><p>Search for matches to an argument pattern</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -813,10 +779,7 @@ description of the error distribution.</p></td>
           <td>
             <p><code><a href="h2o.hit_ratio_table.html">h2o.hit_ratio_table</a></code> </p>
           </td>
-          <td><p>Retrieve the Hit Ratios
-If "train", "valid", and "xval" parameters are FALSE (default), then the training Hit Ratios value is returned. If more
-than one parameter is set to TRUE, then a named list of Hit Ratio tables are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the Hit Ratios</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1152,19 +1115,13 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.null_deviance.html">h2o.null_deviance</a></code> </p>
           </td>
-          <td><p>Retrieve the null deviance
-If "train", "valid", and "xval" parameters are FALSE (default), then the training null deviance value is returned. If more
-than one parameter is set to TRUE, then a named vector of null deviances are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the null deviance</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.null_dof.html">h2o.null_dof</a></code> </p>
           </td>
-          <td><p>Retrieve the null degrees of freedom
-If "train", "valid", and "xval" parameters are FALSE (default), then the training null degrees of freedom value is returned. If more
-than one parameter is set to TRUE, then a named vector of null degrees of freedom are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the null degrees of freedom</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1212,16 +1169,13 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.pivot.html">h2o.pivot</a></code> </p>
           </td>
-          <td><p>Pivot the frame designated by the three columns: index, column, and value. Index and column should be
-of type enum, int, or time.
-For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame</p></td>
+          <td><p>Pivot a frame</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.prcomp.html">h2o.prcomp</a></code> </p>
           </td>
-          <td><p>Principal components analysis of an H2O data frame using the power method
-to calculate the singular value decomposition of the Gram matrix.</p></td>
+          <td><p>Principal component analysis of an H2O data frame</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1311,19 +1265,13 @@ to calculate the singular value decomposition of the Gram matrix.</p></td>
           <td>
             <p><code><a href="h2o.residual_deviance.html">h2o.residual_deviance</a></code> </p>
           </td>
-          <td><p>Retrieve the residual deviance
-If "train", "valid", and "xval" parameters are FALSE (default), then the training residual deviance value is returned. If more
-than one parameter is set to TRUE, then a named vector of residual deviances are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the residual deviance</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.residual_dof.html">h2o.residual_dof</a></code> </p>
           </td>
-          <td><p>Retrieve the residual degrees of freedom
-If "train", "valid", and "xval" parameters are FALSE (default), then the training residual degrees of freedom value is returned. If more
-than one parameter is set to TRUE, then a named vector of residual degrees of freedom are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Retrieve the residual degrees of freedom</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1461,8 +1409,7 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.stackedEnsemble.html">h2o.stackedEnsemble</a></code> </p>
           </td>
-          <td><p>Build a stacked ensemble (aka. Super Learner) using the H2O base
-learning algorithms specified by the user.</p></td>
+          <td><p>Build a stacked ensemble</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1492,8 +1439,7 @@ learning algorithms specified by the user.</p></td>
           <td>
             <p><code><a href="h2o.stringdist.html">h2o.stringdist</a></code> </p>
           </td>
-          <td><p>Compute element-wise string distances between two H2OFrames. Both frames need to have the same
-shape (N x M) and only contain string/factor columns. Return a matrix (H2OFrame) of shape N x M.</p></td>
+          <td><p>Compute element-wise string distances between two H2OFrames</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1559,7 +1505,7 @@ shape (N x M) and only contain string/factor columns. Return a matrix (H2OFrame)
           <td>
             <p><code><a href="h2o.toFrame.html">h2o.toFrame</a></code> </p>
           </td>
-          <td><p>Converts a given word2vec model into H2OFrame. The frame represents learned word embeddings</p></td>
+          <td><p>Convert a word2vec model into an H2OFrame</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1583,19 +1529,13 @@ shape (N x M) and only contain string/factor columns. Return a matrix (H2OFrame)
           <td>
             <p><code><a href="h2o.tot_withinss.html">h2o.tot_withinss</a></code> </p>
           </td>
-          <td><p>Get the total within cluster sum of squares.
-If "train", "valid", and "xval" parameters are FALSE (default), then the training tot_withinss value is returned. If more
-than one parameter is set to TRUE, then a named vector of tot_withinss' are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Get the total within cluster sum of squares.</p></td>
         </tr><tr>
           <!--  -->
           <td>
             <p><code><a href="h2o.totss.html">h2o.totss</a></code> </p>
           </td>
-          <td><p>Get the total sum of squares.
-If "train", "valid", and "xval" parameters are FALSE (default), then the training totss value is returned. If more
-than one parameter is set to TRUE, then a named vector of totss' are returned, where the names are "train", "valid"
-or "xval".</p></td>
+          <td><p>Get the total sum of squares.</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1619,8 +1559,7 @@ or "xval".</p></td>
           <td>
             <p><code><a href="h2o.trunc.html">h2o.trunc</a></code> </p>
           </td>
-          <td><p>trunc takes a single numeric argument x and returns a numeric vector containing the integers
-formed by truncating the values in x toward 0.</p></td>
+          <td><p>Truncate values in x toward 0</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1692,8 +1631,7 @@ formed by truncating the values in x toward 0.</p></td>
           <td>
             <p><code><a href="h2o.xgboost.available.html">h2o.xgboost.available</a></code> </p>
           </td>
-          <td><p>Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
-Returns True if a XGBoost model can be built, or False otherwise.</p></td>
+          <td><p>Determines whether an XGBoost model can be built</p></td>
         </tr><tr>
           <!--  -->
           <td>
@@ -1904,12 +1842,6 @@ Returns True if a XGBoost model can be built, or False otherwise.</p></td>
             <p><code><a href="walking.html">walking</a></code> </p>
           </td>
           <td><p>Muscular Actuations for Walking Subject</p></td>
-        </tr><tr>
-          <!--  -->
-          <td>
-            <p><code><a href="zzz.html">zzz</a></code> </p>
-          </td>
-          <td><p>Shutdown H2O cloud after examples run</p></td>
         </tr>
       </tbody>
       </table>
