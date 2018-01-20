@@ -44,38 +44,38 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] gradient;
     double[][] hessian;
 
-    String[] coef_names;
-    double[] coef;
-    double[] exp_coef;
-    double[] exp_neg_coef;
-    double[] se_coef;
-    double[] z_coef;
-    double[][] var_coef;
-    double null_loglik;
-    double loglik;
-    double loglik_test;
-    double wald_test;
-    double score_test;
-    double rsq;
-    double maxrsq;
-    double lre;
-    int iter;
-    double[] x_mean_cat;
-    double[] x_mean_num;
-    double[] mean_offset;
-    String[] offset_names;
-    long n;
-    long n_missing;
-    long total_event;
-    long min_time;
-    long max_time;
-    long[] time;
-    double[] n_risk;
-    double[] n_event;
-    double[] n_censor;
-    double[] cumhaz_0;
-    double[] var_cumhaz_1;
-    double[][] var_cumhaz_2;
+    String[] _coef_names;
+    double[] _coef;
+    double[] _exp_coef;
+    double[] _exp_neg_coef;
+    double[] _se_coef;
+    double[] _z_coef;
+    double[][] _var_coef;
+    double _null_loglik;
+    double _loglik;
+    double _loglik_test;
+    double _wald_test;
+    double _score_test;
+    double _rsq;
+    double _maxrsq;
+    double _lre;
+    int _iter;
+    double[] _x_mean_cat;
+    double[] _x_mean_num;
+    double[] _mean_offset;
+    String[] _offset_names;
+    long _n;
+    long _n_missing;
+    long _total_event;
+    long _min_time;
+    long _max_time;
+    long[] _time;
+    double[] _n_risk;
+    double[] _n_event;
+    double[] _n_censor;
+    double[] _cumhaz_0;
+    double[] _var_cumhaz_1;
+    double[][] _var_cumhaz_2;
   }
 
   @Override
@@ -101,8 +101,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
    */
   @Override public double[] score0(double[] data, double[] preds) {
     final int n_offsets = _parms._offset_column == null ? 0 : 1;
-    final int n_time    = _output.time.length;
-    final int n_coef    = _output.coef.length;
+    final int n_time    = _output._time.length;
+    final int n_coef    = _output._coef.length;
     final int n_cats    = _output.data_info._cats;
     final int n_nums    = _output.data_info._nums;
     final int n_data    = n_cats + n_nums;
@@ -126,29 +126,29 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
         if (Double.isNaN(data[j])) {
           final int kst = _output.data_info._catOffsets[j];
           final int klen = _output.data_info._catOffsets[j+1] - kst;
-          System.arraycopy(_output.x_mean_cat, kst, full_data, kst, klen);
+          System.arraycopy(_output._x_mean_cat, kst, full_data, kst, klen);
         } else if (data[j] != 0)
           full_data[_output.data_info._catOffsets[j] + (int) (data[j] - 1)] = 1;
       for (int j = 0; j < n_nums; ++j)
         full_data[numStart + j] = data[n_cats + j] - _output.data_info._normSub[j];
       double logRisk = 0;
       for (int j = 0; j < n_coef; ++j)
-        logRisk += full_data[j] * _output.coef[j];
+        logRisk += full_data[j] * _output._coef[j];
       for (int j = n_coef; j < full_data.length; ++j)
         logRisk += full_data[j];
       final double risk = Math.exp(logRisk);
       for (int t = 0; t < n_time; ++t)
-        preds[t + 1] = risk * _output.cumhaz_0[t];
+        preds[t + 1] = risk * _output._cumhaz_0[t];
       for (int t = 0; t < n_time; ++t) {
-        final double cumhaz_0_t = _output.cumhaz_0[t];
+        final double cumhaz_0_t = _output._cumhaz_0[t];
         double var_cumhaz_2_t = 0;
         for (int j = 0; j < n_coef; ++j) {
           double sum = 0;
           for (int k = 0; k < n_coef; ++k)
-            sum += _output.var_coef[j][k] * (full_data[k] * cumhaz_0_t - _output.var_cumhaz_2[t][k]);
-          var_cumhaz_2_t += (full_data[j] * cumhaz_0_t - _output.var_cumhaz_2[t][j]) * sum;
+            sum += _output._var_coef[j][k] * (full_data[k] * cumhaz_0_t - _output._var_cumhaz_2[t][k]);
+          var_cumhaz_2_t += (full_data[j] * cumhaz_0_t - _output._var_cumhaz_2[t][j]) * sum;
         }
-        preds[t + 1 + n_time] = risk * Math.sqrt(_output.var_cumhaz_1[t] + var_cumhaz_2_t);
+        preds[t + 1 + n_time] = risk * Math.sqrt(_output._var_cumhaz_1[t] + var_cumhaz_2_t);
       }
     }
     preds[0] = Double.NaN;
