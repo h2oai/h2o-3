@@ -1,5 +1,5 @@
 ########################################################################
-# Dockerfile for Oracle JDK 7 on Ubuntu 14.04
+# Dockerfile for Oracle JDK 8 on Ubuntu 14.04
 ########################################################################
 
 # pull base image
@@ -41,7 +41,7 @@ RUN \
 RUN \
   apt-get install -y --force-yes r-base r-base-dev
 
-# Install from source dependancies
+# Install from source dependencies
 RUN \
   wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
   tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
@@ -49,7 +49,7 @@ RUN \
   ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
   apt-get clean 
 
-# Install python dependancies
+# Install python dependencies
 RUN \
   wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/requirements.txt && \
   /usr/bin/pip install --upgrade pip && \
@@ -58,11 +58,11 @@ RUN \
   /usr/bin/pip3 install -r requirements.txt && \
   rm requirements.txt 
 
-# Install R dependancies
+# Install R dependencies
 RUN \
   useradd -m -c "H2o AI" jenkins -s /bin/bash && \
   wget https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz && \
-  R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR"))' 
+  R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR", "survival"))'
 
 RUN \
 ## Workaround for LiblineaR problem
