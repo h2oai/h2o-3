@@ -25,9 +25,8 @@ try {
         mode = MODE_MASTER
       }
 
-      node(DEFAULT_NODE_LABEL) {
-
-        stage('Prepare and Build') {
+      stage('Prepare and Build') {
+        node(DEFAULT_NODE_LABEL) {
           dir('h2o-3') {
             // clear the folder
             deleteDir()
