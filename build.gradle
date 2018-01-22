@@ -12,13 +12,13 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.5'
         classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
