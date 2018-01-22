@@ -15,9 +15,8 @@ withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', 'H2O-3 Pipeline') {
       // Checkout and build H2O-3, create test packages and archive the scripts;
       // run this on H2O-3 usable docker node, because we don't want to overload
       // master
-      node(DEFAULT_NODE_LABEL) {
-
-        stage('Prepare and Build') {
+      stage('Prepare and Build') {
+        node(DEFAULT_NODE_LABEL) {
           dir('h2o-3') {
             // clear the folder
             deleteDir()
