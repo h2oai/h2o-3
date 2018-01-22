@@ -2914,7 +2914,8 @@ h2o.sqrt <- function(x) {
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' smtreesH2O <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
+#' url <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv"
+#' smtreesH2O <- h2o.importFile(url)
 #' smtreesR <- read.csv("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
 #' fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, distribution="gaussian", 
 #'                  min_rows=2, learn_rate=.1, training_frame=smtreesH2O)
@@ -3480,6 +3481,7 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
 #' h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package="h2o")
 #' iris <- h2o.uploadFile(path = irisPath)
+#' hex <- as.h2o(iris)
 #' cor_R <- cor(as.matrix(iris[,1]))
 #' cor_h2o <- cor(hex[,1])
 #' iris_Rcor <- cor(iris[,1:4])
