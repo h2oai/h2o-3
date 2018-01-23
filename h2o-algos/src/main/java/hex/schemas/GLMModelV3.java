@@ -121,7 +121,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       super.fillFromImpl(impl);
       lambda_1se = impl.lambda_1se();
       lambda_best = impl.lambda_best();
-      if(impl._multinomial)
+      if(impl._multinomial || impl._ordinal)
         return fillMultinomial(impl);
       String [] names = impl.coefficientNames().clone();
       // put intercept as the first

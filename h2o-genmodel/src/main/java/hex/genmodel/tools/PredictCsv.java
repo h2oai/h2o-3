@@ -123,6 +123,7 @@ public class PredictCsv {
         break;
       case Binomial:
       case Multinomial:
+      case Ordinal:
         output.write("predict");
         String[] responseDomainValues = model.getResponseDomainValues();
         for (String s : responseDomainValues) {
@@ -201,7 +202,18 @@ public class PredictCsv {
             }
             break;
           }
-
+          case Ordinal: {
+            OrdinalModelPrediction p = model.predictOrdinal(row);
+            output.write(p.label);
+            output.write(",");
+            for (int i = 0; i < p.classProbabilities.length; i++) {
+              if (i > 0) {
+                output.write(",");
+              }
+              output.write(myDoubleToString(p.classProbabilities[i]));
+            }
+            break;
+          }
           case Clustering: {
             ClusteringModelPrediction p = model.predictClustering(row);
             output.write(myDoubleToString(p.cluster));

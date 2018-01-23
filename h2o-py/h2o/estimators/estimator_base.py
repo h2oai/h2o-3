@@ -22,9 +22,10 @@ from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics)
+                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
+from ..model.ordinal import H2OOrdinalModel
 from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
 
@@ -386,6 +387,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "Multinomial":
             metrics_class = H2OMultinomialModelMetrics
             model_class = H2OMultinomialModel
+        elif model_type == "Ordinal":
+            metrics_class = H2OOrdinalModelMetrics
+            model_class = H2OOrdinalModel
         elif model_type == "AutoEncoder":
             metrics_class = H2OAutoEncoderModelMetrics
             model_class = H2OAutoEncoderModel

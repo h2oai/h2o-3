@@ -34,7 +34,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
-                                    H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
+                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -835,6 +835,7 @@ class H2OResponse(dict):
         if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
         if schema == "ModelMetricsBinomialV3": return H2OBinomialModelMetrics.make(keyvals)
         if schema == "ModelMetricsMultinomialV3": return H2OMultinomialModelMetrics.make(keyvals)
+        if schema == "ModelMetricsOrdinalV3": return H2OOrdinalModelMetrics.make(keyvals)
         if schema == "ModelMetricsAutoEncoderV3": return H2OAutoEncoderModelMetrics.make(keyvals)
         return super(H2OResponse, cls).__new__(cls, keyvals)
 

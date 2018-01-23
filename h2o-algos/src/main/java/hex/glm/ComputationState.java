@@ -56,7 +56,7 @@ public final class ComputationState {
     _dinfo = dinfo;
     _activeData = _dinfo;
     _intercept = _parms._intercept;
-    _nclasses = parms._family == Family.multinomial?nclasses:1;
+    _nclasses = (parms._family == Family.multinomial||parms._family == Family.ordinal)?nclasses:1;
     _alpha = _parms._alpha[0];
   }
 
@@ -105,8 +105,11 @@ public final class ComputationState {
     double ldiff = lambdaNew - lambdaOld;
     if(ldiff == 0 || l2pen() == 0) return;
     double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
+    if (_parms._family==Family.ordinal)
+      l2pen = l2pen/_nclasses;   // need only one set of parameters
+
     if(l2pen > 0) {
-      if(_parms._family == Family.multinomial) {
+      if(_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
         l2pen = 0;
         int off = 0;
         for(int c = 0; c < _nclasses; ++c) {
@@ -116,6 +119,9 @@ public final class ComputationState {
             _ginfo._gradient[off + i] += ldiff * b;
             l2pen += b*b;
           }
+          if (_parms._family == Family.ordinal) // one beta for all classes
+            break;
+
           off += activeData.fullN()+1;
         }
         l2pen *= .5;
@@ -137,7 +143,7 @@ public final class ComputationState {
   protected void applyStrongRules(double lambdaNew, double lambdaOld) {
     lambdaNew = Math.min(_lambdaMax,lambdaNew);
     lambdaOld = Math.min(_lambdaMax,lambdaOld);
-    if (_parms._family == Family.multinomial /* && _parms._solver != GLMParameters.Solver.L_BFGS */) {
+    if (_parms._family == Family.multinomial || _parms._family == Family.ordinal/* && _parms._solver != GLMParameters.Solver.L_BFGS */) {
       applyStrongRulesMultinomial(lambdaNew, lambdaOld);
       return;
     }
@@ -239,6 +245,7 @@ public final class ComputationState {
       case gaussian:
       case binomial:
       case quasibinomial:
+      case ordinal:
       case multinomial:
         return 2*likelihood();
       case poisson:
@@ -385,7 +392,7 @@ public final class ComputationState {
   }
 
   protected boolean checkKKTs() {
-    if(_parms._family == Family.multinomial)
+    if(_parms._family == Family.multinomial || _parms._family == Family.ordinal)  // always return true?
       return checkKKTsMultinomial();
     double [] beta = _beta;
     double [] u = _u;
@@ -468,7 +475,7 @@ public final class ComputationState {
   private double penalty(double [] beta) {
     if(_lambda == 0) return 0;
     double l1norm = 0, l2norm = 0;
-    if(_parms._family == Family.multinomial) {
+    if(_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
       int len = beta.length/_nclasses;
       assert len*_nclasses == beta.length;
       for(int c = 0; c < _nclasses; ++c) {
@@ -477,6 +484,9 @@ public final class ComputationState {
           l1norm += d >= 0?d:-d;
           l2norm += d*d;
         }
+
+        if (_parms._family == Family.ordinal) // done for ordinal, only one set of beta but numclass-1 intercepts
+          break;
       }
     } else
       for(int i = 0; i < beta.length-1; ++i) {

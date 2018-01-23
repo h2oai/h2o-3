@@ -59,6 +59,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_active_predictors",
             "interactions",
             "interaction_pairs",
+            "obj_reg",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -73,7 +74,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public long seed;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -134,7 +135,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Likelihood divider in objective value computation, default is 1/nobs")
     public double obj_reg;
 
-    @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
+    @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
+            "tweedie", "ologit", "oprobit", "ologlog"})
     public GLMParameters.Link link;
 
     @API(help="Include constant term in the model", level = Level.expert)

@@ -638,6 +638,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL)
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
   if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
+  else if (distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)
 }
@@ -1034,7 +1035,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if (is(object, "H2OModel")) {
     if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@allparameters$family != "multinomial") {
+    if (object@allparameters$family != "multinomial" && object@allparameters$family != "ordinal") {
       coefs <- object@model$coefficients_table$coefficients
       names(coefs) <- object@model$coefficients_table$names
     } else {
@@ -1054,7 +1055,7 @@ h2o.coef <- function(object) {
 h2o.coef_norm <- function(object) {
   if (is(object, "H2OModel")) {
     if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@parameters$family != "multinomial") {
+    if (object@parameters$family != "multinomial"  && object@parameters$family != "ordinal") {
       coefs <- object@model$coefficients_table$standardized_coefficients
       names(coefs) <- object@model$coefficients_table$names
     } else {
@@ -2270,7 +2271,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
 #' @export
 setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=NULL, metrics=NULL) {
   if( !is(object, "H2OBinomialMetrics") ) {
-    if( is(object, "H2OMultinomialMetrics") )
+    if( is(object, "H2OMultinomialMetrics") ||  is(object, "H2OOrdinalMetrics"))
       return(object@metrics$cm$table)
     warning(paste0("No Confusion Matrices for ",class(object)))
     return(NULL)
@@ -2412,11 +2413,11 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       } else if (!(metric %in% c("logloss","auc","classification_error","rmse"))) {
         stop("metric for H2OBinomialModel must be one of: logloss, auc, classification_error, rmse")
       }
-    } else if (is(x, "H2OMultinomialModel")) {
+    } else if (is(x, "H2OMultinomialModel") || is(x, "H2OOrdinalModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
       } else if (!(metric %in% c("logloss","classification_error","rmse"))) {
-        stop("metric for H2OMultinomialModel must be one of: logloss, classification_error, rmse")
+        stop("metric for H2OMultinomialModel/H2OOrdinalModel must be one of: logloss, classification_error, rmse")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
@@ -2425,7 +2426,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
         stop("metric for H2ORegressionModel must be one of: rmse, mae, or deviance")
       }
     } else {
-      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
+      stop("Must be one of: H2OBinomialModel, H2OMultinomialModel, H2OOrdinalModel or H2ORegressionModel")
     }
     # Set timestep
     if (x@algorithm %in% c("gbm", "drf")) {
@@ -2946,6 +2947,7 @@ h2o.cross_validation_predictions <- function(object) {
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
+  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
