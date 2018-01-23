@@ -9,7 +9,7 @@ from tests import pyunit_utils
 def scale_pca_rf_pipe():
 
   from h2o.transforms.preprocessing import H2OScaler
-  from h2o.transforms.decomposition import H2OPCA
+  from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
   from h2o.estimators.random_forest import H2ORandomForestEstimator
   from sklearn.pipeline import Pipeline
   from sklearn.grid_search import RandomizedSearchCV
@@ -23,7 +23,7 @@ def scale_pca_rf_pipe():
 
   # build  transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
-                   ("pca", H2OPCA()),
+                   ("pca", H2OPrincipalComponentAnalysisEstimator()),
                    ("rf", H2ORandomForestEstimator())])
 
   params = {"standardize__center":    [True, False],             # Parameters to test
