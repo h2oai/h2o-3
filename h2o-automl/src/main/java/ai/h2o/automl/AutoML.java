@@ -1223,6 +1223,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Log.info(event);
 
     if (0 < this.leaderboard().getModelKeys().length) {
+
+      // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
+      // Commenting this section out for now
+      /*
       // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
       AutoML dummyAutoML = new AutoML();
       UserFeedback dummyUF = new UserFeedback(dummyAutoML);
@@ -1238,6 +1242,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       validationLeaderboard.addModels(this.leaderboard().getModelKeys());
       Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
       Log.info();
+      */
 
       Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
     }
