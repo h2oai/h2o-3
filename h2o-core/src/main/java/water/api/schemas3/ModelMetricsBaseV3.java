@@ -1,6 +1,5 @@
 package water.api.schemas3;
 
-import hex.CustomMetric;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
@@ -32,7 +31,7 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
   @API(help="Optional description for this scoring run (to note out-of-bag, sampled data, etc.)", direction=API.Direction.OUTPUT)
   public String description;
 
-  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
+  @API(help="The category (e.g., Clustering) for the model used for this scoring run.", values={"Unknown", "Binomial", "Ordinal", "Multinomial", "Regression", "Clustering"}, direction=API.Direction.OUTPUT)
   public ModelCategory model_category;
 
 //  @API(help="The duration in mS for this scoring run.", direction=API.Direction.OUTPUT)

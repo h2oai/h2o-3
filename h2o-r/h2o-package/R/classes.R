@@ -252,6 +252,9 @@ setClass("H2OBinomialModel",    contains="H2OModel")
 setClass("H2OMultinomialModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
+setClass("H2OOrdinalModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
 setClass("H2ORegressionModel",  contains="H2OModel")
 #'
 #' The H2OClusteringModel object.
@@ -524,6 +527,21 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
     else .showMultiMetrics(object, NULL)
   } else print(NULL)
+})
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OOrdinalMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+#' @export
+setMethod("show", "H2OOrdinalMetrics", function(object) {
+    if( !is.null(object@metrics) ) {
+        callNextMethod(object)  # call super
+        if( object@on_train ) .showMultiMetrics(object, "Training")
+        else if( object@on_valid ) .showMultiMetrics(object, "Validation")
+        else if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
+        else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
+        else .showMultiMetrics(object, NULL)
+    } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
 #' @export

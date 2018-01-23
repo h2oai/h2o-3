@@ -313,8 +313,14 @@ class ModelMetricsHandler extends Handler {
       if (pred.numCols()!=s.domain.length) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with " + s.domain.length + " class labels, the predictions_frame must have exactly " + s.domain.length + " columns containing the class-probabilities.");
       }
-      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
-      s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
+
+      if (s.distribution == DistributionFamily.ordinal) {
+        ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
+        s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
+      } else {
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+        s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
+      }
     } else {
       throw H2O.unimpl();
     }

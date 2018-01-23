@@ -23,6 +23,7 @@ from h2o.utils.shared_utils import temp_ctr
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
+from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
@@ -82,7 +83,7 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
                                             "{1}. Expected the first to be > than the second.".format(mse1, mse2)
         elif op == 'ge': assert mse1 >= mse2, "The first model has an MSE of {0} and the second model has an MSE of " \
                                               "{1}. Expected the first to be >= than the second.".format(mse1, mse2)
-    elif isinstance(model1,H2OMultinomialModel): #   2c. Multinomial
+    elif isinstance(model1,H2OMultinomialModel) or isinstance(model1,H2OOrdinalModel): #   2c. Multinomial
         # hit-ratio
         pass
     elif isinstance(model1,H2OClusteringModel): #   2d. Clustering
@@ -196,12 +197,12 @@ def pojo_predict(model, tmpdir, pojoname):
 
     in_csv = (os.path.join(tmpdir, 'in.csv'))   # import the test dataset
     print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", java_file]
     subprocess.check_call(javac_cmd)
 
     out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
     cp_sep = ";" if sys.platform == "win32" else ":"
-    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
+    java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g",
             "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
             "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--decimal"]
 
@@ -739,7 +740,8 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
             weight = np.random.uniform(min_w_value, max_w_value, [col_count+1, 1])
         else:
             assert False, "dataType must be 1 or 2 for now."
-    elif ('binomial' in family_type.lower()) or ('multinomial' in family_type.lower()):
+    elif ('binomial' in family_type.lower()) or ('multinomial' in family_type.lower()
+                                                 or ('ordinal' in family_type.lower())):
         if 'binomial' in family_type.lower():  # for binomial, only need 1 set of weight
             class_number -= 1
 
@@ -758,7 +760,14 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
         else:
             assert False, "dataType must be 1 or 2 for now."
 
-    # save the generated intercept and weight
+    # special treatment for ordinal weights
+    if 'ordinal' in family_type.lower():
+        num_pred = len(weight)
+        for index in range(class_number):
+            weight[0,index] = 0
+            for indP in range(1,num_pred):
+                weight[indP,index] = weight[indP,0] # make sure betas for all classes are the same
+
     np.savetxt(csv_weight_filename, weight.transpose(), delimiter=",")
     return weight
 
@@ -811,7 +820,7 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
 
     # for family_type = 'multinomial' or 'binomial', response_y can be -ve to indicate bad sample data.
     # need to delete this data sample before proceeding
-    if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()):
+    if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
         if 'threshold' in class_method.lower():
             if np.any(response_y < 0):  # remove negative entries out of data set
                 (x_mat, response_y) = remove_negative_response(x_mat, response_y)
@@ -1135,28 +1144,46 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
     """
     (num_row, num_col) = x_mat.shape
 
-    # add a column of 1's to x_mat
     temp_ones_col = np.asmatrix(np.ones(num_row)).transpose()
     x_mat = np.concatenate((temp_ones_col, x_mat), axis=1)
-
-    # generate response given predictor and weight and add noise vector, default behavior
     response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
+
+    if 'ordinal' in family_type.lower():
+        tresp = []
+        (num_sample, num_class) = response_y.shape
+        lastClass = num_class - 1
+        # generate the new y threshold
+        for indP in range(num_sample):
+            tresp.append(-response_y[indP,0])
+        tresp.sort()
+        num_per_class = len(tresp)/lastClass
+
+        for indC in range(lastClass):   # put in threshold
+            weight[0,indC] = tresp[indC*num_per_class]
+
+        discrete_y = np.zeros((num_sample, 1), dtype=np.int)
+        response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
+        for indR in range(num_sample):
+            discrete_y[indR, 0] = lastClass
+            for indC in range(lastClass):
+                if (response_y[indR, indC] >= 0):
+                    discrete_y[indR, 0] = indC
+        return discrete_y
 
     # added more to form Multinomial response
     if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()):
         temp_mat = np.exp(response_y)   # matrix of n by K where K = 1 for binomials
-
         if 'binomial' in family_type.lower():
             ntemp_mat = temp_mat + 1
             btemp_mat = temp_mat / ntemp_mat
             temp_mat = np.concatenate((1-btemp_mat, btemp_mat), axis=1)    # inflate temp_mat to 2 classes
 
-        response_y = derive_discrete_response(temp_mat, class_method, class_margin)
+        response_y = derive_discrete_response(temp_mat, class_method, class_margin, family_type)
 
     return response_y
 
 
-def derive_discrete_response(prob_mat, class_method, class_margin):
+def derive_discrete_response(prob_mat, class_method, class_margin, family_type='binomial'):
     """
     This function is written to generate the final class response given the probabilities (Prob(y=k)).  There are
     two methods that we use and is specified by the class_method.  If class_method is set to 'probability',
@@ -1175,11 +1202,18 @@ def derive_discrete_response(prob_mat, class_method, class_margin):
     """
 
     (num_sample, num_class) = prob_mat.shape
-    prob_mat = normalize_matrix(prob_mat)
+    lastCat = num_class-1
+    if 'probability' in class_method.lower():
+        prob_mat = normalize_matrix(prob_mat)
     discrete_y = np.zeros((num_sample, 1), dtype=np.int)
 
     if 'probability' in class_method.lower():
-        prob_mat = np.cumsum(prob_mat, axis=1)
+        if 'ordinal' not in family_type.lower():
+            prob_mat = np.cumsum(prob_mat, axis=1)
+        else: # for ordinal
+            for indR in list(range(num_sample)):
+                for indC in list(range(num_class)):
+                    prob_mat[indR, indC] = prob_mat[indR,indC]/prob_mat[indR,lastCat]
         random_v = np.random.uniform(0, 1, [num_sample, 1])
 
         # choose the class that final response y belongs to according to the
@@ -3182,3 +3216,20 @@ def cumop(items, op, colInd=0):   # take in one column only
         res[index] = op(res[index-1], items[index, colInd]) if index > 0 else items[index, colInd]
     return res
 
+def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,f2.nrow):
+            if (random.uniform(0,1) < prob):
+                if (math.isnan(float(temp1[rowInd][colInd]))):
+                    assert math.isnan(float(temp2[rowInd][colInd])), "Failed frame values check at row {2} and column {3}! " \
+                                                              "frame1 value: {0}, frame2 value: " \
+                                                              "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
+                else:
+                    v1 = float(temp1[rowInd][colInd])
+                    v2 = float(temp2[rowInd][colInd])
+                    diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
+                    assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                      "{1}".format(v1, v2, rowInd, colInd)
