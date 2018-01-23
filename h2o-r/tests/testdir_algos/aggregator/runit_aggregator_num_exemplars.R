@@ -16,7 +16,7 @@ source("../../../scripts/h2o-r-test-setup.R")
   nf <- h2o.aggregated_frame(agg)
   expect_equal(
     h2o.nrow(nf), target_exemplars, scale=1, tol=(rel_tol*target_exemplars),
-    "Final number of aggregated exemplars should be equal to target number +/- tolerance"
+    info="Final number of aggregated exemplars should be equal to target number +/- tolerance"
   )
 }
 
