@@ -2,8 +2,6 @@ In [41]: from h2o.transforms.preprocessing import H2OScaler
 
 In [42]: from sklearn.pipeline import Pipeline
 
-In [43]: from h2o.transforms.decomposition import H2OPCA
-
 In [44]: # Turn off h2o progress bars
 
 In [45]: h2o.__PROGRESS_BAR__=False
@@ -13,7 +11,7 @@ In [46]: h2o.no_progress()
 In [47]: # build transformation pipeline using sklearn's Pipeline and H2O transforms
 
 In [48]: pipeline = Pipeline([("standardize", H2OScaler()),
-   ....:                  ("pca", H2OPCA(k=2)),
+   ....:                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
    ....:                  ("gbm", H2OGradientBoostingEstimator(distribution="multinomial"))])
 
 In [49]: pipeline.fit(iris_df[:4],iris_df[4])
