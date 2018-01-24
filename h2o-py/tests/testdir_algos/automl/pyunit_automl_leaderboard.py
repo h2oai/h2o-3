@@ -85,6 +85,7 @@ def automl_leaderboard():
 
 
     # Include all algorithms (all should be there, given large enough max_models)
+    fr3 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5")
     aml.train(y=4, training_frame=fr3)
     lb = aml.leaderboard

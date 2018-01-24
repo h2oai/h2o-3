@@ -75,6 +75,7 @@ automl.leaderboard.test <- function() {
     expect_equal(nrow(aml4@leaderboard), 1)
     
     # Include all algorithms (all should be there, given large enough max_models)
+    fr3 <- as.h2o(iris)
     aml5 <- h2o.automl(y = 5, training_frame = fr3, max_models = 10, 
                        project_name = "r_lb_test_aml5")
     model_ids <- as.vector(aml5@leaderboard$model_id)
