@@ -87,7 +87,7 @@ class BuildSummary {
         return summary
     }
 
-    Section addChangesSectionIfNecessary(final context) {
+    GroovyPostbuildSummaryAction addChangesSectionIfNecessary(final context) {
 
         def changesContent = ''
         context.currentBuild.rawBuild.getChangeSets().each { changeSetList ->
@@ -106,11 +106,16 @@ class BuildSummary {
             }
         }
 
-        Section section = null
+        GroovyPostbuildSummaryAction summary = null
         if (changesContent != '') {
-            section = addSection(context, CHANGES_SECTION_ID, 'Changes', changesContent)
+            String detailsHtml = """
+                <h1>Changes</h1>
+                ${changesContent}
+            """
+            summary = context.manager.createSummary('clipboard.gif').appendText(detailsHtml, false)
+            summaries.add(summary)
         }
-        return section
+        return summary
     }
 
     Stage addStageSummary(final context, final String stageName, final String stageDirName) {
