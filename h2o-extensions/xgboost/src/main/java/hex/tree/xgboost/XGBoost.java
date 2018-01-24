@@ -313,7 +313,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           // Wait for results
           waitOnRabitWorkers(rt);
         } catch (Throwable e) {
-          // And propagate exception
+          rt.stop();
           throw e;
         }
 
@@ -369,6 +369,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           // Wait for succesful completion
           waitOnRabitWorkers(rt);
         } catch (Throwable e) {
+          rt.stop();
           throw e;
         }
 

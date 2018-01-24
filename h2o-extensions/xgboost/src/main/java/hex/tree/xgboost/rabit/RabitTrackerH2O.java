@@ -72,6 +72,13 @@ public class RabitTrackerH2O implements IRabitTracker {
         return true;
     }
 
+    @Override
+    public void stop() {
+        if(null != this.trackerThread) {
+            this.trackerThread.interrupt();
+        }
+    }
+
     private class RabitTrackerH2OThread extends Thread {
         private RabitTrackerH2O tracker;
 
@@ -87,7 +94,7 @@ public class RabitTrackerH2O implements IRabitTracker {
             Map<Integer, RabitWorker> waitConn = new HashMap<>();
             List<RabitWorker> pending = new ArrayList<>();
             Queue<Integer> todoNodes = new ArrayDeque<>(tracker.workers);
-            while (shutdown.size() != tracker.workers) {
+            while (!interrupted() && shutdown.size() != tracker.workers) {
                 try {
                     SocketChannel channel = tracker.sock.accept();
                     RabitWorker worker = new RabitWorker(channel);
