@@ -1,3 +1,5 @@
+import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
+
 def call(final boolean updateJobDescription) {
     return new BuildSummary(updateJobDescription)
 }
@@ -19,7 +21,7 @@ class BuildSummary {
     private static final String REPO_URL = 'https://github.com/h2oai/h2o-3'
 
     private final List<Stage> stageSummaries = []
-    private final List<Section> sections = []
+    private final List<GroovyPostbuildSummaryAction> summaries = []
     private final updateJobDescription
 
     BuildSummary(final boolean updateJobDescription) {
@@ -35,7 +37,7 @@ class BuildSummary {
             throw new IllegalArgumentException('Section with id %s already.exists'.format(id))
         }
         def section = new Section(id, title, contentTemplate)
-        sections.add(section)
+        summaries.add(section)
         updateJobDescriptionIfRequired(context)
         return section
     }
@@ -44,13 +46,13 @@ class BuildSummary {
         if (findSection(section.getId()) != null) {
             throw new IllegalArgumentException('Section with id %s already.exists'.format(section.getId()))
         }
-        sections.add(section)
+        summaries.add(section)
         updateJobDescriptionIfRequired(context)
         return section
     }
 
     Section findSection(final String id) {
-        return sections.find({it.getId() == id})
+        return summaries.find({it.getId() == id})
     }
 
     Section findSectionOrThrow(final String id) {
@@ -66,19 +68,23 @@ class BuildSummary {
     }
 
 
-    Section addDetailsSection(final context, final String mode) {
+    GroovyPostbuildSummaryAction addDetailsSection(final context, final String mode) {
         String modeItem = ""
         if (mode != null) {
             modeItem = "<li><strong>Mode:</strong> ${mode}</li>\n"
         }
-        return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
+        String detailsHtml = """
+            <h1>Details</h1>
             <ul>
               ${modeItem}
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>
               <li><strong>Git SHA:</strong> ${context.env.GIT_SHA}</li>
             </ul>
-          """)
+        """
+        final GroovyPostbuildSummaryAction summary = context.manager.createSummary('notepad.gif').appendText(detailsHtml, false)
+        summaries.add(summary)
+        return summary
     }
 
     Section addChangesSectionIfNecessary(final context) {
@@ -171,13 +177,14 @@ class BuildSummary {
                     ${stagesTableBody}
                   </tbody>
                 </table>
-            """, false, !sections.isEmpty())
+            """, false, !summaries.isEmpty())
         }
 
         String sectionsHTML = ''
-        sections.eachWithIndex { Section section, int i ->
-            sectionsHTML += createHTMLForSection(section.getTitle(), section.getContent(), (i + 1) < sections.size(), false)
-        }
+// FIXME
+//        summaries.eachWithIndex { Section section, int i ->
+//            sectionsHTML += createHTMLForSection(section.getTitle(), section.getContent(), (i + 1) < summaries.size(), false)
+//        }
 
         return """
             <div style="border: 1px solid #d3d7cf; padding: 0em 1em 1em 1em;">
