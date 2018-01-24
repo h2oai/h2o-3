@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-gbm.random.grid.test <- function() {
+xgboost.random.grid.test <- function() {
     air.hex <- h2o.uploadFile(locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
     print(summary(air.hex))
     myX <- c("Year","Month","CRSDepTime","UniqueCarrier","Origin","Dest")
@@ -22,22 +22,28 @@ gbm.random.grid.test <- function() {
       col_sample_rate_per_tree = seq(0.2,1,0.01),                                
 
       ## search a large space of how column sampling per split should change as a function of the depth of the split
-      col_sample_rate_change_per_level = seq(0.9,1.1,0.01),                      
+      ## Not available in Xgboost: col_sample_rate_change_per_level = seq(0.9,1.1,0.01),                      
 
       ## search a large space of the number of min rows in a terminal node
       min_rows = 2^seq(0,log2(nrow(air.hex))-1,1),                                 
 
       ## search a large space of the number of bins for split-finding for continuous and integer columns
-      nbins = 2^seq(4,10,1),                                                     
+      ## Not available in Xgboost: nbins = 2^seq(4,10,1),                                                     
 
       ## search a large space of the number of bins for split-finding for categorical columns
-      nbins_cats = 2^seq(4,12,1),                                                
+      ## Not available in Xgboost: nbins_cats = 2^seq(4,12,1),                                                
 
       ## search a few minimum required relative error improvement thresholds for a split to happen
       min_split_improvement = c(0,1e-8,1e-6,1e-4),                               
 
       ## try all histogram types (QuantilesGlobal and RoundRobin are good for numeric columns with outliers)
-      histogram_type = c("UniformAdaptive","QuantilesGlobal","RoundRobin")       
+      ## Not available in XGBoost:      histogram_type = c("UniformAdaptive","QuantilesGlobal","RoundRobin")
+
+      ## Some XGBoost-specific parameters:
+      tree_method = c("auto", "exact", "approx", "hist"),
+      grow_policy = c("depthwise", "lossguide"),
+      booster = c("gbtree", "gblinear", "dart")  
+        
     )
 
     search_criteria = list(
@@ -59,7 +65,7 @@ gbm.random.grid.test <- function() {
       stopping_tolerance = 1e-3
     )
 
-    air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
+    air.grid <- h2o.grid("xgboost", y = "IsDepDelayed", x = myX,
                          distribution="bernoulli",
                          seed=1234,
                          training_frame = air.hex,
@@ -80,4 +86,4 @@ gbm.random.grid.test <- function() {
     print(h2o.getId(predictions))
 }
 
-doTest("GBM Grid Test: Airlines Smalldata", gbm.random.grid.test)
+doTest("XGBoost Grid Test: Airlines Smalldata", xgboost.random.grid.test)
