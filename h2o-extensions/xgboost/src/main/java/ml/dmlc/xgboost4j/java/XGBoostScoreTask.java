@@ -43,7 +43,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 output,
                 parms,
                 booster).doAll(outputTypes(output), data);
-        String[] names = destinationNames(output);
+        String[] names = ObjectArrays.concat(Model.makeScoringNames(output), new String[] {"label"}, String.class);
         Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
 
         XGBoostScoreTaskResult res = new XGBoostScoreTaskResult();
@@ -55,23 +55,22 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             if (computeMetrics) {
                 res.mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
             }
-            res.preds = preds;
         } else if (output.nclasses() == 2) {
             Vec p1 = preds.vec(2);
             if (computeMetrics) {
                 res.mm = ModelMetricsBinomial.make(p1, resp);
             }
-            res.preds = preds;
         } else {
             if (computeMetrics) {
                 Frame pp = new Frame(preds);
                 pp.remove(0);
                 Scope.enter();
-                    res.mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
+                res.mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
                 Scope.exit();
             }
-            res.preds = preds;
         }
+
+        res.preds = preds;
 
         if (resp != null) {
             resp.remove();
@@ -110,14 +109,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             String[][] domains = new String[names.length][];
             domains[0] = output.classNames();
             return domains;
-        }
-    }
-
-    private static String[] destinationNames(XGBoostOutput output) {
-        if (output.nclasses() <= 2) {
-            return null; // default names
-        } else {
-            return ObjectArrays.concat(Model.makeScoringNames(output), new String[] {"label"}, String.class);
         }
     }
 

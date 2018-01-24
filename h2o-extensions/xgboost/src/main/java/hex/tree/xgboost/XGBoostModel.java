@@ -299,11 +299,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // Fast scoring using the C++ data structures
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Booster booster, Frame data, String description) throws XGBoostError {
-    return makeMetrics(booster, data, description, null);
+  private ModelMetrics makeMetrics(Booster booster, Frame data, Frame originalData, String description) throws XGBoostError {
+    return makeMetrics(booster, data, originalData, description, null);
   }
 
-  private ModelMetrics makeMetrics(Booster booster, Frame data, String description, Key<Frame> predFrameKey) throws XGBoostError {
+  private ModelMetrics makeMetrics(Booster booster, Frame data, Frame originalData, String description, Key<Frame> predFrameKey) throws XGBoostError {
     Futures fs = new Futures();
     ModelMetrics[] mms = new ModelMetrics[1];
     Frame predictions = makePreds(booster, data, mms, true, predFrameKey, fs);
@@ -314,7 +314,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     fs.blockForPending();
     ModelMetrics mm = mms[0]
-        .withModelAndFrame(this, data)
+        .withModelAndFrame(this, originalData)
         .withDescription(description);
     return mm;
   }
@@ -335,7 +335,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
               booster, destinationKey, data,
               computeMetrics
       );
-      mms[0] = score.mm;
+      if(computeMetrics) {
+        mms[0] = score.mm;
+      }
       return score.preds;
   }
 
@@ -347,14 +349,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param _valid validation data (optional, can be null)
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, Frame _train, Frame _valid) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, _train, "Metrics reported on training frame");
+  public void doScoring(Booster booster, Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, _train, _trainOrig, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
+    addModelMetrics(mm);
     // Optional validation part
     if (_valid!=null) {
       assert _valid != null : "Validation frame (source of validation matrix) has to be not null!";
-      mm = makeMetrics(booster, _valid, "Metrics reported on validation frame");
+      mm = makeMetrics(booster, _valid, _validOrig, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);
@@ -444,7 +447,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     try {
       Key<Frame> destFrameKey = Key.make(destination_key);
       if (computeMetrics){
-        ModelMetrics mm = makeMetrics(model_info().booster(), adaptFr, "Prediction on frame " + fr._key, destFrameKey);
+        ModelMetrics mm = makeMetrics(model_info().booster(), adaptFr, fr, "Prediction on frame " + fr._key, destFrameKey);
         // Update model with newly computed model metrics
         this.addModelMetrics(mm);
         DKV.put(this);

@@ -444,7 +444,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
-        model.doScoring(booster, _train, _valid);
+        model.doScoring(booster, _train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore(featureMapFile.getAbsolutePath()));
         XGBoostOutput out = model._output;
