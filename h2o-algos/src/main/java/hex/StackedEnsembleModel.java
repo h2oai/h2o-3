@@ -11,6 +11,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -73,6 +74,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       deeplearning
     }
     public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
+    public IcedHashMap<String, Object[]> _metalearner_params = new IcedHashMap<>();
 
   }
 

@@ -15,15 +15,17 @@ import hex.deeplearning.DeepLearningModel;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.api.SchemaMetadata;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.IcedHashMap;
 import water.util.Log;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -228,12 +230,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
 
       //Compute metalearner
-      computeMetaLearner(levelOneTrainingFrame, levelOneValidationFrame, _model._parms._metalearner_algorithm);
+      computeMetaLearner(levelOneTrainingFrame, levelOneValidationFrame, _model._parms._metalearner_algorithm, _model._parms._metalearner_params);
 
 
     } // computeImpl
 
-    private void computeMetaLearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo) {
+    private void computeMetaLearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo, IcedHashMap<String, Object[]> metalearner_params) {
         // Train the metalearner model
         // Default Job for just this training
 

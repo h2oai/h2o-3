@@ -50,7 +50,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame"}
+                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -206,5 +206,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def keep_levelone_frame(self, keep_levelone_frame):
         assert_is_type(keep_levelone_frame, None, bool)
         self._parms["keep_levelone_frame"] = keep_levelone_frame
+
+
+    @property
+    def metalearner_params(self):
+        """
+        Parameters for metalearner algo
+
+        Type: ``Dict[object, object]``  (default: ``{}``).
+        """
+        return self._parms.get("metalearner_params")
+
+    @metalearner_params.setter
+    def metalearner_params(self, metalearner_params):
+        assert_is_type(metalearner_params, None, {object: object})
+        self._parms["metalearner_params"] = metalearner_params
 
 
