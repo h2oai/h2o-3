@@ -29,8 +29,8 @@ from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 from decimal import *
 import urllib.request, urllib.error, urllib.parse
 import numpy as np
@@ -220,7 +220,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     elif algo == "glm": model = H2OGeneralizedLinearEstimator(**kwargs)
     elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
-    elif algo == "pca": model = H2OPCA(**kwargs)
+    elif algo == "pca": model = H2OPrincipalComponentAnalysisEstimator(**kwargs)
     else: raise ValueError
     if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
     else: model.train(x=x, y=y, training_frame=train)

@@ -31,6 +31,7 @@ from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
+from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
@@ -39,7 +40,6 @@ from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
-from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
@@ -696,7 +696,7 @@ def get_model(model_id):
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
     algo = model_json["algo"]
     if algo == "svd":            m = H2OSVD()
-    elif algo == "pca":          m = H2OPCA()
+    elif algo == "pca":          m = H2OPrincipalComponentAnalysisEstimator()
     elif algo == "drf":          m = H2ORandomForestEstimator()
     elif algo == "naivebayes":   m = H2ONaiveBayesEstimator()
     elif algo == "kmeans":       m = H2OKMeansEstimator()

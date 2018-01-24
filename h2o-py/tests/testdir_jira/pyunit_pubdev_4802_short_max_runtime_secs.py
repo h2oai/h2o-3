@@ -8,7 +8,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.word2vec import H2OWord2vecEstimator
 from h2o.estimators.deepwater import H2ODeepWaterEstimator

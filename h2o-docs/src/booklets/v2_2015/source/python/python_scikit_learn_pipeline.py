@@ -2,20 +2,20 @@ In [41]: from h2o.transforms.preprocessing import H2OScaler
 
 In [42]: from sklearn.pipeline import Pipeline
 
-In [43]: # Turn off h2o progress bars
+In [44]: # Turn off h2o progress bars
 
-In [44]: h2o.__PROGRESS_BAR__=False
+In [45]: h2o.__PROGRESS_BAR__=False
 
-In [45]: h2o.no_progress()
+In [46]: h2o.no_progress()
 
-In [46]: # build transformation pipeline using sklearn's Pipeline and H2O transforms
+In [47]: # build transformation pipeline using sklearn's Pipeline and H2O transforms
 
-In [47]: pipeline = Pipeline([("standardize", H2OScaler()),
-   ....:                  ("pca", H2OPCA(k=2)),
+In [48]: pipeline = Pipeline([("standardize", H2OScaler()),
+   ....:                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
    ....:                  ("gbm", H2OGradientBoostingEstimator(distribution="multinomial"))])
 
-In [48]: pipeline.fit(iris_df[:4],iris_df[4])
-Out[48]: Model Details
+In [49]: pipeline.fit(iris_df[:4],iris_df[4])
+Out[49]: Model Details
 =============
 H2OPCA :  Principal Component Analysis
 Model Key:  PCA_model_python_1446220160417_32
