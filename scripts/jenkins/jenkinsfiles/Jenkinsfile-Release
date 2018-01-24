@@ -46,7 +46,7 @@ try {
 
                     setReleaseJobProperties(pipelineContext)
 
-                    pipelineContext.getBuildSummary().addDetailsSection(this)
+                    pipelineContext.getBuildSummary().addDetailsSummary(this)
                     final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo 'version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
                     String releaseContent = """
                         <ul>
@@ -59,7 +59,7 @@ try {
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
-                    pipelineContext.getBuildSummary().addSection(this, 'release', 'Release', releaseContent)
+                    pipelineContext.getBuildSummary().addSummary(this, 'release', 'Release', releaseContent, 'package.png')
 
                     pipelineContext.getBuildSummary().setStageDetails(this, CHECKOUT_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                     pipelineContext.getBuildSummary().markStageSuccessful(this, CHECKOUT_STAGE_NAME)
@@ -444,7 +444,7 @@ EOF
     result = 'SUCCESS'
 } finally {
     if (pipelineContext != null) {
-        pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this), getRelevantRecipients(pipelineContext, result))
+        pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this), ['michalr@h2o.ai'])// getRelevantRecipients(pipelineContext, result))
     }
 }
 

@@ -163,7 +163,7 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
     final def benchmarksSummary = pipelineContext.getBuildSummary().newInstance(false)
     final def buildSummary = pipelineContext.getBuildSummary()
 
-    benchmarksSummary.addSection(this, buildSummary.findSectionOrThrow(buildSummary.DETAILS_SECTION_ID))
+    benchmarksSummary.addSummary(this, buildSummary.findSummaryOrThrow(buildSummary.DETAILS_SECTION_ID))
 
     String rowsHTML = ''
     for (failure in failures) {
@@ -193,7 +193,7 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
             </tbody>
         </table>
     """
-    benchmarksSummary.addSection(this, 'warnings', 'Warnings', warningsTable)
+    benchmarksSummary.addSummary(this, 'warnings', 'Warnings', warningsTable, 'warning.gif')
 
     pipelineContext.getEmailer().sendEmail(this, benchmarksSummary.RESULT_WARNING, benchmarksSummary.getSummaryHTML(this))
 }
