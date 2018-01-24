@@ -64,6 +64,7 @@ public abstract class Paxos {
       return 0;
     }
 
+
     // Update manual flatfile in case of flatfile is enabled
     if (H2O.isFlatfileEnabled()) {
       if (!H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
@@ -76,6 +77,11 @@ public abstract class Paxos {
         // information about the client to the cluster. Once the nodes have the information about the client, then propagate
         // themselves via heartbeat to the client
         H2O.addNodeToFlatfile(h2o);
+      }
+    }else{
+      // We are operating in the multicast mode and heard from the client, so we need to report the client on this node
+      if(h2o._heartbeat._client){
+        H2O.reportClient(h2o);
       }
     }
 
