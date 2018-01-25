@@ -1,12 +1,14 @@
 @Library('test-shared-library@mr/ita/190-build-summary-emailer') _
 
+import ai.h2o.ci.BuildResult
+
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'
 final String DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def defineTestStages = null
 def pipelineContext = null
-String result = 'FAILURE'
+BuildResult result = BuildResult.FAILURE
 def scmEnv = null
 
 final boolean prJob = env.CHANGE_BRANCH != null && env.CHANGE_BRANCH != ''
@@ -49,13 +51,16 @@ try {
         }
       }
       defineTestStages(pipelineContext)
-      result = 'SUCCESS'
+      result = BuildResult.SUCCESS
     }
   }
 } finally {
-  if (!prJob && pipelineContext != null) {
-    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
+// FIXME
+//  if (!prJob && pipelineContext != null) {
+  if (pipelineContext != null) {
+    pipelineContext.getEmailer().sendEmail(this, result, buildSummary.get().toEmail(this), ['michalr@h2o.ai'])
   }
+//  }
 }
 
 def cancelPreviousBuilds() {

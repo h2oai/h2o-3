@@ -1,4 +1,3 @@
-import ai.h2o.ci.buildsummary.BuildSummary
 import ai.h2o.ci.Emailer
 
 def call(final String h2o3Root, final String mode, final scmEnv, final boolean ignoreChanges) {
@@ -16,13 +15,12 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
 
     def final buildinfoPath = "${h2o3Root}/h2o-dist/buildinfo.json"
 
-    def final pipelineUtils = pipelineUtilsFactory()
+    buildSummary(pipelineUtils.REPO_URL, true)
 
     return new PipelineContext(
             buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
                     pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath)
             ),
-            new BuildSummary(true),
             pipelineUtils,
             new Emailer()
     )
@@ -40,23 +38,17 @@ private List<String> getChanges(final String h2o3Root) {
 class PipelineContext{
 
     private final buildConfig
-    private final BuildSummary buildSummary
     private final pipelineUtils
     private final Emailer emailer
 
-    private PipelineContext(final buildConfig, final BuildSummary buildSummary, final pipelineUtils, final Emailer emailer) {
+    private PipelineContext(final buildConfig, final pipelineUtils, final Emailer emailer) {
         this.buildConfig = buildConfig
-        this.buildSummary = buildSummary
         this.pipelineUtils = pipelineUtils
         this.emailer = emailer
     }
 
     def getBuildConfig() {
         return buildConfig
-    }
-
-    BuildSummary getBuildSummary() {
-        return buildSummary
     }
 
     def getUtils() {
