@@ -967,16 +967,23 @@ public class DataInfo extends Keyed<DataInfo> {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
       val = _catNAFill[cid];
-    } else if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
-      val -= 1;
+    }
+
+    if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
+      val = val - 1;
+    }
     if(val < 0) return -1; // column si to be skipped
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
-      assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      assert _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
+      
+      if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
+        val = val - 1;
+      }
     }
     if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
       val = _catMap[cid][val];
