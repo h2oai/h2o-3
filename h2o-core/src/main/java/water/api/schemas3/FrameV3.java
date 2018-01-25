@@ -141,59 +141,64 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     transient Vec _vec;
 
+    ColV3(String name, Vec vec, long off, int len, boolean expensive) {
+      label = name;
+      if (expensive) {
+        missing_count = vec.naCnt();
+        zero_count = vec.length() - vec.nzCnt() - missing_count;
+        positive_infinity_count = vec.pinfs();
+        negative_infinity_count = vec.ninfs();
+        mins = vec.mins();
+        maxs = vec.maxs();
+        mean = vec.mean();
+        sigma = vec.sigma();
+
+        // Histogram data is only computed on-demand.  By default here we do NOT
+        // compute it, but will return any prior computed & cached histogram.
+        histogram_bins = vec.lazy_bins();
+        histogram_base = histogram_bins == null ? 0 : vec.base();
+        histogram_stride = histogram_bins == null ? 0 : vec.stride();
+        percentiles = histogram_bins == null ? null : vec.pctiles();
+
+        type = vec.isUUID() ? "uuid" :
+                vec.isString() ? "string" :
+                        vec.isCategorical() ? "enum" :
+                                vec.isTime() ? "time" :
+                                        vec.isInt() ? "int" : "real";
+        domain = vec.domain();
+        if (vec.isCategorical()) {
+          domain_cardinality = domain.length;
+        } else {
+          domain_cardinality = 0;
+        }
+
+        len = (int) Math.min(len, vec.length() - off);
+        if (vec.isUUID()) {
+          string_data = new String[len];
+          for (int i = 0; i < len; i++)
+            string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
+          data = null;
+        } else if (vec.isString()) {
+          string_data = new String[len];
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < len; i++)
+            string_data[i] = vec.isNA(off + i) ? null : vec.atStr(tmpStr, off + i).toString();
+          data = null;
+        } else {
+          data = MemoryManager.malloc8d(len);
+          for (int i = 0; i < len; i++)
+            data[i] = vec.at(off + i);
+          string_data = null;
+        }
+        _vec = vec;               // Better HTML display, not in the JSON
+        if (len > 0)  // len == 0 is presumed to be a header file
+          precision = vec.chunkForRow(0).precision();
+
+      }
+    }
+
     ColV3(String name, Vec vec, long off, int len) {
-      label=name;
-
-      missing_count = vec.naCnt();
-      zero_count = vec.length() - vec.nzCnt() - missing_count;
-      positive_infinity_count = vec.pinfs();
-      negative_infinity_count = vec.ninfs();
-      mins = vec.mins();
-      maxs = vec.maxs();
-      mean = vec.mean();
-      sigma = vec.sigma();
-      
-      // Histogram data is only computed on-demand.  By default here we do NOT
-      // compute it, but will return any prior computed & cached histogram.
-      histogram_bins  = vec.lazy_bins();
-      histogram_base  = histogram_bins ==null ? 0 : vec.base();
-      histogram_stride= histogram_bins ==null ? 0 : vec.stride();
-      percentiles     = histogram_bins ==null ? null : vec.pctiles();
-
-      type = vec.isUUID()? "uuid" :
-             vec.isString()? "string" :
-             vec.isCategorical()? "enum" :
-             vec.isTime()? "time" :
-             vec.isInt() ? "int" : "real";
-      domain = vec.domain();
-      if (vec.isCategorical()) {
-        domain_cardinality = domain.length;
-      } else {
-        domain_cardinality = 0;
-      }
-
-      len = (int)Math.min(len,vec.length()-off);
-      if( vec.isUUID() ) {
-        string_data = new String[len];
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
-        data = null;
-      } else if ( vec.isString() ) {
-        string_data = new String[len];
-        BufferedString tmpStr = new BufferedString();
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(tmpStr,off + i).toString();
-        data = null;
-      } else {
-        data = MemoryManager.malloc8d(len);
-        for( int i=0; i<len; i++ )
-          data[i] = vec.at(off+i);
-        string_data = null;
-      }
-      _vec = vec;               // Better HTML display, not in the JSON
-      if (len > 0)  // len == 0 is presumed to be a header file
-        precision = vec.chunkForRow(0).precision();
-
+      this(name, vec, off, len, true);
     }
 
     public void clearBinsField() {
@@ -249,8 +254,12 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.total_column_count = f.numCols();
     this.column_offset = column_offset;
     this.column_count = column_count;
-
-    this.columns = new ColV3[column_count];
+    if (expensive) {
+      this.columns = new ColV3[column_count];
+    } else {
+      // in light mode, we will fill all the columns, but just first few will be filled with data
+      this.columns = new ColV3[f.numCols()];
+    }
     Vec[] vecs = f.vecs();
     Futures fs = new Futures();
     // Compute rollups in parallel as needed, by starting all of them and using
@@ -267,6 +276,17 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       else
         columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
 
+    if(!expensive){
+      // In light mode, read also additional columns
+      // This solution however assumes that the light mode will never be used to obtain really just specific
+      // number of columns.
+      for (int i = column_count; i < f.numCols(); i++) {
+        if (null == DKV.get(vecs[column_offset + i]._key))
+          Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i)) + ") is missing; not returning it.");
+        else
+          columns[i] = new ColV3(f._names[column_offset + i], null, this.row_offset, this.row_count, false);
+      }
+    }
     fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
