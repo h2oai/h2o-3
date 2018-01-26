@@ -92,8 +92,57 @@ task copyJar(type: Copy) {
     rename { it.replace(assembly, allInOne) }
 }
 
+downloadLicenses {
+    ext.apacheTwo = license('Apache License, Version 2.0', 'http://opensource.org/licenses/Apache-2.0')
+    ext.bsd = license('BSD License', 'http://www.opensource.org/licenses/bsd-license.php')
+
+    licenses = [
+            'commons-beanutils:commons-beanutils:1.7.0': apacheTwo,
+            'asm:asm-parent:3.1': bsd,
+            'org.codehaus.jettison:jettison:1.1': apacheTwo,
+            'javax.servlet.jsp:jsp-api:2.1': license('CDDL + GPLv2 with classpath exception', 'https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html'),
+            'org.apache.zookeeper:zookeeper:3.4.6': apacheTwo
+    ]
+
+    aliases = [
+            (apacheTwo) : ['The Apache Software License, Version 2.0', 'Apache 2', 'Apache License Version 2.0', 'Apache License, Version 2.0', 'Apache License 2.0', license('Apache License', 'http://www.apache.org/licenses/LICENSE-2.0')],
+            (bsd) : ['BSD', license('New BSD License', 'http://www.opensource.org/licenses/bsd-license.php')]
+    ]
+}
+
+task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
+    doLast {
+        def jsonLicensesFile = file("${buildDir}/reports/license/dependency-license.json")
+        def csvLicensesFile = file("${buildDir}/reports/license/dependency-license.csv")
+        def licenses = new groovy.json.JsonSlurper().parseText(jsonLicensesFile.text)
+        csvLicensesFile.withWriter('UTF-8') { w ->
+            boolean xgboostDefined = false
+            w.write('"Dependency","File","License Name","License URL"\n')
+            licenses.dependencies.each { dep ->
+                dep.licenses.each {
+                    xgboostDefined |= dep.file.startsWith("xgboost4j")
+                    boolean licenseValid = it.name != "No license found"
+                    if (! licenseValid) {
+                        if (dep.name == "asm:asm-parent:3.1") {
+                            // FIXME: manual override, this doesn't work for some reason!
+                            w.write("${dep.name},${dep.file},\"BSD License\",http://www.opensource.org/licenses/bsd-license.php\n")
+                        } else
+                            throw new StopExecutionException("License not found for dependency ${dep.name}. Please define dependency manually.")
+                    }
+                    w.write("${dep.name},${dep.file},\"${it.name}\",${it.url}\n")
+                }
+            }
+            if (! xgboostDefined) {
+                // Manually add XGBoost
+                logger.error('ERROR: XGBoost dependency is manually defined, please consider changing it!')
+                w.write("ml.dmlc:xgboost-jvm:0.7,xgboost4j-0.7.jar,\"Apache License 2.0\",http://opensource.org/licenses/Apache-2.0\n")
+            }
+        }
+    }
+}
+
 // Include licences
-shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
+shadowJar.dependsOn(licenseReport)
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
 // Run shadowJar as par of build
