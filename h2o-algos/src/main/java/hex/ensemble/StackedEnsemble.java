@@ -13,6 +13,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
+
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -21,7 +22,12 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Properties;
+import java.util.Map;
 
 import water.util.Log;
 
