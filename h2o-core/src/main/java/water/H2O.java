@@ -674,9 +674,9 @@ final public class H2O {
    * @param port Port this H2O can be reached at (for REST API and browser).
    * @param size Number of H2O instances in the cloud.
    */
-  public static void notifyAboutCloudSize(InetAddress ip, int port, int size) {
+  public static void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
     if (embeddedH2OConfig == null) { return; }
-    embeddedH2OConfig.notifyAboutCloudSize(ip, port, size);
+    embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
   }
 
 
