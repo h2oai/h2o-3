@@ -204,11 +204,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
     this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
+
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
     // TODO: Look into whether we should deepClone validation metrics instead
     //this._output._validation_metrics = this._output._metalearner._output._validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.valid());  #valid or train?
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
+
     // Cross-validation metrics can be copied from metalearner (may be null).
     // For cross-validation metrics, we use metalearner cross-validation metrics as a proxy for the ensemble
     // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
@@ -299,7 +301,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
 
       if (beenHere) {
-        // check that the base models are all consistent with first based model
+        // check that the base models are all consistent with first base model
 
         if (modelCategory != aModel._output.getModelCategory())
           throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
@@ -359,13 +361,19 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // !beenHere: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
-        _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
 
-        // TODO: set _parms._train to aModel._parms.train()
+        // See PUBDEV-5253: use _origDomains, not _domains, because CategoricalEncoding.LabelEncoding can remove
+        // the domains from the base models.
+        _output._domains = Arrays.copyOf(aModel._output._origDomains, aModel._output._origDomains.length);
+        _output._origDomains = _output._domains;
 
-        _output.setNames(aModel._output._names);
+        _output._names = aModel._output._origNames;
+        _output._origNames = _output._names;
+
         this.names = new NonBlockingHashSet<>();
-        this.names.addAll(Arrays.asList(aModel._output._names));
+        this.names.addAll(Arrays.asList(aModel._output._origNames));
+
+        // TODO: set _parms._train to aModel._parms.train() ?
 
         responseColumn = aModel._parms._response_column;
 

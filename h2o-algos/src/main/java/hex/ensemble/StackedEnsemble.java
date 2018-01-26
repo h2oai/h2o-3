@@ -227,7 +227,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                                      _model._parms.valid());
       }
 
-      //Compute metalearner
+      // Compute metalearner
       computeMetaLearner(levelOneTrainingFrame, levelOneValidationFrame, _model._parms._metalearner_algorithm);
 
 
@@ -246,12 +246,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         DRF metaDRFBuilder;
         DeepLearning metaDeepLearningBuilder;
 
+        // TODO: there's a huge amount of copy/paste here.  Refactor. . .
         if (metalearner_algo.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO)) {
 
-          //GLM Metalearner
+          // GLM Metalearner
           metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
           metaGLMBuilder._parms._non_negative = true;
-          //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
+          // metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
           metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
           metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -290,13 +291,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
+              _job.update(j._work, "training metalearner (" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+          Log.info("Finished training metalearner model (" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaGLMBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
@@ -354,13 +355,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         while (j.isRunning()) {
           try {
-            _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm + ")");
+            _job.update(j._work, "training metalearner (" + _model._parms._metalearner_algorithm + ")");
             Thread.sleep(100);
           } catch (InterruptedException e) {
           }
         }
 
-        Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+        Log.info("Finished training metalearner model (" + _model._parms._metalearner_algorithm + ").");
 
         _model._output._metalearner = metaGLMBuilder.get();
         _model.doScoreOrCopyMetrics(_job);
@@ -402,13 +403,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
+              _job.update(j._work, "training metalearner (" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+          Log.info("Finished training metalearner model (" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaGBMBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
@@ -450,13 +451,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
+              _job.update(j._work, "training metalearner (" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+          Log.info("Finished training metalearner model (" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaDRFBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
@@ -498,13 +499,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           while (j.isRunning()) {
             try {
-              _job.update(j._work, "training metalearner(" + _model._parms._metalearner_algorithm +")");
+              _job.update(j._work, "training metalearner (" + _model._parms._metalearner_algorithm +")");
               Thread.sleep(100);
             }
             catch (InterruptedException e) {}
           }
 
-          Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
+          Log.info("Finished training metalearner model (" + _model._parms._metalearner_algorithm + ").");
 
           _model._output._metalearner = metaDeepLearningBuilder.get();
           _model.doScoreOrCopyMetrics(_job);
