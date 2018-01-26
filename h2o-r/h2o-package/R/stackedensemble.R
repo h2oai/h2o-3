@@ -87,7 +87,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   }
  
   if(!missing(metalearner_params))
-    parms$metalearner_params <- toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE)
+    parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE))
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))

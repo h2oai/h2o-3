@@ -146,6 +146,8 @@ def gen_module(schema, algo):
     yield "from h2o.frame import H2OFrame"
     if classname == "H2OStackedEnsembleEstimator":
         yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
+        yield "import json"
+        yield "import ast"
     else:
         yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
@@ -217,7 +219,13 @@ def gen_module(schema, algo):
         yield ""
         yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
         yield '        """'
-        yield "        return self._parms.get(\"%s\")" % sname
+        if pname != "metalearner_params":
+            yield "        return self._parms.get(\"%s\")" % sname
+        else:
+            yield "        if self._parms.get(\"%s\") != None:" % sname
+            yield "            return ast.literal_eval(self._parms.get(\"%s\"))" % sname
+            yield "        else:"
+            yield "            return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
@@ -235,9 +243,15 @@ def gen_module(schema, algo):
             yield "         else:"
             yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
             yield "            self._parms[\"%s\"] = %s" % (sname, pname)
+        elif pname in {"metalearner_params"}:
+            yield "        assert_is_type(%s, None, %s)" % (pname, "dict")
+            yield '        if %s is not None and %s != "":' % (pname, pname)
+            yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
+            yield "        else:"
+            yield "            self._parms[\"%s\"] = None" % (sname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        if pname not in {"base_models"}:
+        if pname not in {"base_models", "metalearner_params"}:
             yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""

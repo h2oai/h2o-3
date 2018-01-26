@@ -10,6 +10,8 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
+import json
+import ast
 
 
 class H2OStackedEnsembleEstimator(H2OEstimator):
@@ -215,11 +217,17 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
         Type: ``dict``  (default: ``None``).
         """
-        return self._parms.get("metalearner_params")
+        if self._parms.get("metalearner_params") != None:
+            return ast.literal_eval(self._parms.get("metalearner_params"))
+        else:
+            return self._parms.get("metalearner_params")
 
     @metalearner_params.setter
     def metalearner_params(self, metalearner_params):
-        assert_is_type(metalearner_params, None, str)
-        self._parms["metalearner_params"] = metalearner_params
+        assert_is_type(metalearner_params, None, dict)
+        if metalearner_params is not None and metalearner_params != "":
+            self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
+        else:
+            self._parms["metalearner_params"] = None
 
 
