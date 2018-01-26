@@ -6,6 +6,8 @@ import hex.ModelCategory;
 import hex.StackedEnsembleModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.schemas.GLMV3;
+import hex.schemas.ModelBuilderSchema;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRF;
@@ -15,17 +17,20 @@ import hex.deeplearning.DeepLearningModel;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.api.SchemaMetadata;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashMap;
+import water.TypeMap;
+
+import java.util.*;
+
 import water.util.Log;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import water.util.IcedHashMap;
+
+import com.google.gson.Gson;
+import com.google.common.reflect.TypeToken;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -235,7 +240,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     } // computeImpl
 
-    private void computeMetaLearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo, IcedHashMap<String, Object[]> metalearner_params) {
+    private void computeMetaLearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo, String metalearner_params) {
         // Train the metalearner model
         // Default Job for just this training
 
@@ -252,6 +257,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           //GLM Metalearner
           metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
+
           metaGLMBuilder._parms._non_negative = true;
           //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
           metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
@@ -317,6 +323,22 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
         //GLM Metalearner
         metaGLMBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
+        GLMV3.GLMParametersV3 params = new GLMV3.GLMParametersV3();
+        params.init_meta();
+        params.fillFromImpl(metaGLMBuilder._parms); // Defaults for this builder into schema
+
+        //Metalearner parameters
+        if(metalearner_params != null){
+          Properties p = new Properties();
+          HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
+          for (Map.Entry<String, String> param : map.entrySet()) {
+            p.setProperty(param.getKey(), param.getValue());
+            params.fillFromParms(p, true);
+          }
+          GLMModel.GLMParameters glmParams = params.createAndFillImpl();
+          metaGLMBuilder._parms = glmParams;
+        }
+
         metaGLMBuilder._parms._train = levelOneTrainingFrame._key;
         metaGLMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -349,7 +371,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         } else {
           throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
         }
-
         metaGLMBuilder.init(false);
 
         Job<GLMModel> j = metaGLMBuilder.trainModel();

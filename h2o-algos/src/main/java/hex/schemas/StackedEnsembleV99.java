@@ -65,7 +65,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     public boolean keep_levelone_frame;
 
     @API(help = "Parameters for metalearner algo", direction = API.Direction.INOUT)
-    public IcedHashMap<String, Object[]> metalearner_params;
+    public String metalearner_params;
   
   }
 }
