@@ -7,6 +7,9 @@ import hex.StackedEnsembleModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.schemas.GLMV3;
+import hex.schemas.GBMV3;
+import hex.schemas.DRFV3;
+import hex.schemas.DeepLearningV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRF;
@@ -404,6 +407,22 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           //GBM Metalearner
           metaGBMBuilder = ModelBuilder.make("GBM", job, metalearnerKey);
+          GBMV3.GBMParametersV3 params = new GBMV3.GBMParametersV3();
+          params.init_meta();
+          params.fillFromImpl(metaGBMBuilder._parms); // Defaults for this builder into schema
+
+          //Metalearner parameters
+          if(metalearner_params != null){
+            Properties p = new Properties();
+            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
+            for (Map.Entry<String, String> param : map.entrySet()) {
+              p.setProperty(param.getKey(), param.getValue());
+              params.fillFromParms(p, true);
+            }
+            GBMModel.GBMParameters glmParams = params.createAndFillImpl();
+            metaGBMBuilder._parms = glmParams;
+          }
+
           metaGBMBuilder._parms._train = levelOneTrainingFrame._key;
           metaGBMBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaGBMBuilder._parms._response_column = _model.responseColumn;
@@ -452,6 +471,21 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           //DRF Metalearner
           metaDRFBuilder = ModelBuilder.make("DRF", job, metalearnerKey);
+          DRFV3.DRFParametersV3 params = new DRFV3.DRFParametersV3();
+          params.init_meta();
+          params.fillFromImpl(metaDRFBuilder._parms); // Defaults for this builder into schema
+
+          //Metalearner parameters
+          if(metalearner_params != null){
+            Properties p = new Properties();
+            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
+            for (Map.Entry<String, String> param : map.entrySet()) {
+              p.setProperty(param.getKey(), param.getValue());
+              params.fillFromParms(p, true);
+            }
+            DRFModel.DRFParameters glmParams = params.createAndFillImpl();
+            metaDRFBuilder._parms = glmParams;
+          }
           metaDRFBuilder._parms._train = levelOneTrainingFrame._key;
           metaDRFBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaDRFBuilder._parms._response_column = _model.responseColumn;
@@ -500,6 +534,21 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
           //DeepLearning Metalearner
           metaDeepLearningBuilder = ModelBuilder.make("DeepLearning", job, metalearnerKey);
+          DeepLearningV3.DeepLearningParametersV3 params = new DeepLearningV3.DeepLearningParametersV3();
+          params.init_meta();
+          params.fillFromImpl(metaDeepLearningBuilder._parms); // Defaults for this builder into schema
+
+          //Metalearner parameters
+          if(metalearner_params != null){
+            Properties p = new Properties();
+            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
+            for (Map.Entry<String, String> param : map.entrySet()) {
+              p.setProperty(param.getKey(), param.getValue());
+              params.fillFromParms(p, true);
+            }
+            DeepLearningModel.DeepLearningParameters glmParams = params.createAndFillImpl();
+            metaDeepLearningBuilder._parms = glmParams;
+          }
           metaDeepLearningBuilder._parms._train = levelOneTrainingFrame._key;
           metaDeepLearningBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
           metaDeepLearningBuilder._parms._response_column = _model.responseColumn;
