@@ -7,7 +7,6 @@ import hex.StackedEnsembleModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.schemas.GLMV3;
-import hex.schemas.ModelBuilderSchema;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRF;
@@ -17,17 +16,14 @@ import hex.deeplearning.DeepLearningModel;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.TypeMap;
 
 import java.util.*;
 
 import water.util.Log;
-import water.util.IcedHashMap;
 
 import com.google.gson.Gson;
 import com.google.common.reflect.TypeToken;
