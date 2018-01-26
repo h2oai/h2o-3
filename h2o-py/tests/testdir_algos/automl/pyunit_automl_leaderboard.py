@@ -19,13 +19,14 @@ def automl_leaderboard():
 
 
     # Binomial
+    print("Check leaderboard for Binomial")
     fr1 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     fr1["CAPSULE"] = fr1["CAPSULE"].asfactor()
     exclude_algos = ["GLM", "DeepLearning", "DRF"]
     aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos)
     aml.train(y="CAPSULE", training_frame=fr1)
     lb = aml.leaderboard
-    lb
+    print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "auc", "logloss"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
@@ -38,12 +39,13 @@ def automl_leaderboard():
 
     # Regression
     # TO DO: Change this dataset
+    print("Check leaderboard for Regression")
     fr2 = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
     exclude_algos = ["GBM", "DeepLearning"]
     aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos)
     aml.train(y=4, training_frame=fr2)
     lb = aml.leaderboard
-    lb
+    print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "mean_residual_deviance","rmse", "mae", "rmsle"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
@@ -55,12 +57,13 @@ def automl_leaderboard():
 
 
     # Multinomial
+    print("Check leaderboard for Multinomial")
     fr3 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     exclude_algos = ["GBM"]
     aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos)
     aml.train(y=4, training_frame=fr3)
     lb = aml.leaderboard
-    lb
+    print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "mean_per_class_error"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
@@ -72,24 +75,26 @@ def automl_leaderboard():
 
 
     # Exclude all the algorithms, check for empty leaderboard
-    fr1 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    fr1["CAPSULE"] = fr1["CAPSULE"].asfactor()
+    print("Check leaderboard for excluding all algos (empty leaderboard)")    
+    fr4 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    fr4["CAPSULE"] = fr4["CAPSULE"].asfactor()
     exclude_algos = ["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"]
     aml = H2OAutoML(max_runtime_secs=5, project_name="py_lb_test_aml4", exclude_algos=exclude_algos)
-    aml.train(y="CAPSULE", training_frame=fr1)
+    aml.train(y="CAPSULE", training_frame=fr4)
     lb = aml.leaderboard
-    lb
+    print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "auc", "logloss"]
     assert lb.nrows == 0
 
 
     # Include all algorithms (all should be there, given large enough max_models)
-    fr3 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+    print("Check leaderboard for all algorithms")
+    fr5 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5")
-    aml.train(y=4, training_frame=fr3)
+    aml.train(y=4, training_frame=fr5)
     lb = aml.leaderboard
-    lb
+    print(lb)
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     include_algos = list(set(all_algos) - set(exclude_algos)) + ["XRT"]
     # check that expected algos are included in leaderboard
