@@ -198,11 +198,17 @@ def gen_module(schema, algo):
             vals = param["dtype"][5:-1].split(", ")
             extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
-            extrahelp = "Type: ``%s``" % param["dtype"]
+            if pname == "metalearner_params":
+                extrahelp = "Type: ``dict``"
+            else:
+                extrahelp = "Type: ``%s``" % param["dtype"]
         if param["default_value"] is None:
             extrahelp += "."
         else:
-            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
+            if pname == "metalearner_params":
+                extrahelp += "  (default: ``None``)."
+            else:
+                extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
         yield "    @property"
         yield "    def %s(self):" % pname

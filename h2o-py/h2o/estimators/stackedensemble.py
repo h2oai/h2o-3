@@ -213,13 +213,13 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Parameters for metalearner algo
 
-        Type: ``Dict[object, object]``  (default: ``{}``).
+        Type: ``dict``  (default: ``None``).
         """
         return self._parms.get("metalearner_params")
 
     @metalearner_params.setter
     def metalearner_params(self, metalearner_params):
-        assert_is_type(metalearner_params, None, {object: object})
+        assert_is_type(metalearner_params, None, str)
         self._parms["metalearner_params"] = metalearner_params
 
 

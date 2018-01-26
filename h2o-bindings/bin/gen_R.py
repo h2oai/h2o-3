@@ -115,9 +115,12 @@ def gen_module(schema, algo, module):
             temp = normalize_value(param).replace(' "quasibinomial",',"")
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
-            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+            if param["name"] != "metalearner_params":
+                list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
+    if algo in ["stackedensemble"]:
+        list.append(indent("metalearner_params = NULL ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
@@ -240,6 +243,8 @@ def gen_module(schema, algo, module):
         yield "    }"
         yield "  }"
         yield " "
+        yield "  if(!missing(metalearner_params))"
+        yield "    parms$metalearner_params <- toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE)"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -269,6 +274,8 @@ def gen_module(schema, algo, module):
         if param["name"] == "eps_prob":
             yield " if (!missing(eps_prob))"
             yield "   parms$%s <- eps_prob" % param["name"]
+            continue
+        if param["name"] == "metalearner_params":
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
