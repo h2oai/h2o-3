@@ -120,6 +120,8 @@ def prostate_automl_args():
 
     # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard, hoping that it's not an SE model
@@ -131,6 +133,8 @@ def prostate_automl_args():
     assert amodel.params['nfolds']['actual'] == 3
 
     print("Check nfolds = 0 works properly")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
     aml = H2OAutoML(project_name="py_aml_nfolds0", nfolds=0, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
