@@ -16,20 +16,20 @@ def call(final pipelineContext) {
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-      timeoutValue: 8, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JS
+      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java8 Smoke', target: 'test-junit-smoke',
-      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      stageName: 'Java8 Smoke', target: 'test-junit-smoke',timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
@@ -257,26 +257,36 @@ private void invokeStage(final pipelineContext, final body) {
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
   config.excludeAdditionalFiles = config.excludeAdditionalFiles ?: []
 
-  pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
-  stage(config.stageName) {
-      withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${pipelineContext.getBuildConfig().getGitHubCommitStateContext(config.stageName)}") {
+  if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
+    pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
+    stage(config.stageName) {
+      if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
+        echo "###### Stage was successful in previous build ######"
+        pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
+        pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+      } else {
+        withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${pipelineContext.getBuildConfig().getGitHubCommitStateContext(config.stageName)}") {
           node(config.nodeLabel) {
-              try {
-                  pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
-                  echo "###### Unstash scripts. ######"
-                  pipelineContext.getUtils().unstashScripts(this)
+            try {
+              pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
+              echo "###### Unstash scripts. ######"
+              pipelineContext.getUtils().unstashScripts(this)
 
-                  sh "rm -rf ${config.stageDir}"
+              sh "rm -rf ${config.stageDir}"
 
-                  def script = load(config.executionScript)
-                  script(pipelineContext, config)
-                  pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
-              } catch (Exception e) {
-                  pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
-                  throw e
-              }
+              def script = load(config.executionScript)
+              script(pipelineContext, config)
+              pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+            } catch (Exception e) {
+              pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
+              throw e
+            }
           }
+        }
       }
+    }
+  } else {
+    echo "###### Changes for ${stageConfig.component} NOT detected, skipping ${stageConfig.stageName}. ######"
   }
 }
 

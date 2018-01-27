@@ -27,7 +27,6 @@ try {
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
           pipelineContext = prepareH2O3(scmEnv, 'MODE_HADOOP', true)
-          pipelineContext.getBuildConfig().setIgnoreRerun(true)
 
           final String scheduleString = 'H 21 * * *'
           pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
