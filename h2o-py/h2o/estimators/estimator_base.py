@@ -285,8 +285,8 @@ class H2OEstimator(ModelBase):
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OXGBoostEstimator": return "xgboost"
-        if name == "H2OPCA": return "pca"
-        if name == "H2OSVD": return "svd"
+        if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
+        if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 
 
     @staticmethod
