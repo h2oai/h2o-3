@@ -44,7 +44,6 @@ class BuildConfig {
   private String mode
   private String nodeLabel
   private String commitMessage
-  private boolean ignoreRerun = false
   private boolean buildHadoop
   private List hadoopDistributionsToBuild
   private JenkinsMaster master
@@ -77,24 +76,8 @@ class BuildConfig {
     return mode
   }
 
-  def setIgnoreRerun(final boolean ignoreRerun) {
-    this.ignoreRerun = ignoreRerun
-  }
-
-  boolean getIgnoreRerun() {
-    return this.ignoreRerun
-  }
-
-  def commitMessageContains(final String keyword) {
-    return commitMessage.contains(keyword)
-  }
-
   def componentChanged(final String component) {
     return changesMap[component]
-  }
-
-  JenkinsMaster getMaster() {
-    return master
   }
 
   String getDefaultNodeLabel() {
@@ -126,11 +109,13 @@ class BuildConfig {
 
   void setJobProperties(final context, final customProperties) {
     def jobProperties = [
-      context.parameters([
-        context.booleanParam(defaultValue: getIgnoreRerun(), description: 'If checked, execute all stages regardless of the commit message content. If not checked and the message contains !rerun, only stages failed in previous build will be executed.', name: 'ignoreRerun')
-      ]),
       context.buildDiscarder(context.logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25'))
     ]
+    if (context.env.BRANCH_NAME.startsWith('PR')) {
+      jobProperties += context.parameters([
+        context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
+      ])
+    }
     if (customProperties != null) {
       jobProperties += customProperties
     }
