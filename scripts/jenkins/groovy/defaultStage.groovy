@@ -4,43 +4,36 @@ def call(final pipelineContext, final stageConfig) {
 
     def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
 
-    if (pipelineContext.getBuildConfig().componentChanged(stageConfig.component)) {
-        echo "###### Changes for ${stageConfig.component} detected, starting ${stageConfig.stageName} ######"
-        insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, stageConfig.timeoutValue, 'MINUTES') {
-            // run tests only if all stages should be run or if this stage was FAILED in previous build
-            echo "###### ${stageConfig.stageName} was not successful or was not executed in previous build, executing it now. ######"
+    echo "###### Changes for ${stageConfig.component} detected, starting ${stageConfig.stageName} ######"
+    insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, stageConfig.timeoutValue, 'MINUTES') {
+        def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
-            def h2oFolder = stageConfig.stageDir + '/h2o-3'
-
-            // pull the test package unless this is a COMPONENT_ANY stage
-            if (stageConfig.component != pipelineContext.getBuildConfig().COMPONENT_ANY) {
-                unpackTestPackage(stageConfig.component, stageConfig.stageDir)
-            }
-            // pull aditional test packages
-            for (additionalPackage in stageConfig.additionalTestPackages) {
-                echo "Pulling additional test-package-${additionalPackage}.zip"
-                unpackTestPackage(additionalPackage, stageConfig.stageDir)
-            }
-
-            if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
-                installPythonPackage(h2oFolder)
-            }
-
-            if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R)) {
-                installRPackage(h2oFolder)
-            }
-
-            makeTarget {
-                customBuildAction = stageConfig.customBuildAction
-                target = stageConfig.target
-                hasJUnit = stageConfig.hasJUnit
-                h2o3dir = h2oFolder
-                archiveAdditionalFiles = stageConfig.archiveAdditionalFiles
-                makefilePath = stageConfig.makefilePath
-            }
+        // pull the test package unless this is a COMPONENT_ANY stage
+        if (stageConfig.component != pipelineContext.getBuildConfig().COMPONENT_ANY) {
+            unpackTestPackage(stageConfig.component, stageConfig.stageDir)
         }
-    } else {
-        echo "###### Changes for ${stageConfig.component} NOT detected, skipping ${stageConfig.stageName}. ######"
+        // pull aditional test packages
+        for (additionalPackage in stageConfig.additionalTestPackages) {
+            echo "Pulling additional test-package-${additionalPackage}.zip"
+            unpackTestPackage(additionalPackage, stageConfig.stageDir)
+        }
+
+        if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
+            installPythonPackage(h2oFolder)
+        }
+
+        if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R)) {
+            installRPackage(h2oFolder)
+        }
+
+        makeTarget {
+            customBuildAction = stageConfig.customBuildAction
+            target = stageConfig.target
+            hasJUnit = stageConfig.hasJUnit
+            h2o3dir = h2oFolder
+            archiveAdditionalFiles = stageConfig.archiveAdditionalFiles
+            makefilePath = stageConfig.makefilePath
+        }
     }
 }
 
