@@ -71,6 +71,45 @@ class PipelineUtils {
             return jsonResponse.tags.contains(version)
         }
     }
+
+    /**
+     *
+     * @param stageName
+     * @return true if the stage with stageName was present in previous build and did succeed.
+     */
+    @NonCPS
+    boolean wasStageSuccessful(final context, String stageName) {
+        // displayName of the relevant end node.
+        def STAGE_END_TYPE_DISPLAY_NAME = 'Stage : Body : End'
+
+        // There is no previous build, the stage cannot be successful.
+        if (context.currentBuild.previousBuild == null) {
+            echo "###### No previous build available, marking ${stageName} as FAILED. ######"
+            return false
+        }
+
+        // Get all nodes in previous build.
+        def prevBuildNodes = context.currentBuild.previousBuild.rawBuild
+                .getAction(org.jenkinsci.plugins.workflow.job.views.FlowGraphAction.class)
+                .getNodes()
+        // Get all end nodes of the relevant stage in previous build. We need to check
+        // the end nodes, because errors are being recorded on the end nodes.
+        def stageEndNodesInPrevBuild = prevBuildNodes.findAll{it.getTypeDisplayName() == STAGE_END_TYPE_DISPLAY_NAME}
+                .findAll{it.getStartNode().getDisplayName() == stageName}
+
+        // If there is no start node for this stage in previous build that means the
+        // stage was not present in previous build, therefore the stage cannot be successful.
+        def stageMissingInPrevBuild = stageEndNodesInPrevBuild.isEmpty()
+        if (stageMissingInPrevBuild) {
+            echo "###### ${stageName} not present in previous build, marking this stage as FAILED. ######"
+            return false
+        }
+
+        // If the list of end nodes for this stage having error is empty, that
+        // means the stage was successful. The errors are being recorded on the end nodes.
+        return stageEndNodesInPrevBuild.find{it.getError() != null} == null
+    }
+
 }
 
 return this

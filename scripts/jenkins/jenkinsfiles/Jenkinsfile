@@ -41,7 +41,6 @@ try {
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
           pipelineContext = prepareH2O3(scmEnv, mode, !prJob)
-          pipelineContext.getBuildConfig().setIgnoreRerun(!prJob)
 
           pipelineContext.getBuildConfig().setJobProperties(this)
 

@@ -27,7 +27,6 @@ try {
 
           def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
           pipelineContext = prepareH2O3(scmEnv, 'MODE_NIGHTLY', true)
-          pipelineContext.getBuildConfig().setIgnoreRerun(true)
 
           // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
           // for rel- branches at 21:XX
