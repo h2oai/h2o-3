@@ -431,25 +431,67 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public static class InteractionSpec extends Iced {
-    public String[] _columns;
+    private String[] _columns;
+    private StringPair[] _pairs;
 
-    @Deprecated
-    public InteractionSpec(String[] _columns) {
-      this._columns = _columns;
+    private InteractionSpec(String[] columns, StringPair[] pairs) {
+      _columns = columns;
+      _pairs = pairs;
+    }
+
+    public static InteractionSpec allPairwise(String[] columns) {
+      return columns != null ? new InteractionSpec(columns, null) : null;
+    }
+
+    public static InteractionSpec create(String[] columns, StringPair[] pairs) {
+      return columns == null && pairs == null ?
+              null : new InteractionSpec(columns, pairs);
+    }
+
+    public boolean isEmpty() {
+      return _columns == null && _pairs == null;
     }
 
     public Model.InteractionPair[] makeInteractionPairs(Frame f) {
-      int[] interactionIDs = null;
-      interactionIDs = new int[_columns.length];
-      for (int i = 0; i < _columns.length; ++i) {
+      if (isEmpty())
+        return null;
+      InteractionPair[] allPairwise = null;
+      InteractionPair[] allExplicit = null;
+      int[] interactionIDs = new int[0];
+      if (_columns != null) {
+        interactionIDs = new int[_columns.length];
+        for (int i = 0; i < _columns.length; ++i) {
           interactionIDs[i] = f.find(_columns[i]);
-          if( interactionIDs[i]==-1 ) {
-            interactionIDs = null;
-            break;
-          }
-          // FIXME: would be a good idea to log it at least, throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
+          if (interactionIDs[i] == -1)
+            throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactionIDs[i]);
+        }
+        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
       }
-      return Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
+      if (_pairs != null) {
+        Arrays.sort(interactionIDs);
+        allExplicit = new InteractionPair[_pairs.length];
+        int n = 0;
+        for (StringPair p : _pairs) {
+          int aIdx = f.find(p._a);
+          if (aIdx == -1)
+            throw new IllegalArgumentException("Invalid interactions specified (first column is missing): " + p.toJsonString());
+          int bIdx = f.find(p._b);
+          if (bIdx == -1)
+            throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString());
+          if (Arrays.binarySearch(interactionIDs, aIdx) >= 0 && Arrays.binarySearch(interactionIDs, bIdx) >= 0)
+            continue; // This interaction is already included in set of all pairwise interactions
+          allExplicit[n++] = new InteractionPair(aIdx, bIdx, null, null);
+        }
+        if (n != allExplicit.length) {
+          InteractionPair[] resized = new InteractionPair[n];
+          System.arraycopy(allExplicit, 0, resized, 0, resized.length);
+          allExplicit = resized;
+        }
+      }
+      if (allExplicit == null)
+        return allPairwise;
+      else
+        return ArrayUtils.append(allPairwise, allExplicit);
     }
   }
 
@@ -2030,7 +2072,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *     this does not appear here, but in the InteractionWrappedVec class
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
-  public static class InteractionPair extends Iced {
+  public static class InteractionPair extends Iced<InteractionPair> {
     public int vecIdx;
     private int _v1,_v2;
 

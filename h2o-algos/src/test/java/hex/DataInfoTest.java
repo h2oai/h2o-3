@@ -35,7 +35,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
       );
       dinfo.dropInteractions();
       dinfo.remove();
@@ -87,7 +87,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}   // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})   // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -139,7 +139,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -172,7 +172,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1)})          // interactions
       );
       checker(di,false);
     } finally {
@@ -203,7 +203,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -234,7 +234,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -269,7 +269,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}          // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})          // interactions
       );
       checker(di,true);
     } finally {
@@ -304,7 +304,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              new String[]{fr.name(8),fr.name(16),fr.name(2)}           // interactions
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})           // interactions
       );
       checker(di,true);
     } finally {

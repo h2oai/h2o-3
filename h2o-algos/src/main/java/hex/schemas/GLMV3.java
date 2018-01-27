@@ -9,6 +9,7 @@ import water.api.API.Direction;
 import water.api.API.Level;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.StringPairV3;
 
 /**
  * Created by tomasnykodym on 8/29/14.
@@ -57,6 +58,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "beta_constraints",
             "max_active_predictors",
             "interactions",
+            "interaction_pairs",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -163,6 +165,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction=Direction.INPUT, level=Level.expert)
     public String[] interactions;
+
+    @API(help="A list of pairwise (first order) column interactions.", direction=Direction.INPUT, level=Level.expert)
+    public StringPairV3[] interaction_pairs;
 
     // dead unused args, formely inherited from supervised model schema
     /**

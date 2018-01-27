@@ -214,6 +214,9 @@ class H2OEstimator(ModelBase):
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
                                  [quoted(col) for col in parms["interactions"]])
+        parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None else
+                                 [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
+
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 

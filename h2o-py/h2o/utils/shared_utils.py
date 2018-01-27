@@ -16,6 +16,7 @@ import re
 import sys
 import zipfile
 import io
+import string
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
@@ -136,9 +137,14 @@ def _handle_python_lists(python_obj, check_header):
 
 
 def stringify_list(arr):
-    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else str(item)
+    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
 
+def _str(item):
+    return _str_tuple(item) if isinstance(item, tuple) else str(item)
+
+def _str_tuple(t):
+    return "{%s}" % ",".join(["%s: %s" % (ti[0], str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
 
 def _is_list(l):
     return isinstance(l, (tuple, list))

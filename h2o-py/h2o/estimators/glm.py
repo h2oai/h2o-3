@@ -41,7 +41,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                       "missing_values_handling", "compute_p_values", "remove_collinear_columns", "intercept",
                       "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link",
                       "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors", "interactions",
-                      "balance_classes", "class_sampling_factors", "max_after_balance_size",
+                      "interaction_pairs", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                       "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -662,6 +662,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def interactions(self, interactions):
         assert_is_type(interactions, None, [str])
         self._parms["interactions"] = interactions
+
+
+    @property
+    def interaction_pairs(self):
+        """
+        A list of pairwise (first order) column interactions.
+
+        Type: ``List[tuple]``.
+        """
+        return self._parms.get("interaction_pairs")
+
+    @interaction_pairs.setter
+    def interaction_pairs(self, interaction_pairs):
+        assert_is_type(interaction_pairs, None, [tuple])
+        self._parms["interaction_pairs"] = interaction_pairs
 
 
     @property
