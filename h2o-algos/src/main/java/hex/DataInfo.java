@@ -319,13 +319,9 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo validDinfo(Frame valid) {
     DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
-    res._interactions=_interactions;
-    res._interactionSpec=_interactionSpec;
-    if( _interactionSpec!=null ) {
-      //FIXME: this looks wrong:
-      //int[] interactions = new int[_interactionColumns.length];
-      //for(int i=0;i<interactions.length;++i)
-      //  interactions[i] = valid.find(_interactionColumns[i]);
+    res._interactions = _interactions;
+    res._interactionSpec = _interactionSpec;
+    if (_interactionSpec != null) {
       valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, false).add(valid);
     }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
