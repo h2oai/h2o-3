@@ -61,7 +61,7 @@ test.XGBoost.bernoulli.SyntheticData <- function() {
     print("H2O XGBoost grid search")
     grid_space <- list()
     grid_space$ntrees <- c(5)
-    grid_space$min_rows <- c(1)
+    grid_space$min_rows <- c(2)
     grid_space$max_depth <- c(1,2,3)
     grid_space$learn_rate <- c(1,.1)
 # No nbins in XGBoost!    grid_space$nbins <- c(20)
