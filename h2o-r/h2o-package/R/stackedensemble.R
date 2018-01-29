@@ -87,7 +87,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   }
  
   if(!missing(metalearner_params))
-    parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE))
+      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE))
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -105,5 +105,10 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   # Error check and build model
-  .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99) 
+  model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99)
+  #Convert metalearner_params back to list if not NULL
+  if(!missing(metalearner_params)) {
+      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))
+  }
+  return(model)
 }
