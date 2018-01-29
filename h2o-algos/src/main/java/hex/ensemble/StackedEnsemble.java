@@ -333,7 +333,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         params.fillFromImpl(metaGLMBuilder._parms); // Defaults for this builder into schema
 
         //Metalearner parameters
-        if(metalearner_params != null){
+        if(metalearner_params != null && !metalearner_params.isEmpty()){
           Properties p = new Properties();
           HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
           for (Map.Entry<String, String> param : map.entrySet()) {
@@ -476,7 +476,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           params.fillFromImpl(metaDRFBuilder._parms); // Defaults for this builder into schema
 
           //Metalearner parameters
-          if(metalearner_params != null){
+          if(metalearner_params != null && !metalearner_params.isEmpty()){
             Properties p = new Properties();
             HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
             for (Map.Entry<String, String> param : map.entrySet()) {
@@ -539,7 +539,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           params.fillFromImpl(metaDeepLearningBuilder._parms); // Defaults for this builder into schema
 
           //Metalearner parameters
-          if(metalearner_params != null){
+          if(metalearner_params != null && !metalearner_params.isEmpty()){
             Properties p = new Properties();
             HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
             for (Map.Entry<String, String> param : map.entrySet()) {
