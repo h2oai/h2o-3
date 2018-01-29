@@ -546,8 +546,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
               p.setProperty(param.getKey(), param.getValue());
               params.fillFromParms(p, true);
             }
-            DeepLearningModel.DeepLearningParameters glmParams = params.createAndFillImpl();
-            metaDeepLearningBuilder._parms = glmParams;
+            DeepLearningModel.DeepLearningParameters dlParams = params.createAndFillImpl();
+            metaDeepLearningBuilder._parms = dlParams;
           }
           metaDeepLearningBuilder._parms._train = levelOneTrainingFrame._key;
           metaDeepLearningBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
