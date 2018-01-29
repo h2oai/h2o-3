@@ -218,7 +218,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Type: ``dict``  (default: ``None``).
         """
         if self._parms.get("metalearner_params") != None:
-            return ast.literal_eval(self._parms.get("metalearner_params"))
+            metalearner_params_dict =  ast.literal_eval(self._parms.get("metalearner_params"))
+            for k in metalearner_params_dict:
+                if len(metalearner_params_dict[k]) == 1: #single parameter
+                    metalearner_params_dict[k] = metalearner_params_dict[k][0]
+            return metalearner_params_dict
         else:
             return self._parms.get("metalearner_params")
 
@@ -226,6 +230,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def metalearner_params(self, metalearner_params):
         assert_is_type(metalearner_params, None, dict)
         if metalearner_params is not None and metalearner_params != "":
+            for k in metalearner_params:
+                if ("[" and "]") not in str(metalearner_params[k]):
+                    metalearner_params[k]=[metalearner_params[k]]
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None

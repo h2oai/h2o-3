@@ -223,7 +223,11 @@ def gen_module(schema, algo):
             yield "        return self._parms.get(\"%s\")" % sname
         else:
             yield "        if self._parms.get(\"%s\") != None:" % sname
-            yield "            return ast.literal_eval(self._parms.get(\"%s\"))" % sname
+            yield "            metalearner_params_dict =  ast.literal_eval(self._parms.get(\"%s\"))" % sname
+            yield "            for k in metalearner_params_dict:"
+            yield "                if len(metalearner_params_dict[k]) == 1: #single parameter"
+            yield "                    metalearner_params_dict[k] = metalearner_params_dict[k][0]"
+            yield "            return metalearner_params_dict"
             yield "        else:"
             yield "            return self._parms.get(\"%s\")" % sname
         yield ""
@@ -246,6 +250,9 @@ def gen_module(schema, algo):
         elif pname in {"metalearner_params"}:
             yield "        assert_is_type(%s, None, %s)" % (pname, "dict")
             yield '        if %s is not None and %s != "":' % (pname, pname)
+            yield "            for k in %s:" % (pname)
+            yield '                if ("[" and "]") not in str(metalearner_params[k]):'
+            yield "                    metalearner_params[k]=[metalearner_params[k]]"
             yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
             yield "        else:"
             yield "            self._parms[\"%s\"] = None" % (sname)

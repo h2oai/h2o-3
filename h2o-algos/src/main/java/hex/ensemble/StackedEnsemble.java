@@ -335,9 +335,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         //Metalearner parameters
         if(metalearner_params != null && !metalearner_params.isEmpty()){
           Properties p = new Properties();
-          HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
-          for (Map.Entry<String, String> param : map.entrySet()) {
-            p.setProperty(param.getKey(), param.getValue());
+          HashMap<String,String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>(){}.getType());
+          for (Map.Entry<String, String[]> param : map.entrySet()) {
+            String[] paramVal = param.getValue();
+            if(paramVal.length == 1){
+              p.setProperty(param.getKey(), paramVal[0]);
+            } else {
+              p.setProperty(param.getKey(), Arrays.toString(paramVal));
+            }
             params.fillFromParms(p, true);
           }
           GLMModel.GLMParameters glmParams = params.createAndFillImpl();
@@ -414,13 +419,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           //Metalearner parameters
           if(metalearner_params != null && !metalearner_params.isEmpty()){
             Properties p = new Properties();
-            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
-            for (Map.Entry<String, String> param : map.entrySet()) {
-              p.setProperty(param.getKey(), param.getValue());
+            HashMap<String,String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>(){}.getType());
+            for (Map.Entry<String, String[]> param : map.entrySet()) {
+              String[] paramVal = param.getValue();
+              if(paramVal.length == 1){
+                p.setProperty(param.getKey(), paramVal[0]);
+              } else {
+                p.setProperty(param.getKey(), Arrays.toString(paramVal));
+              }
               params.fillFromParms(p, true);
             }
-            GBMModel.GBMParameters glmParams = params.createAndFillImpl();
-            metaGBMBuilder._parms = glmParams;
+            GBMModel.GBMParameters gbmParams = params.createAndFillImpl();
+            metaGBMBuilder._parms = gbmParams;
           }
 
           metaGBMBuilder._parms._train = levelOneTrainingFrame._key;
@@ -478,13 +488,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           //Metalearner parameters
           if(metalearner_params != null && !metalearner_params.isEmpty()){
             Properties p = new Properties();
-            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
-            for (Map.Entry<String, String> param : map.entrySet()) {
-              p.setProperty(param.getKey(), param.getValue());
+            HashMap<String,String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>(){}.getType());
+            for (Map.Entry<String, String[]> param : map.entrySet()) {
+              String[] paramVal = param.getValue();
+              if(paramVal.length == 1){
+                p.setProperty(param.getKey(), paramVal[0]);
+              } else {
+                p.setProperty(param.getKey(), Arrays.toString(paramVal));
+              }
               params.fillFromParms(p, true);
             }
-            DRFModel.DRFParameters glmParams = params.createAndFillImpl();
-            metaDRFBuilder._parms = glmParams;
+            DRFModel.DRFParameters drfParams = params.createAndFillImpl();
+            metaDRFBuilder._parms = drfParams;
           }
           metaDRFBuilder._parms._train = levelOneTrainingFrame._key;
           metaDRFBuilder._parms._valid = (levelOneValidationFrame == null ? null : levelOneValidationFrame._key);
@@ -541,9 +556,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           //Metalearner parameters
           if(metalearner_params != null && !metalearner_params.isEmpty()){
             Properties p = new Properties();
-            HashMap<String,String> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String>>(){}.getType());
-            for (Map.Entry<String, String> param : map.entrySet()) {
-              p.setProperty(param.getKey(), param.getValue());
+            HashMap<String,String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>(){}.getType());
+            for (Map.Entry<String, String[]> param : map.entrySet()) {
+              String[] paramVal = param.getValue();
+              if(paramVal.length == 1){
+                p.setProperty(param.getKey(), paramVal[0]);
+              } else {
+                p.setProperty(param.getKey(), Arrays.toString(paramVal));
+              }
               params.fillFromParms(p, true);
             }
             DeepLearningModel.DeepLearningParameters dlParams = params.createAndFillImpl();
