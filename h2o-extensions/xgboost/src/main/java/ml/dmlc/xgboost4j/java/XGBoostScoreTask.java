@@ -58,10 +58,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } else if (output.nclasses() == 2) {
             Vec p1 = preds.vec(2);
             if (computeMetrics) {
+                resp.setDomain(output.classNames());
                 res.mm = ModelMetricsBinomial.make(p1, resp);
             }
         } else {
             if (computeMetrics) {
+                resp.setDomain(output.classNames());
                 Frame pp = new Frame(preds);
                 pp.remove(0);
                 Scope.enter();
