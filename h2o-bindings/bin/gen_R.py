@@ -244,7 +244,7 @@ def gen_module(schema, algo, module):
         yield "  }"
         yield " "
         yield "  if(!missing(metalearner_params))"
-        yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE, auto_unbox = TRUE))"
+        yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
