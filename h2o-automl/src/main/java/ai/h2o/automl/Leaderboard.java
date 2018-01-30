@@ -88,6 +88,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private boolean sort_decreasing;
 
   /**
+   * Have we set the sort_metric based on a model in the leadboard?
+   */
+  private boolean have_set_sort_metric = false;
+
+  /**
    * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
    * Right now this is a "new leader" message.
    */
@@ -111,17 +116,21 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
     this._key = make(idForProject(project_name));
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
+
     if (null != this.leaderboardFrame) {
       this.leaderboardFrameChecksum = leaderboardFrame.checksum();
     } else {
       this.leaderboardFrameChecksum = 0;
     }
-    DKV.put(this);
+
+    this.sort_metric = "auc";
+    this.other_metrics = new String[] { "logloss" };
+    this.sort_decreasing = true;
   }
 
   public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
@@ -139,7 +148,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return exists;
     }
 
-    return new Leaderboard(project_name, userFeedback, leaderboardFrame);
+    Leaderboard newLeaderboard = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+    DKV.put(newLeaderboard);
+    return newLeaderboard;
   }
 
   // satisfy typing for job return type...
@@ -162,12 +173,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.sort_metric = metric;
     this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
+    this.have_set_sort_metric = true;
     DKV.put(this);
   }
 
   public void setMetricAndDirection(String metric,boolean sortDecreasing){
     this.sort_metric = metric;
     this.sort_decreasing = sortDecreasing;
+    this.have_set_sort_metric = true;
     DKV.put(this);
   }
 
@@ -195,7 +208,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return;
     }
 
-    if (this.sort_metric == null) {
+    if (! this.have_set_sort_metric) {
       // lazily set to default for this model category
       setDefaultMetricAndDirection(newModels[0].get());
     }
@@ -206,7 +219,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard updating) {
-        if (updating == null) updating = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+        if (updating == null) {
+          Log.err("trying to update null leaderboard!");
+          throw new H2OIllegalArgumentException("Trying to update a null leaderboard.");
+        }
 
         final Key<Model>[] oldModels = updating.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -563,7 +579,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
         "sort_metrics needs to be always not-null for non-empty array!";
-    
+
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
@@ -571,10 +587,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
       // empty TwoDimTable
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
-              new String[0],
-              new String[0],
-              new String[0],
-              new String[0],
+              rowHeaders,
+              Leaderboard.colHeaders(sort_metric, other_metric),
+              Leaderboard.colTypesBinomial,
+              Leaderboard.colFormatsBinomial,
               "-");
     } else if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
       return new TwoDimTable(tableHeader,
@@ -588,7 +604,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metric),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "#");
@@ -596,7 +612,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric,other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metric),
               Leaderboard.colTypesRegression,
               Leaderboard.colFormatsRegression,
               "#");

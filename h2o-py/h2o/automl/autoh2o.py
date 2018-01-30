@@ -36,6 +36,10 @@ class H2OAutoML(object):
       a project name will be auto-generated based on the training frame ID.  More models can be trained on an
       existing AutoML project by specifying the same project name in muliple calls to the AutoML function
       (as long as the same training frame is used in subsequent runs).
+    :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
+      An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "GLM", "GBM", "DRF" 
+      (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
+      all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 
     :examples:
     >>> import h2o
@@ -46,14 +50,19 @@ class H2OAutoML(object):
     >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
     >>> # Identify the response and set of predictors
     >>> y = "response"
-    >>> x = train.columns  #if x is defined as all columns except the response, then x is not required
+    >>> x = list(train.columns)  #if x is defined as all columns except the response, then x is not required
     >>> x.remove(y)
     >>> # For binary classification, response should be a factor
     >>> train[y] = train[y].asfactor()
     >>> test[y] = test[y].asfactor()
     >>> # Run AutoML for 30 seconds
     >>> aml = H2OAutoML(max_runtime_secs = 30)
-    >>> aml.train(x = x, y = y, training_frame = train,leaderboard_frame = test)
+    >>> aml.train(x = x, y = y, training_frame = train)
+    >>> # Print Leaderboard (ranked by xval metrics)
+    >>> aml.leaderboard
+    >>> # (Optional) Evaluate performance on a test set
+    >>> perf = aml.leader.model_performance(test)
+    >>> perf.auc()
     """
     def __init__(self,
                  nfolds=5,
@@ -63,7 +72,8 @@ class H2OAutoML(object):
                  stopping_tolerance=None,
                  stopping_rounds=3,
                  seed=None,
-                 project_name=None):
+                 project_name=None,
+                 exclude_algos=None):
 
         # Check if H2O jar contains AutoML
         try:
@@ -81,6 +91,12 @@ class H2OAutoML(object):
             'stopping_criteria': {
                 'max_runtime_secs': max_runtime_secs,
             }
+        }
+
+        # Make bare minimum build_models
+        self.build_models = {
+            'exclude_algos': None
+            #                [ "GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"]
         }
 
         # nfolds must be an non-negative integer and not equal to 1:
@@ -129,7 +145,12 @@ class H2OAutoML(object):
             self.project_name = project_name
         else:
             self.project_name = None
-    
+
+        if exclude_algos is not None:
+            assert_is_type(exclude_algos,list)
+            for elem in exclude_algos:
+                assert_is_type(elem,str)
+            self.build_models['exclude_algos'] = exclude_algos
 
         self._job = None
         self._automl_key = None
@@ -150,11 +171,11 @@ class H2OAutoML(object):
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=training_frame)
+        >>> aml.train(y=y, training_frame=train)
         >>> # Get the best model in the AutoML Leaderboard
         >>> aml.leader
         """
-        return h2o.get_model(self._leader_id)
+        return None if self._leader_id is None else h2o.get_model(self._leader_id)
 
     @property
     def leaderboard(self):
@@ -168,17 +189,17 @@ class H2OAutoML(object):
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=training_frame)
+        >>> aml.train(y=y, training_frame=train)
         >>> # Get the AutoML Leaderboard
         >>> aml.leaderboard
         """
-        return self._leaderboard
+        return H2OFrame([]) if self._leaderboard is None else self._leaderboard
 
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
     def train(self, x = None, y = None, training_frame = None, fold_column = None, 
-              weights_column = None, validation_frame = None, leaderboard_frame=None):
+              weights_column = None, validation_frame = None, leaderboard_frame = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -191,9 +212,13 @@ class H2OAutoML(object):
             assignments.
         :param weights_column: The name or index of the column in training_frame that holds per-row weights.
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
-            additional columns specified by fold, offset, and weights).
-        :param validation_frame: H2OFrame with validation data to be scored on while training.
-        :param leaderboard_frame: H2OFrame with test data to be scored on in the leaderboard.
+            additional columns specified by fold_column or weights_column).
+        :param validation_frame: H2OFrame with validation data to be scored on while training. Optional. 
+            This frame is used early stopping of individual models and early stopping of the grid searches 
+            (unless max_models or max_runtime_secs overrides metric-based early stopping).
+        :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
+            if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
+            rankings instead.  
 
         :returns: An H2OAutoML object.
 
@@ -201,7 +226,7 @@ class H2OAutoML(object):
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=training_frame)
+        >>> aml.train(y=y, training_frame=train)
         """
         ncols = training_frame.ncols
         names = training_frame.names
@@ -269,6 +294,7 @@ class H2OAutoML(object):
         # NOTE: if the user hasn't specified some block of parameters don't send them!
         # This lets the back end use the defaults.
         automl_build_params['build_control'] = self.build_control
+        automl_build_params['build_models']  = self.build_models
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
@@ -295,10 +321,10 @@ class H2OAutoML(object):
         :examples:
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch H2OAutoML
-        >>> aml.train(y=y, training_frame=training_frame)
-        >>> # Predict with #1 model from AutoML Leaderboard
-        >>> aml.predict(test_data)
+        >>> # Launch an H2OAutoML run
+        >>> aml.train(y=y, training_frame=train)
+        >>> # Predict with top model from AutoML Leaderboard on a H2OFrame called 'test'
+        >>> aml.predict(test)
 
         """
         if self._fetch():
@@ -317,6 +343,7 @@ class H2OAutoML(object):
             self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
+
         self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())[1:]
         return self._leader_id is not None
 

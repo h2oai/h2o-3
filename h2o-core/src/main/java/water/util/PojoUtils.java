@@ -470,7 +470,11 @@ public class PojoUtils {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
-      } else if (f.getType().isArray() && value.getClass().isArray()) {
+      } else if (f.getType().isArray() && (value.getClass().isArray()) || value instanceof List) {
+        if (value instanceof List) {
+          value = ((List)value).toArray(); // handle both [] arrays and List subclasses like ArrayList
+        }
+
         if (f.getType().getComponentType() == value.getClass().getComponentType()) {
           // array of the same type on both sides
           f.set(o, value);
@@ -493,10 +497,22 @@ public class PojoUtils {
             valuesCast[i] = valuesTyped[i];
           f.set(o, valuesCast);
         } else if (f.getType().getComponentType() == float.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
-          Float[] valuesTyped = ((Float[])value);
+          Float[] valuesTyped = ((Float[]) value);
           float[] valuesCast = new float[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
             valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if(f.getType().getComponentType().isEnum()) {
+          Object[] valuesTyped = ((Object[]) value);
+          Enum[] valuesCast = (Enum[])java.lang.reflect.Array.newInstance(f.getType().getComponentType(), ((Object[]) value).length);
+          for (int i = 0; i < valuesTyped.length; i++) {
+            String v = (String)valuesTyped[i];
+            try {
+              valuesCast[i] = Enum.valueOf((Class<Enum>) f.getType().getComponentType(), v);
+            } catch (IllegalArgumentException e) {
+              throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value, e);
+            }
+          }
           f.set(o, valuesCast);
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());

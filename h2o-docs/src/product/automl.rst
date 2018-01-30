@@ -43,9 +43,9 @@ Optional Data Parameters
 
 - `x <data-science/algo-params/x.html>`__: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
 
-- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is used to specify the validation frame used for early stopping within the training process of the individual models, grid search and the AutoML run itself (unless a model or time limit is set).  
+- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is used to specify the validation frame used for early stopping of individual models and early stopping of the grid searches (unless ``max_models`` or ``max_runtime_secs`` overrides metric-based early stopping).  
 
-- **leaderboard_frame**: This argument allows the user to specify a particular data frame use to score & rank models on the leaderboard. This frame will not be used for anything besides leaderboard scoring. If a leaderboard frame is not specified by the user, then the leaderboard will use cross-validation metrics instead or if cross-validation is turned off by setting ``nfolds = 0``, then a leaderboard frame will be generated automatically from the validation frame (if provided) or the training frame.
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame use to score & rank models on the leaderboard. This frame will not be used for anything besides leaderboard scoring. If a leaderboard frame is not specified by the user, then the leaderboard will use cross-validation metrics instead (or if cross-validation is turned off by setting ``nfolds = 0``, then a leaderboard frame will be generated automatically from the validation frame (if provided) or the training frame).
 
 - `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 
@@ -79,6 +79,15 @@ Optional Miscellaneous Parameters
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` is used because ``max_runtime_secs`` is resource limited, meaning that if the available compute resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained and added to an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
+
+- **exclude_algos**: List/vector of character strings naming the algorithms to skip during the model-building phase.  An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``exclude_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow.  The algorithm names are:
+
+    - ``GLM``
+    - ``DeepLearning``
+    - ``GBM``
+    - ``DRF`` (includes both the Random Forest and Extremely-Randomized Trees models)
+    - ``StackedEnsemble``
+
 
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
@@ -259,7 +268,9 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More details about the hyperparamter ranges for the models will be added to the appendix at a later date.
+  The current version of AutoML trains and cross-validates a default Random Forest, an Extremely-Randomized Forest, a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models.  Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument.  This is useful if you already have some idea of the algorithms that will do well on your dataset.  As a recommendation, if you have really wide or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF).
+
+  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More details about the hyperparamter ranges for the models will be added to the appendix at a later date.
 
   Both of the ensembles should produce better models than any individual model from the AutoML run.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains five models.  It should be relatively fast to use (to generate predictions on new data) without much degredation in model performance when compared to the "All Models" ensemble.   
 
@@ -271,7 +282,7 @@ FAQ
 Appendix: Grid Search Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
 **GBM Hyperparameters**
 
