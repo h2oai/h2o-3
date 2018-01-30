@@ -89,6 +89,12 @@ public class RabitTrackerH2O implements IRabitTracker {
             this.tracker = tracker;
         }
 
+        private static final String PRINT_CMD = "print";
+        private static final String SHUTDOWN_CMD = "shutdown";
+        private static final String START_CMD = "start";
+        private static final String RECOVER_CMD = "recover";
+        private static final String NULL_STR = "null";
+
         @Override
         public void run() {
             Set<Integer> shutdown = new HashSet<>();
@@ -100,20 +106,20 @@ public class RabitTrackerH2O implements IRabitTracker {
                     SocketChannel channel = tracker.sock.accept();
                     RabitWorker worker = new RabitWorker(channel);
 
-                    if ("print".equals(worker.cmd)) {
+                    if (PRINT_CMD.equals(worker.cmd)) {
                         String msg = worker.receiver().getExternalStr();
                         Log.warn("Rabit worker: ", msg);
                         continue;
-                    } else if ("shutdown".equals(worker.cmd)) {
+                    } else if (SHUTDOWN_CMD.equals(worker.cmd)) {
                         assert worker.rank >= 0 && !shutdown.contains(worker.rank);
                         assert !waitConn.containsKey(worker);
                         shutdown.add(worker.rank);
                         Log.debug("Received ", worker.cmd, " signal from ", worker.rank);
                         continue;
                     }
-                    assert "start".equals(worker.cmd) || "recover".equals(worker.cmd);
+                    assert START_CMD.equals(worker.cmd) || RECOVER_CMD.equals(worker.cmd);
 
-                    if ("recover".equals(worker.cmd)) {
+                    if (RECOVER_CMD.equals(worker.cmd)) {
                         assert worker.rank >= 0;
                     }
 
@@ -126,7 +132,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                         assert worker.worldSize == -1 || worker.worldSize == tracker.workers;
                     }
 
-                    if ("recover".equals(worker.cmd)) {
+                    if (RECOVER_CMD.equals(worker.cmd)) {
                         assert worker.rank >= 0;
                     }
 
@@ -138,7 +144,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                             Collections.sort(pending);
                             for (RabitWorker p : pending) {
                                 rank = todoNodes.poll();
-                                if (!"null".equals(p.jobId)) {
+                                if (!NULL_STR.equals(p.jobId)) {
                                     jobToRankMap.put(p.jobId, rank);
                                 }
                                 p.assignRank(rank, waitConn, linkMap);
