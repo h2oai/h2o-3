@@ -283,8 +283,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
       }
 
-      // There is a single rabit tracker per job
-      // The RabitTracker is a python process for monitoring slaves.
+      // Single Rabit tracker per job. Manages the node graph for Rabit.
       IRabitTracker rt = null;
       try {
         // Create a temporary storage for user files

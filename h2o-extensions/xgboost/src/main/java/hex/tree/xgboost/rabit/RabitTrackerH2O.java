@@ -19,8 +19,6 @@ public class RabitTrackerH2O implements IRabitTracker {
     private int workers;
 
     private Map<String, String> envs = new HashMap<>();
-    private LinkMap linkMap;
-    private Map<String, Integer> jobToRankMap = new HashMap<>();
 
     private RabitTrackerH2OThread trackerThread;
 
@@ -82,6 +80,9 @@ public class RabitTrackerH2O implements IRabitTracker {
     private class RabitTrackerH2OThread extends Thread {
         private RabitTrackerH2O tracker;
 
+        private LinkMap linkMap;
+        private Map<String, Integer> jobToRankMap = new HashMap<>();
+
         private RabitTrackerH2OThread(RabitTrackerH2O tracker) {
             setPriority(MAX_PRIORITY-1);
             this.setName("TCP-" + tracker.sock);
@@ -116,8 +117,8 @@ public class RabitTrackerH2O implements IRabitTracker {
                         assert worker.rank >= 0;
                     }
 
-                    if (null == tracker.linkMap) {
-                        tracker.linkMap = new LinkMap(tracker.workers);
+                    if (null == linkMap) {
+                        linkMap = new LinkMap(tracker.workers);
                         for (int i = 0; i < tracker.workers; i++) {
                             todoNodes.add(i);
                         }
@@ -129,7 +130,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                         assert worker.rank >= 0;
                     }
 
-                    int rank = worker.decideRank(tracker.jobToRankMap);
+                    int rank = worker.decideRank(jobToRankMap);
                     if (-1 == rank) {
                         assert todoNodes.size() != 0;
                         pending.add(worker);
@@ -138,9 +139,9 @@ public class RabitTrackerH2O implements IRabitTracker {
                             for (RabitWorker p : pending) {
                                 rank = todoNodes.poll();
                                 if (!"null".equals(p.jobId)) {
-                                    tracker.jobToRankMap.put(p.jobId, rank);
+                                    jobToRankMap.put(p.jobId, rank);
                                 }
-                                p.assignRank(rank, waitConn, tracker.linkMap);
+                                p.assignRank(rank, waitConn, linkMap);
 
                                 if (p.waitAccept > 0) {
                                     waitConn.put(rank, p);
@@ -156,7 +157,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                             Log.debug("All " + tracker.workers + " Rabit workers are getting started.");
                         }
                     } else {
-                        worker.assignRank(rank, waitConn, tracker.linkMap);
+                        worker.assignRank(rank, waitConn, linkMap);
                         if (worker.waitAccept > 0) {
                             waitConn.put(rank, worker);
                         }
