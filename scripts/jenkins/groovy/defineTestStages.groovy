@@ -286,7 +286,7 @@ private void invokeStage(final pipelineContext, final body) {
       }
     }
   } else {
-    echo "###### Changes for ${stageConfig.component} NOT detected, skipping ${stageConfig.stageName}. ######"
+    echo "###### Changes for ${config.component} NOT detected, skipping ${config.stageName}. ######"
   }
 }
 
