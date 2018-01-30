@@ -1,4 +1,7 @@
-@Library('test-shared-library') _
+#! /usr/bin/env groovy
+
+// FIXME
+@Library('test-shared-library@0.0.1') _
 
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 

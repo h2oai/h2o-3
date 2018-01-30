@@ -258,29 +258,20 @@ private void invokeStage(final pipelineContext, final body) {
   config.excludeAdditionalFiles = config.excludeAdditionalFiles ?: []
 
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
-    pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
-    stage(config.stageName) {
+    buildSummary.stageWithSummary(config.stageName, config.stageDir) {
       if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
         echo "###### Stage was successful in previous build ######"
-        pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
-        pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
       } else {
         withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${pipelineContext.getBuildConfig().getGitHubCommitStateContext(config.stageName)}") {
           node(config.nodeLabel) {
-            try {
-              pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
-              echo "###### Unstash scripts. ######"
-              pipelineContext.getUtils().unstashScripts(this)
+            buildSummary.refreshStage(config.stageName)
+            echo "###### Unstash scripts. ######"
+            pipelineContext.getUtils().unstashScripts(this)
 
-              sh "rm -rf ${config.stageDir}"
+            sh "rm -rf ${config.stageDir}"
 
-              def script = load(config.executionScript)
-              script(pipelineContext, config)
-              pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
-            } catch (Exception e) {
-              pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
-              throw e
-            }
+            def script = load(config.executionScript)
+            script(pipelineContext, config)
           }
         }
       }
