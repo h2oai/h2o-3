@@ -1,3 +1,5 @@
+import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
+
 def call(final boolean updateJobDescription) {
     return new BuildSummary(updateJobDescription)
 }
@@ -12,14 +14,14 @@ class BuildSummary {
     public static final String DETAILS_SECTION_ID = 'details'
     public static final String CHANGES_SECTION_ID = 'changes'
 
-    public static final String TABLE_STYLE = 'margin-left: 1em; border-collapse: collapse'
-    public static final String TD_STYLE = 'vertical-align: middle; border: 1px solid black; padding: 0.3em 1em;'
-    public static final String TH_STYLE = 'vertical-align: middle; border: 1px solid black; padding: 0.5em;'
+    public static final String TABLE_STYLE = 'border-collapse: collapse'
+    public static final String TD_STYLE = 'vertical-align: middle; border: 1px solid #b1b1b1; padding: 0.3em 1em;'
+    public static final String TH_STYLE = 'vertical-align: middle; border: 1px solid #b1b1b1; padding: 0.5em;'
 
     private static final String REPO_URL = 'https://github.com/h2oai/h2o-3'
 
     private final List<Stage> stageSummaries = []
-    private final List<Section> sections = []
+    private final List<Summary> summaries = []
     private final updateJobDescription
 
     BuildSummary(final boolean updateJobDescription) {
@@ -30,81 +32,60 @@ class BuildSummary {
         return new BuildSummary(updateJobDescription)
     }
 
-    Section addSection(final context, final String id, final String title, final String contentTemplate) {
-        if (findSection(id) != null) {
-            throw new IllegalArgumentException('Section with id %s already.exists'.format(id))
+    Summary addSummary(final context, final String id, final String title, final String content, final String icon) {
+        if (findSummary(id) != null) {
+            throw new IllegalArgumentException('Summary with id %s already.exists'.format(id))
         }
-        def section = new Section(id, title, contentTemplate)
-        sections.add(section)
-        updateJobDescriptionIfRequired(context)
-        return section
+        def summary = new Summary(id, title, content, icon)
+        summaries.add(summary)
+        updateBuildDetailPage(context)
+        return summary
     }
 
-    Section addSection(final context, final Section section) {
-        if (findSection(section.getId()) != null) {
-            throw new IllegalArgumentException('Section with id %s already.exists'.format(section.getId()))
+    Summary addSummary(final context, final Summary summary) {
+        if (findSummary(summary.getId()) != null) {
+            throw new IllegalArgumentException('Summary with id %s already.exists'.format(summary.getId()))
         }
-        sections.add(section)
-        updateJobDescriptionIfRequired(context)
-        return section
+        summaries.add(summary)
+        updateBuildDetailPage(context)
+        return summary
     }
 
-    Section findSection(final String id) {
-        return sections.find({it.getId() == id})
+    Summary findSummary(final String id) {
+        return summaries.find({it.getId() == id})
     }
 
-    Section findSectionOrThrow(final String id) {
-        def section = findSection(id)
-        if (section == null) {
-            throw new IllegalStateException("Cannot find section with id %s".format(id))
+    Summary findSummaryOrThrow(final String id) {
+        def summary = findSummary(id)
+        if (summary == null) {
+            throw new IllegalStateException("Cannot find Summary with id %s".format(id))
         }
-        return section
+        return summary
     }
 
-    Section addDetailsSection(final context) {
-        return addDetailsSection(context, null)
+    Summary addDetailsSummary(final context) {
+        return addDetailsSummary(context, null)
     }
 
-
-    Section addDetailsSection(final context, final String mode) {
+    Summary addDetailsSummary(final context, final String mode) {
+        if (findSummary(DETAILS_SECTION_ID) != null) {
+            throw new IllegalArgumentException("Details Summary already exists")
+        }
         String modeItem = ""
         if (mode != null) {
             modeItem = "<li><strong>Mode:</strong> ${mode}</li>\n"
         }
-        return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
+        String detailsHtml = """
             <ul>
               ${modeItem}
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>
               <li><strong>Git SHA:</strong> ${context.env.GIT_SHA}</li>
             </ul>
-          """)
-    }
-
-    Section addChangesSectionIfNecessary(final context) {
-
-        def changesContent = ''
-        context.currentBuild.rawBuild.getChangeSets().each { changeSetList ->
-            if (changeSetList.getBrowser().getRepoUrl() == REPO_URL) {
-                changesContent += "<ul>"
-                changeSetList.each { changeSet ->
-                    changesContent += """
-                      <li>
-                        <a href=\"${REPO_URL}/commit/${changeSet.getRevision()}\">
-                          <strong>${changeSet.getRevision().substring(0, 8)}</strong>
-                        </a> by <strong>${changeSet.getAuthorEmail()}</strong> - ${changeSet.getMsg()}
-                      </li>
-                    """
-                }
-                changesContent += "</ul>"
-            }
-        }
-
-        Section section = null
-        if (changesContent != '') {
-            section = addSection(context, CHANGES_SECTION_ID, 'Changes', changesContent)
-        }
-        return section
+        """
+        final Summary summary = new Summary(DETAILS_SECTION_ID, 'Details', detailsHtml, 'notepad.gif')
+        summaries.add(summary)
+        return summary
     }
 
     Stage addStageSummary(final context, final String stageName, final String stageDirName) {
@@ -113,131 +94,131 @@ class BuildSummary {
         }
         def stage = new Stage(stageName, stageDirName)
         stageSummaries.add(stage)
-        updateJobDescriptionIfRequired(context)
+        updateBuildDetailPage(context)
         return stage
     }
 
     Stage markStageSuccessful(final context, final String stageName) {
         final Stage stage = setStageResult(stageName, RESULT_SUCCESS)
-        updateJobDescriptionIfRequired(context)
+        updateBuildDetailPage(context)
         return stage
     }
 
     Stage markStageFailed(final context, final String stageName) {
         final Stage stage = setStageResult(stageName, RESULT_FAILURE)
-        updateJobDescriptionIfRequired(context)
+        updateBuildDetailPage(context)
         return stage
     }
 
     Stage setStageDetails(final context, final String stageName, final String nodeName, final String workspacePath) {
-        def stage = findStageSummaryWithNameOrThrow(stageName)
+        final Stage stage = findStageSummaryWithNameOrThrow(stageName)
         stage.setNodeName(nodeName)
         stage.setWorkspace(workspacePath)
-        updateJobDescriptionIfRequired(context)
+        updateBuildDetailPage(context)
         return stage
     }
 
     String getSummaryHTML(final context) {
-
-        String stagesSection = ''
-        String stagesTableBody = ''
-
-        if (!stageSummaries.isEmpty()) {
-            for (stageSummary in stageSummaries) {
-                def nodeName = stageSummary.getNodeName() ?: 'Not yet allocated'
-                def result = stageSummary.getResult() ?: RESULT_PENDING.capitalize()
-                stagesTableBody += """
-                  <tr style="background-color: ${stageResultToBgColor(stageSummary.getResult())}">
-                    <td style="${TD_STYLE}">${stageSummary.getName()}</td>
-                    <td style="${TD_STYLE}">${nodeName}</td>
-                    <td style="${TD_STYLE}">${stageSummary.getWorkspaceText()}</td>
-                    <td style="${TD_STYLE}">${stageSummary.getArtifactsHTML(context)}</td>
-                    <td style="${TD_STYLE}">${result.capitalize()}</td>
-                  </tr>
-                """
-            }
-            stagesSection = createHTMLForSection('Stages Overview', """
-                <table style="${TABLE_STYLE}">
-                  <thead>
-                    <tr>
-                      <th style="${TH_STYLE}">Name</th>
-                      <th style="${TH_STYLE}">Node</th>
-                      <th style="${TH_STYLE}">Workspace</th>
-                      <th style="${TH_STYLE}">Artifacts</th>
-                      <th style="${TH_STYLE}">Result</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${stagesTableBody}
-                  </tbody>
-                </table>
-            """, false, !sections.isEmpty())
+        List<GroovyPostbuildSummaryAction> summaryActions = context.currentBuild.rawBuild.getActions(GroovyPostbuildSummaryAction.class)
+        String result = ''
+        for(GroovyPostbuildSummaryAction action : summaryActions) {
+            result += createHTMLTitle("<img src=\"${imageLink(context, action.getIconPath(), ImageSize.XLARGE)}\" />")
+            result += "${action.getText()}"
         }
-
-        String sectionsHTML = ''
-        sections.eachWithIndex { Section section, int i ->
-            sectionsHTML += createHTMLForSection(section.getTitle(), section.getContent(), (i + 1) < sections.size(), false)
-        }
-
-        return """
-            <div style="border: 1px solid #d3d7cf; padding: 0em 1em 1em 1em;">
-                ${sectionsHTML}
-                ${stagesSection}
-            </div>
-        """
+        return result
     }
 
-    private void updateJobDescriptionIfRequired(final context) {
+    @NonCPS
+    private void updateBuildDetailPage(final context) {
         if (updateJobDescription) {
-            context.currentBuild.description = getSummaryHTML(context)
+            String stagesSection = ''
+            String stagesTableBody = ''
+
+            if (!stageSummaries.isEmpty()) {
+                for (stageSummary in stageSummaries) {
+                    def nodeName = stageSummary.getNodeName() ?: 'Not yet allocated'
+                    def result = stageSummary.getResult() ?: RESULT_PENDING.capitalize()
+                    stagesTableBody += """
+                        <tr>
+                            <td style="${TD_STYLE}"><img src="${imageLink(context, stageResultToImageName(result), ImageSize.LARGE)}" /></td>
+                            <td style="${TD_STYLE}">${stageSummary.getName()}</td>
+                            <td style="${TD_STYLE}">${nodeName}</td>
+                            <td style="${TD_STYLE}">${stageSummary.getWorkspaceText()}</td>
+                            <td style="${TD_STYLE}">${stageSummary.getArtifactsHTML(context)}</td>
+                        </tr>
+                    """
+                }
+                stagesSection = createHTMLForSection('Stages Overview', """
+                    <table style="${TABLE_STYLE}">
+                      <thead>
+                        <tr>
+                          <th style="${TH_STYLE}"></th>
+                          <th style="${TH_STYLE}">Name</th>
+                          <th style="${TH_STYLE}">Node</th>
+                          <th style="${TH_STYLE}">Workspace</th>
+                          <th style="${TH_STYLE}">Artifacts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${stagesTableBody}
+                      </tbody>
+                    </table>
+                """)
+            }
+
+            context.manager.removeSummaries()
+            for (Summary summary : summaries) {
+                final GroovyPostbuildSummaryAction summaryAction = context.manager.createSummary(summary.getIcon())
+                summaryAction.appendText(createHTMLTitle(summary.getTitle()), false)
+                summaryAction.appendText(summary.getContent(), false)
+            }
+            final GroovyPostbuildSummaryAction stagesSummary = context.manager.createSummary('computer.png')
+            stagesSummary.appendText(stagesSection, false)
+            getSummaryHTML(context)
         }
     }
 
-    private String createHTMLForSection(final String title, final String content, final boolean borderBottom, final boolean borderTop) {
-        String borderBottomValue = ''
-        if (borderBottom) {
-            borderBottomValue = 'border-bottom: 1px dashed gray;'
-        }
+    private String createHTMLTitle(final String title) {
+        return "<h1 style=\"display: inline-block;\">${title}</h1>"
+    }
 
-        String borderTopValue = ''
-        if (borderTop) {
-            borderTopValue = 'border-top: 1px dashed gray;'
-        }
+    private String createHTMLForSection(final String title, final String content) {
         return """
-            <div style="margin-bottom: 15px;${borderBottomValue}${borderTopValue}">
-                <h3>${title}</h3>
-                <div style="margin-left: 15px;">
-                    ${content}
-                </div>
+            ${createHTMLTitle(title)}
+            <div style="margin-left: 15px;">
+                ${content}
             </div>
         """
     }
 
-    private setStageResult(final String stageName, final String result) {
+    private Stage setStageResult(final String stageName, final String result) {
         def summary = findStageSummaryWithNameOrThrow(stageName)
         summary.setResult(result)
         return summary
     }
 
-    private String stageResultToBgColor(final String result) {
-        def BG_COLOR_SUCCESS = '#a8ff8e'
-        def BG_COLOR_FAILURE = '#fe9272'
-        def BG_COLOR_OTHER = '#fbf78b'
-
-        if (result == RESULT_SUCCESS) {
-            return BG_COLOR_SUCCESS
+    private String stageResultToImageName(final String result) {
+        switch (result) {
+            case RESULT_PENDING:
+                return 'nobuilt_anime.gif'
+            case RESULT_FAILURE:
+                return 'red.gif'
+            case RESULT_SUCCESS:
+                return 'green.gif'
+            default:
+                return 'red.gif'
         }
-        if (result == RESULT_FAILURE) {
-            return BG_COLOR_FAILURE
-        }
-        return BG_COLOR_OTHER
     }
 
-    private def findStageSummaryWithName(final String stageName) {
+    private String imageLink(final context, final String imageName, final ImageSize imageSize=ImageSize.MEDIUM) {
+        "${context.env.HUDSON_URL}${Jenkins.RESOURCE_PATH}/images/${imageSize.getSizeString()}/${imageName}"
+    }
+
+    private Stage findStageSummaryWithName(final String stageName) {
         return stageSummaries.find({ it.getName() == stageName })
     }
 
-    private def findStageSummaryWithNameOrThrow(final String stageName) {
+    private Stage findStageSummaryWithNameOrThrow(final String stageName) {
         def summary = findStageSummaryWithName(stageName)
         if (summary == null) {
             throw new IllegalArgumentException('Cannot find StageSummary with name %s'.format(stageName))
@@ -245,15 +226,34 @@ class BuildSummary {
         return summary
     }
 
-    static class Section {
+    private enum ImageSize {
+        SMALL('16x16'),
+        MEDIUM('24x24'),
+        LARGE('32x32'),
+        XLARGE('48x48')
+
+        private final String size
+
+        private ImageSize(final String size) {
+            this.size = size
+        }
+
+        String getSizeString() {
+            return size
+        }
+    }
+
+    static class Summary {
         private final String id
+        private final String icon
         private String title
         private String content
 
-        Section(final String id, final String title, final String content) {
+        Summary(final String id, final String title, final String content, final String icon) {
             this.id = id
             this.title = title
             this.content = content
+            this.icon = icon
         }
 
         String getId() {
@@ -266,6 +266,10 @@ class BuildSummary {
 
         String getContent() {
             return content
+        }
+
+        String getIcon() {
+            return icon
         }
 
         void setTitle(String title) {
@@ -283,6 +287,7 @@ class BuildSummary {
         private String nodeName
         private String workspace
         private String result
+        private String artifactsLink
 
         Stage(final String name, final String stageDirName) {
             this.name = name
