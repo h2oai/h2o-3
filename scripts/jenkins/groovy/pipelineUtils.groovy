@@ -84,7 +84,7 @@ class PipelineUtils {
 
         // There is no previous build, the stage cannot be successful.
         if (context.currentBuild.previousBuild == null) {
-            echo "###### No previous build available, marking ${stageName} as FAILED. ######"
+            context.echo "###### No previous build available, marking ${stageName} as FAILED. ######"
             return false
         }
 
@@ -101,7 +101,7 @@ class PipelineUtils {
         // stage was not present in previous build, therefore the stage cannot be successful.
         def stageMissingInPrevBuild = stageEndNodesInPrevBuild.isEmpty()
         if (stageMissingInPrevBuild) {
-            echo "###### ${stageName} not present in previous build, marking this stage as FAILED. ######"
+            context.echo "###### ${stageName} not present in previous build, marking this stage as FAILED. ######"
             return false
         }
 
