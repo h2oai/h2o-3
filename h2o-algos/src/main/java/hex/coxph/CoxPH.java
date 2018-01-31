@@ -104,73 +104,73 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      o.n = p.stopVec().length();
+      o._n = p.stopVec().length();
       o.data_info = dinfo;
       final int n_offsets = _offset == null ? 0 : 1;
       final int n_coef    = o.data_info.fullN() - n_offsets;
       final String[] coefNames = o.data_info.coefNames();
-      o.coef_names   = new String[n_coef];
-      System.arraycopy(coefNames, 0, o.coef_names, 0, n_coef);
-      o.coef         = MemoryManager.malloc8d(n_coef);
-      o.exp_coef     = MemoryManager.malloc8d(n_coef);
-      o.exp_neg_coef = MemoryManager.malloc8d(n_coef);
-      o.se_coef      = MemoryManager.malloc8d(n_coef);
-      o.z_coef       = MemoryManager.malloc8d(n_coef);
+      o._coef_names = new String[n_coef];
+      System.arraycopy(coefNames, 0, o._coef_names, 0, n_coef);
+      o._coef = MemoryManager.malloc8d(n_coef);
+      o._exp_coef = MemoryManager.malloc8d(n_coef);
+      o._exp_neg_coef = MemoryManager.malloc8d(n_coef);
+      o._se_coef = MemoryManager.malloc8d(n_coef);
+      o._z_coef = MemoryManager.malloc8d(n_coef);
       o.gradient     = MemoryManager.malloc8d(n_coef);
       o.hessian      = malloc2DArray(n_coef, n_coef);
-      o.var_coef     = malloc2DArray(n_coef, n_coef);
-      o.x_mean_cat   = MemoryManager.malloc8d(n_coef - (o.data_info._nums - n_offsets));
-      o.x_mean_num   = MemoryManager.malloc8d(o.data_info._nums - n_offsets);
-      o.mean_offset  = MemoryManager.malloc8d(n_offsets);
-      o.offset_names = new String[n_offsets];
-      System.arraycopy(coefNames, n_coef, o.offset_names, 0, n_offsets);
+      o._var_coef = malloc2DArray(n_coef, n_coef);
+      o._x_mean_cat = MemoryManager.malloc8d(n_coef - (o.data_info._nums - n_offsets));
+      o._x_mean_num = MemoryManager.malloc8d(o.data_info._nums - n_offsets);
+      o._mean_offset = MemoryManager.malloc8d(n_offsets);
+      o._offset_names = new String[n_offsets];
+      System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
 
-      o.min_time = p.startVec() == null ? (long) p.stopVec().min():
+      o._min_time = p.startVec() == null ? (long) p.stopVec().min():
               (long) p.startVec().min() + 1;
-      o.max_time = (long) p.stopVec().max();
+      o._max_time = (long) p.stopVec().max();
 
       final int n_time = new VecUtils.CollectIntegerDomain().doAll(p.stopVec()).domain().length;
-      o.time         = MemoryManager.malloc8(n_time);
-      o.n_risk       = MemoryManager.malloc8d(n_time);
-      o.n_event      = MemoryManager.malloc8d(n_time);
-      o.n_censor     = MemoryManager.malloc8d(n_time);
-      o.cumhaz_0     = MemoryManager.malloc8d(n_time);
-      o.var_cumhaz_1 = MemoryManager.malloc8d(n_time);
-      o.var_cumhaz_2 = malloc2DArray(n_time, n_coef);
+      o._time = MemoryManager.malloc8(n_time);
+      o._n_risk = MemoryManager.malloc8d(n_time);
+      o._n_event = MemoryManager.malloc8d(n_time);
+      o._n_censor = MemoryManager.malloc8d(n_time);
+      o._cumhaz_0 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_2 = malloc2DArray(n_time, n_coef);
     }
 
     protected void calcCounts(CoxPHModel model, final CoxPHTask coxMR) {
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      o.n_missing = o.n - coxMR.n;
-      o.n         = coxMR.n;
-      for (int j = 0; j < o.x_mean_cat.length; j++)
-        o.x_mean_cat[j] = coxMR.sumWeightedCatX[j] / coxMR.sumWeights;
-      for (int j = 0; j < o.x_mean_num.length; j++)
-        o.x_mean_num[j] = o.data_info._normSub[j] + coxMR.sumWeightedNumX[j] / coxMR.sumWeights;
-      System.arraycopy(o.data_info._normSub, o.x_mean_num.length, o.mean_offset, 0, o.mean_offset.length);
+      o._n_missing = o._n - coxMR.n;
+      o._n = coxMR.n;
+      for (int j = 0; j < o._x_mean_cat.length; j++)
+        o._x_mean_cat[j] = coxMR.sumWeightedCatX[j] / coxMR.sumWeights;
+      for (int j = 0; j < o._x_mean_num.length; j++)
+        o._x_mean_num[j] = o.data_info._normSub[j] + coxMR.sumWeightedNumX[j] / coxMR.sumWeights;
+      System.arraycopy(o.data_info._normSub, o._x_mean_num.length, o._mean_offset, 0, o._mean_offset.length);
       int nz = 0;
       for (int t = 0; t < coxMR.countEvents.length; ++t) {
-        o.total_event += coxMR.countEvents[t];
+        o._total_event += coxMR.countEvents[t];
         if (coxMR.sizeEvents[t] > 0 || coxMR.sizeCensored[t] > 0) {
-          o.time[nz]     = o.min_time + t;
-          o.n_risk[nz]   = coxMR.sizeRiskSet[t];
-          o.n_event[nz]  = coxMR.sizeEvents[t];
-          o.n_censor[nz] = coxMR.sizeCensored[t];
+          o._time[nz]     = o._min_time + t;
+          o._n_risk[nz]   = coxMR.sizeRiskSet[t];
+          o._n_event[nz]  = coxMR.sizeEvents[t];
+          o._n_censor[nz] = coxMR.sizeCensored[t];
           nz++;
         }
       }
       if (p._start_column == null)
-        for (int t = o.n_risk.length - 2; t >= 0; --t)
-          o.n_risk[t] += o.n_risk[t + 1];
+        for (int t = o._n_risk.length - 2; t >= 0; --t)
+          o._n_risk[t] += o._n_risk[t + 1];
     }
 
     protected double calcLoglik(CoxPHModel model, final CoxPHTask coxMR) {
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      final int n_coef = o.coef.length;
+      final int n_coef = o._coef.length;
       final int n_time = coxMR.sizeEvents.length;
       double newLoglik = 0;
       for (int j = 0; j < n_coef; ++j)
@@ -261,42 +261,42 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      final int n_coef = o.coef.length;
+      final int n_coef = o._coef.length;
       final Matrix inv_hessian = new Matrix(o.hessian).inverse();
       for (int j = 0; j < n_coef; ++j) {
         for (int k = 0; k <= j; ++k) {
           final double elem = -inv_hessian.get(j, k);
-          o.var_coef[j][k] = elem;
-          o.var_coef[k][j] = elem;
+          o._var_coef[j][k] = elem;
+          o._var_coef[k][j] = elem;
         }
       }
       for (int j = 0; j < n_coef; ++j) {
-        o.coef[j]         = newCoef[j];
-        o.exp_coef[j]     = Math.exp(o.coef[j]);
-        o.exp_neg_coef[j] = Math.exp(- o.coef[j]);
-        o.se_coef[j]      = Math.sqrt(o.var_coef[j][j]);
-        o.z_coef[j]       = o.coef[j] / o.se_coef[j];
+        o._coef[j]         = newCoef[j];
+        o._exp_coef[j]     = Math.exp(o._coef[j]);
+        o._exp_neg_coef[j] = Math.exp(- o._coef[j]);
+        o._se_coef[j]      = Math.sqrt(o._var_coef[j][j]);
+        o._z_coef[j]       = o._coef[j] / o._se_coef[j];
       }
-      if (o.iter == 0) {
-        o.null_loglik = newLoglik;
-        o.maxrsq      = 1 - Math.exp(2 * o.null_loglik / o.n);
-        o.score_test  = 0;
+      if (o._iter == 0) {
+        o._null_loglik = newLoglik;
+        o._maxrsq = 1 - Math.exp(2 * o._null_loglik / o._n);
+        o._score_test = 0;
         for (int j = 0; j < n_coef; ++j) {
           double sum = 0;
           for (int k = 0; k < n_coef; ++k)
-            sum += o.var_coef[j][k] * o.gradient[k];
-          o.score_test += o.gradient[j] * sum;
+            sum += o._var_coef[j][k] * o.gradient[k];
+          o._score_test += o.gradient[j] * sum;
         }
       }
-      o.loglik      = newLoglik;
-      o.loglik_test = - 2 * (o.null_loglik - o.loglik);
-      o.rsq         = 1 - Math.exp(- o.loglik_test / o.n);
-      o.wald_test   = 0;
+      o._loglik = newLoglik;
+      o._loglik_test = - 2 * (o._null_loglik - o._loglik);
+      o._rsq = 1 - Math.exp(- o._loglik_test / o._n);
+      o._wald_test = 0;
       for (int j = 0; j < n_coef; ++j) {
         double sum = 0;
         for (int k = 0; k < n_coef; ++k)
-          sum -= o.hessian[j][k] * (o.coef[k] - p._init);
-        o.wald_test += (o.coef[j] - p._init) * sum;
+          sum -= o.hessian[j][k] * (o._coef[k] - p._init);
+        o._wald_test += (o._coef[j] - p._init) * sum;
       }
     }
 
@@ -304,7 +304,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      final int n_coef = o.coef.length;
+      final int n_coef = o._coef.length;
       int nz = 0;
       switch (p._ties) {
         case efron:
@@ -316,18 +316,18 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               final double sumRiskEvents_t = coxMR.sumRiskEvents[t];
               final double rcumsumRisk_t   = coxMR.rcumsumRisk[t];
               final double avgSize = sizeEvents_t / countEvents_t;
-              o.cumhaz_0[nz]     = 0;
-              o.var_cumhaz_1[nz] = 0;
+              o._cumhaz_0[nz]     = 0;
+              o._var_cumhaz_1[nz] = 0;
               for (int j = 0; j < n_coef; ++j)
-                o.var_cumhaz_2[nz][j] = 0;
+                o._var_cumhaz_2[nz][j] = 0;
               for (long e = 0; e < countEvents_t; ++e) {
                 final double frac   = ((double) e) / ((double) countEvents_t);
                 final double haz    = 1 / (rcumsumRisk_t - frac * sumRiskEvents_t);
                 final double haz_sq = haz * haz;
-                o.cumhaz_0[nz]     += avgSize * haz;
-                o.var_cumhaz_1[nz] += avgSize * haz_sq;
+                o._cumhaz_0[nz]     += avgSize * haz;
+                o._var_cumhaz_1[nz] += avgSize * haz_sq;
                 for (int j = 0; j < n_coef; ++j)
-                  o.var_cumhaz_2[nz][j] +=
+                  o._var_cumhaz_2[nz][j] +=
                           avgSize * ((coxMR.rcumsumXRisk[t][j] - frac * coxMR.sumXRiskEvents[t][j]) * haz_sq);
               }
               nz++;
@@ -341,10 +341,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             if (sizeEvents_t > 0 || sizeCensored_t > 0) {
               final double rcumsumRisk_t = coxMR.rcumsumRisk[t];
               final double cumhaz_0_nz   = sizeEvents_t / rcumsumRisk_t;
-              o.cumhaz_0[nz]     = cumhaz_0_nz;
-              o.var_cumhaz_1[nz] = sizeEvents_t / (rcumsumRisk_t * rcumsumRisk_t);
+              o._cumhaz_0[nz]     = cumhaz_0_nz;
+              o._var_cumhaz_1[nz] = sizeEvents_t / (rcumsumRisk_t * rcumsumRisk_t);
               for (int j = 0; j < n_coef; ++j)
-                o.var_cumhaz_2[nz][j] = (coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t) * cumhaz_0_nz;
+                o._var_cumhaz_2[nz][j] = (coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t) * cumhaz_0_nz;
               nz++;
             }
           }
@@ -353,11 +353,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
 
-      for (int t = 1; t < o.cumhaz_0.length; ++t) {
-        o.cumhaz_0[t]     = o.cumhaz_0[t - 1]     + o.cumhaz_0[t];
-        o.var_cumhaz_1[t] = o.var_cumhaz_1[t - 1] + o.var_cumhaz_1[t];
+      for (int t = 1; t < o._cumhaz_0.length; ++t) {
+        o._cumhaz_0[t]     = o._cumhaz_0[t - 1]     + o._cumhaz_0[t];
+        o._var_cumhaz_1[t] = o._var_cumhaz_1[t - 1] + o._var_cumhaz_1[t];
         for (int j = 0; j < n_coef; ++j)
-          o.var_cumhaz_2[t][j] = o.var_cumhaz_2[t - 1][j] + o.var_cumhaz_2[t][j];
+          o._var_cumhaz_2[t][j] = o._var_cumhaz_2[t - 1][j] + o._var_cumhaz_2[t][j];
       }
     }
 
@@ -390,13 +390,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int j = 0; j < n_coef; ++j)
           newCoef[j] = model._parms._init;
         double oldLoglik = -Double.MAX_VALUE;
-        final int n_time = (int) (model._output.max_time - model._output.min_time + 1);
+        final int n_time = (int) (model._output._max_time - model._output._min_time + 1);
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
         for (int i = 0; i <= model._parms._iter_max; ++i) {
-          model._output.iter = i;
+          model._output._iter = i;
 
-          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
+          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._min_time, n_time, n_offsets,
                   has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
           final double newLoglik = calcLoglik(model, coxMR);
@@ -408,16 +408,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             calcCumhaz_0(model, coxMR);
 
             if (newLoglik == 0)
-              model._output.lre = -Math.log10(Math.abs(oldLoglik - newLoglik));
+              model._output._lre = -Math.log10(Math.abs(oldLoglik - newLoglik));
             else
-              model._output.lre = -Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
-            if (model._output.lre >= model._parms._lre_min)
+              model._output._lre = -Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
+            if (model._output._lre >= model._parms._lre_min)
               break;
 
             Arrays.fill(step, 0);
             for (int j = 0; j < n_coef; ++j)
               for (int k = 0; k < n_coef; ++k)
-                step[j] -= model._output.var_coef[j][k] * model._output.gradient[k];
+                step[j] -= model._output._var_coef[j][k] * model._output.gradient[k];
             for (int j = 0; j < n_coef; ++j)
               if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
                 break;
