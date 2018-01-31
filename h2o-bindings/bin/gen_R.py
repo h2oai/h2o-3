@@ -218,6 +218,13 @@ def gen_module(schema, algo, module):
         yield "  parms$response_column <- args$y\n"
     elif algo == "word2vec":
         yield ""
+    elif algo == "kmeans":
+        yield "  if(!missing(x)){"
+        yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
+        yield "    if(!missing(fold_column)){"
+        yield "      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)"
+        yield "    }"
+        yield "  }"
     else:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
