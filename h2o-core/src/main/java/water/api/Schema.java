@@ -118,7 +118,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     this.fillFromImpl(impl);
   }
 
-  public void init_meta() {
+  protected void init_meta() {
     if (_schema_name != null) return;
     _schema_name = this.getClass().getSimpleName();
     _schema_version = extractVersionFromSchemaName(_schema_name);
