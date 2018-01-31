@@ -11,9 +11,6 @@ def call(final scmEnv, final String mode, final boolean ignoreChanges) {
   // Archive scripts so we don't have to do additional checkouts when changing node
   pipelineContext.getUtils().stashScripts(this)
 
-  // Load build script and execute it
-  def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
-  buildH2O3(pipelineContext)
   return pipelineContext
 }
 

@@ -232,10 +232,11 @@ private void executeInParallel(final jobs, final pipelineContext) {
 
 private void invokeStage(final pipelineContext, final body) {
 
-  def DEFAULT_PYTHON = '3.5'
-  def DEFAULT_R = '3.4.1'
-  def DEFAULT_TIMEOUT = 60
-  def DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
+  final String DEFAULT_PYTHON = '3.5'
+  final String DEFAULT_R = '3.4.1'
+  final int DEFAULT_TIMEOUT = 60
+  final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
+  final int HEALTH_CHECK_RETRIES = 5
 
   def config = [:]
 
@@ -266,21 +267,36 @@ private void invokeStage(final pipelineContext, final body) {
         pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
       } else {
         withCustomCommitStates(scm, 'h2o-ops-personal-auth-token', "${pipelineContext.getBuildConfig().getGitHubCommitStateContext(config.stageName)}") {
-          node(config.nodeLabel) {
-            try {
-              pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
-              echo "###### Unstash scripts. ######"
-              pipelineContext.getUtils().unstashScripts(this)
+          boolean healthCheckPassed = false
+          int attempt = 0
+          String nodeLabel = config.nodeLabel
+          try {
+            while (!healthCheckPassed) {
+              attempt += 1
+              if (attempt > HEALTH_CHECK_RETRIES) {
+                error "Too many attempts to pass initial health check"
+              }
+              nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
+              echo "######### NodeLabel: ${nodeLabel} #########"
+              node(nodeLabel) {
+                echo "###### Unstash scripts. ######"
+                pipelineContext.getUtils().unstashScripts(this)
 
-              sh "rm -rf ${config.stageDir}"
+                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY)
+                if (healthCheckPassed) {
+                  pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
-              def script = load(config.executionScript)
-              script(pipelineContext, config)
-              pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
-            } catch (Exception e) {
-              pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
-              throw e
+                  sh "rm -rf ${config.stageDir}"
+
+                  def script = load(config.executionScript)
+                  script(pipelineContext, config)
+                  pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+                }
+              }
             }
+          } catch (Exception e) {
+            pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
+            throw e
           }
         }
       }
