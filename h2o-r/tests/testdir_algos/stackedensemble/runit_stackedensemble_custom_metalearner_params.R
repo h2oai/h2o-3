@@ -28,31 +28,31 @@ stackedensemble.custom.metalearner.test <- function() {
 
     # Train & Cross-validate a GBM
     my_gbm <- h2o.gbm(x = x,
-    y = y,
-    training_frame = train,
-    distribution = "bernoulli",
-    ntrees = 10,
-    nfolds = nfolds,
-    keep_cross_validation_predictions = TRUE,
-    seed = 1)
+                      y = y,
+                      training_frame = train,
+                      distribution = "bernoulli",
+                      ntrees = 10,
+                      nfolds = nfolds,
+                      keep_cross_validation_predictions = TRUE,
+                      seed = 1)
 
     # Train & Cross-validate a RF
     my_rf <- h2o.randomForest(x = x,
-    y = y,
-    training_frame = train,
-    ntrees = 10,
-    nfolds = nfolds,
-    keep_cross_validation_predictions = TRUE,
-    seed = 1)
+                              y = y,
+                              training_frame = train,
+                              ntrees = 10,
+                              nfolds = nfolds,
+                              keep_cross_validation_predictions = TRUE,
+                              seed = 1)
 
     # Train a stacked ensemble & check that metalearner_algorithm/metalearner_params works
     print("SE with GBM metalearner and custom params")
     stack_gbm <- h2o.stackedEnsemble(x = x,
-    y = y,
-    training_frame = train,
-    base_models = list(my_gbm, my_rf),
-    metalearner_algorithm = "gbm",
-    metalearner_params = gbm_params)
+                                     y = y,
+                                     training_frame = train,
+                                     base_models = list(my_gbm, my_rf),
+                                     metalearner_algorithm = "gbm",
+                                     metalearner_params = gbm_params)
     # Check that metalearner_algorithm is a default GBM
     expect_equal(stack_gbm@parameters$metalearner_algorithm, "gbm")
     expect_equal(stack_gbm@allparameters$metalearner_algorithm, "gbm")
@@ -66,12 +66,12 @@ stackedensemble.custom.metalearner.test <- function() {
     # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
     print("SE with DRF metalearner and custom params")
     stack_drf <- h2o.stackedEnsemble(x = x,
-    y = y,
-    training_frame = train,
-    base_models = list(my_gbm, my_rf),
-    metalearner_nfolds = 3,
-    metalearner_algorithm = "drf",
-    metalearner_params = drf_params)
+                                     y = y,
+                                     training_frame = train,
+                                     base_models = list(my_gbm, my_rf),
+                                     metalearner_nfolds = 3,
+                                     metalearner_algorithm = "drf",
+                                     metalearner_params = drf_params)
     # Check that metalearner_algorithm is a default RF
     expect_equal(stack_drf@parameters$metalearner_algorithm, "drf")
     # Check that CV was performed
@@ -86,11 +86,11 @@ stackedensemble.custom.metalearner.test <- function() {
     # Train a stacked ensemble & metalearner_algorithm "glm"
     print("SE with GLM metalearner and custom params")
     stack_glm <- h2o.stackedEnsemble(x = x,
-    y = y,
-    training_frame = train,
-    base_models = list(my_gbm, my_rf),
-    metalearner_algorithm = "glm",
-    metalearner_params = glm_params)
+                                     y = y,
+                                     training_frame = train,
+                                     base_models = list(my_gbm, my_rf),
+                                     metalearner_algorithm = "glm",
+                                     metalearner_params = glm_params)
     # Check that metalearner_algorithm is a default GLM
     expect_equal(stack_glm@parameters$metalearner_algorithm, "glm")
     meta_glm <- h2o.getModel(stack_glm@model$metalearner$name)
@@ -102,11 +102,11 @@ stackedensemble.custom.metalearner.test <- function() {
     # Train a stacked ensemble & metalearner_algorithm "deeplearning"
     print("SE with DL metalearner and custom params")
     stack_deeplearning <- h2o.stackedEnsemble(x = x,
-    y = y,
-    training_frame = train,
-    base_models = list(my_gbm, my_rf),
-    metalearner_algorithm = "deeplearning",
-    metalearner_params = dl_params)
+                                              y = y,
+                                              training_frame = train,
+                                              base_models = list(my_gbm, my_rf),
+                                              metalearner_algorithm = "deeplearning",
+                                              metalearner_params = dl_params)
     # Check that metalearner_algorithm is a default DNN
     expect_equal(stack_deeplearning@parameters$metalearner_algorithm, "deeplearning")
     meta_dl <- h2o.getModel(stack_deeplearning@model$metalearner$name)

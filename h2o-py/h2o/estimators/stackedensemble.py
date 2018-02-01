@@ -216,6 +216,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Parameters for metalearner algo
 
         Type: ``dict``  (default: ``None``).
+        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}
         """
         if self._parms.get("metalearner_params") != None:
             metalearner_params_dict =  ast.literal_eval(self._parms.get("metalearner_params"))

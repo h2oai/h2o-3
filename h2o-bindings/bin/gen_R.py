@@ -243,7 +243,7 @@ def gen_module(schema, algo, module):
         yield "    }"
         yield "  }"
         yield " "
-        yield "  if(!missing(metalearner_params))"
+        yield "  if (!missing(metalearner_params))"
         yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
@@ -290,7 +290,7 @@ def gen_module(schema, algo, module):
         yield "  # Error check and build model"
         yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
         yield "  #Convert metalearner_params back to list if not NULL"
-        yield "  if(!missing(metalearner_params)) {"
+        yield "  if (!missing(metalearner_params)) {"
         yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))"
         yield "  }"
         yield "  return(model)"
@@ -1023,6 +1023,8 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
+    if param["name"] == "metalearner_params":
+        return "NULL"
     if not(is_help) and param["type"][:4] == "enum":
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:

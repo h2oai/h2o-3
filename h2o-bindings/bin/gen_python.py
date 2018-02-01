@@ -218,6 +218,8 @@ def gen_module(schema, algo):
         yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
         yield ""
         yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        if pname == "metalearner_params":
+            yield "        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}"
         yield '        """'
         if pname != "metalearner_params":
             yield "        return self._parms.get(\"%s\")" % sname

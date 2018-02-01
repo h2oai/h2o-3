@@ -28,7 +28,7 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
-#' @param metalearner_params Parameters for metalearner algo Defaults to .
+#' @param metalearner_params Parameters for metalearner algo Defaults to NULL.
 #' @examples
 #' 
 #' # See example R code here:
@@ -86,7 +86,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     }
   }
  
-  if(!missing(metalearner_params))
+  if (!missing(metalearner_params))
       parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
   if (!missing(model_id))
     parms$model_id <- model_id
@@ -107,7 +107,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   # Error check and build model
   model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99)
   #Convert metalearner_params back to list if not NULL
-  if(!missing(metalearner_params)) {
+  if (!missing(metalearner_params)) {
       model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))
   }
   return(model)
