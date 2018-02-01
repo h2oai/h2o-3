@@ -1,23 +1,21 @@
 package hex.glm;
 
-import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -988,7 +986,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
 
   @Test
-  public void testPValues(){
+  public void testPValues(){    
 //    1) NON-STANDARDIZED
 
 //    summary(m)
@@ -1056,13 +1054,16 @@ public class GLMBasicTestBinomial extends TestUtil {
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
+    boolean naive_descent_exception_thrown = false;
     try {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
+    } catch(H2OIllegalArgumentException e) {
+      naive_descent_exception_thrown = true;
     }
+    assertTrue(naive_descent_exception_thrown);
     try {
       params._solver = Solver.COORDINATE_DESCENT;
       job0 = new GLM(params);

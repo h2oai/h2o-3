@@ -13,9 +13,11 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 
 import java.io.File;
@@ -23,12 +25,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import water.fvec.*;
-import static water.util.FileUtils.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static water.util.FileUtils.getFile;
 
 /**
  * Created by tomasnykodym on 6/4/15.
@@ -162,14 +160,34 @@ public class GLMBasicTestRegression extends TestUtil {
         parms._train = _weighted._key;
         parms._solver = s;
         parms._weights_column = "weights";
-        model1 = new GLM(parms).trainModel().get();
+        boolean naive_descent_exception_thrown = false;
+        try {
+          model1 = new GLM(parms).trainModel().get();
+        } catch (H2OIllegalArgumentException e) {
+          naive_descent_exception_thrown = true;
+        }
+        if (s.equals(Solver.COORDINATE_DESCENT_NAIVE)) {
+          assertTrue(naive_descent_exception_thrown);
+        } else {
+          assertFalse(naive_descent_exception_thrown);
+        }
         HashMap<String, Double> coefs1 = model1.coefficients();
         System.out.println("coefs1 = " + coefs1);
         parms._train = _upsampled._key;
         parms._weights_column = null;
         parms._lambda = new double[]{1e-5};
         parms._alpha = null;
-        model2 = new GLM(parms).trainModel().get();
+        naive_descent_exception_thrown = false;
+        try {
+          model2 = new GLM(parms).trainModel().get();
+        } catch (H2OIllegalArgumentException e) {
+          naive_descent_exception_thrown = true;
+        }
+        if (s.equals(Solver.COORDINATE_DESCENT_NAIVE)) {
+          assertTrue(naive_descent_exception_thrown);
+        } else {
+          assertFalse(naive_descent_exception_thrown);
+        }
         HashMap<String, Double> coefs2 = model2.coefficients();
         System.out.println("coefs2 = " + coefs2);
         System.out.println("mse1 = " + model1._output._training_metrics.mse() + ", mse2 = " + model2._output._training_metrics.mse());
@@ -650,12 +668,15 @@ public class GLMBasicTestRegression extends TestUtil {
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
+    boolean naive_descent_exception_thrown = false;
     try {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       new GLM(params).trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
+    } catch (H2OIllegalArgumentException t) {
+      naive_descent_exception_thrown = true;
     }
+    assertTrue(naive_descent_exception_thrown);
     try {
       params._solver = Solver.COORDINATE_DESCENT;
       new GLM(params).trainModel().get();
