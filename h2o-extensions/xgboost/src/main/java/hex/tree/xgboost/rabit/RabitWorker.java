@@ -15,6 +15,7 @@ import java.util.Set;
 public class RabitWorker implements Comparable<RabitWorker> {
 
     final String host;
+    final int workerPort;
     private SocketChannel socket;
     int rank;
     int worldSize;
@@ -30,6 +31,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         this.ab = new AutoBuffer(channel, null);
         this.socket = channel;
         this.host = channel.socket().getInetAddress().getHostAddress();
+        this.workerPort = channel.socket().getPort();
         int magicReceived = ab.get4();
         if(RabitTrackerH2O.MAGIC != magicReceived) {
             throw new IllegalStateException(
@@ -49,7 +51,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         this.cmd = safeLowercase(ab.getExternalStr());
         this.waitAccept = 0;
         this.port = -1;
-        Log.debug("Initialized worker " + this.host + " with rank " + this.rank + ".");
+        Log.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
     }
 
     private String safeLowercase(String str) {

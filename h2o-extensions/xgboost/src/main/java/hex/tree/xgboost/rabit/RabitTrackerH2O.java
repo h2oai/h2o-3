@@ -63,6 +63,9 @@ public class RabitTrackerH2O implements IRabitTracker {
 
     @Override
     public boolean start(long timeout) {
+        if(null != this.trackerThread) {
+            throw new IllegalStateException("Rabit tracker already started.");
+        }
         RabitTrackerH2OThread trackerThread = new RabitTrackerH2OThread(this);
         trackerThread.setDaemon(true);
         trackerThread.start();
@@ -74,6 +77,7 @@ public class RabitTrackerH2O implements IRabitTracker {
     public void stop() {
         if(null != this.trackerThread) {
             this.trackerThread.interrupt();
+            this.trackerThread = null;
         }
     }
 
@@ -154,7 +158,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                                 }
 
                                 Log.debug("Received " + p.cmd +
-                                        " signal from " + p.host +
+                                        " signal from " + p.host + ":" + p.workerPort +
                                         ". Assigned rank " + p.rank
                                 );
                             }
@@ -178,12 +182,12 @@ public class RabitTrackerH2O implements IRabitTracker {
 
     @Override
     public int waitFor(long timeout) {
-        while(this.trackerThread.isAlive()) {
+        while(null != this.trackerThread && this.trackerThread.isAlive()) {
             try {
                 this.trackerThread.join(timeout);
                 this.trackerThread = null;
             } catch (InterruptedException e) {
-                // TODO handle
+                Log.debug("Rabit tracker thread got suddenly interrupted.", e);
             }
         }
         return 0;

@@ -10,19 +10,14 @@ import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.ExtensionManager;
+import water.*;
 import ml.dmlc.xgboost4j.java.*;
-import water.H2O;
-import water.H2OModelBuilderError;
-import water.Job;
-import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.network.SecurityUtils;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.ReflectionUtils;
+import water.util.*;
 import water.util.Timer;
 
 import java.io.File;
@@ -289,8 +284,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Create a temporary storage for user files
         featureMapFile = createFeatureMapFile();
 
+        // Count on how many nodes the data resides
+        Set<H2ONode> nodesHoldingFrame = new HashSet<>();
+        Vec vec = train().anyVec();
+        for(int chunkNr = 0; chunkNr < vec.nChunks(); chunkNr++) {
+          nodesHoldingFrame.add(vec.chunkKey(chunkNr).home_node());
+        }
+
         // Prepare Rabit tracker for this job
-        rt = new RabitTrackerH2O(H2O.getCloudSize());
+        // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
+        // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
+        // for H2O.getCloudSize() number of requests/responses.
+        rt = new RabitTrackerH2O(nodesHoldingFrame.size());
 
         if (!startRabitTracker(rt)) {
           throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
@@ -308,9 +313,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               new String[]{""}).doAll(_train).getBooster(featureMapFile));
           // Wait for results
           waitOnRabitWorkers(rt);
-        } catch (Throwable e) {
+        } finally {
           rt.stop();
-          throw e;
         }
 
         // train the model
@@ -364,9 +368,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               null).doAll(_train).getBooster());
           // Wait for succesful completion
           waitOnRabitWorkers(rt);
-        } catch (Throwable e) {
+        } finally {
           rt.stop();
-          throw e;
         }
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());

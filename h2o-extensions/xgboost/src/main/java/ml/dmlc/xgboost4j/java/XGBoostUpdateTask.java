@@ -9,6 +9,7 @@ import water.H2O;
 import water.MRTask;
 import water.util.FileUtils;
 import water.util.IcedHashMapGeneric;
+import water.util.Log;
 
 import java.io.*;
 import java.util.*;
@@ -56,6 +57,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         try {
             update();
         } catch (XGBoostError xgBoostError) {
+            try {
+                Rabit.shutdown();
+            } catch (XGBoostError xgBoostError1) {
+                xgBoostError1.printStackTrace();
+            }
             xgBoostError.printStackTrace();
             throw new IllegalStateException("Failed XGBoost training.", xgBoostError);
         }
@@ -66,11 +72,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
-        // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
-        // just to check if we have GPU on the machine
-        Rabit.init(rabitEnv);
-        try {
-            DMatrix trainMat = XGBoostUtils.convertFrameToDMatrix(
+        DMatrix trainMat = XGBoostUtils.convertFrameToDMatrix(
                 _sharedModel._dataInfoKey,
                 _fr,
                 true,
@@ -80,18 +82,23 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _featureMap,
                 _output._sparse);
 
-            if (null == trainMat) {
-                return;
-            }
+        if (null == trainMat) {
+            return;
+        }
+
+        try {
+            // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
+            // just to check if we have GPU on the machine
+            Rabit.init(rabitEnv);
 
             if (_rawBooster == null) {
                 HashMap<String, DMatrix> watches = new HashMap<>();
                 _booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat,
-                                                               params,
-                                                               0,
-                                                               watches,
-                                                               null,
-                                                               null);
+                        params,
+                        0,
+                        watches,
+                        null,
+                        null);
             } else {
                 try {
                     _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
@@ -106,7 +113,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             }
             _rawBooster = _booster.toByteArray();
         } finally {
-            Rabit.shutdown();
+            try {
+                Rabit.shutdown();
+            } catch (XGBoostError xgBoostError) {
+                Log.debug("Rabit shutdown during update failed", xgBoostError);
+            }
         }
     }
 
