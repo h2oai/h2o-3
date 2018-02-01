@@ -198,7 +198,7 @@ test-package-java:
 		h2o-core/build/classes/main \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
-		scripts/run.py py \
+		scripts/run.py py scripts/test-xgb-gpu-smoke.sh\
 		sort_crash.csv tests/doOnlyJunitSmokeTestList
 	find . -name "*.gradle" | zip -q -r test-package-java \
 	    -x h2o-web/* \
@@ -214,12 +214,30 @@ test-junit-jenkins:
 test-junit:
 	./gradlew test
 
-test-junit-jenkins:
+test-junit-smoke-jenkins:
 	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
 
 test-junit-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test
+
+test-xgb-smoke-minimal-jenkins:
+	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-minimal
+
+test-xgb-smoke-omp-jenkins:
+	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-omp
+
+test-xgb-smoke-minimal test-xgb-smoke-omp:
+	./gradlew h2o-ext-xgboost:test
+
+test-xgb-smoke-gpu-jenkins:
+	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-gpu
+
+test-xgb-smoke-gpu:
+	scripts/test-xgb-gpu-smoke.sh
 
 benchmark:
 	Rscript ml-benchmark/h2oR/benchmark.R -d $$DATASETS_PATH -t $$TEST_CASES_PATH -o $$OUTPUT_PREFIX --git-sha $$GIT_SHA --git-date "$$GIT_DATE" --model $$BENCHMARK_MODEL --build-id $$BUILD_ID

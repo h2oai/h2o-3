@@ -1,0 +1,7 @@
+#! /bin/bash
+
+set -e
+set -x
+
+groupadd -g ${JENKINS_GID} jenkins
+useradd jenkins -m -u ${JENKINS_UID} -g jenkins
