@@ -423,6 +423,9 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       E[] a = null;
       // Handle simple case with null-array
       if (s.equals("null") || s.length() == 0) return null;
+      // Handling of "auto-parseable" cases
+      if (AutoParseable.class.isAssignableFrom(afclz))
+        return gson.fromJson(s, fclz);
       // Splitted values
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (s.startsWith("[") && s.endsWith("]") ) { // It looks like an array
@@ -715,4 +718,10 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     }
     return builder.stringBuffer();
   }
+
+  /**
+   * This "Marker Interface" denotes classes that can directly be parsed by GSON parser (skip H2O's own parser)
+   */
+  public interface AutoParseable { /* nothing here */}
+
 }

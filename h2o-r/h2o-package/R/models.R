@@ -290,6 +290,8 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
                           })
       if (type == "character")
         paramValue <- .collapse.char(paramValue)
+      else if (paramDef$type == "StringPair[]")
+        paramValue <- .collapse(sapply(paramValue, .collapse.tuple))
       else
         paramValue <- .collapse(paramValue)
     }
@@ -297,6 +299,18 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
   if( is.H2OFrame(paramValue) )
     paramValue <- h2o.getId(paramValue)
   paramValue
+}
+
+.collapse.tuple <- function(x) {
+  names <- names(x)
+  if (is.null(names))
+    names <- letters[1:length(x)]
+  r <- c()
+  for (i in 1:length(x)) {
+    s <- paste0(names[i], ": \"", x[i], "\"")
+    r <- c(r, s)
+  }
+  paste0("{", paste0(r, collapse = ","), "}")
 }
 
 # Validate a given set of hyper parameters

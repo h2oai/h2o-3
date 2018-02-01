@@ -430,6 +430,71 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warnings[_warnings.length-1] = s;
   }
 
+  public static class InteractionSpec extends Iced {
+    private String[] _columns;
+    private StringPair[] _pairs;
+
+    private InteractionSpec(String[] columns, StringPair[] pairs) {
+      _columns = columns;
+      _pairs = pairs;
+    }
+
+    public static InteractionSpec allPairwise(String[] columns) {
+      return columns != null ? new InteractionSpec(columns, null) : null;
+    }
+
+    public static InteractionSpec create(String[] columns, StringPair[] pairs) {
+      return columns == null && pairs == null ?
+              null : new InteractionSpec(columns, pairs);
+    }
+
+    public boolean isEmpty() {
+      return _columns == null && _pairs == null;
+    }
+
+    public Model.InteractionPair[] makeInteractionPairs(Frame f) {
+      if (isEmpty())
+        return null;
+      InteractionPair[] allPairwise = null;
+      InteractionPair[] allExplicit = null;
+      int[] interactionIDs = new int[0];
+      if (_columns != null) {
+        interactionIDs = new int[_columns.length];
+        for (int i = 0; i < _columns.length; ++i) {
+          interactionIDs[i] = f.find(_columns[i]);
+          if (interactionIDs[i] == -1)
+            throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactionIDs[i]);
+        }
+        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
+      }
+      if (_pairs != null) {
+        Arrays.sort(interactionIDs);
+        allExplicit = new InteractionPair[_pairs.length];
+        int n = 0;
+        for (StringPair p : _pairs) {
+          int aIdx = f.find(p._a);
+          if (aIdx == -1)
+            throw new IllegalArgumentException("Invalid interactions specified (first column is missing): " + p.toJsonString());
+          int bIdx = f.find(p._b);
+          if (bIdx == -1)
+            throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString());
+          if (Arrays.binarySearch(interactionIDs, aIdx) >= 0 && Arrays.binarySearch(interactionIDs, bIdx) >= 0)
+            continue; // This interaction is already included in set of all pairwise interactions
+          allExplicit[n++] = new InteractionPair(aIdx, bIdx, null, null);
+        }
+        if (n != allExplicit.length) {
+          InteractionPair[] resized = new InteractionPair[n];
+          System.arraycopy(allExplicit, 0, resized, 0, resized.length);
+          allExplicit = resized;
+        }
+      }
+      if (allExplicit == null)
+        return allPairwise;
+      else
+        return ArrayUtils.append(allPairwise, allExplicit);
+    }
+  }
+
   /** Model-specific output class.  Each model sub-class contains an instance
    *  of one of these containing its "output": the pieces of the model needed
    *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
@@ -559,7 +624,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
-    public String[] interactions() { return null; }
+    public InteractionSpec interactions() { return null; }
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx() {
       if(!_hasWeights) return -1;
@@ -909,7 +974,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
+                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionSpec interactions, ToEigenVec tev,
                                            IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
@@ -955,10 +1020,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // create the interactions now and bolt them on to the front of the test Frame
     if( null!=interactions ) {
-      int[] interactionIndexes = new int[interactions.length];
-      for(int i=0;i<interactions.length;++i)
-        interactionIndexes[i] = test.find(interactions[i]);
-      test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, true, false));
+      InteractionPair[] interactionPairs = interactions.makeInteractionPairs(test);
+      test.add(makeInteractions(test, false, interactionPairs, true, true, false));
     }
 
     // Build the validation set to be compatible with the training set.
@@ -1978,7 +2041,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (InteractionPair ip : interactions) {
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
       InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
-//      if(!valid) ip.setDomain(iwv.domain());
       interactionVecs[idx++] = iwv;
     }
     return new Frame(interactionNames, interactionVecs);
@@ -2010,11 +2072,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *     this does not appear here, but in the InteractionWrappedVec class
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
-  public static class InteractionPair extends Iced {
+  public static class InteractionPair extends Iced<InteractionPair> {
     public int vecIdx;
     private int _v1,_v2;
 
-    private String[] _domain; // not null for enum-enum interactions
     private String[] _v1Enums;
     private String[] _v2Enums;
     private int _hash;
@@ -2067,73 +2128,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for(int j=i+1;j<indexes.length;++j)
           res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
       return res;
-    }
-
-    /**
-     * Set the domain; computed in an MRTask over the two categorical vectors that make
-     * up this interaction pair
-     * @param dom The domain retrieved by the CombineDomainTask in InteractionWrappedVec
-     */
-    public void setDomain(String[] dom) { _domain=dom; }
-
-    /**
-     * Check to see if any of the vecIdx values is the desired value.
-     */
-    public static int isInteraction(int i, InteractionPair[] ips) {
-      int idx = 0;
-      for (InteractionPair ip: ips) {
-        if (i == ip.vecIdx) return idx;
-        else               idx++;
-      }
-      return -1;
-    }
-
-    // parser stuff
-    private int _p;
-    private String _str;
-    public static InteractionPair[] read(String interaction) {
-      String[] interactions=interaction.split("\n");
-      HashSet<InteractionPair> res = new HashSet<>();
-      for (String i: interactions)
-        res.addAll(new InteractionPair().parse(i));
-      return res.toArray(new InteractionPair[res.size()]);
-    }
-
-    private HashSet<InteractionPair> parse(String i) { // v1[E8,E9]:v2,v3,v8,v90,v128[E1,E22]
-      _p=0;
-      _str=i;
-      HashSet<InteractionPair> res=new HashSet<>();
-      int v1 = parseNum();    // parse the first int
-      String[] v1Enums=parseEnums();  // shared
-      if( i.charAt(_p)!=':' || _p>=i.length() ) throw new IllegalArgumentException("Error");
-      while( _p++<i.length() ) {
-        int v2=parseNum();
-        String[] v2Enums=parseEnums();
-        if( v1 == v2 ) continue; // don't interact on self!
-        res.add(new InteractionPair(v1,v2,v1Enums,v2Enums));
-      }
-      return res;
-    }
-
-    private int parseNum() {
-      int start=_p++;
-      while( _p<_str.length() && '0' <= _str.charAt(_p) && _str.charAt(_p) <= '9') _p++;
-      try {
-        return Integer.valueOf(_str.substring(start,_p));
-      } catch(NumberFormatException ex) {
-        throw new IllegalArgumentException("No number could be parsed. Interaction: " + _str);
-      }
-    }
-
-    private String[] parseEnums() {
-      if( _p>=_str.length() || _str.charAt(_p)!='[' ) return null;
-      ArrayList<String> enums = new ArrayList<>();
-      while( _str.charAt(_p++)!=']' ) {
-        int start=_p++;
-        while(_str.charAt(_p)!=',' && _str.charAt(_p)!=']') _p++;
-        enums.add(_str.substring(start,_p));
-      }
-      return enums.toArray(new String[enums.size()]);
     }
 
     @Override public int hashCode() { return _hash; }

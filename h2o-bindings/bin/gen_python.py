@@ -20,6 +20,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["StringPair"] = "tuple"
         self.make_array = lambda vtype: "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
@@ -46,6 +47,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["StringPair"] = "tuple"
         self.make_array = lambda vtype: "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
