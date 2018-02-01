@@ -7,9 +7,9 @@
 Description
 ~~~~~~~~~~~
 
-By default, interactions between predictor columns are expanded and computed on the fly as GLM iterates over dataset. The ``interactions`` option allows you to enter a list of predictor column indices that should interact. Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. 
+By default, interactions between predictor columns are expanded and computed on the fly as GLM iterates over dataset. The ``interactions`` option allows you to enter a list of predictor column indices that should interact. 
 
-For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures. 
+Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures. 
 
 An ``interactions`` specification of the form ‘first + second’ computes all of the terms in ‘first’ together with all the terms in ‘second’ with any duplicates removed.
 

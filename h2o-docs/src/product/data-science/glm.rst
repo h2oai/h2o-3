@@ -155,6 +155,8 @@ Defining a GLM Model
 
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
+-  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
