@@ -1157,6 +1157,10 @@ types.
 
 -  **max_active_predictors**: (GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors.
 
+-  **interactions**: (GLM) Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
+
+-  **interaction_pairs** (GLM) When defining interactions, use this to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
 --------------
 
 Viewing Models

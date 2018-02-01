@@ -43,6 +43,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ignored_columns
    data-science/algo-params/impute_missing
    data-science/algo-params/init
+   data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
    data-science/algo-params/intercept
    data-science/algo-params/k
