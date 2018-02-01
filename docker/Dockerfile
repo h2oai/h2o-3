@@ -69,6 +69,10 @@ RUN \
   tar -xvzf cmake-3.5.2.tar.gz && \
   cd cmake-3.5.2/ && ./configure && make && make install && cd ../ && \
   rm -rf cmake-3.5.2/ && rm -rf cmake-3.5.2.tar.gz && \
+  wget https://github.com/jgm/pandoc/releases/download/2.1.1/pandoc-2.1.1-linux.tar.gz && \
+  tar -xvzf pandoc-2.1.1-linux.tar.gz --strip-components 1 -C /usr/local/ && \
+  which pandoc && \
+  rm -rf pandoc-2.1.1-linux.tar.gz && \
   apt-get clean && \
   apt-get autoremove && \
   apt-get autoclean

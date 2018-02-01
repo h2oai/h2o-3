@@ -114,6 +114,11 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
+      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
+      archiveAdditionalFiles: ['h2o-r/h2o-package/**/*.html', 'r-generated-docs.zip']
     ]
   ]
 
@@ -224,6 +229,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           makefilePath = c['makefilePath']
           archiveAdditionalFiles = c['archiveAdditionalFiles']
           excludeAdditionalFiles = c['excludeAdditionalFiles']
+          archiveFiles = c['archiveFiles']
         }
       }
     ]
@@ -249,7 +255,9 @@ private void invokeStage(final pipelineContext, final body) {
   config.pythonVersion = config.pythonVersion ?: DEFAULT_PYTHON
   config.rVersion = config.rVersion ?: DEFAULT_R
   config.timeoutValue = config.timeoutValue ?: DEFAULT_TIMEOUT
-  config.hasJUnit = config.hasJUnit ?: true
+  if (config.hasJUnit == null) {
+    config.hasJUnit = true
+  }
   config.additionalTestPackages = config.additionalTestPackages ?: []
   config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
   config.executionScript = config.executionScript ?: DEFAULT_EXECUTION_SCRIPT
@@ -257,6 +265,9 @@ private void invokeStage(final pipelineContext, final body) {
   config.makefilePath = config.makefilePath ?: pipelineContext.getBuildConfig().MAKEFILE_PATH
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
   config.excludeAdditionalFiles = config.excludeAdditionalFiles ?: []
+  if (config.archiveFiles == null) {
+    config.archiveFiles = true
+  }
 
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
     pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
