@@ -52,9 +52,7 @@ A form will display allowing you to enter information about the bug or feature r
   	* Reproducible code that can be run end to end without requiring an engineer to edit your code. Use {code} {code} around your code to make it appear in code format.
   	* Any scripts or necessary documents. Add by dragging and dropping your files into the create issue dialogue box.
 
-* You can be able to leave the rest of the ticket blank.
-
-When you are done with your ticket, simply click on the **Create** button at the bottom of the page.
+You can leave the rest of the ticket blank. When you are done with your ticket, simply click on the **Create** button at the bottom of the page.
 
  ![new issue](h2o-docs/src/product/images/jira_finished_create.png)
 
