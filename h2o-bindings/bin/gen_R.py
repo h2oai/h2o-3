@@ -115,9 +115,12 @@ def gen_module(schema, algo, module):
             temp = normalize_value(param).replace(' "quasibinomial",',"")
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
-            list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+            if param["name"] != "metalearner_params":
+                list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
+    if algo in ["stackedensemble"]:
+        list.append(indent("metalearner_params = NULL ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
@@ -247,6 +250,8 @@ def gen_module(schema, algo, module):
         yield "    }"
         yield "  }"
         yield " "
+        yield "  if (!missing(metalearner_params))"
+        yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -277,15 +282,26 @@ def gen_module(schema, algo, module):
             yield " if (!missing(eps_prob))"
             yield "   parms$%s <- eps_prob" % param["name"]
             continue
+        if param["name"] == "metalearner_params":
+            continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
     if help_extra_checks:
         lines = help_extra_checks.split("\n")
         for line in lines:
             yield "%s" % line
-    if algo not in ["aggregator", "glm", "deeplearning", "drf", "gbm", "xgboost"]:
+    if algo not in ["aggregator", "glm", "deeplearning", "drf", "gbm", "xgboost", "stackedensemble"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+    if algo in ["stackedensemble"]:
+        yield "  # Error check and build model"
+        yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+        yield "  #Convert metalearner_params back to list if not NULL"
+        yield "  if (!missing(metalearner_params)) {"
+        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))"
+        yield "  }"
+        yield "  return(model)"
+        yield "}"
     if algo in ["deeplearning", "drf", "gbm", "xgboost"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d, verbose=verbose) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
@@ -1014,6 +1030,8 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
+    if param["name"] == "metalearner_params":
+        return "NULL"
     if not(is_help) and param["type"][:4] == "enum":
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:

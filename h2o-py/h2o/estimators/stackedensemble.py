@@ -10,6 +10,8 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
+import json
+import ast
 
 
 class H2OStackedEnsembleEstimator(H2OEstimator):
@@ -50,7 +52,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame"}
+                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -206,5 +208,34 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def keep_levelone_frame(self, keep_levelone_frame):
         assert_is_type(keep_levelone_frame, None, bool)
         self._parms["keep_levelone_frame"] = keep_levelone_frame
+
+
+    @property
+    def metalearner_params(self):
+        """
+        Parameters for metalearner algo
+
+        Type: ``dict``  (default: ``None``).
+        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}
+        """
+        if self._parms.get("metalearner_params") != None:
+            metalearner_params_dict =  ast.literal_eval(self._parms.get("metalearner_params"))
+            for k in metalearner_params_dict:
+                if len(metalearner_params_dict[k]) == 1: #single parameter
+                    metalearner_params_dict[k] = metalearner_params_dict[k][0]
+            return metalearner_params_dict
+        else:
+            return self._parms.get("metalearner_params")
+
+    @metalearner_params.setter
+    def metalearner_params(self, metalearner_params):
+        assert_is_type(metalearner_params, None, dict)
+        if metalearner_params is not None and metalearner_params != "":
+            for k in metalearner_params:
+                if ("[" and "]") not in str(metalearner_params[k]):
+                    metalearner_params[k]=[metalearner_params[k]]
+            self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
+        else:
+            self._parms["metalearner_params"] = None
 
 
