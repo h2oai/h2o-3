@@ -26,39 +26,39 @@ If you're an Open Source community member you should send these to one of:
 
 ### How to File Bugs and Feature Requests
 
-You can file a bug report or feature request directly at the H2O-3 JIRA tracking system at [https://0xdata.atlassian.net/projects/PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV). Anyone can create a JIRA ticket as long as you create a JIRA account using your email address.  
+You can file a bug report or feature request directly in the H2O-3 JIRA tracking system at [https://0xdata.atlassian.net/projects/PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV). Anyone can create a JIRA ticket as long as you create a JIRA account using your email address.  
 
-1. Log in the the [H2O JIRA tracking system](https://0xdata.atlassian.net/projects/PUBDEV). (Create an account if necessary.)
+Log in to the [H2O JIRA tracking system](https://0xdata.atlassian.net/projects/PUBDEV). (Create an account if necessary.)
 
-2. Once inside the home page, click the **Create** button.
+Once inside the home page, click the **Create** button.
 
  ![create](h2o-docs/src/product/images/jira_create.png)
 
-3. A form will display allowing you to enter information about the bug or feature request.
+A form will display allowing you to enter information about the bug or feature request.
 
  ![new issue](h2o-docs/src/product/images/jira_new_issue.png)
 
-	* Select the Project that you want to file the issue under. For example, if this is an open source public bug, you should file it under **Public H2O 3 (PUBDEV)**.
-	* Specify the Issue Type. For example, if you believe you've found a bug, then select **Bug**, or if you want to request a new feature, then select **New Feature**.
-	* Provide a short but concise summar about the issue. The summary will be shown when engineers organize, filter, and search for Jira tickets.
-	* Specify the urgency of the issue using the Priority dropdown menu. 
-	* If there is a due date specify it with the Due Date.
-	* The Components drop down refers to the API or language that the issue relates to. (See the drop down menu for available options.)
-	* You can leave Affects Version/s, Fix Version\s, and Assignee fields blank. Our engineering team will fill this in.
-	* Add a detailed description of your bug in the Description section. Best practice for descriptions include:
+* Select the Project that you want to file the issue under. For example, if this is an open source public bug, you should file it under **Public H2O 3 (PUBDEV)**.
+* Specify the Issue Type. For example, if you believe you've found a bug, then select **Bug**, or if you want to request a new feature, then select **New Feature**.
+* Provide a short but concise summar about the issue. The summary will be shown when engineers organize, filter, and search for Jira tickets.
+* Specify the urgency of the issue using the Priority dropdown menu. 
+* If there is a due date specify it with the Due Date.
+* The Components drop down refers to the API or language that the issue relates to. (See the drop down menu for available options.)
+* You can leave Affects Version/s, Fix Version\s, and Assignee fields blank. Our engineering team will fill this in.
+* Add a detailed description of your bug in the Description section. Best practice for descriptions include:
 
-	  	* A summary of what the issue is
-	  	* What you think is causing the issue
-	  	* Reproducible code that can be run end to end without requiring an engineer to edit your code. Use {code} {code} around your code to make it appear in code format.
-	  	* Any scripts or necessary documents by dragging and dropping your files into the create issue dialogue box.
+  	* A summary of what the issue is
+  	* What you think is causing the issue
+  	* Reproducible code that can be run end to end without requiring an engineer to edit your code. Use {code} {code} around your code to make it appear in code format.
+  	* Any scripts or necessary documents. Add by dragging and dropping your files into the create issue dialogue box.
 
-	* You can be able to leave the rest of the ticket blank.
+* You can be able to leave the rest of the ticket blank.
 
-4. When you are done with your ticket, simply click on the **Create** button at the bottom of the page.
+When you are done with your ticket, simply click on the **Create** button at the bottom of the page.
 
  ![new issue](h2o-docs/src/product/images/jira_finished_create.png)
 
-After you click on **Create**, a pop up will appear on the right side of your screen with a link to your Jira ticket. It will have the form https://0xdata.atlassian.net/browse/PUBDEV-####. You can use this link to later edit your ticket. 
+After you click **Create**, a pop up will appear on the right side of your screen with a link to your Jira ticket. It will have the form https://0xdata.atlassian.net/browse/PUBDEV-####. You can use this link to later edit your ticket. 
 
 Please note that your Jira ticket number along with its summary will appear in one of the Jira ticket slack channels, and anytime you update the ticket anyone associated with that ticket, whether as the assignee or a watcher will receive an email with your changes.
 
