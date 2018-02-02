@@ -109,11 +109,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public int _gpu_id = 0; // which GPU to use
     public Backend _backend = Backend.auto;
 
-    public XGBoostParameters() {
-      super();
-      _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
-    }
-
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
     public String javaName() { return XGBoostModel.class.getName(); }
