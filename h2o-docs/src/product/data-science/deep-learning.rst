@@ -38,7 +38,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
 
--  `y <algo-params/y.html>`__: Specify the column to use as the independent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__: Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 

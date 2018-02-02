@@ -63,7 +63,7 @@ Before training a stacked ensemble, you will need to train and cross-validate a 
 Defining a Stacked Ensemble Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `y <algo-params/y.html>`__: (Required) Specify the index or column name of the column to use as the independent variable (response column). The response column can be numeric (regression) or categorical (classification).  
+-  `y <algo-params/y.html>`__: (Required) Specify the index or column name of the column to use as the dependent variable (response column). The response column can be numeric (regression) or categorical (classification).  
 
 -  `x <algo-params/x.html>`__: (Optional) Specify a vector containing the names or indices of the predictor variables to use when building the model.   If ``x`` is missing, then all columns except ``y`` are used.  The only use for ``x`` is to get the correct training set so that we can compute ensemble training metrics.
 

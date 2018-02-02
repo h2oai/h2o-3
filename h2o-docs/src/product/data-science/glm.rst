@@ -37,8 +37,7 @@ Defining a GLM Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
 
    -  For a regression model, this column must be numeric (**Real** or
       **Int**).

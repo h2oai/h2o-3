@@ -22,9 +22,7 @@ Defining a Naïve Bayes Model
 -  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable. The data must be categorical and must contain
-   at least two unique categorical levels.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data must be categorical and must contain at least two unique categorical levels.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
