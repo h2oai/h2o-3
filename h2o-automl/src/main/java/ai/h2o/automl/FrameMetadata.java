@@ -5,6 +5,7 @@ import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.tree.DHistogram;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
@@ -200,35 +201,22 @@ public class FrameMetadata extends Iced {
     if( _minSkewness!=-1 && _maxSkewness!=-1 && _meanSkewness!=-1 && _stdSkewness!=-1 && _medianSkewness!=-1) return ar;
 
     if(isAnyNumeric()){
-      int ar_size = numberOfNumericFeatures();
-      double[] darry = new double[ar_size];
-      int ind=0;
+      DescriptiveStatistics stats = new DescriptiveStatistics();
       for(int i=0;i<_cols.length;++i) {
         if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isNumeric) {
-          darry[ind] = _cols[i]._skew;
-          ind +=1;
+          stats.addValue(_cols[i]._skew);
         }
       }
-      Vec vd1 = dvec(darry);
-      Vec[] vdd = new  Vec[1];
-      vdd[0] = vd1;
-      Key<Frame> key = Key.make("keyD");
-      String[] names= new String[1];
-      names[0] ="vd1";
-      Frame dr = new Frame(key,names,vdd);
-      DKV.put(dr);
-
-      ar[0] = rapidMin(dr);
-      ar[1] = rapidMax(dr);
-      ar[2] = rapidMean(dr);
-      ar[3] = rapidSd(dr);
-      ar[4] = rapidMedian(dr);
+      ar[0] = stats.getMin();
+      ar[1] = stats.getMax();
+      ar[2] = stats.getMean();
+      ar[3] = stats.getStandardDeviation();
+      ar[4] = stats.getPercentile(50);
       _minSkewness = ar[0];
       _maxSkewness = ar[1];
       _meanSkewness = ar[2];
       _stdSkewness = ar[3];
       _medianSkewness = ar[4];
-      dr.remove();
     }else{
     ar[0] = Double.NaN;
     ar[1] = Double.NaN;
@@ -256,35 +244,22 @@ public class FrameMetadata extends Iced {
     if( _minKurtosis!=-1 && _maxKurtosis!=-1 && _meanKurtosis!=-1 && _stdKurtosis!=-1 && _medianKurtosis!=-1) return ar;
 
     if(isAnyNumeric()){
-      int ar_size = numberOfNumericFeatures();
-      double[] darry = new double[ar_size];
-      int ind=0;
+      DescriptiveStatistics stats = new DescriptiveStatistics();
       for(int i=0;i<_cols.length;++i) {
         if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isNumeric) {
-          darry[ind] = _cols[i]._kurtosis;
-          ind +=1;
+          stats.addValue(_cols[i]._kurtosis);
         }
       }
-      Vec vd1 = dvec(darry);
-      Vec[] vdd = new  Vec[1];
-      vdd[0] = vd1;
-      Key<Frame> key = Key.make("keyD");
-      String[] names= new String[1];
-      names[0] ="vd1";
-      Frame dr = new Frame(key,names,vdd);
-      DKV.put(dr);
-
-      ar[0] = rapidMin(dr);
-      ar[1] = rapidMax(dr);
-      ar[2] = rapidMean(dr);
-      ar[3] = rapidSd(dr);
-      ar[4] = rapidMedian(dr);
+      ar[0] = stats.getMin();
+      ar[1] = stats.getMax();
+      ar[2] = stats.getMean();
+      ar[3] = stats.getStandardDeviation();
+      ar[4] = stats.getPercentile(50);
       _minKurtosis = ar[0];
       _maxKurtosis = ar[1];
       _meanKurtosis = ar[2];
       _stdKurtosis = ar[3];
       _medianKurtosis = ar[4];
-      dr.remove();
     }else{
       ar[0] = Double.NaN;
       ar[1] = Double.NaN;
@@ -312,35 +287,23 @@ public class FrameMetadata extends Iced {
     if( _minCardinality!=-1 && _maxCardinality!=-1 && _meanCardinality!=-1 && _stdCardinality!=-1 && _medianCardinality!=-1) return ar;
 
     if(isAnyCategorical()){
-      int ar_size = numberOfCategoricalFeatures();
-      double[] darry = new double[ar_size];
-      int ind=0;
+      DescriptiveStatistics stats = new DescriptiveStatistics();
       for(int i=0;i<_cols.length;++i) {
         if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isCategorical) {
-          darry[ind] = _cols[i]._cardinality;
-          ind +=1;
+          stats.addValue(_cols[i]._cardinality);
         }
       }
 
-      Vec vd1 = dvec(darry);
-      Vec[] vdd = new  Vec[1];
-      vdd[0] = vd1;
-      Key<Frame> key = Key.make("keyD");
-      String[] names= new String[1];
-      names[0] ="vd1";
-      Frame dr = new Frame(key,names,vdd);
-      DKV.put(dr);
-      ar[0] = rapidMin(dr);
-      ar[1] = rapidMax(dr);
-      ar[2] = rapidMean(dr);
-      ar[3] = rapidSd(dr);
-      ar[4] = rapidMedian(dr);
+      ar[0] = stats.getMin();
+      ar[1] = stats.getMax();
+      ar[2] = stats.getMean();
+      ar[3] = stats.getStandardDeviation();
+      ar[4] = stats.getPercentile(50);
       _minCardinality = ar[0];
       _maxCardinality = ar[1];
       _meanCardinality = ar[2];
       _stdCardinality = ar[3];
       _medianCardinality = ar[4];
-      dr.remove();
     }else{
       ar[0] = Double.NaN;
       ar[1] = Double.NaN;
@@ -355,19 +318,6 @@ public class FrameMetadata extends Iced {
 
     }
     return ar;
-  }
-  /** A numeric Vec from an array of doubles */
-  public static Vec dvec(double...rows) {
-    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for (double r : rows)
-      chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
   }
 
   /** checks if there are any numeric features in the frame*/
@@ -394,51 +344,6 @@ public class FrameMetadata extends Iced {
     }
     if(cnt ==1) return true;
     else return false;
-  }
-
-  /** min function from rapids */
-  public double rapidMin(Frame dr){
-    //String y0 = String.format("(min %s)",dr._key);
-    Val val = Rapids.exec("(min " + dr._key + ")");
-    double d = val.getNum();
-    return d;
-  }
-
-  /** max function from rapids */
-  public double rapidMax(Frame dr){
-    Val val = Rapids.exec("(max " + dr._key + ")");
-    double d = val.getNum();
-    return d;
-  }
-
-  /** mean function from rapids */
-  /** AstMean now accepts a flag to treat NAs as a 0 or ignore them completely */
-  public double rapidMean(Frame dr, boolean ignore_na) {
-    //String y0 = String.format("(mean %s %s %s)",dr._key,1,0/1);
-    Val val = Rapids.exec("(mean " + dr._key + " " + ignore_na + " false)");
-    double[] darray = val.getRow();
-    double d = darray[0];
-    return d;
-  }
-  /** mean function with default of ignore_na = true */
-  public double rapidMean(Frame dr) {
-    return rapidMean(dr, true);
-  }
-
-  /** sd function from rapids */
-  public double rapidSd(Frame dr){
-    Val val = Rapids.exec("(sd " + dr._key + " true)");
-    double[] darray = val.getNums();
-    double d = darray[0];
-    return d;
-  }
-
-  /** median function from rapids */
-  public double rapidMedian(Frame dr){
-    Val val = Rapids.exec("(median " + dr._key + " true)");
-    double[] darray = val.getNums();
-    double d = darray[0];
-    return d;
   }
 
   /**
