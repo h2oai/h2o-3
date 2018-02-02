@@ -35,7 +35,8 @@ test-package-py:
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -q -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
+	zip -q -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/h2o-package/**/*.Rd h2o-r/h2o-package/DESCRIPTION \
+		h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
 		h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList \
@@ -117,6 +118,16 @@ test-r-demos-small:
 test-r-demos-medium-large:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
+
+r-generate-docs-jenkins:
+	@$(MAKE) -f $(THIS_FILE) r-generate-docs
+	@$(MAKE) -f $(THIS_FILE) pack-r-generated-docs
+
+r-generate-docs:
+	cd h2o-r/h2o-package && R -e 'pkgdown::build_site(examples=FALSE)'
+
+pack-r-generated-docs:
+	zip r-generated-docs.zip h2o-r/h2o-package/docs/**/*.html
 
 test-package-js:
 	zip -q -r test-package-js \
