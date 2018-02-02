@@ -62,7 +62,7 @@ After you click **Create**, a pop up will appear on the right side of your scree
 
 Please note that your Jira ticket number along with its summary will appear in one of the Jira ticket slack channels, and anytime you update the ticket anyone associated with that ticket, whether as the assignee or a watcher will receive an email with your changes.
 
-### How to Vote for or Comment on Jira Issues
+### How to Vote for or Comment on JIRA Issues
 
 You can also vote for or comment on existing bugs and feature requests that are already in the H2O-3 JIRA. To vote for a JIRA issue, log in the the H2O JIRA tracking system (create an account if necessary), find or create the issue that you want to vote for, then click the **Vote for this issue** link (upper right portion of the issue). Voting can help H2O prioritize the features that are included in each release. 
 
