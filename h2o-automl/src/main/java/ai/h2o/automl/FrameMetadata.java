@@ -12,7 +12,6 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKurtosis;
 import water.rapids.ast.prims.advmath.AstSkewness;
-import water.rapids.ast.prims.mungers.AstNaOmit;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -108,7 +107,7 @@ public class FrameMetadata extends Iced {
   private enum StatsType { Skewness, Kurtosis, Cardinality }
 
   private SimpleStats populateStats(StatsType st, SimpleStats s, Map<String, Object> output) {
-    if (s == null || ! s.isValid())
+    if (s == null)
       s = calculateStats(st);
     s.toMap(st.name(), output);
     return s;
@@ -147,10 +146,6 @@ public class FrameMetadata extends Iced {
     double _mean = Double.NaN;
     double _std = Double.NaN;
     double _median = Double.NaN;
-
-    boolean isValid() {
-      return _min != -1 && _max != -1 && _mean != -1 && _std != -1 && _median != -1;
-    }
 
     static SimpleStats from(DescriptiveStatistics stats) {
       SimpleStats ss = new SimpleStats();
