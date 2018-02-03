@@ -45,25 +45,11 @@ public class FrameMetadata extends Iced {
   public Vec[]  _trainTestWeight;  // weight vecs for train/test splits
   private long _featsWithNa=-1;    // count of features with nas
   private long _rowsWithNa=-1;     // count of rows with nas
-  private double _minSkewness=-1;    // minimum skewness across all numeric features
-  private double _maxSkewness=-1;    // maximun skewness across all numeric features
-  private double _meanSkewness=-1;   // mean skewness across all numeric features
-  private double _stdSkewness=-1;    // standard deviation in skewness across all numeric features
-  private double _medianSkewness=-1; // median across all numeric features
-  private double _minKurtosis=-1;    // minimum kurtosis across all numeric features
-  private double _maxKurtosis=-1;    // maximun kurtosis across all numeric features
-  private double _meanKurtosis=-1;   // mean kurtosis across all numeric features
-  private double _stdKurtosis=-1;    // standard deviation in kurtosis across all numeric features
-  private double _medianKurtosis=-1; // median across all numeric features
-  private double _minCardinality=-1;    // minimum count of symbols across all categorical features
-  private double _maxCardinality=-1;    // maximun count of symbols across all categorical features
-  private double _meanCardinality=-1;   // mean count of symbols across all categorical features
-  private double _stdCardinality=-1;    // standard deviation in count of symbols across all categorical features
-  private double _medianCardinality=-1; // median count of symbols across all categorical features
+  private SimpleStats _statsSkewness;
+  private SimpleStats _statsKurtosis;
+  private SimpleStats _statsCardinality;
 
   private UserFeedback _userFeedback;
-
-  private AstNaOmit astNaOmit;
 
   public static final double SQLNAN = -99999;
 
@@ -114,24 +100,79 @@ public class FrameMetadata extends Iced {
     fm.put("FeatWithNAs", (double)na_FeatureCount());
     fm.put("RowsWithNAs",(double)rowsWithNa());
     fm.put("NClass",(double)nClass());
-    double[] skew=skewness();
-    fm.put("MinSkewness",skew[0]);
-    fm.put("MaxSkewness", skew[1]);
-    fm.put("MeanSkewness", skew[2]);
-    fm.put("StdSkewness", skew[3]);
-    fm.put("MedianSkewness", skew[4]);
-    double[] kurt=kurtosis();
-    fm.put("MinKurtosis",kurt[0]);
-    fm.put("MaxKurtosis", kurt[1]);
-    fm.put("MeanKurtosis", kurt[2]);
-    fm.put("StdKurtosis", kurt[3]);
-    fm.put("MedianKurtosis", kurt[4]);
-    double[] sym=cardinality();
-    fm.put("MinCardinality",sym[0]);
-    fm.put("MaxCardinality", sym[1]);
-    fm.put("MeanCardinality", sym[2]);
-    fm.put("StdCardinality", sym[3]);
-    fm.put("MedianCardinality", sym[4]);
+    _statsSkewness = populateStats(StatsType.Skewness, _statsSkewness, fm);
+    _statsKurtosis = populateStats(StatsType.Kurtosis, _statsKurtosis, fm);
+    _statsCardinality = populateStats(StatsType.Cardinality, _statsCardinality, fm);
+  }
+
+  private enum StatsType { Skewness, Kurtosis, Cardinality }
+
+  private SimpleStats populateStats(StatsType st, SimpleStats s, Map<String, Object> output) {
+    if (s == null || ! s.isValid())
+      s = calculateStats(st);
+    s.toMap(st.name(), output);
+    return s;
+  }
+
+  private SimpleStats calculateStats(StatsType st) {
+    if (! isAnyNumeric())
+      return SimpleStats.na();
+
+    DescriptiveStatistics stats = new DescriptiveStatistics();
+    for (ColMeta col : _cols) {
+      if (!col._ignored && !col._response && col._isNumeric) {
+        double v;
+        switch (st) {
+          case Skewness:
+            v = col._skew;
+            break;
+          case Kurtosis:
+            v = col._kurtosis;
+            break;
+          case Cardinality:
+            v = col._cardinality;
+            break;
+          default:
+            throw new IllegalStateException("Unsupported type " + st);
+        }
+        stats.addValue(v);
+      }
+    }
+    return SimpleStats.from(stats);
+  }
+
+  private static class SimpleStats extends Iced<SimpleStats> {
+    double _min = Double.NaN;
+    double _max = Double.NaN;
+    double _mean = Double.NaN;
+    double _std = Double.NaN;
+    double _median = Double.NaN;
+
+    boolean isValid() {
+      return _min != -1 && _max != -1 && _mean != -1 && _std != -1 && _median != -1;
+    }
+
+    static SimpleStats from(DescriptiveStatistics stats) {
+      SimpleStats ss = new SimpleStats();
+      ss._min = stats.getMin();
+      ss._max = stats.getMax();
+      ss._mean = stats.getMean();
+      ss._std = stats.getStandardDeviation();
+      ss._median = stats.getPercentile(50);
+      return ss;
+    }
+
+    static SimpleStats na() {
+      return new SimpleStats();
+    }
+
+    void toMap(String type, Map<String, Object> output) {
+      output.put("Min" + type, _min);
+      output.put("Max" + type, _max);
+      output.put("Mean" + type, _mean);
+      output.put("Std" + type, _std);
+      output.put("Median" + type, _median);
+    }
   }
 
   /**
@@ -188,136 +229,6 @@ public class FrameMetadata extends Iced {
     }else{
       return(_nclass=0);
     }
-  }
-
-  /** Loops over numeric features to get skewness summary for the frame **/
-  public double[] skewness(){
-    double[] ar = new double[5];
-    ar[0] = _minSkewness;
-    ar[1] = _maxSkewness;
-    ar[2] = _meanSkewness;
-    ar[3] = _stdSkewness;
-    ar[4] = _medianSkewness;
-    if( _minSkewness!=-1 && _maxSkewness!=-1 && _meanSkewness!=-1 && _stdSkewness!=-1 && _medianSkewness!=-1) return ar;
-
-    if(isAnyNumeric()){
-      DescriptiveStatistics stats = new DescriptiveStatistics();
-      for(int i=0;i<_cols.length;++i) {
-        if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isNumeric) {
-          stats.addValue(_cols[i]._skew);
-        }
-      }
-      ar[0] = stats.getMin();
-      ar[1] = stats.getMax();
-      ar[2] = stats.getMean();
-      ar[3] = stats.getStandardDeviation();
-      ar[4] = stats.getPercentile(50);
-      _minSkewness = ar[0];
-      _maxSkewness = ar[1];
-      _meanSkewness = ar[2];
-      _stdSkewness = ar[3];
-      _medianSkewness = ar[4];
-    }else{
-    ar[0] = Double.NaN;
-    ar[1] = Double.NaN;
-    ar[2] = Double.NaN;
-    ar[3] = Double.NaN;
-    ar[4] = Double.NaN;
-    _minSkewness = Double.NaN;
-    _maxSkewness = Double.NaN;
-    _meanSkewness = Double.NaN;
-    _stdSkewness = Double.NaN;
-    _medianSkewness = Double.NaN;
-
-    }
-    return ar;
-  }
-
-  /** Loops over numeric features to get kurtosis summary for the frame **/
-  public double[] kurtosis(){
-    double[] ar = new double[5];
-    ar[0] = _minKurtosis;
-    ar[1] = _maxKurtosis;
-    ar[2] = _meanKurtosis;
-    ar[3] = _stdKurtosis;
-    ar[4] = _medianKurtosis;
-    if( _minKurtosis!=-1 && _maxKurtosis!=-1 && _meanKurtosis!=-1 && _stdKurtosis!=-1 && _medianKurtosis!=-1) return ar;
-
-    if(isAnyNumeric()){
-      DescriptiveStatistics stats = new DescriptiveStatistics();
-      for(int i=0;i<_cols.length;++i) {
-        if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isNumeric) {
-          stats.addValue(_cols[i]._kurtosis);
-        }
-      }
-      ar[0] = stats.getMin();
-      ar[1] = stats.getMax();
-      ar[2] = stats.getMean();
-      ar[3] = stats.getStandardDeviation();
-      ar[4] = stats.getPercentile(50);
-      _minKurtosis = ar[0];
-      _maxKurtosis = ar[1];
-      _meanKurtosis = ar[2];
-      _stdKurtosis = ar[3];
-      _medianKurtosis = ar[4];
-    }else{
-      ar[0] = Double.NaN;
-      ar[1] = Double.NaN;
-      ar[2] = Double.NaN;
-      ar[3] = Double.NaN;
-      ar[4] = Double.NaN;
-      _minKurtosis = Double.NaN;
-      _maxKurtosis = Double.NaN;
-      _meanKurtosis = Double.NaN;
-      _stdKurtosis = Double.NaN;
-      _medianKurtosis = Double.NaN;
-
-    }
-    return ar;
-  }
-
-  /** Loops over categorical features to get cardinality summary for the frame **/
-  public double[] cardinality(){
-    double[] ar = new double[5];
-    ar[0] = _minCardinality;
-    ar[1] = _maxCardinality;
-    ar[2] = _meanCardinality;
-    ar[3] = _stdCardinality;
-    ar[4] = _medianCardinality;
-    if( _minCardinality!=-1 && _maxCardinality!=-1 && _meanCardinality!=-1 && _stdCardinality!=-1 && _medianCardinality!=-1) return ar;
-
-    if(isAnyCategorical()){
-      DescriptiveStatistics stats = new DescriptiveStatistics();
-      for(int i=0;i<_cols.length;++i) {
-        if( !_cols[i]._ignored && !_cols[i]._response && _cols[i]._isCategorical) {
-          stats.addValue(_cols[i]._cardinality);
-        }
-      }
-
-      ar[0] = stats.getMin();
-      ar[1] = stats.getMax();
-      ar[2] = stats.getMean();
-      ar[3] = stats.getStandardDeviation();
-      ar[4] = stats.getPercentile(50);
-      _minCardinality = ar[0];
-      _maxCardinality = ar[1];
-      _meanCardinality = ar[2];
-      _stdCardinality = ar[3];
-      _medianCardinality = ar[4];
-    }else{
-      ar[0] = Double.NaN;
-      ar[1] = Double.NaN;
-      ar[2] = Double.NaN;
-      ar[3] = Double.NaN;
-      ar[4] = Double.NaN;
-      _minCardinality = Double.NaN;
-      _maxCardinality = Double.NaN;
-      _meanCardinality = Double.NaN;
-      _stdCardinality = Double.NaN;
-      _medianCardinality = Double.NaN;
-
-    }
-    return ar;
   }
 
   /** checks if there are any numeric features in the frame*/
@@ -531,23 +442,9 @@ public class FrameMetadata extends Iced {
     _includeCols=null;
     _featsWithNa=-1;
     _rowsWithNa=-1;
-    _minKurtosis=-1;
-    _minSkewness=-1;
-    _minCardinality=-1;
-    _maxKurtosis=-1;
-    _maxSkewness=-1;
-    _maxCardinality=-1;
-    _meanKurtosis=-1;
-    _meanSkewness=-1;
-    _meanCardinality=-1;
-    _stdKurtosis=-1;
-    _stdSkewness=-1;
-    _stdCardinality=-1;
-    _medianKurtosis=-1;
-    _medianSkewness=-1;
-    _medianCardinality=-1;
-
-
+    _statsSkewness = null;
+    _statsKurtosis = null;
+    _statsCardinality = null;
   }
 
   public static String[] intAtoStringA(int[] select, String[] names) {
