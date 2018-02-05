@@ -327,7 +327,7 @@ class H2OCache(object):
                 self.names_valid() and
                 self.types_valid())
 
-    def fill(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, light=False):
+    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
         assert self._id is not None
         if self._data is not None:
             if rows <= len(self):
@@ -336,6 +336,7 @@ class H2OCache(object):
             "row_count": rows,
             "row_offset": rows_offset,
             "column_count" : cols,
+            "full_column_count" : full_cols,
             "column_offset" : cols_offset
         }
         if light:
@@ -365,7 +366,8 @@ class H2OCache(object):
             else:
                 if c['data'] and (len(c['data']) > 0):  # orc file parse can return frame with zero rows
                     c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
-            self._data[c.pop('label')] = c  # Label used as the Key
+            if c['data']:
+                self._data[c.pop('label')] = c  # Label used as the Key
         return self
 
     #---- pretty printing ----

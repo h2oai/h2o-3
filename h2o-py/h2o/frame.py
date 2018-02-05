@@ -187,7 +187,7 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, cols_offset=0, light=False):
+    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
         """
         Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
 
@@ -202,7 +202,7 @@ class H2OFrame(object):
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
-            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset, light=light)
+            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, full_cols=full_cols, cols_offset=cols_offset, light=light)
         except EnvironmentError:
             return None
         return fr

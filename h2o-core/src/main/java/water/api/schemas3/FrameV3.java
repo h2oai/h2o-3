@@ -37,6 +37,9 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   @API(help="Number of columns to return", direction=API.Direction.INOUT)
   public int column_count;
 
+  @API(help="Number of full columns to return. The columns between full_column_count and column_count will be returned without the data", direction=API.Direction.INOUT)
+  public int full_column_count;
+
   @API(help="Total number of columns in the Frame", direction=API.Direction.INOUT)
   public int total_column_count;
 
@@ -141,37 +144,37 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     transient Vec _vec;
 
-    ColV3(String name, Vec vec, long off, int len, boolean expensive) {
+    ColV3(String name, Vec vec, long off, int len, boolean is_full_column) {
       label = name;
-      if (expensive) {
-        missing_count = vec.naCnt();
-        zero_count = vec.length() - vec.nzCnt() - missing_count;
-        positive_infinity_count = vec.pinfs();
-        negative_infinity_count = vec.ninfs();
-        mins = vec.mins();
-        maxs = vec.maxs();
-        mean = vec.mean();
-        sigma = vec.sigma();
 
-        // Histogram data is only computed on-demand.  By default here we do NOT
-        // compute it, but will return any prior computed & cached histogram.
-        histogram_bins = vec.lazy_bins();
-        histogram_base = histogram_bins == null ? 0 : vec.base();
-        histogram_stride = histogram_bins == null ? 0 : vec.stride();
-        percentiles = histogram_bins == null ? null : vec.pctiles();
+      missing_count = vec.naCnt();
+      zero_count = vec.length() - vec.nzCnt() - missing_count;
+      positive_infinity_count = vec.pinfs();
+      negative_infinity_count = vec.ninfs();
+      mins = vec.mins();
+      maxs = vec.maxs();
+      mean = vec.mean();
+      sigma = vec.sigma();
+      // Histogram data is only computed on-demand.  By default here we do NOT
+      // compute it, but will return any prior computed & cached histogram.
+      histogram_bins = vec.lazy_bins();
+      histogram_base = histogram_bins == null ? 0 : vec.base();
+      histogram_stride = histogram_bins == null ? 0 : vec.stride();
+      percentiles = histogram_bins == null ? null : vec.pctiles();
 
-        type = vec.isUUID() ? "uuid" :
-                vec.isString() ? "string" :
-                        vec.isCategorical() ? "enum" :
-                                vec.isTime() ? "time" :
-                                        vec.isInt() ? "int" : "real";
-        domain = vec.domain();
-        if (vec.isCategorical()) {
-          domain_cardinality = domain.length;
-        } else {
-          domain_cardinality = 0;
-        }
+      type = vec.isUUID() ? "uuid" :
+              vec.isString() ? "string" :
+                      vec.isCategorical() ? "enum" :
+                              vec.isTime() ? "time" :
+                                      vec.isInt() ? "int" : "real";
+      domain = vec.domain();
+      if (vec.isCategorical()) {
+        domain_cardinality = domain.length;
+      } else {
+        domain_cardinality = 0;
+      }
 
+      if (is_full_column) {
         len = (int) Math.min(len, vec.length() - off);
         if (vec.isUUID()) {
           string_data = new String[len];
@@ -191,10 +194,10 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
           string_data = null;
         }
         _vec = vec;               // Better HTML display, not in the JSON
-        if (len > 0)  // len == 0 is presumed to be a header file
-          precision = vec.chunkForRow(0).precision();
-
       }
+      if (len > 0)  // len == 0 is presumed to be a header file
+        precision = vec.chunkForRow(0).precision();
+
     }
 
     ColV3(String name, Vec vec, long off, int len) {
@@ -212,30 +215,45 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   public FrameV3(Key<Frame> frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   public FrameV3(Frame fr) {
-    this(fr, 1, (int) fr.numRows(), 0, -1, true); // NOTE: possible row len truncation
+    this(fr, 1, (int) fr.numRows(), 0, -1, -1, true); // NOTE: possible row len truncation
   }
 
   public FrameV3(Frame f, long row_offset, int row_count) {
-    this(f, row_offset, row_count, 0, -1, true);
+    this(f, row_offset, row_count, 0, -1, -1, true);
   }
 
   public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
-    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, true);
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, -1, true);
   }
 
-  public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count, boolean expensive) {
-    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, expensive);
+  public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count, int full_column_count, boolean expensive) {
+    this.fillFromImpl(f, row_offset, row_count, column_offset, column_count, full_column_count, expensive);
   }
 
   @Override public FrameV3 fillFromImpl(Frame f) {
-    return fillFromImpl(f, 1, (int)f.numRows(), 0, -1, false);
+    return fillFromImpl(f, 1, (int)f.numRows(), 0, -1, -1, false);
   }
 
+  /**
+   *
+   * @param f frame from which to obtain the data
+   * @param row_offset starting position for rows
+   * @param row_count number or rows to obtain
+   * @param column_offset starting position for columns
+   * @param column_count number of columns to obtain
+   * @param full_column_count number of columns starting at column_offset which will be obtained together with data.
+   *                          The columns on positions between column_offset+full_column_count and column_offset+column_count
+   *                          won't be backed by vectors so we won't transfer the data to the client side. By default, all columns
+   *                          we ask for are full columns.
+   * @param expensive whether to execute long-lasting but not exactly strictly required computations
+   * @return desired frame slice
+   */
   private FrameV3 fillFromImpl(Frame f, long row_offset, int row_count,
-                              int column_offset, int column_count,
+                              int column_offset, int column_count, int full_column_count,
                               boolean expensive) {
     if( row_count < 0 ) row_count = 100;                                 // 100 rows by default
     if( column_count < 0 ) column_count = f.numCols() - column_offset; // full width by default
+    if( full_column_count < 0 || full_column_count > column_count) full_column_count=column_count; // light_column_count can't be larger then number of columns we asked for
 
     row_count    = (int) Math.min(row_count, row_offset + f.numRows());
     column_count = Math.min(column_count, column_offset + f.numCols());
@@ -254,12 +272,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.total_column_count = f.numCols();
     this.column_offset = column_offset;
     this.column_count = column_count;
-    if (expensive) {
-      this.columns = new ColV3[column_count];
-    } else {
-      // in light mode, we will fill all the columns, but just first few will be filled with data
-      this.columns = new ColV3[f.numCols()];
-    }
+    this.full_column_count = full_column_count;
+    this.columns = new ColV3[column_count];
     Vec[] vecs = f.vecs();
     Futures fs = new Futures();
     // Compute rollups in parallel as needed, by starting all of them and using
@@ -270,23 +284,19 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
         Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i))+ ") is missing; not returning it.");
       else
         vecs[column_offset + i].startRollupStats(fs);
+
+
     for( int i = 0; i < column_count; i++ )
       if (null == DKV.get(vecs[column_offset + i]._key))
         Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i))+ ") is missing; not returning it.");
-      else
-        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
-
-    if(!expensive){
-      // In light mode, read also additional columns
-      // This solution however assumes that the light mode will never be used to obtain really just specific
-      // number of columns.
-      for (int i = column_count; i < f.numCols(); i++) {
-        if (null == DKV.get(vecs[column_offset + i]._key))
-          Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i)) + ") is missing; not returning it.");
-        else
-          columns[i] = new ColV3(f._names[column_offset + i], null, this.row_offset, this.row_count, false);
+      else {
+        if(i < full_column_count) {
+          columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+        }else{
+          columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, false);
+        }
       }
-    }
+
     fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
