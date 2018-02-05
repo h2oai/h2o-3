@@ -62,12 +62,14 @@ h2o.grid <- function(algorithm,
   # Parameter list
   dots <- list(...)
   # Add x, y, and training_frame
-  if(!missing(y)){
-    dots$y <- y
-  } else {
-    stop("Must specify response, y")
-  }
-  if(!missing(training_frame)){
+  if(!(algorithm %in% c("kmeans", "pca", "svd", "glrm"))) {
+    if(!missing(y)) {
+      dots$y <- y
+    } else {
+      stop("Must specify response, y")
+    }
+  } 
+  if(!missing(training_frame)) {
     dots$training_frame <- training_frame
   } else {
     stop("Must specify training frame, training_frame")
