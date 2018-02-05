@@ -200,6 +200,10 @@ test-junit-jenkins:
 test-junit:
 	./gradlew test
 
+test-junit-jenkins:
+	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
+
 test-junit-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test
 
