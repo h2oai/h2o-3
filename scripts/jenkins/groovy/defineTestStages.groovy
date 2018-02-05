@@ -65,11 +65,11 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
-      timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
@@ -97,7 +97,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
@@ -164,11 +164,11 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 110, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
-      timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.3 CMD Check', target: 'test-r-cmd-check', rVersion: '3.3.3',
