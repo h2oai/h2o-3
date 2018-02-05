@@ -59,10 +59,12 @@ h2o.grid <- function(algorithm,
                      do_hyper_params_check = FALSE,
                      search_criteria = NULL)
 {
+  #Unsupervised algos to account for in grid (these algos do not need response)
+  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
   # Parameter list
   dots <- list(...)
   # Add x, y, and training_frame
-  if(!(algorithm %in% c("kmeans", "pca", "svd", "glrm"))) {
+  if(!(algorithm %in% c(unsupervised_algos, toupper(unsupervised_algos)))) {
     if(!missing(y)) {
       dots$y <- y
     } else {
@@ -74,15 +76,17 @@ h2o.grid <- function(algorithm,
   } else {
     stop("Must specify training frame, training_frame")
   }
-  # If x is missing, then assume user wants to use all columns as features.
-  if (missing(x)) {
-    if (is.numeric(y)) {
-      dots$x <- setdiff(col(training_frame), y)
+  # If x is missing, then assume user wants to use all columns as features for supervised models only
+  if(!(algorithm %in% c(unsupervised_algos, toupper(unsupervised_algos)))) {
+    if (missing(x)) {
+      if (is.numeric(y)) {
+        dots$x <- setdiff(col(training_frame), y)
+      } else {
+        dots$x <- setdiff(colnames(training_frame), y)
+      }
     } else {
-      dots$x <- setdiff(colnames(training_frame), y)
+      dots$x <- x
     }
-  } else {
-    dots$x <- x
   }
   algorithm <- .h2o.unifyAlgoName(algorithm)
   model_param_names <- names(dots)
