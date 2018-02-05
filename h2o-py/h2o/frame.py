@@ -468,8 +468,8 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-        res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
-        self._ex._cache._fill_data(res)
+        self._ex._cache.flush()
+        self._ex._cache.fill(rows=10)
         print("Rows:{}".format(self.nrow))
         print("Cols:{}".format(self.ncol))
 
