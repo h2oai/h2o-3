@@ -43,7 +43,7 @@ def call(body) {
       echo "Post-processing following test result files:"
       sh findCmd
       sh replaceCmd
-      junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
+      junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: false, keepLongStdio: true
     }
     if (config.archiveFiles) {
       archiveStageFiles(config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
