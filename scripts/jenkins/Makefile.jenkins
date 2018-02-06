@@ -123,6 +123,9 @@ r-generate-docs-jenkins:
 	@$(MAKE) -f $(THIS_FILE) r-generate-docs
 	@$(MAKE) -f $(THIS_FILE) pack-r-generated-docs
 
+#######################################
+### TARGET USED BY RELEASE PIPELINE ###
+#######################################
 r-generate-docs:
 	cd h2o-r/h2o-package && R -e 'pkgdown::build_site(examples=FALSE)'
 

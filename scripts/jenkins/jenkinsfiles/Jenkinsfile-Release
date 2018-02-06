@@ -529,6 +529,9 @@ private getRelevantRecipients(final pipelineContext, final String result) {
     def RELEASE_ALWAYS_RECIPIENTS = ['michalk@h2o.ai', 'anmol@h2o.ai', 'michalr@h2o.ai']
     def RELEASE_FAILURE_RECIPIENTS = [] + RELEASE_ALWAYS_RECIPIENTS
 
+    if (params.TEST_RELEASE) {
+        return ['michalr@h2o.ai']
+    }
     if (result.toLowerCase() == pipelineContext.getBuildSummary().RESULT_SUCCESS) {
         if (env.NIGHTLY_BUILD != null && env.NIGHTLY_BUILD.toLowerCase() == 'true') {
             return RELEASE_NIGHTLY_ALWAYS_RECIPIENTS
