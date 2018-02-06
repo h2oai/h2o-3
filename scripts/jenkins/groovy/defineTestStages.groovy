@@ -25,7 +25,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JS
+      component: pipelineContext.getBuildConfig().COMPONENT_JS, hasJUnit: false
     ],
     [
       stageName: 'Java8 Smoke', target: 'test-junit-smoke',timeoutValue: 20,
@@ -88,7 +88,7 @@ def call(final pipelineContext) {
       timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS', target: 'test-phantom-js',
+      stageName: 'PhantomJS', target: 'test-phantom-js', hasJUnit: false,
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
@@ -146,11 +146,11 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
+      stageName: 'PhantomJS Small', target: 'test-phantom-js-small', hasJUnit: false,
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
+      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium', hasJUnit: false,
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ]
   ]

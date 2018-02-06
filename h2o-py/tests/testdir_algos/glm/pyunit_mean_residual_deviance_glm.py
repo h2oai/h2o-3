@@ -7,6 +7,8 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 def glm_mean_residual_deviance():
 
+  # FIXME remove assert
+  assert False
   cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
   s = cars[0].runif()
   train = cars[s > 0.2]
