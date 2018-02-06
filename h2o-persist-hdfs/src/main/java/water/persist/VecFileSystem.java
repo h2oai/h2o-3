@@ -35,7 +35,10 @@ public class VecFileSystem extends FileSystem {
   }
 
   @Override public FileStatus getFileStatus(Path p){
-    return new FileStatus(_v.length(),false,1,_v.length()/_v.nChunks(),0l,VecFileSystem.VEC_PATH);
+    if (VEC_PATH.equals(p)) {
+      return new FileStatus(_v.length(),false,1,_v.length()/_v.nChunks(),0l, VecFileSystem.VEC_PATH);
+    } else
+      return null;
   }
 
   @Override
@@ -73,7 +76,10 @@ public class VecFileSystem extends FileSystem {
 
   @Override
   public FileStatus[] listStatus(Path f) throws IOException {
-    return new FileStatus[0];
+    if (VEC_PATH.equals(f)) {
+      return new FileStatus[]{getFileStatus(f)};
+    } else
+      return new FileStatus[0];
   }
 
   @Override

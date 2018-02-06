@@ -22,18 +22,18 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 
+import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.filter2.compat.RowGroupFilter;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 
 import static org.apache.parquet.format.converter.ParquetMetadataConverter.MetadataFilter;
 
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.MessageType;
 import water.fvec.Vec;
 import water.parser.ParseWriter;
 import water.persist.VecDataInputStream;
@@ -41,6 +41,7 @@ import water.util.Log;
 
 import static org.apache.parquet.bytes.BytesUtils.readIntLittleEndian;
 import static org.apache.parquet.format.converter.ParquetMetadataConverter.NO_FILTER;
+import static org.apache.parquet.hadoop.ParquetFileReader.PARQUET_READ_PARALLELISM;
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
 
 import water.persist.VecFileSystem;
@@ -61,7 +62,7 @@ public class VecParquetReader implements Closeable {
   private final ParseWriter writer;
   private final byte[] chunkSchema;
 
-  private H2OInternalParquetRecordReader<Integer> reader;
+  private ParquetReader<Integer> reader;
 
   public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema) {
     this.vec = vec;
@@ -75,28 +76,31 @@ public class VecParquetReader implements Closeable {
    * @throws IOException
    */
   public Integer read() throws IOException {
-    try {
-      if (reader == null) {
-        initReader();
-      }
-      assert reader != null;
-      if (reader.nextKeyValue()) {
-        return reader.getCurrentValue();
-      } else {
-        return null;
-      }
-    } catch (InterruptedException e) {
-      throw new IOException(e);
+    if (reader == null) {
+      initReader();
     }
+    assert reader != null;
+    return reader.read();
   }
 
   private void initReader() throws IOException {
     assert reader == null;
-    List<BlockMetaData> blocks = metadata.getBlocks();
-    MessageType fileSchema = metadata.getFileMetaData().getSchema();
-    reader = new H2OInternalParquetRecordReader<>(new ChunkReadSupport(writer, chunkSchema));
     Configuration conf = VecFileSystem.makeConfiguration(vec);
-    reader.initialize(fileSchema, metadata.getFileMetaData(), VecFileSystem.VEC_PATH, blocks, conf);
+    conf.setInt(PARQUET_READ_PARALLELISM, 1); // disable parallelism (just one virtual file!)
+    ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema);
+    ParquetReader.Builder<Integer> prBuilder = ParquetReader.builder(crSupport, VecFileSystem.VEC_PATH)
+            .withConf(conf)
+            .withFilter(new FilterCompat.Filter() {
+              @Override
+              @SuppressWarnings("unchecked")
+              public <R> R accept(FilterCompat.Visitor<R> visitor) {
+                if (visitor instanceof RowGroupFilter) // inject already filtered metadata on RowGroup level
+                  return (R) metadata.getBlocks();
+                else // no other filtering otherwise
+                  return visitor.visit((FilterCompat.NoOpFilter) FilterCompat.NOOP);
+              }
+            });
+    reader = prBuilder.build();
   }
 
   @Override
@@ -107,7 +111,7 @@ public class VecParquetReader implements Closeable {
   }
 
   public long getInvalidRecordCount() {
-    return reader != null ? reader.getUnmaterializableRecordCount() : -1;
+    return -1;
   }
 
   public static byte[] readFooterAsBytes(Vec vec) {

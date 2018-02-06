@@ -1,7 +1,7 @@
 //
-// H2O Parquet Parser
+// H2O Parquet Parser Compatibility Test (1.7)
 //
-description = "H2O Parquet Parser"
+description = "H2O Parquet Compatibility Test - Parquet 1.7.x)"
 
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
   binding.variables.get("hadoopVersion") : defaultHadoopClientVersion
@@ -11,15 +11,19 @@ dependencies {
   compile(project(":h2o-persist-hdfs")) {
     transitive = false
   }
+  compile(project(":h2o-parquet-parser")) {
+    transitive = false
+  }
   // Parquet support
-  compile("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
+  compile("org.apache.parquet:parquet-hadoop:1.7.0")
   compile("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
     transitive = false
   }
 
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testCompile("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
+  testCompile project(path: ":h2o-parquet-parser", configuration: "testArchives")
+  testCompile("org.apache.parquet:parquet-avro:1.7.0")
   // We need correct version of MapRe Hadoop to run JUnits
   testCompile("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
     exclude module: "servlet-api"
@@ -30,6 +34,7 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 test {
   dependsOn ":h2o-core:testJar"
+  dependsOn ":h2o-parquet-parser:testJar"
   dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
 
   // Defeat task 'test' by running no tests.
