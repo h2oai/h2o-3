@@ -289,13 +289,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     for( int i = 0; i < column_count; i++ )
       if (null == DKV.get(vecs[column_offset + i]._key))
         Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i))+ ") is missing; not returning it.");
-      else {
-        if(i < full_column_count) {
-          columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
-        }else{
-          columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, false);
-        }
-      }
+      else
+        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count, i < full_column_count);
 
     fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
