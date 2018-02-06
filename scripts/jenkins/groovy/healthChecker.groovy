@@ -15,30 +15,14 @@ class HealthChecker {
     boolean checkHealth(final context, final String node, final String dockerImage, final String dockerRegistry) {
         boolean healthy = true
         String cause = ''
-        final String checkRootSpaceCmd = """
-            used=\$(df -h --output=pcent / | tail -1 | tr -d %)
-            if [ \$used -gt ${ROOT_THRESHOLD} ]; then 
-                echo "Usage limit for / reached -> used \${used}%, limit is ${ROOT_THRESHOLD}%";
-                exit 1 
-            else 
-                echo "/ space check passed"
-            fi
-        """
+        final String checkRootSpaceCmd = createSpaceCheckCmd(ROOT_THRESHOLD, '/')
         final int rootSpaceCheckResult = context.sh(script: checkRootSpaceCmd, returnStatus: true)
         if (rootSpaceCheckResult != 0) {
             cause = "Free space check of / failed"
             healthy = false
         }
 
-        final String checkHomeSpaceCmd = """
-            used=\$(df -h --output=pcent \${HOME} | tail -1 | tr -d %)
-            if [ \$used -gt ${HOME_THRESHOLD} ]; then 
-                echo "Usage limit for \${HOME} reached -> used \${used}%, limit is ${HOME_THRESHOLD}%";
-                exit 1 
-            else 
-                echo "\${HOME} space check passed"
-            fi
-        """
+        final String checkHomeSpaceCmd = createSpaceCheckCmd(HOME_THRESHOLD, '${HOME}')
         final int homeSpaceCheckResult = context.sh(script: checkHomeSpaceCmd, returnStatus: true)
         if (homeSpaceCheckResult != 0) {
             cause = "Free space check of \${HOME} failed"
@@ -105,6 +89,18 @@ class HealthChecker {
         """
         benchmarksSummary.addSection(this, 'warnings', 'Unhealthy nodes', warningsTable)
         return benchmarksSummary.getSummaryHTML(context)
+    }
+
+    private String createSpaceCheckCmd(final int threshold, final String path) {
+        return """
+            used=\$(df -h --output=pcent ${path} | tail -1 | tr -d % | tr -d [:space:])
+            if [ \$used -gt ${threshold} ]; then 
+                echo "Usage limit for ${path} reached -> used \${used}%, limit is ${threshold}%";
+                exit 1 
+            else 
+                echo "${path} space check passed"
+            fi
+        """
     }
 
     static class HealthProblem {
