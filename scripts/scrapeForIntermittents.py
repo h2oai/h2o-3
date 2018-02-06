@@ -134,7 +134,8 @@ def get_console_out(url_string):
 
     :return: none
     """
-    full_command = 'curl ' + '"'+ url_string +'"'+ ' --user '+'"admin:admin"'+' > ' + g_temp_filename
+    full_command = 'curl ' + '"'+ url_string +'"'+ ' > ' + g_temp_filename
+    print full_command
     subprocess.call(full_command,shell=True)
 
 
@@ -354,7 +355,8 @@ def main(argv):
         monthToKeep = float(argv[10])
         g_daily_failure_csv = os.path.join(g_test_root_dir, argv[11])
 
-        g_resource_url = '/'.join([g_jenkins_url, "job", g_job_name, g_build_id])
+        job_url = '/job/'.join(g_job_name.split('/'))
+        g_resource_url = '/'.join([g_jenkins_url, "job", job_url, g_build_id])
         get_console_out(g_resource_url+"/#showFailuresLink/")       # save remote console output in local directory
         extract_failed_tests_info()      # grab the console text and stored the failed tests/paths
         save_failed_tests_info()         # save new failed test info into a file

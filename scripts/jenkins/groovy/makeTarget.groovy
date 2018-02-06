@@ -48,7 +48,7 @@ def call(body) {
       final String awsDictName = "${s3root}${intermittentsOutputDict}"
       final String dailyOutputFile = "Daily_PyUnits_Failed_from_${safeJobName}\"_\"${timestamp}.csv"
       sh """
-        cd ${config.h2o3dir}
+        cd ${config.h2o3dir}/scripts
 
         echo "*********************************************"
         echo "***  PostBuild: Looking for intermittents ***"
@@ -72,7 +72,7 @@ def call(body) {
         pip install pytz python-dateutil
 
         python --version
-        python scripts/scrapeForIntermittents.py ${timestamp} ${safeJobName} ${env.BUILD_ID} ${env.GIT_SHA} ${env.NODE_NAME} PyUnit ${env.JENKINS_URL} ${intermittentsOutputFile} ${intermittentsOutputDict} 2 ${dailyOutputFile}
+        python scrapeForIntermittents.py ${timestamp} ${env.JOB_NAME} ${env.BUILD_ID} ${env.GIT_SHA} ${env.NODE_NAME} PyUnit ${env.JENKINS_URL} ${intermittentsOutputFile} ${intermittentsOutputDict} 2 ${dailyOutputFile}
         
         s3cmd put ${intermittentsOutputFile} ${s3root}
         s3cmd put ${intermittentsOutputDict} ${s3root}
