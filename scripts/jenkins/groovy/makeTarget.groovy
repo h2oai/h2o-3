@@ -39,7 +39,7 @@ def call(body) {
   } catch (Exception e) {
     if (config.hasJUnit) {
       final String safeJobName = env.JOB_NAME.replace('/', '_')
-      final String timestamp = sh(script: 'date +%s', returnStdout: true)
+      final String timestamp = sh(script: 'date +%s', returnStdout: true).trim()
       // FIXME set correct s3 root
       final String s3root = 's3://test.0xdata.com/intermittents/jenkins/' // 's3://ai.h2o.tests/jenkins/'
       final String intermittentsOutputFile = "Failed_PyUnits_from_${safeJobName}.csv"
@@ -66,6 +66,12 @@ def call(body) {
           s3cmd get ${awsDictName}
         fi
 
+        # FIXME this should be already installed in system-wide python2
+        virtualenv --python=python2 ~/env
+        . ~/env/bin/activate
+        pip install pytz python-dateutil
+
+        python --version
         python scripts/scrapeForIntermittents.py ${timestamp} ${safeJobName} ${env.BUILD_ID} ${env.GIT_SHA} ${env.NODE_NAME} PyUnit ${env.JENKINS_URL} ${intermittentsOutputFile} ${intermittentsOutputDict} 2 ${dailyOutputFile}
         
         s3cmd put ${intermittentsOutputFile} ${s3root}

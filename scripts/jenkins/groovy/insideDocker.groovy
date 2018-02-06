@@ -7,8 +7,9 @@ def call(customEnv, image, registry, timeoutValue, timeoutUnit, customArgs='', b
   }
 
   withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-      sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
-      sh "docker pull ${image}"
+// FIXME
+//      sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
+//      sh "docker pull ${image}"
   }
 
   withEnv(customEnv) {
