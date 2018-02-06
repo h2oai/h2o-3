@@ -6,6 +6,7 @@ import itertools
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
+from h2o.exceptions import H2OValueError
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
@@ -150,7 +151,7 @@ class H2OGridSearch(backwards_compatible()):
         self._job = None
 
 
-    def train(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
+    def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
               validation_frame=None, **params):
         """
         Train the model synchronously (i.e. do not return until the model finishes training).
@@ -185,7 +186,25 @@ class H2OGridSearch(backwards_compatible()):
                     parms["y"] = y[0]
                 else:
                     raise ValueError('y must be a single column reference')
-            self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
+        if x is None:
+            if(isinstance(y, int)):
+                xset = set(range(training_frame.ncols)) - {y}
+            else:
+                xset = set(training_frame.names) - {y}
+        else:
+            xset = set()
+            if is_type(x, int, str): x = [x]
+            for xi in x:
+                if is_type(xi, int):
+                    if not (-training_frame.ncols <= xi < training_frame.ncols):
+                        raise H2OValueError("Column %d does not exist in the training frame" % xi)
+                    xset.add(training_frame.names[xi])
+                else:
+                    if xi not in training_frame.names:
+                        raise H2OValueError("Column %s not in the training frame" % xi)
+                    xset.add(xi)
+        x = list(xset)
+        parms["x"] = x
         self.build_model(parms)
 
 
