@@ -25,6 +25,8 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip && \
     rm -rf /var/lib/apt/lists/*
 
+ENV H2O_BRANCH='master'
+
 # Set required env vars and install Java 8 and Pythons
 COPY ${PATH_PREFIX}/../common/sbin/ scripts/install_java scripts/install_python_versions /usr/sbin/
 RUN \
