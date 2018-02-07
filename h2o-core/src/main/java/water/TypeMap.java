@@ -113,12 +113,18 @@ public class TypeMap {
   // lookup  : id -> string (on leader)
   //
 
-  // returns the ID for an existing className (fails if class doesn't exist yet)
+  // returns the ID for an existing className (fails if class doesn't exist/cannot be loaded)
   public static int getIcedId(String className) {
     Integer I = MAP.get(className);
-    if (I == null)
-      throw new IllegalArgumentException("Class " + className + " is not known to H2O (it is not in the TypeMap).");
-    return I;
+    if (I != null)
+      return I;
+    try {
+      Class<?> clz = classForName(className);
+      assert clz != null;
+    } catch (ClassNotFoundException e) {
+      throw new IllegalArgumentException("Class " + className + " is not known to H2O.", e);
+    }
+    return onIce(className);
   }
 
   // During first Icing, get a globally unique class ID for a className
