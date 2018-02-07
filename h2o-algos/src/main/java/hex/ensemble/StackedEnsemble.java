@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.StackedEnsembleModel;
+import static hex.StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm;
 
 import water.DKV;
 import water.Job;
@@ -242,53 +243,59 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                         _model._parms.valid());
       }
 
-      //Compute metalearner
-      //Check if metalearner is valid
-      boolean validMetalearner = checkMetalearner(_model._parms._metalearner_algorithm);
-      StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearnerAlgorithm = _model._parms._metalearner_algorithm;
+      MetalearnerAlgorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
+      MetalearnerAlgorithm metalearnerAlgoImpl = getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
-      if(validMetalearner) {
-        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._parms._metalearner_algorithm + "_" + _model._key);
-        Job metalearnerJob = new Job<>(metalearnerKey, _model._parms._metalearner_algorithm.toString(),
-                "StackingEnsemble metalearner (" + _model._parms._metalearner_algorithm + ")");
+      // Compute metalearner
+      if(metalearnerAlgoImpl != null) {
+        Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + metalearnerAlgoSpec + "_" + _model._key);
+
+        Job metalearnerJob = new Job<>(metalearnerKey, ModelBuilder.javaName(metalearnerAlgoImpl.toString()),
+                "StackingEnsemble metalearner (" + metalearnerAlgoSpec + ")");
         //Check if metalearner_params are passed in
-        boolean hasMetaLearnerParams = _model._parms._metalearner_params != null && !_model._parms._metalearner_params.isEmpty() ? true : false;
+        boolean hasMetaLearnerParams = _model._parms._metalearner_params != null && !_model._parms._metalearner_params.isEmpty();
         Metalearner metalearner = new Metalearner(levelOneTrainingFrame, levelOneValidationFrame,
                                                   _model._parms._metalearner_params, _model, _job,
                                                   metalearnerKey, metalearnerJob, _parms, hasMetaLearnerParams);
 
-        if (metalearnerAlgorithm.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.AUTO)) {
-          metalearner.computeAutoMetalearner();
-        } else if (metalearnerAlgorithm.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.gbm)) {
-          metalearner.computeGBMMetalearner();
-        } else if (metalearnerAlgorithm.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.drf)) {
-          metalearner.computeDRFMetalearner();
-        } else if (metalearnerAlgorithm.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.glm)) {
-          metalearner.computeGLMMetalearner();
-        } else if (metalearnerAlgorithm.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm.deeplearning)) {
-          metalearner.computeDeepLearningMetalearner();
+        switch (metalearnerAlgoSpec) {
+          case AUTO:
+            metalearner.computeAutoMetalearner();
+            break;
+          case gbm:
+            metalearner.computeGBMMetalearner();
+            break;
+          case drf:
+            metalearner.computeDRFMetalearner();
+            break;
+          case glm:
+            metalearner.computeGLMMetalearner();
+            break;
+          case deeplearning:
+            metalearner.computeDeepLearningMetalearner();
+            break;
+          default:
+            throw new UnsupportedOperationException("Unknown meta-learner algo:" + metalearnerAlgoSpec);
         }
-
       } else {
-            throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + _model._parms._metalearner_algorithm + " " +
+            throw new H2OIllegalArgumentException("Invalid `metalearner_algorithm`. Passed in " + metalearnerAlgoSpec + " " +
                     "but must be one of 'glm', 'gbm', 'randomForest', or 'deeplearning'.");
       }
     } // computeImpl
   }
 
-  private boolean checkMetalearner(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerAlgorithm metalearner_algo){
-    if(metalearner_algo.equals(metalearner_algo.AUTO)){
-      return true;
-    } else if (metalearner_algo.equals(metalearner_algo.gbm)){
-      return true;
-    } else if (metalearner_algo.equals(metalearner_algo.glm)){
-      return true;
-    } else if (metalearner_algo.equals(metalearner_algo.drf)){
-      return true;
-    } else if (metalearner_algo.equals(metalearner_algo.deeplearning)){
-      return true;
-    } else {
-      return false;
+  private MetalearnerAlgorithm getActualMetalearnerAlgo(MetalearnerAlgorithm metalearner_algo) {
+    switch (metalearner_algo) {
+      case AUTO:
+        return MetalearnerAlgorithm.glm;
+      case gbm:
+      case glm:
+      case drf:
+      case deeplearning:
+        return metalearner_algo;
+      default:
+        return null;
     }
   }
+
 }

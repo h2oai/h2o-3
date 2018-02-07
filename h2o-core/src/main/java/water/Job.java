@@ -52,7 +52,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     super(defaultJobKey());     // Passing in a brand new Job key
     assert key==null || clz_of_T!=null;
     _result = key;              // Result (destination?) key
-    _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
+    _typeid = clz_of_T==null ? 0 : TypeMap.getIcedId(clz_of_T);
     _description = desc; 
   }
 
