@@ -1,7 +1,7 @@
 package hex.tree.xgboost.rabit;
 
+import hex.tree.xgboost.rabit.communication.XGBoostAutoBuffer;
 import hex.tree.xgboost.rabit.util.LinkMap;
-import water.AutoBuffer;
 import water.ExternalFrameUtils;
 import water.util.Log;
 
@@ -23,12 +23,12 @@ public class RabitWorker implements Comparable<RabitWorker> {
     public String cmd;
     int waitAccept;
     private int port;
-    private AutoBuffer ab;
-    private AutoBuffer writerAB;
+    private XGBoostAutoBuffer ab;
+    private XGBoostAutoBuffer writerAB;
 
 
-    public RabitWorker(SocketChannel channel) throws IOException {
-        this.ab = new AutoBuffer(channel, null);
+    RabitWorker(SocketChannel channel) throws IOException {
+        this.ab = new XGBoostAutoBuffer(channel);
         this.socket = channel;
         this.host = channel.socket().getInetAddress().getHostAddress();
         this.workerPort = channel.socket().getPort();
@@ -41,14 +41,14 @@ public class RabitWorker implements Comparable<RabitWorker> {
             );
         }
 
-        writerAB = new AutoBuffer();
+        writerAB = new XGBoostAutoBuffer();
         writerAB.put4(RabitTrackerH2O.MAGIC);
-        ExternalFrameUtils.writeToChannel(writerAB, socket);
+        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
 
         this.rank = ab.get4();
         this.worldSize = ab.get4();
-        this.jobId = safeLowercase(ab.getExternalStr());
-        this.cmd = safeLowercase(ab.getExternalStr());
+        this.jobId = safeLowercase(ab.getStr());
+        this.cmd = safeLowercase(ab.getStr());
         this.waitAccept = 0;
         this.port = -1;
         Log.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
@@ -68,7 +68,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         return -1;
     }
 
-    public AutoBuffer receiver() {
+    public XGBoostAutoBuffer receiver() {
         return ab;
     }
 
@@ -100,7 +100,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         } else {
             writerAB.put4(-1);
         }
-        ExternalFrameUtils.writeToChannel(writerAB, socket);
+        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
 
         while (true) {
             int ngood = ab.get4();
@@ -120,15 +120,15 @@ public class RabitWorker implements Comparable<RabitWorker> {
             }
 
             writerAB.put4(conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB, socket);
+            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
             writerAB.put4(badSet.size() - conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB, socket);
+            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
 
             for (Integer r : conset) {
-                writerAB.putExternalStr(waitConn.get(r).host);
+                writerAB.putStr(waitConn.get(r).host);
                 writerAB.put4(waitConn.get(r).port);
                 writerAB.put4(r);
-                ExternalFrameUtils.writeToChannel(writerAB, socket);
+                ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
             }
 
             int nerr = ab.get4();

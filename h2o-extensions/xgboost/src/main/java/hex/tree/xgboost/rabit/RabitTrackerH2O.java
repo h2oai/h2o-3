@@ -111,7 +111,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                     RabitWorker worker = new RabitWorker(channel);
 
                     if (PRINT_CMD.equals(worker.cmd)) {
-                        String msg = worker.receiver().getExternalStr();
+                        String msg = worker.receiver().getStr();
                         Log.warn("Rabit worker: ", msg);
                         continue;
                     } else if (SHUTDOWN_CMD.equals(worker.cmd)) {
