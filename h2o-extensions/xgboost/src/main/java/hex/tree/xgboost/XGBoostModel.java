@@ -210,7 +210,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (XGBoost.hasGPU(p._gpu_id)) {
+      if(H2O.getCloudSize() > 1) {
+        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+      } else if (XGBoost.hasGPU(p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {

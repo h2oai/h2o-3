@@ -127,6 +127,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
     }
 
+    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && H2O.getCloudSize() > 1) {
+      error("_backend", "GPU backend is not supported in distributed mode.");
+    }
+
     if (_parms._distribution == DistributionFamily.quasibinomial)
       error("_distribution", "Quasibinomial is not supported for XGBoost in current H2O.");
 
@@ -244,9 +248,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) ||
-              XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
-              hasGPU(_parms._gpu_id) ) {
+      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
+              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 ) {
         synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
           buildModelImpl();
         }
