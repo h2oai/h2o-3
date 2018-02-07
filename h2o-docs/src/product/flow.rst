@@ -905,6 +905,8 @@ types.
 
 -  **max_runtime_secs**: (XGBoost, AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
 
+-  **base_model**: (Stacked Ensembles) Specify a list of models (or model IDs) that can be stacked together.  Models must have been cross-validated (i.e. ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
+
 -  **metalearner_algorithm**: (Stacked Ensembles) Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), 'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with default parameters).
 
 -  **metalearner_nfolds**: (Stacked Ensembles) Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).
@@ -1041,8 +1043,6 @@ types.
 -  **grow_policy**: (XGBoost) Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change.
 
 -  **dmatrix_type**: (XGBoost) Specify the type of DMatrix. Valid options are "auto", "dense", and "sparse". Note that for a DMatrix type of "sparase", NAs and 0 are treated equally.
-
--  **base_model**: (Stacked Ensembles) Specify a list of models (or model IDs) that can be stacked together.  Models must have been cross-validated (i.e. ``nfolds``>1 or ``fold_column`` was specified), they all must use the same cross-validation folds, and ``keep_cross_validation_predictions`` must have been set to True. One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
 -  **metalearner_fold_assignment**: (Stacked Ensembles) Cross-validation fold assignment scheme for metalearner cross-validation. Defaults to AUTO (which is currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for classification problems.
 
