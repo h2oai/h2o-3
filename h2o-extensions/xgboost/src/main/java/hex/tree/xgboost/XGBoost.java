@@ -83,10 +83,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
     if (expensive) {
-      if (_response.naCnt() > 0)
+      if (_response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
-      if (!ExtensionManager.getInstance().isCoreExtensionEnabled(XGBoostExtension.NAME)) {
-        error("XGBoost", "XGBoost is not available!");
+      }
+      if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
+        error("XGBoost", "XGBoost is not available on all nodes!");
       }
     }
 
@@ -304,15 +305,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         try {
           model.model_info().setBooster(new XGBoostUpdateTask(
-              model.model_info().getBooster(),
-              model.model_info(),
-              model._output,
-              _parms,
-              0,
-              getWorkerEnvs(rt),
-              new String[]{""}).doAll(_train).getBooster(featureMapFile));
+                  model.model_info().getBooster(),
+                  model.model_info(),
+                  model._output,
+                  _parms,
+                  0,
+                  getWorkerEnvs(rt),
+                  new String[]{""}).doAll(_train).getBooster(featureMapFile));
           // Wait for results
           waitOnRabitWorkers(rt);
+        } catch (RuntimeException e) {
+          throw e;
         } finally {
           rt.stop();
         }
@@ -368,6 +371,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               null).doAll(_train).getBooster());
           // Wait for succesful completion
           waitOnRabitWorkers(rt);
+        } catch (RuntimeException e) {
+          throw e;
         } finally {
           rt.stop();
         }

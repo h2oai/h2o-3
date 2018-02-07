@@ -50,7 +50,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             return;
         }
 
-        // We need to verify that the xgboost is available on the remove node
+        // We need to verify that the xgboost is available on the remote node
         if (!ExtensionManager.getInstance().isCoreExtensionEnabled(XGBoostExtension.NAME)) {
             throw new IllegalStateException("XGBoost is not available on the node " + H2O.SELF);
         }
