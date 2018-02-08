@@ -18,6 +18,7 @@ import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -699,6 +701,54 @@ public class XGBoostTest extends TestUtil {
       if (tfr!=null) tfr.remove();
       if (preds!=null) preds.remove();
       if (model!=null) model.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGPUIncompatParams() {
+    XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+    parms._backend = XGBoostModel.XGBoostParameters.Backend.gpu;
+    parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
+    Map<String, Object> expectedIncompats = Collections.singletonMap("grow_policy", (Object) XGBoostModel.XGBoostParameters.GrowPolicy.lossguide);
+    Assert.assertEquals(expectedIncompats, parms.gpuIncompatibleParams());
+  }
+
+  @Test
+  public void testGPUIncompats() {
+    Scope.enter();
+    try {
+      Frame tfr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("A", "B,", "A", "C", "A", "B", "A"))
+              .build();
+      Scope.track(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 3;
+      parms._max_depth = 3;
+      parms._train = tfr._key;
+      parms._response_column = "ColB";
+
+      // Force GPU backend
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.gpu;
+
+      // Set GPU incompatible parameter 'grow_policy = lossguide'
+      parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist; // Needed by lossguide
+
+      try {
+        XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+        Scope.track_generic(model);
+        Assert.fail("Thes parameter settings are not suppose to work!");
+      } catch (H2OModelBuilderIllegalArgumentException e) {
+        String expected = "ERRR on field: _backend: GPU backend is not available for parameter setting 'grow_policy = lossguide'. Use CPU backend instead.\n";
+        Assert.assertTrue(e.getMessage().endsWith(expected));
+      }
+    } finally {
       Scope.exit();
     }
   }
