@@ -12,6 +12,7 @@ import org.apache.commons.math3.distribution.TDistribution;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -211,6 +212,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
+      if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE))
+        throw H2O.unimpl("Naive coordinate descent is not supported.");
       if(_alpha != null && (1 < _alpha[0] || _alpha[0] < 0))
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
@@ -327,7 +330,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return 1;
         case binomial:
-        case multinomial:
+
         case quasibinomial:
           return mu * (1 - mu);
         case poisson:
@@ -336,6 +339,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return mu * mu;
         case tweedie:
           return Math.pow(mu, _tweedie_variance_power);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw new RuntimeException("unknown family Id " + this._family);
       }
@@ -394,7 +401,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
         case logit:
-//        case multinomial:
           double div = (x * (1 - x));
           if(div < 1e-6) return 1e6; // avoid numerical instability
           return 1.0 / div;
@@ -413,6 +419,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return _tweedie_link_power == 0
             ?1.0/Math.max(2e-16,x)
             :_tweedie_link_power * Math.pow(x,_tweedie_link_power-1);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw H2O.unimpl();
       }
@@ -420,7 +430,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public final double linkInv(double x) {
       switch(_link) {
-//        case multinomial: // should not be used
         case identity:
           return x;
         case logit:
@@ -434,6 +443,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return _tweedie_link_power == 0
             ?Math.max(2e-16,Math.exp(x))
             :Math.pow(x, 1/ _tweedie_link_power);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -456,6 +469,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 //        case tweedie:
 //          double vp = (1. - _tweedie_link_power) / _tweedie_link_power;
 //          return (1/ _tweedie_link_power) * Math.pow(x, vp);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -531,7 +548,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
         case logit:
-//        case multinomial:
           double div = (x * (1 - x));
           if(div < 1e-6) return 1e6; // avoid numerical instability
           return 1.0 / div;
@@ -545,6 +561,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return _link_power == 0
             ?1.0/Math.max(2e-16,x)
             :_link_power * Math.pow(x,_link_power-1);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw H2O.unimpl();
       }
@@ -552,7 +572,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public final double linkInv(double x) {
       switch(_link) {
-//        case multinomial: // should not be used
         case identity:
           return x;
         case logit:
@@ -566,6 +585,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return _link_power == 0
             ?Math.max(2e-16,Math.exp(x))
             :Math.pow(x, 1/ _link_power);
+        case multinomial:
+          // This function is only executed in case naive coordinate descent is chosen in combination with
+          // multinomial distribution
+          throw H2O.unimpl("Naive coordinate descent is not supported.");
         default:
           throw new RuntimeException("unexpected link function id  " + _link);
       }
