@@ -224,7 +224,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, expensive);
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count, s.column_offset, s.column_count, s.full_column_count, expensive);
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Model.fetchAll());

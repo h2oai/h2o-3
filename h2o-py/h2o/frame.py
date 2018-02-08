@@ -187,7 +187,7 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, cols_offset=0, light=False):
+    def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
         """
         Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
 
@@ -195,6 +195,7 @@ class H2OFrame(object):
         :param int rows: number of rows to fetch for preview (10 by default)
         :param int rows_offset: offset to fetch rows from (0 by default)
         :param int cols: number of columns to fetch (all by default)
+        :param full_cols: number of columns to fetch together with backed data
         :param int cols_offset: offset to fetch rows from (0 by default)
         :param bool light: wether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
@@ -202,7 +203,7 @@ class H2OFrame(object):
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
-            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset, light=light)
+            fr._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, full_cols=full_cols, cols_offset=cols_offset, light=light)
         except EnvironmentError:
             return None
         return fr
@@ -470,6 +471,7 @@ class H2OFrame(object):
         """
         res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
         self._ex._cache._fill_data(res)
+
         print("Rows:{}".format(self.nrow))
         print("Cols:{}".format(self.ncol))
 

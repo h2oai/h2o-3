@@ -22,6 +22,9 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
   @API(help="Column offset to return", direction=API.Direction.INOUT)
   public int column_offset;
 
+  @API(help="Number of full columns to return. The columns between full_column_count and column_count will be returned without the data", direction=API.Direction.INOUT)
+  public int full_column_count = -1;
+
   @API(help="Number of columns to return", direction=API.Direction.INOUT)
   public int column_count = -1;
 
