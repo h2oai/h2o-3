@@ -110,10 +110,6 @@ public class VecParquetReader implements Closeable {
     }
   }
 
-  public long getInvalidRecordCount() {
-    return -1;
-  }
-
   public static byte[] readFooterAsBytes(Vec vec) {
     FSDataInputStream f = null;
     try {
