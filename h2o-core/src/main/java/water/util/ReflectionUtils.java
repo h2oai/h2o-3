@@ -129,4 +129,17 @@ public class ReflectionUtils {
     } while (clz != Object.class);
     return null;
   }
+
+  public static <T> T getFieldValue(Object o, String fieldName) {
+    Field f = findNamedField(o, fieldName);
+    if (f == null) {
+      return null;
+    } else {
+      try {
+        return (T) f.get(o);
+      } catch (IllegalAccessException e) {
+        return null;
+      }
+    }
+  }
 }
