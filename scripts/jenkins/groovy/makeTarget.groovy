@@ -16,10 +16,6 @@ def call(body) {
   body.delegate = config
   body()
 
-  if (config.archiveFiles == null) {
-    config.archiveFiles = true
-  }
-
   if (config.hasJUnit == null) {
     config.hasJUnit = true
   }
@@ -51,11 +47,11 @@ def call(body) {
     }
     if (config.archiveFiles) {
       archiveStageFiles(config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
-      if (config.archiveAdditionalFiles) {
-        echo "###### Archiving additional files: ######"
-        echo "${config.archiveAdditionalFiles}"
-        archiveStageFiles(config.h2o3dir, config.archiveAdditionalFiles, config.excludeAdditionalFiles)
-      }
+    }
+    if (config.archiveAdditionalFiles) {
+      echo "###### Archiving additional files: ######"
+      echo "${config.archiveAdditionalFiles.join(', ')}"
+      archiveStageFiles(config.h2o3dir, config.archiveAdditionalFiles, config.excludeAdditionalFiles)
     }
   }
 }
@@ -81,7 +77,11 @@ private void execMake(final String buildAction, final String h2o3dir) {
 }
 
 private void archiveStageFiles(final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {
-  archiveArtifacts artifacts: archiveFiles.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true, excludes: excludeFiles.collect{"${h2o3dir}/${it}"}.join(', ')
+  List<String> excludes = []
+  if (excludeFiles != null) {
+    excludes = excludeFiles
+  }
+  archiveArtifacts artifacts: archiveFiles.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true, excludes: excludes.collect{"${h2o3dir}/${it}"}.join(', ')
 }
 
 return this

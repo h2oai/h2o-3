@@ -26,18 +26,35 @@ test.glm.interactions <- function() {
     expect_true( abs( h2o_coef - R_coef) < 1e-10 )
   }
 
-  m_h2o_interaction <- h2o.glm(x=1:3,y=4,training_frame=as.h2o(iris), interactions=c(1,2,3), lambda=0, standardize=FALSE)
+  train <- as.h2o(iris)
+
+  # use all pairwise interactions of specified columns
+  m_h2o_interaction <- h2o.glm(x=1:3,y=4,training_frame=train,
+                               interactions=c("Sepal.Length", "Sepal.Width", "Petal.Length"),
+                               lambda=0, standardize=FALSE)
+  # enumerate all pairwise interactions explicitly
+  m_h2o_interaction_explicit <- h2o.glm(x=1:3,y=4,training_frame=train,
+                                        interaction_pairs=list(
+                                          c("Sepal.Length", "Sepal.Width"),
+                                          c("Sepal.Length", "Petal.Length"),
+                                          c("Sepal.Width", "Petal.Length")
+                                        ), lambda=0, standardize=FALSE)
+
   m_h2o_interaction_coefs <- m_h2o_interaction@model$coefficients_table
-    for(i in 1:length(m_R_coefs)) {
-      name <- names(m_R_coefs[i])
-      if( name=="(Intercept)" ) { name <- "Intercept" }
-      print(name)
-      h2o_coef <- m_h2o_interaction_coefs[m_h2o_interaction_coefs$names==name,"coefficients"]
-      R_coef <- as.vector(m_R_coefs)[i]
-      print( paste0("H2O Coeff: ",  h2o_coef))
-      print( paste0("R   Coeff: ",  R_coef))
-      expect_true( abs( h2o_coef - R_coef) < 1e-10 )
-    }
+  m_h2o_interaction_coefs_expl <- m_h2o_interaction_explicit@model$coefficients_table
+  for(i in 1:length(m_R_coefs)) {
+    name <- names(m_R_coefs[i])
+    if( name=="(Intercept)" ) { name <- "Intercept" }
+    print(name)
+    h2o_coef <- m_h2o_interaction_coefs[m_h2o_interaction_coefs$names==name,"coefficients"]
+    h2o_coef_expl <- m_h2o_interaction_coefs_expl[m_h2o_interaction_coefs_expl$names==name,"coefficients"]
+    R_coef <- as.vector(m_R_coefs)[i]
+    print( paste0("R   Coeff: ",  R_coef))
+    print( paste0("H2O Coeff: ",  h2o_coef))
+    print( paste0("H2O CoExp: ",  h2o_coef_expl))
+    expect_true( abs( h2o_coef - R_coef) < 1e-10 )
+    expect_true( abs( h2o_coef - h2o_coef_expl) < 1e-10 )
+  }
 }
 
 doTest("Testing model accessors for GLM", test.glm.interactions)

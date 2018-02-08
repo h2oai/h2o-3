@@ -106,9 +106,9 @@ description of the error distribution.</p>
   <span class='kw'>link</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"family_default"</span>, <span class='st'>"identity"</span>, <span class='st'>"logit"</span>, <span class='st'>"log"</span>, <span class='st'>"inverse"</span>,
   <span class='st'>"tweedie"</span>), <span class='kw'>prior</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>lambda_min_ratio</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>beta_constraints</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>max_active_predictors</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>balance_classes</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>class_sampling_factors</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>max_after_balance_size</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>max_hit_ratio_k</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>custom_metric_func</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+  <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>balance_classes</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>class_sampling_factors</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>max_after_balance_size</span> <span class='kw'>=</span> <span class='fl'>5</span>,
+  <span class='kw'>max_hit_ratio_k</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>custom_metric_func</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -308,6 +308,10 @@ max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults 
     <tr>
       <th>interactions</th>
       <td><p>A list of predictor column indices to interact. All pairwise combinations will be computed for the list.</p></td>
+    </tr>
+    <tr>
+      <th>interaction_pairs</th>
+      <td><p>A list of pairwise (first order) column interactions.</p></td>
     </tr>
     <tr>
       <th>balance_classes</th>

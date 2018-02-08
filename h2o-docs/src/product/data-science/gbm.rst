@@ -47,8 +47,7 @@ Defining a GBM Model
 
 -  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 

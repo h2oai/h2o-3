@@ -1,9 +1,9 @@
-package hex.tree.xgboost;
+package ml.dmlc.xgboost4j.java;
 
 import hex.DataInfo;
+import hex.tree.xgboost.XGBoostModel;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.BoosterHelper;
-import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 import water.Key;
@@ -20,14 +20,29 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
-  private int _classes;
-  byte[] _boosterBytes; // internal state of native backend
+  public byte[] _boosterBytes; // internal state of native backend
 
   private TwoDimTable summaryTable;
 
   private transient Booster _booster;  //pointer to C++ process
 
-  Key<DataInfo> _dataInfoKey;
+  public Booster getBooster() {
+    if(null == _booster && null != _boosterBytes) {
+      try {
+        _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+      } catch (XGBoostError | IOException exception) {
+        throw new IllegalStateException("Failed to load the booster.", exception);
+      }
+    }
+
+    return _booster;
+  }
+
+  public void setBooster(Booster _booster) {
+    this._booster = _booster;
+  }
+
+  public Key<DataInfo> _dataInfoKey;
 
   public final Booster booster() {
     if (_booster == null) {
@@ -38,18 +53,14 @@ final public class XGBoostModelInfo extends Iced {
     return _booster;
   }
 
-  public final void setBooster(Booster booster) {
-      this._booster = booster;
-  }
-
-  void nukeBackend() {
+  public void nukeBackend() {
     if (_booster != null) {
       _booster.dispose();
     }
     _booster = null;
   }
 
-  void nativeToJava() {
+  public void nativeToJava() {
     try {
       _boosterBytes = _booster.toByteArray();
     } catch (XGBoostError xgBoostError) {
@@ -90,9 +101,8 @@ final public class XGBoostModelInfo extends Iced {
    * @param origParams Model parameters
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
-  XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, int nClasses) {
-    _classes = nClasses;
-    _classification = _classes > 1;
+  public XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, int nClasses) {
+    _classification = nClasses > 1;
     parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
   }
 
@@ -103,13 +113,13 @@ final public class XGBoostModelInfo extends Iced {
    */
   TwoDimTable createSummaryTable() {
     TwoDimTable table = new TwoDimTable(
-        "Status of XGBoost Model",
+            "Status of XGBoost Model",
             "Ha",
-        new String[1], //rows
-        new String[]{"Input Neurons", "Rate", "Momentum" },
-        new String[]{"int", "double", "double" },
-        new String[]{"%d", "%5f", "%5f"},
-        "");
+            new String[1], //rows
+            new String[]{"Input Neurons", "Rate", "Momentum" },
+            new String[]{"int", "double", "double" },
+            new String[]{"%d", "%5f", "%5f"},
+            "");
     table.set(0, 0, 123);
     table.set(0, 1, 1234);
     table.set(0, 2, 12345);
@@ -127,4 +137,5 @@ final public class XGBoostModelInfo extends Iced {
     if (summaryTable!=null) sb.append(summaryTable.toString(1));
     return sb.toString();
   }
+
 }

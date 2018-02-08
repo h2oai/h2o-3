@@ -147,7 +147,7 @@ public final class AutoBuffer {
    *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
    *  represents the case where the communication is coming from h2o node.
    *  */
-  AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
+  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer

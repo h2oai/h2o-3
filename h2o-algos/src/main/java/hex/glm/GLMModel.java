@@ -202,6 +202,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
     public String[] _interactions=null;
+    public StringPair[] _interaction_pairs=null;
     public boolean _early_stopping = true;
 
     public Key<Frame> _beta_constraints = null;
@@ -477,6 +478,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
       return y * Math.log(y / mu);
     }
+
+    public InteractionSpec interactionSpec() {
+      return InteractionSpec.create(_interactions, _interaction_pairs);
+    }
+
   } // GLMParameters
 
   public static class GLMWeights {
@@ -805,8 +811,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    @Override public String[] interactions() { return _dinfo._interactionColumns; }
-    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+    @Override public InteractionSpec interactions() { return _dinfo._interactionSpec; }
+    public static Frame expand(Frame fr, InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 

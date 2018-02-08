@@ -307,7 +307,7 @@ public class ExternalFrameUtils {
         writeToChannel(ab, channel);
     }
 
-    static void writeToChannel(AutoBuffer ab, ByteChannel channel) throws IOException {
+    public static void writeToChannel(AutoBuffer ab, ByteChannel channel) throws IOException {
         ab.flipForReading();
         channel.write(ab._bb);
         ab.clearForWriting(H2O.MAX_PRIORITY);

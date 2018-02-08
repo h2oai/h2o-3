@@ -20,6 +20,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["StringPair"] = "tuple"
         self.make_array = lambda vtype: "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
@@ -46,6 +47,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
+        self.types["StringPair"] = "tuple"
         self.make_array = lambda vtype: "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
@@ -146,6 +148,8 @@ def gen_module(schema, algo):
     yield "from h2o.frame import H2OFrame"
     if classname == "H2OStackedEnsembleEstimator":
         yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
+        yield "import json"
+        yield "import ast"
     else:
         yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
@@ -198,11 +202,17 @@ def gen_module(schema, algo):
             vals = param["dtype"][5:-1].split(", ")
             extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
-            extrahelp = "Type: ``%s``" % param["dtype"]
+            if pname == "metalearner_params":
+                extrahelp = "Type: ``dict``"
+            else:
+                extrahelp = "Type: ``%s``" % param["dtype"]
         if param["default_value"] is None:
             extrahelp += "."
         else:
-            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
+            if pname == "metalearner_params":
+                extrahelp += "  (default: ``None``)."
+            else:
+                extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
         yield "    @property"
         yield "    def %s(self):" % pname
@@ -210,8 +220,20 @@ def gen_module(schema, algo):
         yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
         yield ""
         yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        if pname == "metalearner_params":
+            yield "        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}"
         yield '        """'
-        yield "        return self._parms.get(\"%s\")" % sname
+        if pname != "metalearner_params":
+            yield "        return self._parms.get(\"%s\")" % sname
+        else:
+            yield "        if self._parms.get(\"%s\") != None:" % sname
+            yield "            metalearner_params_dict =  ast.literal_eval(self._parms.get(\"%s\"))" % sname
+            yield "            for k in metalearner_params_dict:"
+            yield "                if len(metalearner_params_dict[k]) == 1: #single parameter"
+            yield "                    metalearner_params_dict[k] = metalearner_params_dict[k][0]"
+            yield "            return metalearner_params_dict"
+            yield "        else:"
+            yield "            return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
@@ -229,9 +251,18 @@ def gen_module(schema, algo):
             yield "         else:"
             yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
             yield "            self._parms[\"%s\"] = %s" % (sname, pname)
+        elif pname in {"metalearner_params"}:
+            yield "        assert_is_type(%s, None, %s)" % (pname, "dict")
+            yield '        if %s is not None and %s != "":' % (pname, pname)
+            yield "            for k in %s:" % (pname)
+            yield '                if ("[" and "]") not in str(metalearner_params[k]):'
+            yield "                    metalearner_params[k]=[metalearner_params[k]]"
+            yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
+            yield "        else:"
+            yield "            self._parms[\"%s\"] = None" % (sname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        if pname not in {"base_models"}:
+        if pname not in {"base_models", "metalearner_params"}:
             yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""

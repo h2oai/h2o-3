@@ -3,6 +3,7 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     final String BUILD_CONFIG_SCRIPT_NAME = 'buildConfig.groovy'
     final String PIPELINE_UTILS_SCRIPT_NAME = 'pipelineUtils.groovy'
     final String EMAILER_SCRIPT_NAME = 'emailer.groovy'
+    final String HEALTH_CHECKER_SCRIPT_NAME = 'healthChecker.groovy'
 
     env.COMMIT_MESSAGE = sh(script: "cd ${h2o3Root} && git log -1 --pretty=%B", returnStdout: true).trim()
     env.BRANCH_NAME = scmEnv['GIT_BRANCH'].replaceAll('origin/', '')
@@ -13,6 +14,7 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     def final buildConfigFactory = load("${h2o3Root}/scripts/jenkins/groovy/${BUILD_CONFIG_SCRIPT_NAME}")
     def final pipelineUtilsFactory = load("${h2o3Root}/scripts/jenkins/groovy/${PIPELINE_UTILS_SCRIPT_NAME}")
     def final emailerFactory = load("${h2o3Root}/scripts/jenkins/groovy/${EMAILER_SCRIPT_NAME}")
+    def final healthCheckerFactory = load("${h2o3Root}/scripts/jenkins/groovy/${HEALTH_CHECKER_SCRIPT_NAME}")
 
     def final buildinfoPath = "${h2o3Root}/h2o-dist/buildinfo.json"
 
@@ -24,7 +26,8 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
             ),
             buildSummaryFactory(true),
             pipelineUtils,
-            emailerFactory()
+            emailerFactory(),
+            healthCheckerFactory()
     )
 }
 
@@ -43,12 +46,14 @@ class PipelineContext{
     private final buildSummary
     private final pipelineUtils
     private final emailer
+    private final healthChecker
 
-    private PipelineContext(final buildConfig, final buildSummary, final pipelineUtils, final emailer) {
+    private PipelineContext(final buildConfig, final buildSummary, final pipelineUtils, final emailer, final healthChecker) {
         this.buildConfig = buildConfig
         this.buildSummary = buildSummary
         this.pipelineUtils = pipelineUtils
         this.emailer = emailer
+        this.healthChecker = healthChecker
     }
 
     def getBuildConfig() {
@@ -65,6 +70,10 @@ class PipelineContext{
 
     def getEmailer() {
         return emailer
+    }
+
+    def getHealthChecker() {
+        return healthChecker
     }
 
 }

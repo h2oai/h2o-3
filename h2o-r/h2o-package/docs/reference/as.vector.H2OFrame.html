@@ -109,6 +109,7 @@
 <span class='fu'><a href='h2o.init.html'>h2o.init</a></span>()
 <span class='no'>irisPath</span> <span class='kw'>&lt;-</span> <span class='fu'>system.file</span>(<span class='st'>"extdata"</span>, <span class='st'>"iris.csv"</span>, <span class='kw'>package</span><span class='kw'>=</span><span class='st'>"h2o"</span>)
 <span class='no'>iris</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.importFile.html'>h2o.uploadFile</a></span>(<span class='kw'>path</span> <span class='kw'>=</span> <span class='no'>irisPath</span>)
+<span class='no'>hex</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='as.h2o.html'>as.h2o</a></span>(<span class='no'>iris</span>)
 <span class='no'>cor_R</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.cor.html'>cor</a></span>(<span class='fu'>as.matrix</span>(<span class='no'>iris</span>[,<span class='fl'>1</span>]))
 <span class='no'>cor_h2o</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.cor.html'>cor</a></span>(<span class='no'>hex</span>[,<span class='fl'>1</span>])
 <span class='no'>iris_Rcor</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='h2o.cor.html'>cor</a></span>(<span class='no'>iris</span>[,<span class='fl'>1</span>:<span class='fl'>4</span>])

@@ -7,6 +7,7 @@ import jsr166y.ForkJoinTask;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OConcurrentModificationException;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
 import water.parser.BufferedString;
@@ -303,7 +304,7 @@ final class RollupStats extends Iced {
   static void start(final Vec vec, Futures fs, boolean computeHisto) {
     if( vec instanceof InteractionWrappedVec ) return;
     if( DKV.get(vec._key)== null )
-      throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
+      throw new H2OConcurrentModificationException("Rollups not possible, because Vec was deleted: "+vec._key);
     if( vec.isString() ) computeHisto = false; // No histogram for string columns
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = getOrNull(vec,rskey);
@@ -319,7 +320,7 @@ final class RollupStats extends Iced {
 
   static RollupStats get(Vec vec, boolean computeHisto) {
     if( DKV.get(vec._key)== null ) {
-      throw new RuntimeException("Rollups not possible, because Vec was deleted: " + vec._key);
+      throw new H2OConcurrentModificationException("Rollups not possible, because Vec was deleted: " + vec._key);
     }
     if( vec.isString() ) {
       computeHisto = false; // No histogram for string columns
@@ -328,7 +329,7 @@ final class RollupStats extends Iced {
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
       if(rs != null && rs.isMutating())
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
+        throw new H2OConcurrentModificationException("Can not compute rollup stats while vec is being modified. (1)");
       // 1. compute only once
       try {
         RPC rpcNew = new RPC(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto));
@@ -416,7 +417,7 @@ final class RollupStats extends Iced {
       Value old = DKV.DputIfMatch(_rsKey, new Value(_rsKey, rs), nnn, fs);
       assert rs.isReady();
       if(old != nnn)
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (2)");
+        throw new H2OConcurrentModificationException("Can not compute rollup stats while vec is being modified. (2)");
       fs.blockForPending();
     }
 
@@ -453,7 +454,7 @@ final class RollupStats extends Iced {
           } else if (rs.isComputing()) { // b) => wait for current computation to finish
             rs._tsk.join();
           } else if(rs.isMutating()) // c) => throw IAE
-            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (3)");
+            throw new H2OConcurrentModificationException("Can not compute rollup stats while vec is being modified. (3)");
         } else { // d) => compute the rollups
           final Value nnn = makeComputing();
           Futures fs = new Futures();

@@ -37,8 +37,7 @@ Defining a GLM Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
-   independent variable.
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
 
    -  For a regression model, this column must be numeric (**Real** or
       **Int**).
@@ -154,6 +153,8 @@ Defining a GLM Model
    criterium to prevent expensive model building with many predictors.
 
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
+
+-  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~

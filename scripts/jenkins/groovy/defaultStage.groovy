@@ -32,7 +32,9 @@ def call(final pipelineContext, final stageConfig) {
             hasJUnit = stageConfig.hasJUnit
             h2o3dir = h2oFolder
             archiveAdditionalFiles = stageConfig.archiveAdditionalFiles
+            excludeAdditionalFiles = stageConfig.excludeAdditionalFiles
             makefilePath = stageConfig.makefilePath
+            archiveFiles = stageConfig.archiveFiles
         }
     }
 }

@@ -23,7 +23,7 @@ public class DataInfoTestAdapt extends TestUtil {
     DataInfo dinfo=null, scoreInfo=null;
     Frame fr=null, expanded=null;
     Frame[] frSplits=null, expandSplits=null;
-    String[] interactions = new String[]{"class", "sepal_len"};
+    Model.InteractionSpec interactions = Model.InteractionSpec.allPairwise(new String[]{"class", "sepal_len"});
 
     boolean useAll=false;
     boolean standardize=false;  // golden frame is standardized before splitting, while frame we want to check would be standardized post-split (not exactly what we want!)
@@ -61,7 +61,7 @@ public class DataInfoTestAdapt extends TestUtil {
     DataInfo dinfo=null, scoreInfo=null;
     Frame frA=null, fr=null, expanded=null;
     Frame[] frSplits=null, expandSplits=null;
-    String[] interactions = new String[]{"CRSDepTime", "Origin"};
+    Model.InteractionSpec interactions = Model.InteractionSpec.allPairwise(new String[]{"CRSDepTime", "Origin"});
 
     String[] keepColumns = new String[]{
             "Year",           "Month"     ,     "DayofMonth" ,    "DayOfWeek",
@@ -115,19 +115,19 @@ public class DataInfoTestAdapt extends TestUtil {
   }
 
 
-  private void checkSplits(Frame frSplits[], Frame goldSplits[], String[] interactions, boolean useAll, boolean standardize) {
+  private void checkSplits(Frame frSplits[], Frame goldSplits[], Model.InteractionSpec interactions, boolean useAll, boolean standardize) {
     checkSplits(frSplits,goldSplits,interactions,useAll,standardize,false);
   }
 
-  private void checkSplits(Frame frSplits[], Frame goldSplits[], String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+  private void checkSplits(Frame frSplits[], Frame goldSplits[], Model.InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
     for(int i=0;i<frSplits.length;++i)
       checkFrame(makeInfo(frSplits[i],interactions,useAll,standardize,skipMissing),goldSplits[i], skipMissing);
   }
 
-  private static DataInfo makeInfo(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
+  private static DataInfo makeInfo(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize) {
     return makeInfo(fr,interactions,useAll,standardize,true);
   }
-  private static DataInfo makeInfo(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+  private static DataInfo makeInfo(Frame fr, Model.InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
     return new DataInfo(
             fr,          // train
             null,        // valid
