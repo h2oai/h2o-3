@@ -206,7 +206,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = Schema.newInstance(ModelsV3.class);
     try {
-      Model<?, ?, ?> model = Model.importBinary(mimport.dir);
+      Model<?, ?, ?> model = Model.importBinaryModel(mimport.dir);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (IOException | FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
@@ -218,7 +218,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = model.exportBinary(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
+      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {

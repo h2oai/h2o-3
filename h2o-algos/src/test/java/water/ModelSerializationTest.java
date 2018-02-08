@@ -5,8 +5,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import hex.Model;
@@ -203,9 +201,9 @@ public class ModelSerializationTest extends TestUtil {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
       String path = file.getAbsolutePath();
-      model.exportBinary(path, true);
+      model.exportBinaryModel(path, true);
       if( deleteModel ) model.delete();
-      return Model.importBinary(path);
+      return Model.importBinaryModel(path);
     } finally {
       if (! file.delete())
         Log.err("Temporary file " + file + " was not deleted.");

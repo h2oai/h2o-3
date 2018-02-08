@@ -2228,7 +2228,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return instance of an H2O Model
    * @throws IOException when reading fails
    */
-  public static <M extends Model<?, ?, ?>> M importBinary(String location) throws IOException {
+  public static <M extends Model<?, ?, ?>> M importBinaryModel(String location) throws IOException {
     InputStream is = null;
     try {
       URI targetUri = FileUtils.getURI(location);
@@ -2253,7 +2253,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return URI representation of the target location
    * @throws IOException when writing fails
    */
-  public URI exportBinary(String location, boolean force) throws IOException {
+  public URI exportBinaryModel(String location, boolean force) throws IOException {
     OutputStream os = null;
     try {
       URI targetUri = FileUtils.getURI(location);
