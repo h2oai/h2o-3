@@ -3,6 +3,7 @@ package hex.grid;
 import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
+import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
@@ -295,7 +296,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         Model m = ((Model)k._key.get());
         if ((m == null) || (m._parms == null))
           return false;
-        return m._parms.checksum() == checksum;
+        try {
+          return m._parms.checksum() == checksum;
+        } catch (H2OConcurrentModificationException e) {
+          // We are inspecting model parameters that doesn't belong to us - they might be modified (or deleted) while
+          // checksum is being calculated: we skip them (see PUBDEV-5286)
+          Log.warn("GridSearch encountered concurrent modification while searching DKV", e);
+          return false;
+        }
       }
     }).keys();
 
