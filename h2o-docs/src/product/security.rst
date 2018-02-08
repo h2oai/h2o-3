@@ -213,7 +213,17 @@ extension libcurl and OpenSSL.
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with HTTPS:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+
+The underlying HTTPS implementation is provided by RCurl and by
+extension libcurl and OpenSSL.
+
+ **Caution:** Certificate checking has not been implemented yet. The ``insecure`` flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the ``insecure`` flag must be set to ``TRUE`` so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
 
 HTTPS Server Side
 ^^^^^^^^^^^^^^^^^
@@ -478,7 +488,12 @@ with authentication:
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
 LDAP H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^
@@ -759,7 +774,12 @@ with authentication:
 Python Client
 '''''''''''''
 
-Not yet implemented. Please contact H2O for an update.
+The following code snippet demonstrates connecting to an H2O cluster
+with authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
 Hash File H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^
