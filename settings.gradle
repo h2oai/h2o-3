@@ -20,6 +20,7 @@ include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
+include 'h2o-parquet-v17-compat'
 include 'h2o-jaas-pam'
 include 'h2o-automl'
 include 'h2o-genmodel-ext-xgboost'
@@ -48,6 +49,11 @@ scalaCrossCompile {
 rootProject.children.each { project ->
   if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
     String projectDirName = "h2o-parsers/${project.name}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+  // Parser Compatibility Testing
+  if (project.name.startsWith("h2o-") && project.name.endsWith("-compat")) {
+    String projectDirName = "h2o-parsers/" + project.name.replaceFirst("-v[0-9]+-", "-") + "/" + project.name
     project.projectDir = new File(settingsDir, projectDirName)
   }
   if (project.name.startsWith("h2o-ext-")) {

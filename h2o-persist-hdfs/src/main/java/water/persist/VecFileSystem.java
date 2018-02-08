@@ -7,6 +7,7 @@ import org.apache.hadoop.util.Progressable;
 import water.DKV;
 import water.fvec.Vec;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 
@@ -34,8 +35,11 @@ public class VecFileSystem extends FileSystem {
     super.initialize(name, conf);
   }
 
-  @Override public FileStatus getFileStatus(Path p){
-    return new FileStatus(_v.length(),false,1,_v.length()/_v.nChunks(),0l,VecFileSystem.VEC_PATH);
+  @Override public FileStatus getFileStatus(Path p) throws IOException {
+    if (VEC_PATH.equals(p)) {
+      return new FileStatus(_v.length(),false,1,_v.length()/_v.nChunks(),0l, VecFileSystem.VEC_PATH);
+    } else
+      throw new FileNotFoundException("File does not exist: " + p);
   }
 
   @Override
@@ -73,7 +77,10 @@ public class VecFileSystem extends FileSystem {
 
   @Override
   public FileStatus[] listStatus(Path f) throws IOException {
-    return new FileStatus[0];
+    if (VEC_PATH.equals(f)) {
+      return new FileStatus[]{getFileStatus(f)};
+    } else
+      return new FileStatus[0];
   }
 
   @Override

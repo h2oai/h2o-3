@@ -80,6 +80,8 @@ public class FileUtils {
     if( !file.exists() )
       file = new File("../../" + fname);
     if( !file.exists() )
+      file = new File("../../../" + fname);
+    if( !file.exists() )
       file = new File("../target/" + fname);
     if( !file.exists() )
       file = new File(StringUtils.expandPath(fname));

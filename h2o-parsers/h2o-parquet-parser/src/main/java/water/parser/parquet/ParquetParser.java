@@ -63,9 +63,6 @@ public class ParquetParser extends Parser {
     } catch (IOException e) {
       throw new RuntimeException("Failed to parse records", e);
     }
-    long skipped = reader.getInvalidRecordCount();
-    if (skipped > 0)
-      dout.addError(new ParseWriter.ParseErr("Some records were corrupt (skipped " + skipped + ").", cidx, -1, chunk.start()));
     return dout;
   }
 
