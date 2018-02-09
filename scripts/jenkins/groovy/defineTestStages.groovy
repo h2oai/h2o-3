@@ -208,9 +208,6 @@ def call(final pipelineContext) {
         stageDefinition['executionScript'] = 'h2o-3/scripts/jenkins/groovy/xgbGPUStage.groovy'
       }
       XGB_STAGES += stageDefinition
-      if (xgbEnv.runAfterMerge) {
-        PR_STAGES += stageDefinition
-      }
     }
   }
 
