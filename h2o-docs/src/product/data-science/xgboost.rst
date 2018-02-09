@@ -12,7 +12,7 @@ The H2O XGBoost implementation is based on two separated modules. The first modu
 
 The second module, `h2o-ext-xgboost <https://github.com/h2oai/h2o-3/tree/master/h2o-extensions/xgboost>`__, contains the actual XGBoost model and model builder code, which communicates with native XGBoost libraries via the JNI API. The module also provides all necessary REST API definitions to expose the XGBoost model builder to clients.
 
-XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementation will only be available if the system itself supports it. (It has the right version of libraries.) If the requirements are not satisfied, XGBoost will use a fallback that is single core only. Multi-node support will be added in a future release.
+XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementation will only be available if the system itself supports it. (It has the right version of libraries.) If the requirements are not satisfied, XGBoost will use a fallback that is single core only. Multi-node support is currently available as a Beta feature.
 
 Refer to the `XGBoost in H2O Machine Learning Platform <https://blog.h2o.ai/2017/06/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
@@ -99,7 +99,7 @@ Defining an XGBoost Model
 
 -  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In XGBoost, the algorithm will automatically perform ``label_encoder`` encoding.
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In XGBoost, the algorithm will automatically perform ``enum`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
@@ -237,7 +237,7 @@ The list of limitations include:
 
   1. XGBoost is not supported on Windows.
 
-  2. Right now XGBoost is initialized only for single-node H2O clusters; however multi-node XGBoost support is coming soon.
+  2. XGBoost is initialized for single-node H2O clusters; however multi-node XGBoost support is available as a Beta feature.
 
   3. The list of supported platforms includes:
  
