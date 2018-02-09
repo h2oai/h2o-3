@@ -4566,6 +4566,7 @@ h2o.targetencoding_map <- function(groupby_frame, y){
 #' @param groupby_frame An H2OFrame object with categorical columns in which to group by.
 #' @param y An H2OFrame object with a single numeric or binary column.
 #' @param train \code{Logical}. Whether to apply the target encoding to train data.
+#' @param blending_avg \code{Logical}. (Optional) Whether to perform blending average.
 #' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
 #' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object containing the leave one out target encoding.
@@ -4586,7 +4587,8 @@ h2o.targetencoding_map <- function(groupby_frame, y){
 #' 
 #' }
 #' @export
-h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train, noise_level = NULL, seed = -1){
+h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train, 
+                                     blending_avg = TRUE, noise_level = NULL, seed = -1){
   
   if (missing(groupby_frame)) 
     stop("argument 'groupby_frame' is missing, with no default")
@@ -4613,18 +4615,40 @@ h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train
   else if (noise_level < 0)
     stop("`noise_level` must be non-negative")
   
+  if(!is.logical(train))
+    stop(`train` must be logical)
+  if(!is.logical(blending_avg))
+    stop(`blending_avg` must be logical)
+  
   # Merge Target Encoding Mapping to groupby_frame
   y_name <- colnames(y)
   te_frame <- h2o.cbind(groupby_frame, y)
   te_frame <- h2o.merge(te_frame, targetencoding_map, all.x = TRUE, all.y = FALSE)
   
-  # Calculate Mean Per Group
-  if (train){
+  # If train = TRUE, remove value of existing row
+  if(train){
     
-    # Calculate Mean Target per Group - removing value of existing row
-    target_encoding <- h2o.ifelse(is.na(te_frame[[y_name]]), 
-                                  te_frame$numerator/te_frame$denominator,
-                                  (te_frame$numerator - te_frame[[y_name]])/(te_frame$denominator - 1))
+    te_frame$numerator <- h2o.ifelse(is.na(te_frame[[y_name]]), 
+                                     te_frame$numerator, 
+                                     te_frame$numerator - te_frame[[y_name]])
+    
+    te_frame$denominator <- h2o.ifelse(is.na(te_frame[[y_name]]),
+                                       te_frame$denominator, 
+                                       te_frame$denominator - 1)
+    
+  }
+  
+  # Calculate Mean Per Group
+  if (blending_avg){
+    
+    # Calculate Blended Mean Per Group
+    # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
+    # Equations (3), (4)
+    k = 20
+    f = 10
+    global_mean = sum(te_frame$numerator)/sum(te_frame$denominator)
+    lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
+    target_encoding <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
     
   } else{
     
@@ -4637,7 +4661,7 @@ h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train
   
   if(is.null(noise_level)){
     # If `noise_level` is NULL, value chosen based on `y` distribution
-    noise_level <- (max(y) - min(y))*0.01
+    noise_level <- ifelse(is.factor(y), 0.01, (max(y) - min(y))*0.01)
   }
   
   if(noise_level > 0){
