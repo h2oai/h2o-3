@@ -123,12 +123,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU(_parms._gpu_id)) {
-      error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
-    }
+    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      if (! hasGPU(_parms._gpu_id))
+        error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
 
-    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && H2O.getCloudSize() > 1) {
-      error("_backend", "GPU backend is not supported in distributed mode.");
+      if (H2O.getCloudSize() > 1)
+        error("_backend", "GPU backend is not supported in distributed mode.");
+
+      Map<String, Object> incompats = _parms.gpuIncompatibleParams();
+      if (! incompats.isEmpty())
+        for (Map.Entry<String, Object> incompat : incompats.entrySet())
+          error("_backend", "GPU backend is not available for parameter setting '" + incompat.getKey() + " = " + incompat.getValue() + "'. Use CPU backend instead.");
     }
 
     if (_parms._distribution == DistributionFamily.quasibinomial)
@@ -248,8 +253,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
-              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 ) {
+      if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
+              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 && _parms.gpuIncompatibleParams().isEmpty()) {
         synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
           buildModelImpl();
         }

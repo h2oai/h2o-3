@@ -121,6 +121,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public long progressUnits() {
       return _ntrees;
     }
+
+    /**
+     * Finds parameter settings that are not available on GPU backend.
+     * In this case the CPU backend should be used instead of GPU.
+     * @return map of parameter name -> parameter value
+     */
+    Map<String, Object> gpuIncompatibleParams() {
+      Map<String, Object> incompat = new HashMap<>();
+      if (_grow_policy == GrowPolicy.lossguide)
+        incompat.put("grow_policy", GrowPolicy.lossguide); // See PUBDEV-5302 (param.grow_policy != TrainParam::kLossGuide Loss guided growth policy not supported. Use CPU algorithm.)
+      return incompat;
+    }
+
   }
 
   @Override
@@ -210,8 +223,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if(H2O.getCloudSize() > 1) {
+      if (H2O.getCloudSize() > 1) {
         Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+      } else if (! p.gpuIncompatibleParams().isEmpty()) {
+        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
       } else if (XGBoost.hasGPU(p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
