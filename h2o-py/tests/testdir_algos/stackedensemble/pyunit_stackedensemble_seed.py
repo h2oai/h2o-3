@@ -61,7 +61,7 @@ def stackedensemble_metalearner_seed_test():
     meta_gbm1 = h2o.get_model(stack_gbm1.metalearner()['name'])
     meta_gbm2 = h2o.get_model(stack_gbm2.metalearner()['name'])
 
-    assert meta_gbm1.rmse(train) == meta_gbm2.rmse(train), "RMSE should match if same seed"
+    assert meta_gbm1.rmse(train=True) == meta_gbm2.rmse(train=True), "RMSE should match if same seed"
 
     #Train two SE models with diff metalearner seeds
     stack_gbm3 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="gbm",
@@ -72,7 +72,7 @@ def stackedensemble_metalearner_seed_test():
     stack_gbm4.train(x=x, y=y, training_frame=train)
     meta_gbm3 = h2o.get_model(stack_gbm3.metalearner()['name'])
     meta_gbm4 = h2o.get_model(stack_gbm4.metalearner()['name'])
-    assert meta_gbm3.rmse(train) != meta_gbm4.rmse(train), "RMSE should NOT match if diff seed"
+    assert meta_gbm3.rmse(train=True) != meta_gbm4.rmse(train=True), "RMSE should NOT match if diff seed"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(stackedensemble_metalearner_seed_test)
