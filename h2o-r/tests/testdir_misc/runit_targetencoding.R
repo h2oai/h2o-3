@@ -55,5 +55,5 @@ test <- function() {
   
 }
 
-doTest("Test data frame", test)
+doTest("Test target encoding", test)
 
