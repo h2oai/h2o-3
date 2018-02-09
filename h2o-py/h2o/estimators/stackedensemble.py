@@ -52,7 +52,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
                       "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params"}
+                      "metalearner_fold_column", "keep_levelone_frame", "metalearner_params", "seed"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -213,7 +213,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def metalearner_params(self):
         """
-        Parameters for metalearner algo
+        Parameters for metalearner algorithm
 
         Type: ``dict``  (default: ``None``).
         Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}
@@ -237,5 +237,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None
+
+
+    @property
+    def seed(self):
+        """
+        Seed for metalearner algorithm
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("seed")
+
+    @seed.setter
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
