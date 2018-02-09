@@ -4584,8 +4584,6 @@ h2o.targetencoding_map <- function(groupby_frame, y){
 #' mapping <- h2o.targetencoding_map(train[c("job", "marital")], train$age)
 #' h2o.targetencoding_frame(test[c("job", "marital")], test$age, mapping, train = FALSE)
 #' 
-#' # Run Target Encoding on bank-additional-full data with binary `y`
-#' h2o.target_encoding(data.hex$job, data.hex$y)
 #' }
 #' @export
 h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train, noise_level = NULL, seed = -1){
