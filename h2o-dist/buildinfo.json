@@ -122,9 +122,14 @@
             "path" : "https://github.com/h2oai/h2o-3/blob/SUBST_LAST_COMMIT_HASH/Changes.md"
         },
         {
-            "name" : "R User Documentation",
+            "name" : "R User Documentation (PDF)",
             "id"   : "doc-r-pdf",
             "path" : "docs-website/h2o-r/h2o_package.pdf"
+        },
+        {
+            "name" : "R User Documentation (HTML)",
+            "id"   : "doc-r-pdf",
+            "path" : "docs-website/h2o-r/docs/index.html"
         },
         {
             "name" : "Python User Documentation",
