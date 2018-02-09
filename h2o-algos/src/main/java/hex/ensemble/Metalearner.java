@@ -156,6 +156,9 @@ class Metalearner {
             metaGBMBuilder._parms = gbmParams;
         }
 
+        if(metaGBMBuilder._parms._seed == -1){ //Seed is not set in metalearner_params
+            metaGBMBuilder._parms._seed = _metalearnerSeed;
+        }
         metaGBMBuilder._parms._seed = _metalearnerSeed;
         metaGBMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGBMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
@@ -229,7 +232,9 @@ class Metalearner {
             metaDRFBuilder._parms = drfParams;
         }
 
-        metaDRFBuilder._parms._seed = _metalearnerSeed;
+        if(metaDRFBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaDRFBuilder._parms._seed = _metalearnerSeed;
+        }
         metaDRFBuilder._parms._train = _levelOneTrainingFrame._key;
         metaDRFBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaDRFBuilder._parms._response_column = _model.responseColumn;
@@ -301,7 +306,9 @@ class Metalearner {
             metaGLMBuilder._parms = glmParams;
         }
 
-        metaGLMBuilder._parms._seed = _metalearnerSeed;
+        if(metaGLMBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaGLMBuilder._parms._seed = _metalearnerSeed;
+        }
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -383,7 +390,9 @@ class Metalearner {
             metaDeepLearningBuilder._parms = dlParams;
         }
 
-        metaDeepLearningBuilder._parms._seed = _metalearnerSeed;
+        if(metaDeepLearningBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaDeepLearningBuilder._parms._seed = _metalearnerSeed;
+        }
         metaDeepLearningBuilder._parms._train = _levelOneTrainingFrame._key;
         metaDeepLearningBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaDeepLearningBuilder._parms._response_column = _model.responseColumn;
