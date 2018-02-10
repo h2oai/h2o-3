@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OConcurrentModificationException;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.StringUtils;
@@ -213,11 +214,11 @@ public class FVecTest extends TestUtil {
       try {
         v2.min();
         assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-      } catch( IllegalArgumentException ie ) {
-        // if on local node can get iae directly
+      } catch( H2OConcurrentModificationException ie ) {
+        // if on local node can get CME directly
       } catch( RuntimeException re ) {
-        assertTrue(re.getCause() instanceof IllegalArgumentException);
-        // expect to get IAE since we're requesting rollups while also changing the vec
+        assertTrue(re.getCause() instanceof H2OConcurrentModificationException);
+        // expect to get CME since we're requesting rollups while also changing the vec
       }
       w.close(fs);
       fs.blockForPending();
