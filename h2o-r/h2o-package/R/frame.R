@@ -4616,9 +4616,9 @@ h2o.targetencoding_frame <- function(groupby_frame, y, targetencoding_map, train
     stop("`noise_level` must be non-negative")
   
   if(!is.logical(train))
-    stop(`train` must be logical)
+    stop("`train` must be logical")
   if(!is.logical(blending_avg))
-    stop(`blending_avg` must be logical)
+    stop("`blending_avg` must be logical")
   
   # Merge Target Encoding Mapping to groupby_frame
   y_name <- colnames(y)
