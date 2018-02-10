@@ -56,7 +56,10 @@ def gen_module(schema, algo, module):
                 yield "#' @param eps_prob Cutoff below which probability is replaced with min_prob."
                 continue
         if param["name"] == "seed":
-            yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
+            if algo != "stackedensemble":
+                yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
+            else:
+                yield "#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)"
             if algo in ["deeplearning", "deepwater"]:
                 yield "#'        Note: only reproducible when running single threaded."
             yield "#'        Defaults to -1 (time-based random number)."

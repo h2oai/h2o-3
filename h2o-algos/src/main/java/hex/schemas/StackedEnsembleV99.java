@@ -22,7 +22,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_fold_assignment",
       "metalearner_fold_column",
       "keep_levelone_frame",
-      "metalearner_params"
+      "metalearner_params",
+      "seed"
     };
 
 
@@ -64,8 +65,11 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Keep level one frame used for metalearner training.")
     public boolean keep_levelone_frame;
 
-    @API(help = "Parameters for metalearner algo", direction = API.Direction.INOUT)
+    @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
     public String metalearner_params;
+
+    @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
+    public long seed;
   
   }
 }

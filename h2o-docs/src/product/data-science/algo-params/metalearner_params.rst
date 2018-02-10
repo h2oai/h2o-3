@@ -11,6 +11,8 @@ Stacked Ensemble allows you to specify the metalearning algorithm to use when tr
 
 The default parameters for the metalearning algorithms may not be the best choice, so it's a good idea to experiment a bit with different parameters using ``metalearner_params``.  In the `next release <https://0xdata.atlassian.net/browse/PUBDEV-5281>`__ of H2O, there will be an option to easily do a grid search over metalearner parameters using the standard H2O Grid interface, which will make tuning the metalearner a bit easier.
 
+Note: The ``seed`` argument in Stacked Ensemble is passed through to the metalearner automatically.  If you define ``seed`` in ``metalearner_params``, it will use that value instead of value defined by the ``seed`` argument.  If the only parameter that you want to customze for the metalearner is ``seed``, then it's simpler to just use top-level argument instead.
+
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
