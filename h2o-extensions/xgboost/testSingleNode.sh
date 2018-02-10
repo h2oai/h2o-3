@@ -90,7 +90,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 
 # Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort | grep -v AAA_PreCloudLock > $OUTDIR/tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BIG | sort | grep -v AAA_PreCloudLock > $OUTDIR/tests.txt
 
 # Output the comma-separated list of ignored/dooonly tests
 # Ignored tests trump do-only tests

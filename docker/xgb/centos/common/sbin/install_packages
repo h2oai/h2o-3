@@ -1,0 +1,27 @@
+#! /bin/bash
+
+set -e
+set -x
+
+yum install -y wget
+rpm --rebuilddb
+yum -y install gcc
+rpm --rebuilddb
+yum install -y shadow-utils.x86_64
+rpm --rebuilddb
+yum -y install https://centos$(rpm -q --queryformat '%{VERSION}' centos-release).iuscommunity.org/ius-release.rpm
+rpm --rebuilddb
+yum -y install python35u-devel
+rpm --rebuilddb
+yum -y install python-pip
+rpm --rebuilddb
+yum -y install git
+rpm --rebuilddb
+yum -y install mysql-devel
+rpm --rebuilddb
+yum -y install unzip
+rpm --rebuilddb
+yum -y install make
+rpm --rebuilddb
+yum -y install tar
+rpm --rebuilddb
