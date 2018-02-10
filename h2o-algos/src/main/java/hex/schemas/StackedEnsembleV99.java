@@ -68,7 +68,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
     public String metalearner_params;
 
-    @API(help = "Seed for metalearner algorithm", gridable = true)
+    @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
   
   }

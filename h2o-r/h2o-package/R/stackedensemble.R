@@ -29,7 +29,7 @@
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param metalearner_params Parameters for metalearner algorithm Defaults to NULL.
-#' @param seed Seed for metalearner
+#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 #'        Defaults to -1 (time-based random number).
 #' @examples
 #' 

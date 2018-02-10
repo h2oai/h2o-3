@@ -242,7 +242,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def seed(self):
         """
-        Seed for metalearner algorithm
+        Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 
         Type: ``int``  (default: ``-1``).
         """
