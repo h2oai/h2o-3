@@ -4494,8 +4494,6 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #' 
 #' @param groupby_frame An H2OFrame object with categorical columns in which to group by.
 #' @param y An H2OFrame object with a single numeric or binary column.
-#' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
-#' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object containing the target encoding mapping per group
 #' @seealso \code{\link{h2o.targetencoding_frame}} for creating the target encoding frame from the mapping.
 #' @examples
@@ -4565,11 +4563,13 @@ h2o.targetencoding_map <- function(groupby_frame, y){
 #' 
 #' @param groupby_frame An H2OFrame object with categorical columns in which to group by.
 #' @param y An H2OFrame object with a single numeric or binary column.
+#' @param targetencoding_map An H2OFrame object that is the results of the \code{\link{h2o.targetencoding_map}} function.
 #' @param train \code{Logical}. Whether to apply the target encoding to train data.
 #' @param blending_avg \code{Logical}. (Optional) Whether to perform blending average.
 #' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
 #' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object containing the target encoding per record.
+#' @seealso \code{\link{h2o.targetencoding_map}} for creating the target encoding frame from the mapping.
 #' @examples
 #' \donttest{
 #' library(h2o)
