@@ -7,8 +7,10 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import water.*;
+import water.api.FSIOException;
 import water.api.ModelsHandler;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
@@ -18,11 +20,13 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -2216,4 +2220,72 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return false;
     }
   }
+
+  /**
+   * Imports a binary model from a given location.
+   * Note: binary model has to be created by the same version of H2O, import of a model from a different version will fail
+   * @param location path to the binary representation of the model on a local filesystem, HDFS, S3...
+   * @return instance of an H2O Model
+   * @throws IOException when reading fails
+   */
+  public static <M extends Model<?, ?, ?>> M importBinaryModel(String location) throws IOException {
+    InputStream is = null;
+    try {
+      URI targetUri = FileUtils.getURI(location);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      is = p.open(targetUri.toString());
+      final AutoBuffer ab = new AutoBuffer(is);
+      ab.sourceName = targetUri.toString();
+      @SuppressWarnings("unchecked")
+      M model = (M) Keyed.readAll(ab);
+      ab.close();
+      is.close();
+      return model;
+    } finally {
+      FileUtils.close(is);
+    }
+  }
+
+  /**
+   * Exports a binary model to a given location.
+   * @param location target path, it can be on local filesystem, HDFS, S3...
+   * @param force If true, overwrite already existing file
+   * @return URI representation of the target location
+   * @throws IOException when writing fails
+   */
+  public URI exportBinaryModel(String location, boolean force) throws IOException {
+    OutputStream os = null;
+    try {
+      URI targetUri = FileUtils.getURI(location);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      os = p.create(targetUri.toString(), force);
+      this.writeAll(new AutoBuffer(os, true)).close();
+      os.close();
+      return targetUri;
+    } finally {
+      FileUtils.close(os);
+    }
+  }
+
+  /**
+   * Exports a MOJO representation of a model to a given location.
+   * @param location target path, it can be on local filesystem, HDFS, S3...
+   * @param force If true, overwrite already existing file
+   * @return URI representation of the target location
+   * @throws IOException when writing fails
+   */
+  public URI exportMojo(String location, boolean force) throws IOException {
+    OutputStream os = null;
+    try {
+      URI targetUri = FileUtils.getURI(location);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      os = p.create(targetUri.toString(), force);
+      this.writeAll(new AutoBuffer(os, true)).close();
+      os.close();
+      return targetUri;
+    } finally {
+      FileUtils.close(os);
+    }
+  }
+
 }

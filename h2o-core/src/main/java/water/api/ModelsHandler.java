@@ -1,7 +1,6 @@
 package water.api;
 
 import hex.Model;
-import hex.ModelMojoWriter;
 import hex.PartialDependence;
 import water.*;
 import water.api.schemas3.*;
@@ -16,7 +15,6 @@ import water.util.JCodeGen;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
@@ -204,33 +202,23 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return models;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = Schema.newInstance(ModelsV3.class);
-    InputStream is = null;
     try {
-      URI targetUri = FileUtils.getURI(mimport.dir);
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      is = p.open(targetUri.toString());
-      final AutoBuffer ab = new AutoBuffer(is);
-      ab.sourceName = targetUri.toString();
-      Model model = (Model)Keyed.readAll(ab);
-      ab.close();
+      Model<?, ?, ?> model = Model.importBinaryModel(mimport.dir);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
-    } catch (FSIOException e) {
+    } catch (IOException | FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
-    } finally {
-      FileUtils.close(is);
     }
     return s;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportModel(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      OutputStream os = p.create(targetUri.toString(),mexport.force);
-      model.writeAll(new AutoBuffer(os,true)).close();
+      URI targetUri = model.exportBinaryModel(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
@@ -239,14 +227,11 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return mexport;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportMojo(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
-      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
-      Persist p = H2O.getPM().getPersistForURI(targetUri);
-      OutputStream os = p.create(targetUri.toString(),mexport.force);
-      ModelMojoWriter mojo = model.getMojo();
-      mojo.writeTo(os);
+      URI targetUri = model.exportMojo(mexport.dir, mexport.force); // mexport.dir: Really file, not dir
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
@@ -255,6 +240,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return mexport;
   }
 
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportModelDetails(int version, ModelExportV3 mexport){
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {

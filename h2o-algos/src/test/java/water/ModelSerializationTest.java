@@ -5,8 +5,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import hex.Model;
@@ -20,6 +18,7 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.fvec.Frame;
+import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -198,16 +197,16 @@ public class ModelSerializationTest extends TestUtil {
     return saveAndLoad(model,true);
   }
   // Serialize to and from a file
-  private <M extends Model> M saveAndLoad(M model, boolean deleteModel) throws IOException {
+  private <M extends Model<?, ?, ?>> M saveAndLoad(M model, boolean deleteModel) throws IOException {
     File file = File.createTempFile(model.getClass().getSimpleName(),null);
     try {
-      model.writeAll(new AutoBuffer(new FileOutputStream(file),true)).close();
+      String path = file.getAbsolutePath();
+      model.exportBinaryModel(path, true);
       if( deleteModel ) model.delete();
-      final AutoBuffer ab = new AutoBuffer(new FileInputStream(file));
-      ab.sourceName = file.getAbsolutePath();
-      return (M)Keyed.readAll(ab);
+      return Model.importBinaryModel(path);
     } finally {
-      file.delete();
+      if (! file.delete())
+        Log.err("Temporary file " + file + " was not deleted.");
     }
   }
 
