@@ -5,15 +5,16 @@ description = "H2O GenModel XGBoost support"
 dependencies {
     compile project(":h2o-genmodel")
 
-    // XGBoost dependencies but not officialy published
-    compile files("lib/xgboost4j-0.7.jar",
-                  "lib/xgboost4j-native-osx_minimal-0.7.jar",
-                  "lib/xgboost4j-native-linux_minimal-0.7.jar",
-                  "lib/xgboost4j-native-linux_omp-0.7.jar",
-                  "lib/xgboost4j-native-linux_gpu-0.7.jar")
+    // XGBoost dependencies but not officially published
+    compile files("xgblib/xgboost4j-0.7.1.jar",
+                  "xgblib/xgboost4j-native-osx_minimal-0.7.1.jar",
+                  "xgblib/xgboost4j-native-linux_minimal-0.7.1.jar",
+                  "xgblib/xgboost4j-native-linux_ompv3-0.7.1.jar",
+                  "xgblib/xgboost4j-native-linux_gpuv4-0.7.1.jar")
 
     // These are dependencies extracted from xgboost/jvm-packages/pom.xml
     compile 'com.esotericsoftware.kryo:kryo:2.21'
+    compile 'commons-logging:commons-logging:1.2'
 }
 
 // Disable default jar
