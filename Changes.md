@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Wolbert (3.18.0.1) - 2/12/2018
+### Wolpert (3.18.0.1) - 2/12/2018
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolbert/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolbert/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html</a>
 
 <h4>Bug</h4>
 
