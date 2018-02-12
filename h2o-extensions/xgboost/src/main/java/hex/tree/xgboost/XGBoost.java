@@ -480,11 +480,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // helper
   static synchronized boolean hasGPU(int gpu_id) {
-    try {
-      if(!NativeLibLoader.getLoadedLibraryName().toLowerCase().contains("gpu")) {
-        return false;
-      }
-    } catch (IOException e) {
+    if (! XGBoostExtension.isGpuSupportEnabled()) {
       return false;
     }
 

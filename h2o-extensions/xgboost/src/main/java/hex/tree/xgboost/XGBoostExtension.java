@@ -1,10 +1,14 @@
 package hex.tree.xgboost;
 
+import ml.dmlc.xgboost4j.java.INativeLibLoader;
 import ml.dmlc.xgboost4j.java.NativeLibLoader;
+import ml.dmlc.xgboost4j.java.NativeLibrary;
+import ml.dmlc.xgboost4j.java.NativeLibraryLoaderChain;
 import water.AbstractH2OExtension;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * XGBoost Extension
@@ -51,12 +55,21 @@ public class XGBoostExtension extends AbstractH2OExtension {
 
   private final boolean initXgboost() {
     try {
-      String libName = NativeLibLoader.getLoadedLibraryName();
+      INativeLibLoader loader = NativeLibLoader.getLoader();
+      if (! (loader instanceof NativeLibraryLoaderChain)) {
+        Log.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
+                "XGBoost extension will be disabled.");
+        return false;
+      }
+      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
+      String libName = chainLoader.getLoadedLibraryName();
       if (libName != null) {
         Log.info("Found XGBoost backend with library: " + libName);
-        String suffix = NativeLibLoader.getLoadedLibrarySuffix();
-        if (suffix.equals(NativeLibLoader.MINIMAL_LIB_SUFFIX)) {
+        NativeLibrary.CompilationFlags[] flags = chainLoader.getLoadedLibraryCompilationFlags();
+        if (flags.length == 0) {
           Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
+        } else {
+          Log.info("XGBoost supported backends: " + Arrays.asList(flags));
         }
         return true;
       } else {
@@ -69,4 +82,22 @@ public class XGBoostExtension extends AbstractH2OExtension {
       return false;
     }
   }
+
+  public static boolean isGpuSupportEnabled() {
+    try {
+      INativeLibLoader loader = NativeLibLoader.getLoader();
+      if (! (loader instanceof NativeLibraryLoaderChain))
+        return false;
+      NativeLibrary.CompilationFlags[] flags = ((NativeLibraryLoaderChain) NativeLibLoader.getLoader())
+              .getLoadedLibraryCompilationFlags();
+      for (NativeLibrary.CompilationFlags flag : flags)
+        if (NativeLibrary.CompilationFlags.WITH_GPU.equals(flag))
+          return true;
+      return false;
+    } catch (IOException e) {
+      Log.debug(e);
+      return false;
+    }
+  }
+
 }
