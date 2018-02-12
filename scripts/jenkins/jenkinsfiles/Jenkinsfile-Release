@@ -297,69 +297,6 @@ EOF
                 if (params.TEST_RELEASE || env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)) {
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
-                    if (params.UPLOAD_PYPI) {
-                        // create and upload PyPI package
-                        def UPLOAD_TO_PYPI_STAGE_NAME = 'Upload to PyPI'
-                        stage(UPLOAD_TO_PYPI_STAGE_NAME) {
-                            try {
-                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
-                                    insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 2, 'HOURS') {
-                                        sh """
-                                            echo "Activating Python ${env.PYTHON_VERSION}"
-                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-                                
-                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py
-                                            python setup.py sdist
-                                            
-                                            if [ "\$TEST_RELEASE" = true ]; then
-                                                echo '****** WARNING! Upload to PyPI suppressed ******'
-                                            else
-                                                echo '****** Upload to PyPI ******'
-                                                twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
-                                            fi
-                                        """
-                                    }
-                                }
-                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
-                            } catch (Exception e) {
-                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
-                                throw e
-                            }
-                        }
-                        // check that pip package for each Python version reports correct H2O version
-                        if (!params.TEST_RELEASE) {
-                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
-                                def checkPyPIStageName = "Check Py${pyVersion} PyPI Package"
-                                stage(checkPyPIStageName) {
-                                    try {
-                                        pipelineContext.getBuildSummary().addStageSummary(this, checkPyPIStageName, env.BUILD_NUMBER_DIR)
-                                        pipelineContext.getBuildSummary().setStageDetails(this, checkPyPIStageName, env.NODE_NAME, env.WORKSPACE)
-                                        insideDocker(["PYTHON_VERSION=${pyVersion}"], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 2, 'HOURS') {
-                                            echo "Check PyPI package for Python ${pyVersion}"
-                                            sh """
-                                            export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-                                            echo "Activating Python ${env.PYTHON_VERSION}"
-                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-    
-                                            pip install h2o
-                                            python --version
-                                            python h2o_test.py
-                                        """
-                                        }
-                                        pipelineContext.getBuildSummary().markStageSuccessful(this, checkPyPIStageName)
-                                    } catch (Exception e) {
-                                        pipelineContext.getBuildSummary().markStageFailed(this, checkPyPIStageName)
-                                        throw e
-                                    }
-                                }
-                            }
-                        } else {
-                            echo 'Marked as TEST_RELEASE, don\'t check uploaded PyPI packages'
-                        }
-                    }
-
                     if (params.UPLOAD_CONDA) {
                         // build for all Python versions
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
@@ -435,6 +372,72 @@ EOF
                             }
                         } else {
                             echo 'Marked as TEST_RELEASE, don\'t check uploaded Conda packages'
+                        }
+                    }
+
+                    if (params.UPLOAD_PYPI) {
+                        // create and upload PyPI package
+                        def UPLOAD_TO_PYPI_STAGE_NAME = 'Upload to PyPI'
+                        stage(UPLOAD_TO_PYPI_STAGE_NAME) {
+                            try {
+                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                    insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 2, 'HOURS') {
+                                        sh """
+                                            echo "Activating Python ${env.PYTHON_VERSION}"
+                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+                                
+                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py
+                                            python setup.py sdist
+                                            
+                                            if [ "\$TEST_RELEASE" = true ]; then
+                                                echo '****** WARNING! Upload to PyPI suppressed ******'
+                                            else
+                                                echo '****** Upload to PyPI ******'
+                                                echo 'Because PyPI returns HTTP 503 although upload has been successfull, ignore this error. The package will be checked afterwards'
+                                                set +e
+                                                twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                set -e
+                                            fi
+                                        """
+                                    }
+                                }
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                            } catch (Exception e) {
+                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                throw e
+                            }
+                        }
+                        // check that pip package for each Python version reports correct H2O version
+                        if (!params.TEST_RELEASE) {
+                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                                def checkPyPIStageName = "Check Py${pyVersion} PyPI Package"
+                                stage(checkPyPIStageName) {
+                                    try {
+                                        pipelineContext.getBuildSummary().addStageSummary(this, checkPyPIStageName, env.BUILD_NUMBER_DIR)
+                                        pipelineContext.getBuildSummary().setStageDetails(this, checkPyPIStageName, env.NODE_NAME, env.WORKSPACE)
+                                        insideDocker(["PYTHON_VERSION=${pyVersion}"], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 2, 'HOURS') {
+                                            echo "Check PyPI package for Python ${pyVersion}"
+                                            sh """
+                                            export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+                                            echo "Activating Python ${env.PYTHON_VERSION}"
+                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+    
+                                            pip install h2o
+                                            python --version
+                                            python h2o_test.py
+                                        """
+                                        }
+                                        pipelineContext.getBuildSummary().markStageSuccessful(this, checkPyPIStageName)
+                                    } catch (Exception e) {
+                                        pipelineContext.getBuildSummary().markStageFailed(this, checkPyPIStageName)
+                                        throw e
+                                    }
+                                }
+                            }
+                        } else {
+                            echo 'Marked as TEST_RELEASE, don\'t check uploaded PyPI packages'
                         }
                     }
                 }
