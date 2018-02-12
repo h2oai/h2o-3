@@ -63,6 +63,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5297'>PUBDEV-5297</a>] - Fixed an issue that caused the Parquet parser to fail on Spark 2.0 (SW-707).
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5315'>PUBDEV-5315</a>] - Fixed an issue that caused XGBoost OpenMP to fail on Ubuntu 14.04. 
+</li>
 </ul>
     
 <h4>New Feature</h4>
