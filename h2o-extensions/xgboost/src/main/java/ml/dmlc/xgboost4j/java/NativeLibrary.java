@@ -28,7 +28,7 @@ import org.apache.commons.logging.LogFactory;
 /**
  * Representation of native library.
  */
-public class NativeLibrary implements Loadable {
+public class NativeLibrary {
 
   private static final Log logger = LogFactory.getLog(NativeLibrary.class);
 
@@ -40,7 +40,6 @@ public class NativeLibrary implements Loadable {
   }
 
   private final String name;
-  private final String version;
   private final ClassLoader classLoader;
   private final Platform platform;
   private final CompilationFlags[] flags;
@@ -48,39 +47,31 @@ public class NativeLibrary implements Loadable {
   // Is this library loaded already
   private boolean loaded = false;
 
-  public static Loadable nativeLibrary(String name, CompilationFlags[] flags) {
+  static NativeLibrary nativeLibrary(String name, CompilationFlags[] flags) {
     return new NativeLibrary(name, flags);
   }
 
-  public static Loadable nativeLibrary(String name, CompilationFlags[] flags,
-                                       ClassLoader classLoader) {
-    return new NativeLibrary(name, null, flags, classLoader);
+  static NativeLibrary nativeLibrary(String name, CompilationFlags[] flags,
+                                     ClassLoader classLoader) {
+    return new NativeLibrary(name, flags, classLoader);
   }
 
-  public NativeLibrary(String name, CompilationFlags[] flags) {
-    this(name, null, flags, NativeLibrary.class.getClassLoader());
+  private NativeLibrary(String name, CompilationFlags[] flags) {
+    this(name, flags, NativeLibrary.class.getClassLoader());
   }
 
-  public NativeLibrary(String name, String version, CompilationFlags[] flags,
-                       ClassLoader classLoader) {
+  private NativeLibrary(String name, CompilationFlags[] flags, ClassLoader classLoader) {
     this.name = name;
-    this.version = version;
     this.classLoader = classLoader;
     this.platform = Platform.geOSType();
     this.flags = flags;
   }
 
-  @Override
-  public synchronized boolean load() throws IOException {
+  synchronized boolean load() throws IOException {
     if (!loaded) {
       doLoad();
       loaded = true;
     }
-    return loaded;
-  }
-
-  @Override
-  public boolean isLoaded() {
     return loaded;
   }
 
@@ -102,27 +93,22 @@ public class NativeLibrary implements Loadable {
     }
   }
 
-  protected String getPlatformLibraryPath() {
+  private String getPlatformLibraryPath() {
     return String.format("%s/%s/%s", getResourcePrefix(),
                          platform.getPlatform(),
                          platform.getPlatformLibName(getName()));
   }
 
-  protected String getSimpleLibraryPath() {
+  private String getSimpleLibraryPath() {
     return String.format("%s/%s", getResourcePrefix(),
                          platform.getPlatformLibName(getName()));
   }
 
-  protected String getResourcePrefix() {
+  private String getResourcePrefix() {
     return "lib";
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  protected ClassLoader getClassLoader() {
+  private ClassLoader getClassLoader() {
     return classLoader;
   }
 
@@ -178,8 +164,12 @@ public class NativeLibrary implements Loadable {
     return temp;
   }
 
-  public boolean hasComilationFlag(CompilationFlags flag) {
-    for (CompilationFlags f : flags) {
+  public String getName() {
+    return name;
+  }
+
+  public boolean hasCompilationFlag(CompilationFlags flag) {
+    for (CompilationFlags f : getCompilationFlags()) {
       if (flag == f) return true;
     }
     return false;

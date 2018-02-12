@@ -34,23 +34,23 @@ public class NativeLibraryLoaderChain implements INativeLibLoader {
 
   private static final Log logger = LogFactory.getLog(NativeLibraryLoaderChain.class);
 
-  private final Loadable[] nativeLibs;
+  private final NativeLibrary[] nativeLibs;
 
-  private Loadable successfullyLoaded = null;
+  private NativeLibrary successfullyLoaded = null;
 
   @SuppressWarnings("unused")
   public NativeLibraryLoaderChain() {
     this(
-      // GPU support enabled
+      // GPU & OpenMP support enabled - backend will be decided at runtime based on availability
       nativeLibrary("xgboost4j_gpu", new NativeLibrary.CompilationFlags[] {WITH_GPU, WITH_OMP}),
-      // OMP support enabled
+      // OpenMP 3.x support enabled (when libgomp1 4.x is not available - eg. Ubuntu 14.04)
       nativeLibrary("xgboost4j_omp", new NativeLibrary.CompilationFlags[] {WITH_OMP}),
       // Minimum version of library - no gpu, no omp
       nativeLibrary("xgboost4j_minimal", EMPTY_COMPILATION_FLAGS)
     );
   }
 
-  private NativeLibraryLoaderChain(Loadable... libs) {
+  private NativeLibraryLoaderChain(NativeLibrary... libs) {
     assert libs != null : "Argument `libs` cannot be null.";
     nativeLibs = libs;
   }
@@ -58,7 +58,7 @@ public class NativeLibraryLoaderChain implements INativeLibLoader {
   @Override
   public void loadNativeLibs() throws IOException {
     LinkedList<IOException> exs = new LinkedList<>();
-    for (Loadable lib : nativeLibs) {
+    for (NativeLibrary lib : nativeLibs) {
       try {
         // Try to load
         if (lib.load()) {
@@ -86,31 +86,12 @@ public class NativeLibraryLoaderChain implements INativeLibLoader {
     return 1;
   }
 
-  /**
-   * Full name of loaded library.
-   * @return  library name (e.g., 'xgboost4j_gpu`), never returns null.
-   * @throws IOException  if no library was found or library loading fails
-   */
-  public String getLoadedLibraryName() throws IOException {
+  public NativeLibrary getLoadedLibrary() throws IOException {
     if (successfullyLoaded != null) {
-      return successfullyLoaded.getName();
+      return successfullyLoaded;
     } else {
       throw new IOException("No binary library found!");
     }
   }
-
-  /** Return compilation flags for loaded library or throws exception if no library was loaded
-   *
-   * @return  compilation flags of loaded XGBoost library
-   * @throws IOException  if no XGBoost library was found
-   */
-  public NativeLibrary.CompilationFlags[] getLoadedLibraryCompilationFlags() throws IOException {
-    if (successfullyLoaded != null) {
-      return ((NativeLibrary) successfullyLoaded).getCompilationFlags();
-    } else {
-      throw new IOException("No binary library found!");
-    }
-  }
-
 
 }
