@@ -41,6 +41,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/inde
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5179'>PUBDEV-5179</a>] - Fixed an issue that caused a list of columns to be truncated in PySparkling. Light endpoint now returns all columns.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5186'>PUBDEV-5186</a>] - In AutoML, fixed a deadlock issue that occurred when two AutoML runs came in the same second, resulting in matching timestamps.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5191'>PUBDEV-5191</a>] - The offset_column and distribution parameters are no longer available in Random Forest. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5203'>PUBDEV-5203</a>] - Fixed an issue that caused XGBoost to mangle the domain levels for datasets that have string response domains.
