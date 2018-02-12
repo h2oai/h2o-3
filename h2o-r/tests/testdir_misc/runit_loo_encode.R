@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ##
-# Testing target encoding map (h2o.targetencoding_map) and target encoding frame (h2o.targetencoding_frame)
+# Testing target encoding map (h2o.loo_encode_create) and target encoding frame (h2o.loo_encode_apply)
 ##
 
 
@@ -12,7 +12,7 @@ test <- function() {
   iris.hex = as.h2o(iris)
   
   Log.info("Calculating Target Encoding Mapping for numeric column")
-  map_length <- h2o.targetencoding_map(iris.hex$Species, iris.hex$Sepal.Length)
+  map_length <- h2o.loo_encode_create(iris.hex$Species, iris.hex$Sepal.Length)
   
   Log.info("Expect that number of rows of mapping match number of unique levels in original file")
   expect_that(nrow(map_length), equals(length(levels(iris$Species))))
@@ -29,7 +29,7 @@ test <- function() {
   Log.info("Calculating Target Encoding Mapping for binary column with NA's")
   iris$y <- as.factor(ifelse(iris$Sepal.Length < 5, NA, ifelse(iris$Sepal.Length < 6, "yes", "no")))
   iris.hex <- as.h2o(iris)
-  map_y <- h2o.targetencoding_map(iris.hex$Species, iris.hex$y)
+  map_y <- h2o.loo_encode_create(iris.hex$Species, iris.hex$y)
   
   Log.info("Expect that numerator matches sum of y = yes of levels in original file")
   map_y_df <- as.data.frame(map_y)
@@ -42,8 +42,8 @@ test <- function() {
   
   
   Log.info("Calculating Target Encoding Frame for train = FALSE")
-  frame_y_test <- h2o.targetencoding_frame(iris.hex$Species, iris.hex$y, map_y, 
-                                           train = FALSE, blending_avg = FALSE, noise_level = 0)
+  frame_y_test <- h2o.loo_encode_apply(iris.hex$Species, iris.hex$y, map_y, 
+                                       train = FALSE, blending_avg = TRUE, noise_level = 0.5)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_test), equals(nrow(iris.hex)))
@@ -54,8 +54,8 @@ test <- function() {
   expect_that(as.matrix(frame_y_test$C1)[, 1], equals(expected_y_test$y.x/expected_y_test$y.y))
   
   Log.info("Calculating Target Encoding Frame for train = TRUE")
-  frame_y_train <- h2o.targetencoding_frame(iris.hex$Species, iris.hex$y, map_y, 
-                                           train = TRUE, blending_avg = FALSE, noise_level = 0)
+  frame_y_train <- h2o.loo_encode_apply(iris.hex$Species, iris.hex$y, map_y,
+                                        train = TRUE, blending_avg = FALSE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_train), equals(nrow(iris.hex)))
