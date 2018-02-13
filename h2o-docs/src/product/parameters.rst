@@ -15,6 +15,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
    data-science/algo-params/alpha
    data-science/algo-params/balance_classes
+   data-science/algo-params/beta_constraints
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
    data-science/algo-params/build_tree_one_node
@@ -83,6 +84,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/offset_column
    data-science/algo-params/pca_method
    data-science/algo-params/pred_noise_bandwidth
+   data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
    data-science/algo-params/remove_collinear_columns
    data-science/algo-params/sample_rate
