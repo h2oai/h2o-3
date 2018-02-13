@@ -1623,9 +1623,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     double [] scored = score0(tmp, preds, offset);
-    if(isSupervised())
+    if(needsPostProcess() && isSupervised())
       score0PostProcessSupervised(scored, tmp);
     return scored;
+  }
+
+  /**
+   * Implementations can disable post-processing of predictions by overriding this method (eg. GLM)
+   * @return true, if output of score0 needs post-processing, false if the output is final
+   */
+  protected boolean needsPostProcess() {
+    return true;
   }
 
   protected final void score0PostProcessSupervised(double[] scored, double[] tmp) {
