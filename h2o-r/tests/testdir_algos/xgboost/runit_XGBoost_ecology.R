@@ -4,6 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.XGBoost.ecology <- function() {
+  expect_true(h2o.xgboost.available())
   
   Log.info("==============================")
   Log.info("H2O XGBoost Params: ")

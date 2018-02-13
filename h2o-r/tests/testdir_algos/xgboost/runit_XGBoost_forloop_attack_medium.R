@@ -89,6 +89,7 @@ randomParams <- function(distribution, train, test, x, y) {
 }
 
 test.XGBoost.rand_attk_forloop <- function() {
+  expect_true(h2o.xgboost.available())
   Log.info("Import and data munging...")
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
   seed <- as.integer(runif(1,1,.Machine$integer.max))

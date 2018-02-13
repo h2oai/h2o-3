@@ -4,6 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.XGBoost <- function() {
+  expect_true(h2o.xgboost.available())
 
   print("about to parse train")
   train.hex <- h2o.uploadFile(locate("bigdata/laptop/usecases/cup98LRN_z.csv"), destination_frame="cup98LRN_z.hex")

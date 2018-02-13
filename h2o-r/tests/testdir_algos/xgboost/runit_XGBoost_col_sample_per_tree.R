@@ -4,6 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.xgboost.colsamplepertree <- function() {
+  expect_true(h2o.xgboost.available())
+
   covtype <- h2o.importFile(locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
   splits <- h2o.splitFrame(covtype, 0.8, seed=1234)

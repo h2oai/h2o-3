@@ -4,6 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 checkpoint.remove.all <- function() {
+  expect_true(h2o.xgboost.available())
 
   iris = h2o.importFile(locate("smalldata/iris/iris.csv"))
   m1 = h2o.xgboost(x=1:4, y=5, training_frame=iris, ntrees=100)

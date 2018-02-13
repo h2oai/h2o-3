@@ -4,6 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.XGBoost.frameslice <- function() {
+  expect_true(h2o.xgboost.available())
   Log.info("Importing prostate data...\n")
   pros.hex <- h2o.importFile(path = locate("smalldata/logreg/prostate.csv"))
 
