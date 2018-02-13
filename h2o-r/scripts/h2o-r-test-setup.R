@@ -11,7 +11,7 @@ options(scipen=999)
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
 ON.HADOOP                   <<- FALSE
-HADOOP.NAMENODE             <<- NULL
+HADOOP.NAMENODE             <<- Sys.getenv("NAME_NODE")
 IS.RDEMO                    <<- FALSE
 IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
