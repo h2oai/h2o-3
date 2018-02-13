@@ -33,7 +33,8 @@ RUN \
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
     sync && \
-    /usr/sbin/create_jenkins_user
+    /usr/sbin/create_jenkins_user && \
+    JENKINS_USER_NAME=jenkins2 JENKINS_GROUP_NAME=jenkins2 JENKINS_GID=2117 JENKINS_UID=2117 /usr/sbin/create_jenkins_user
 
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 # Set GRADLE USER env var

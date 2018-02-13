@@ -33,7 +33,8 @@ RUN \
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
     sync && \
-    /usr/sbin/create_jenkins_user
+    /usr/sbin/create_jenkins_user && \
+    JENKINS_USER_NAME=jenkins2 JENKINS_GROUP_NAME=jenkins2 JENKINS_GID=2117 JENKINS_UID=2117 /usr/sbin/create_jenkins_user
 
 # Set GRADLE USER env var
 ENV GRADLE_OPTS '-Dorg.gradle.daemon=false'
