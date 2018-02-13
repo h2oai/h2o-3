@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/inde
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4585'>PUBDEV-4585</a>] - Fixed an issue that caused XGBoost binary save/load to fail.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4593'>PUBDEV-4593</a>] - Fixed an issue that caused a ,        Levensthein Distance Normalization Error. Levenstein distance is now implemented directly into H2O.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4593'>PUBDEV-4593</a>] - Fixed an issue that caused a Levensthein Distance Normalization Error. Levenstein distance is now implemented directly into H2O.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5112'>PUBDEV-5112</a>] - The Word2Vec Python API for pretrained models no longer requires a training frame. In addition, a new `from_external` option was added, which creates a new H2OWord2vecEstimator based on an external model.
 </li>
@@ -44,6 +44,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/inde
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5186'>PUBDEV-5186</a>] - In AutoML, fixed a deadlock issue that occurred when two AutoML runs came in the same second, resulting in matching timestamps.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5191'>PUBDEV-5191</a>] - The offset_column and distribution parameters are no longer available in Random Forest. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5195'>PUBDEV-5195</a>] - Fixed an issue in XGBoost that caused MOJOs to fail to work without manually adding the Commons Logging dependency.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5203'>PUBDEV-5203</a>] - Fixed an issue that caused XGBoost to mangle the domain levels for datasets that have string response domains.
 </li>
