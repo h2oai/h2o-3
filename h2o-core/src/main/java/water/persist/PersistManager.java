@@ -42,6 +42,7 @@ public class PersistManager {
     public static final String S3   = "s3";
     public static final String S3N  = "s3n";
     public static final String S3A  = "s3a";
+    public static final String GCS  = "gs";
     public static final String NFS  = "nfs";
   }
 
@@ -71,6 +72,7 @@ public class PersistManager {
         || s.startsWith("s3:")
         || s.startsWith("s3n:")
         || s.startsWith("s3a:")
+        || s.startsWith("gs:")
         || s.startsWith("maprfs:")
         || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path)) {
       return true;
@@ -144,6 +146,15 @@ public class PersistManager {
     } catch (Throwable ignore) {
       Log.info("S3 subsystem not available");
     }
+
+    try {
+      Class klass = Class.forName("water.persist.PersistGcs");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.GCS] = (Persist) constructor.newInstance();
+      Log.info("GCS subsystem successfully initialized");
+    } catch (Throwable ignore) {
+      Log.info("GCS subsystem not available");
+    }
   }
 
   public void store(int backend, Value v) throws IOException {
@@ -189,6 +200,8 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
+    } else if ("gs".equals(scheme)) {
+      ikey = I[Value.GCS].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
     } else if (useHdfsAsFallback() && I[Value.HDFS].canHandle(uri.toString())) {
@@ -231,6 +244,8 @@ public class PersistManager {
       }
     } else if(s.startsWith("s3://")) {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
+    } else if(s.startsWith("gs://")) {
+      return I[Value.GCS].calcTypeaheadMatches(filter, limit);
     } else if (s.startsWith("hdfs:")
                || s.startsWith("s3n:")
                || s.startsWith("s3a:")
@@ -284,6 +299,9 @@ public class PersistManager {
     } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("gs".equals(scheme)) {
+      if (I[Value.GCS] == null) throw new H2OIllegalArgumentException("GCS support is not configured");
+      I[Value.GCS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("hdfs".equals(scheme) ||
         "s3n:".equals(scheme) ||
         "s3a:".equals(scheme) ||
@@ -516,6 +534,8 @@ public class PersistManager {
           return I[Value.HDFS];
         case Schemes.S3:
           return I[Value.S3];
+        case Schemes.GCS:
+          return I[Value.GCS];
         default:
           if (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(uri.toString())) {
             return I[Value.HDFS];
