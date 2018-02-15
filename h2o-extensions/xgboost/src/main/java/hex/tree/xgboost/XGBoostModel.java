@@ -22,7 +22,6 @@ import java.util.Map;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
-  private static final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
   private XGBoostModelInfo model_info;
 
   XGBoostModelInfo model_info() { return model_info; }
@@ -305,7 +304,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param params Parameters to localize
    */
   private static void localizeDecimalParams(final HashMap<String, Object> params) {
-
+    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
     for (String key : params.keySet()) {
       final Object value = params.get(key);
       if (value instanceof Float || value instanceof Double) {
@@ -313,7 +312,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put(key, localizedValue);
       }
     }
-
   }
 
   @Override
