@@ -2,6 +2,8 @@ from __future__ import print_function
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
+import random
+import sys
 from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 
@@ -14,16 +16,21 @@ def automl_leaderboard():
     # Leaderboard columns are correct for each ML task 
     # Check that correct algos are in the leaderboard
 
+    #Random positive seed for AutoML
+    if sys.version_info[0] < 3: #Python 2
+        automl_seed = random.randint(0,sys.maxint)
+    else: #Python 3
+        automl_seed = random.randint(0,sys.maxsize)
+    print("Random Seed for pyunit_automl_leaderboard.py = " + str(automl_seed))
 
     all_algos = ["GLM", "DeepLearning", "GBM", "DRF", "StackedEnsemble"]
-
 
     # Binomial
     print("Check leaderboard for Binomial")
     fr1 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     fr1["CAPSULE"] = fr1["CAPSULE"].asfactor()
     exclude_algos = ["GLM", "DeepLearning", "DRF"]
-    aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos)
+    aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y="CAPSULE", training_frame=fr1)
     lb = aml.leaderboard
     print(lb)
@@ -42,7 +49,7 @@ def automl_leaderboard():
     print("Check leaderboard for Regression")
     fr2 = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
     exclude_algos = ["GBM", "DeepLearning"]
-    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos)
+    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y=4, training_frame=fr2)
     lb = aml.leaderboard
     print(lb)
@@ -60,7 +67,7 @@ def automl_leaderboard():
     print("Check leaderboard for Multinomial")
     fr3 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     exclude_algos = ["GBM"]
-    aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos)
+    aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y=4, training_frame=fr3)
     lb = aml.leaderboard
     print(lb)
@@ -79,7 +86,7 @@ def automl_leaderboard():
     fr4 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     fr4["CAPSULE"] = fr4["CAPSULE"].asfactor()
     exclude_algos = ["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"]
-    aml = H2OAutoML(max_runtime_secs=5, project_name="py_lb_test_aml4", exclude_algos=exclude_algos)
+    aml = H2OAutoML(max_runtime_secs=5, project_name="py_lb_test_aml4", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y="CAPSULE", training_frame=fr4)
     lb = aml.leaderboard
     print(lb)
@@ -91,7 +98,7 @@ def automl_leaderboard():
     # Include all algorithms (all should be there, given large enough max_models)
     print("Check leaderboard for all algorithms")
     fr5 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5")
+    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5", seed=automl_seed)
     aml.train(y=4, training_frame=fr5)
     lb = aml.leaderboard
     print(lb)
