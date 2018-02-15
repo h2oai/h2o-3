@@ -47,6 +47,7 @@ Collate:
          'edicts.R'
          'models.R'
          'coxph.R'
+         'coxphutils.R'
          'kmeans.R'
          'gbm.R'
          'glm.R'

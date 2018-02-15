@@ -38,6 +38,8 @@ def gen_module(schema, algo, module):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size"]:
             continue
+        if algo == "coxph" and param["name"] == "rcall":
+            continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "
@@ -97,6 +99,8 @@ def gen_module(schema, algo, module):
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
+        if algo == "coxph" and param["name"] == "rcall":
+            continue
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size", "training_frame"]:
             continue
         if algo == "naivebayes":
@@ -286,6 +290,9 @@ def gen_module(schema, algo, module):
             yield "   parms$%s <- eps_prob" % param["name"]
             continue
         if param["name"] == "metalearner_params":
+            continue
+        if algo == "coxph" and param["name"] == "rcall":
+            yield "  parms$rcall <- deparse(match.call())"
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
