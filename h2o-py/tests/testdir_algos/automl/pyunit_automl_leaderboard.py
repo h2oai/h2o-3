@@ -17,7 +17,6 @@ def automl_leaderboard():
     # Check that correct algos are in the leaderboard
 
     #Random positive seed for AutoML
-    import sys
     if sys.version_info[0] < 3: #Python 2
         automl_seed = random.randint(0,sys.maxint)
     else: #Python 3
