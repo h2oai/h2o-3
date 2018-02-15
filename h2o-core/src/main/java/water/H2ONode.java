@@ -145,7 +145,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern( H2Okey key ) {
     H2ONode h2o = INTERN.get(key);
-    if( h2o != null ) return h2o;
+    if( h2o != null){
+      if(h2o._heartbeat._client && h2o._removed_from_cloud){
+        // the client has reconnected, we need to restore the state
+        h2o._removed_from_cloud = false;
+        h2o._sendThread = h2o.new UDP_TCP_SendThread(); // Launch the UDP send thread
+        h2o._sendThread.start();
+      }else{
+        return h2o;
+      }
+    }
     final int idx = UNIQUE.getAndIncrement();
     assert idx < Short.MAX_VALUE;
     h2o = new H2ONode(key,(short)idx);

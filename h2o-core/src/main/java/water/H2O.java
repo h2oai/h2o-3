@@ -2048,6 +2048,9 @@ final public class H2O {
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
 
+    // Start thread checking client disconnections
+    new ClientDisconnectCheckThread().start();
+
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2183,6 +2186,7 @@ final public class H2O {
   }
 
   public static H2ONode removeClient(H2ONode client){
+    client.stopSendThread();
     return CLIENTS_MAP.remove(client.getIpPortString());
   }
 
