@@ -49,9 +49,9 @@ public class LinkMap {
 
         for (Map.Entry<Integer, Integer> kv : parentMap_.entrySet()) {
             if(kv.getKey() == 0) {
-                parentMap.put(kv.getKey(), -1);
+                parentMap.put(rMap_.get(kv.getKey()), -1);
             } else {
-                parentMap.put(kv.getKey(), rMap_.get(kv.getValue()));
+                parentMap.put(rMap_.get(kv.getKey()), rMap_.get(kv.getValue()));
             }
         }
     }
@@ -77,13 +77,19 @@ public class LinkMap {
     }
 
     private List<Integer> getNeighbours(int rank) {
-        int rank1 = rank + 1;
-        List<Integer> neighbour = new ArrayList<>(3);
-        for(Integer n : new int[]{rank1 / 2 - 1, rank1 * 2 - 1, rank1 * 2}) {
-            if(n >= 0 && n < numWorkers) {
-                neighbour.add(n);
-            }
+        rank += 1;
+        List<Integer> neighbour = new ArrayList<>();
+
+        if(rank > 1) {
+            neighbour.add(rank / 2 - 1);
         }
+        if(rank * 2 - 1 < numWorkers) {
+            neighbour.add(rank * 2 - 1);
+        }
+        if(rank * 2 < numWorkers) {
+            neighbour.add(rank * 2);
+        }
+
         return neighbour;
     }
 
@@ -100,13 +106,11 @@ public class LinkMap {
             int cnt = 0;
             for(Integer n : connectionSet) {
                 List<Integer> vConnSeq = constructShareRing(treeMap, parentMap, n);
-                if(vConnSeq.size() == cnt + 1) {
-                    Collections.reverse(vConnSeq);
-                    ringSeq.addAll(vConnSeq);
-                } else {
-                    ringSeq.addAll(vConnSeq);
-                }
                 cnt++;
+                if(connectionSet.size() == cnt) {
+                    Collections.reverse(vConnSeq);
+                }
+                ringSeq.addAll(vConnSeq);
             }
             return ringSeq;
         }

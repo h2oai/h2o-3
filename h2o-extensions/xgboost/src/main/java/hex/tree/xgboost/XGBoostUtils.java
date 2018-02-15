@@ -695,7 +695,7 @@ public class XGBoostUtils {
                 rowIndex[currentRow] = new int[1 << 20];
             } else {
                 int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
-                Log.info("Enlarging dense data structure row from " + data[currentRow].length + " bytes to " + newLen + " bytes.");
+                Log.info("Enlarging dense data structures row from " + data[currentRow].length + " float entries to " + newLen + " entries.");
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
             }
