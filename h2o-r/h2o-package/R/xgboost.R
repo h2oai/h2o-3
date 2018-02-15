@@ -43,7 +43,7 @@
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to LabelEncoder.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
