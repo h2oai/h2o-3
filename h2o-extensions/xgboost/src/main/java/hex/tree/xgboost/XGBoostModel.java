@@ -22,6 +22,7 @@ import java.util.Map;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
+
   private XGBoostModelInfo model_info;
 
   XGBoostModelInfo model_info() { return model_info; }
