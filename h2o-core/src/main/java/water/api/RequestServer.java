@@ -657,7 +657,7 @@ public class RequestServer extends HttpServlet {
       // url "/3/Foo/bar" => path ["", "GET", "Foo", "bar", "3"]
       String[] path = uri.getPath();
       if (path[2].equals("")) return redirectToFlow();
-      if (path[2].equals("Logs") && path[3].equals("download")) return downloadLogs();
+      if (path[2].equals("Logs") && path[3].equals("download")) return LogsHandler.downloadAllLogs();
       if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
     }
     return null;
@@ -739,116 +739,6 @@ public class RequestServer extends HttpServlet {
     return res;
   }
 
-  private static NanoResponse downloadLogs() {
-    Log.info("\nCollecting logs.");
-
-    H2ONode[] members = H2O.CLOUD.members();
-    byte[][] perNodeZipByteArray = new byte[members.length][];
-    byte[] clientNodeByteArray = null;
-
-    for (int i = 0; i < members.length; i++) {
-      byte[] bytes;
-
-      try {
-        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        if (members[i].isHealthy()) {
-          GetLogsFromNode g = new GetLogsFromNode();
-          g.nodeidx = i;
-          g.doIt();
-          bytes = g.bytes;
-        } else {
-          bytes = StringUtils.bytesOf("Node not healthy");
-        }
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      perNodeZipByteArray[i] = bytes;
-    }
-
-    if (H2O.ARGS.client) {
-      byte[] bytes;
-      try {
-        GetLogsFromNode g = new GetLogsFromNode();
-        g.nodeidx = -1;
-        g.doIt();
-        bytes = g.bytes;
-      }
-      catch (Exception e) {
-        bytes = StringUtils.toBytes(e);
-      }
-      clientNodeByteArray = bytes;
-    }
-
-    String outputFileStem = getOutputLogStem();
-    byte[] finalZipByteArray;
-    try {
-      finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
-    }
-    catch (Exception e) {
-      finalZipByteArray = StringUtils.toBytes(e);
-    }
-
-    NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
-    res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
-    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + ".zip");
-    return res;
-  }
-
-  private static String getOutputLogStem() {
-    String pattern = "yyyyMMdd_hhmmss";
-    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
-    String now = formatter.format(new Date());
-    return "h2ologs_" + now;
-  }
-
-  private static byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
-    int l = 0;
-    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
-    for (byte[] result : results) l += result.length;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-
-    // Add top-level directory.
-    ZipOutputStream zos = new ZipOutputStream(baos);
-    {
-      ZipEntry zde = new ZipEntry (topDir + File.separator);
-      zos.putNextEntry(zde);
-    }
-
-    try {
-      // Add zip directory from each cloud member.
-      for (int i =0; i<results.length; i++) {
-        String filename =
-            topDir + File.separator +
-                "node" + i + "_" +
-                H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
-                ".zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(results[i]);
-        zos.closeEntry();
-      }
-
-      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
-      if (clientResult != null) {
-        String filename =
-            topDir + File.separator +
-                "driver.zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(clientResult);
-        zos.closeEntry();
-      }
-
-      // Close the top-level directory.
-      zos.closeEntry();
-    } finally {
-      // Close the full zip file.
-      zos.close();
-    }
-
-    return baos.toByteArray();
-  }
 
   // cache of all loaded resources
   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // remove this once TO-DO below is addressed
