@@ -10,6 +10,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     public static String[] fields = new String[] {
               "model_id",
               "training_frame",
+              "rcall",
               "start_column",
               "stop_column",
               "response_column",
@@ -21,6 +22,9 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "lre_min",
               "iter_max"
       };
+
+    @API(help="rcall", direction = API.Direction.INPUT)
+    public String rcall;
 
     @API(help="stop_column", direction = API.Direction.INOUT)
     public String stop_column;

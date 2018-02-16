@@ -13,5 +13,6 @@ public enum ModelCategory {
   Clustering,
   AutoEncoder,
   DimReduction,
-  WordEmbedding
+  WordEmbedding,
+  CoxPH
 }

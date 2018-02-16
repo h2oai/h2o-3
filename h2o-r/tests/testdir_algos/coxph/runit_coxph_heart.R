@@ -27,8 +27,38 @@ test.CoxPH.heart <- function() {
     expect_equal(output$n, coxph.r$n)
     expect_equal(sum(output$n_event), coxph.r$nevent)
 
-
     expect_equal(output$wald.test, coxph.r$wald_test, tolerance = 1e-8)
+
+    # test summary, coef
+    summary.info <- summary(coxph.h2o)
+    expect_equal(coef(coxph.h2o)[1], c(age = coef(summary.info)[,1]), tolerance = 1e-8)
+
+    # test print summary
+    summary.out <- capture.output(print(summary.info))
+    summary.out.sanitized <- gsub("[0-9]", "?", x = summary.out)[4:18]
+    summary.out.expected <- c(
+      "  n= ???",
+      "",
+      "       coef exp(coef) se(coef)     z Pr(>|z|)  ",
+      "age ?.?????   ?.?????  ?.????? ?.???   ?.???? *",
+      "---",
+      "Signif. codes:  ? ‘***’ ?.??? ‘**’ ?.?? ‘*’ ?.?? ‘.’ ?.? ‘ ’ ?",
+      "",
+      "    exp(coef) exp(-coef) lower .?? upper .??",
+      "age     ?.???     ?.????     ?.???      ?.??",
+      "",
+      "Rsquare= ?.??   (max possible= ?.??? )",
+      "Likelihood ratio test= ?.??  on ? df,   p=?.?????",
+      "Wald test            = ?.??  on ? df,   p=?.?????",
+      "Score (logrank) test = ?.??  on ? df,   p=?.?????",
+      ""
+    )
+    expect_equal(summary.out.expected, summary.out.sanitized)
+
+    # smoke tests
+    print(extractAIC(coxph.h2o))
+    print(logLik(coxph.h2o))
+    print(vcov(coxph.h2o))
 }
 
 doTest("CoxPH: Heart Test", test.CoxPH.heart)
