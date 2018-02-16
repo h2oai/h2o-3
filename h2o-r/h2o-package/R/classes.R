@@ -285,11 +285,22 @@ setClass("H2ODimReductionModel", contains="H2OModel")
 #' @export
 setClass("H2OWordEmbeddingModel", contains="H2OModel")
 
-#' @rdname H2OModel-class
+#'
+#' The H2OCoxPHModel object.
+#'
+#' Virtual object representing H2O's CoxPH Model.
+#'
+#' @aliases H2OCoxPHModel
 #' @export
 setClass("H2OCoxPHModel", contains="H2OModel")
 
-#' @rdname H2OCoxPHModelSummary-class
+#'
+#' The H2OCoxPHModelSummary object.
+#'
+#' Wrapper object for summary information compatible with survival package.
+#'
+#' @slot summary A \code{list} containing the a summary compatible with CoxPH summary used in the survival package.
+#' @aliases H2OCoxPHModelSummary
 #' @export
 setClass("H2OCoxPHModelSummary", representation(summary="list"))
 
@@ -309,16 +320,29 @@ setMethod("show", "H2OCoxPHModel", function(object) {
     get("print.coxph", getNamespace("survival"))(.as.survival.coxph.model(o@model))
 })
 
+#'
+#' Print the CoxPH Model Summary
+#'
+#' @param object An \linkS4class{H2OCoxPHModelSummary} object.
+#' @param ... further arguments to be passed on (currently unimplemented)
+#' @export
 setMethod("show", "H2OCoxPHModelSummary", function(object)
   get("print.summary.coxph", getNamespace("survival"))(object@summary))
 
+#'
+#' Print the CoxPH Model Summary
+#'
+#' @param object an \code{H2OCoxPHModel} object.
+#' @param conf.int a specification of the confidence interval.
+#' @param scale a scale.
+#' @export
 setMethod("summary", "H2OCoxPHModel",
           function(object, conf.int = 0.95, scale = 1) {
             res <- .as.survival.coxph.summary(object@model)
             if (conf.int == 0)
               res@summary$conf.int <- NULL
             else {
-              z <- qnorm((1 + conf.int)/2, 0, 1)
+              z <- stats::qnorm((1 + conf.int)/2, 0, 1)
               coef <- scale * res@summary$coefficients[,    "coef",  drop = TRUE]
               se   <- scale * res@summary$coefficients[, "se(coef)", drop = TRUE]
               shift <- z * se

@@ -27,7 +27,8 @@ Suggests: ggplot2,
           Matrix,
           slam,
           bit64 (>= 0.9.7),
-          data.table (>= 1.9.8)
+          data.table (>= 1.9.8),
+          survival
 Collate:
          'aggregator.R'
          'astfun.R'
