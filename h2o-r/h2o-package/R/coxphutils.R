@@ -28,22 +28,22 @@
              n            = model$n,
              loglik       = model$loglik,
              nevent       = model$nevent,
-             coefficients = structure(cbind(model$coef, model$exp_coef, model$se_coef, model$z_coef, 1 - pchisq(model$z_coef^2, 1)),
+             coefficients = structure(cbind(model$coef, model$exp_coef, model$se_coef, model$z_coef, 1 - stats::pchisq(model$z_coef^2, 1)),
              dimnames     = list(coef_names, c("coef", "exp(coef)", "se(coef)", "z", "Pr(>|z|)"))),
              conf.int     = NULL,
              logtest      = c(
                                 test   = model$loglik_test,
                                 df     = df,
-                                pvalue = 1 - pchisq(model$loglik_test, df)),
+                                pvalue = 1 - stats::pchisq(model$loglik_test, df)),
              sctest       = c(
                                 test   = model$score_test,
                                 df     = df,
-                                pvalue = 1 - pchisq(model$score_test, df)),
+                                pvalue = 1 - stats::pchisq(model$score_test, df)),
              rsq          = c(rsq = model$rsq, maxrsq = model$maxrsq),
              waldtest     = c(
                                 test = model$wald_test,
                                 df = df,
-                                pvalue = 1 - pchisq(model$wald_test, df)),
+                                pvalue = 1 - stats::pchisq(model$wald_test, df)),
              used.robust  = FALSE)
     return(new("H2OCoxPHModelSummary", summary = summary))
 }
