@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /** Log for H2O. 
  *

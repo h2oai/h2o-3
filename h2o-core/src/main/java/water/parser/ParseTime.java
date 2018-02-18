@@ -57,8 +57,10 @@ public abstract class ParseTime {
       long t4 = attemptDayFirstTimeParse2(str); // "dd/MM/yy" and time if present; note that this format is ambiguous
       if( t4 != Long.MIN_VALUE ) return t4;     // Cant tell which date: 3/2/10 is
     } catch( org.joda.time.IllegalFieldValueException | // Not time at all
-             org.joda.time.IllegalInstantException      // Parsed as time, but falls into e.g. a daylight-savings hour hole
-             ie ) { } //FIXME should collect errors and report at end of parse
+        org.joda.time.IllegalInstantException |      // Parsed as time, but falls into e.g. a daylight-savings hour hole
+        ArrayIndexOutOfBoundsException
+        e) {
+    }
     return Long.MIN_VALUE;
   }
   // Tries to parse "yyyy-MM[-dd] [HH:mm:ss.SSS aa]"
@@ -248,7 +250,7 @@ public abstract class ParseTime {
       for (byte[] ms : mss) {
         MMM = ms;
         if (MMM == null) continue;
-        if (i + MMM.length > end) 
+        if (i + MMM.length > end)
           continue INNER;
         for (int j = 0; j < MMM.length; j++)
           if (MMM[j] != Character.toLowerCase(buf[i + j]))
