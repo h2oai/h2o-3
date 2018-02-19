@@ -78,6 +78,10 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     double[] var_cumhaz_1;
     @API(help = "var_cumhaz_2")
     double[][] var_cumhaz_2;
+    @API(help = "rcall")
+    String rcall;
+    @API(help = "ties", values = {"efron", "breslow"})
+    CoxPHModel.CoxPHParameters.CoxPHTies ties;
 
   } // CoxPHModelOutputV3
 

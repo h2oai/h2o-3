@@ -16,14 +16,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.network.SecurityUtils;
 import water.util.*;
 import water.util.Timer;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -336,9 +334,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._boosterBytes = model.model_info()._boosterBytes;
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
-        H2O.fail("XGBoost failure", xgBoostError);
-      } catch (IOException e) {
-        H2O.fail("XGBoost failure", e);
+        throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
         // Unlock & save results
         model.unlock(_job);
@@ -351,9 +347,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
         return new File(tmpModelDir, featureMapFileName);
       } catch(IOException e) {
-        H2O.fail("Cannot generate temporary directory for feature map file", e);
+        throw new RuntimeException("Cannot generate temporary directory for feature map file", e);
       }
-      return null;
     }
 
     protected final void scoreAndBuildTrees(XGBoostModel model, IRabitTracker rt) throws XGBoostError {

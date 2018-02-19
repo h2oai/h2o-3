@@ -13,6 +13,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 import hex.ModelMetrics;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -107,11 +110,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _skip_drop = 0;
     public int _gpu_id = 0; // which GPU to use
     public Backend _backend = Backend.auto;
-
-    public XGBoostParameters() {
-      super();
-      _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
-    }
 
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
@@ -290,7 +288,26 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       Log.info(" " + s.getKey() + " = " + s.getValue());
     }
     Log.info("");
+
+    localizeDecimalParams(params);
     return params;
+  }
+
+  /**
+   * Iterates over a set of parameters and applies locale-specific formatting
+   * to decimal ones (Floats and Doubles).
+   *
+   * @param params Parameters to localize
+   */
+  private static void localizeDecimalParams(final HashMap<String, Object> params) {
+    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
+    for (String key : params.keySet()) {
+      final Object value = params.get(key);
+      if (value instanceof Float || value instanceof Double) {
+        final String localizedValue = localizedNumberFormatter.format(value);
+        params.put(key, localizedValue);
+      }
+    }
   }
 
   @Override

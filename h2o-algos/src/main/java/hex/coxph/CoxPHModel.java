@@ -1,9 +1,6 @@
 package hex.coxph;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsRegression;
+import hex.*;
 import hex.coxph.CoxPHModel.CoxPHOutput;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import hex.schemas.CoxPHModelV3;
@@ -28,6 +25,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
+    public String _rcall;
     public double _init = 0;
     public double _lre_min = 9;
     public int _iter_max = 20;
@@ -37,7 +35,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   public static class CoxPHOutput extends Model.Output {
-    public CoxPHOutput( CoxPH b ) { super(b); }
+    public CoxPHOutput(CoxPH coxPH) {
+      super(coxPH);
+      _ties = coxPH._parms._ties;
+      _rcall = coxPH._parms._rcall;
+    }
+
+    @Override
+    public ModelCategory getModelCategory() { return ModelCategory.CoxPH; }
 
     DataInfo data_info;
     // FIXME: these should most likely not be in the model output
@@ -76,6 +81,9 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _cumhaz_0;
     double[] _var_cumhaz_1;
     double[][] _var_cumhaz_2;
+
+    CoxPHParameters.CoxPHTies _ties;
+    String _rcall;
   }
 
   @Override

@@ -1,9 +1,7 @@
 package hex.glm;
 
 import hex.FrameSplitter;
-import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
-import hex.ModelMetricsMultinomial;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -12,12 +10,13 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 import water.*;
 
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
-import water.util.FrameUtils;
 
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +28,9 @@ public class GLMBasicTestMultinomial extends TestUtil {
   static Frame _covtype;
   static Frame _train;
   static Frame _test;
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @BeforeClass
   public static void setup() {
@@ -299,6 +301,17 @@ public class GLMBasicTestMultinomial extends TestUtil {
       if(model != null)model.delete();
       if(preds != null)preds.delete();
     }
+  }
+
+  @Test
+  public void testNaiveCoordinateDescent() {
+    expectedException.expect(H2OIllegalArgumentException.class);
+    expectedException.expectMessage("Naive coordinate descent is not supported.");
+    GLMParameters params = new GLMParameters(Family.multinomial);
+    params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+
+    // Should throw exception with information about unsupported message
+    new GLM(params).trainModel().get();
   }
 
 

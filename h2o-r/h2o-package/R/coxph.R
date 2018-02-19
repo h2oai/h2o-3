@@ -65,6 +65,7 @@ h2o.coxph <- function(x, event_column, training_frame,
 
   if (!missing(model_id))
     parms$model_id <- model_id
+  parms$rcall <- deparse(match.call())
   if (!missing(start_column))
     parms$start_column <- start_column
   if (!missing(stop_column))
