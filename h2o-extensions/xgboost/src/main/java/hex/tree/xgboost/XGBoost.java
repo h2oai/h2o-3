@@ -335,8 +335,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
-      } catch (IOException e) {
-        throw new RuntimeException("XGBoost failure", e);
       } finally {
         // Unlock & save results
         model.unlock(_job);
