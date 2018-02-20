@@ -314,6 +314,7 @@ public class JettyHTTPD extends AbstractHTTPD {
   }
 
   private static void setCommonResponseHttpHeaders(HttpServletResponse response) {
+    response.setHeader("Cache-Control", "no-cache");
     response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
