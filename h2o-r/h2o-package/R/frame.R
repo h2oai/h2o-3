@@ -4526,11 +4526,6 @@ h2o.loo_encode_create <- function(data, x, y){
   if (!is.h2o(data)) 
     stop("argument `data` must be a valid H2OFrame")
   
-  if (length(intersect(colnames(data), y)) != 1)
-    stop("`y` must be a column name in `data`")
-    if (length(intersect(colnames(data), x)) != length(x))
-        stop("`x` must be column names in `data`")
-  
   if (is.numeric(data[x]) || length(data[x]) == 0L) 
     stop("`x` must be categorical columns")
   
@@ -4541,9 +4536,15 @@ h2o.loo_encode_create <- function(data, x, y){
     else stop(paste0("`y` must be a numeric or binary vector - has ", length(y_levels), " levels"))
   }
   
+  if(is.numeric(x)){
+    x <- colnames(data)[x]
+  }
+  if(is.numeric(y)){
+    y <- colnames(data)[y]
+  }
+  
   # Remove records where y is NA
-  encoding_data <- data[c(x, y)]
-  encoding_data <- encoding_data[!is.na(encoding_data[[y]]), ]
+  encoding_data <- data[!is.na(data[[y]]), ]
   
   # Calculate sum of y and number of rows per level of data
   te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
@@ -4563,8 +4564,8 @@ h2o.loo_encode_create <- function(data, x, y){
 #' 
 #' @param data An H2OFrame object with categorical columns in which to group by.
 #' @param loo_encode_map An H2OFrame object that is the results of the \code{\link{h2o.loo_encode_create}} function.
-#' @param using_holdout \code{Logical}. Whether the target encoding mapping was created on a separate holdout dataset.
-#' @param y (Optional) The name of the target column which can be either a numeric or binary column. Only required if \code{train = TRUE}.
+#' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary. Only required when the value of the existing row should be removed (leave-one-out).
+#' @param leave_one_out \code{Logical}. (Optional) Whether the value of the existing row should be removed from the target encoding.
 #' @param blended_avg \code{Logical}. (Optional) Whether to perform blending average.
 #' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
 #' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
@@ -4583,12 +4584,11 @@ h2o.loo_encode_create <- function(data, x, y){
 #' train <- splits[[1]]
 #' test <- splits[[2]]
 #' mapping <- h2o.loo_encode_create(train, c("job", "marital"), "age")
-#' h2o.loo_encode_apply(test, mapping, using_holdout = FALSE)
+#' h2o.loo_encode_apply(test, mapping, "age", leave_one_out = FALSE)
 #' 
 #' }
 #' @export
-h2o.loo_encode_apply <- function(data, loo_encode_map, using_holdout, 
-                                 y = NULL, blended_avg = TRUE, noise_level = NULL, seed = -1){
+h2o.loo_encode_apply <- function(data, loo_encode_map, y, leave_one_out = TRUE, blended_avg = TRUE, noise_level = NULL, seed = -1){
   
   if (missing(data)) 
     stop("argument 'data' is missing, with no default")
@@ -4606,18 +4606,23 @@ h2o.loo_encode_apply <- function(data, loo_encode_map, using_holdout,
   if (length(intersect(colnames(data), colnames(loo_encode_map))) == 0L) 
     stop("`data` and `loo_encode_map` must have intersecting column names to merge on")
   
-  if(!is.logical(using_holdout))
-    stop("`using_holdout` must be logical")
+  if(!is.logical(leave_one_out))
+    stop("`leave_one_out` must be logical")
+  if(!is.logical(blended_avg))
+    stop("`blended_avg` must be logical")
   
-  if(!using_holdout & is.null(y))
-    stop("`y` must be provided if `using_holdout` = FALSE")
+  if (!is.null(noise_level))
+    if (!is.numeric(noise_level) || length(noise_level) > 1L)
+      stop("`noise_level` must be a numeric vector of length 1")
+  else if (noise_level < 0)
+    stop("`noise_level` must be non-negative")
+
+  if(is.numeric(y)){
+    y <- colnames(data)[y]
+  }
   
-  
-  # If using_holdout = FALSE, remove value of existing row
-  if(!using_holdout){
-    
-    if (length(intersect(colnames(data), y)) != 1)
-      stop("`y` must be a column name in `data`")
+  # If leave_one_out = TRUE, remove value of existing row
+  if(leave_one_out){
     
     # Merge Target Encoding Mapping to data
     te_frame <- h2o.merge(data, loo_encode_map, all.x = TRUE, all.y = FALSE)
@@ -4631,58 +4636,46 @@ h2o.loo_encode_apply <- function(data, loo_encode_map, using_holdout,
                                        te_frame$denominator, 
                                        te_frame$denominator - 1)
     
-    if(!is.logical(blended_avg))
-      stop("`blended_avg` must be logical")
-    
-    # Calculate Mean Per Group
-    if (blended_avg){
-      
-      # Calculate Blended Mean Per Group
-      # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
-      # Equations (3), (4)
-      k = 20
-      f = 10
-      global_mean <- sum(loo_encode_map$numerator)/sum(loo_encode_map$denominator)
-      lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
-      te_frame$C1 <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
-      
-    } else{
-      
-      # Calculate Mean Target per Group
-      te_frame$C1  <- te_frame$numerator/te_frame$denominator
-      
-    }
-    
-    if (!is.null(noise_level))
-      if (!is.numeric(noise_level) || length(noise_level) > 1L)
-        stop("`noise_level` must be a numeric vector of length 1")
-    else if (noise_level < 0)
-      stop("`noise_level` must be non-negative")
-    
-    # Add Random Noise
-    if(is.null(noise_level)){
-      # If `noise_level` is NULL, value chosen based on `y` distribution
-      noise_level <- ifelse(is.factor(y), 0.01, (max(data[[y]]) - min(data[[y]]))*0.01)
-    }
-    
-    if(noise_level > 0){
-      # Generate random floats sampled from a uniform distribution  
-      random_noise <- h2o.runif(te_frame, seed = seed)
-      # Scale within noise_level
-      random_noise <- random_noise * 2 * noise_level - noise_level
-      # Add noise to target_encoding
-      te_frame$C1  <- te_frame$C1  + random_noise
-    }
-    
-    
   } else{
     
-    # If using_holdout = TRUE, calculate simple average from mapping
+    # If y is NULL, do not remove value of existing row 
     
     # Merge Target Encoding Mapping to data
     te_frame <- h2o.merge(data, loo_encode_map, all.x = TRUE, all.y = FALSE)
+  }
+  
+  # Calculate Mean Per Group
+  if (blended_avg){
     
-    te_frame$C1 <- te_frame$numerator/te_frame$denominator
+    # Calculate Blended Mean Per Group
+    # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
+    # Equations (3), (4)
+    k = 20
+    f = 10
+    global_mean <- sum(loo_encode_map$numerator)/sum(loo_encode_map$denominator)
+    lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
+    te_frame$C1 <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
+    
+  } else{
+    
+    # Calculate Mean Target per Group
+    te_frame$C1  <- te_frame$numerator/te_frame$denominator
+    
+  }
+  
+  # Add Random Noise
+  if(is.null(noise_level)){
+    # If `noise_level` is NULL, value chosen based on `y` distribution
+    noise_level <- ifelse(is.factor(data[[y]]), 0.01, (max(data[[y]], na.rm = TRUE) - min(data[[y]], na.rm = TRUE))*0.01)
+  }
+  
+  if(noise_level > 0){
+    # Generate random floats sampled from a uniform distribution  
+    random_noise <- h2o.runif(te_frame, seed = seed)
+    # Scale within noise_level
+    random_noise <- random_noise * 2 * noise_level - noise_level
+    # Add noise to target_encoding
+    te_frame$C1  <- te_frame$C1  + random_noise
   }
   
   te_frame$numerator <- NULL

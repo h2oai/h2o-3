@@ -34,7 +34,7 @@ print("Peform LOO Encoding on Origin and Destination")
 
 # For this model we will calculate LOO Encoding mapping on the full train
 # There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
-# To mitigate the effect of data leakage without creating a holdout data, we add noise and blended_avg (on when `using_holdout = FALSE`)
+# To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (leave_one_out = TRUE)
 
 for(i in c("Origin", "Dest")){
   
@@ -42,19 +42,19 @@ for(i in c("Origin", "Dest")){
   encoding_map <- h2o.loo_encode_create(full_train, i, "IsDepDelayed")
   
   print("Apply Leave One Out Encoding Map on Training, Validation, Testing Data")
-  full_train <- h2o.loo_encode_apply(full_train, encoding_map, using_holdout = FALSE, seed = 1234, y = "IsDepDelayed")
-  valid <- h2o.loo_encode_apply(valid, encoding_map, using_holdout = TRUE)
-  test <- h2o.loo_encode_apply(test, encoding_map, using_holdout = TRUE)
+  full_train <- h2o.loo_encode_apply(full_train, encoding_map,  y = "IsDepDelayed", leave_one_out = TRUE, seed = 1234)
+  valid <- h2o.loo_encode_apply(valid, encoding_map, y = "IsDepDelayed", leave_one_out = FALSE, noise_level = 0)
+  test <- h2o.loo_encode_apply(test, encoding_map, y = "IsDepDelayed", leave_one_out = FALSE, noise_level = 0)
   
-  colnames(full_train)[colnames(full_train) == "C1"] <- paste0(i, "_TE")
-  colnames(valid)[colnames(valid) == "C1"] <- paste0(i, "_TE")
-  colnames(test)[colnames(test) == "C1"] <- paste0(i, "_TE")
+  colnames(full_train)[colnames(full_train) == "C1"] <- paste0("LOO_TE_", i)
+  colnames(valid)[colnames(valid) == "C1"] <- paste0("LOO_TE_", i)
+  colnames(test)[colnames(test) == "C1"] <- paste0("LOO_TE_", i)
 }
 
 
 print("Run GBM with Leave One Out Encoding")
-myX <- setdiff(colnames(full_train), c("IsDepDelayed", "IsDepDelayed_REC", "fDayofMonth", "Origin", "Dest"))
-loo_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed", 
+loo_x <- c(setdiff(myX, c("IsDepDelayed", "Origin", "Dest")), colnames(test)[grep("LOO_TE_", colnames(test))])
+loo_gbm <- h2o.gbm(x = loo_x, y = "IsDepDelayed", 
                    training_frame = full_train, validation_frame = valid, 
                    ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm.hex",
                    # Early Stopping
@@ -65,11 +65,11 @@ print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm, test)), 3))
 
 h2o.varimp_plot(loo_gbm)
 
-print("Peform LOO Encoding on Origin and Destination on Separate Holdout Data")
+print("Peform Target Encoding on Origin and Destination on Separate Holdout Data")
 
 # For this model we will calculate LOO Encoding mapping on the te_holdout data
 # Since we are creating the encoding map on the te_holdout data and applying it to the training data, 
-# we do not need to take data leakage precautions (set `using_holdout = TRUE`)
+# we do not need to take data leakage precautions (set `leave_one_out = FALSE`)
 
 for(i in c("Origin", "Dest")){
   
@@ -77,19 +77,19 @@ for(i in c("Origin", "Dest")){
   encoding_map <- h2o.loo_encode_create(te_holdout, i, "IsDepDelayed")
   
   print("Apply Leave One Out Encoding Map on Training, Validation, and Testing Data")
-  train <- h2o.loo_encode_apply(train, encoding_map, using_holdout = TRUE)
-  valid <- h2o.loo_encode_apply(valid, encoding_map, using_holdout = TRUE)
-  test <- h2o.loo_encode_apply(test, encoding_map, using_holdout = TRUE)
+  train <- h2o.loo_encode_apply(train, encoding_map, y = "IsDepDelayed", leave_one_out = FALSE, noise_level = 0)
+  valid <- h2o.loo_encode_apply(valid, encoding_map, y = "IsDepDelayed", leave_one_out = FALSE, noise_level = 0)
+  test <- h2o.loo_encode_apply(test, encoding_map, y = "IsDepDelayed", leave_one_out = FALSE, noise_level = 0)
   
-  colnames(train)[colnames(train) == "C1"] <- paste0(i, "_TE")
-  colnames(valid)[colnames(valid) == "C1"] <- paste0(i, "_TE")
-  colnames(test)[colnames(test) == "C1"] <- paste0(i, "_TE")
+  colnames(train)[colnames(train) == "C1"] <- paste0("Holdout_TE_", i)
+  colnames(valid)[colnames(valid) == "C1"] <- paste0("Holdout_TE_", i)
+  colnames(test)[colnames(test) == "C1"] <- paste0("Holdout_TE_", i)
 }
 
 
 print("Run GBM with Leave One Out Encoding")
-myX <- setdiff(colnames(train), c("IsDepDelayed", "IsDepDelayed_REC", "fDayofMonth", "Origin", "Dest"))
-loo_holdout_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed", 
+holdout_x <- c(setdiff(myX, c("IsDepDelayed", "Origin", "Dest")), colnames(test)[grep("Holdout_TE_", colnames(test))])
+loo_holdout_gbm <- h2o.gbm(x = holdout_x, y = "IsDepDelayed", 
                            training_frame = train, validation_frame = valid, 
                            ntrees = 1000, score_tree_interval = 10, model_id = "loo_holdout_gbm.hex",
                            # Early Stopping

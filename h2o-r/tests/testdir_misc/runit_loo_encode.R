@@ -42,8 +42,8 @@ test <- function() {
   expect_that(map_y_df$denominator, equals(denominator_expected$y))
   
   
-  Log.info("Calculating Target Encoding Frame for using_holdout = TRUE")
-  frame_y_test <- h2o.loo_encode_apply(iris.hex, map_y, using_holdout = TRUE)
+  Log.info("Calculating Target Encoding Frame for leave_one_out = FALSE")
+  frame_y_test <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = FALSE, blended_avg = FALSE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_test), equals(nrow(iris.hex)))
@@ -53,8 +53,8 @@ test <- function() {
   expected_y_test <- merge(iris, expected_y_test, by = "Species", all.x = T, all.y = F)
   expect_that(as.matrix(frame_y_test$C1)[, 1], equals(expected_y_test$y.x/expected_y_test$y.y))
   
-  Log.info("Calculating Target Encoding Frame for using_holdout = FALSE")
-  frame_y_train <- h2o.loo_encode_apply(iris.hex, map_y, using_holdout = FALSE, y = "y", blended_avg = FALSE, noise_level = 0)
+  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE")
+  frame_y_train <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = FALSE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_train), equals(nrow(iris.hex)))
@@ -65,8 +65,8 @@ test <- function() {
                              (expected_y_test$y.x - ifelse(expected_y_test$y == "yes", 1, 0))/(expected_y_test$y.y - 1))
   expect_that(as.matrix(frame_y_train$C1)[, 1], equals(expected_y_train))
   
-  Log.info("Calculating Target Encoding Frame for using_holdout = FALSE and blended_avg = TRUE")
-  frame_y_blended <- h2o.loo_encode_apply(iris.hex, map_y, using_holdout = FALSE, y = "y", blended_avg = TRUE, noise_level = 0)
+  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE and blended_avg = TRUE")
+  frame_y_blended <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = TRUE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_blended), equals(nrow(iris.hex)))
@@ -91,11 +91,26 @@ test <- function() {
   expect_that(as.matrix(frame_y_blended$C1)[, 1], equals(expected_y_blended$C1))
   
   
-  Log.info("Calculating Target Encoding Frame for using_holdout = FALSE, blended_avg = TRUE and noise_level = 0.1")
-  frame_y_noise <- h2o.loo_encode_apply(iris.hex, map_y, using_holdout = FALSE, y = "y", blended_avg = TRUE, noise_level = 0.1)
+  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE, blended_avg = TRUE and noise_level = 0.1")
+  frame_y_noise <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = TRUE, noise_level = 0.1)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_noise), equals(nrow(iris.hex)))
+  
+  Log.info("Calculating Target Encoding Frame for Sepal.Length")
+  map_sepallen <- h2o.loo_encode_create(iris.hex, "Species", "Sepal.Length")
+  frame_sepallen <- h2o.loo_encode_apply(iris.hex, map_sepallen, y = "Sepal.Length", seed = 1234)
+  expect_that(nrow(frame_sepallen), equals(nrow(iris.hex)))
+  
+  Log.info("Calculating Target Encoding Frame for x and y indices")
+  map_indices <- h2o.loo_encode_create(iris.hex, c(5), 1)
+  
+  Log.info("Expect that mapping with indices matches mapping with column names")
+  expect_that(map_indices, equals(map_sepallen))
+  
+  Log.info("Expect that frame with indices matches frame with column names")
+  frame_indices <- h2o.loo_encode_apply(iris.hex, map_indices, y = 1, seed = 1234)
+  expect_that(frame_indices, equals(frame_sepallen))
   
   
 }
