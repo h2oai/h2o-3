@@ -396,8 +396,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int i = 0; i <= model._parms._iter_max; ++i) {
           model._output._iter = i;
 
-          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._min_time, n_time, n_offsets,
-                  has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._min_time, (long) response().min(),
+                  n_time, n_offsets, has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
           final double newLoglik = calcLoglik(model, coxMR);
           if (newLoglik > oldLoglik) {
@@ -464,6 +464,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private final int      _n_offsets;
     private final boolean  _has_start_column;
     private final boolean  _has_weights_column;
+    private final long     _min_event;
 
     protected long         n;
     protected double       sumWeights;
@@ -482,12 +483,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     protected double[][]   rcumsumXRisk;
     protected double[][][] rcumsumXXRisk;
 
-    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final long min_time, final int n_time,
-              final int n_offsets, final boolean has_start_column, final boolean has_weights_column) {
+    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final long min_time, final long min_event,
+              final int n_time, final int n_offsets, final boolean has_start_column, final boolean has_weights_column) {
       super(jobKey, dinfo);
       _beta               = beta;
       _n_time             = n_time;
       _min_time           = min_time;
+      _min_event          = min_event;
       _n_offsets          = n_offsets;
       _has_start_column   = has_start_column;
       _has_weights_column = has_weights_column;
@@ -523,7 +525,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final double weight = _has_weights_column ? response[0] : 1.0;
       if (weight <= 0)
         throw new IllegalArgumentException("weights must be positive values");
-      final long event = (long) response[response.length - 1];
+      final long event = (long) (response[response.length - 1] - _min_event);
       final int t1 = _has_start_column ? (int) (((long) response[response.length - 3] + 1) - _min_time) : -1;
       final int t2 = (int) (((long) response[response.length - 2]) - _min_time);
       if (t1 > t2)
