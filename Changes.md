@@ -2,6 +2,34 @@
 
 ## H2O
 
+### Wolpert (3.18.0.2) - 2/20/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5301'>PUBDEV-5301</a>] - Distributed XGBoost no longer fails silently when expanding a 4G dataset on a 1TB cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5254'>PUBDEV-5254</a>] - Fixed an issue that caused GLM Multinomial to not work properly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5278'>PUBDEV-5278</a>] - In XGBoost, when the first domain of a categorical is parseable as an Int, the remaining columns are not automatically assumed to also be parseable as an Int. As a result of this fix, the default value of categorical_encoding in XGBoost is now AUTO rather than label_encoder.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5294'>PUBDEV-5294</a>] - Fixed an issue that caused XGBoost models to fail to converge when an unknown decimal separator existed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5326'>PUBDEV-5326</a>] - Fixed an issue in ParseTime that led to parse failing.
+</li>
+</ul>
+
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5313'>PUBDEV-5313</a>] - In the User Guide, the default value for categorical_encoding in XGBoost is now AUTO rather than label_encoder.
+</li>
+</ul>
+
+
 ### Wolpert (3.18.0.1) - 2/12/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html</a>
