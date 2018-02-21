@@ -590,7 +590,6 @@ public class DataInfo extends Keyed<DataInfo> {
           normSub[idx] = v.mean();
           break;
         case DEMEAN:
-          if( isIWV ) throw H2O.unimpl();
           normMul[idx] = 1;
           normSub[idx] = v.mean();
           break;

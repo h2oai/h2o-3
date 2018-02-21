@@ -119,8 +119,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o.gradient     = MemoryManager.malloc8d(n_coef);
       o.hessian      = malloc2DArray(n_coef, n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
-      o._x_mean_cat = MemoryManager.malloc8d(n_coef - (o.data_info._nums - n_offsets));
-      o._x_mean_num = MemoryManager.malloc8d(o.data_info._nums - n_offsets);
+      o._x_mean_cat = MemoryManager.malloc8d(o.data_info.numCats());
+      o._x_mean_num = MemoryManager.malloc8d(o.data_info.numNums());
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
@@ -374,7 +374,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         int nResponses = _parms.startVec() == null ? 2 : 3;
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -498,8 +498,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     @Override
     protected boolean chunkInit(){
       final int n_coef = _beta.length;
-      sumWeightedCatX  = MemoryManager.malloc8d(n_coef - (_dinfo._nums - _n_offsets));
-      sumWeightedNumX  = MemoryManager.malloc8d(_dinfo._nums);
+      sumWeightedCatX  = MemoryManager.malloc8d(_dinfo.numCats());
+      sumWeightedNumX  = MemoryManager.malloc8d(_dinfo.numNums());
       sizeRiskSet      = MemoryManager.malloc8d(_n_time);
       sizeCensored     = MemoryManager.malloc8d(_n_time);
       sizeEvents       = MemoryManager.malloc8d(_n_time);
@@ -520,7 +520,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       n++;
       double [] response = row.response;
       int ncats = row.nBins;
-      int [] cats = row.numIds;
+      int [] cats = row.binIds;
       double [] nums = row.numVals;
       final double weight = _has_weights_column ? response[0] : 1.0;
       if (weight <= 0)
