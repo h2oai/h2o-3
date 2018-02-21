@@ -3,7 +3,7 @@
     df <- length(model$coef)
     model <- list(
              coefficients = structure(model$coef, names = coef_names),
-             var          = do.call(rbind, as.list(model$var_coef)),
+             var          = model$var_coef,
              loglik       = c(model$null_loglik, model$loglik),
              score        = model$score_test,
              iter         = model$iter,
