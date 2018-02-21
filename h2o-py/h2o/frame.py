@@ -1011,6 +1011,21 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
 
+    def rename(self, columns=None):
+        """
+        Change names of columns in the frame.
+
+        Dict key is an index or name of the column whose name is to be set.
+        Dict value is the new name of the column.
+
+        :param columns: dict-like transformations to apply to the column names
+        """
+        assert_is_type(columns, None, dict)
+        for col, name in columns.items():
+            self.set_name(col, name)
+        return self
+
+
     def set_names(self, names):
         """
         Change names of all columns in the frame.
