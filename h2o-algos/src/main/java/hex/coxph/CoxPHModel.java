@@ -30,8 +30,12 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public double _lre_min = 9;
     public int _iter_max = 20;
 
+    public String[] _interactions = null;
+    public StringPair[] _interaction_pairs = null;
+
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
+    InteractionSpec interactionSpec() { return InteractionSpec.create(_interactions, _interaction_pairs); }
   }
 
   public static class CoxPHOutput extends Model.Output {

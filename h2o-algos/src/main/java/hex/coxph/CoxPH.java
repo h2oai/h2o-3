@@ -374,7 +374,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         int nResponses = _parms.startVec() == null ? 2 : 3;
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
