@@ -2280,7 +2280,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       URI targetUri = FileUtils.getURI(location);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       os = p.create(targetUri.toString(), force);
-      this.writeAll(new AutoBuffer(os, true)).close();
+      ModelMojoWriter mojo = getMojo();
+      mojo.writeTo(os);
       os.close();
       return targetUri;
     } finally {
