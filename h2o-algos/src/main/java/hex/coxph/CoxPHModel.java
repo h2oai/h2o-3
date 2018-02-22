@@ -76,9 +76,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     long _n;
     long _n_missing;
     long _total_event;
-    long _min_time;
-    long _max_time;
-    long[] _time;
+    double[] _time;
     double[] _n_risk;
     double[] _n_event;
     double[] _n_censor;

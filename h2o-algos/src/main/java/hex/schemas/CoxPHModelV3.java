@@ -60,12 +60,8 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     long n_missing;
     @API(help = "total_event")
     long total_event;
-    @API(help = "min_time")
-    long min_time;
-    @API(help = "max_time")
-    long max_time;
     @API(help = "time")
-    long[] time;
+    double[] time;
     @API(help = "n_risk")
     double[] n_risk;
     @API(help = "n_event")
