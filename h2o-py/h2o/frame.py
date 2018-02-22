@@ -1021,8 +1021,21 @@ class H2OFrame(object):
         :param columns: dict-like transformations to apply to the column names
         """
         assert_is_type(columns, None, dict)
+        new_names = self.names
+        ncols = self.ncols
+
         for col, name in columns.items():
-            self.set_name(col, name)
+            col_index = None
+            if is_type(col, int) and (-ncols <= col < ncols):
+                col_index = (col + ncols) % ncols  # handle negative indices
+            elif is_type(col, str) and col in self.names:
+                col_index = self.names.index(col)  # lookup the name
+
+            if col_index is not None:
+                new_names[col_index] = name
+
+        assert_satisfies(new_names, len(new_names) == self.ncol)
+        self._ex = ExprNode("colnames=", self, range(self.ncol), new_names)  # Update-in-place, but still lazy
         return self
 
 
