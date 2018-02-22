@@ -20,8 +20,8 @@ if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
   exit 1
 fi
 
-# Download requirements.txt file from GitHub
-wget https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/requirements.txt
+# Download test-requirements.txt file from GitHub
+wget https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
@@ -34,7 +34,7 @@ for python_version in "${array[@]}"; do
 
   echo "###### Installing dependencies for Python ${python_version} ######"
   source /envs/h2o_env_python${python_version}/bin/activate
-  pip install -r requirements.txt
+  pip install -r test-requirements.txt
   if [ -f /usr/sbin/install_xgboost ]; then
     # install nose, it's required by XGBoost tests which are executed when installing XGBoost
     pip install --upgrade pip nose
@@ -44,4 +44,4 @@ for python_version in "${array[@]}"; do
   deactivate
 done
 
-rm requirements.txt
+rm test-requirements.txt
