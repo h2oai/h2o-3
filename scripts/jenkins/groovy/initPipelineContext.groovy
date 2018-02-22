@@ -7,6 +7,7 @@ def call(final scmEnv, final String mode, final boolean ignoreChanges) {
 
   pipelineContext.getBuildSummary().addDetailsSection(this, mode)
   pipelineContext.getBuildSummary().addChangesSectionIfNecessary(this)
+  pipelineContext.getBuildSummary().addFailedTestsSection(this)
 
   // Archive scripts so we don't have to do additional checkouts when changing node
   pipelineContext.getUtils().stashScripts(this)
