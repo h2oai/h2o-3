@@ -436,7 +436,7 @@ public class VecUtils {
         _uniques.put(val,_placeHolder);
         val = new IcedDouble(0);
         if(_uniques.size() > _maxDomain)
-          throw new RuntimeException("Too many unique values. Expected |uniques| < " + _maxDomain + ", already got " + _uniques.size());
+          onMaxDomainExceeded(_maxDomain, _uniques.size());
       }
       return val;
     }
@@ -450,7 +450,10 @@ public class VecUtils {
     @Override public void reduce(CollectDoubleDomain mrt) {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
       if(_uniques.size() > _maxDomain)
-        throw new RuntimeException("Too many unique values. Expected |uniques| < " + _maxDomain + ", already got " + _uniques.size());
+        onMaxDomainExceeded(_maxDomain, _uniques.size());
+    }
+    protected void onMaxDomainExceeded(int maxDomainSize, int currentSize) {
+      throw new RuntimeException("Too many unique values. Expected |uniques| < " + maxDomainSize + ", already got " + currentSize);
     }
   }
 
