@@ -4486,35 +4486,36 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 }
 
 #'
-#' Create Leave One Out Target Encoding Map
+#' Create Target Encoding Map
 #' 
-#' Creates a LOO Target Encoding map based on a group-by column and a target column (numeric or binary).
+#' Creates Target Encoding map based on a group-by column and a target column (numeric or binary).
 #' 
 #' Calculates the metrics of the target column per group.  Used to create the target encoding frame.
 #' 
-#' @param data An H2OFrame object with which to create the LOO Target Encoding map.
+#' @param data An H2OFrame object with which to create the Target Encoding map.
 #' @param x A vector containing the names or indices of the variables to group by in target encoding.
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
-#' @return Returns an H2OFrame object containing the Leave One Out Target Encoding mapping per group
-#' @seealso \code{\link{h2o.loo_encode_apply}} for creating the target encoding frame from the mapping.
+#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column``).
+#' @return Returns an H2OFrame object containing the Target Encoding mapping per group
+#' @seealso \code{\link{h2o.target_encode_apply}} for applying the target encoding mapping to a frame.
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' 
-#' # Get LOO Target Encoding Map on bank-additional-full data with numeric `y`
+#' # Get Target Encoding Map on bank-additional-full data with numeric `y`
 #' data.hex = h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
 #' destination_frame = "data.hex")
-#' h2o.loo_encode_create(data.hex, c("job"), "age")
+#' h2o.target_encode_create(data.hex, c("job"), "age")
 #' 
-#' # Get LOO Target Encoding Map on bank-additional-full data with binary `y`
-#' h2o.loo_encode_create(data.hex, c("job", "marital"), "y")
+#' # Get Target Encoding Map on bank-additional-full data with binary `y`
+#' h2o.target_encode_create(data.hex, c("job", "marital"), "y")
 #' 
 #' }
 #' @export
 
-h2o.loo_encode_create <- function(data, x, y){
+h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   
   if (missing(data)) 
     stop("argument 'data' is missing, with no default")
@@ -4542,74 +4543,108 @@ h2o.loo_encode_create <- function(data, x, y){
   if(is.numeric(y)){
     y <- colnames(data)[y]
   }
+  if(is.numeric(fold_column)){
+    fold_column <- colnames(data)[fold_column]
+  }
   
   # Remove records where y is NA
   encoding_data <- data[!is.na(data[[y]]), ]
   
   # Calculate sum of y and number of rows per level of data
-  te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
+  if(is.null(fold_column)){
+    te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
+  } else{
+    in_fold_mapping <- h2o.group_by(encoding_data, c(x, "fold"), sum(y), nrow(y))
+    out_fold_mapping <- NULL
+    
+    folds <- unique(as.matrix(data[[fold_column]])[, 1])
+    for(i in folds){
+      in_fold <- data[data[[fold_column]] == i, ]
+      out_fold <- data[data[[fold_column]] != i, ]
+      
+      # Remove records where y is NA
+      out_fold <- out_fold[c(x, y)]
+      out_fold <- out_fold[!is.na(out_fold[[y]]), ]
+      
+      # Calculate sum of y and number of rows per level of data
+      te_fold <- h2o.group_by(out_fold, x, sum(y), nrow(y))
+      colnames(te_fold)[which(colnames(te_fold) == paste0("sum_", y))] <- "out_fold_numerator"
+      colnames(te_fold)[which(colnames(te_fold) == "nrow")] <- "out_fold_denominator"
+      te_fold$fold <- i
+      
+      out_fold_mapping <- h2o.rbind(out_fold_mapping, te_fold)
+    }
+    
+    te_mapping <- h2o.merge(in_fold_mapping, out_fold_mapping, by = c(x, "fold"), all.x = TRUE)
+  }
+  
   colnames(te_mapping)[which(colnames(te_mapping) == paste0("sum_", y))] <- "numerator"
   colnames(te_mapping)[which(colnames(te_mapping) == "nrow")] <- "denominator"
   
   return(te_mapping)
 }
 
-# Apply Leave One Out Target Encoding Map to Frame
+# Apply Target Encoding Map to Frame
 #' 
-#' Creates a LOO Target Encoding frame based on a LOO Target Encoding Map
+#' Creates a Target Encoding frame based on a Target Encoding Map
 #' 
-#' For training data, calculates the mean of the target encoding map per group removing the value of the existing row.
-#' For validation data, calculates the mean of the target encoding map per group.
-#' This can help predictive performance of high cardinality categorical columns in supervised learning problems.
+#' Applying Target Encoding to high cardinality categorical columns can improve performance of supervised learning models.
 #' 
-#' @param data An H2OFrame object with categorical columns in which to group by.
-#' @param loo_encode_map An H2OFrame object that is the results of the \code{\link{h2o.loo_encode_create}} function.
-#' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary. Only required when the value of the existing row should be removed (leave-one-out).
-#' @param leave_one_out \code{Logical}. (Optional) Whether the value of the existing row should be removed from the target encoding.
-#' @param blended_avg \code{Logical}. (Optional) Whether to perform blending average.
+#' @param data An H2OFrame object with which to apply the target encoding map.
+#' @param x A vector containing the names or indices of the variables to group by in target encoding.
+#' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
+#' @param target_encode_map An H2OFrame object that is the results of the \code{\link{h2o.target_encode_create}} function.
+#' @param holdout_type The holdout type used. Must be one of: "LeaveOneOut", "KFold", "None".
+#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column``). Only required if `holdout_type` = "KFold".
+#' @param blended_avg \code{Logical}. (Optional) Whether to perform blended average.
 #' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
 #' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object containing the target encoding per record.
-#' @seealso \code{\link{h2o.loo_encode_create}} for creating the Leave One Out Target Encoding map
+#' @seealso \code{\link{h2o.target_encode_create}} for creating the Target Encoding map
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' 
-#' # Get LOO Target Encoding Frame on bank-additional-full data with numeric `y`
+#' # Get Target Encoding Frame on bank-additional-full data with numeric `y`
 #' data.hex = h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
 #' destination_frame = "data.hex")
 #' splits <- h2o.splitFrame(data.hex, seed = 1234)
 #' train <- splits[[1]]
 #' test <- splits[[2]]
-#' mapping <- h2o.loo_encode_create(train, c("job", "marital"), "age")
-#' h2o.loo_encode_apply(test, mapping, "age", leave_one_out = FALSE)
+#' mapping <- h2o.target_encode_create(train, c("job", "marital"), "age")
+#' train_encode <- h2o.target_encode_apply(train, c("job", "marital"), "age", mapping, holdout_type = "LeaveOneOut")
+#' valid_encode <- h2o.target_encode_apply(valid, c("job", "marital"), "age", mapping, holdout_type = "None")
+#' test_encode <- h2o.target_encode_apply(test, c("job", "marital"), "age", mapping, holdout_type = "None")
 #' 
 #' }
 #' @export
-h2o.loo_encode_apply <- function(data, loo_encode_map, y, leave_one_out = TRUE, blended_avg = TRUE, noise_level = NULL, seed = -1){
+h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type, 
+                                    fold_column = NULL, blended_avg = TRUE, noise_level = NULL, seed = -1){
   
   if (missing(data)) 
     stop("argument 'data' is missing, with no default")
-  if (missing(loo_encode_map)) 
-    stop("argument 'loo_encode_map' is missing, with no default")
+  if (missing(target_encode_map)) 
+    stop("argument 'target_encode_map' is missing, with no default")
   
   if (!is.h2o(data)) 
     stop("argument `data` must be a valid H2OFrame")
-  if (!is.h2o(loo_encode_map)) 
-    stop("argument `loo_encode_map` must be a valid H2OFrame")
+  if (!is.h2o(target_encode_map)) 
+    stop("argument `target_encode_map` must be a valid H2OFrame")
   
-  if (!Reduce('&', c("numerator", "denominator") %in% colnames(loo_encode_map)))
-    stop("`loo_encode_map` must have columns: numerator, denominator")
+  if (!Reduce('&', c("numerator", "denominator") %in% colnames(target_encode_map)))
+    stop("`target_encode_map` must have columns: numerator, denominator")
   
-  if (length(intersect(colnames(data), colnames(loo_encode_map))) == 0L) 
-    stop("`data` and `loo_encode_map` must have intersecting column names to merge on")
+  if (length(intersect(colnames(data), colnames(target_encode_map))) == 0L) 
+    stop("`data` and `target_encode_map` must have intersecting column names to merge on")
   
-  if(!is.logical(leave_one_out))
-    stop("`leave_one_out` must be logical")
   if(!is.logical(blended_avg))
     stop("`blended_avg` must be logical")
+  
+  if (holdout_type == "KFold")
+    if (is.null(fold_column))
+      stop("`fold_column` must be provided for `holdout_type = KFold")
   
   if (!is.null(noise_level))
     if (!is.numeric(noise_level) || length(noise_level) > 1L)
@@ -4620,12 +4655,25 @@ h2o.loo_encode_apply <- function(data, loo_encode_map, y, leave_one_out = TRUE, 
   if(is.numeric(y)){
     y <- colnames(data)[y]
   }
+  if(is.numeric(x)){
+    x <- colnames(data)[x]
+  }
+  if(is.numeric(fold_column)){
+    fold_column <- colnames(data)[fold_column]
+  }
   
-  # If leave_one_out = TRUE, remove value of existing row
-  if(leave_one_out){
+  if(holdout_type == "KFold"){
+    
+    te_frame <- h2o.merge(data, target_encode_map[c(x, fold_column, "out_fold_numerator", "out_fold_denominator")], 
+                          by = c(x, fold_column), all.x = TRUE, all.y = FALSE)
+    colnames(te_frame)[which(colnames(te_frame) == "out_fold_denominator")] <- "denominator"
+    colnames(te_frame)[which(colnames(te_frame) == "out_fold_numerator")] <- "numerator"
+  }
+  
+  if(holdout_type == "LeaveOneOut"){
     
     # Merge Target Encoding Mapping to data
-    te_frame <- h2o.merge(data, loo_encode_map, all.x = TRUE, all.y = FALSE)
+    te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
     
     # Calculate Numerator and Denominator
     te_frame$numerator <- h2o.ifelse(is.na(te_frame[[y]]), 
@@ -4636,12 +4684,22 @@ h2o.loo_encode_apply <- function(data, loo_encode_map, y, leave_one_out = TRUE, 
                                        te_frame$denominator, 
                                        te_frame$denominator - 1)
     
-  } else{
+  }
+
+  if(holdout_type == "None"){
     
-    # If y is NULL, do not remove value of existing row 
+    if (!is.null(fold_column)){
+      if (fold_column %in% colnames(target_encode_map)){
+        # Aggregate to the in fold numerator and denominator
+        target_encode_map <- h2o.group_by(target_encode_map, x, sum("numerator"), sum("denominator"))
+        colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_denominator")] <- "denominator"
+        colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_numerator")] <- "numerator"
+      }
+    }
     
     # Merge Target Encoding Mapping to data
-    te_frame <- h2o.merge(data, loo_encode_map, all.x = TRUE, all.y = FALSE)
+    te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
+    
   }
   
   # Calculate Mean Per Group
@@ -4652,7 +4710,7 @@ h2o.loo_encode_apply <- function(data, loo_encode_map, y, leave_one_out = TRUE, 
     # Equations (3), (4)
     k = 20
     f = 10
-    global_mean <- sum(loo_encode_map$numerator)/sum(loo_encode_map$denominator)
+    global_mean <- sum(target_encode_map$numerator)/sum(target_encode_map$denominator)
     lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
     te_frame$C1 <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
     

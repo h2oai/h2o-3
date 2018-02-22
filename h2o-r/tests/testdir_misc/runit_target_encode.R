@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ##
-# Testing target encoding map (h2o.loo_encode_create) and target encoding frame (h2o.loo_encode_apply)
+# Testing target encoding map (h2o.target_encode_create) and target encoding frame (h2o.target_encode_apply)
 ##
 
 
@@ -13,7 +13,7 @@ test <- function() {
   iris.hex = as.h2o(shuffled_iris)
   
   Log.info("Calculating Target Encoding Mapping for numeric column")
-  map_length <- h2o.loo_encode_create(iris.hex, "Species", "Sepal.Length")
+  map_length <- h2o.target_encode_create(iris.hex, "Species", "Sepal.Length")
   
   Log.info("Expect that number of rows of mapping match number of unique levels in original file")
   expect_that(nrow(map_length), equals(length(levels(iris$Species))))
@@ -30,7 +30,7 @@ test <- function() {
   Log.info("Calculating Target Encoding Mapping for binary column with NA's")
   iris$y <- as.factor(ifelse(iris$Sepal.Length < 5, NA, ifelse(iris$Sepal.Length < 6, "yes", "no")))
   iris.hex <- as.h2o(iris)
-  map_y <- h2o.loo_encode_create(iris.hex, "Species", "y")
+  map_y <- h2o.target_encode_create(iris.hex, "Species", "y")
   
   Log.info("Expect that numerator matches sum of y = yes of levels in original file")
   map_y_df <- as.data.frame(map_y)
@@ -41,9 +41,23 @@ test <- function() {
   denominator_expected <- aggregate(y ~ Species, data = iris, length)
   expect_that(map_y_df$denominator, equals(denominator_expected$y))
   
+  Log.info("Calculating Target Encoding Mapping with fold_column")
+  iris$fold <- rep(c(1:3), 50)
+  iris.hex <- as.h2o(iris)
+  map_fold <- h2o.target_encode_create(iris.hex, "Species", "y", "fold")
   
-  Log.info("Calculating Target Encoding Frame for leave_one_out = FALSE")
-  frame_y_test <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = FALSE, blended_avg = FALSE, noise_level = 0)
+  Log.info("Expect that out_fold_numerator matches sum of y = yes on out of fold levels in original file")
+  map_fold1_df <- as.data.frame(map_fold[map_fold$fold == 1, ])
+  numerator_fold_expected <- aggregate(y ~ Species, data = iris[(iris$y == "yes") & (iris$fold != 1), ], length)
+  expect_that(map_fold1_df$out_fold_numerator, equals(numerator_fold_expected$y))
+  
+  Log.info("Expect that out_fold_denominator matches frequency of levels in original file")
+  denominator_fold_expected <- aggregate(y ~ Species, data = iris[iris$fold != 1, ], length)
+  expect_that(map_fold1_df$out_fold_denominator, equals(denominator_fold_expected$y))
+  
+  
+  Log.info("Calculating Target Encoding Frame for `holdout_type = None`")
+  frame_y_test <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "None", blended_avg = FALSE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_test), equals(nrow(iris.hex)))
@@ -53,8 +67,8 @@ test <- function() {
   expected_y_test <- merge(iris, expected_y_test, by = "Species", all.x = T, all.y = F)
   expect_that(as.matrix(frame_y_test$C1)[, 1], equals(expected_y_test$y.x/expected_y_test$y.y))
   
-  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE")
-  frame_y_train <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = FALSE, noise_level = 0)
+  Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut`")
+  frame_y_train <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "LeaveOneOut", blended_avg = FALSE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_train), equals(nrow(iris.hex)))
@@ -65,8 +79,8 @@ test <- function() {
                              (expected_y_test$y.x - ifelse(expected_y_test$y == "yes", 1, 0))/(expected_y_test$y.y - 1))
   expect_that(as.matrix(frame_y_train$C1)[, 1], equals(expected_y_train))
   
-  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE and blended_avg = TRUE")
-  frame_y_blended <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = TRUE, noise_level = 0)
+  Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut` and blended_avg = TRUE")
+  frame_y_blended <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "LeaveOneOut", blended_avg = TRUE, noise_level = 0)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_blended), equals(nrow(iris.hex)))
@@ -91,28 +105,30 @@ test <- function() {
   expect_that(as.matrix(frame_y_blended$C1)[, 1], equals(expected_y_blended$C1))
   
   
-  Log.info("Calculating Target Encoding Frame for leave_one_out = TRUE, blended_avg = TRUE and noise_level = 0.1")
-  frame_y_noise <- h2o.loo_encode_apply(iris.hex, map_y, y = "y", leave_one_out = TRUE, blended_avg = TRUE, noise_level = 0.1)
+  Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut`, blended_avg = TRUE and noise_level = 0.1")
+  frame_y_noise <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "LeaveOneOut", blended_avg = TRUE, noise_level = 0.1)
   
   Log.info("Expect that number of rows of frame match number of rows of original file")
   expect_that(nrow(frame_y_noise), equals(nrow(iris.hex)))
   
   Log.info("Calculating Target Encoding Frame for Sepal.Length")
-  map_sepallen <- h2o.loo_encode_create(iris.hex, "Species", "Sepal.Length")
-  frame_sepallen <- h2o.loo_encode_apply(iris.hex, map_sepallen, y = "Sepal.Length", seed = 1234)
+  map_sepallen <- h2o.target_encode_create(iris.hex, "Species", "Sepal.Length")
+  frame_sepallen <- h2o.target_encode_apply(iris.hex, x = "Species", y = "Sepal.Length", map_sepallen, holdout_type = "LeaveOneOut", seed = 1234)
   expect_that(nrow(frame_sepallen), equals(nrow(iris.hex)))
   
   Log.info("Calculating Target Encoding Frame for x and y indices")
-  map_indices <- h2o.loo_encode_create(iris.hex, c(5), 1)
+  map_indices <- h2o.target_encode_create(iris.hex, x = c(5), y = 1)
   
   Log.info("Expect that mapping with indices matches mapping with column names")
   expect_that(map_indices, equals(map_sepallen))
   
   Log.info("Expect that frame with indices matches frame with column names")
-  frame_indices <- h2o.loo_encode_apply(iris.hex, map_indices, y = 1, seed = 1234)
+  frame_indices <- h2o.target_encode_apply(iris.hex, x = 5, y = 1, map_indices, holdout_type = "LeaveOneOut", seed = 1234)
   expect_that(frame_indices, equals(frame_sepallen))
   
-  
+  Log.info("Calculating Target Encoding Frame with Fold")
+  frame_y_fold <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_fold, holdout_type = "KFold", fold_column = "fold", noise_level = 0, blended_avg = FALSE)
+  expect_that(nrow(frame_y_fold), equals(nrow(iris)))
 }
 
 doTest("Test target encoding", test)
