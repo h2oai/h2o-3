@@ -3,15 +3,15 @@ h2o.init()
 
 dataPath <- h2o:::.h2o.locate("smalldata/gbm_test/titanic.csv")
 print("Importing titanic data into H2O")
-data.hex <- h2o.importFile(path = dataPath, destination_frame = "data.hex")
-data.hex$survived <- as.factor(data.hex$survived)
-data.hex$name <- as.factor(data.hex$name)
+data <- h2o.importFile(path = dataPath, destination_frame = "data")
+data$survived <- as.factor(data$survived)
+data$name <- as.factor(data$name)
 
 print("Print out summary of titanic data")
-print(summary(data.hex))
+print(summary(data))
 
 print("Split data into training, validation, testing and target encoding holdout")
-splits <- h2o.splitFrame(data.hex, seed = 1234, ratios = c(0.7, 0.1, 0.1), 
+splits <- h2o.splitFrame(data, seed = 1234, ratios = c(0.7, 0.1, 0.1), 
                          destination_frames = c("train.hex", "valid.hex", "te_holdout.hex", "test.hex"))
 train <- splits[[1]]
 valid <- splits[[2]]
@@ -26,9 +26,10 @@ myX <- setdiff(colnames(train), c("survived", "name", "ticket", "boat", "body"))
 full_train <- h2o.rbind(train, te_holdout)
 default_gbm <- h2o.gbm(x = myX, y = "survived", 
                        training_frame = full_train, validation_frame = valid, 
-                       ntrees = 1000, score_tree_interval = 10, model_id = "default_gbm.hex",
+                       ntrees = 1000, score_tree_interval = 10, model_id = "default_gbm",
                        # Early Stopping
-                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001)
+                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                       seed = 1)
 
 print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
 
@@ -38,7 +39,7 @@ print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
 # There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
 
-for(i in c("cabin", "embarked", "home.dest")){
+for (i in c("cabin", "embarked", "home.dest")) {
   
   print("Create Leave One Out Encoding Map")
   encoding_map <- h2o.target_encode_create(full_train, i, "survived")
@@ -58,9 +59,10 @@ print("Run GBM with Leave One Out Target Encoding")
 loo_x <- c(setdiff(myX, c("cabin", "embarked", "home.dest")), colnames(test)[grep("LOO_TE_", colnames(test))])
 loo_gbm <- h2o.gbm(x = loo_x, y = "survived", 
                    training_frame = full_train, validation_frame = valid, 
-                   ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm.hex",
+                   ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
                    # Early Stopping
-                   stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001)
+                   stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                   seed = 1)
 
 print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
 print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm, test)), 3)))
@@ -74,7 +76,7 @@ print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Vali
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
 
 full_train$fold <- h2o.kfold_column(full_train, nfolds = 5, seed = 1234)
-for(i in c("cabin", "embarked", "home.dest")){
+for (i in c("cabin", "embarked", "home.dest")) {
   
   print("Create Leave One Out Encoding Map")
   encoding_map <- h2o.target_encode_create(full_train, i, "survived", "fold")
@@ -94,9 +96,10 @@ print("Run GBM with Cross Validation Target Encoding")
 cvte_x <- c(setdiff(myX, c("cabin", "embarked", "home.dest")), colnames(test)[grep("CV_TE_", colnames(test))])
 cvte_gbm <- h2o.gbm(x = cvte_x, y = "survived", 
                     training_frame = full_train, validation_frame = valid, 
-                    ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm.hex",
+                    ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm",
                     # Early Stopping
-                    stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001)
+                    stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                    seed = 1)
 
 print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
 print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm,test)), 3)))
@@ -111,7 +114,7 @@ print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Hol
 # Since we are creating the encoding map on the te_holdout data and applying it to the training data, 
 # we do not need to take data leakage precautions (set `holdout_type = None`)
 
-for(i in c("cabin", "embarked", "home.dest")){
+for (i in c("cabin", "embarked", "home.dest")) {
   
   print("Create Leave One Out Encoding Map")
   encoding_map <- h2o.target_encode_create(te_holdout, i, "survived")
@@ -131,9 +134,10 @@ print("Run GBM with Target Encoding on Holdout")
 holdout_x <- c(setdiff(myX, c("cabin", "embarked", "home.dest")), colnames(test)[grep("Holdout_TE_", colnames(test))])
 holdout_gbm <- h2o.gbm(x = holdout_x, y = "survived", 
                        training_frame = train, validation_frame = valid, 
-                       ntrees = 1000, score_tree_interval = 10, model_id = "holdout_gbm.hex",
+                       ntrees = 1000, score_tree_interval = 10, model_id = "holdout_gbm",
                        # Early Stopping
-                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001)
+                       stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                       seed = 1)
 
 print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
 print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm,test)), 3)))

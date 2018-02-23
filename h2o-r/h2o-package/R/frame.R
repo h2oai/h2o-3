@@ -4501,47 +4501,53 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #' library(h2o)
 #' h2o.init()
 #' 
-#' # Get Target Encoding Map on bank-additional-full data with numeric `y`
-#' data.hex = h2o.importFile(
+#' # Get Target Encoding Map on bank-additional-full data with numeric response
+#' data <- h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-#' destination_frame = "data.hex")
-#' h2o.target_encode_create(data.hex, c("job"), "age")
+#' destination_frame = "data")
+#' mapping_age <- h2o.target_encode_create(data = data, x = c("job"), y = "age")
+#' head(mapping_age)
 #' 
-#' # Get Target Encoding Map on bank-additional-full data with binary `y`
-#' h2o.target_encode_create(data.hex, c("job", "marital"), "y")
+#' # Get Target Encoding Map on bank-additional-full data with binary response
+#' mapping_y <- h2o.target_encode_create(data = data, x = c("job", "marital"), y = "y")
+#' head(mapping_y)
 #' 
 #' }
 #' @export
 
 h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   
-  if (missing(data)) 
+  if (missing(data)) {
     stop("argument 'data' is missing, with no default")
-  if (missing(y)) 
+  }  
+  if (missing(y)) {
     stop("argument 'y' is missing, with no default")
-  if (missing(x)) 
+  }  
+  if (missing(x)) {
     stop("argument 'x' is missing, with no default")
-  
-  if (!is.h2o(data)) 
+  }
+  if (!is.h2o(data)) {
     stop("argument `data` must be a valid H2OFrame")
-  
-  if (is.numeric(data[x]) || length(data[x]) == 0L) 
+  }
+  if (is.numeric(data[x]) || length(data[x]) == 0L) {
     stop("`x` must be categorical columns")
-  
+  }
   if (is.factor(data[[y]])) {
     y_levels <- h2o.levels(data[[y]])
-    if (length(y_levels) == 2)
+    if (length(y_levels) == 2) {
       data[[y]] <- h2o.ifelse(is.na(data[[y]]), NA, h2o.ifelse(data[[y]] == y_levels[[1]], 0, 1))
-    else stop(paste0("`y` must be a numeric or binary vector - has ", length(y_levels), " levels"))
+    } else { 
+      stop(paste0("`y` must be a numeric or binary vector - has ", length(y_levels), " levels"))
+    }
   }
   
-  if(is.numeric(x)){
+  if (is.numeric(x)) {
     x <- colnames(data)[x]
   }
-  if(is.numeric(y)){
+  if (is.numeric(y)) {
     y <- colnames(data)[y]
   }
-  if(is.numeric(fold_column)){
+  if (is.numeric(fold_column)) {
     fold_column <- colnames(data)[fold_column]
   }
   
@@ -4549,14 +4555,14 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   encoding_data <- data[!is.na(data[[y]]), ]
   
   # Calculate sum of y and number of rows per level of data
-  if(is.null(fold_column)){
+  if (is.null(fold_column)) {
     te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
-  } else{
+  } else {
     in_fold_mapping <- h2o.group_by(encoding_data, c(x, "fold"), sum(y), nrow(y))
     out_fold_mapping <- NULL
     
     folds <- unique(as.matrix(data[[fold_column]])[, 1])
-    for(i in folds){
+    for (i in folds){
       in_fold <- data[data[[fold_column]] == i, ]
       out_fold <- data[data[[fold_column]] != i, ]
       
@@ -4603,79 +4609,85 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' h2o.init()
 #' 
 #' # Get Target Encoding Frame on bank-additional-full data with numeric `y`
-#' data.hex = h2o.importFile(
+#' data <- h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-#' destination_frame = "data.hex")
-#' splits <- h2o.splitFrame(data.hex, seed = 1234)
+#' destination_frame = "data")
+#' splits <- h2o.splitFrame(data, seed = 1234)
 #' train <- splits[[1]]
 #' test <- splits[[2]]
-#' mapping <- h2o.target_encode_create(train, c("job", "marital"), "age")
-#' train_encode <- h2o.target_encode_apply(train, c("job", "marital"), "age", 
+#' mapping <- h2o.target_encode_create(data = train, x = c("job", "marital"), y = "age")
+#' 
+#' # Apply mapping to the training dataset
+#' train_encode <- h2o.target_encode_apply(data = train, x = c("job", "marital"), y = "age", 
 #' mapping, holdout_type = "LeaveOneOut")
-#' test_encode <- h2o.target_encode_apply(test, c("job", "marital"), "age", 
-#' mapping, holdout_type = "None")
+#' # Apply mapping to a test dataset
+#' test_encode <- h2o.target_encode_apply(data = test, x = c("job", "marital"), y = "age", 
+#' target_encode_map = mapping, holdout_type = "None")
 #' 
 #' }
 #' @export
 h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type, 
-                                    fold_column = NULL, blended_avg = TRUE, noise_level = NULL, seed = -1){
+                                    fold_column = NULL, blended_avg = TRUE, noise_level = NULL, seed = -1) {
   
-  if (missing(data)) 
+  if (missing(data)) {
     stop("argument 'data' is missing, with no default")
-  if (missing(target_encode_map)) 
+  }
+  if (missing(target_encode_map)) {
     stop("argument 'target_encode_map' is missing, with no default")
-  
-  if (!is.h2o(data)) 
+  }
+  if (!is.h2o(data)) {
     stop("argument `data` must be a valid H2OFrame")
-  if (!is.h2o(target_encode_map)) 
+  }  
+  if (!is.h2o(target_encode_map)) {
     stop("argument `target_encode_map` must be a valid H2OFrame")
-  
-  if (!Reduce('&', c("numerator", "denominator") %in% colnames(target_encode_map)))
+  }
+  if (!Reduce('&', c("numerator", "denominator") %in% colnames(target_encode_map))) {
     stop("`target_encode_map` must have columns: numerator, denominator")
-  
-  if (length(intersect(colnames(data), colnames(target_encode_map))) == 0L) 
+  }
+  if (length(intersect(colnames(data), colnames(target_encode_map))) == 0L) {
     stop("`data` and `target_encode_map` must have intersecting column names to merge on")
-  
-  if(!is.logical(blended_avg))
+  }
+  if (!is.logical(blended_avg)) {
     stop("`blended_avg` must be logical")
-  
-  if (holdout_type == "KFold")
-    if (is.null(fold_column))
+  }
+  if (holdout_type == "KFold") {
+    if (is.null(fold_column)) {
       stop("`fold_column` must be provided for `holdout_type = KFold")
-  
-  if (!is.null(noise_level))
-    if (!is.numeric(noise_level) || length(noise_level) > 1L)
+    }
+  }
+  if (!is.null(noise_level)) {
+    if (!is.numeric(noise_level) || length(noise_level) > 1L) {
       stop("`noise_level` must be a numeric vector of length 1")
-  else if (noise_level < 0)
+    }  else if (noise_level < 0) {
     stop("`noise_level` must be non-negative")
-
-  if(is.numeric(y)){
+    }  
+  }
+  if (is.numeric(y)) {
     y <- colnames(data)[y]
   }
-  if(is.numeric(x)){
+  if (is.numeric(x)) {
     x <- colnames(data)[x]
   }
-  if(is.numeric(fold_column)){
+  if (is.numeric(fold_column)) {
     fold_column <- colnames(data)[fold_column]
   }
   
   # Remove string columns from `data` (see: https://0xdata.atlassian.net/browse/PUBDEV-5266)
   dd <- h2o.describe(data)
   string_cols <- as.character(dd[which(dd$Type == "string"), "Label"])
-  if(length(string_cols) > 0){
+  if (length(string_cols) > 0) {
     data <- data[setdiff(colnames(data), string_cols)]
     warning(paste0("The string columns: ", paste(string_cols, collapse = ", "), " were dropped from the dataset"))
   }
   
-  if(holdout_type == "KFold"){
-    
+  if (holdout_type == "KFold") {
     te_frame <- h2o.merge(data, target_encode_map[c(x, fold_column, "out_fold_numerator", "out_fold_denominator")], 
                           by = c(x, fold_column), all.x = TRUE, all.y = FALSE)
     colnames(te_frame)[which(colnames(te_frame) == "out_fold_denominator")] <- "denominator"
     colnames(te_frame)[which(colnames(te_frame) == "out_fold_numerator")] <- "numerator"
   }
   
-  if(holdout_type == "LeaveOneOut"){
+  if (holdout_type == "LeaveOneOut") {
     
     # Merge Target Encoding Mapping to data
     te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
@@ -4688,51 +4700,46 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     te_frame$denominator <- h2o.ifelse(is.na(te_frame[[y]]),
                                        te_frame$denominator, 
                                        te_frame$denominator - 1)
-    
   }
-
-  if(holdout_type == "None"){
+  if (holdout_type == "None") {
     
-    if (!is.null(fold_column)){
-      if (fold_column %in% colnames(target_encode_map)){
+    if (!is.null(fold_column)) {
+      if (fold_column %in% colnames(target_encode_map)) {
         # Aggregate to the in fold numerator and denominator
         target_encode_map <- h2o.group_by(target_encode_map, x, sum("numerator"), sum("denominator"))
         colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_denominator")] <- "denominator"
         colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_numerator")] <- "numerator"
       }
     }
-    
     # Merge Target Encoding Mapping to data
     te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
-    
   }
   
   # Calculate Mean Per Group
-  if (blended_avg){
+  if (blended_avg) {
     
     # Calculate Blended Mean Per Group
     # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
     # Equations (3), (4)
-    k = 20
-    f = 10
+    k <- 20
+    f <- 10
     global_mean <- sum(target_encode_map$numerator)/sum(target_encode_map$denominator)
     lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
     te_frame$C1 <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
     
-  } else{
+  } else {
     
     # Calculate Mean Target per Group
     te_frame$C1  <- te_frame$numerator/te_frame$denominator
-    
   }
   
   # Add Random Noise
-  if(is.null(noise_level)){
+  if (is.null(noise_level)) {
     # If `noise_level` is NULL, value chosen based on `y` distribution
     noise_level <- ifelse(is.factor(data[[y]]), 0.01, (max(data[[y]], na.rm = TRUE) - min(data[[y]], na.rm = TRUE))*0.01)
   }
   
-  if(noise_level > 0){
+  if (noise_level > 0) {
     # Generate random floats sampled from a uniform distribution  
     random_noise <- h2o.runif(te_frame, seed = seed)
     # Scale within noise_level
