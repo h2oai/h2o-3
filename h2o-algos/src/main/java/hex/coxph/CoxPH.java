@@ -393,7 +393,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Arrays.fill(oldCoef, Double.NaN);
         for (int j = 0; j < n_coef; ++j)
           newCoef[j] = model._parms._init;
-        double oldLoglik = -Double.MAX_VALUE;
+        double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
         for (int i = 0; i <= model._parms._iter_max; ++i) {
@@ -403,7 +403,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                   n_offsets, has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
           final double newLoglik = calcLoglik(model, coxMR);
-          if (newLoglik > oldLoglik) {
+          if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
 
@@ -411,9 +411,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             calcCumhaz_0(model, coxMR);
 
             if (newLoglik == 0)
-              model._output._lre = -Math.log10(Math.abs(oldLoglik - newLoglik));
+              model._output._lre = -Math.log10(Math.abs(logLik - newLoglik));
             else
-              model._output._lre = -Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
+              model._output._lre = -Math.log10(Math.abs((logLik - newLoglik) / newLoglik));
             if (model._output._lre >= model._parms._lre_min)
               break;
 
@@ -425,7 +425,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
                 break;
 
-            oldLoglik = newLoglik;
+            logLik = newLoglik;
             System.arraycopy(newCoef, 0, oldCoef, 0, oldCoef.length);
           } else {
             for (int j = 0; j < n_coef; ++j)
@@ -434,6 +434,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           for (int j = 0; j < n_coef; ++j)
             newCoef[j] = oldCoef[j] - step[j];
+
+          _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
         }
 
         model.update(_job);
