@@ -129,6 +129,15 @@ test <- function() {
   Log.info("Calculating Target Encoding Frame with Fold")
   frame_y_fold <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_fold, holdout_type = "KFold", fold_column = "fold", noise_level = 0, blended_avg = FALSE)
   expect_that(nrow(frame_y_fold), equals(nrow(iris)))
+  
+  Log.info("Calculating Target Encoding Frame with String Columns")
+  iris.hex$y <- as.character(iris.hex$y)
+  frame_strings <- h2o.target_encode_apply(iris.hex, x = "Species", y = "Sepal.Length", map_sepallen, holdout_type = "None")
+  
+  Log.info("Expect that string column dropped from frame")
+  expect_that(ncol(frame_strings), equals(ncol(iris.hex)))
+  expect_that(colnames(frame_strings), equals(c("Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "C1")))
+  
 }
 
 doTest("Test target encoding", test)

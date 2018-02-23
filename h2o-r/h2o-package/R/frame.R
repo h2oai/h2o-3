@@ -4488,15 +4488,13 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #'
 #' Create Target Encoding Map
 #' 
-#' Creates Target Encoding map based on a group-by column and a target column (numeric or binary).
+#' Creates a target encoding map based on group-by columns (`x`) and a numeric or binary target column (`y`). Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
-#' Calculates the metrics of the target column per group.  Used to create the target encoding frame.
-#' 
-#' @param data An H2OFrame object with which to create the Target Encoding map.
+#' @param data An H2OFrame object with which to create the target encoding map.
 #' @param x A vector containing the names or indices of the variables to group by in target encoding.
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
-#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column``).
-#' @return Returns an H2OFrame object containing the Target Encoding mapping per group
+#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column`).
+#' @return Returns an H2OFrame object containing the target encoding mapping per group
 #' @seealso \code{\link{h2o.target_encode_apply}} for applying the target encoding mapping to a frame.
 #' @examples
 #' \donttest{
@@ -4584,23 +4582,21 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   return(te_mapping)
 }
 
-# Apply Target Encoding Map to Frame
+#' Apply Target Encoding Map to Frame
 #' 
-#' Creates a Target Encoding frame based on a Target Encoding Map
-#' 
-#' Applying Target Encoding to high cardinality categorical columns can improve performance of supervised learning models.
+#' Applies a target encoding map to an H2OFrame object.  Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
 #' @param data An H2OFrame object with which to apply the target encoding map.
 #' @param x A vector containing the names or indices of the variables to group by in target encoding.
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
 #' @param target_encode_map An H2OFrame object that is the results of the \code{\link{h2o.target_encode_create}} function.
 #' @param holdout_type The holdout type used. Must be one of: "LeaveOneOut", "KFold", "None".
-#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column``). Only required if `holdout_type` = "KFold".
+#' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column`). Only required if `holdout_type` = "KFold".
 #' @param blended_avg \code{Logical}. (Optional) Whether to perform blended average.
 #' @param noise_level (Optional) The amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
 #' @param seed (Optional) A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object containing the target encoding per record.
-#' @seealso \code{\link{h2o.target_encode_create}} for creating the Target Encoding map
+#' @seealso \code{\link{h2o.target_encode_create}} for creating the target encoding map
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -4614,9 +4610,10 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' train <- splits[[1]]
 #' test <- splits[[2]]
 #' mapping <- h2o.target_encode_create(train, c("job", "marital"), "age")
-#' train_encode <- h2o.target_encode_apply(train, c("job", "marital"), "age", mapping, holdout_type = "LeaveOneOut")
-#' valid_encode <- h2o.target_encode_apply(valid, c("job", "marital"), "age", mapping, holdout_type = "None")
-#' test_encode <- h2o.target_encode_apply(test, c("job", "marital"), "age", mapping, holdout_type = "None")
+#' train_encode <- h2o.target_encode_apply(train, c("job", "marital"), "age", 
+#' mapping, holdout_type = "LeaveOneOut")
+#' test_encode <- h2o.target_encode_apply(test, c("job", "marital"), "age", 
+#' mapping, holdout_type = "None")
 #' 
 #' }
 #' @export
@@ -4660,6 +4657,14 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
   }
   if(is.numeric(fold_column)){
     fold_column <- colnames(data)[fold_column]
+  }
+  
+  # Remove string columns from `data` (see: https://0xdata.atlassian.net/browse/PUBDEV-5266)
+  dd <- h2o.describe(data)
+  string_cols <- as.character(dd[which(dd$Type == "string"), "Label"])
+  if(length(string_cols) > 0){
+    data <- data[setdiff(colnames(data), string_cols)]
+    warning(paste0("The string columns: ", paste(string_cols, collapse = ", "), " were dropped from the dataset"))
   }
   
   if(holdout_type == "KFold"){
