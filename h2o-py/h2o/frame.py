@@ -1034,9 +1034,7 @@ class H2OFrame(object):
             if col_index is not None:
                 new_names[col_index] = name
 
-        assert_satisfies(new_names, len(new_names) == self.ncol)
-        self._ex = ExprNode("colnames=", self, range(self.ncol), new_names)  # Update-in-place, but still lazy
-        return self
+        return self.set_names(new_names)
 
 
     def set_names(self, names):
