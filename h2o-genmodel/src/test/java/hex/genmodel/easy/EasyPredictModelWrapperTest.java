@@ -4,11 +4,13 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -103,8 +105,10 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(total, 0);
     }
 
+    CountingErrorConsumer errorConsumer = new CountingErrorConsumer();
     m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(rawModel)
+            .setErrorConsumer(errorConsumer)
             .setConvertUnknownCategoricalLevelsToNa(true)
             .setConvertInvalidNumbersToNa(true));
 
@@ -141,6 +145,7 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 4);
       Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C1").get(), 1);
       Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C2").get(), 3);
+      Assert.assertEquals(4, errorConsumer.unseenCategoricalConsumed);
     }
   }
 
@@ -245,6 +250,33 @@ public class EasyPredictModelWrapperTest {
     Assert.assertEquals(expected, aep.reconstructedRowData);
   }
 
+  @Test
+  public void testVoidErrorConsumerInitialized() throws NoSuchFieldException, IllegalAccessException {
+    MyAutoEncoderModel model = new MyAutoEncoderModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(model);
+
+    Field errorConsumerField = m.getClass().getDeclaredField("errorConsumer");
+    errorConsumerField.setAccessible(true);
+    Object errorConsumer = errorConsumerField.get(m);
+    Assert.assertNotNull(errorConsumer);
+    Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
+  }
+
+
+  @Test
+  public void testVoidErrorConsumerInitializedWithConfig() throws NoSuchFieldException, IllegalAccessException {
+    MyAutoEncoderModel model = new MyAutoEncoderModel();
+    EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(model));
+
+    Field errorConsumerField = modelWrapper.getClass().getDeclaredField("errorConsumer");
+    errorConsumerField.setAccessible(true);
+    Object errorConsumer = errorConsumerField.get(modelWrapper);
+    Assert.assertNotNull(errorConsumer);
+    Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
+  }
+  
+
   private static class MyAutoEncoderModel extends GenModel {
 
     private static final String[][] DOMAINS = new String[][] {
@@ -280,6 +312,27 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(result.length, preds.length);
       System.arraycopy(result, 0, preds, 0, result.length);
       return result;
+    }
+  }
+
+  private class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer {
+    public int errorsConsumed = 0;
+    public int unseenCategoricalConsumed = 0;
+
+    @Override
+    public void dataTransformError(String columnName, Object value, String message) {
+      Assert.assertNotNull(columnName);
+      Assert.assertNotNull(value);
+      Assert.assertNotNull(message);
+      errorsConsumed++;
+    }
+
+    @Override
+    public void unseenCategorical(String columnName, Object value, String message) {
+      Assert.assertNotNull(columnName);
+      Assert.assertNotNull(value);
+      Assert.assertNotNull(message);
+      unseenCategoricalConsumed++;
     }
   }
 
