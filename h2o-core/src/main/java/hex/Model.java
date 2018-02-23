@@ -441,23 +441,74 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public static class InteractionSpec extends Iced {
     private String[] _columns;
     private StringPair[] _pairs;
+    private String[] _interactionsOnly;
 
-    private InteractionSpec(String[] columns, StringPair[] pairs) {
+    private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
       _columns = columns;
       _pairs = pairs;
+      _interactionsOnly = interactionsOnly;
     }
 
     public static InteractionSpec allPairwise(String[] columns) {
-      return columns != null ? new InteractionSpec(columns, null) : null;
+      return columns != null ? new InteractionSpec(columns, null, null) : null;
+    }
+
+    public static InteractionSpec create(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
+      return columns == null && pairs == null ?
+              null : new InteractionSpec(columns, pairs, interactionsOnly);
     }
 
     public static InteractionSpec create(String[] columns, StringPair[] pairs) {
       return columns == null && pairs == null ?
-              null : new InteractionSpec(columns, pairs);
+              null : new InteractionSpec(columns, pairs, null);
     }
 
     public boolean isEmpty() {
       return _columns == null && _pairs == null;
+    }
+
+    private boolean isUsed(String col) {
+        if (_columns != null) {
+          for (String usedCol : _columns) {
+            if (usedCol.equals(col))
+              return true;
+          }
+        }
+        if (_pairs != null) {
+          for (StringPair colPair : _pairs) {
+            if (col.equals(colPair._a) || col.equals(colPair._b))
+              return true;
+          }
+        }
+        return false;
+    }
+
+    /**
+     * Reorders columns of a Frame so that columns that only used to make interactions
+     * are at the end of the Frame. Only Vecs that will actually be used are kept in the frame.
+     * @param f frame to adjust
+     * @return reordered frame
+     */
+    public Frame reorderColumns(Frame f) {
+      if ((_interactionsOnly == null) || (f == null))
+        return f;
+      Vec[] interOnlyVecs = f.vecs(_interactionsOnly);
+      f.remove(_interactionsOnly);
+      for (int i = 0; i < _interactionsOnly.length; i++) {
+        if (isUsed(_interactionsOnly[i])) {
+          f.add(_interactionsOnly[i], interOnlyVecs[i]);
+        } else {
+          Log.warn("Column '" + _interactionsOnly[i] + "' was marked to be used for interactions only " +
+                  "but it is not actually required in any interaction.");
+        }
+      }
+      return f;
+    }
+
+    public Frame removeInteractionOnlyColumns(Frame f) {
+      if ((_interactionsOnly == null) || (f == null))
+        return f;
+      return f.remove(_interactionsOnly);
     }
 
     public Model.InteractionPair[] makeInteractionPairs(Frame f) {
@@ -2152,7 +2203,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
   public static class InteractionPair extends Iced<InteractionPair> {
-    public int vecIdx;
     private int _v1,_v2;
 
     private String[] _v1Enums;
@@ -2171,23 +2221,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( _v2Enums==null ) _hash = 31*_hash;
       else
         for( String s:_v2Enums ) _hash = 31*_hash + s.hashCode();
-    }
-
-    /**
-     * Generate all pairwise combinations of ints in the range [from,to).
-     * @param from Start index
-     * @param to End index (exclusive)
-     * @return An array of interaction pairs.
-     */
-    public static InteractionPair[] generatePairwiseInteractions(int from, int to) {
-      if( 1==(to-from) )
-        throw new IllegalArgumentException("Illegal range of values, must be greater than a single value. Got: " + from + "<" + to);
-      InteractionPair[] res = new InteractionPair[ ((to-from-1)*(to-from)) >> 1];  // n*(n+1) / 2
-      int idx=0;
-      for(int i=from;i<to;++i)
-        for(int j=i+1;j<to;++j)
-          res[idx++] = new InteractionPair(i,j,null,null);
-      return res;
     }
 
     /**

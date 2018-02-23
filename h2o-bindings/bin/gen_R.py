@@ -167,6 +167,11 @@ def gen_module(schema, algo, module):
         yield "         x <- setdiff(colnames(training_frame), event_column)"
         yield "     }"
         yield "  }"
+        yield "  if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {"
+        yield "     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))"
+        yield "     interactions_only <- setdiff(used, x)"
+        yield "     x <- c(x, interactions_only)"
+        yield "  }"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"

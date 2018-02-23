@@ -22,6 +22,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "init",
               "lre_min",
               "iter_max",
+              "interactions_only",
               "interactions",
               "interaction_pairs"
     };
@@ -46,6 +47,9 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 
     @API(help="iter_max", direction = API.Direction.INOUT)
     public int iter_max;
+
+    @API(help="A list of columns that should only be used to create interactions but should not itself participate in model training.", direction=API.Direction.INPUT, level=API.Level.expert)
+    public String[] interactions_only;
 
     @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction= API.Direction.INPUT, level= API.Level.expert)
     public String[] interactions;
