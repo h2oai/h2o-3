@@ -1,7 +1,7 @@
 library(h2o)
 h2o.init()
 
-dataPath <- h2o:::.h2o.locate("smalldata/gbm_test/titanic.csv")
+dataPath <- h2o:::.h2o.locate("Work/h2o-3/smalldata/gbm_test/titanic.csv")
 print("Importing titanic data into H2O")
 data <- h2o.importFile(path = dataPath, destination_frame = "data")
 data$survived <- as.factor(data$survived)
@@ -81,10 +81,6 @@ for (i in c("cabin", "embarked", "home.dest")) {
   cv_train <- h2o.target_encode_apply(cv_train, x = i,  y = "survived", encoding_map, holdout_type = "KFold", fold_column = "fold", seed = 1234)
   cv_valid <- h2o.target_encode_apply(cv_valid, x = i, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
   cv_test <- h2o.target_encode_apply(cv_test, x = i, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
-  
-  colnames(cv_train)[colnames(cv_train) == "C1"] <- paste0("TE_", i)
-  colnames(cv_valid)[colnames(cv_valid) == "C1"] <- paste0("TE_", i)
-  colnames(cv_test)[colnames(cv_test) == "C1"] <- paste0("TE_", i)
 }
 
 
