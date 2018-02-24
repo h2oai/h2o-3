@@ -46,14 +46,13 @@ test <- function() {
   iris.hex <- as.h2o(iris)
   map_fold <- h2o.target_encode_create(iris.hex, "Species", "y", "fold")
   
-  Log.info("Expect that out_fold_numerator matches sum of y = yes on out of fold levels in original file")
-  map_fold1_df <- as.data.frame(map_fold[map_fold$fold == 1, ])
-  numerator_fold_expected <- aggregate(y ~ Species, data = iris[(iris$y == "yes") & (iris$fold != 1), ], length)
-  expect_that(map_fold1_df$out_fold_numerator, equals(numerator_fold_expected$y))
+  Log.info("Expect that numerator matches sum of y = yes by fold and Species in original file")
+  numerator_fold_expected <- aggregate(y ~ fold + Species, data = iris[(iris$y == "yes"), ], length)
+  expect_that(as.matrix(map_fold$numerator)[, 1], equals(numerator_fold_expected$y))
   
-  Log.info("Expect that out_fold_denominator matches frequency of levels in original file")
-  denominator_fold_expected <- aggregate(y ~ Species, data = iris[iris$fold != 1, ], length)
-  expect_that(map_fold1_df$out_fold_denominator, equals(denominator_fold_expected$y))
+  Log.info("Expect that denominator matches frequency by fold and Species in original file")
+  denominator_fold_expected <- aggregate(y ~ fold + Species, data = iris, length)
+  expect_that(as.matrix(map_fold$denominator)[, 1], equals(denominator_fold_expected$y))
   
   
   Log.info("Calculating Target Encoding Frame for `holdout_type = None`")
@@ -65,7 +64,7 @@ test <- function() {
   Log.info("Expect that target encoding of test matches the average per group on the original file")
   expected_y_test <- merge(numerator_expected, denominator_expected, by = "Species")
   expected_y_test <- merge(iris, expected_y_test, by = "Species", all.x = T, all.y = F)
-  expect_that(as.matrix(frame_y_test$C1)[, 1], equals(expected_y_test$y.x/expected_y_test$y.y))
+  expect_that(as.matrix(frame_y_test$TargetEncode_Species)[, 1], equals(expected_y_test$y.x/expected_y_test$y.y))
   
   Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut`")
   frame_y_train <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "LeaveOneOut", blended_avg = FALSE, noise_level = 0)
@@ -77,7 +76,7 @@ test <- function() {
   expected_y_train <- ifelse(is.na(expected_y_test$y), 
                              expected_y_test$y.x/expected_y_test$y.y, 
                              (expected_y_test$y.x - ifelse(expected_y_test$y == "yes", 1, 0))/(expected_y_test$y.y - 1))
-  expect_that(as.matrix(frame_y_train$C1)[, 1], equals(expected_y_train))
+  expect_that(as.matrix(frame_y_train$TargetEncode_Species)[, 1], equals(expected_y_train))
   
   Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut` and blended_avg = TRUE")
   frame_y_blended <- h2o.target_encode_apply(iris.hex, x = "Species", y = "y", map_y, holdout_type = "LeaveOneOut", blended_avg = TRUE, noise_level = 0)
@@ -102,7 +101,7 @@ test <- function() {
    
     expected_y_blended <- rbind(expected_y_blended, species) 
   }
-  expect_that(as.matrix(frame_y_blended$C1)[, 1], equals(expected_y_blended$C1))
+  expect_that(as.matrix(frame_y_blended$TargetEncode_Species)[, 1], equals(expected_y_blended$C1))
   
   
   Log.info("Calculating Target Encoding Frame for `holdout_type = LeaveOneOut`, blended_avg = TRUE and noise_level = 0.1")
@@ -136,7 +135,7 @@ test <- function() {
   
   Log.info("Expect that string column dropped from frame")
   expect_that(ncol(frame_strings), equals(ncol(iris.hex)))
-  expect_that(colnames(frame_strings), equals(c("Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "C1")))
+  expect_that(colnames(frame_strings), equals(c("Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "TargetEncode_Species")))
   
 }
 

@@ -4558,28 +4558,7 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   if (is.null(fold_column)) {
     te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
   } else {
-    in_fold_mapping <- h2o.group_by(encoding_data, c(x, "fold"), sum(y), nrow(y))
-    out_fold_mapping <- NULL
-    
-    folds <- unique(as.matrix(data[[fold_column]])[, 1])
-    for (i in folds){
-      in_fold <- data[data[[fold_column]] == i, ]
-      out_fold <- data[data[[fold_column]] != i, ]
-      
-      # Remove records where y is NA
-      out_fold <- out_fold[c(x, y)]
-      out_fold <- out_fold[!is.na(out_fold[[y]]), ]
-      
-      # Calculate sum of y and number of rows per level of data
-      te_fold <- h2o.group_by(out_fold, x, sum(y), nrow(y))
-      colnames(te_fold)[which(colnames(te_fold) == paste0("sum_", y))] <- "out_fold_numerator"
-      colnames(te_fold)[which(colnames(te_fold) == "nrow")] <- "out_fold_denominator"
-      te_fold$fold <- i
-      
-      out_fold_mapping <- h2o.rbind(out_fold_mapping, te_fold)
-    }
-    
-    te_mapping <- h2o.merge(in_fold_mapping, out_fold_mapping, by = c(x, "fold"), all.x = TRUE)
+    te_mapping <- h2o.group_by(encoding_data, c(x, "fold"), sum(y), nrow(y))
   }
   
   colnames(te_mapping)[which(colnames(te_mapping) == paste0("sum_", y))] <- "numerator"
@@ -4681,10 +4660,23 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
   }
   
   if (holdout_type == "KFold") {
-    te_frame <- h2o.merge(data, target_encode_map[c(x, fold_column, "out_fold_numerator", "out_fold_denominator")], 
-                          by = c(x, fold_column), all.x = TRUE, all.y = FALSE)
-    colnames(te_frame)[which(colnames(te_frame) == "out_fold_denominator")] <- "denominator"
-    colnames(te_frame)[which(colnames(te_frame) == "out_fold_numerator")] <- "numerator"
+    
+    holdout_encode_map <- NULL
+    
+    folds <- as.matrix(h2o.unique(target_encode_map[[fold_column]]))[, 1]
+    for (i in folds){
+      out_fold <- target_encode_map[target_encode_map[[fold_column]] != i, ]
+      
+      # Calculate sum of y and number of rows per level on out of fold data
+      out_fold <- h2o.group_by(out_fold, x, sum("numerator"), sum("denominator"))
+      colnames(out_fold)[which(colnames(out_fold) == "sum_numerator")] <- "numerator"
+      colnames(out_fold)[which(colnames(out_fold) == "sum_denominator")] <- "denominator"
+      out_fold$fold <- i
+      
+      holdout_encode_map <- h2o.rbind(holdout_encode_map, out_fold)
+    }
+    
+    te_frame <- h2o.merge(data, holdout_encode_map, by = c(x, "fold"), all.x = TRUE)
   }
   
   if (holdout_type == "LeaveOneOut") {
@@ -4704,12 +4696,10 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
   if (holdout_type == "None") {
     
     if (!is.null(fold_column)) {
-      if (fold_column %in% colnames(target_encode_map)) {
-        # Aggregate to the in fold numerator and denominator
-        target_encode_map <- h2o.group_by(target_encode_map, x, sum("numerator"), sum("denominator"))
-        colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_denominator")] <- "denominator"
-        colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_numerator")] <- "numerator"
-      }
+      # Roll up to the x level - we do not need to know per fold information
+      target_encode_map <- h2o.group_by(target_encode_map, x, sum("numerator"), sum("denominator"))
+      colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_denominator")] <- "denominator"
+      colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_numerator")] <- "numerator"
     }
     # Merge Target Encoding Mapping to data
     te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
@@ -4725,12 +4715,12 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     f <- 10
     global_mean <- sum(target_encode_map$numerator)/sum(target_encode_map$denominator)
     lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
-    te_frame$C1 <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
+    te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
     
   } else {
     
     # Calculate Mean Target per Group
-    te_frame$C1  <- te_frame$numerator/te_frame$denominator
+    te_frame$target_encode  <- te_frame$numerator/te_frame$denominator
   }
   
   # Add Random Noise
@@ -4745,11 +4735,12 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     # Scale within noise_level
     random_noise <- random_noise * 2 * noise_level - noise_level
     # Add noise to target_encoding
-    te_frame$C1  <- te_frame$C1  + random_noise
+    te_frame$target_encode  <- te_frame$target_encode  + random_noise
   }
   
   te_frame$numerator <- NULL
   te_frame$denominator <- NULL
+  colnames(te_frame)[which(colnames(te_frame) == "target_encode")] <- paste0("TargetEncode_", paste(x, collapse = ":"))
   
   return(te_frame)
 }
