@@ -206,7 +206,7 @@ public class DataInfo extends Keyed<DataInfo> {
       Frame inter = Model.makeInteractions(train, false, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE);
       train = inter.add(_interactionSpec.removeInteractionOnlyColumns(train));
       if( valid!=null ) {
-        valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, predictor_transform == TransformType.STANDARDIZE).add(valid); // FIXME: should be using the training subs/muls!
+        inter = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, predictor_transform == TransformType.STANDARDIZE); // FIXME: should be using the training subs/muls!
         valid = inter.add(_interactionSpec.removeInteractionOnlyColumns(valid));
       }
     }
