@@ -1,15 +1,15 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import water.fvec.Vec;
-import water.fvec.FileVec;
 import water.Key;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.*;
+import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -459,17 +459,19 @@ MAIN_LOOP:
   }
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
-    boolean hasHdr = true;
+    boolean hasHdr = false;
     String[] lines = getFirstLines(bits);
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
-      if (_setup._column_names != null) {
-        for (int i = 0; hasHdr && i < firstLine.length; ++i)
+      if (_setup._column_names != null && _setup._column_names.length == firstLine.length) {
+        for (int i = 0; !hasHdr && i < firstLine.length; ++i)
           hasHdr = (_setup._column_names[i] == firstLine[i]) || (_setup._column_names[i] != null && _setup._column_names[i].equalsIgnoreCase(firstLine[i]));
       } else { // declared to have header, but no column names provided, assume header exist in all files
+        hasHdr = true;
         _setup._column_names = firstLine;
       }
-    } // else FIXME Throw exception
+    }
+    
     return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
     // consider making insensitive to quotes
   }
