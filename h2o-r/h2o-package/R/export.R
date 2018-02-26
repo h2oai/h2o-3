@@ -42,6 +42,7 @@
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE, parts = 1) {
+  path <- normalizePath(path)
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -143,7 +144,8 @@ h2o.downloadCSV <- function(data, filename) {
 #' # h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE) {
+h2o.saveModel <- function(object, path = "", force = FALSE) {
+  path <- suppressWarnings(normalizePath(path)) # known warning for default path = ""
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
@@ -173,7 +175,8 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' # h2o.saveMojo(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
-h2o.saveMojo <- function(object, path="", force=FALSE) {
+h2o.saveMojo <- function(object, path = "", force = FALSE) {
+  path <- suppressWarnings(normalizePath(path)) # known warning for default path = ""
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
@@ -202,7 +205,8 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # h2o.saveModelDetails(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
-h2o.saveModelDetails <- function(object, path="", force=FALSE) {
+h2o.saveModelDetails <- function(object, path = "", force = FALSE) {
+  path <- suppressWarnings(normalizePath(path)) # known warning for default path = ""
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
