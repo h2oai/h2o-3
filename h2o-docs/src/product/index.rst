@@ -61,6 +61,11 @@ We're glad you're interested in learning more about H2O. If you have questions o
 
    grid-search
 
+.. toctree::   
+   :maxdepth: 2
+
+   checkpointing-models
+
 .. toctree::
    :maxdepth: 2
 
