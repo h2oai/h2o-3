@@ -40,6 +40,11 @@ def gen_module(schema, algo, module):
             continue
         if algo == "coxph" and param["name"] == "rcall":
             continue
+        if algo == "drf":
+            if param["name"] == "offset_column":
+                yield "#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest."
+            if param["name"] == "distribution":
+                yield "#' @param distribution Distribution. This argument is deprecated and has no use for Random Forest."
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "

@@ -24,6 +24,7 @@
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -79,6 +80,7 @@
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
+#' @param distribution Distribution. This argument is deprecated and has no use for Random Forest.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
