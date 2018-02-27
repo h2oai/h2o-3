@@ -11,7 +11,7 @@ options(scipen=999)
 H2O.IP                      <<- "127.0.0.1"
 H2O.PORT                    <<- 54321
 ON.HADOOP                   <<- FALSE
-HADOOP.NAMENODE             <<- NULL
+HADOOP.NAMENODE             <<- Sys.getenv("NAME_NODE")
 IS.RDEMO                    <<- FALSE
 IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
@@ -150,7 +150,7 @@ function() {
         # source h2o-r/h2o-package/R. overrides h2o package load
         to_src <- c("aggregator.R", "classes.R", "connection.R","config.R", "constants.R", "logging.R", "communication.R",
                     "kvstore.R", "frame.R", "astfun.R","automl.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R",
-                    "coxph.R", "gbm.R", "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R",
+                    "coxph.R", "coxphutils.R", "gbm.R", "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R",
                     "naivebayes.R", "pca.R", "svd.R", "locate.R", "grid.R", "word2vec.R", "w2vutils.R", "stackedensemble.R",
                     "predict.R", "xgboost.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)

@@ -1,10 +1,14 @@
 package hex.tree.xgboost;
 
+import ml.dmlc.xgboost4j.java.INativeLibLoader;
 import ml.dmlc.xgboost4j.java.NativeLibLoader;
+import ml.dmlc.xgboost4j.java.NativeLibrary;
+import ml.dmlc.xgboost4j.java.NativeLibraryLoaderChain;
 import water.AbstractH2OExtension;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * XGBoost Extension
@@ -49,24 +53,43 @@ public class XGBoostExtension extends AbstractH2OExtension {
     return isXgboostPresent;
   }
 
-  private final boolean initXgboost() {
+  private boolean initXgboost() {
     try {
-      String libName = NativeLibLoader.getLoadedLibraryName();
-      if (libName != null) {
-        Log.info("Found XGBoost backend with library: " + libName);
-        String suffix = NativeLibLoader.getLoadedLibrarySuffix();
-        if (suffix.equals(NativeLibLoader.MINIMAL_LIB_SUFFIX)) {
-          Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
-        }
-        return true;
-      } else {
-        Log.warn("Cannot get XGBoost backend!" + XGBOOST_MIN_REQUIREMENTS);
+      INativeLibLoader loader = NativeLibLoader.getLoader();
+      if (! (loader instanceof NativeLibraryLoaderChain)) {
+        Log.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
+                "XGBoost extension will be disabled.");
         return false;
       }
+      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
+      NativeLibrary lib = chainLoader.getLoadedLibrary();
+      Log.info("Found XGBoost backend with library: " + lib.getName());
+      NativeLibrary.CompilationFlags[] flags = lib.getCompilationFlags();
+      if (flags.length == 0) {
+        Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
+      } else {
+        Log.info("XGBoost supported backends: " + Arrays.toString(flags));
+      }
+      return true;
     } catch (IOException e) {
       // Ups no lib loaded or load failed
       Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
       return false;
     }
   }
+
+  static boolean isGpuSupportEnabled() {
+    try {
+      INativeLibLoader loader = NativeLibLoader.getLoader();
+      if (! (loader instanceof NativeLibraryLoaderChain))
+        return false;
+      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
+      NativeLibrary lib = chainLoader.getLoadedLibrary();
+      return lib.hasCompilationFlag(NativeLibrary.CompilationFlags.WITH_GPU);
+    } catch (IOException e) {
+      Log.debug(e);
+      return false;
+    }
+  }
+
 }

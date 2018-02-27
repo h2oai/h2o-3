@@ -10,12 +10,12 @@ def call(final pipelineContext, final stageConfig) {
 
         // pull the test package unless this is a COMPONENT_ANY stage
         if (stageConfig.component != pipelineContext.getBuildConfig().COMPONENT_ANY) {
-            unpackTestPackage(stageConfig.component, stageConfig.stageDir)
+            pipelineContext.getUtils().unpackTestPackage(this, stageConfig.component, stageConfig.stageDir)
         }
         // pull aditional test packages
         for (additionalPackage in stageConfig.additionalTestPackages) {
             echo "Pulling additional test-package-${additionalPackage}.zip"
-            unpackTestPackage(additionalPackage, stageConfig.stageDir)
+            pipelineContext.getUtils().unpackTestPackage(this, additionalPackage, stageConfig.stageDir)
         }
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
@@ -26,7 +26,7 @@ def call(final pipelineContext, final stageConfig) {
             installRPackage(h2oFolder)
         }
 
-        makeTarget {
+        makeTarget(pipelineContext) {
             customBuildAction = stageConfig.customBuildAction
             target = stageConfig.target
             hasJUnit = stageConfig.hasJUnit
@@ -35,6 +35,8 @@ def call(final pipelineContext, final stageConfig) {
             excludeAdditionalFiles = stageConfig.excludeAdditionalFiles
             makefilePath = stageConfig.makefilePath
             archiveFiles = stageConfig.archiveFiles
+            activatePythonEnv = stageConfig.activatePythonEnv
+            activateR = stageConfig.activateR
         }
     }
 }
@@ -53,18 +55,6 @@ def installRPackage(String h2o3dir) {
     activate_R_${env.R_VERSION}
     R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
   """
-}
-
-def unpackTestPackage(component, String stageDir) {
-    echo "###### Pulling test package. ######"
-    step([$class              : 'CopyArtifact',
-          projectName         : env.JOB_NAME,
-          fingerprintArtifacts: true,
-          filter              : "h2o-3/test-package-${component}.zip, h2o-3/build/h2o.jar",
-          selector            : [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
-          target              : stageDir + '/'
-    ])
-    sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
 }
 
 return this

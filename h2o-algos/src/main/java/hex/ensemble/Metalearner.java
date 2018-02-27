@@ -44,10 +44,11 @@ class Metalearner {
     private Job _metalearnerJob;
     private StackedEnsembleParameters _parms;
     private boolean _hasMetalearnerParams;
+    private long _metalearnerSeed;
     
     Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, String metalearner_params,
                        StackedEnsembleModel model, Job StackedEnsembleJob, Key<Model> metalearnerKey, Job metalearnerJob,
-                       StackedEnsembleParameters parms, boolean hasMetalearnerParams){
+                       StackedEnsembleParameters parms, boolean hasMetalearnerParams, long metalearnerSeed){
 
         _levelOneTrainingFrame = levelOneTrainingFrame;
         _levelOneValidationFrame = levelOneValidationFrame;
@@ -58,6 +59,7 @@ class Metalearner {
         _metalearnerJob = metalearnerJob;
         _parms = parms;
         _hasMetalearnerParams = hasMetalearnerParams;
+        _metalearnerSeed = metalearnerSeed;
 
     }
 
@@ -65,6 +67,7 @@ class Metalearner {
         //GLM Metalearner
         GLM metaGLMBuilder = ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
 
+        metaGLMBuilder._parms._seed = _metalearnerSeed;
         metaGLMBuilder._parms._non_negative = true;
         //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
@@ -153,6 +156,10 @@ class Metalearner {
             metaGBMBuilder._parms = gbmParams;
         }
 
+        if(metaGBMBuilder._parms._seed == -1){ //Seed is not set in metalearner_params
+            metaGBMBuilder._parms._seed = _metalearnerSeed;
+        }
+        metaGBMBuilder._parms._seed = _metalearnerSeed;
         metaGBMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGBMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaGBMBuilder._parms._response_column = _model.responseColumn;
@@ -223,6 +230,10 @@ class Metalearner {
             }
             DRFModel.DRFParameters drfParams = params.createAndFillImpl();
             metaDRFBuilder._parms = drfParams;
+        }
+
+        if(metaDRFBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaDRFBuilder._parms._seed = _metalearnerSeed;
         }
         metaDRFBuilder._parms._train = _levelOneTrainingFrame._key;
         metaDRFBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
@@ -295,6 +306,9 @@ class Metalearner {
             metaGLMBuilder._parms = glmParams;
         }
 
+        if(metaGLMBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaGLMBuilder._parms._seed = _metalearnerSeed;
+        }
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
@@ -374,6 +388,10 @@ class Metalearner {
             }
             DeepLearningModel.DeepLearningParameters dlParams = params.createAndFillImpl();
             metaDeepLearningBuilder._parms = dlParams;
+        }
+
+        if(metaDeepLearningBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+            metaDeepLearningBuilder._parms._seed = _metalearnerSeed;
         }
         metaDeepLearningBuilder._parms._train = _levelOneTrainingFrame._key;
         metaDeepLearningBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);

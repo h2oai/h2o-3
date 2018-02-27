@@ -1,5 +1,6 @@
 package water.parser;
 
+import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -11,6 +12,18 @@ import water.fvec.Vec;
 public class ParseTimeTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private double[] d(double... ds) { return ds; }
+
+  @Test
+  public void testDateWithColonEnding() {
+    long parsedMillis = ParseTime.attemptTimeParse(new BufferedString("2011-01-01:"));
+    Assert.assertEquals(Long.MIN_VALUE, parsedMillis);
+  }
+
+  @Test
+  public void testTimeWithColonEnding() {
+    long parsedMillis = ParseTime.attemptTimeParse(new BufferedString(":"));
+    Assert.assertEquals(Long.MIN_VALUE, parsedMillis);
+  }
 
   // Parse click & query times from a subset of kaggle bestbuy data
   @Test public void testTimeParse1() {

@@ -145,7 +145,12 @@ public class JettyHTTPD extends AbstractHTTPD {
         try { Thread.sleep(100); }
         catch (Exception ignore) {}
       }
-      setCommonResponseHttpHeaders(response);
+
+      boolean isXhrRequest = false;
+      if (request != null) {
+        isXhrRequest = isXhrRequest(request);
+      }
+      setCommonResponseHttpHeaders(response, isXhrRequest);
     }
   }
 
@@ -313,7 +318,15 @@ public class JettyHTTPD extends AbstractHTTPD {
     }
   }
 
-  private static void setCommonResponseHttpHeaders(HttpServletResponse response) {
+  private static boolean isXhrRequest(final HttpServletRequest request) {
+    final String requestedWithHeader = request.getHeader("X-Requested-With");
+    return "XMLHttpRequest".equals(requestedWithHeader);
+  }
+
+  private static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
+    if (xhrRequest) {
+      response.setHeader("Cache-Control", "no-cache");
+    }
     response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));

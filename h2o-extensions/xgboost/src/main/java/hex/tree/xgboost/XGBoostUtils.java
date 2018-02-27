@@ -304,25 +304,29 @@ public class XGBoostUtils {
                 enlargeFloatTable(data, cols, currentRow, currentCol);
 
                 for (int j = 0; j < di._cats; ++j) {
-                    int offset;
+                    int offset = di._catOffsets[j+1] - di._catOffsets[j];
+                    int pos;
                     if (vecs[j].isNA(i)) {
-                        offset = di.getCategoricalId(j, Double.NaN);
+                        pos = di.getCategoricalId(j, Double.NaN);
                     } else {
-                        offset = di.getCategoricalId(j, vecs[j].at8(i));
+                        pos = di.getCategoricalId(j, vecs[j].at8(i));
                     }
+                    // Relative position, not absolute
+                    pos -= di._catOffsets[j];
 
-                    // Relative offset, not absolute
-                    offset -= di._catOffsets[j];
-
-                    int spaceLeft = data[currentRow].length;
-                    while(spaceLeft <= currentCol + offset) {
-                        offset -= (offset - spaceLeft);
-                        currentCol = 0;
+                    if (currentCol + pos < data[currentRow].length) {
+                        data[currentRow][currentCol + pos] = 1;
+                    }
+                    if (currentCol + offset >= data[currentRow].length) { // did we advance to next row?
+                        pos = currentCol + pos - data[currentRow].length;
+                        offset = currentCol + offset - data[currentRow].length;
                         currentRow++;
+                        currentCol = 0;
+                        if (pos >= 0) { // was not written in previous row, need to write here
+                            data[currentRow][currentCol + pos] = 1;
+                        }
                     }
-
                     currentCol += offset;
-                    data[currentRow][currentCol] = 1;
                 }
                 for (int j = 0; j < di._nums; ++j) {
                     if(currentCol == ARRAY_MAX) {
@@ -357,24 +361,29 @@ public class XGBoostUtils {
             enlargeFloatTable(data, cols, currentRow, currentCol);
 
             for (int j = 0; j < di._cats; ++j) {
-                int offset;
+                int offset = di._catOffsets[j+1] - di._catOffsets[j];
+                int pos;
                 if (chunks[j].isNA(i)) {
-                    offset = di.getCategoricalId(j, Double.NaN);
+                    pos = di.getCategoricalId(j, Double.NaN);
                 } else {
-                    offset = di.getCategoricalId(j, chunks[j].at8(i));
+                    pos = di.getCategoricalId(j, chunks[j].at8(i));
                 }
-                // Relative offset, not absolute
-                offset -= di._catOffsets[j];
+                // Relative position, not absolute
+                pos -= di._catOffsets[j];
 
-                int spaceLeft = data[currentRow].length;
-                while(spaceLeft <= currentCol + offset) {
-                    offset -= (offset - spaceLeft);
-                    currentCol = 0;
+                if (currentCol + pos < data[currentRow].length) {
+                    data[currentRow][currentCol + pos] = 1;
+                }
+                if (currentCol + offset >= data[currentRow].length) { // did we advance to next row?
+                    pos = currentCol + pos - data[currentRow].length;
+                    offset = currentCol + offset - data[currentRow].length;
                     currentRow++;
+                    currentCol = 0;
+                    if (pos >= 0) { // was not written in previous row, need to write here
+                        data[currentRow][currentCol + pos] = 1;
+                    }
                 }
-
                 currentCol += offset;
-                data[currentRow][currentCol] = 1;
             }
 
             for (int j = 0; j < di._nums; ++j) {
@@ -695,7 +704,7 @@ public class XGBoostUtils {
                 rowIndex[currentRow] = new int[1 << 20];
             } else {
                 int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
-                Log.info("Enlarging dense data structure row from " + data[currentRow].length + " bytes to " + newLen + " bytes.");
+                Log.info("Enlarging dense data structures row from " + data[currentRow].length + " float entries to " + newLen + " entries.");
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
             }

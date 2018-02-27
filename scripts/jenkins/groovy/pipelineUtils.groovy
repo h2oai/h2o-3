@@ -110,6 +110,30 @@ class PipelineUtils {
         return stageEndNodesInPrevBuild.find{it.getError() != null} == null
     }
 
+    void unpackTestPackage(final context, final String component, final String stageDir) {
+        context.echo "###### Pulling test package. ######"
+        context.step([$class              : 'CopyArtifact',
+                      projectName         : context.env.JOB_NAME,
+                      fingerprintArtifacts: true,
+                      filter              : "h2o-3/test-package-${component}.zip, h2o-3/build/h2o.jar",
+                      selector            : [$class: 'SpecificBuildSelector', buildNumber: context.env.BUILD_ID],
+                      target              : stageDir + '/'
+        ])
+        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
+    }
+
+    void archiveStageFiles(final context, final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {
+        List<String> excludes = []
+        if (excludeFiles != null) {
+            excludes = excludeFiles
+        }
+        context.archiveArtifacts artifacts: archiveFiles.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true, excludes: excludes.collect{"${h2o3dir}/${it}"}.join(', ')
+    }
+
+    void archiveJUnitResults(final context, final h2o3dir) {
+        context.junit testResults: "${h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
+    }
+
 }
 
 return this

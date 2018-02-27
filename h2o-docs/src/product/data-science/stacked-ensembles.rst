@@ -93,6 +93,9 @@ Defining a Stacked Ensemble Model
 
 -  **keep_levelone_frame**: (Optional) Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
 
+-  `seed <algo-params/seed.html>`__: (Optional) Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
+
+
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__, there will be an additional ``metalearner_params`` argument which allows for full customization of the metalearner algorithm hyperparamters.  
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.

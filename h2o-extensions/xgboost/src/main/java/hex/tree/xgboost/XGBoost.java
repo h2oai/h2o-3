@@ -16,14 +16,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.network.SecurityUtils;
 import water.util.*;
 import water.util.Timer;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -123,12 +121,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU(_parms._gpu_id)) {
-      error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
-    }
+    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      if (! hasGPU(_parms._gpu_id))
+        error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
 
-    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && H2O.getCloudSize() > 1) {
-      error("_backend", "GPU backend is not supported in distributed mode.");
+      if (H2O.getCloudSize() > 1)
+        error("_backend", "GPU backend is not supported in distributed mode.");
+
+      Map<String, Object> incompats = _parms.gpuIncompatibleParams();
+      if (! incompats.isEmpty())
+        for (Map.Entry<String, Object> incompat : incompats.entrySet())
+          error("_backend", "GPU backend is not available for parameter setting '" + incompat.getKey() + " = " + incompat.getValue() + "'. Use CPU backend instead.");
     }
 
     if (_parms._distribution == DistributionFamily.quasibinomial)
@@ -248,8 +251,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
-              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 ) {
+      if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
+              hasGPU(_parms._gpu_id) && H2O.getCloudSize() == 1 && _parms.gpuIncompatibleParams().isEmpty()) {
         synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
           buildModelImpl();
         }
@@ -331,9 +334,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._boosterBytes = model.model_info()._boosterBytes;
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
-        H2O.fail("XGBoost failure", xgBoostError);
-      } catch (IOException e) {
-        H2O.fail("XGBoost failure", e);
+        throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
         // Unlock & save results
         model.unlock(_job);
@@ -346,9 +347,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
         return new File(tmpModelDir, featureMapFileName);
       } catch(IOException e) {
-        H2O.fail("Cannot generate temporary directory for feature map file", e);
+        throw new RuntimeException("Cannot generate temporary directory for feature map file", e);
       }
-      return null;
     }
 
     protected final void scoreAndBuildTrees(XGBoostModel model, IRabitTracker rt) throws XGBoostError {
@@ -475,11 +475,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // helper
   static synchronized boolean hasGPU(int gpu_id) {
-    try {
-      if(!NativeLibLoader.getLoadedLibraryName().toLowerCase().contains("gpu")) {
-        return false;
-      }
-    } catch (IOException e) {
+    if (! XGBoostExtension.isGpuSupportEnabled()) {
       return false;
     }
 

@@ -6,6 +6,10 @@ import java.util.*;
 
 /**
  * Java implementation of ml.dmlc.xgboost4j.scala.rabit.util.LinkMap
+ *
+ * Naming left for consistency. In reality this is a simple binary tree data structure, which is used for communication
+ * between Rabit workers.
+ *
  */
 public class LinkMap {
     private int numWorkers;
@@ -49,14 +53,17 @@ public class LinkMap {
 
         for (Map.Entry<Integer, Integer> kv : parentMap_.entrySet()) {
             if(kv.getKey() == 0) {
-                parentMap.put(kv.getKey(), -1);
+                parentMap.put(rMap_.get(kv.getKey()), -1);
             } else {
-                parentMap.put(kv.getKey(), rMap_.get(kv.getValue()));
+                parentMap.put(rMap_.get(kv.getKey()), rMap_.get(kv.getValue()));
             }
         }
     }
 
-    private Map<Integer, List<Integer>> initTreeMap() {
+    /**
+     * Generates a mapping node -> neighbours(node)
+     */
+    Map<Integer, List<Integer>> initTreeMap() {
         Map<Integer, List<Integer>> treeMap = new LinkedHashMap<>(numWorkers);
         for(int r = 0; r < numWorkers; r++) {
             treeMap.put(r, getNeighbours(r));
@@ -64,7 +71,10 @@ public class LinkMap {
         return treeMap;
     }
 
-    private Map<Integer, Integer> initParentMap() {
+    /**
+     * Generates a mapping node -> parent (parent of root is -1)
+     */
+    Map<Integer, Integer> initParentMap() {
         Map<Integer, Integer> parentMap = new LinkedHashMap<>(numWorkers);
         for(int r = 0; r < numWorkers; r++) {
             parentMap.put(r, ((r + 1) / 2 - 1) );
@@ -72,22 +82,38 @@ public class LinkMap {
         return parentMap;
     }
 
-    public AssignedRank assignRank(int rank) {
-        return new AssignedRank(rank, treeMap.get(rank), ringMap.get(rank), parentMap.get(rank));
-    }
-
-    private List<Integer> getNeighbours(int rank) {
-        int rank1 = rank + 1;
-        List<Integer> neighbour = new ArrayList<>(3);
-        for(Integer n : new int[]{rank1 / 2 - 1, rank1 * 2 - 1, rank1 * 2}) {
-            if(n >= 0 && n < numWorkers) {
-                neighbour.add(n);
-            }
+    /**
+     * Returns a list containing existing neighbours of a node, this includes at most 3 nodes: parent, left and right child.
+     */
+    List<Integer> getNeighbours(int rank) {
+        if(rank < 0) {
+            throw new IllegalStateException("Rank should be non negative");
         }
+
+        if(rank >= numWorkers) {
+            throw new IllegalStateException("Rank ["+rank+"] too high for the number of workers ["+numWorkers+"]");
+        }
+
+        rank += 1;
+        List<Integer> neighbour = new ArrayList<>();
+
+        if(rank > 1) {
+            neighbour.add(rank / 2 - 1);
+        }
+        if(rank * 2 - 1 < numWorkers) {
+            neighbour.add(rank * 2 - 1);
+        }
+        if(rank * 2 < numWorkers) {
+            neighbour.add(rank * 2);
+        }
+
         return neighbour;
     }
 
-    private List<Integer> constructShareRing(Map<Integer, List<Integer>> treeMap,
+    /**
+     * Returns a DFS (root, DFS(left_child), DFS(right)child) order from root with given rank.
+     */
+    List<Integer> constructShareRing(Map<Integer, List<Integer>> treeMap,
                                             Map<Integer, Integer> parentMap,
                                             int rank) {
         Set<Integer> connectionSet = new LinkedHashSet<>(treeMap.get(rank));
@@ -100,20 +126,22 @@ public class LinkMap {
             int cnt = 0;
             for(Integer n : connectionSet) {
                 List<Integer> vConnSeq = constructShareRing(treeMap, parentMap, n);
-                if(vConnSeq.size() == cnt + 1) {
-                    Collections.reverse(vConnSeq);
-                    ringSeq.addAll(vConnSeq);
-                } else {
-                    ringSeq.addAll(vConnSeq);
-                }
                 cnt++;
+                if(connectionSet.size() == cnt) {
+                    Collections.reverse(vConnSeq);
+                }
+                ringSeq.addAll(vConnSeq);
             }
             return ringSeq;
         }
 
     }
 
-    private Map<Integer, Pair<Integer, Integer>> constructRingMap(Map<Integer, List<Integer>> treeMap,
+    /**
+     * Returns for each node with "rank" the previous and next node in DFS order. For the root the "previous"
+     * entry will be the last element, which will create a ring type structure.
+     */
+    Map<Integer, Pair<Integer, Integer>> constructRingMap(Map<Integer, List<Integer>> treeMap,
                                                                   Map<Integer, Integer> parentMap) {
         assert parentMap.get(0) == -1;
 

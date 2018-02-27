@@ -124,13 +124,13 @@ Defining a GLM Model
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
    -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported.
 
--  prior: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
+-  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
 -  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros).
 
--  beta_constraints: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. 
+-  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active
    predictors during computation. This value is used as a stopping

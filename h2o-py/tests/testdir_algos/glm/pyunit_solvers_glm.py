@@ -1,5 +1,8 @@
 from __future__ import print_function
 import sys
+
+from h2o.exceptions import H2OResponseError
+
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
@@ -21,7 +24,13 @@ def glm_solvers():
       else:                      training_data[response_col] = training_data[response_col].asnumeric()
 
       model = H2OGeneralizedLinearEstimator(family=family, alpha=0, Lambda=1e-5, solver=solver)
-      model.train(x=predictors, y=response_col, training_frame=training_data)
+      try:
+        model.train(x=predictors, y=response_col, training_frame=training_data)
+      except H2OResponseError as e:
+        #Coordinate descent (naive version) is not yet fully implemented.
+        # An exception is expected.
+        assert solver == "COORDINATE_DESCENT_NAIVE"
+        assert "unimplemented: Naive coordinate descent is not supported." in str(e)
       h2o.remove(training_data)
 
 if __name__ == "__main__":

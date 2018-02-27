@@ -788,7 +788,9 @@ The constraints are specified as a frame with following vecs (matched by name; a
 \item \texttt{lower\_bounds}: (optional) coefficient lower bounds , must be less than or equal to \texttt{upper\_bounds}
 \item \texttt{upper\_bounds}: (optional) coefficient upper bounds , must be greater than or equal to \texttt{lower\_bounds}
 \item \texttt{beta\_given}: (optional) specifies the given solution in proximal operator interface
-\item \texttt{rho} (mandatory if \texttt{beta\_given} is specified, otherwise ignored): specifies per-column  $\ell_2$ penalties on the distance from the given solution
+\item \texttt{rho}: (mandatory if \texttt{beta\_given} is specified, otherwise ignored): specifies per-column  $\ell_2$ penalties on the distance from the given solution
+\item \texttt{mean}: specifies the mean override (for data standardization)
+\item \texttt{std\_dev}: specifies the standard deviation override (for data standardization)
 \end{itemize}
  
 \subsubsection{Proximal Operators}

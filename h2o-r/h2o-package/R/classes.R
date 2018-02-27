@@ -286,6 +286,95 @@ setClass("H2ODimReductionModel", contains="H2OModel")
 setClass("H2OWordEmbeddingModel", contains="H2OModel")
 
 #'
+#' The H2OCoxPHModel object.
+#'
+#' Virtual object representing H2O's CoxPH Model.
+#'
+#' @aliases H2OCoxPHModel
+#' @export
+setClass("H2OCoxPHModel", contains="H2OModel")
+
+#'
+#' The H2OCoxPHModelSummary object.
+#'
+#' Wrapper object for summary information compatible with survival package.
+#'
+#' @slot summary A \code{list} containing the a summary compatible with CoxPH summary used in the survival package.
+#' @aliases H2OCoxPHModelSummary
+#' @export
+setClass("H2OCoxPHModelSummary", representation(summary="list"))
+
+#' @rdname H2OCoxPHModel-class
+#' @param object an \code{H2OCoxPHModel} object.
+#' @export
+setMethod("show", "H2OCoxPHModel", function(object) {
+    o <- object
+    model.parts <- .model.parts(o)
+    m <- model.parts$m
+    cat("Model Details:\n")
+    cat("==============\n\n")
+    cat(class(o), ": ", o@algorithm, "\n", sep = "")
+    cat("Model ID: ", o@model_id, "\n")
+
+    # summary
+    get("print.coxph", getNamespace("survival"))(.as.survival.coxph.model(o@model))
+})
+
+#'
+#' Print the CoxPH Model Summary
+#'
+#' @param object An \linkS4class{H2OCoxPHModelSummary} object.
+#' @param ... further arguments to be passed on (currently unimplemented)
+#' @export
+setMethod("show", "H2OCoxPHModelSummary", function(object)
+  get("print.summary.coxph", getNamespace("survival"))(object@summary))
+
+#'
+#' Print the CoxPH Model Summary
+#'
+#' @param object an \code{H2OCoxPHModel} object.
+#' @param conf.int a specification of the confidence interval.
+#' @param scale a scale.
+#' @export
+setMethod("summary", "H2OCoxPHModel",
+          function(object, conf.int = 0.95, scale = 1) {
+            res <- .as.survival.coxph.summary(object@model)
+            if (conf.int == 0)
+              res@summary$conf.int <- NULL
+            else {
+              z <- stats::qnorm((1 + conf.int)/2, 0, 1)
+              coef <- scale * res@summary$coefficients[,    "coef",  drop = TRUE]
+              se   <- scale * res@summary$coefficients[, "se(coef)", drop = TRUE]
+              shift <- z * se
+              res@summary$conf.int <-
+                structure(cbind(exp(coef), exp(- coef), exp(coef - shift), exp(coef + shift)),
+                          dimnames =
+                            list(rownames(res@summary$coefficients),
+                                 c("exp(coef)", "exp(-coef)",
+                                   sprintf("lower .%.0f", 100 * conf.int),
+                                   sprintf("upper .%.0f", 100 * conf.int))))
+            }
+            res
+          })
+
+coef.H2OCoxPHModel        <- function(object, ...) .as.survival.coxph.model(object@model)$coefficients
+coef.H2OCoxPHModelSummary <- function(object, ...) object@summary$coefficients
+
+extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
+  fun <- get("extractAIC.coxph", getNamespace("stats"))
+  if (missing(scale))
+    fun(.as.survival.coxph.model(fit@model), k = k)
+  else
+    fun(.as.survival.coxph.model(fit@model), scale = scale, k = k)
+}
+
+logLik.H2OCoxPHModel <- function(object, ...)
+  get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+
+vcov.H2OCoxPHModel <- function(object, ...)
+  get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+
+#'
 #' Accessor Methods for H2OModel Object
 #'
 #' Function accessor methods for various H2O output fields.
@@ -517,6 +606,10 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OWordEmbeddingMetrics", contains="H2OModelMetrics")
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OCoxPHMetrics", contains="H2OModelMetrics")
 
 #' H2O Future Model
 #'

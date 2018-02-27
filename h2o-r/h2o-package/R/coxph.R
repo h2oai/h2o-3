@@ -22,6 +22,8 @@
 #' @param init init Defaults to 0.
 #' @param lre_min lre_min Defaults to 9.
 #' @param iter_max iter_max Defaults to 20.
+#' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
+#' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @export
 h2o.coxph <- function(x, event_column, training_frame,
                       model_id = NULL,
@@ -32,7 +34,9 @@ h2o.coxph <- function(x, event_column, training_frame,
                       ties = c("efron", "breslow"),
                       init = 0,
                       lre_min = 9,
-                      iter_max = 20
+                      iter_max = 20,
+                      interactions = NULL,
+                      interaction_pairs = NULL
                       ) 
 {
 
@@ -65,6 +69,7 @@ h2o.coxph <- function(x, event_column, training_frame,
 
   if (!missing(model_id))
     parms$model_id <- model_id
+  parms$rcall <- deparse(match.call())
   if (!missing(start_column))
     parms$start_column <- start_column
   if (!missing(stop_column))
@@ -81,6 +86,10 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$lre_min <- lre_min
   if (!missing(iter_max))
     parms$iter_max <- iter_max
+  if (!missing(interactions))
+    parms$interactions <- interactions
+  if (!missing(interaction_pairs))
+    parms$interaction_pairs <- interaction_pairs
   # Error check and build model
   .h2o.modelJob('coxph', parms, h2oRestApiVersion = 3) 
 }

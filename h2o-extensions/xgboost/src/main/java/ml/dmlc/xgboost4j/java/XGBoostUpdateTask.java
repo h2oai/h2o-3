@@ -137,7 +137,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             os.write(_featureMap[0].getBytes());
             os.close();
         } catch (IOException e) {
-            H2O.fail("Cannot generate " + featureMapFile, e);
+            throw new RuntimeException("Cannot generate " + featureMapFile, e);
         } finally {
             FileUtils.close(os);
         }

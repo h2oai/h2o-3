@@ -51,7 +51,7 @@ public class ModelBuilderTest extends TestUtil {
     public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
     @Override public String fullName() { return "dummy"; }
     @Override public String algoName() { return "dummy"; }
-    @Override public String javaName() { return "dummy"; }
+    @Override public String javaName() { return DummyModelBuilder.class.getName(); }
     @Override public long progressUnits() { return 1; }
   }
   public static class DummyModel extends Model<DummyModel, DummyModelParameters, DummyModelOutput> {

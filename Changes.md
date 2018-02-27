@@ -2,6 +2,159 @@
 
 ## H2O
 
+### Wolpert (3.18.0.2) - 2/20/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5301'>PUBDEV-5301</a>] - Distributed XGBoost no longer fails silently when expanding a 4G dataset on a 1TB cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5254'>PUBDEV-5254</a>] - Fixed an issue that caused GLM Multinomial to not work properly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5278'>PUBDEV-5278</a>] - In XGBoost, when the first domain of a categorical is parseable as an Int, the remaining columns are not automatically assumed to also be parseable as an Int. As a result of this fix, the default value of categorical_encoding in XGBoost is now AUTO rather than label_encoder.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5294'>PUBDEV-5294</a>] - Fixed an issue that caused XGBoost models to fail to converge when an unknown decimal separator existed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5326'>PUBDEV-5326</a>] - Fixed an issue in ParseTime that led to parse failing.
+</li>
+</ul>
+
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5313'>PUBDEV-5313</a>] - In the User Guide, the default value for categorical_encoding in XGBoost is now AUTO rather than label_encoder.
+</li>
+</ul>
+
+### Wolpert (3.18.0.1) - 2/12/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/1/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4585'>PUBDEV-4585</a>] - Fixed an issue that caused XGBoost binary save/load to fail.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4593'>PUBDEV-4593</a>] - Fixed an issue that caused a Levensthein Distance Normalization Error. Levenstein distance is now implemented directly into H2O.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5112'>PUBDEV-5112</a>] - The Word2Vec Python API for pretrained models no longer requires a training frame. In addition, a new `from_external` option was added, which creates a new H2OWord2vecEstimator based on an external model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5128'>PUBDEV-5128</a>] - Fixed an issue that caused the show function of metrics base to fail to check for a key custom_metric_name and excepts.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5129'>PUBDEV-5129</a>] - The fold column in Kmeans is no longer required to be in x.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5130'>PUBDEV-5130</a>] - The date is now parsed correctly when parsed from H2O-R.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5133'>PUBDEV-5133</a>] -  In Flow, the scoring history plot is now available for GLM models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5135'>PUBDEV-5135</a>] - The Parquet parser no longer fails if one of the files to parse has no records.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5145'>PUBDEV-5145</a>] - Added error checking and logging on all the uses of `water.util.JSONUtils.parse().
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5155'>PUBDEV-5155</a>] - In AutoML, fixed an exception in Python binding that occurred when the leaderboard was empty. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5156'>PUBDEV-5156</a>] - In AutoML, fixed an exception in R binding that occurred when the leaderboard was empty.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5159'>PUBDEV-5159</a>] - Removed Pandas dependency for AutoML in Python.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5167'>PUBDEV-5167</a>] - In PySparkling, reading Parquet/Orc data with time type now works correctly in H2O.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5174'>PUBDEV-5174</a>] - Fixed a maximum recursion depth error when using `isin` in the H2O Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5175'>PUBDEV-5175</a>] - When running getJobs in Flow, fixed a ClassNotFoundException that occurred when AutoML jobs existed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5179'>PUBDEV-5179</a>] - Fixed an issue that caused a list of columns to be truncated in PySparkling. Light endpoint now returns all columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5186'>PUBDEV-5186</a>] - In AutoML, fixed a deadlock issue that occurred when two AutoML runs came in the same second, resulting in matching timestamps.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5191'>PUBDEV-5191</a>] - The offset_column and distribution parameters are no longer available in Random Forest. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5195'>PUBDEV-5195</a>] - Fixed an issue in XGBoost that caused MOJOs to fail to work without manually adding the Commons Logging dependency.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5203'>PUBDEV-5203</a>] - Fixed an issue that caused XGBoost to mangle the domain levels for datasets that have string response domains.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5213'>PUBDEV-5213</a>] - In Flow, the separator drop down now shows 3-digit decimal values instead of 2.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5215'>PUBDEV-5215</a>] - Users can now specify interactions when running GLM in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5228'>PUBDEV-5228</a>] - FrameMetadate code no longer uses hardcoded keys. Also fixed an issue that caused AutoML to fail when multiple AutoMLs are run simultaneously.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5229'>PUBDEV-5229</a>] - A frame can potentially have a null key. If there is a Frame with a null key (just a container for vecs), H2O no longer attempts to track a null key. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5256'>PUBDEV-5256</a>] - Users can now successfully build an XGBoost model as compile chain. XGBoost no longer fails to provide the compatible artifact for an Oracle Linux environment.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5265'>PUBDEV-5265</a>] - GLM no longer fails when a categorical column exists in the dataset along with an empty value on at least one row.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5286'>PUBDEV-5286</a>] - Fixed an issue that cause GBM grid to fail on some datasets when specifying `sample_rate` in the grid.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5287'>PUBDEV-5287</a>] - The x argument is no longer required when performing a grid search.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5297'>PUBDEV-5297</a>] - Fixed an issue that caused the Parquet parser to fail on Spark 2.0 (SW-707).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5315'>PUBDEV-5315</a>] - Fixed an issue that caused XGBoost OpenMP to fail on Ubuntu 14.04. 
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4111'>PUBDEV-4111</a>] - Added support for INT96 timestamp to the Parquet parser.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4652'>PUBDEV-4652</a>] - Added support for XGBoost multinode training in H2O. Note that this is still a BETA feature.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4980'>PUBDEV-4980</a>] - Users can now specify a list of algorithms to exclude during an AutoML run. This is done using the new `exclude_algos` parameter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5204'>PUBDEV-5204</a>] - In GLM, users can now specify a list of interactions terms to include when building a model instead of relying on the default action of including all interactions. 
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5230'>PUBDEV-5230</a>] - The Python PCA code examples in github and in the User Guide now use the h2o.estimators.pca.H2OPrincipalComponentAnalysisEstimator method instead of the h2o.transforms.decomposition.H2OPCA method.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5251'>PUBDEV-5251</a>] - Upgraded the XGBoost version. This now supports RHEL 6.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5086'>PUBDEV-5086</a>] - Stacked Ensemble allows you to specify the metalearning algorithm to use when training the ensemble. When an algorithm is specified, Stacked Ensemble runs with the specified algorithm's default hyperparameter values.  The new ``metalearner_params`` option allows you to pass in a dictionary/list of hyperparameters to use for that algorithm instead of the defaults.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5224'>PUBDEV-5224</a>] - Users can now specify a seed parameter in Stacked Ensemble.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5310'>PUBDEV-5310</a>] - Documented clouding behavior of an H2O cluster. This is available at https://github.com/h2oai/h2o-3/blob/master/h2o-docs/devel/h2o_clouding.rst.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5149'>PUBDEV-5149</a>] - Updated the documentation to indicate that datetime parsing from R and Flow now is UTC by default.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5151'>PUBDEV-5151</a>] - R documentation on docs.h2o.ai is now available in HTML format. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5172'>PUBDEV-5172</a>] - Added a new Cloud Integration topic for using H2O with AWS.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5221'>PUBDEV-5221</a>] - In the XGBoost chapter, added that XGBoost in H2O supports multicore.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5242'>PUBDEV-5242</a>] - Added `interaction_pairs` to the list of GLM parameters. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5283'>PUBDEV-5283</a>] - Added `metalearner_algorithm` and `metalearner_params` to the Stacked Ensembles chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5311'>PUBDEV-5311</a>] - The H2O-3 download site now includes a link to the HTML version of the R documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5312'>PUBDEV-5312</a>] - Updated the XGBoost documentation to indicate that multinode support is now available as a Beta feature.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5314'>PUBDEV-5314</a>] - Added the seed parameter to the Stacked Ensembles section of the User Guide.
+</li>
+</ul>
+
+
 ### Wheeler (3.16.0.4) - 1/15/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wheeler/4/index.html</a>

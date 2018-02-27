@@ -68,7 +68,7 @@ class NullModelOutput extends Model.Output {
 class NullModelParameters extends Model.Parameters {
   @Override public String fullName() { return "nullModel"; }
   @Override public String algoName() { return "nullModel"; }
-  @Override public String javaName() { return "nullModel"; }
+  @Override public String javaName() { return NullModelBuilder.class.getName(); }
   @Override public long progressUnits() { return 1; }
 }
 class NullModel extends Model<NullModel, NullModelParameters, NullModelOutput> {

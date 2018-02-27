@@ -13,10 +13,13 @@ import water.util.*;
 import java.util.Arrays;
 
 /**
- * Deep Learning Neural Net implementation based on MRTask
+ * Cox Proportional Hazards Model
  */
 public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
-  @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.Unknown, }; }
+
+  private static final int MAX_TIME_BINS = 10000;
+
+  @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   @Override public boolean isSupervised() { return true; }
 
@@ -37,22 +40,30 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     super.init(expensive);
 
     if (_parms._train != null) {
-      if ((_parms._start_column != null) && !_parms.startVec().isInt())
-        error("start_column", "start time must be null or of type integer");
+      if (_parms._start_column != null) {
+        if (_parms.startVec().isNumeric()) {
+          if (expensive) {
+            try {
+              CollectTimes.collect(_parms.stopVec());
+            } catch (CollectTimesException e) {
+              error("stop_column", e.getMessage());
+            }
+          }
+        } else {
+          error("start_column", "start time must be undefined or of type numeric");
+        }
+      }
 
-      if (!_parms.stopVec().isInt())
-        error("stop_column", "stop time must be of type integer");
+      if (! _parms.stopVec().isNumeric())
+        error("stop_column", "stop time must be of type numeric");
 
-      if (!_response.isInt() && (!_response.isCategorical()))
+      if (! _response.isInt() && (! _response.isCategorical()))
         error("response_column", "response/event column must be of type integer or factor");
 
-      final int MAX_TIME_BINS = 10000;
-      final long min_time = (_parms.startVec() == null) ? (long) _parms.stopVec().min() : (long) _parms.startVec().min() + 1;
-      final int n_time = (int) (_parms.stopVec().max() - min_time + 1);
-      if (n_time < 1)
-        error("start_column", "start times must be strictly less than stop times");
-      if (n_time > MAX_TIME_BINS)
-        error("stop_column", "number of distinct stop times is " + n_time + "; maximum number allowed is " + MAX_TIME_BINS);
+      if (_parms._start_column != null && _parms._stop_column != null) {
+        if (_parms.startVec().min() >= _parms.stopVec().max())
+          error("start_column", "start times must be strictly less than stop times");
+      }
     }
 
     if (Double.isNaN(_parms._lre_min) || _parms._lre_min <= 0)
@@ -119,24 +130,20 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o.gradient     = MemoryManager.malloc8d(n_coef);
       o.hessian      = malloc2DArray(n_coef, n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
-      o._x_mean_cat = MemoryManager.malloc8d(n_coef - (o.data_info._nums - n_offsets));
-      o._x_mean_num = MemoryManager.malloc8d(o.data_info._nums - n_offsets);
+      o._x_mean_cat = MemoryManager.malloc8d(o.data_info.numCats());
+      o._x_mean_num = MemoryManager.malloc8d(o.data_info.numNums());
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
 
-      o._min_time = p.startVec() == null ? (long) p.stopVec().min():
-              (long) p.startVec().min() + 1;
-      o._max_time = (long) p.stopVec().max();
-
-      final int n_time = new VecUtils.CollectIntegerDomain().doAll(p.stopVec()).domain().length;
-      o._time = MemoryManager.malloc8(n_time);
-      o._n_risk = MemoryManager.malloc8d(n_time);
-      o._n_event = MemoryManager.malloc8d(n_time);
-      o._n_censor = MemoryManager.malloc8d(n_time);
-      o._cumhaz_0 = MemoryManager.malloc8d(n_time);
-      o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
-      o._var_cumhaz_2 = malloc2DArray(n_time, n_coef);
+      final double[] time = CollectTimes.collect(p.stopVec());
+      o._time = time;
+      o._n_risk = MemoryManager.malloc8d(time.length);
+      o._n_event = MemoryManager.malloc8d(time.length);
+      o._n_censor = MemoryManager.malloc8d(time.length);
+      o._cumhaz_0 = MemoryManager.malloc8d(time.length);
+      o._var_cumhaz_1 = MemoryManager.malloc8d(time.length);
+      o._var_cumhaz_2 = malloc2DArray(time.length, n_coef);
     }
 
     protected void calcCounts(CoxPHModel model, final CoxPHTask coxMR) {
@@ -150,15 +157,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       for (int j = 0; j < o._x_mean_num.length; j++)
         o._x_mean_num[j] = o.data_info._normSub[j] + coxMR.sumWeightedNumX[j] / coxMR.sumWeights;
       System.arraycopy(o.data_info._normSub, o._x_mean_num.length, o._mean_offset, 0, o._mean_offset.length);
-      int nz = 0;
       for (int t = 0; t < coxMR.countEvents.length; ++t) {
         o._total_event += coxMR.countEvents[t];
         if (coxMR.sizeEvents[t] > 0 || coxMR.sizeCensored[t] > 0) {
-          o._time[nz]     = o._min_time + t;
-          o._n_risk[nz]   = coxMR.sizeRiskSet[t];
-          o._n_event[nz]  = coxMR.sizeEvents[t];
-          o._n_censor[nz] = coxMR.sizeCensored[t];
-          nz++;
+          o._n_risk[t]   = coxMR.sizeRiskSet[t];
+          o._n_event[t]  = coxMR.sizeEvents[t];
+          o._n_censor[t] = coxMR.sizeCensored[t];
         }
       }
       if (p._start_column == null)
@@ -374,7 +378,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         int nResponses = _parms.startVec() == null ? 2 : 3;
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -389,18 +393,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Arrays.fill(oldCoef, Double.NaN);
         for (int j = 0; j < n_coef; ++j)
           newCoef[j] = model._parms._init;
-        double oldLoglik = -Double.MAX_VALUE;
-        final int n_time = (int) (model._output._max_time - model._output._min_time + 1);
+        double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
         for (int i = 0; i <= model._parms._iter_max; ++i) {
           model._output._iter = i;
 
-          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._min_time, n_time, n_offsets,
-                  has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
+                  n_offsets, has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
           final double newLoglik = calcLoglik(model, coxMR);
-          if (newLoglik > oldLoglik) {
+          if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
 
@@ -408,9 +411,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             calcCumhaz_0(model, coxMR);
 
             if (newLoglik == 0)
-              model._output._lre = -Math.log10(Math.abs(oldLoglik - newLoglik));
+              model._output._lre = -Math.log10(Math.abs(logLik - newLoglik));
             else
-              model._output._lre = -Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
+              model._output._lre = -Math.log10(Math.abs((logLik - newLoglik) / newLoglik));
             if (model._output._lre >= model._parms._lre_min)
               break;
 
@@ -422,7 +425,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
                 break;
 
-            oldLoglik = newLoglik;
+            logLik = newLoglik;
             System.arraycopy(newCoef, 0, oldCoef, 0, oldCoef.length);
           } else {
             for (int j = 0; j < n_coef; ++j)
@@ -431,6 +434,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           for (int j = 0; j < n_coef; ++j)
             newCoef[j] = oldCoef[j] - step[j];
+
+          _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
         }
 
         model.update(_job);
@@ -459,35 +464,35 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
   protected static class CoxPHTask extends FrameTask<CoxPHTask> {
     private final double[] _beta;
-    private final int      _n_time;
-    private final long     _min_time;
+    private final double[] _time;
     private final int      _n_offsets;
     private final boolean  _has_start_column;
     private final boolean  _has_weights_column;
+    private final long     _min_event;
 
-    protected long         n;
-    protected double       sumWeights;
-    protected double[]     sumWeightedCatX;
-    protected double[]     sumWeightedNumX;
-    protected double[]     sizeRiskSet;
-    protected double[]     sizeCensored;
-    protected double[]     sizeEvents;
-    protected long[]       countEvents;
-    protected double[][]   sumXEvents;
-    protected double[]     sumRiskEvents;
-    protected double[][]   sumXRiskEvents;
-    protected double[][][] sumXXRiskEvents;
-    protected double[]     sumLogRiskEvents;
-    protected double[]     rcumsumRisk;
-    protected double[][]   rcumsumXRisk;
-    protected double[][][] rcumsumXXRisk;
+    long         n;
+    double       sumWeights;
+    double[]     sumWeightedCatX;
+    double[]     sumWeightedNumX;
+    double[]     sizeRiskSet;
+    double[]     sizeCensored;
+    double[]     sizeEvents;
+    long[]       countEvents;
+    double[][]   sumXEvents;
+    double[]     sumRiskEvents;
+    double[][]   sumXRiskEvents;
+    double[][][] sumXXRiskEvents;
+    double[]     sumLogRiskEvents;
+    double[]     rcumsumRisk;
+    double[][]   rcumsumXRisk;
+    double[][][] rcumsumXXRisk;
 
-    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final long min_time, final int n_time,
+    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
               final int n_offsets, final boolean has_start_column, final boolean has_weights_column) {
       super(jobKey, dinfo);
       _beta               = beta;
-      _n_time             = n_time;
-      _min_time           = min_time;
+      _time = time;
+      _min_event          = min_event;
       _n_offsets          = n_offsets;
       _has_start_column   = has_start_column;
       _has_weights_column = has_weights_column;
@@ -495,21 +500,22 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     @Override
     protected boolean chunkInit(){
+      final int n_time = _time.length;
       final int n_coef = _beta.length;
-      sumWeightedCatX  = MemoryManager.malloc8d(n_coef - (_dinfo._nums - _n_offsets));
-      sumWeightedNumX  = MemoryManager.malloc8d(_dinfo._nums);
-      sizeRiskSet      = MemoryManager.malloc8d(_n_time);
-      sizeCensored     = MemoryManager.malloc8d(_n_time);
-      sizeEvents       = MemoryManager.malloc8d(_n_time);
-      countEvents      = MemoryManager.malloc8(_n_time);
-      sumRiskEvents    = MemoryManager.malloc8d(_n_time);
-      sumLogRiskEvents = MemoryManager.malloc8d(_n_time);
-      rcumsumRisk      = MemoryManager.malloc8d(_n_time);
-      sumXEvents       = malloc2DArray(_n_time, n_coef);
-      sumXRiskEvents   = malloc2DArray(_n_time, n_coef);
-      rcumsumXRisk     = malloc2DArray(_n_time, n_coef);
-      sumXXRiskEvents  = malloc3DArray(_n_time, n_coef, n_coef);
-      rcumsumXXRisk    = malloc3DArray(_n_time, n_coef, n_coef);
+      sumWeightedCatX  = MemoryManager.malloc8d(_dinfo.numCats());
+      sumWeightedNumX  = MemoryManager.malloc8d(_dinfo.numNums());
+      sizeRiskSet      = MemoryManager.malloc8d(n_time);
+      sizeCensored     = MemoryManager.malloc8d(n_time);
+      sizeEvents       = MemoryManager.malloc8d(n_time);
+      countEvents      = MemoryManager.malloc8(n_time);
+      sumRiskEvents    = MemoryManager.malloc8d(n_time);
+      sumLogRiskEvents = MemoryManager.malloc8d(n_time);
+      rcumsumRisk      = MemoryManager.malloc8d(n_time);
+      sumXEvents       = malloc2DArray(n_time, n_coef);
+      sumXRiskEvents   = malloc2DArray(n_time, n_coef);
+      rcumsumXRisk     = malloc2DArray(n_time, n_coef);
+      sumXXRiskEvents  = malloc3DArray(n_time, n_coef, n_coef);
+      rcumsumXXRisk    = malloc3DArray(n_time, n_coef, n_coef);
       return true;
     }
 
@@ -518,14 +524,19 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       n++;
       double [] response = row.response;
       int ncats = row.nBins;
-      int [] cats = row.numIds;
+      int [] cats = row.binIds;
       double [] nums = row.numVals;
       final double weight = _has_weights_column ? response[0] : 1.0;
       if (weight <= 0)
         throw new IllegalArgumentException("weights must be positive values");
-      final long event = (long) response[response.length - 1];
-      final int t1 = _has_start_column ? (int) (((long) response[response.length - 3] + 1) - _min_time) : -1;
-      final int t2 = (int) (((long) response[response.length - 2]) - _min_time);
+      final long event = (long) (response[response.length - 1] - _min_event);
+      double startTime = _has_start_column ? response[response.length - 3] : _time[0] - 1;
+      double stopTime = response[response.length - 2];
+      int t1c = Arrays.binarySearch(_time, startTime);
+      final int t1 = (t1c < 0) ? -t1c - 1 : t1c + 1;
+      final int t2 = Arrays.binarySearch(_time, stopTime);
+      if (t2 < 0)
+        throw new IllegalStateException("Encountered unexpected stop time");
       if (t1 > t2)
         throw new IllegalArgumentException("start times must be strictly less than stop times");
       final int numStart = _dinfo.numStart();
@@ -631,4 +642,24 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
   }
+
+  private static class CollectTimes extends VecUtils.CollectDoubleDomain {
+    private CollectTimes() {
+      super(new double[0], MAX_TIME_BINS);
+    }
+    static double[] collect(Vec timeVec) {
+      return new CollectTimes().doAll(timeVec).domain();
+    }
+    @Override
+    protected void onMaxDomainExceeded(int maxDomainSize, int currentSize) {
+      throw new CollectTimesException("number of distinct stop times is at least " + currentSize + "; maximum number allowed is " + maxDomainSize);
+    }
+  }
+
+  private static class CollectTimesException extends RuntimeException {
+    private CollectTimesException(String message) {
+      super(message);
+    }
+  }
+
 }

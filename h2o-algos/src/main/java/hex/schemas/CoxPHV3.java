@@ -4,12 +4,14 @@ import hex.coxph.CoxPH;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.StringPairV3;
 
 public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParametersV3> {
   public static final class CoxPHParametersV3 extends ModelParametersSchemaV3<CoxPHParameters, CoxPHParametersV3> {
     public static String[] fields = new String[] {
               "model_id",
               "training_frame",
+              "rcall",
               "start_column",
               "stop_column",
               "response_column",
@@ -19,8 +21,13 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "ties",
               "init",
               "lre_min",
-              "iter_max"
-      };
+              "iter_max",
+              "interactions",
+              "interaction_pairs"
+    };
+
+    @API(help="rcall", direction = API.Direction.INPUT)
+    public String rcall;
 
     @API(help="stop_column", direction = API.Direction.INOUT)
     public String stop_column;
@@ -39,6 +46,12 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 
     @API(help="iter_max", direction = API.Direction.INOUT)
     public int iter_max;
+
+    @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction= API.Direction.INPUT, level= API.Level.expert)
+    public String[] interactions;
+
+    @API(help="A list of pairwise (first order) column interactions.", direction= API.Direction.INPUT, level= API.Level.expert)
+    public StringPairV3[] interaction_pairs;
 
   }
 }

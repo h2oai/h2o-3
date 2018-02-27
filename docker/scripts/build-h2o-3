@@ -1,5 +1,6 @@
 #! /bin/bash
 
+set -x
 set -e
 
 if [[ ! ${H2O_BRANCH} ]]; then

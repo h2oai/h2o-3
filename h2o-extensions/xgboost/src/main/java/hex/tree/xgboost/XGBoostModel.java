@@ -13,6 +13,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 import hex.ModelMetrics;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -108,11 +111,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public int _gpu_id = 0; // which GPU to use
     public Backend _backend = Backend.auto;
 
-    public XGBoostParameters() {
-      super();
-      _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
-    }
-
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
     public String javaName() { return XGBoostModel.class.getName(); }
@@ -121,6 +119,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public long progressUnits() {
       return _ntrees;
     }
+
+    /**
+     * Finds parameter settings that are not available on GPU backend.
+     * In this case the CPU backend should be used instead of GPU.
+     * @return map of parameter name -> parameter value
+     */
+    Map<String, Object> gpuIncompatibleParams() {
+      Map<String, Object> incompat = new HashMap<>();
+      if (_grow_policy == GrowPolicy.lossguide)
+        incompat.put("grow_policy", GrowPolicy.lossguide); // See PUBDEV-5302 (param.grow_policy != TrainParam::kLossGuide Loss guided growth policy not supported. Use CPU algorithm.)
+      return incompat;
+    }
+
   }
 
   @Override
@@ -210,8 +221,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if(H2O.getCloudSize() > 1) {
+      if (H2O.getCloudSize() > 1) {
         Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+      } else if (! p.gpuIncompatibleParams().isEmpty()) {
+        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
       } else if (XGBoost.hasGPU(p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
@@ -275,7 +288,26 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       Log.info(" " + s.getKey() + " = " + s.getValue());
     }
     Log.info("");
+
+    localizeDecimalParams(params);
     return params;
+  }
+
+  /**
+   * Iterates over a set of parameters and applies locale-specific formatting
+   * to decimal ones (Floats and Doubles).
+   *
+   * @param params Parameters to localize
+   */
+  private static void localizeDecimalParams(final HashMap<String, Object> params) {
+    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
+    for (String key : params.keySet()) {
+      final Object value = params.get(key);
+      if (value instanceof Float || value instanceof Double) {
+        final String localizedValue = localizedNumberFormatter.format(value);
+        params.put(key, localizedValue);
+      }
+    }
   }
 
   @Override

@@ -1,4 +1,4 @@
-def call(body) {
+def call(final pipelineContext, final Closure body) {
   final List<String> FILES_TO_EXCLUDE = [
     '**/rest.log'
   ]
@@ -19,15 +19,27 @@ def call(body) {
   if (config.hasJUnit == null) {
     config.hasJUnit = true
   }
+
+  if (config.activatePythonEnv == null) {
+    config.activatePythonEnv = true
+  }
+  if (config.activateR == null) {
+    config.activateR = true
+  }
+
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
   if (config.customBuildAction == null) {
     config.customBuildAction = """
-      echo "Activating Python ${env.PYTHON_VERSION}"
-      . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+      if [ "${config.activatePythonEnv}" = 'true' ]; then
+        echo "Activating Python ${env.PYTHON_VERSION}"
+        . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+      fi
 
-      echo "Activating R ${env.R_VERSION}"
-      activate_R_${env.R_VERSION}
+      if [ "${config.activateR}" = 'true' ]; then
+        echo "Activating R ${env.R_VERSION}"
+        activate_R_${env.R_VERSION}
+      fi
 
       echo "Running Make"
       make -f ${config.makefilePath} ${config.target}
@@ -43,15 +55,15 @@ def call(body) {
       echo "Post-processing following test result files:"
       sh findCmd
       sh replaceCmd
-      junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
+      pipelineContext.getUtils().archiveJUnitResults(this, config.h2o3dir)
     }
     if (config.archiveFiles) {
-      archiveStageFiles(config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
+      pipelineContext.getUtils().archiveStageFiles(this, config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
     }
     if (config.archiveAdditionalFiles) {
       echo "###### Archiving additional files: ######"
       echo "${config.archiveAdditionalFiles.join(', ')}"
-      archiveStageFiles(config.h2o3dir, config.archiveAdditionalFiles, config.excludeAdditionalFiles)
+      pipelineContext.getUtils().archiveStageFiles(this, config.h2o3dir, config.archiveAdditionalFiles, config.excludeAdditionalFiles)
     }
   }
 }
@@ -59,6 +71,7 @@ def call(body) {
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"
@@ -74,14 +87,6 @@ private void execMake(final String buildAction, final String h2o3dir) {
     printenv
     ${buildAction}
   """
-}
-
-private void archiveStageFiles(final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {
-  List<String> excludes = []
-  if (excludeFiles != null) {
-    excludes = excludeFiles
-  }
-  archiveArtifacts artifacts: archiveFiles.collect{"${h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true, excludes: excludes.collect{"${h2o3dir}/${it}"}.join(', ')
 }
 
 return this

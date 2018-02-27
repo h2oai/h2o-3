@@ -344,7 +344,9 @@ class H2OAutoML(object):
         else:
             self._leader_id = None
 
-        self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())[1:]
+        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+        leaderboard = h2o.H2OFrame(res["leaderboard_table"].cell_values, column_names=res["leaderboard_table"].col_header)
+        self._leaderboard = leaderboard[1:]
         return self._leader_id is not None
 
     def _get_params(self):

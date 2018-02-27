@@ -18,26 +18,26 @@ def call(final pipelineContext) {
             stage(stageName) {
                 insideDocker(buildEnv, pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 30, 'MINUTES') {
                     try {
-                        makeTarget {
+                        makeTarget(pipelineContext) {
                             target = 'build-h2o-3'
                             hasJUnit = false
                             archiveFiles = false
                             makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                         }
-                        makeTarget {
+                        makeTarget(pipelineContext) {
                             target = 'test-package-py'
                             hasJUnit = false
                             archiveFiles = false
                             makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                         }
-                        makeTarget {
+                        makeTarget(pipelineContext) {
                             target = 'test-package-r'
                             hasJUnit = false
                             archiveFiles = false
                             makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                         }
                         if (pipelineContext.getBuildConfig().getBuildHadoop()) {
-                            makeTarget {
+                            makeTarget(pipelineContext) {
                                 target = 'test-package-hadoop'
                                 hasJUnit = false
                                 archiveFiles = false
@@ -45,7 +45,7 @@ def call(final pipelineContext) {
                             }
                         }
                         if (pipelineContext.getBuildConfig().componentChanged(pipelineContext.getBuildConfig().COMPONENT_JS)) {
-                            makeTarget {
+                            makeTarget(pipelineContext) {
                                 target = 'test-package-js'
                                 hasJUnit = false
                                 archiveFiles = false
@@ -53,7 +53,7 @@ def call(final pipelineContext) {
                             }
                         }
                         if (pipelineContext.getBuildConfig().componentChanged(pipelineContext.getBuildConfig().COMPONENT_JAVA)) {
-                            makeTarget {
+                            makeTarget(pipelineContext) {
                                 target = 'test-package-java'
                                 hasJUnit = false
                                 archiveFiles = false
@@ -62,14 +62,14 @@ def call(final pipelineContext) {
                         }
                     } finally {
                         archiveArtifacts """
-              h2o-3/${pipelineContext.getBuildConfig().MAKEFILE_PATH},
-              h2o-3/h2o-py/dist/*.whl,
-              h2o-3/build/h2o.jar,
-              h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
-              h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-              h2o-3/test-package-*.zip,
-              **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
-            """
+                              h2o-3/${pipelineContext.getBuildConfig().MAKEFILE_PATH},
+                              h2o-3/h2o-py/dist/*.whl,
+                              h2o-3/build/h2o.jar,
+                              h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
+                              h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
+                              h2o-3/test-package-*.zip,
+                              **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
+                        """
                     }
                 }
             }
