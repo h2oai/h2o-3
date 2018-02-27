@@ -1,9 +1,16 @@
 package hex.coxph;
 
+import hex.StringPair;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Key;
+import water.MRTask;
+import water.Scope;
 import water.TestUtil;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import static org.junit.Assert.*;
 
@@ -153,6 +160,61 @@ public class CoxPHTest extends TestUtil {
         fr.delete();
       if (model != null)
         model.delete();
+    }
+  }
+
+  @Test
+  public void testCoxPHEfron1Interaction() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
+
+      // Decompose a "age" column into two components: "age1" and "age2"
+      Frame ext = new MRTask() {
+        @Override
+        public void map(Chunk c, NewChunk nc0, NewChunk nc1) {
+          for (int i = 0; i < c._len; i++) {
+            double v = c.atd(i);
+            if (i % 2 == 0) {
+              nc0.addNum(v); nc1.addNum(1);
+            } else {
+              nc0.addNum(1); nc1.addNum(v);
+            }
+          }
+        }
+      }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, fr.vec("age"))
+              .outputFrame(Key.<Frame>make(), new String[]{"age1", "age2"}, null);
+      Scope.track(ext);
+      fr.add(ext);
+
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train           = fr._key;
+      parms._start_column    = "start";
+      parms._stop_column     = "stop";
+      parms._response_column = "event";
+      // We create interaction pair from the "age" components
+      parms._interaction_pairs = new StringPair[]{new StringPair("age1", "age2")};
+      parms._interactions_only = new String[]{"age1", "age2"};
+      // Exclude the original "age" column
+      parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "age"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+
+      CoxPH builder = new CoxPH(parms);
+      CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());
+
+      // Expect the same result as we used "age"
+      assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
+      assertEquals(model._output._var_coef[0][0], 0.000203471477951459, 1e-8);
+      assertEquals(model._output._null_loglik,    -298.121355672984,    1e-8);
+      assertEquals(model._output._loglik,         -295.536762216228,    1e-8);
+      assertEquals(model._output._score_test,     4.64097294749287,     1e-8);
+      assertTrue(model._output._iter >= 1);
+      assertEquals(model._output._x_mean_num[0],  -2.48402655078554,    1e-8);
+      assertEquals(model._output._n,              172);
+      assertEquals(model._output._total_event,    75);
+      assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+    } finally {
+      Scope.exit();
     }
   }
 

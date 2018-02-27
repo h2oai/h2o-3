@@ -6,6 +6,8 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 
+import java.util.Arrays;
+
 
 // test cases:
 // skipMissing = TRUE/FALSE
@@ -151,6 +153,42 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+  @Test public void testAirlinesInteractionSpec() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              null,
+              new StringPair[]{new StringPair("UniqueCarrier", "Origin"), new StringPair("Origin", "DayofMonth")},
+              new String[]{"UniqueCarrier"}
+      );
+      DataInfo dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              false,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interactions
+      );
+      Scope.track_generic(dinfo);
+
+      Assert.assertArrayEquals(new String[]{
+              "TailNum", "UniqueCarrier_Origin", "Dest", "Origin", "CancellationCode", "IsArrDelayed", "Origin_DayofMonth",
+              "Year", "Month", "DayofMonth", "DayOfWeek", "DepTime", "CRSDepTime", "ArrTime", "CRSArrTime", "FlightNum",
+              "ActualElapsedTime", "CRSElapsedTime", "AirTime", "ArrDelay", "DepDelay", "Distance", "TaxiIn", "TaxiOut",
+              "Cancelled", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay",
+              "IsDepDelayed"}, dinfo._adaptedFrame._names);
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test public void testIris1() {  // test that getting sparseRows and denseRows produce the same results
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");

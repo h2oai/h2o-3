@@ -22,6 +22,8 @@
 #' @param init init Defaults to 0.
 #' @param lre_min lre_min Defaults to 9.
 #' @param iter_max iter_max Defaults to 20.
+#' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
+#'        training.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @export
@@ -35,6 +37,7 @@ h2o.coxph <- function(x, event_column, training_frame,
                       init = 0,
                       lre_min = 9,
                       iter_max = 20,
+                      interactions_only = NULL,
                       interactions = NULL,
                       interaction_pairs = NULL
                       ) 
@@ -47,6 +50,11 @@ h2o.coxph <- function(x, event_column, training_frame,
      } else {
          x <- setdiff(colnames(training_frame), event_column)
      }
+  }
+  if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {
+     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))
+     interactions_only <- setdiff(used, x)
+     x <- c(x, interactions_only)
   }
   # Required args: training_frame
   if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
@@ -86,6 +94,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$lre_min <- lre_min
   if (!missing(iter_max))
     parms$iter_max <- iter_max
+  if (!missing(interactions_only))
+    parms$interactions_only <- interactions_only
   if (!missing(interactions))
     parms$interactions <- interactions
   if (!missing(interaction_pairs))

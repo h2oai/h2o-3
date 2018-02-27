@@ -180,9 +180,9 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
     super(Key.<DataInfo>make());
-    _valid = valid != null;
     assert predictor_transform != null;
-    assert  response_transform != null;
+    assert response_transform != null;
+    _valid = valid != null;
     _offset = offset;
     _weights = weight;
     _fold = fold;
@@ -194,15 +194,21 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
     _interactionSpec = interactions;
-    if (interactions != null)
+    if (interactions != null) {
+      train = interactions.reorderColumns(train);
+      valid = interactions.reorderColumns(valid);
       _interactions = interactions.makeInteractionPairs(train);
+    }
 
     // create dummy InteractionWrappedVecs and shove them onto the front
     if( _interactions!=null ) {
       _interactionVecs=new int[_interactions.length];
-      train = Model.makeInteractions(train, false, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE).add(train);
-      if( valid!=null )
-        valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE).add(valid); // FIXME: should be using the training subs/muls!
+      Frame inter = Model.makeInteractions(train, false, _interactions, _useAllFactorLevels, _skipMissing,predictor_transform==TransformType.STANDARDIZE);
+      train = inter.add(_interactionSpec.removeInteractionOnlyColumns(train));
+      if( valid!=null ) {
+        inter = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, predictor_transform == TransformType.STANDARDIZE); // FIXME: should be using the training subs/muls!
+        valid = inter.add(_interactionSpec.removeInteractionOnlyColumns(valid));
+      }
     }
 
     _permutation = new int[train.numCols()];
@@ -257,7 +263,6 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       if( v instanceof InteractionWrappedVec ) {
-        if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
         _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
       }
@@ -275,7 +280,6 @@ public class DataInfo extends Keyed<DataInfo> {
       tvecs2[i+ncats] = v;
       isIWV = v instanceof InteractionWrappedVec;
       if( isIWV ) {
-        if( null!=_interactions ) _interactions[interactionIdx].vecIdx=i+ncats;
         _interactionVecs[interactionIdx++]=i+ncats;
       }
       _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) v).expandedLength() : 1));
