@@ -19,6 +19,7 @@ You can specify one of the following ``family`` options based on the response co
 
 - ``gaussian``: The data must be numeric (Real or Int). This is the default family.
 - ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
+- ``ordinal``: The data must be categorical with at least 3 levels. 
 - ``quasibinomial``: The data must be numeric.
 - ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
 - ``poisson``: The data must be numeric and non-negative (Int).
