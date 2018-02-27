@@ -12,7 +12,10 @@ import org.apache.parquet.schema.Type;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseWriter;
+import water.util.Log;
 import water.util.StringUtils;
+
+import static water.H2OConstants.MAX_STR_LEN;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -84,22 +87,34 @@ class ChunkConverter extends GroupConverter {
   }
 
   private static class StringConverter extends PrimitiveConverter {
-
+    // Maximum array size (Integer.MAX_VALUE - 8) minus one place for a trailing zero
     private final BufferedString _bs = new BufferedString();
     private final int _colIdx;
     private final WriterDelegate _writer;
     private final boolean _dictionarySupport;
     private String[] _dict;
+    private long _writtenAmount;
+    private boolean _overflew;
 
     StringConverter(WriterDelegate writer, int colIdx, boolean dictionarySupport) {
       _colIdx = colIdx;
       _writer = writer;
       _dictionarySupport = dictionarySupport;
+      _writtenAmount = 0;
+      _overflew = false;
     }
 
     @Override
     public void addBinary(Binary value) {
+      if(_overflew) return;
       _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
+      _writtenAmount += _bs.length();
+      long lenDifference = _writtenAmount - MAX_STR_LEN;
+      if(lenDifference > 0){
+        _overflew = true;
+        Log.err("A String chunk value overflext maximum allowed size by ", lenDifference, " bytes. Stripping the string.\n");
+        return;
+      }
       _writer.addStrCol(_colIdx, _bs);
     }
 
