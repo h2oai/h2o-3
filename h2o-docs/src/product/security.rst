@@ -508,7 +508,7 @@ Example **ldap.conf**:
 ::
 
     ldaploginmodule {
-        org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+        ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
         debug="true"
         useLdaps="false"
         contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
