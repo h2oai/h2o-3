@@ -4606,14 +4606,15 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' splits <- h2o.splitFrame(data, seed = 1234)
 #' train <- splits[[1]]
 #' test <- splits[[2]]
-#' mapping <- h2o.target_encode_create(data = train, x = list(c("job"), c("job", "marital")), y = "age")
+#' mapping <- h2o.target_encode_create(data = train, x = list(c("job"), c("job", "marital")), 
+#' y = "age")
 #' 
 #' # Apply mapping to the training dataset
-#' train_encode <- h2o.target_encode_apply(data = train, x = list(c("job"), c("job", "marital")), y = "age", 
-#' mapping, holdout_type = "LeaveOneOut")
+#' train_encode <- h2o.target_encode_apply(data = train, x = list(c("job"), c("job", "marital")), 
+#' y = "age", mapping, holdout_type = "LeaveOneOut")
 #' # Apply mapping to a test dataset
-#' test_encode <- h2o.target_encode_apply(data = test, x = list(c("job"), c("job", "marital")), y = "age", 
-#' target_encode_map = mapping, holdout_type = "None")
+#' test_encode <- h2o.target_encode_apply(data = test, x = list(c("job"), c("job", "marital")), 
+#' y = "age", target_encode_map = mapping, holdout_type = "None")
 #' 
 #' }
 #' @export
