@@ -4491,10 +4491,10 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #' Creates a target encoding map based on group-by columns (`x`) and a numeric or binary target column (`y`). Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
 #' @param data An H2OFrame object with which to create the target encoding map.
-#' @param x A vector containing the names or indices of the variables to group by in target encoding.
+#' @param x A list containing the names or indices of the variables to encode.
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
 #' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column`).
-#' @return Returns an H2OFrame object containing the target encoding mapping per group
+#' @return Returns a list of H2OFrame objects containing the target encoding mapping for each column in `x`.
 #' @seealso \code{\link{h2o.target_encode_apply}} for applying the target encoding mapping to a frame.
 #' @examples
 #' \donttest{
@@ -4505,11 +4505,11 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #' data <- h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
 #' destination_frame = "data")
-#' mapping_age <- h2o.target_encode_create(data = data, x = c("job"), y = "age")
+#' mapping_age <- h2o.target_encode_create(data = data, x = list(c("job"), c("job", "marital")), y = "age")
 #' head(mapping_age)
 #' 
 #' # Get Target Encoding Map on bank-additional-full data with binary response
-#' mapping_y <- h2o.target_encode_create(data = data, x = c("job", "marital"), y = "y")
+#' mapping_y <- h2o.target_encode_create(data = data, x = list(c("job"), c("job", "marital")), y = "y")
 #' head(mapping_y)
 #' 
 #' }
@@ -4526,10 +4526,13 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   if (missing(x)) {
     stop("argument 'x' is missing, with no default")
   }
+  if (!is.list(x)) {
+    stop("argument 'x' must be a list")
+  }
   if (!is.h2o(data)) {
     stop("argument `data` must be a valid H2OFrame")
   }
-  if (is.numeric(data[x]) || length(data[x]) == 0L) {
+  if (any(is.numeric(data[unlist(x)])) || length(data[unlist(x)]) == 0L) {
     stop("`x` must be categorical columns")
   }
   if (is.factor(data[[y]])) {
@@ -4541,8 +4544,8 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
     }
   }
   
-  if (is.numeric(x)) {
-    x <- colnames(data)[x]
+  if (is.numeric(unlist(x))) {
+    x <- sapply(x, function(i) colnames(data)[i])
   }
   if (is.numeric(y)) {
     y <- colnames(data)[y]
@@ -4554,15 +4557,24 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
   # Remove records where y is NA
   encoding_data <- data[!is.na(data[[y]]), ]
   
-  # Calculate sum of y and number of rows per level of data
-  if (is.null(fold_column)) {
-    te_mapping <- h2o.group_by(encoding_data, x, sum(y), nrow(y))
-  } else {
-    te_mapping <- h2o.group_by(encoding_data, c(x, "fold"), sum(y), nrow(y))
+  # Calculate target encoding mapping for each x
+  te_mapping <- list()
+  for(cols in x){
+    
+    # Calculate sum of y and number of rows per level of data
+    if (is.null(fold_column)) {
+      x_mapping <- h2o.group_by(encoding_data, cols, sum(y), nrow(y))
+    } else {
+      x_mapping <- h2o.group_by(encoding_data, c(cols, "fold"), sum(y), nrow(y))
+    }
+    
+    colnames(x_mapping)[which(colnames(x_mapping) == paste0("sum_", y))] <- "numerator"
+    colnames(x_mapping)[which(colnames(x_mapping) == "nrow")] <- "denominator"
+    
+    te_mapping <- c(te_mapping, x_mapping)
   }
   
-  colnames(te_mapping)[which(colnames(te_mapping) == paste0("sum_", y))] <- "numerator"
-  colnames(te_mapping)[which(colnames(te_mapping) == "nrow")] <- "denominator"
+  names(te_mapping) <- sapply(x, function(i) paste(i, collapse = ":"))
   
   return(te_mapping)
 }
@@ -4572,9 +4584,9 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' Applies a target encoding map to an H2OFrame object.  Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
 #' @param data An H2OFrame object with which to apply the target encoding map.
-#' @param x A vector containing the names or indices of the variables to group by in target encoding.
+#' @param x A vector containing the names or indices of the variables to encode.
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
-#' @param target_encode_map An H2OFrame object that is the results of the \code{\link{h2o.target_encode_create}} function.
+#' @param target_encode_map A list of H2OFrame objects that is the results of the \code{\link{h2o.target_encode_create}} function.
 #' @param holdout_type The holdout type used. Must be one of: "LeaveOneOut", "KFold", "None".
 #' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column`). Only required if `holdout_type` = "KFold".
 #' @param blended_avg \code{Logical}. (Optional) Whether to perform blended average.
@@ -4594,13 +4606,13 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' splits <- h2o.splitFrame(data, seed = 1234)
 #' train <- splits[[1]]
 #' test <- splits[[2]]
-#' mapping <- h2o.target_encode_create(data = train, x = c("job", "marital"), y = "age")
+#' mapping <- h2o.target_encode_create(data = train, x = list(c("job"), c("job", "marital")), y = "age")
 #' 
 #' # Apply mapping to the training dataset
-#' train_encode <- h2o.target_encode_apply(data = train, x = c("job", "marital"), y = "age", 
+#' train_encode <- h2o.target_encode_apply(data = train, x = list(c("job"), c("job", "marital")), y = "age", 
 #' mapping, holdout_type = "LeaveOneOut")
 #' # Apply mapping to a test dataset
-#' test_encode <- h2o.target_encode_apply(data = test, x = c("job", "marital"), y = "age", 
+#' test_encode <- h2o.target_encode_apply(data = test, x = list(c("job"), c("job", "marital")), y = "age", 
 #' target_encode_map = mapping, holdout_type = "None")
 #' 
 #' }
@@ -4617,15 +4629,6 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
   if (!is.h2o(data)) {
     stop("argument `data` must be a valid H2OFrame")
   }  
-  if (!is.h2o(target_encode_map)) {
-    stop("argument `target_encode_map` must be a valid H2OFrame")
-  }
-  if (!Reduce('&', c("numerator", "denominator") %in% colnames(target_encode_map))) {
-    stop("`target_encode_map` must have columns: numerator, denominator")
-  }
-  if (length(intersect(colnames(data), colnames(target_encode_map))) == 0L) {
-    stop("`data` and `target_encode_map` must have intersecting column names to merge on")
-  }
   if (!is.logical(blended_avg)) {
     stop("`blended_avg` must be logical")
   }
@@ -4644,11 +4647,16 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
   if (is.numeric(y)) {
     y <- colnames(data)[y]
   }
-  if (is.numeric(x)) {
-    x <- colnames(data)[x]
+  if (is.numeric(unlist(x))) {
+    x <- sapply(x, function(i) colnames(data)[i])
   }
   if (is.numeric(fold_column)) {
     fold_column <- colnames(data)[fold_column]
+  }
+  
+  if (is.null(noise_level)) {
+    # If `noise_level` is NULL, value chosen based on `y` distribution
+    noise_level <- ifelse(is.factor(data[[y]]), 0.01, (max(data[[y]], na.rm = TRUE) - min(data[[y]], na.rm = TRUE))*0.01)
   }
   
   # Remove string columns from `data` (see: https://0xdata.atlassian.net/browse/PUBDEV-5266)
@@ -4659,88 +4667,90 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     warning(paste0("The string columns: ", paste(string_cols, collapse = ", "), " were dropped from the dataset"))
   }
   
-  if (holdout_type == "KFold") {
+  te_frame <- data
+  for (cols in x){
     
-    holdout_encode_map <- NULL
+    x_map <- target_encode_map[[paste(cols, collapse = ":")]]
     
-    folds <- as.matrix(h2o.unique(target_encode_map[[fold_column]]))[, 1]
-    for (i in folds){
-      out_fold <- target_encode_map[target_encode_map[[fold_column]] != i, ]
+    if (holdout_type == "KFold") {
       
-      # Calculate sum of y and number of rows per level on out of fold data
-      out_fold <- h2o.group_by(out_fold, x, sum("numerator"), sum("denominator"))
-      colnames(out_fold)[which(colnames(out_fold) == "sum_numerator")] <- "numerator"
-      colnames(out_fold)[which(colnames(out_fold) == "sum_denominator")] <- "denominator"
-      out_fold$fold <- i
+      holdout_encode_map <- NULL
       
-      holdout_encode_map <- h2o.rbind(holdout_encode_map, out_fold)
+      folds <- as.matrix(h2o.unique(x_map[[fold_column]]))[, 1]
+      for (i in folds){
+        out_fold <- x_map[x_map[[fold_column]] != i, ]
+        
+        # Calculate sum of y and number of rows per level on out of fold data
+        out_fold <- h2o.group_by(out_fold, cols, sum("numerator"), sum("denominator"))
+        colnames(out_fold)[which(colnames(out_fold) == "sum_numerator")] <- "numerator"
+        colnames(out_fold)[which(colnames(out_fold) == "sum_denominator")] <- "denominator"
+        out_fold$fold <- i
+        
+        holdout_encode_map <- h2o.rbind(holdout_encode_map, out_fold)
+      }
+      
+      te_frame <- h2o.merge(te_frame, holdout_encode_map, by = c(cols, "fold"), all.x = TRUE)
     }
     
-    te_frame <- h2o.merge(data, holdout_encode_map, by = c(x, "fold"), all.x = TRUE)
-  }
-  
-  if (holdout_type == "LeaveOneOut") {
-    
-    # Merge Target Encoding Mapping to data
-    te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
-    
-    # Calculate Numerator and Denominator
-    te_frame$numerator <- h2o.ifelse(is.na(te_frame[[y]]), 
-                                     te_frame$numerator, 
-                                     te_frame$numerator - te_frame[[y]])
-    
-    te_frame$denominator <- h2o.ifelse(is.na(te_frame[[y]]),
-                                       te_frame$denominator, 
-                                       te_frame$denominator - 1)
-  }
-  if (holdout_type == "None") {
-    
-    if (!is.null(fold_column)) {
-      # Roll up to the x level - we do not need to know per fold information
-      target_encode_map <- h2o.group_by(target_encode_map, x, sum("numerator"), sum("denominator"))
-      colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_denominator")] <- "denominator"
-      colnames(target_encode_map)[which(colnames(target_encode_map) == "sum_numerator")] <- "numerator"
+    if (holdout_type == "LeaveOneOut") {
+      
+      # Merge Target Encoding Mapping to data
+      te_frame <- h2o.merge(te_frame, x_map, by = cols, all.x = TRUE, all.y = FALSE)
+      
+      # Calculate Numerator and Denominator
+      te_frame$numerator <- h2o.ifelse(is.na(te_frame[[y]]), 
+                                       te_frame$numerator, 
+                                       te_frame$numerator - te_frame[[y]])
+      
+      te_frame$denominator <- h2o.ifelse(is.na(te_frame[[y]]),
+                                         te_frame$denominator, 
+                                         te_frame$denominator - 1)
     }
-    # Merge Target Encoding Mapping to data
-    te_frame <- h2o.merge(data, target_encode_map, by = x, all.x = TRUE, all.y = FALSE)
-  }
-  
-  # Calculate Mean Per Group
-  if (blended_avg) {
+    if (holdout_type == "None") {
+      
+      if (!is.null(fold_column)) {
+        # Roll up to the x level - we do not need to know per fold information
+        x_map <- h2o.group_by(x_map, cols, sum("numerator"), sum("denominator"))
+        colnames(x_map)[which(colnames(x_map) == "sum_denominator")] <- "denominator"
+        colnames(x_map)[which(colnames(x_map) == "sum_numerator")] <- "numerator"
+      }
+      # Merge Target Encoding Mapping to data
+      te_frame <- h2o.merge(te_frame, x_map, by = cols, all.x = TRUE, all.y = FALSE)
+    }
     
-    # Calculate Blended Mean Per Group
-    # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
-    # Equations (3), (4)
-    k <- 20
-    f <- 10
-    global_mean <- sum(target_encode_map$numerator)/sum(target_encode_map$denominator)
-    lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
-    te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
+    # Calculate Mean Per Group
+    if (blended_avg) {
+      
+      # Calculate Blended Mean Per Group
+      # See https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
+      # Equations (3), (4)
+      k <- 20
+      f <- 10
+      global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
+      lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
+      te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
+      
+    } else {
+      
+      # Calculate Mean Target per Group
+      te_frame$target_encode  <- te_frame$numerator/te_frame$denominator
+    }
     
-  } else {
+    # Add Random Noise
+    if (noise_level > 0) {
+      # Generate random floats sampled from a uniform distribution  
+      random_noise <- h2o.runif(te_frame, seed = seed)
+      # Scale within noise_level
+      random_noise <- random_noise * 2 * noise_level - noise_level
+      # Add noise to target_encoding
+      te_frame$target_encode  <- te_frame$target_encode  + random_noise
+    }
     
-    # Calculate Mean Target per Group
-    te_frame$target_encode  <- te_frame$numerator/te_frame$denominator
+    te_frame$numerator <- NULL
+    te_frame$denominator <- NULL
+    colnames(te_frame)[which(colnames(te_frame) == "target_encode")] <- paste0("TargetEncode_", paste(cols, collapse = ":"))
   }
   
-  # Add Random Noise
-  if (is.null(noise_level)) {
-    # If `noise_level` is NULL, value chosen based on `y` distribution
-    noise_level <- ifelse(is.factor(data[[y]]), 0.01, (max(data[[y]], na.rm = TRUE) - min(data[[y]], na.rm = TRUE))*0.01)
-  }
-  
-  if (noise_level > 0) {
-    # Generate random floats sampled from a uniform distribution  
-    random_noise <- h2o.runif(te_frame, seed = seed)
-    # Scale within noise_level
-    random_noise <- random_noise * 2 * noise_level - noise_level
-    # Add noise to target_encoding
-    te_frame$target_encode  <- te_frame$target_encode  + random_noise
-  }
-  
-  te_frame$numerator <- NULL
-  te_frame$denominator <- NULL
-  colnames(te_frame)[which(colnames(te_frame) == "target_encode")] <- paste0("TargetEncode_", paste(x, collapse = ":"))
   
   return(te_frame)
 }

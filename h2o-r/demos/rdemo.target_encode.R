@@ -32,6 +32,8 @@ default_gbm <- h2o.gbm(x = myX, y = "survived",
 
 print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
 
+te_cols <- list("cabin", "embarked", "home.dest")
+
 # For this model we will calculate LOO Target Encoding on the full train
 # There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
@@ -39,20 +41,18 @@ print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
 loo_train <- full_train
 loo_valid <- valid
 loo_test <- test
-for (i in c("cabin", "embarked", "home.dest")) {
-  
-  # Create Leave One Out Encoding Map
-  encoding_map <- h2o.target_encode_create(full_train, i, "survived")
-  
-  # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
-  loo_train <- h2o.target_encode_apply(loo_train, x = i,  y = "survived", encoding_map, holdout_type = "LeaveOneOut", seed = 1234)
-  loo_valid <- h2o.target_encode_apply(loo_valid, x = i, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
-  loo_test <- h2o.target_encode_apply(loo_test, x = i, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
-}
+
+# Create Leave One Out Encoding Map
+encoding_map <- h2o.target_encode_create(full_train, te_cols, "survived")
+
+# Apply Leave One Out Encoding Map on Training, Validation, Testing Data
+loo_train <- h2o.target_encode_apply(loo_train, x = te_cols,  y = "survived", encoding_map, holdout_type = "LeaveOneOut", seed = 1234)
+loo_valid <- h2o.target_encode_apply(loo_valid, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
+loo_test <- h2o.target_encode_apply(loo_test, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
 
 
 print("Run GBM with Leave One Out Target Encoding")
-myX <- setdiff(colnames(loo_test), c("cabin", "embarked", "home.dest", "survived", "name", "ticket", "boat", "body"))
+myX <- setdiff(colnames(loo_test), c(te_cols, "survived", "name", "ticket", "boat", "body"))
 loo_gbm <- h2o.gbm(x = myX, y = "survived", 
                    training_frame = loo_train, validation_frame = loo_valid, 
                    ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
@@ -72,16 +72,14 @@ cv_train <- full_train
 cv_valid <- valid
 cv_test <- test
 cv_train$fold <- h2o.kfold_column(cv_train, nfolds = 5, seed = 1234)
-for (i in c("cabin", "embarked", "home.dest")) {
-  
-  # Create Leave One Out Encoding Map
-  encoding_map <- h2o.target_encode_create(cv_train, i, "survived", "fold")
-  
-  # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
-  cv_train <- h2o.target_encode_apply(cv_train, x = i,  y = "survived", encoding_map, holdout_type = "KFold", fold_column = "fold", seed = 1234)
-  cv_valid <- h2o.target_encode_apply(cv_valid, x = i, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
-  cv_test <- h2o.target_encode_apply(cv_test, x = i, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
-}
+
+# Create Leave One Out Encoding Map
+encoding_map <- h2o.target_encode_create(cv_train, te_cols, "survived", "fold")
+
+# Apply Leave One Out Encoding Map on Training, Validation, Testing Data
+cv_train <- h2o.target_encode_apply(cv_train, x = te_cols,  y = "survived", encoding_map, holdout_type = "KFold", fold_column = "fold", seed = 1234)
+cv_valid <- h2o.target_encode_apply(cv_valid, x = te_cols, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
+cv_test <- h2o.target_encode_apply(cv_test, x = te_cols, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
 
 
 print("Run GBM with Cross Validation Target Encoding")
@@ -104,16 +102,14 @@ print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Hol
 holdout_train <- train
 holdout_valid <- valid
 holdout_test <- test
-for (i in c("cabin", "embarked", "home.dest")) {
-  
-  # Create Leave One Out Encoding Map
-  encoding_map <- h2o.target_encode_create(te_holdout, i, "survived")
-  
-  # Apply Leave One Out Encoding Map on Training, Validation, and Testing Data
-  holdout_train <- h2o.target_encode_apply(holdout_train, x = i, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
-  holdout_valid <- h2o.target_encode_apply(holdout_valid, x = i, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
-  holdout_test <- h2o.target_encode_apply(holdout_test, x = i, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
-}
+
+# Create Leave One Out Encoding Map
+encoding_map <- h2o.target_encode_create(te_holdout, te_cols, "survived")
+
+# Apply Leave One Out Encoding Map on Training, Validation, and Testing Data
+holdout_train <- h2o.target_encode_apply(holdout_train, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
+holdout_valid <- h2o.target_encode_apply(holdout_valid, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
+holdout_test <- h2o.target_encode_apply(holdout_test, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
 
 
 print("Run GBM with Target Encoding on Holdout")
