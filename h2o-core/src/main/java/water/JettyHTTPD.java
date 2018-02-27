@@ -145,7 +145,12 @@ public class JettyHTTPD extends AbstractHTTPD {
         try { Thread.sleep(100); }
         catch (Exception ignore) {}
       }
-      setCommonResponseHttpHeaders(response, isXhrRequest(baseRequest));
+
+      boolean isXhrRequest = false;
+      if (request != null) {
+        isXhrRequest = isXhrRequest(request);
+      }
+      setCommonResponseHttpHeaders(response, isXhrRequest);
     }
   }
 
@@ -313,7 +318,7 @@ public class JettyHTTPD extends AbstractHTTPD {
     }
   }
 
-  private static boolean isXhrRequest(final Request request) {
+  private static boolean isXhrRequest(final HttpServletRequest request) {
     final String requestedWithHeader = request.getHeader("X-Requested-With");
     return "XMLHttpRequest".equals(requestedWithHeader);
   }
