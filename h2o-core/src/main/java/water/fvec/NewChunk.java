@@ -11,6 +11,8 @@ import water.util.UnsafeUtils;
 
 import java.util.*;
 
+import static water.H2OConstants.MAX_STR_LEN;
+
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
 
@@ -567,10 +569,25 @@ public class NewChunk extends Chunk {
     byte b[] = str.getBuffer();
 
     if (_ss == null) {
-      _ss = MemoryManager.malloc1((strlen + 1) * 4);
+      int size = (strlen + 1) * 4;
+
+      if(size < 0 || size > MAX_STR_LEN){
+        size = MAX_STR_LEN;
+      }
+       _ss = MemoryManager.malloc1(size);
     }
+
+    long spaceRequired = _sslen + strlen + 1;
+    if( spaceRequired > MAX_STR_LEN ){
+      throw new IllegalStateException("Parsed string is too big.");
+    }
+
     while (_ss.length < (_sslen + strlen + 1)) {
-      _ss = MemoryManager.arrayCopyOf(_ss,_ss.length << 1);
+      long doubleSize = _ss.length << 1;
+      if(doubleSize > Integer.MAX_VALUE){
+        doubleSize = MAX_STR_LEN;
+      }
+      _ss = MemoryManager.arrayCopyOf(_ss, (int) doubleSize);
     }
     for (int i = off; i < off+strlen; i++)
       _ss[_sslen++] = b[i];

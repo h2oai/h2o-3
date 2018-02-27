@@ -14,13 +14,18 @@ import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.example.GroupWriteSupport;
+import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import water.H2OConstants;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
@@ -28,6 +33,8 @@ import water.parser.ParseSetup;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -44,6 +51,7 @@ import static org.junit.Assert.*;
 public class ParseTestParquet extends TestUtil {
 
   private static double EPSILON = 1e-9;
+  public ExpectedException expectedException = ExpectedException.none();
 
   @BeforeClass
   static public void setup() { TestUtil.stall_till_cloudsize(1); }
@@ -197,7 +205,6 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseSingleEmpty() {
-    final Date date = new Date();
     FrameAssertion assertion = new GenFrameAssertion("empty.parquet", TestUtil.ari(5, 0)) {
       @Override
       protected File prepareFile() throws IOException {
@@ -210,6 +217,39 @@ public class ParseTestParquet extends TestUtil {
         assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME), f.types());
       }
     };
+    assertFrameAssertion(assertion);
+  }
+
+  @Test
+  public void testParseStringOverflow() throws IllegalAccessException, NoSuchFieldException {
+    H2OConstants.MAX_STR_LEN = 6;
+    FrameAssertion assertion = new GenFrameAssertion("large.parquet", TestUtil.ari(1, 1)) {
+      @Override
+      protected File prepareFile() throws IOException {
+        return ParquetFileGenerator.generateStringParquet(Files.createTempDir(), file);
+      }
+
+      @Override
+      public Frame prepare() {
+        try {
+          File f = super.generatedFile = prepareFile();
+          System.out.println("File generated into: " + f.getCanonicalPath());
+            return parse_test_file(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, new byte[]{Vec.T_STR});
+        } catch (IOException e) {
+          throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
+        }
+      }
+
+      @Override
+      public void check(Frame f) {
+        assertArrayEquals("Column names need to match!", ar("string_field"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_STR), f.types());
+        Assert.assertEquals(1, f.naCount());
+        Assert.assertEquals(1, f.numCols());
+        Assert.assertEquals(1, f.numRows());
+      }
+    };
+
     assertFrameAssertion(assertion);
   }
 
@@ -346,6 +386,39 @@ class ParquetFileGenerator {
       writer.close();
     }
     return f;
+  }
+
+  static File generateStringParquet(File parentDir, String filename) throws IOException {
+    File f = new File(parentDir, filename);
+
+    Configuration conf = new Configuration();
+    MessageType schema = parseMessageType(
+        "message test { "
+            + "required BINARY string_field; "
+            + "} ");
+    GroupWriteSupport.setSchema(schema, conf);
+    SimpleGroupFactory fact = new SimpleGroupFactory(schema);
+    ParquetWriter<Group> writer = new ParquetWriter<Group>(new Path(f.getPath()), new GroupWriteSupport(),
+        UNCOMPRESSED,
+        262144, 1024, 512, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
+    try {
+      //This test may fail on Java 9, as it will use 1 byte per char and sometimes 2 bytes
+      Binary binary = Binary.fromString(fillString(12, 'c'));
+      writer.write(fact.newGroup()
+            .append("string_field", binary)
+        );
+    } finally {
+      writer.close();
+    }
+    return f;
+  }
+
+  public static String fillString(int count,char c) {
+    StringBuilder sb = new StringBuilder( count );
+    for( int i=0; i<count; i++ ) {
+      sb.append( c );
+    }
+    return sb.toString();
   }
 
   static File generateEmptyWithSchema(File parentDir, String filename) throws IOException {
