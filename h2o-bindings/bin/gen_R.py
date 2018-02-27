@@ -80,6 +80,8 @@ def gen_module(schema, algo, module):
             phelp=phelp.replace(' "quasibinomial",',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
+        if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
+            continue
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         yield "#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE."
