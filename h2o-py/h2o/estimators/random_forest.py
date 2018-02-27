@@ -229,7 +229,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def offset_column(self):
         """
-        This argument is deprecated and has no use for Random Forest.
+        [Deprecated] Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
         """
         return self._parms.get("offset_column")
 
@@ -723,7 +725,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def distribution(self):
         """
-        This argument is deprecated and has no use for Random Forest.
+        [Deprecated] Distribution function
+
+        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 

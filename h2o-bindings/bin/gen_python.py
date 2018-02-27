@@ -214,16 +214,13 @@ def gen_module(schema, algo):
             else:
                 extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
-        if pname == "offset_column" and algo == "drf":
+        if (pname == "offset_column" or pname == "distribution") and algo == "drf":
             yield "    @property"
             yield "    def %s(self):" % pname
             yield '        """'
-            yield "        %s" % bi.wrap("This argument is deprecated and has no use for Random Forest.",indent=(" " * 8), indent_first=False)
-        elif pname == "distribution" and algo == "drf":
-            yield "    @property"
-            yield "    def %s(self):" % pname
-            yield '        """'
-            yield "        %s" % bi.wrap("This argument is deprecated and has no use for Random Forest.",indent=(" " * 8), indent_first=False)
+            yield "        [Deprecated] %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+            yield ""
+            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
         else:
             yield "    @property"
             yield "    def %s(self):" % pname
