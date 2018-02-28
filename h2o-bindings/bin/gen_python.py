@@ -214,12 +214,20 @@ def gen_module(schema, algo):
             else:
                 extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
-        yield "    @property"
-        yield "    def %s(self):" % pname
-        yield '        """'
-        yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
-        yield ""
-        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        if (pname == "offset_column" or pname == "distribution") and algo == "drf":
+            yield "    @property"
+            yield "    def %s(self):" % pname
+            yield '        """'
+            yield "        [Deprecated] %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+            yield ""
+            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        else:
+            yield "    @property"
+            yield "    def %s(self):" % pname
+            yield '        """'
+            yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+            yield ""
+            yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
         if pname == "metalearner_params":
             yield "        Example: metalearner_gbm_params = {'max_depth': 2, 'col_sample_rate': 0.3}"
         yield '        """'
