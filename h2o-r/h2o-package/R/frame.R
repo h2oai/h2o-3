@@ -4491,7 +4491,7 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #' Creates a target encoding map based on group-by columns (`x`) and a numeric or binary target column (`y`). Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
 #' @param data An H2OFrame object with which to create the target encoding map.
-#' @param x A list containing the names or indices of the variables to encode.
+#' @param x A list containing the names or indices of the variables to encode.  A target encoding map will be created for each element in the list.  Items in the list can be multiple columns.  For example, if `x = list(c("A"), c("B", "C"))`, then there will be one mapping frame for A and one mapping frame for B & C (in this case, we group by two columns). 
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
 #' @param fold_column (Optional) The name or column index of the fold column in the data. Defaults to NULL (no `fold_column`).
 #' @return Returns a list of H2OFrame objects containing the target encoding mapping for each column in `x`.
@@ -4586,7 +4586,7 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #' Applies a target encoding map to an H2OFrame object.  Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
 #' 
 #' @param data An H2OFrame object with which to apply the target encoding map.
-#' @param x A vector containing the names or indices of the variables to encode.
+#' @param x A list containing the names or indices of the variables to encode.  A target encoding column will be created for each element in the list.  Items in the list can be multiple columns.  For example, if `x = list(c("A"), c("B", "C"))`, then the resulting frame will have a target encoding column for A and a target encoding column for B & C (in this case, we group by two columns). 
 #' @param y The name or column index of the response variable in the data. The response variable can be either numeric or binary.
 #' @param target_encode_map A list of H2OFrame objects that is the results of the \code{\link{h2o.target_encode_create}} function.
 #' @param holdout_type The holdout type used. Must be one of: "LeaveOneOut", "KFold", "None".
