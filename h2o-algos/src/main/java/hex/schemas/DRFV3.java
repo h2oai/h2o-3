@@ -21,6 +21,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "response_column",
                 "ignored_columns",
                 "ignore_const_cols",
+                "offset_column",
                 "weights_column",
                 "balance_classes",
                 "class_sampling_factors",
@@ -52,6 +53,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "categorical_encoding",
                 "calibrate_model",
                 "calibration_frame",
+                "distribution",
                 "custom_metric_func"
         };
 
