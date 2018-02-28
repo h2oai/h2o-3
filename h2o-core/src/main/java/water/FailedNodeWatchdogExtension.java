@@ -131,9 +131,12 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 sleep(watchdogClientConnectTimeout);
                 boolean watchDogConnected = false;
                 HashSet<H2ONode> clients = H2O.getClients();
-                Log.debug("Checking if watchdog client connected to the cluster, available clients at this moment are: ");
-                for(H2ONode n : clients){
-                    Log.debug("Client: " + n + ", is watchdog = " + n._heartbeat._watchdog_client);
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client connected to the cluster, available clients at this moment are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client);
+                    }
                 }
                 for(H2ONode client: clients){
                     if(client._heartbeat._watchdog_client){
@@ -226,12 +229,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             while (true) {
-                Log.debug("Checking if watchdog client is connected, available clients are: ");
                 HashSet<H2ONode> clients = H2O.getClients();
-                for(H2ONode n : clients){
-                    Log.debug("Client: " + n + ", is watchdog = " + n._heartbeat._watchdog_client);
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client is connected, available clients are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client);
+                    }
                 }
-                for(H2ONode client: clients){
+                for (H2ONode client : clients) {
                     if(isTimeoutExceeded(client, watchdogClientRetryTimeout)){
                         handleClientDisconnect(client, watchdogClientRetryTimeout);
                     }
