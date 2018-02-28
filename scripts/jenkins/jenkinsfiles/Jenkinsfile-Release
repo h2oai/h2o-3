@@ -227,7 +227,7 @@ try {
                                     s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
                                 done
 
-                                echo UPDATE LATEST POINTER
+/*                                echo UPDATE LATEST POINTER
                                 tmpdir=./buildh2odev.tmp
                                 mkdir -p \${tmpdir}
                                 echo ${currentBuild.number} > \${tmpdir}/latest
@@ -285,7 +285,7 @@ EOF
                                     s3cmd --acl-public put \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html
                                     done
                                 """
-                            }
+                            }*/
                         }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
                     } catch (Exception e) {
