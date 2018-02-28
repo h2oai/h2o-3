@@ -188,6 +188,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(offset_column))
+    warning("argument offset_column is deprecated and has no use for Random Forest.")
     parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
@@ -250,6 +251,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
   if (!missing(distribution))
+    warning("argument distribution is deprecated and has no use for Random Forest.")
     parms$distribution <- distribution
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func

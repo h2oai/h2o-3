@@ -43,8 +43,10 @@ def gen_module(schema, algo, module):
         if algo == "drf":
             if param["name"] == "offset_column":
                 yield "#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest."
+                continue
             if param["name"] == "distribution":
                 yield "#' @param distribution Distribution. This argument is deprecated and has no use for Random Forest."
+                continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "
@@ -80,8 +82,6 @@ def gen_module(schema, algo, module):
             phelp=phelp.replace(' "quasibinomial",',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
-        if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
-            continue
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         yield "#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE."
@@ -305,6 +305,11 @@ def gen_module(schema, algo, module):
             continue
         if algo == "coxph" and param["name"] == "rcall":
             yield "  parms$rcall <- deparse(match.call())"
+            continue
+        if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
+            yield "  if (!missing(%s))" % param["name"]
+            yield "    warning(\"argument %s is deprecated and has no use for Random Forest.\")" % param["name"]
+            yield "    parms$%s <- %s" % (param["name"], param["name"])
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
