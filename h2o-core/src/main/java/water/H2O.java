@@ -2171,7 +2171,11 @@ final public class H2O {
   public static H2ONode reportClient(H2ONode client) {
     H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
     if (oldClient == null) {
-      Log.info("New client discovered at " + client);
+      if (client._heartbeat._watchdog_client) {
+        Log.info("New watchdog client discovered at " + client);
+      } else {
+        Log.info("New client discovered at " + client);
+      }
     }
     return oldClient;
   }
