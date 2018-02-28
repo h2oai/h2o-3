@@ -604,12 +604,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output(ModelBuilder b) {
+      this(b, b._train);
+    }
+
+    protected Output(ModelBuilder b, Frame train) {
       _isSupervised = b.isSupervised();
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
-      setNames(b._train != null ? b._train.names() : new String[0]);
-      _domains = b._train != null ? b._train.domains() : new String[0][];
+      setNames(train != null ? train.names() : new String[0]);
+      _domains = train != null ? train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _hasOffset = b.hasOffsetCol();

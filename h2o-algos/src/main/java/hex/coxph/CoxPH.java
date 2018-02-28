@@ -373,14 +373,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
         Frame f = reorderTrainFrameColumns();
 
-        // The model to be built
-        model = new CoxPHModel(_job._result, _parms, new CoxPHModel.CoxPHOutput(CoxPH.this));
-        model.delete_and_lock(_job);
-
         int nResponses = _parms.startVec() == null ? 2 : 3;
         final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
+
+        // The model to be built
+        CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame);
+        model = new CoxPHModel(_job._result, _parms, output);
+        model.delete_and_lock(_job);
 
         initStats(model, dinfo);
 
