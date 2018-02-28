@@ -308,8 +308,11 @@ def gen_module(schema, algo, module):
             continue
         if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
             yield "  if (!missing(%s))" % param["name"]
-            yield "    warning(\"argument %s is deprecated and has no use for Random Forest.\")" % param["name"]
-            yield "    parms$%s <- %s" % (param["name"], param["name"])
+            yield "    warning(\"Argument %s is deprecated and has no use for Random Forest.\")" % param["name"]
+            if param["name"] == "distribution":
+                yield "    parms$%s <- 'AUTO'" % (param["name"])
+            else:
+                yield "    parms$%s <- NULL" % (param["name"])
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
