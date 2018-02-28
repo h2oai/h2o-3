@@ -227,67 +227,6 @@ try {
                                     s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
                                 done
 
-/*                                echo UPDATE LATEST POINTER
-                                tmpdir=./buildh2odev.tmp
-                                mkdir -p \${tmpdir}
-                                echo ${currentBuild.number} > \${tmpdir}/latest
-                                echo "<head>" > \${tmpdir}/latest.html
-                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
-                                echo "</head>" >> \${tmpdir}/latest.html
-
-                                s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
-                            """
-                            if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
-                                sh """
-                                    cd ${env.BUILD_NUMBER_DIR}
-
-                                    tmpdir=./buildh2odev.tmp
-
-                                    LINKS="latest_stable:index.html
-latest_stable_doc:docs-website/h2o-docs/index.html
-latest_stable_Py:Python/h2o-${env.PROJECT_VERSION}-py2.py3-none-any.whl
-latest_stable_R:R/src/contrib/h2o_${env.PROJECT_VERSION}.tar.gz
-latest_stable_Rdoc:docs-website/h2o-r/h2o_package.pdf
-latest_stable_Pydoc:docs-website/h2o-py/docs/index.html
-latest_stable_GLM_booklet:docs-website/h2o-docs/booklets/GLM_Vignette.pdf
-latest_stable_GBM_booklet:docs-website/h2o-docs/booklets/GBM_Vignette.pdf
-latest_stable_DeepLearning_booklet:docs-website/h2o-docs/booklets/DeepLearning_Vignette.pdf
-latest_stable_R_booklet:docs-website/h2o-docs/booklets/R_Vignette.pdf
-latest_stable_Python_booklet:docs-website/h2o-docs/booklets/Python_booklet.pdf
-latest_stable_SparklingWater_booklet:docs-website/h2o-docs/booklets/SparklingWaterVignette.pdf
-latest_stable_javadoc_genmodel:docs-website/h2o-genmodel/javadoc/index.html
-latest_stable_javadoc_core:docs-website/h2o-core/javadoc/index.html
-latest_stable_javadoc_algos:docs-website/h2o-algos/javadoc/index.html
-latest_stable_javadoc_scala:docs-website/h2o-scala/scaladoc/index.html
-latest_stable_javadoc_scala_2_10:docs-website/h2o-scala_2.10/scaladoc/index.html
-latest_stable_javadoc_scala_2_11:docs-website/h2o-scala_2.11/scaladoc/index.html
-latest_stable_restdoc_route_reference:docs-website/h2o-docs/index.html#route-reference
-latest_stable_restdoc_schema_reference:docs-website/h2o-docs/index.html#schema-reference"
-                                    
-                                    # Output stable link
-                                    echo "https://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip" > \${tmpdir}/latest_stable
-                                    
-                                    # Output all other links
-                                    echo "\$LINKS" | while IFS=":" read link dest; do 
-                                    cat <<EOF > \${tmpdir}/\${link}.html
-<head>
-<meta http-equiv="refresh" content="0; url=/h2o/${env.BRANCH_NAME}/${currentBuild.number}/\${dest}" />
-</head>
-EOF
-                                    done
-                                    
-                                    # Upload
-                                    # Upload first stable link
-                                    s3cmd --acl-public put \${tmpdir}/latest_stable ${env.S3_ROOT}/latest_stable
-                                    echo "\$LINKS" | while IFS=":" read link dest; do 
-                                    s3cmd --acl-public put \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html
-                                    done
-                                """
-                            }
-                            */
-                          }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
