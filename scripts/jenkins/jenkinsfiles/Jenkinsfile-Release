@@ -235,10 +235,6 @@ try {
                                 echo "<head>" > \${tmpdir}/latest.html
                                 echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
                                 echo "</head>" >> \${tmpdir}/latest.html
-
-                                s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
                             """
                         }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
@@ -257,6 +253,10 @@ try {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
                                     tmpdir=./buildh2odev.tmp
+
+                                    s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
 
                                     LINKS="latest_stable:index.html
 latest_stable_doc:docs-website/h2o-docs/index.html
