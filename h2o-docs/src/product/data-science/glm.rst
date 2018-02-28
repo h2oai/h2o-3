@@ -269,13 +269,13 @@ Logistic Ordinal Regression (Ordinal Family)
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
-Let :math:`X_i\in\rm \Bbb I \!\Bbb R^{(p)}`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cummulative probability that :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^{(p)}`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative probability that :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
 
 .. math::
 
   P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}
 
-Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the threholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j \geq 0` for the lowest class label :math:`j`.
+Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the thresholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j \geq 0` for the lowest class label :math:`j`.
 
 We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
 
