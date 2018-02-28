@@ -285,8 +285,9 @@ EOF
                                     s3cmd --acl-public put \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html
                                     done
                                 """
-                            }*/
-                        }
+                            }
+                            */
+                          }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
