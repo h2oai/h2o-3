@@ -269,33 +269,21 @@ Logistic Ordinal Regression (Ordinal Family)
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
-Given :math:`X\in\rm \Bbb I \!\Bbb R^{(nxp)}` input data and :math:`y\in\rm \Bbb I \!\Bbb N^{n}` target values. For simplicity, assume :math:`y` is a non-decreasing vector, that is, :math:`y_1 \leq y_2 \leq \ldots`. In the logistic ordinal regression, we model the cummulative probability as the logistic function:
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^{(p)}`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cummulative probability that :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
 
 .. math::
 
-  P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) \dfrac {1} {1+ (-\beta^{T}X_i - \theta_j)}
+  P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}
 
-Compared to multiclass logistic regression, this adds the constraint that the hyperplanes that separate the different classes are parallel for all classes, that is, the vector :math:`\beta` is common across classes. To decide which class will :math:`X_i` be predicted, we make use of the vector of threholds :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-2`. We then assign the class :math:`j` if the prediction :math:`-\beta^{T}X_i` lies in the interval :math:`[\theta_{j-1}; \theta_j]`. (Recall that it's a linear model.) In order to keep the same definition for external classes, we define :math:`\theta -1 = -\infty` and :math:`\theta_{K-1} = +\infty`.
+Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the threholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j \geq 0` for the lowest class label :math:`j`.
 
-The intuition is that we are seeking a vector :math:`\beta` such that :math:`X\beta` produces a set of values that are well separated into the different classes by the different thresholds :math:`\theta`. We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
+We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
 
-As an optimization, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. 
-
-.. math::
-
-  L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{y_i} - 1) \big)
-
-Using the formula :math:`\text{log}(\phi(t))' = (1 - \phi(t))`, we can compute the gradient of the loss function as:
+To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. 
 
 .. math::
 
-  \triangledown_\beta L(\beta, \theta) = \sum_{i=1}^{n} X_i(1 - \phi(\theta_{y_i} - \beta^{T}X_i) - \phi(\theta_{{y_i}-1} - \beta^{T} X_i))
-
-  \triangledown_\theta L(\beta, \theta) = \sum_{i=1}^{n} e_{y_i} \big(1 - \phi(\theta_{y_i} - \beta^{T}X_i) - \dfrac {1} {1  - \text{exp} (\theta_{{y_i}-1} - \theta_{y_i})} \big)
-
-  + e_{{y_i}-1} \big(1 - \phi(\theta_{{y_i}-1} - \beta^{T}X_i) - \dfrac {1} {1  - \text{exp} (-(\theta_{{y_i}-1} - \theta_{y_i}))} \big)
-
-where :math:`e_i` is the :math:`i\text{th}` canonical vector.
+  L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
 
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
