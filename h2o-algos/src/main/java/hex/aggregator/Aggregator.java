@@ -149,6 +149,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         double lo = 0;
         double hi = 256;
         double mid = 8; //starting point of radius_scale
+        int count = 0;
+        int previousNumExemplars = 0;
 
         double tol = _parms._rel_tol_num_exemplars;
         int upperLimit = (int)((1.+tol)*targetNumExemplars);
@@ -193,6 +195,12 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             } else {
               Log.info(" Too few exemplars.");
               hi = mid;
+              if(previousNumExemplars == numExemplars)  count++;
+              if (count > _parms._num_iteration_without_new_exemplar) {
+                Log.info("Exiting with " + numExemplars + " exemplars as last " + _parms._num_iteration_without_new_exemplar + " iterations did not accure any more exemplars");
+                break;
+              }
+              previousNumExemplars = numExemplars;
             }
           }
           mid = lo + (hi-lo)/2.;
