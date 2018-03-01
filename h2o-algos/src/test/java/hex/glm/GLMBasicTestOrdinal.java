@@ -28,7 +28,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(3);
+    stall_till_cloudsize(1);
     _trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
     convert2Enum(_trainBinomialEnum, new int[]{0,1,2,3,4,5,6,34}); // convert enum columns
     _trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
