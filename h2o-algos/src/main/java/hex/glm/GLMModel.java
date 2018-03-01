@@ -1117,6 +1117,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     return preds;
   }
+  @Override protected boolean needsPostProcess() { return false; /* pred[0] is already set by score0 */ }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
