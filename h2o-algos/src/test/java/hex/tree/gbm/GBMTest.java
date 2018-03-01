@@ -2732,7 +2732,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testDeviances() {
     for (DistributionFamily dist : DistributionFamily.values()) {
-      if (dist == modified_huber || dist == quasibinomial) continue;
+      if (dist == modified_huber || dist == quasibinomial || dist == ordinal) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
