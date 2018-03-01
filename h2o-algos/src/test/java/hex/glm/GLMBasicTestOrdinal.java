@@ -19,16 +19,20 @@ import static org.junit.Assert.assertEquals;
 // 2. for Binomial, compare ordinal result with the one for binomial
 // 3. make sure h2o predict, mojo and pojo predict all agrees
 public class GLMBasicTestOrdinal extends TestUtil {
-  static Frame _trainBinomialEnum;  // response is 34
-  static Frame _trainBinomial;      // response is 34
-  static Frame _trainMultinomialEnum; // 0, 1 enum, response is 25
-  static Frame _trainMultinomial; // response 25
+  Frame _trainBinomialEnum;  // response is 34
+  Frame _trainBinomial;      // response is 34
+  Frame _trainMultinomialEnum; // 0, 1 enum, response is 25
+  Frame _trainMultinomial; // response 25
   static double _tol = 1e-10;   // threshold for comparison
   Random rand = new Random();
 
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
+  }
+
+  @Before
+  public void setupFiles() {
     _trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
     convert2Enum(_trainBinomialEnum, new int[]{0,1,2,3,4,5,6,34}); // convert enum columns
     _trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
@@ -39,14 +43,14 @@ public class GLMBasicTestOrdinal extends TestUtil {
     convert2Enum(_trainMultinomial, new int[] {25});
   }
 
-  public static void convert2Enum(Frame f, int[] indices) {
+  public void convert2Enum(Frame f, int[] indices) {
     for (int index=0; index < indices.length; index++) {
       f.replace(indices[index],f.vec(indices[index]).toCategoricalVec()).remove();
     }
   }
 
-  @AfterClass
-  public static void cleanUp() {
+  @After
+  public void cleanUp() {
     if (_trainBinomialEnum != null)
       _trainBinomialEnum.delete();
     if (_trainBinomial != null)
