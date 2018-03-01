@@ -633,7 +633,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null && (_parms._family != Family.multinomial || _parms._family != Family.ordinal)) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
+          if(_state._u == null && (_parms._family != Family.multinomial)) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
             (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
@@ -815,7 +815,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (l1pen > 0 || _state.activeBC().hasBounds()) {
         double[] nullBeta = MemoryManager.malloc8d(beta.length); // compute ginfo at null beta to get estimate for rho
         if (_dinfo._intercept) {
-          if (_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
+          if (_parms._family == Family.multinomial) {
             for (int c = 0; c < _nclass; c++)
               nullBeta[(c + 1) * (P + 1) - 1] = glmw.link(_state._ymu[c]);
           } else
@@ -1172,10 +1172,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double [] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
         double sumExp = 0;
-        int P = _dinfo.fullN();
-        int N = _dinfo.fullN()+1;
-        for(int i = 1; i < _nclass; ++i)
-          sumExp += Math.exp(nb[i*N + P] - maxRow);
+        if (_parms._family == Family.multinomial) {
+          int P = _dinfo.fullN();
+          int N = _dinfo.fullN() + 1;
+          for (int i = 1; i < _nclass; ++i)
+            sumExp += Math.exp(nb[i * N + P] - maxRow);
+        }
         Vec [] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow});
         if(_parms._lambda_search && _parms._is_cv_model) {
           Scope.untrack(vecs[0]._key, vecs[1]._key);
