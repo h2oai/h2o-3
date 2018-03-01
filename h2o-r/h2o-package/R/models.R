@@ -638,7 +638,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL)
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
   name <- "H2ORegressionMetrics"
   if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
-  else if (distribution == "ordinal") name <- "H2OOrdinalMetrics"
+  else if (!is.null(distribution) && distribution == "ordinal") name <- "H2OOrdinalMetrics"
   else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
   new(Class = name, metrics = metrics)
 }
