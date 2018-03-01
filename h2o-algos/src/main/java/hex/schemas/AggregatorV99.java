@@ -22,7 +22,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 //            "radius_scale",
             "transform",
             "categorical_encoding",
-            "save_mapping_frame"
+            "save_mapping_frame",
+            "num_iteration_without_new_exemplar",
 //            "pca_method",
 //            "k",
 //            "max_iterations",
@@ -59,5 +60,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 
     @API(help = "Whether to export the mapping of the aggregated frame", direction = API.Direction.INOUT, level= API.Level.expert)
     public boolean save_mapping_frame;
+
+    @API(help = "The number of iterations to run before aggregator exits if the number of exemplars collected donot change", direction = API.Direction.INOUT, level= API.Level.expert)
+    public int num_iteration_without_new_exemplar;
   }
 }

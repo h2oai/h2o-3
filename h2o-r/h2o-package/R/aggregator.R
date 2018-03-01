@@ -16,6 +16,22 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param save_mapping_frame \code{Logical}. Whether to export the mapping of the aggregated frame Defaults to FALSE.
+#' @param num_iteration_without_new_exemplar The number of iterations to run before aggregator exits if the number of exemplars collected donot change
+#'        Defaults to 500.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' df <- h2o.createFrame(rows=100, cols=5, categorical_fraction=0.6, integer_fraction=0,
+#' binary_fraction=0, real_range=100, integer_range=100, missing_fraction=0)
+#' target_num_exemplars=1000
+#' rel_tol_num_exemplars=0.5
+#' encoding="Eigen"
+#' agg <- h2o.aggregator(training_frame=df,
+#' target_num_exemplars=target_num_exemplars,
+#' rel_tol_num_exemplars=rel_tol_num_exemplars,
+#' categorical_encoding=encoding)
+#' }
 #' @export
 h2o.aggregator <- function(training_frame, x,
                            model_id = NULL,
@@ -24,7 +40,8 @@ h2o.aggregator <- function(training_frame, x,
                            rel_tol_num_exemplars = 0.5,
                            transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                           save_mapping_frame = FALSE
+                           save_mapping_frame = FALSE,
+                           num_iteration_without_new_exemplar = 500
                            ) 
 {
 
@@ -55,6 +72,8 @@ h2o.aggregator <- function(training_frame, x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(save_mapping_frame))
     parms$save_mapping_frame <- save_mapping_frame
+  if (!missing(num_iteration_without_new_exemplar))
+    parms$num_iteration_without_new_exemplar <- num_iteration_without_new_exemplar
 
   m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
   m@model$aggregated_frame_id <- m@model$output_frame$name
