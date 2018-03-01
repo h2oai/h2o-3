@@ -56,6 +56,7 @@ try {
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
                             <li><strong>PyPI Upload:</strong> ${params.UPLOAD_PYPI}</li>
                             <li><strong>Conda Upload:</strong> ${params.UPLOAD_CONDA}</li>
+                            <li><strong>Update Latest Links</strong> ${params.UPDATE_LATEST}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -234,16 +235,28 @@ try {
                                 echo "<head>" > \${tmpdir}/latest.html
                                 echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
                                 echo "</head>" >> \${tmpdir}/latest.html
-
-                                s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
-                                s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
                             """
-                            if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
+                        throw e
+                    }
+                }
+                def UPDATE_LATEST_STAGE_NAME = 'Update Latest Links'
+                if ((params.UPDATE_LATEST)) {
+                    stage(UPDATE_LATEST_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 2, 'HOURS') {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
-
                                     tmpdir=./buildh2odev.tmp
+
+                                    s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
 
                                     LINKS="latest_stable:index.html
 latest_stable_doc:docs-website/h2o-docs/index.html
@@ -265,7 +278,7 @@ latest_stable_javadoc_scala_2_10:docs-website/h2o-scala_2.10/scaladoc/index.html
 latest_stable_javadoc_scala_2_11:docs-website/h2o-scala_2.11/scaladoc/index.html
 latest_stable_restdoc_route_reference:docs-website/h2o-docs/index.html#route-reference
 latest_stable_restdoc_schema_reference:docs-website/h2o-docs/index.html#schema-reference"
-                                    
+                                
                                     # Output stable link
                                     echo "https://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip" > \${tmpdir}/latest_stable
                                     
@@ -286,11 +299,11 @@ EOF
                                     done
                                 """
                             }
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_LATEST_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_LATEST_STAGE_NAME)
+                            throw e
                         }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, PUBLISH_STAGE_NAME)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
-                        throw e
                     }
                 }
 
@@ -462,11 +475,23 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
+            booleanParam(defaultValue: true, description: 'If set, update latest links', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build Conda package. Also if building rel- branch, publish to Conda', name: 'UPLOAD_CONDA')
         ])
     ]
+    if (env.BRANCH_NAME == 'master') {
+        // in case of master branch enable the periodical builds and buildDiscarder
+        jobProperties += pipelineTriggers(
+            [cron('30 23 * * *')]
+        )
+        jobProperties += buildDiscarder(
+            logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')
+        )
+
+    }
+    properties(jobProperties)
 
     if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
@@ -476,22 +501,15 @@ private setReleaseJobProperties(final pipelineContext) {
     echo "Release will be pushed to ${env.S3_ROOT}"
 
     if (env.BRANCH_NAME == 'master') {
-        // in case of master branch enable the periodical builds and buildDiscarder
+        // we are building nightly build
         env.NIGHTLY_BUILD = true
-        jobProperties += pipelineTriggers(
-                [cron('30 23 * * *')]
-        )
-        jobProperties += buildDiscarder(
-                logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25')
-        )
-
     } else if (params.TEST_RELEASE || isReleaseBranch) {
         // in case of release branch and enabled upload to Maven, we have to set DO_RELEASE
         if (params.UPLOAD_NEXUS) {
             env.DO_RELEASE = true
         }
     }
-    properties(jobProperties)
+    sh 'env'
 }
 
 private printReleaseConfiguration(final pipelineContext) {
