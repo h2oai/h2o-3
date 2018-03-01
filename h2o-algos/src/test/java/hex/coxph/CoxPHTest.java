@@ -56,6 +56,31 @@ public class CoxPHTest extends TestUtil {
   }
 
   @Test
+  public void testCoxPHEfron1VarScoring() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
+
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train           = fr._key;
+      parms._start_column    = "start";
+      parms._stop_column     = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+
+      CoxPH builder = new CoxPH(parms);
+      CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());
+
+      assertNotNull(model);
+      Frame linearPredictors = Scope.track(model.score(fr));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testCoxPHBreslow1Var()  {
     CoxPHModel model = null;
     Frame fr = null;
