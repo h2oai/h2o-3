@@ -285,6 +285,8 @@ To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log
 
   L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
 
+**Note**: Be careful when using ordinal regression. H2O's GLM uses a likelihood function to adjust the system parameters. However, during prediction, we look at the log CDF odds. As a result, there is a small disconnect between the two. Please also consider using recommendation methods as well. 
+
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
