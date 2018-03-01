@@ -12,6 +12,7 @@ import water.util.VecUtils;
 
 import java.util.*;
 
+import static water.H2O.registerResourceRoot;
 import static water.H2O.technote;
 
 public class XGBoostUtils {
@@ -112,15 +113,21 @@ public class XGBoostUtils {
                 Log.info("Treating matrix as dense.");
 
                 int cols = di.fullN();
-                float[][] data = new float[1][];
+                float[][] data = new float[getDataRows(chunks, vec, cols)][];
                 data[0] = new float[1 << 20];
-                int actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
-                data[data.length - 1] = Arrays.copyOf(data[data.length - 1], actualRows * cols % Integer.MAX_VALUE);
+                long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
+                int lastRowSize = (int)(actualRows * cols % ARRAY_MAX);
+                if(data[data.length - 1].length > lastRowSize) {
+                    data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
+                }
                 trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
                 assert trainMat.rowNum() == actualRows;
             }
         } catch (NegativeArraySizeException e) {
-            throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+            throw new IllegalArgumentException(
+                    technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."),
+                    e
+            );
         }
 
         int len = (int) trainMat.rowNum();
@@ -132,6 +139,23 @@ public class XGBoostUtils {
         }
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
         return trainMat;
+    }
+
+    // FIXME this and the other method should subtract rows where response is 0
+    private static int getDataRows(Chunk[] chunks, int cols) {
+        double totalRows = 0;
+        for(Chunk ch : chunks) {
+            totalRows += ch.len();
+        }
+        return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
+    }
+
+    private static int getDataRows(int[] chunks, Vec vec, int cols) {
+        double totalRows = 0;
+        for(int ch : chunks) {
+            totalRows += vec.chunkLen(ch);
+        }
+        return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
     }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
@@ -275,12 +299,15 @@ public class XGBoostUtils {
         Log.info("Treating matrix as dense.");
 
         // extract predictors
-        float[][] data = new float[1][];
-        data[0] = new float[1 << 20];
         int cols = di.fullN();
+        float[][] data = new float[getDataRows(chunks, cols)][];
+        data[0] = new float[1 << 20];
 
-        int actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], actualRows * cols % Integer.MAX_VALUE);
+        long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
+        int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
+        if(data[data.length - 1].length > lastRowSize) {
+            data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
+        }
         trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
@@ -288,14 +315,14 @@ public class XGBoostUtils {
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
 
-    private static int denseChunk(float[][] data,
+    private static long denseChunk(float[][] data,
                                   int[] chunks, Frame f, // for MR task
                                   Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
                                   DataInfo di, int cols,
                                   float[] resp, float[] weights, Vec.Reader respVec) {
         int currentRow = 0;
         int currentCol = 0;
-        int actualRows = 0;
+        long actualRows = 0;
         int rwRow = 0;
         for (Integer chunk : chunks) {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
@@ -314,13 +341,23 @@ public class XGBoostUtils {
                     // Relative position, not absolute
                     pos -= di._catOffsets[j];
 
-                    if (currentCol + pos < data[currentRow].length) {
+                    // currentCol + pos might overflow int and the size of current row
+                    if (currentCol + pos < data[currentRow].length && currentCol + pos >= 0) {
                         data[currentRow][currentCol + pos] = 1;
                     }
-                    if (currentCol + offset >= data[currentRow].length) { // did we advance to next row?
+                    if (currentCol + offset >= data[currentRow].length || currentCol + offset < 0) { // did we advance to next row?
                         pos = currentCol + pos - data[currentRow].length;
                         offset = currentCol + offset - data[currentRow].length;
                         currentRow++;
+
+                        if(currentRow > ARRAY_MAX) {
+                            throw new IllegalStateException(
+                                    "Data too big to be used in XGBoost. Currently we can handle only up to "  +
+                                            ((double)ARRAY_MAX * (double)ARRAY_MAX) +
+                                            " entries (after encodings etc.)."
+                            );
+                        }
+
                         currentCol = 0;
                         if (pos >= 0) { // was not written in previous row, need to write here
                             data[currentRow][currentCol + pos] = 1;
@@ -348,15 +385,14 @@ public class XGBoostUtils {
         return actualRows;
     }
 
-    private static int denseChunk(float[][] data, Chunk[] chunks, int weight, int respIdx, DataInfo di, int cols, float[] resp, float[] weights) {
+    private static long denseChunk(float[][] data, Chunk[] chunks, int weight, int respIdx, DataInfo di, int cols, float[] resp, float[] weights) {
         int currentRow = 0;
         int currentCol = 0;
-        int actualRows = 0;
+        long actualRows = 0;
         int rwRow = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-
             // Enlarge the table if necessary
             enlargeFloatTable(data, cols, currentRow, currentCol);
 
@@ -434,7 +470,7 @@ public class XGBoostUtils {
 
         long[][] rowHeaders = new long[1][nRows + 1];
         int initial_size = 1 << 20;
-        float[][] data = new float[1][initial_size];
+        float[][] data = new float[getDataRows(chunks, di.fullN())][initial_size];
         int[][] colIndex = new int[1][initial_size];
 
         // extract predictors
@@ -632,7 +668,7 @@ public class XGBoostUtils {
         int currentCol = 0;
         int nz = 0;
         long[][] colHeaders = new long[1][nCols + 1];
-        float[][] data = new float[1][nzCount];
+        float[][] data = new float[getDataRows(chunks, di.fullN())][nzCount];
         int[][] rowIndex = new int[1][nzCount];
         int rwRow = 0;
         // fill data for DMatrix
@@ -712,7 +748,7 @@ public class XGBoostUtils {
     }
 
     private static void enlargeFloatTable(float[][] data, int cols, int currentRow, int currentCol) {
-        while (data[currentRow].length < currentCol + cols) {
+        while (data[currentRow].length < (long)currentCol + cols) {
             if(data[currentRow].length == ARRAY_MAX) {
                 currentCol = 0;
                 cols -= (data[currentRow].length - currentCol);
