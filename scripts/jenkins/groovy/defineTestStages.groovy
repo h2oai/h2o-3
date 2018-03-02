@@ -317,7 +317,7 @@ private void invokeStage(final pipelineContext, final body) {
                 echo "###### Unstash scripts. ######"
                 pipelineContext.getUtils().unstashScripts(this)
 
-                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY)
+                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
                 if (healthCheckPassed) {
                   pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 

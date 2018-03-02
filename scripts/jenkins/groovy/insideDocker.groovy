@@ -1,4 +1,4 @@
-def call(customEnv, image, registry, timeoutValue, timeoutUnit, customArgs='', block) {
+def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='', block) {
 
   def AWS_CREDENTIALS_ID = 'AWS S3 Credentials'
   def DEFAULT_DNS = '172.16.0.200'
@@ -7,9 +7,28 @@ def call(customEnv, image, registry, timeoutValue, timeoutUnit, customArgs='', b
     customArgs = ''
   }
 
-  withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+  // by default, the image should be loaded
+  def pullImage = true
+  // First check that the image is present
+  def imagePresent = sh(script: "docker inspect ${image}", returnStatus: true) == 0
+  if (imagePresent) {
+    echo "${image} present on host, checking versions..."
+    // check that the image has expected SHA
+    def expectedVersion = buildConfig.getExpectedImageVersion(image)
+    def currentVersion = sh(script: "docker inspect --format=\'{{index .RepoDigests 0}}\' ${image}", returnStdout: true).trim()
+    echo "current image version: ${currentVersion}"
+    echo "expected image version: ${expectedVersion}"
+    pullImage = currentVersion != expectedVersion
+  }
+
+  if (pullImage) {
+    echo "######### Pulling ${image} #########"
+    withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
       sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
       sh "docker pull ${image}"
+    }
+  } else {
+    echo "######### Current version of ${image} already loaded #########"
   }
 
   withEnv(customEnv) {
