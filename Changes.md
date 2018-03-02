@@ -2,6 +2,57 @@
 
 ## H2O
 
+### Wolpert (3.18.0.3) - 3/2/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5102'>PUBDEV-5102</a>] - In Flow, the metalearner_fold_column option now correctly displays a drop-down of column names.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5282'>PUBDEV-5282</a>] -  Fixed an issue that caused data import and building models fail when using Flow in IE 11.1944 on Windows 10 Enterprise.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5323'>PUBDEV-5323</a>] - Stacked Ensemble no longer fails when using a grid or list of GLMs as the base models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5330'>PUBDEV-5330</a>] - Fixed an issue that caused an error when during Parquet data ingest.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5335'>PUBDEV-5335</a>] - In Random Forest, added back the distribution and offset_column options for backward compatibility. Note that these options are deprecated and will be ignored if used. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5339'>PUBDEV-5339</a>] - MOJO export to a file now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5343'>PUBDEV-5343</a>] - Fixed an NPE that occurred when checking if a request is Xhr.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5008'>PUBDEV-5008</a>] - Added support for ordinal regression in GLM. This is specified using the `family` option.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5274'>PUBDEV-5274</a>] - Added the exclude_algos option to AutoML in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5308'>PUBDEV-5308</a>] - Added a Leave-One-Out Target Encoding option to the R API. This can help improve supervised learning results when there are categorical predictors with high cardinality. Note that a similar function for Python will be available at a later date.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5324'>PUBDEV-5324</a>] - POJO now logs error messages for all incorrect data types and includes default values rather than NULL when a data type is unexpected.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5344'>PUBDEV-5344</a>] - Moved AutoML to the top of the Model menu in Flow.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5306'>PUBDEV-5306</a>] - In the GLM chapter, added Ordinal to the list of `family` options. Also added Ologit, Oprobit, and Ologlog to the list of `link` options, which can be used with the Ordinal family.
+</li>
+</ul>
+
+
 ### Wolpert (3.18.0.2) - 2/20/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/index.html</a>
@@ -28,7 +79,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/2/inde
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5313'>PUBDEV-5313</a>] - In the User Guide, the default value for categorical_encoding in XGBoost is now AUTO rather than label_encoder.
 </li>
 </ul>
-
 
 ### Wolpert (3.18.0.1) - 2/12/2018
 
