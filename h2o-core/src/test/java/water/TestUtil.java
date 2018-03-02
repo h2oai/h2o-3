@@ -753,7 +753,7 @@ public class TestUtil extends Iced {
     public GenFrameAssertion(String file, int[] dim) {
       super(file, dim);
     }
-    File generatedFile;
+    protected File generatedFile;
 
     protected abstract File prepareFile() throws IOException;
 
