@@ -47,6 +47,41 @@ class BuildConfig {
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
+  private static final Map EXPECTED_IMAGE_VERSIONS= [
+          (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:3f557ddfb44cb9e3b12bab4834bab7428db069d7f1f445db9782135ffbf15f72',
+          (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:411fd6beb53fa41eec93b6ae34313252e9bbd39556fe74518377b4a4b73c744c',
+
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:2211ae1b90244ef96ac68155c4ab6c629bad706513e9c2422a70c67e75187c50',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:d6f900f1f80c6cf71d599d5151daa902f78b6a4641bd4903367d7b1ead019c46',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:fad370582e14e171885a179ba9cd6faf17519bf5d2e893cc708c407e64a05d9b',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:b3af5d980e925bf265e3ef3c8a23704bf964f1a22c995e76d01f5757b243283d',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:4601e2187cae939a3d56de70249f96d7cfccc627f5fca243858ac2a261db1872',
+
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:40656e9403db5e157e4ee30ea3a3ea33165a8508516a8f7fc23f852c2a355e3e',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:b7e9c1a195406565c839e7fafaae983d57ab07b7a75a05ab1dfefaf94977aa15',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:84faffd2ba8b3733587d9baf3c47ca133790f274a00b6d20cf8a8a5c29550e57',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:e382b7beda9b4eb9b8196579027f27deed8807a74013317e87e524f89f5c62bc',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:9e42db65931d0bea6478af4604bd4dfc10c19025ea88c20e480e85f46567778b',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:6819d8d0d921119d2fb53aa13e5d5af3f98a6e152a3083961742a9c316824571',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:dcff3d0b53acbd6bf46ac18ab339e00a6f42501e894134c48d9a61fbb355e331',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:0359acf4d960bba6475bfe7bfe4688626ced72f2354ab4419547f397b273c0e4',
+
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:eb6ebbaf58b03e203bc4d72752180d88a5bf8518a257a0bac19faabd467672e3',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:7e737e2209e07f047044a43efe6411a6e9a6dcd82b95654b7adaf04b03a474bc',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:91b3ae089e1e94a16c4b5c8c2301b0543707c68a800d1ca23c44ce6e6aeb5913',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu16': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:5891959c7ea4117f84e228ce66555d429baafca2d232da3983236ee2bf850027',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:ubuntu16': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:3ebf20991090305b8ead053dd0d183de88a653ab8800cd79f42518da2e6924b9',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:ubuntu16': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:5f900fd4e4d672e0b9f6c3f0070d010b27b015b7b0639f9663ecd58e16e11370',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.5': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:92711e47df350c0e40f8d47194e315f9391af7ea704458bbe7fe24ac99755732',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:centos6.5': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:f7902184b1c4ce03df5a3d4e3aecd39574716305ee2c93364f9e0c79608fe0ed',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.8': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:8bc6a1b4f7a22b510e5898d74f38aa0ee9de635935828b0312336598ec0a8fb9',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:centos6.8': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:b3551202fa65f7074d3b93390f6a591bf79ff77f576082c7495bf5c4b270071d',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos6.9': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:6347fa1b45c389af67f52012a27711b430f52210db7e482afdc1f42b7b09d08e',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:9ddd8c3b81715d6548bf07f2002f2e9ae1eb7456b586ea3849c37efcfa145869',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:centos7.3': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:5e10fd12834613852c66d719828e917f45fb191341816b19243197aec8cd12fc',
+          'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos7.4': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:b53f7a8ca0247ea92723ba1cc343e9b474702bf345f8afebf48c8a7d6d6185b3',
+  ]
+
   private String mode
   private String nodeLabel
   private String commitMessage
@@ -195,6 +230,14 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("xgbEnv.targetName ${xgbEnv.targetName} not supported")
     }
+  }
+
+  String getExpectedImageVersion(final String image) {
+    final def version = EXPECTED_IMAGE_VERSIONS[image]
+    if (version == null) {
+      throw new IllegalArgumentException(String.format('Cannot find expected image version for %s', image))
+    }
+    return version
   }
 
   private void detectChanges(List<String> changes) {
