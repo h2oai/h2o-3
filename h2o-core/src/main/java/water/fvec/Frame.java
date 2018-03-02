@@ -471,9 +471,8 @@ public class Frame extends Lockable<Frame> {
   public String[][] domains() {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
-    for( int i=0; i<vecs.length; i++ ) {
-        ds[i] = vecs[i].domain();
-    }
+    for(int i=0; i<vecs.length; i++)
+      ds[i] = vecs[i].domain();
     return ds;
   }
 
