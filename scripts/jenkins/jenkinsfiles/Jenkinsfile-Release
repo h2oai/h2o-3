@@ -1,4 +1,4 @@
-def NODE_LABEL = 'master'
+def NODE_LABEL = 'mr-0xc6'
 
 def pipelineContext = null
 def result = 'FAILURE'
@@ -146,38 +146,38 @@ try {
                 env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
                 env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
 
-                if (!params.TEST_RELEASE) {
-                    final String TAG_STAGE_NAME = 'Create Git Tag'
-                    stage(TAG_STAGE_NAME) {
-                        try {
-                            pipelineContext.getBuildSummary().addStageSummary(this, TAG_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                            pipelineContext.getBuildSummary().setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}
-                                git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
-                            """
-                            if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
-                                sh """
-                                    cd ${env.BUILD_NUMBER_DIR}
-    
-                                    echo "Process release tags"
-                                    git tag -d jenkins-rel-latest-stable
-                                    git push origin :refs/tags/jenkins-rel-latest-stable
-                                    git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
-                                    git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
-                                """
-                            }
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}
-                                git push --tags
-                            """
-                            pipelineContext.getBuildSummary().markStageSuccessful(this, TAG_STAGE_NAME)
-                        } catch (Exception e) {
-                            pipelineContext.getBuildSummary().markStageFailed(this, TAG_STAGE_NAME)
-                            throw e
-                        }
-                    }
-                }
+//                if (!params.TEST_RELEASE) {
+//                    final String TAG_STAGE_NAME = 'Create Git Tag'
+//                    stage(TAG_STAGE_NAME) {
+//                        try {
+//                            pipelineContext.getBuildSummary().addStageSummary(this, TAG_STAGE_NAME, env.BUILD_NUMBER_DIR)
+//                            pipelineContext.getBuildSummary().setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+//                            sh """
+//                                cd ${env.BUILD_NUMBER_DIR}
+//                                git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+//                            """
+//                            if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
+//                                sh """
+//                                    cd ${env.BUILD_NUMBER_DIR}
+//
+//                                    echo "Process release tags"
+//                                    git tag -d jenkins-rel-latest-stable
+//                                    git push origin :refs/tags/jenkins-rel-latest-stable
+//                                    git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+//                                    git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+//                                """
+//                            }
+//                            sh """
+//                                cd ${env.BUILD_NUMBER_DIR}
+//                                git push --tags
+//                            """
+//                            pipelineContext.getBuildSummary().markStageSuccessful(this, TAG_STAGE_NAME)
+//                        } catch (Exception e) {
+//                            pipelineContext.getBuildSummary().markStageFailed(this, TAG_STAGE_NAME)
+//                            throw e
+//                        }
+//                    }
+//                }
 
                 def PUBLISH_STAGE_NAME = 'Publish to S3'
                 stage(PUBLISH_STAGE_NAME) {
