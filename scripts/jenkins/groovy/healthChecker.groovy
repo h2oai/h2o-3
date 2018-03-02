@@ -12,7 +12,7 @@ class HealthChecker {
 
     private List<HealthProblem> healthProblems = []
 
-    boolean checkHealth(final context, final String node, final String dockerImage, final String dockerRegistry) {
+    boolean checkHealth(final context, final String node, final String dockerImage, final String dockerRegistry, final buildConfig) {
         boolean healthy = true
         String cause = ''
         final String checkRootSpaceCmd = createSpaceCheckCmd(ROOT_THRESHOLD, '/')
@@ -31,7 +31,7 @@ class HealthChecker {
 
         def insideDocker = context.load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
         try {
-            insideDocker([], dockerImage, dockerRegistry, 90, 'SECONDS') {
+            insideDocker([], dockerImage, dockerRegistry, buildConfig, 90, 'SECONDS') {
                 context.echo 'Docker health check passed'
             }
         } catch (Exception e) {

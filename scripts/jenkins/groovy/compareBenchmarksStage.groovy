@@ -57,7 +57,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
 
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
 
-    insideDocker(pipelineContext.getBuildConfig().getBuildEnv(), stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, 5, 'MINUTES') {
+    insideDocker(pipelineContext.getBuildConfig().getBuildEnv(), stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 5, 'MINUTES') {
         String csvFilePath = "${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getCSVPath()}"
         def csvData = parseCsvFile(csvFilePath)
 
