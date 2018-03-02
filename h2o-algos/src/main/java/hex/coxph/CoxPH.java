@@ -397,13 +397,20 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
+        Timer iterTimer = null;
         for (int i = 0; i <= model._parms._iter_max; ++i) {
+          iterTimer = new Timer();
           model._output._iter = i;
 
+          Timer aggregTimer = new Timer();
           final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+          Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
+          Timer loglikTimer = new Timer();
           final double newLoglik = calcLoglik(model, coxMR);
+          Log.info("LogLik: iter=" + i + ", " + loglikTimer.toString());
+
           if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
@@ -437,7 +444,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             newCoef[j] = oldCoef[j] - step[j];
 
           _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
+          if (i != model._parms._iter_max)
+            Log.info("CoxPH Iteration: iter=" + i + ", " + iterTimer.toString());
         }
+
+        if (iterTimer != null)
+          Log.info("CoxPH Last Iteration: " + iterTimer.toString());
 
         model.update(_job);
       } finally {
@@ -662,5 +674,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       super(message);
     }
   }
+
+
 
 }
