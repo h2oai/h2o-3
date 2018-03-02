@@ -80,6 +80,8 @@ def gen_module(schema, algo, module):
             phelp += " Must be one of: %s." % ", ".join('"%s"' % p for p in param["values"])
         if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
             phelp=phelp.replace(' "quasibinomial",',"")
+        if (param["name"]==u'distribution') and not(algo==u'glm'):    # ordinal only in glm
+            phelp=phelp.replace(' "ordinal",',"")
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
@@ -125,8 +127,12 @@ def gen_module(schema, algo, module):
             if param["name"] == "eps_prob":
                 list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
-        if (param["name"]==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
-            temp = normalize_value(param).replace(' "quasibinomial",',"")
+        if (param["name"]==u'distribution'):
+            temp = normalize_value(param)
+            if not(algo==u'glm') and not(algo==u'gbm'):    # quasibinomial only in glm, gbm
+                temp = temp.replace(' "quasibinomial",',"")
+            if not(algo==u'glm'):
+                temp = temp.replace(' "ordinal",',"")
             list.append(indent("%s = %s" % (param["name"], temp), 17 + len(module)))
         else:
             if param["name"] != "metalearner_params":
