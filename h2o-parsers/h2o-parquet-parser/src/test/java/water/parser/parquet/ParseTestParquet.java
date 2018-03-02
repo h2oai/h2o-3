@@ -20,9 +20,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import water.H2OConstants;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.NewChunk;
@@ -30,6 +28,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.IcedInt;
 
 import java.io.File;
 import java.io.IOException;
@@ -222,7 +221,6 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseStringOverflow() throws IllegalAccessException, NoSuchFieldException {
-    H2OConstants.MAX_STR_LEN = 6;
     FrameAssertion assertion = new GenFrameAssertion("large.parquet", TestUtil.ari(1, 1)) {
       @Override
       protected File prepareFile() throws IOException {
@@ -250,7 +248,13 @@ public class ParseTestParquet extends TestUtil {
       }
     };
 
-    assertFrameAssertion(assertion);
+    Key<?> cfgKey = Key.make(ChunkConverter.class.getCanonicalName() + "_maxStringSize");
+    try {
+      DKV.put(cfgKey, new IcedInt(6));
+      assertFrameAssertion(assertion);
+    } finally {
+      DKV.remove(cfgKey);
+    }
   }
 
   @Test

@@ -14,5 +14,5 @@ public class H2OConstants {
    * Maximum size of an array, minus one more byte reserved a trailing zero.
    * Non-final for testing purpose.
    */
-  public static int MAX_STR_LEN = MAX_ARRAY_SIZE - 1;
+  public static final int MAX_STR_LEN = MAX_ARRAY_SIZE - 1;
 }
