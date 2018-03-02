@@ -40,11 +40,11 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testCheckGradientBinomial() {
     Scope.enter();
     Frame trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
+    Scope.track(trainBinomialEnum);
     convert2Enum(trainBinomialEnum, new int[]{0,1,2,3,4,5,6,34}); // convert enum columns
     Frame trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
-    convert2Enum(trainBinomial, new int[]{34});
-    Scope.track(trainBinomialEnum);
     Scope.track(trainBinomial);
+    convert2Enum(trainBinomial, new int[]{34});
     checkGradientWithBinomial(trainBinomial, 34, "C35"); // only numerical columns
     checkGradientWithBinomial(trainBinomialEnum, 34, "C35"); // with enum and numerical columns
     Scope.exit();
@@ -56,8 +56,8 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testOrdinalPredMojoPojo() {
     Scope.enter();
     Frame trainMultinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv");
-    convert2Enum(trainMultinomial, new int[] {25});
     Scope.track(trainMultinomial);
+    convert2Enum(trainMultinomial, new int[] {25});
     GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
             GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
     paramsO._train = trainMultinomial._key;
@@ -85,14 +85,11 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testOrdinalMultinomial() {
     Scope.enter();
     Frame trainMultinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv");
+    Scope.track(trainMultinomial);
     convert2Enum(trainMultinomial, new int[] {25});
-    Scope.track(trainMultinomial);
     int iterNum = rand.nextInt(10)+2;   // number of iterations to test
-
-    Scope.track(trainMultinomial);
     GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
             GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-
     paramsO._train = trainMultinomial._key;
     paramsO._lambda_search = false;
     paramsO._response_column = "C26";
