@@ -9,9 +9,13 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
+import water.DKV;
+import water.Iced;
+import water.Key;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseWriter;
+import water.util.IcedInt;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -29,12 +33,14 @@ import static water.H2OConstants.MAX_STR_LEN;
  */
 class ChunkConverter extends GroupConverter {
 
+  private final int _maxStringSize;
   private final WriterDelegate _writer;
   private final Converter[] _converters;
 
   private int _currentRecordIdx = -1;
 
   ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, ParseWriter writer) {
+    _maxStringSize = getMaxStringSize();
     _writer = new WriterDelegate(writer, chunkSchema.length);
     int colIdx = 0;
     _converters = new Converter[chunkSchema.length];
@@ -43,6 +49,12 @@ class ChunkConverter extends GroupConverter {
       _converters[colIdx] = newConverter(colIdx, chunkSchema[colIdx], parquetField.asPrimitiveType());
       colIdx++;
     }
+  }
+
+  // For unit tests only: allows to set maximum string size in a test for all nodes
+  private int getMaxStringSize() {
+    Iced<?> maxSize = DKV.getGet(Key.make(ChunkConverter.class.getCanonicalName() + "_maxStringSize"));
+    return (maxSize instanceof IcedInt) ? ((IcedInt) maxSize)._val : MAX_STR_LEN;
   }
 
   @Override
@@ -77,7 +89,7 @@ class ChunkConverter extends GroupConverter {
           return new TimestampConverter(colIdx, _writer);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
-          return new StringConverter(_writer, colIdx, dictSupport);
+          return new StringConverter(_writer, colIdx, dictSupport, _maxStringSize);
         }
       case Vec.T_NUM:
         return new NumberConverter(colIdx, _writer);
@@ -87,35 +99,29 @@ class ChunkConverter extends GroupConverter {
   }
 
   private static class StringConverter extends PrimitiveConverter {
-    // Maximum array size (Integer.MAX_VALUE - 8) minus one place for a trailing zero
     private final BufferedString _bs = new BufferedString();
     private final int _colIdx;
     private final WriterDelegate _writer;
     private final boolean _dictionarySupport;
+    private final int _maxSize;
     private String[] _dict;
-    private long _writtenAmount;
-    private boolean _overflew;
+    private long _totalSize; // total size of ingested String values (in bytes)
+    private boolean _sizeLimitReached; // indicates whether the input was too big to fit in a single chunk, see PUBDEV-5330
 
-    StringConverter(WriterDelegate writer, int colIdx, boolean dictionarySupport) {
+    StringConverter(WriterDelegate writer, int colIdx, boolean dictionarySupport, int maxSize) {
       _colIdx = colIdx;
       _writer = writer;
       _dictionarySupport = dictionarySupport;
-      _writtenAmount = 0;
-      _overflew = false;
+      _maxSize = maxSize;
+      _totalSize = 0;
+      _sizeLimitReached = false;
     }
 
     @Override
     public void addBinary(Binary value) {
-      if(_overflew) return;
-      _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
-      _writtenAmount += _bs.length();
-      long lenDifference = _writtenAmount - MAX_STR_LEN;
-      if(lenDifference > 0){
-        _overflew = true;
-        Log.err("A String chunk value overflext maximum allowed size by ", lenDifference, " bytes. Stripping the string.\n");
+      if(_sizeLimitReached)
         return;
-      }
-      _writer.addStrCol(_colIdx, _bs);
+      writeStrCol(StringUtils.bytesOf(value.toStringUsingUTF8()));
     }
 
     @Override
@@ -133,9 +139,23 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addValueFromDictionary(int dictionaryId) {
-      _bs.set(StringUtils.bytesOf(_dict[dictionaryId]));
+      if(_sizeLimitReached)
+        return;
+      writeStrCol(StringUtils.bytesOf(_dict[dictionaryId]));
+    }
+
+    private void writeStrCol(byte[] data) {
+      _bs.set(data);
+      _totalSize += _bs.length();
+      long lenDifference = _totalSize - _maxSize;
+      if (lenDifference > 0) {
+        _sizeLimitReached = true;
+        Log.err("Total String size limit reached: skipping remaining value in column: " + _colIdx + "!");
+        return;
+      }
       _writer.addStrCol(_colIdx, _bs);
     }
+
   }
 
   private static class NumberConverter extends PrimitiveConverter {
