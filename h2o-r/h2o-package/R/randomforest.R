@@ -69,7 +69,7 @@
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
 #' @param checkpoint Model checkpoint to resume training with.
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 1e-05.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",

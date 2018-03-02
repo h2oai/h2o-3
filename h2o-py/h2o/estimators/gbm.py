@@ -697,7 +697,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def col_sample_rate_change_per_level(self):
         """
-        Relative change of the column sampling rate for every level (from 0.0 to 2.0)
+        Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
 
         Type: ``float``  (default: ``1``).
         """
