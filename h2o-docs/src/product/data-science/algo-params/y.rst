@@ -34,6 +34,7 @@ In GLM, you can specify one of the following family options based on the respons
 - ``poisson``: The data must be numeric and non-negative (Int).
 - ``gamma``: The data must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+- ``ordinal``: Requires a categorical response with at least 3 levels. (For 2-class problems use family="binomial".)
 
 **Notes**: 
 

@@ -4,12 +4,7 @@ Generalized Linear Model (GLM)
 Introduction
 ~~~~~~~~~~~~
 
-Generalized Linear Models (GLM) estimate regression models for outcomes
-following exponential distributions. In addition to the Gaussian (i.e.
-normal) distribution, these include Poisson, binomial, and gamma
-distributions. Each serves a different purpose, and depending on
-distribution and link function choice, can be used either for prediction
-or classification.
+Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
 The GLM suite includes:
 
@@ -18,6 +13,7 @@ The GLM suite includes:
 -  Binomial regression (classification)
 -  Multinomial classification
 -  Gamma regression
+-  Ordinal regression
 
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -39,11 +35,8 @@ Defining a GLM Model
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
 
-   -  For a regression model, this column must be numeric (**Real** or
-      **Int**).
-   -  For a classification model, this column must be categorical
-      (**Enum** or **String**). If the family is **Binomial**, the
-      dataset cannot contain more than two levels.
+   -  For a regression model, this column must be numeric (**Real** or **Int**).
+   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
@@ -51,22 +44,11 @@ Defining a GLM Model
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are
-   AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant
    training columns, since no information can be gained from them. This
@@ -87,10 +69,11 @@ Defining a GLM Model
    -  If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
    -  If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
    -  If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
+   -  If the family is **ordinal**, the data must be categorical with at least 3 levels.
+   -  If the family is **quasibinomial**, the data must be numeric.
    -  If the family is **poisson**, the data must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
-   -  If the family is **quasibinomial**, the data must be numeric.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -108,17 +91,17 @@ Defining a GLM Model
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
    
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
+-  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation).
 
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove\_collinear\_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove\_collinear\_columns flag is not enabled.
+-  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. 
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0).
 
--  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default.
+-  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default. 
 
 -  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values.
 
@@ -130,7 +113,7 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
@@ -139,6 +122,7 @@ Defining a GLM Model
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
+   -  If the family is **Ordinal**, then only **Ologit**, **Oprobit**, and **Ologlog** are supported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
@@ -155,6 +139,9 @@ Defining a GLM Model
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+
+-  **obj_reg**: Specifies the liklihood divider in objective value computation. This defaults to 1/nobs.
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,8 +198,9 @@ The ``family`` option specifies a probability distribution from an exponential f
 
 - ``gaussian``: The data must be numeric (Real or Int). This is the default family.
 - ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
-- ``quasibinomial``: The data must be numeric.
 - ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
+- ``ordinal``: Requires a categorical response with at least 3 levels. (For 2-class problems use family="binomial".)
+- ``quasibinomial``: The data must be numeric.
 - ``poisson``: The data must be numeric and non-negative (Int).
 - ``gamma``: The data must be numeric and continuous and positive (Real or Int).
 - ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
@@ -275,6 +263,29 @@ The corresponding deviance is equal to:
 .. math::
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
+
+Logistic Ordinal Regression (Ordinal Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
+
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^{(p)}`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative probability that :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
+
+.. math::
+
+  P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}
+
+Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the thresholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j \geq 0` for the lowest class label :math:`j`.
+
+We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
+
+To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. 
+
+.. math::
+
+  L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
+
+**Note**: Be careful when using ordinal regression. H2O's GLM uses a likelihood function to adjust the system parameters. However, during prediction, we look at the log CDF odds. As a result, there is a small disconnect between the two. Please also consider using recommendation methods as well. 
 
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -364,29 +375,31 @@ Links
 
 As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, and Tweedie.
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, and Ologlog.
 
 The following table describes the allowed Family/Link combinations.
 
-+----------------+-------------------------------------------------------------+
-| **Family**     | **Link Function**                                           |
-+----------------+----------------+----------+-------+-----+---------+---------+
-|                | Family_Default | Identity | Logit | Log | Inverse | Tweedie |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Binomial       | X              |          | X     |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Quasibinomial  | X              |          | X     |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Multinomial    | X              |          |       |     |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Gaussian       | X              | X        |       | X   | X       |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Poisson        | X              | X        |       | X   |         |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Gamma          | X              | X        |       | X   | X       |         |
-+----------------+----------------+----------+-------+-----+---------+---------+
-| Tweedie        | X              |          |       |     |         | X       |
-+----------------+----------------+----------+-------+-----+---------+---------+
++----------------+-------------------------------------------------------------+--------+---------+---------+
+| **Family**     | **Link Function**                                                                        |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+|                | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit | Oprobit | Ologlog |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Binomial       | X              |          | X     |     |         |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Quasibinomial  | X              |          | X     |     |         |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Multinomial    | X              |          |       |     |         |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Ordinal        | X              |          |       |     |         |         | X      | X       | X       |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gaussian       | X              | X        |       | X   | X       |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Poisson        | X              | X        |       | X   |         |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Gamma          | X              | X        |       | X   | X       |         |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
+| Tweedie        | X              |          |       |     |         | X       |        |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+--------+---------+---------+
 
 Regularization
 ~~~~~~~~~~~~~~

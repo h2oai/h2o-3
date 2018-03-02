@@ -32,7 +32,7 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
 
-\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Amy Wang}}
+\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Amy Wang \hspace{10pt} Wendy Wong}}
 
 \textsc{\small{Edited by: Angela Bartz}}
 \\
@@ -43,7 +43,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Sixth Edition
+\monthname \hspace{1pt}  \the\year: Seventh Edition
 
  
 \bigskip
@@ -68,7 +68,7 @@
 
 Generalized Linear Modeling with H2O\\
 
-by Tomas Nykodym, Tom Kraljevic, \&\ Amy Wang\\
+by Tomas Nykodym, Tom Kraljevic, Amy Wang \&\ Wendy Wong \\ 
 with assistance from Nadine Hussami \&\ Ariel Rao \\
 Edited by: Angela Bartz
 
@@ -361,8 +361,6 @@ $$  \max_{\beta,\beta_0} \  \frac{1}{N} \sum_{i=1}^{N} \left( \ y_i (x_i^{\top}\
 The corresponding deviance is equal to 
 $$D = -2\sum_{i=1}^{n} \left(y_i \log(\hat{y}_i) + (1 - y_i)\log(1-\hat{y}_i)  \right).$$
 
-
-
 Using the prostate dataset, this example builds a binomial model that classifies the incidence of penetration of the prostatic
 capsule (CAPSULE). Confirm the entries in the CAPSULE column are binary using the \texttt{h2o.table()}
 function. Change the regression by changing the family to binomial.
@@ -370,6 +368,33 @@ function. Change the regression by changing the family to binomial.
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.R}
 
+\waterExampleInPython
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.py}
+
+
+\subsubsection{Logistic Ordinal Regression (Ordinal Family)}
+
+A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
+
+Let $X_i\in\rm \Bbb I \!\Bbb R^{(p)}$, $y$ can belong to any of the $K$ classes. In logistic ordinal regression, we model the cumulative probability that $y$ belongs to class $j$, given $X_i$ as the logistic function:
+
+$$P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}$$
+
+Compared to multiclass logistic regression, all classes share the same $\beta$ vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will $X_i$ be predicted, we use the thresholds vector $\theta$. If there are $K$ different classes, then $\theta$ is a non-decreasing vector (that is, $\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})$ of size $K-1$. We then assign $X_i$ to the class $j$ if $\beta^{T}X_i + \theta_j \geq 0$ for the lowest class label $j$.
+
+We choose a logistic function to model the probability $P(y \leq j|X_i)$ but other choices are possible. 
+
+To determine the values of $\beta$ and $\theta$, we maximize the log-likelihood minus the same Regularization Penalty, as with the other families. 
+
+$$L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)$$
+
+\textbf{Note}: Be careful when using ordinal regression. H2O's GLM uses a likelihood function to adjust the system parameters. However, during prediction, we look at the log CDF odds. As a result, there is a small disconnect between the two. Please also consider using recommendation methods as well. 
+
+\waterExampleInR
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_ordinal_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_ordinal_example.py}
 
 \subsubsection{Multi-class classification (Multinomial Family)}
 Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the
@@ -1257,7 +1282,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{gradient\_epsilon}: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 \item \texttt{solver}: A character string specifying the solver used: either \texttt{IRLSM}, which supports more features, or \texttt{L\_BFGS}, which scales better for datasets with many columns. 
 \item \texttt{standardize}: A logical value that indicates whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to model training. 
-\item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian}, \texttt{binomial}, \texttt{gamma}, \texttt{multinomial}, \texttt{poisson}, \texttt{tweedie,} or \texttt{quasibinomial}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
+\item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian}, \texttt{binomial}, \texttt{gamma}, \texttt{ordinal}, \texttt{multinomial}, \texttt{poisson}, \texttt{tweedie,} or \texttt{quasibinomial}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
 \item \texttt{link}: The link function relates the linear predictor to the distribution function. The default is the canonical link for the specified family. The full list of supported links for each family: 
 	\begin{itemize}
 \item	{\textbf {logit}}: binomial, quasibinomial
@@ -1266,6 +1291,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item {\textbf{inverse}}: gaussian, gamma
 \item {\textbf{tweedie}}: tweedie
 \item {\textbf{multinomial}} (family\_default): multinomial 
+\item {\textbf{ordinal}}: ologit, oprobit, and ologlog
 	\end{itemize}
 \item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}.  Default is 0.
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}.  Default is 1.
@@ -1335,20 +1361,12 @@ We would like to acknowledge the following individuals for their contributions t
 
 \section{Authors}
 
-\textbf{Tomas Nykodym}
-
-Tomas is our resident Software Engineer. He received his Masters degree from the Czech Technical University. Tomas has worked at IBM-research and Agent-Technology Group. Tomas also created a sandbox with simulated user activity for safe execution of malware with advanced behavior extraction algorithms to extract behavior of malware injected into other processes. 
-
 \textbf{Tom Kraljevic}
 
 Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to the magic of engineering and customer happiness. Tom has an MS degree in Electrical Engineering from the University of Illinois (at Urbana-Champaign), and a BSE degree in Computer Engineering from the University of Michigan (at Ann Arbor).
 
-\textbf{Amy Wang}
+\textbf{Wendy Wong}
 
-Amy is the Sales Engineering Lead at H2O. She graduated from Hunter College in NYC with a Masters in Applied Mathematics and Statistics with a heavy concentration on numerical analysis and financial mathematics. Her interest in applicable math eventually lead her to big data and finding the appropriate mediums for data analysis.
-
-\textbf{Angela Bartz}
-
-Angela is the doc whisperer at H2O.ai. With extensive experience in technical communication, she brings our products to life by documenting the many features and functionality of H2O. Having worked for companies both large and small, she is an expert at understanding her audience and translating complex ideas to user-friendly content. 
+Wendy is a hacker at H2O, devising solutions to make systems smarter. She obtained her bachelors in electrical engineering from Purdue University and her Masters and Ph.D. in Electrical Engineering from Cornell. She loves machine learning, swarm intelligence, mathematics and wireless communication systems, and she enjoys being involved with all phases of the product development cycle. Her diverse interests and skills are reflected in her patents.
 
 \end{document}
