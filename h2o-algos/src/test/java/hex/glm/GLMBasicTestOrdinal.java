@@ -7,6 +7,7 @@ import water.MemoryManager;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
@@ -19,18 +20,13 @@ import static org.junit.Assert.assertEquals;
 // 2. for Binomial, compare ordinal result with the one for binomial
 // 3. make sure h2o predict, mojo and pojo predict all agrees
 public class GLMBasicTestOrdinal extends TestUtil {
-  Frame _trainBinomialEnum;  // response is 34
-  Frame _trainBinomial;      // response is 34
-  Frame _trainMultinomialEnum; // 0, 1 enum, response is 25
-  Frame _trainMultinomial; // response 25
-  static double _tol = 1e-10;   // threshold for comparison
-  Random rand = new Random();
+  private static final double _tol = 1e-10;   // threshold for comparison
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-  public void convert2Enum(Frame f, int[] indices) {
-    for (int index=0; index < indices.length; index++) {
-      f.replace(indices[index],f.vec(indices[index]).toCategoricalVec()).remove();
+  private void convert2Enum(Frame f, int[] cols) {
+    for (int col : cols) {
+      f.replace(col, f.vec(col).toCategoricalVec()).remove();
     }
   }
 
@@ -38,44 +34,50 @@ public class GLMBasicTestOrdinal extends TestUtil {
   // beginning of a run.
   @Test
   public void testCheckGradientBinomial() {
-    Scope.enter();
-    Frame trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
-    convert2Enum(trainBinomialEnum, new int[]{0,1,2,3,4,5,6,34}); // convert enum columns
-    Frame trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
-    convert2Enum(trainBinomial, new int[]{34});
-    Scope.track(trainBinomialEnum);
-    Scope.track(trainBinomial);
-    checkGradientWithBinomial(trainBinomial, 34, "C35"); // only numerical columns
-    checkGradientWithBinomial(trainBinomialEnum, 34, "C35"); // with enum and numerical columns
-    Scope.exit();
+    try {
+      Scope.enter();
+      Frame trainBinomialEnum = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_enum_small.csv");
+      convert2Enum(trainBinomialEnum, new int[]{0, 1, 2, 3, 4, 5, 6, 34}); // convert enum columns
+      Frame trainBinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_binomial_training_set_small.csv");
+      convert2Enum(trainBinomial, new int[]{34});
+      Scope.track(trainBinomialEnum);
+      Scope.track(trainBinomial);
+      checkGradientWithBinomial(trainBinomial, 34, "C35"); // only numerical columns
+      checkGradientWithBinomial(trainBinomialEnum, 34, "C35"); // with enum and numerical columns
+    } finally {
+      Scope.exit();
+    }
   }
 
   // test and make sure the h2opredict, pojo and mojo predict agrees with multinomial dataset that includes
   // both enum and numerical datasets
   @Test
   public void testOrdinalPredMojoPojo() {
-    Scope.enter();
-    Frame trainMultinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv");
-    convert2Enum(trainMultinomial, new int[] {25});
-    Scope.track(trainMultinomial);
-    GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
-            GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-    paramsO._train = trainMultinomial._key;
-    paramsO._lambda_search = false;
-    paramsO._response_column = "C26";
-    paramsO._lambda = new double[]{0};
-    paramsO._alpha = new double[]{0.001};  // l1pen
-    paramsO._objective_epsilon = 1e-6;
-    paramsO._beta_epsilon = 1e-4;
-    paramsO._standardize = false;
+    try {
+      Scope.enter();
+      Frame trainMultinomial = Scope.track(parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv"));
+      convert2Enum(trainMultinomial, new int[]{25});
 
-    GLMModel model = new GLM(paramsO).trainModel().get();
+      GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
+              GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      paramsO._train = trainMultinomial._key;
+      paramsO._lambda_search = false;
+      paramsO._response_column = "C26";
+      paramsO._lambda = new double[]{0};
+      paramsO._alpha = new double[]{0.001};  // l1pen
+      paramsO._objective_epsilon = 1e-6;
+      paramsO._beta_epsilon = 1e-4;
+      paramsO._standardize = false;
 
-    Scope.track_generic(model);
-    Frame pred = model.score(trainMultinomial);
-    Scope.track(pred);
-    Assert.assertTrue(model.testJavaScoring(trainMultinomial, pred, _tol));
-    Scope.exit();
+      GLMModel model = new GLM(paramsO).trainModel().get();
+      Scope.track_generic(model);
+
+      Frame pred = model.score(trainMultinomial);
+      Scope.track(pred);
+      Assert.assertTrue(model.testJavaScoring(trainMultinomial, pred, _tol));
+    } finally {
+      Scope.exit();
+    }
   }
 
   // test ordinal regression with few iterations to make sure our gradient calculation and update is correct
@@ -83,38 +85,41 @@ public class GLMBasicTestOrdinal extends TestUtil {
   // alternate calculation without the distributed framework.  The datasets contains only numerical columns.
   @Test
   public void testOrdinalMultinomial() {
-    Scope.enter();
-    Frame trainMultinomial = parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv");
-    convert2Enum(trainMultinomial, new int[] {25});
-    Scope.track(trainMultinomial);
-    int iterNum = rand.nextInt(10)+2;   // number of iterations to test
+    try {
+      Scope.enter();
+      Frame trainMultinomial = Scope.track(parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv"));
+      convert2Enum(trainMultinomial, new int[]{25});
 
-    Scope.track(trainMultinomial);
-    GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
-            GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      final int iterNum = new Random().nextInt(10) + 2;   // number of iterations to test
+      Log.info("testOrdinalMultinomial will use iterNum = " + iterNum);
 
-    paramsO._train = trainMultinomial._key;
-    paramsO._lambda_search = false;
-    paramsO._response_column = "C26";
-    paramsO._lambda = new double[]{1e-6};  // no regularization here
-    paramsO._alpha = new double[]{1e-5};  // l1pen
-    paramsO._objective_epsilon = 1e-6;
-    paramsO._beta_epsilon = 1e-4;
-    paramsO._max_iterations = iterNum;
-    paramsO._standardize = false;
-    paramsO._seed = 987654321;
-    paramsO._obj_reg = 1e-7;
+      GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
+              GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      paramsO._train = trainMultinomial._key;
+      paramsO._lambda_search = false;
+      paramsO._response_column = "C26";
+      paramsO._lambda = new double[]{1e-6};  // no regularization here
+      paramsO._alpha = new double[]{1e-5};  // l1pen
+      paramsO._objective_epsilon = 1e-6;
+      paramsO._beta_epsilon = 1e-4;
+      paramsO._max_iterations = iterNum;
+      paramsO._standardize = false;
+      paramsO._seed = 987654321;
+      paramsO._obj_reg = 1e-7;
 
-    GLMModel model = new GLM(paramsO).trainModel().get();
-    Scope.track_generic(model);
-    double[] interceptPDF = model._ymu;
-    double[][] coeffs = model._output._global_beta_multinomial; // class by npred
-    double[] beta = new double[coeffs[0].length-1]; // coefficients not including the intercepts
-    double[] icpt = new double[coeffs.length-1]; // all the intercepts
-    updateOrdinalCoeff( trainMultinomial, 25, paramsO, interceptPDF, coeffs[0].length,
-            Integer.parseInt(model._output._model_summary.getCellValues()[0][5].toString()), beta, icpt);
-    Scope.exit();
-    compareMultCoeffs(coeffs, beta, icpt);  // compare and check coefficients agree
+      GLMModel model = new GLM(paramsO).trainModel().get();
+      Scope.track_generic(model);
+
+      double[] interceptPDF = model._ymu;
+      double[][] coeffs = model._output._global_beta_multinomial; // class by npred
+      double[] beta = new double[coeffs[0].length - 1]; // coefficients not including the intercepts
+      double[] icpt = new double[coeffs.length - 1]; // all the intercepts
+      updateOrdinalCoeff(trainMultinomial, 25, paramsO, interceptPDF, coeffs[0].length,
+              Integer.parseInt(model._output._model_summary.getCellValues()[0][5].toString()), beta, icpt);
+      compareMultCoeffs(coeffs, beta, icpt);  // compare and check coefficients agree
+    } finally {
+      Scope.exit();
+    }
   }
 
   public void compareMultCoeffs(double[][] coeffs, double[] beta, double[] icpt) {
