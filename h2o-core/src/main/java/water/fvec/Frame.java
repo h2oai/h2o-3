@@ -472,7 +472,6 @@ public class Frame extends Lockable<Frame> {
     Vec[] vecs = vecs();
     String ds[][] = new String[vecs.length][];
     for( int i=0; i<vecs.length; i++ ) {
-      if (null != vecs[i] && vecs[i].isCategorical())  // only access domain if enums
         ds[i] = vecs[i].domain();
     }
     return ds;
