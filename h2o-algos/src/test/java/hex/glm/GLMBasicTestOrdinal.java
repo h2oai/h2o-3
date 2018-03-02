@@ -28,6 +28,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
     for (int col : cols) {
       f.replace(col, f.vec(col).toCategoricalVec()).remove();
     }
+    DKV.put(f);
   }
 
   // Ordinal regression with class = 2 defaults to binomial.  Hence, they should have the same gradients at the
