@@ -43,7 +43,9 @@ public class GLMScore extends MRTask<GLMScore> {
     _generatePredictions = generatePredictions;
     _m._parms = m._parms;
     _nclasses = m._output.nclasses();
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial){
+
+    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
+            _m._parms._family == GLMModel.GLMParameters.Family.ordinal){
       _beta = null;
       _beta_multinomial = m._output._global_beta_multinomial;
     } else {
@@ -72,7 +74,36 @@ public class GLMScore extends MRTask<GLMScore> {
   }
 
   public double [] scoreRow(DataInfo.Row r, double o, double [] preds) {
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
+    int lastClass = _nclasses-1;
+    if(_m._parms._family == GLMModel.GLMParameters.Family.ordinal) {  // todo: change this to take various link func
+      final double[][] bm = _beta_multinomial;
+      Arrays.fill(preds,1e-10); // initialize to small number
+      preds[0] = lastClass;  // initialize to last class by default here
+      double previousCDF = 0.0;
+      for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
+        double eta = r.innerProduct(bm[cInd])+o;
+        double tempExpEta = Math.exp(eta);
+        double currCDF = tempExpEta/(1+tempExpEta);
+        preds[cInd+1] = currCDF-previousCDF;
+        previousCDF = currCDF;
+        if (eta >= 0) { // found the correct class
+          preds[0] = cInd;
+          break;
+        }
+      }
+      for (int cInd = (int)preds[0]+1;cInd < lastClass; cInd++) {  // continue PDF calculation
+        double tempExpEta = Math.exp(r.innerProduct(bm[cInd])+o);
+        double currCDF = tempExpEta/(1+tempExpEta);
+        if (currCDF > previousCDF) {
+          preds[cInd + 1] = currCDF - previousCDF;
+          previousCDF = currCDF;
+        } else {
+          previousCDF = 1-1e-10;
+          break;
+        }
+      }
+      preds[_nclasses] = 1-previousCDF;
+    } else if (_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
       double[] eta = _eta;
       final double[][] bm = _beta_multinomial;
       double sumExp = 0;
@@ -121,7 +152,8 @@ public class GLMScore extends MRTask<GLMScore> {
   }
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
-    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial)
+    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial ||
+            _m._parms._family == GLMModel.GLMParameters.Family.ordinal)
       _eta = MemoryManager.malloc8d(_nclasses);
     double[] ps;
     _vcov = _m._output._vcov;

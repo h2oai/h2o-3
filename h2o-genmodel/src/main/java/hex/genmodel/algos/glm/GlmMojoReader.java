@@ -40,6 +40,8 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
     String family = readkv("family");
     if ("multinomial".equals(family))
       return new GlmMultinomialMojoModel(columns, domains, responseColumn);
+    else if ("ordinal".equals(family))
+      return new GlmOrdinalMojoModel(columns, domains, responseColumn);
     else
       return new GlmMojoModel(columns, domains, responseColumn);
   }

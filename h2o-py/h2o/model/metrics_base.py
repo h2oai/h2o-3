@@ -68,11 +68,12 @@ class MetricsBase(backwards_compatible()):
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial']
+        types_w_ord = ['ModelMetricsOrdinal']
         types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
         types_w_r2 = ['ModelMetricsRegressionGLM']
         types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
-        types_w_logloss = types_w_bin + types_w_mult
+        types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
 
         print()
@@ -101,7 +102,7 @@ class MetricsBase(backwards_compatible()):
         if metric_type == 'ModelMetricsBinomial':
             # second element for first threshold is the actual mean per class error
             print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type == 'ModelMetricsMultinomial':
+        if metric_type == 'ModelMetricsMultinomial' or metric_type == 'ModelMetricsOrdinal':
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
             print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
@@ -117,7 +118,7 @@ class MetricsBase(backwards_compatible()):
             if self.gains_lift():
                 print(self.gains_lift())
 
-        if metric_type in types_w_mult:
+        if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
         if metric_type in types_w_clustering:
@@ -297,6 +298,19 @@ class H2OMultinomialModelMetrics(MetricsBase):
 
 
 
+class H2OOrdinalModelMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OOrdinalModelMetrics, self).__init__(metric_json, on, algo)
+
+    def confusion_matrix(self):
+        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset."""
+        return self._metric_json['cm']['table']
+
+
+    def hit_ratio_table(self):
+        """Retrieve the Hit Ratios."""
+        return self._metric_json['hit_ratio_table']
 
 class H2OBinomialModelMetrics(MetricsBase):
     """

@@ -31,7 +31,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @API(help="The pretty algo name for this ModelBuilder (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
   public String algo_full_name;
 
-  @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
+  @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Ordinal", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public ModelCategory[] can_build;
 
   @API(help="Indicator whether the model is supervised or not.", direction=API.Direction.OUTPUT)

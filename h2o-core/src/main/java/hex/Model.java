@@ -7,10 +7,8 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
-import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import water.*;
-import water.api.FSIOException;
 import water.api.ModelsHandler;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
@@ -27,7 +25,10 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -2107,6 +2108,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               case Binomial:
                 BinomialModelPrediction bmp = (BinomialModelPrediction) p;
                 d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                break;
+              case Ordinal:
+                OrdinalModelPrediction orp = (OrdinalModelPrediction) p;
+                d2 = (col == 0) ? orp.labelIndex : orp.classProbabilities[col - 1];
                 break;
               case Multinomial:
                 MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;

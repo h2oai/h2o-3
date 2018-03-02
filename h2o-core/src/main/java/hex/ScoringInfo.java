@@ -2,7 +2,6 @@ package hex;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.util.PrettyPrint;
@@ -137,7 +136,8 @@ public class ScoringInfo extends Iced<ScoringInfo> {
     boolean hasEpochs = (scoringInfos instanceof HasEpochs[]);
     boolean hasSamples = (scoringInfos instanceof HasSamples[]);
     boolean hasIterations = (scoringInfos instanceof HasIterations[]);
-    boolean isClassifier = (modelCategory == ModelCategory.Binomial || modelCategory == ModelCategory.Multinomial);
+    boolean isClassifier = (modelCategory == ModelCategory.Binomial || modelCategory == ModelCategory.Multinomial
+            || modelCategory == ModelCategory.Ordinal);
 
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();

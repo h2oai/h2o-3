@@ -123,7 +123,14 @@ public class GlmMojoModel extends GlmMojoModelBase {
     @Override public double eval(double x) { return GenModel.GLM_logInv(x); }
   }
   private static class GLM_inverseInv implements Function1 {
-    @Override public double eval(double x) { return GenModel.GLM_inverseInv(x); }
+    @Override
+    public double eval(double x) {
+      return GenModel.GLM_inverseInv(x);
+    }
+  }
+
+    private static class GLM_ologitInv implements Function1 {
+      @Override public double eval(double x) { return GenModel.GLM_ologitInv(x); }
   }
   private static class GLM_tweedieInv implements Function1 {
     private final double _tweedie_link_power;

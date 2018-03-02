@@ -813,3 +813,14 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
     }
   }
 }
+
+calAccuracy <- function(rframe1, rframe2) {
+  correctC = 0.0
+  fLen = length(rframe1)
+  for (ind in c(1:fLen)) {
+    if (rframe1[ind]==rframe2[ind]) {
+      correctC = correctC+1.0
+    }
+  }
+  return(correctC/fLen)
+}

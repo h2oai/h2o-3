@@ -127,8 +127,9 @@ def gen_module(schema, algo):
             enum_values = None
         pname = param["name"]
         if (pname==u'distribution') and (not(algo==u'glm') and not(algo==u'gbm')):    # quasibinomial only in glm, gbm
-            enum_values.remove(u'quasibinomial');
-
+            enum_values.remove(u'quasibinomial')
+        if (pname==u'distribution') and (not(algo==u'glm')):    # ordinal only in glm
+            enum_values.remove(u'ordinal')
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname
