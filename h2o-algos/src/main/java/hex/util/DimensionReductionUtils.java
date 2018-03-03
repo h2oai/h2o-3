@@ -113,9 +113,9 @@ public class DimensionReductionUtils {
      * 
      * @param dinfo
      * @param vEigenIn
-     * @return
+     * @return transformed eigenvectors
      */
-    public static double[][] transformEigenVectors(DataInfo dinfo, double[][] vEigenIn) {
+    public static double[][] getTransformedEigenvectors(DataInfo dinfo, double[][] vEigenIn) {
         Frame tempFrame = new Frame(dinfo._adaptedFrame);
         Frame eigFrame = new water.util.ArrayUtils().frame(vEigenIn);
         tempFrame.add(eigFrame);

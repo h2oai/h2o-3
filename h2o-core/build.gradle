@@ -72,7 +72,7 @@ test {
   exclude '**'
 }
 
-def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java");
+def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java")
 
 task generateBuildVersionJava {
   doLast {

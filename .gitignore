@@ -23,6 +23,7 @@ h2o-web/src/main/resources/www/flow
 h2o-web/src/main/resources/www/3/h2o-genmodel.jar
 h2o*/test-output/
 test-output/
+results/
 out/
 .idea/
 *.ipr

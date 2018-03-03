@@ -16,8 +16,17 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
-#' @param pca_method Method for computing PCA (Caution: GLRM is currently experimental and unstable) Must be one of: "GramSVD",
-#'        "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_method Specify the algorithm to use for computing the principal components: GramSVD - uses a distributed computation
+#'        of the Gram matrix, followed by a local SVD; Power - computes the SVD using the power iteration method
+#'        (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank
+#'        model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
+#'        (experimental) Must be one of: "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_impl Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
+#'        decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
+#'        using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+#'        decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
+#'        https://github.com/fommil/matrix-toolkits-java/ Must be one of: "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX",
+#'        "MTJ_SVD_DENSEMATRIX", "JAMA".
 #' @param k Rank of matrix approximation Defaults to 1.
 #' @param max_iterations Maximum training iterations Defaults to 1000.
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
@@ -45,6 +54,7 @@ h2o.prcomp <- function(training_frame, x,
                        score_each_iteration = FALSE,
                        transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                        pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                       pca_impl = c("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"),
                        k = 1,
                        max_iterations = 1000,
                        use_all_factor_levels = FALSE,
@@ -88,6 +98,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$transform <- transform
   if (!missing(pca_method))
     parms$pca_method <- pca_method
+  if (!missing(pca_impl))
+    parms$pca_impl <- pca_impl
   if (!missing(k))
     parms$k <- k
   if (!missing(max_iterations))
