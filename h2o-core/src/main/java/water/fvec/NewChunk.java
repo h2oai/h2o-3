@@ -623,7 +623,10 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if (C16Chunk.isNA(lo, hi)) addNA();
+    if (C16Chunk.isNA(lo, hi)) {
+      addNA();
+      return;
+    }
     if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
       append2slowUUID();
     _ms.set(_sparseLen,lo);
