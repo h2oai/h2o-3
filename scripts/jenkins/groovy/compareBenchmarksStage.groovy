@@ -3,11 +3,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
     def EXPECTED_VALUES = [
             'paribas': [
                     50: [
-                            'train_time_min': 9.2,
+                            'train_time_min': 9.1,
                             'train_time_max': 11.7
                     ],
                     200: [
-                            'train_time_min': 31.1,
+                            'train_time_min': 30,
                             'train_time_max': 35.1
                     ]
             ],
@@ -18,17 +18,17 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     ],
                     200: [
                             'train_time_min': 41.2,
-                            'train_time_max': 46.0
+                            'train_time_max': 48.0
                     ]
             ],
             'redhat': [
                     50: [
-                            'train_time_min': 28.5,
+                            'train_time_min': 28,
                             'train_time_max': 33.5
                     ],
                     200: [
-                            'train_time_min': 129.0,
-                            'train_time_max': 134.5
+                            'train_time_min': 128.0,
+                            'train_time_max': 136
                     ]
             ],
             'springleaf': [
@@ -37,13 +37,13 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                             'train_time_max': 63.5
                     ],
                     200: [
-                            'train_time_min': 464.0,
+                            'train_time_min': 463.0,
                             'train_time_max': 497.0
                     ]
             ],
             'higgs': [
                     50: [
-                            'train_time_min': 89.0,
+                            'train_time_min': 88.0,
                             'train_time_max': 95.0
                     ],
                     200: [
