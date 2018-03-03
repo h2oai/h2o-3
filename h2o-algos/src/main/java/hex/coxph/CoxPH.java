@@ -127,8 +127,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._exp_neg_coef = MemoryManager.malloc8d(n_coef);
       o._se_coef = MemoryManager.malloc8d(n_coef);
       o._z_coef = MemoryManager.malloc8d(n_coef);
-      o.gradient     = MemoryManager.malloc8d(n_coef);
-      o.hessian      = malloc2DArray(n_coef, n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
       o._x_mean_cat = MemoryManager.malloc8d(o.data_info.numCats());
       o._x_mean_num = MemoryManager.malloc8d(o.data_info.numNums());
@@ -170,18 +168,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           o._n_risk[t] += o._n_risk[t + 1];
     }
 
-    protected double calcLoglik(CoxPHModel model, final CoxPHTask coxMR) {
-      CoxPHModel.CoxPHParameters p = model._parms;
-      CoxPHModel.CoxPHOutput o = model._output;
-
-      final int n_coef = o._coef.length;
+    protected ComputationState calcLoglik(ComputationState cs, CoxPHModel.CoxPHParameters p, final CoxPHTask coxMR) {
+      final int n_coef = cs._n_coef;
       final int n_time = coxMR.sizeEvents.length;
       double newLoglik = 0;
-      for (int j = 0; j < n_coef; ++j)
-        o.gradient[j] = 0;
-      for (int j = 0; j < n_coef; ++j)
-        for (int k = 0; k < n_coef; ++k)
-          o.hessian[j][k] = 0;
 
       switch (p._ties) {
         case efron:
@@ -228,12 +218,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           for (int t = 0; t < n_time; ++t)
             for (int j = 0; j < n_coef; ++j)
-              o.gradient[j] += gradient_t[t][j];
+              cs._gradient[j] += gradient_t[t][j];
 
           for (int t = 0; t < n_time; ++t)
             for (int j = 0; j < n_coef; ++j)
               for (int k = 0; k < n_coef; ++k)
-                o.hessian[j][k] += hessian_t[t][j][k];
+                cs._hessian[j][k] += hessian_t[t][j][k];
           break;
         case breslow:
           for (int t = n_time - 1; t >= 0; --t) {
@@ -245,10 +235,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               newLoglik -= sizeEvents_t * Math.log(rcumsumRisk_t);
               for (int j = 0; j < n_coef; ++j) {
                 final double dlogTerm = coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t;
-                o.gradient[j] += coxMR.sumXEvents[t][j];
-                o.gradient[j] -= sizeEvents_t * dlogTerm;
+                cs._gradient[j] += coxMR.sumXEvents[t][j];
+                cs._gradient[j] -= sizeEvents_t * dlogTerm;
                 for (int k = 0; k < n_coef; ++k)
-                  o.hessian[j][k] -= sizeEvents_t *
+                  cs._hessian[j][k] -= sizeEvents_t *
                           (((coxMR.rcumsumXXRisk[t][j][k] / rcumsumRisk_t) -
                                   (dlogTerm * (coxMR.rcumsumXRisk[t][k] / rcumsumRisk_t))));
               }
@@ -258,15 +248,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         default:
           throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
-      return newLoglik;
+      cs._logLik =  newLoglik;
+      return cs;
     }
 
-    protected void calcModelStats(CoxPHModel model, final double[] newCoef, final double newLoglik) {
+    protected void calcModelStats(CoxPHModel model, final double[] newCoef, final ComputationState cs) {
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
       final int n_coef = o._coef.length;
-      final Matrix inv_hessian = new Matrix(o.hessian).inverse();
+      final Matrix inv_hessian = new Matrix(cs._hessian).inverse();
       for (int j = 0; j < n_coef; ++j) {
         for (int k = 0; k <= j; ++k) {
           final double elem = -inv_hessian.get(j, k);
@@ -282,24 +273,24 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         o._z_coef[j]       = o._coef[j] / o._se_coef[j];
       }
       if (o._iter == 0) {
-        o._null_loglik = newLoglik;
+        o._null_loglik = cs._logLik;
         o._maxrsq = 1 - Math.exp(2 * o._null_loglik / o._n);
         o._score_test = 0;
         for (int j = 0; j < n_coef; ++j) {
           double sum = 0;
           for (int k = 0; k < n_coef; ++k)
-            sum += o._var_coef[j][k] * o.gradient[k];
-          o._score_test += o.gradient[j] * sum;
+            sum += o._var_coef[j][k] * cs._gradient[k];
+          o._score_test += cs._gradient[j] * sum;
         }
       }
-      o._loglik = newLoglik;
+      o._loglik = cs._logLik;
       o._loglik_test = - 2 * (o._null_loglik - o._loglik);
       o._rsq = 1 - Math.exp(- o._loglik_test / o._n);
       o._wald_test = 0;
       for (int j = 0; j < n_coef; ++j) {
         double sum = 0;
         for (int k = 0; k < n_coef; ++k)
-          sum -= o.hessian[j][k] * (o._coef[k] - p._init);
+          sum -= cs._hessian[j][k] * (o._coef[k] - p._init);
         o._wald_test += (o._coef[j] - p._init) * sum;
       }
     }
@@ -397,6 +388,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
         final boolean has_weights_column = (_weights != null);
+        final ComputationState cs = new ComputationState(n_coef);
         Timer iterTimer = null;
         for (int i = 0; i <= model._parms._iter_max; ++i) {
           iterTimer = new Timer();
@@ -408,14 +400,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
           Timer loglikTimer = new Timer();
-          final double newLoglik = calcLoglik(model, coxMR);
+          cs.reset();
+          final double newLoglik = calcLoglik(cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", " + loglikTimer.toString());
 
           if (newLoglik > logLik) {
             if (i == 0)
               calcCounts(model, coxMR);
 
-            calcModelStats(model, newCoef, newLoglik);
+            calcModelStats(model, newCoef, cs);
             calcCumhaz_0(model, coxMR);
 
             if (newLoglik == 0)
@@ -428,7 +421,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             Arrays.fill(step, 0);
             for (int j = 0; j < n_coef; ++j)
               for (int k = 0; k < n_coef; ++k)
-                step[j] -= model._output._var_coef[j][k] * model._output.gradient[k];
+                step[j] -= model._output._var_coef[j][k] * cs._gradient[k];
             for (int j = 0; j < n_coef; ++j)
               if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
                 break;
@@ -675,6 +668,27 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
   }
 
+  private static class ComputationState {
+    final int _n_coef;
+    double _logLik;
+    double[] _gradient;
+    double[][] _hessian;
 
+    ComputationState(int n_coef) {
+      _n_coef = n_coef;
+      _logLik = 0;
+      _gradient = MemoryManager.malloc8d(n_coef);
+      _hessian = malloc2DArray(n_coef, n_coef);
+    }
+
+    void reset() {
+      for (int j = 0; j < _n_coef; ++j)
+        _gradient[j] = 0;
+      for (int j = 0; j < _n_coef; ++j)
+        for (int k = 0; k < _n_coef; ++k)
+          _hessian[j][k] = 0;
+    }
+
+  }
 
 }

@@ -61,9 +61,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     InteractionSpec _interactionSpec;
     DataInfo data_info;
-    // FIXME: these should most likely not be in the model output
-    double[] gradient;
-    double[][] hessian;
 
     String[] _coef_names;
     double[] _coef;
