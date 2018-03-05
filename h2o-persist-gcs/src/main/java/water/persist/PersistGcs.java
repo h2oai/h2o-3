@@ -4,8 +4,10 @@ import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.*;
 import water.H2O;
 import water.Key;
+import water.MemoryManager;
 import water.Value;
 import water.api.FSIOException;
+import water.fvec.FileVec;
 import water.fvec.GcsFileVec;
 import water.util.Log;
 
@@ -26,10 +28,23 @@ public final class PersistGcs extends Persist {
   private static final Storage storage = StorageOptions.getDefaultInstance().getService();
 
   @Override
-  public byte[] load(Value v) throws IOException {
+  public byte[] load(final Value v) throws IOException {
     final BlobId blobId = GcsBlob.of(v._key).getBlobId();
-    Log.info("Loading: " + blobId.toString());
-    return storage.get(blobId).getContent();
+    
+    final byte[] contentBytes = MemoryManager.malloc1(v._max);
+    final ByteBuffer wrappingBuffer = ByteBuffer.wrap(contentBytes);
+    final Key k = v._key;
+    long offset = 0;
+    // Skip offset based on chunk number
+    if(k._kb[0] == Key.CHK) {
+      offset = FileVec.chunkOffset(k); // The offset
+    }
+    
+    final ReadChannel reader = storage.reader(blobId);
+    reader.seek(offset);
+    reader.read(wrappingBuffer);
+    
+    return contentBytes;
   }
 
   @Override
@@ -105,10 +120,31 @@ public final class PersistGcs extends Persist {
                           ArrayList<String> keys,
                           ArrayList<String> fails,
                           ArrayList<String> dels) {
+    // bk[0] is bucket name, bk[1] is file name - file name is optional.
     final String bk[] = GcsBlob.removePrefix(path).split("/", 2);
-    final Bucket bucket = storage.get(bk[0]);
+
+    if (bk.length < 2) {
+      parseBucket(bk[0], files, keys, fails);
+    } else {
+      try {
+        Blob blob = storage.get(bk[0], bk[1]);
+        final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
+        final Key k = GcsFileVec.make(path, blob.getSize());
+        keys.add(k.toString());
+        files.add(path);
+      } catch (Throwable t) {
+        fails.add(path);
+      }
+    }
+
+  }
+
+  private void parseBucket(String bucketId,
+                           ArrayList<String> files,
+                           ArrayList<String> keys,
+                           ArrayList<String> fails) {
+    final Bucket bucket = storage.get(bucketId);
     for (Blob blob : bucket.list().iterateAll()) {
-      if (bk.length == 1 || blob.getName().startsWith(bk[1])) {
         final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
         Log.info("Importing: " + gcsBlob.toString());
         try {
@@ -118,7 +154,6 @@ public final class PersistGcs extends Persist {
         } catch (Throwable t) {
           fails.add(gcsBlob.getCanonical());
         }
-      }
     }
   }
 
