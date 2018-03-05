@@ -160,19 +160,18 @@ public final class PersistGcs extends Persist {
     Log.info("Openning: " + gcsBlob.toString());
     final Blob blob = storage.get(gcsBlob.getBlobId());
     return new InputStream() {
+    final ReadChannel reader = blob.reader();
       @Override
       public int read() throws IOException {
         // very naive version with reading byte by byte
-        int res = -1;
-        try (ReadChannel reader = blob.reader()) {
-          ByteBuffer bytes = ByteBuffer.allocate(1);
-          while (reader.read(bytes) > 0) {
-            res = bytes.getInt();
-          }
+        try {
+          ByteBuffer bytes = ByteBuffer.wrap(MemoryManager.malloc1(1));
+          int numRed = reader.read(bytes);
+          if(numRed == 0) return -1;
+          return bytes.get(0);
         } catch (IOException e) {
           throw new FSIOException(path, e);
         }
-        return res;
       }
 
       @Override
