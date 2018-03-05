@@ -4,8 +4,6 @@ import Jama.Matrix;
 import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import jsr166y.ForkJoinTask;
-import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -168,64 +166,86 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           o._n_risk[t] += o._n_risk[t + 1];
     }
 
+    private class EfronUpdateFun extends MrFun<EfronUpdateFun> {
+      transient CoxPHTask _coxMR;
+      int _n_coef;
+      double _logLik;
+      double[] _gradient;
+      double[][] _hessian;
+
+      private EfronUpdateFun(ComputationState cs, CoxPHTask coxMR) {
+        _coxMR = coxMR;
+        _n_coef = cs._n_coef;
+        _logLik = cs._logLik;
+        _gradient = cs._gradient;
+        _hessian = cs._hessian;
+      }
+
+      @Override
+      protected void map(int t) {
+        final double sizeEvents_t = _coxMR.sizeEvents[t];
+        if (sizeEvents_t > 0) {
+          final long   countEvents_t      = _coxMR.countEvents[t];
+          final double sumLogRiskEvents_t = _coxMR.sumLogRiskEvents[t];
+          final double sumRiskEvents_t    = _coxMR.sumRiskEvents[t];
+          final double rcumsumRisk_t      = _coxMR.rcumsumRisk[t];
+          final double avgSize            = sizeEvents_t / countEvents_t;
+          _logLik += sumLogRiskEvents_t;
+          for (int i = 0; i < _n_coef; i++)
+            _gradient[i] += _coxMR.sumXEvents[t][i];
+          for (long e = 0; e < countEvents_t; ++e) {
+            final double frac = ((double) e) / ((double) countEvents_t);
+            final double term = rcumsumRisk_t - frac * sumRiskEvents_t;
+            _logLik -= avgSize * Math.log(term);
+            for (int j = 0; j < _n_coef; ++j) {
+              final double djTerm    = _coxMR.rcumsumXRisk[t][j] - frac * _coxMR.sumXRiskEvents[t][j];
+              final double djLogTerm = djTerm / term;
+              _gradient[j] -= avgSize * djLogTerm;
+              for (int k = 0; k < _n_coef; ++k) {
+                final double dkTerm  = _coxMR.rcumsumXRisk[t][k] - frac * _coxMR.sumXRiskEvents[t][k];
+                final double djkTerm = _coxMR.rcumsumXXRisk[t][j][k] - frac * _coxMR.sumXXRiskEvents[t][j][k];
+                _hessian[j][k] -= avgSize * (djkTerm / term - (djLogTerm * (dkTerm / term)));
+              }
+            }
+          }
+        }
+      }
+
+      @Override
+      protected void reduce(EfronUpdateFun o) {
+        _logLik += o._logLik;
+        for (int i = 0; i < _n_coef; i++)
+          _gradient[i] += o._gradient[i];
+        for (int i = 0; i < _n_coef; i++)
+          for (int j = 0; j < _n_coef; j++)
+            _hessian[i][j] += o._hessian[i][j];
+      }
+
+      @Override
+      protected MrFun<EfronUpdateFun> makeCopy() {
+        return new EfronUpdateFun(new ComputationState(_n_coef), _coxMR);
+      }
+
+      ComputationState toComputationState(ComputationState cs) {
+        cs._logLik = _logLik;
+        cs._gradient = _gradient;
+        cs._hessian = _hessian;
+        return cs;
+      }
+    }
+
     protected ComputationState calcLoglik(ComputationState cs, CoxPHModel.CoxPHParameters p, final CoxPHTask coxMR) {
       final int n_coef = cs._n_coef;
       final int n_time = coxMR.sizeEvents.length;
-      double newLoglik = 0;
 
+      cs.reset();
       switch (p._ties) {
         case efron:
-          final double[]   newLoglik_t = MemoryManager.malloc8d(n_time);
-          final double[][]  gradient_t = malloc2DArray(n_time, n_coef);
-          final double[][][] hessian_t = malloc3DArray(n_time, n_coef, n_coef);
-          ForkJoinTask[] fjts = new ForkJoinTask[n_time];
-          for (int t = n_time - 1; t >= 0; --t) {
-            final int _t = t;
-            fjts[t] = new RecursiveAction() {
-              @Override protected void compute() {
-                final double sizeEvents_t = coxMR.sizeEvents[_t];
-                if (sizeEvents_t > 0) {
-                  final long   countEvents_t      = coxMR.countEvents[_t];
-                  final double sumLogRiskEvents_t = coxMR.sumLogRiskEvents[_t];
-                  final double sumRiskEvents_t    = coxMR.sumRiskEvents[_t];
-                  final double rcumsumRisk_t      = coxMR.rcumsumRisk[_t];
-                  final double avgSize            = sizeEvents_t / countEvents_t;
-                  newLoglik_t[_t] = sumLogRiskEvents_t;
-                  System.arraycopy(coxMR.sumXEvents[_t], 0, gradient_t[_t], 0, n_coef);
-                  for (long e = 0; e < countEvents_t; ++e) {
-                    final double frac = ((double) e) / ((double) countEvents_t);
-                    final double term = rcumsumRisk_t - frac * sumRiskEvents_t;
-                    newLoglik_t[_t] -= avgSize * Math.log(term);
-                    for (int j = 0; j < n_coef; ++j) {
-                      final double djTerm    = coxMR.rcumsumXRisk[_t][j] - frac * coxMR.sumXRiskEvents[_t][j];
-                      final double djLogTerm = djTerm / term;
-                      gradient_t[_t][j] -= avgSize * djLogTerm;
-                      for (int k = 0; k < n_coef; ++k) {
-                        final double dkTerm  = coxMR.rcumsumXRisk[_t][k] - frac * coxMR.sumXRiskEvents[_t][k];
-                        final double djkTerm = coxMR.rcumsumXXRisk[_t][j][k] - frac * coxMR.sumXXRiskEvents[_t][j][k];
-                        hessian_t[_t][j][k] -= avgSize * (djkTerm / term - (djLogTerm * (dkTerm / term)));
-                      }
-                    }
-                  }
-                }
-              }
-            };
-          }
-          ForkJoinTask.invokeAll(fjts);
-
-          for (int t = 0; t < n_time; ++t)
-            newLoglik += newLoglik_t[t];
-
-          for (int t = 0; t < n_time; ++t)
-            for (int j = 0; j < n_coef; ++j)
-              cs._gradient[j] += gradient_t[t][j];
-
-          for (int t = 0; t < n_time; ++t)
-            for (int j = 0; j < n_coef; ++j)
-              for (int k = 0; k < n_coef; ++k)
-                cs._hessian[j][k] += hessian_t[t][j][k];
-          break;
+          EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
+          H2O.submitTask(new LocalMR(f, n_time)).join();
+          return f.toComputationState(cs);
         case breslow:
+          double newLoglik = 0;
           for (int t = n_time - 1; t >= 0; --t) {
             final double sizeEvents_t = coxMR.sizeEvents[t];
             if (sizeEvents_t > 0) {
@@ -244,12 +264,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               }
             }
           }
-          break;
+          cs._logLik =  newLoglik;
+          return cs;
         default:
           throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
-      cs._logLik =  newLoglik;
-      return cs;
     }
 
     protected void calcModelStats(CoxPHModel model, final double[] newCoef, final ComputationState cs) {
@@ -400,7 +419,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
           Timer loglikTimer = new Timer();
-          cs.reset();
           final double newLoglik = calcLoglik(cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", " + loglikTimer.toString());
 
@@ -682,6 +700,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     void reset() {
+      _logLik = 0;
       for (int j = 0; j < _n_coef; ++j)
         _gradient[j] = 0;
       for (int j = 0; j < _n_coef; ++j)
