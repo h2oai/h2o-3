@@ -56,7 +56,7 @@ public final class PersistGcs extends Persist {
     if (!v._key.home()) return;
     final byte payload[] = v.memOrLoad();
     final GcsBlob blob = GcsBlob.of(v._key);
-    Log.info("Storing: " + blob.toString());
+    Log.debug("Storing: " + blob.toString());
     final ByteBuffer buffer = ByteBuffer.wrap(payload);
     storage.create(blob.getBlobInfo()).writer().write(buffer);
   }
@@ -64,7 +64,7 @@ public final class PersistGcs extends Persist {
   @Override
   public void delete(Value v) {
     final BlobId blobId = GcsBlob.of(v._key).getBlobId();
-    Log.info("Deleting: " + blobId.toString());
+    Log.debug("Deleting: " + blobId.toString());
     storage.get(blobId).delete();
   }
 
@@ -143,7 +143,7 @@ public final class PersistGcs extends Persist {
     final Bucket bucket = storage.get(bucketId);
     for (Blob blob : bucket.list().iterateAll()) {
         final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
-        Log.info("Importing: " + gcsBlob.toString());
+        Log.debug("Importing: " + gcsBlob.toString());
         try {
           final Key k = GcsFileVec.make(gcsBlob.getCanonical(), blob.getSize());
           keys.add(k.toString());
@@ -157,7 +157,7 @@ public final class PersistGcs extends Persist {
   @Override
   public InputStream open(final String path) {
     final GcsBlob gcsBlob = GcsBlob.of(path);
-    Log.info("Openning: " + gcsBlob.toString());
+    Log.debug("Opening: " + gcsBlob.toString());
     final Blob blob = storage.get(gcsBlob.getBlobId());
     return new InputStream() {
     final ReadChannel reader = blob.reader();
