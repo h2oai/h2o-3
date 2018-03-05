@@ -914,10 +914,10 @@ public abstract class GLMTask  {
         }
       }
     }
-    
+
     // This method will compute the multipliers for gradient calculation of the betas in etas and for
     // the intercepts in etas_offsets for each row of data
-    final void computeGradientMultipliers(double [][] etas, double [][] etasOffset, double [] ys, double [] ws) {
+    final void computeGradientMultipliersLH(double [][] etas, double [][] etasOffset, double [] ys, double [] ws) {
       int K = _beta[0].length;    // number of class
       double[] tempEtas = new double[K];  // store original etas
       int y;  // get and store response class category
@@ -956,6 +956,42 @@ public abstract class GLMTask  {
           etasOffset[row][y] = (yJ-1)*oneOverThreshold/oneMcdfPC;
           yJ = yJ==0?1e-10:yJ;
           etasOffset[row][lastC] = yJm1*oneOverThreshold/yJ;
+        }
+        for (int c=1; c<K; c++)  // set beta of all classes to be the same
+          etas[row][c]=etas[row][0];
+      }
+    }
+    
+    // This method will compute the multipliers for gradient calculation of the betas in etas and for
+    // the intercepts in etas_offsets for each row of data
+    final void computeGradientMultipliersSQERR(double [][] etas, double [][] etasOffset, double [] ys, double [] ws) {
+      int K = _beta[0].length;    // number of class
+      double[] tempEtas = new double[K];  // store original etas
+      int y;  // get and store response class category
+      double yJ, yJm1;
+      for (int row = 0; row < etas.length; row++) { // calculate the multiplier from each row
+        double w = ws[row];
+        if (w==0) {
+          Arrays.fill(etas[row], 0);    // zero out etas for current row
+          continue;
+        }
+        // note that, offset is different for all class, beta is shared for all classes
+        System.arraycopy(etas[row], 0, tempEtas, 0, K); // copy data over to tempEtas
+        Arrays.fill(etas[row], 0);    // zero out etas for current row
+        y = (int) ys[row];  // get response class category
+        for (int c = 0; c < y; c++) { // classes < yresp, should be negative
+          if (tempEtas[c] > 0) {
+            etasOffset[row][c] = tempEtas[c];
+            etas[row][0] += tempEtas[c];
+            _likelihood += w*0.5*tempEtas[c]*tempEtas[c];
+          }
+        }
+        for (int c = y; c < _theLast; c++) {  // class >= yresp, should be positive
+          if (tempEtas[c] <= 0) {
+            etasOffset[row][c] = tempEtas[c];
+            etas[row][0] += tempEtas[c];
+            _likelihood += w*0.5*tempEtas[c]*tempEtas[c];
+          }
         }
         for (int c=1; c<K; c++)  // set beta of all classes to be the same
           etas[row][c]=etas[row][0];
@@ -1008,9 +1044,12 @@ public abstract class GLMTask  {
       int [] ids = MemoryManager.malloc4(M);
       computeCategoricalEtas(chks,etas,vals,ids);
       computeNumericEtas(chks,etas,vals,ids);
-      if (_link == Link.ologit)  // gradient is stored in etas
-        computeGradientMultipliers(etas, etasOffset, response.getDoubles(vals, 0, M), ws);
-       else
+      if (_glmp != null && _link == Link.ologit && (_glmp._solver.equals(GLMParameters.Solver.AUTO) ||
+              _glmp._solver.equals((GLMParameters.Solver.GRADIENT_DESCENT_LH))))  // gradient is stored in etas
+        computeGradientMultipliersLH(etas, etasOffset, response.getDoubles(vals, 0, M), ws);
+      else if (_glmp != null && _link == Link.ologit && _glmp._solver.equals(GLMParameters.Solver.GRADIENT_DESCENT_SQERR))
+        computeGradientMultipliersSQERR(etas, etasOffset, response.getDoubles(vals, 0, M), ws);
+      else
         computeGradientMultipliers(etas, response.getDoubles(vals, 0, M), ws);
 
       computeCategoricalGrads(chks, etas, vals, ids);
