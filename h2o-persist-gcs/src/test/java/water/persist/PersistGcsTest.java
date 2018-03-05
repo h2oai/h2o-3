@@ -41,7 +41,7 @@ public class PersistGcsTest extends TestUtil {
       Frame remoteFrame = DKV.getGet(remoteKey);
       FileVec remoteFileVec = (FileVec) remoteFrame.anyVec();
 
-      Key localKey = H2O.getPM().anyURIToKey(new URI(FileUtils.getFile("smalldata/nexrad/NWS_NEXRAD_NXL2DPBL_KABR_20180101050000_20180101055959").getAbsolutePath()));
+      Key localKey = H2O.getPM().anyURIToKey(new URI(FileUtils.getFile("smalldata/nexrad/NWS_NEXRAD_NXL2DPBL_KABR_20180101050000_20180101055959.tar").getAbsolutePath()));
       FileVec localFileVec = DKV.getGet(localKey);
       assertEquals(localFileVec.length(), remoteFileVec.length());
       assertVecEquals(localFileVec, remoteFileVec, 0);
