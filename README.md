@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular algorithms such as GBM, Random Forest, Deep Neural Networks, Word2Vec and Stacked Ensembles.  H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  
+H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular algorithms such as [GBM](https://en.wikipedia.org/wiki/Gradient_boosting), [Random Forest](https://en.wikipedia.org/wiki/Random_forest), [Deep Neural Networks](https://en.wikipedia.org/wiki/Deep_neural_networks), [Word2Vec](https://en.wikipedia.org/wiki/Word2vec) and [Stacked Ensembles](https://en.wikipedia.org/wiki/Ensemble_learning).  H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  
 
 Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
 
