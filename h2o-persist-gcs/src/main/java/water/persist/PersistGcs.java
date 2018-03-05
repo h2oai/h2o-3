@@ -15,10 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Persistence backend for GCS
@@ -179,15 +176,16 @@ public final class PersistGcs extends Persist {
       }
 
       @Override
-      public int read(byte b[], int off, int len) throws IOException {
-        if (b == null) {
-          throw new NullPointerException();
-        } else if (off < 0 || len < 0 || len > b.length - off) {
-          throw new IndexOutOfBoundsException();
+      public int read(byte bytes[], int off, int len) throws IOException {
+        Objects.requireNonNull(bytes);
+        
+        if (off < 0 || len < 0 || len > bytes.length - off) {
+          throw new IndexOutOfBoundsException("Length of byte array is " + bytes.length + ". Offset is " + off
+              + " and length is " + len);
         } else if (len == 0) {
           return 0;
         }
-        final ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+        final ByteBuffer buffer = ByteBuffer.wrap(bytes, off, len);
         final ReadChannel reader = blob.reader();
         return reader.read(buffer);
       }
