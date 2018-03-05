@@ -3,12 +3,12 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from random import randint
-
-NTESTROWS = 200    # number of test dataset rows
-PROBLEM="multinomial"
+from random import uniform
 
 def glm_ordinal_mojo_pojo():
     params = set_params()   # set deeplearning model parameters
+    NTESTROWS = 200    # number of test dataset rows
+    PROBLEM="multinomial"
     df = pyunit_utils.random_dataset(PROBLEM, NTESTROWS)       # generate random dataset
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
@@ -29,18 +29,15 @@ def glm_ordinal_mojo_pojo():
     pyunit_utils.compare_frames_local(pred_mojo, pred_pojo, 0.1, tol=1e-10)
 
 def set_params():
-    global PROBLEM
-    #missingValues = ['Skip', 'MeanImputation']
     missingValues = ['MeanImputation']
-    PROBLEM = "multinomial"
-    print("PROBLEM is {0}".format(PROBLEM))
     missing_values = missingValues[randint(0, len(missingValues)-1)]
     reg = 1.0/250000.0
     params = {'missing_values_handling': missing_values, 'family':"ordinal", 'alpha':[0.5], 'lambda_':[reg],
               'obj_reg':reg}
+    if uniform(0.0, 1.0) > 0.5:
+        params['solver'] = "GRADIENT_DESCENT_SQERR"
     print(params)
     return params
-
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_ordinal_mojo_pojo)

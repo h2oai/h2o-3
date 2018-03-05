@@ -1771,7 +1771,8 @@ public class GLMTest  extends TestUtil {
     for(Family fam:new Family[]{Family.multinomial,Family.binomial}) {
       for (double alpha : new double[]{0, .5, 1}) {
         for (Solver s : Solver.values()) {
-          if (s == Solver.COORDINATE_DESCENT_NAIVE || s== Solver.AUTO) continue;
+          if (s == Solver.COORDINATE_DESCENT_NAIVE || s== Solver.AUTO || s.equals(Solver.GRADIENT_DESCENT_LH)
+                  || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue;
 //          if(fam == Family.multinomial && (s != Solver.L_BFGS || alpha != 0)) continue;
           try {
             Scope.enter();

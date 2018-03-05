@@ -273,9 +273,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if (_family == Family.ordinal) {
         if (_intercept == false)
           glm.error("Ordinal regression", "must have intercepts.  set _intercept to true.");
-        if (_solver != Solver.AUTO)
+        if (!(_solver.equals(Solver.AUTO) || _solver.equals(Solver.GRADIENT_DESCENT_SQERR) || _solver.equals(Solver.GRADIENT_DESCENT_LH)))
           glm.error("Ordinal regression","Ordinal regression only supports gradient descend.  " +
-                  "Do not set Solver or set Solver to auto.");
+                  "Do not set Solver or set Solver to auto, GRADIENT_DESCENT_LH or GRADIENT_DESCENT_SQERR.");
         if (_lambda_search)
           glm.error("ordinal regression", "Ordinal regression do not support lambda search.");
       }
@@ -501,7 +501,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -1160,7 +1160,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           preds[cInd + 1] = currCDF - previousCDF;
           previousCDF = currCDF;
 
-          if (currEta >= 0) { // found the correct class
+          if (currEta > 0) { // found the correct class
             preds[0] = cInd;
             break;
           }
@@ -1298,7 +1298,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         body.ip("  double currCDF = 1.0/(1+Math.exp(-eta));").nl();
         body.ip("  preds[cInd+1] = currCDF-previousCDF;").nl();
         body.ip("  previousCDF = currCDF;").nl();
-        body.ip("  if (eta >= 0) { // found the correct class").nl();
+        body.ip("  if (eta > 0) { // found the correct class").nl();
         body.ip("    preds[0] = cInd;").nl();
         body.ip("    break;").nl();
         body.ip("  }").nl();
