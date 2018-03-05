@@ -9,14 +9,13 @@ import water.fvec.Frame;
 import water.util.FileUtils;
 
 import java.net.URI;
-import java.util.Arrays;
 
 import static junit.framework.TestCase.assertEquals;
 
 public class PersistGcsTest extends TestUtil {
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
   }
 
   private static class XORTask extends MRTask<XORTask> {
@@ -42,7 +41,7 @@ public class PersistGcsTest extends TestUtil {
       Frame remoteFrame = DKV.getGet(remoteKey);
       FileVec remoteFileVec = (FileVec) remoteFrame.anyVec();
 
-      Key localKey = H2O.getPM().anyURIToKey(new URI(FileUtils.getFile("smalldata/nexrad/nexrad_20180101055959_KABR.tar").getAbsolutePath()));
+      Key localKey = H2O.getPM().anyURIToKey(new URI(FileUtils.getFile("smalldata/nexrad/NWS_NEXRAD_NXL2DPBL_KABR_20180101050000_20180101055959").getAbsolutePath()));
       FileVec localFileVec = DKV.getGet(localKey);
       assertEquals(localFileVec.length(), remoteFileVec.length());
       assertVecEquals(localFileVec, remoteFileVec, 0);
