@@ -25,6 +25,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public String _start_column;
     public String _stop_column;
+    final String _strata_column = "__strata";
+    public String[] _stratify_by;
 
     public enum CoxPHTies { efron, breslow }
 
@@ -42,6 +44,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
     InteractionSpec interactionSpec() { return InteractionSpec.create(_interactions, _interaction_pairs, _interactions_only); }
+
+    boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
   }
 
   public static class CoxPHOutput extends Model.Output {
@@ -113,6 +117,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm);
     return new CoxPHScore(scoringInfo, _output).doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
             .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
+  }
+
+  @Override
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+    if (_parms.isStratified() && (test.vec(_parms._strata_column) == null)) {
+      test.add(_parms._strata_column, test.anyVec().makeCon(Double.NaN));
+    }
+    return super.adaptTestForTrain(test, expensive, computeMetrics);
   }
 
   private static class CoxPHScore extends MRTask<CoxPHScore> {
