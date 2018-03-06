@@ -538,9 +538,11 @@ public class ParseSetup extends Iced {
       if (namesA == null) return namesB;
       else if (namesB == null) return namesA;
       else {
+        if (namesA.length != namesB.length) {
+          throw new ParseDataset.H2OParseException("Column length does not match between files.");
+        }
         for (int i = 0; i < namesA.length; i++) {
-          if (i > namesB.length || !namesA[i].equals(namesB[i])) {
-            // TODO improvement: if files match except for blanks, merge?
+          if (!namesA[i].equals(namesB[i])) {
             throw new ParseDataset.H2OParseException("Column names do not match between files.");
           }
         }

@@ -465,12 +465,7 @@ MAIN_LOOP:
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], parseSetup._separator, parseSetup._single_quotes);
       if (parseSetup._column_names != null) {
-        if(parseSetup._number_columns != firstLine.length){
-          // If column count on first row does not match give number of columns, assume it's data.
-          hasHdr = false;
-        } else {
           hasHdr = parseSetup._column_names.length == parseSetup._number_columns; 
-        }
       } else { // declared to have header, but no column names provided, assume header exist in all files
         parseSetup._column_names = firstLine;
       }
