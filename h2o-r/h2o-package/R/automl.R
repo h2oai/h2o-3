@@ -199,7 +199,12 @@ h2o.automl <- function(x, y, training_frame,
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  leaderboard <- as.h2o(leaderboard)  # Convert to H2OFrame
+  
+  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+  h2o.no_progress()
+  leaderboard <- as.h2o(leaderboard)
+  h2o.show_progress()
+
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
   # If leaderboard is empty, create a "dummy" leader
   if (nrow(leaderboard) > 1) {
