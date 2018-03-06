@@ -28,7 +28,7 @@ import java.util.Arrays;
  * (otherwise the same column name would appear twice in the result).
  * <p/>
  * If the client side wants to allow named columns to be merged, the client
- * side is reponsible for renaming columns as needed to bring the names into
+ * side is responsible for renaming columns as needed to bring the names into
  * alignment as above.  This can be as simple as renaming the RHS to match the
  * LHS column names.  Duplicate columns NOT part of the merge are still not
  * allowed - because the resulting Frame will end up with duplicate column
@@ -39,12 +39,12 @@ import java.util.Arrays;
  * allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  * </p>
  * We support merge method hash, radix and auto.  If a user chooses auto, the
- * algorithm will pick the most appropriate merge method based on the contents of the
- * leftFrame and rightFrame.  Note that the radix method cannot work with String columns,
- * they need to be casted to enums/integer columns before calling merge.  However, it
- * gives accurate merge results even if there are duplicated rows in the rightFrame.  The
- * hash method will tolerate string columns in the rightFrames.  However, it assumes that
- * there are not duplicated rows in the rightFrame.
+ * algorithm will default to method radix which is the better algorithm.  It
+ * gives accurate merge results even if there are duplicated rows in the rightFrame.
+ * In addition, the radix method will allow the presences of string columns in
+ * the frames.  The Hash method will not give correct merge results if there
+ * are duplicated rows in the rightFrame.  The hash method cannot work with String columns,
+ * they need to be casted to enums/integer columns before calling merge.
  */
 public class AstMerge extends AstPrimitive {
   @Override
@@ -113,10 +113,9 @@ public class AstMerge extends AstPrimitive {
         if (lv.get_type() != rv.get_type())
           throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[ncols] +
               " found types " + lv.get_type_str() + " and " + rv.get_type_str());
-        if (lv.isString())
-          throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
-        if (lv.isString() && method.equals("auto"))
-          method = "hash";  // set method to hash if user choose auto but there is string column in right frame
+        if (method.equals("hash") && lv.isString())
+          throw new IllegalArgumentException("Cannot merge Strings with hash method; flip toCategoricalVec first" +
+                  " or set your method to auto or radix");
     }
 
     // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
@@ -130,7 +129,7 @@ public class AstMerge extends AstPrimitive {
       }
     }.doAllNodes();
 
-    if (method.equals("radix") || method.equals("auto")) {
+    if (method.equals("radix") || method.equals("auto")) {  // default to radix as default merge metho
       // Build categorical mappings, to rapidly convert categoricals from the left to the right
       // With the sortingMerge approach there is no variance here: always map left to right
       if (allLeft && allRite)
@@ -141,10 +140,7 @@ public class AstMerge extends AstPrimitive {
       for (int i = 0; i < ncols; i++) { // flip the frame orders for allRite
         Vec lv = onlyLeftAllOff ? l.vec(i) : r.vec(i);
         Vec rv = onlyLeftAllOff ? r.vec(i) : l.vec(i);
-        if (rv.isString()) {
-          throw new IllegalArgumentException("Your right/y frame contains String columns.  Flip toCategoricalVec" +
-                  " first or choose the hash method instead.");
-        }
+
         if (onlyLeftAllOff ? lv.isCategorical() : rv.isCategorical()) {
           assert onlyLeftAllOff ? rv.isCategorical() : lv.isCategorical();  // if not, would have thrown above
           id_maps[i] = onlyLeftAllOff ? CategoricalWrappedVec.computeMap(lv.domain(), rv.domain()) : CategoricalWrappedVec.computeMap(rv.domain(), lv.domain());
