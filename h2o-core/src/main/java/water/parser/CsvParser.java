@@ -458,16 +458,21 @@ MAIN_LOOP:
     return dout;
   }
 
-  @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
+  @Override
+  protected int fileHasHeader(byte[] bits, ParseSetup parseSetup) {
     boolean hasHdr = true;
     String[] lines = getFirstLines(bits);
     if (lines != null && lines.length > 0) {
-      String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
-      if (_setup._column_names != null) {
-        for (int i = 0; hasHdr && i < firstLine.length; ++i)
-          hasHdr = (_setup._column_names[i] == firstLine[i]) || (_setup._column_names[i] != null && _setup._column_names[i].equalsIgnoreCase(firstLine[i]));
+      String[] firstLine = determineTokens(lines[0], parseSetup._separator, parseSetup._single_quotes);
+      if (parseSetup._column_names != null) {
+        if(parseSetup._number_columns != firstLine.length){
+          // If column count on first row does not match give number of columns, assume it's data.
+          hasHdr = false;
+        } else {
+          hasHdr = parseSetup._column_names.length == parseSetup._number_columns; 
+        }
       } else { // declared to have header, but no column names provided, assume header exist in all files
-        _setup._column_names = firstLine;
+        parseSetup._column_names = firstLine;
       }
     } // else FIXME Throw exception
     return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
