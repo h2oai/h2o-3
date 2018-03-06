@@ -109,6 +109,20 @@ abstract public class Log {
     currentLevel = level;
   }
 
+  @Deprecated
+  /* Exists to ensure compatibility with previous H2O versions. Will be removed in the next major H2O release */
+  public static void setLogLevel(String level, boolean quiet){
+    quietLogging = quiet;
+    setLogLevel(Level.fromString(level));
+  }
+
+  @Deprecated
+  /* Exists to ensure compatibility with previous H2O versions. Will be removed in the next major H2O release */
+  public static void setLogLevel(String level){
+    quietLogging = true;
+    setLogLevel(Level.fromString(level));
+  }
+
   public static Level getCurrentLogLevel(){
     return currentLevel;
   }
@@ -135,7 +149,12 @@ abstract public class Log {
   }
 
   public static boolean isLoggingFor(Level level){
-    return  currentLevel.numLevel >= level.numLevel;
+    return currentLevel.numLevel >= level.numLevel;
+  }
+
+  @Deprecated
+  public static boolean isLoggingFor(String level){
+    return isLoggingFor(Level.fromString(level));
   }
 
   /**
@@ -153,6 +172,9 @@ abstract public class Log {
     return getLogDir() + File.separator + getLogFileName(level);
   }
 
+  @Deprecated
+  public static String getLogFilePath(String level) { return getLogFilePath(Level.fromString(level)); }
+
   /** Get path to HTTPD logs. They are special logs and therefore are handled separately */
   public static String getLogFilePathHTTPD(){
     return getLogDir() + File.separator + getLogFileNameHTTPD();
@@ -165,6 +187,8 @@ abstract public class Log {
     return getLogFileNamePrefix() + getLogFileNameSuffix(level);
   }
 
+  @Deprecated
+  public static String getLogFileName(String level) { return getLogFileName(Level.fromString(level)); }
 
   public static boolean isLoggerInitialized(){
     return logDir != null;
@@ -178,6 +202,11 @@ abstract public class Log {
   public static void init(Level level, boolean quiet) {
     currentLevel = level;
     quietLogging = quiet;
+  }
+
+  @Deprecated
+  public static void init(String level, boolean quiet) {
+    init(Level.fromString(level), quiet);
   }
 
   /** Get name of HTTPD logs. They are special logs and therefore are handled separately */
