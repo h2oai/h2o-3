@@ -71,6 +71,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Vec v = _parms.train().vec(col);
           if (v == null || v.get_type() != Vec.T_CAT)
             error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          if (_parms._interactions != null) {
+            for (String inter : _parms._interactions) {
+              if (col.equals(inter)) {
+                // Makes implementation simpler and should not have an actual impact anyway
+                error("stratify_by", "stratification column '" + col + "' cannot be used in an implicit interaction. " +
+                        "Use explicit (pair-wise) interactions instead");
+                break;
+              }
+            }
+          }
         }
       }
     }
