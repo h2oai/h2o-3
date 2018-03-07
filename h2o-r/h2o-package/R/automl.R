@@ -201,16 +201,14 @@ h2o.automl <- function(x, y, training_frame,
   row.names(leaderboard) <- seq(nrow(leaderboard))
   
   # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
-  # If any failure happens, revert back to h2o.show_progress() and display the error message.
+  # If any failure happens, revert back to user's original setting for progress and display the error message.
+  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
   h2o.no_progress()
   leaderboard <- tryCatch(
     as.h2o(leaderboard),
-    error = function(e) {
-      h2o.show_progress()
-      stop(e$message)
-    }
+    error = identity,
+    finally = if (is_progress) h2o.show_progress()
   )
-  h2o.show_progress()
 
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
   # If leaderboard is empty, create a "dummy" leader
