@@ -2697,9 +2697,9 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
 
     for param in hyper_keys:
 
-        # this param should be between 0 and 2
+        # this param should be > 0 and <= 2
         if param == "col_sample_rate_change_per_level":
-            param_len = len([x for x in hyper_params["col_sample_rate_change_per_level"] if (x >= 0)
+            param_len = len([x for x in hyper_params["col_sample_rate_change_per_level"] if (x > 0)
                                  and (x <= 2)])
         elif param in params_zero_one:
             param_len = len([x for x in hyper_params[param] if (x >= 0)
