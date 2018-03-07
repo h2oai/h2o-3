@@ -32,6 +32,13 @@ Defining a PCA Model
    -  **Randomized**: Uses randomized subspace iteration method
    -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
+-  `pca_impl <algo-params/pca_impl.html>`__: Specify the implementation to use for computing PCA (via SVD or EVD). Available options include:
+
+   - **mtj_evd_densematrix**: Eigenvalue decompositions for dense matrix using Matrix Toolkit Java (`MTJ <https://github.com/fommil/matrix-toolkits-java/>`__)
+   - **mtj_evd_symmmatrix**: Eigenvalue decompositions for symmetric matrix using Matrix Toolkit Java (`MTJ <https://github.com/fommil/matrix-toolkits-java/>`__) (default)
+   - **mtj_svd_densematrix**: Singular-value decompositions for dense matrix using Matrix Toolkit Java (`MTJ <https://github.com/fommil/matrix-toolkits-java/>`__)
+   - **jama**: Eigenvalue decompositions for dense matrix using Java Matrix (`JAMA <http://math.nist.gov/javanumerics/jama/>`__)
+
 -  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to 9 and defaults to 1.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
