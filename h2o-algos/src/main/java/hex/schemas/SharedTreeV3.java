@@ -81,7 +81,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double col_sample_rate_per_tree;
 
-    @API(help = "Relative change of the column sampling rate for every level (from 0.0 to 2.0)", level = API.Level.expert, gridable = true)
+    @API(help = "Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)", level = API.Level.expert, gridable = true)
     public double col_sample_rate_change_per_level;
 
     @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)

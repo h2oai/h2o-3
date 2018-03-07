@@ -22,7 +22,7 @@ As indicated above, this option is multiplicative with ``col_sample_rate``. The 
 
 	col_sample_rate_per_tree * col_sample_rate * col_sample_rate_change_per_level^depth
 
-This option defaults to 1.0 and can be in the range of 0.0 to 2.0.
+This option defaults to 1.0 and must be > 0.0 and <= 2.0.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

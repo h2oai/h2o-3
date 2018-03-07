@@ -77,7 +77,7 @@
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 1e-05.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",

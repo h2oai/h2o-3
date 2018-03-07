@@ -196,7 +196,7 @@ Defining a DRF Model
    previously trained model. Use this option to build a new model as a
    continuation of a previously generated model.
 
--  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value from 0.0 to 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
    level 1: **col\_sample_rate**
   

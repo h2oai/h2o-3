@@ -167,7 +167,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
       error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
     if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
-      error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be between 0 and 2");
+      error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be > 0" +
+              " and <= 2");
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
