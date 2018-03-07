@@ -466,7 +466,14 @@ MAIN_LOOP:
       String[] firstLine = determineTokens(lines[0], parseSetup._separator, parseSetup._single_quotes);
       String[] secondLine = determineTokens(lines[1], parseSetup._separator, parseSetup._single_quotes);
       if (parseSetup._column_names != null) {
-          hasHdr = parseSetup._column_names.length == parseSetup._number_columns && ParseSetup.hasHeader(firstLine, secondLine); 
+        // First the the exact match
+        for (int i = 0; hasHdr && i < firstLine.length; ++i) {
+          hasHdr = (_setup._column_names[i] == firstLine[i]) || (_setup._column_names[i] != null && _setup._column_names[i].equalsIgnoreCase(firstLine[i]));
+        }
+        // If the header is not an exact match, try heuristics
+        if (!hasHdr) {
+          hasHdr = parseSetup._column_names.length == parseSetup._number_columns && ParseSetup.hasHeader(firstLine, secondLine);
+        }
       } else { // declared to have header, but no column names provided, assume header exist in all files
         parseSetup._column_names = firstLine;
       }
