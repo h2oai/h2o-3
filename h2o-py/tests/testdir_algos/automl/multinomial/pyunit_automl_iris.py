@@ -25,11 +25,6 @@ def iris_automl():
     print(aml.leaderboard)
     assert set(aml.leaderboard.columns) == set(["model_id","mean_per_class_error"])
 
-    # Check that a StackedEnsemble model was trained
-    lbdf = aml.leaderboard.as_data_frame()
-    assert len([x for x in lbdf['model_id'] if "StackedEnsemble" in x]) > 0
-
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(iris_automl)
 else:
