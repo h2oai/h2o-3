@@ -462,10 +462,11 @@ MAIN_LOOP:
   protected int fileHasHeader(byte[] bits, ParseSetup parseSetup) {
     boolean hasHdr = true;
     String[] lines = getFirstLines(bits);
-    if (lines != null && lines.length > 0) {
+    if (lines != null && lines.length > 1) {
       String[] firstLine = determineTokens(lines[0], parseSetup._separator, parseSetup._single_quotes);
+      String[] secondLine = determineTokens(lines[1], parseSetup._separator, parseSetup._single_quotes);
       if (parseSetup._column_names != null) {
-          hasHdr = parseSetup._column_names.length == parseSetup._number_columns; 
+          hasHdr = parseSetup._column_names.length == parseSetup._number_columns && ParseSetup.hasHeader(firstLine, secondLine); 
       } else { // declared to have header, but no column names provided, assume header exist in all files
         parseSetup._column_names = firstLine;
       }
