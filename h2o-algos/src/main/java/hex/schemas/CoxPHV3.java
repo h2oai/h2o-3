@@ -28,28 +28,28 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "interaction_pairs"
     };
 
-    @API(help="rcall", direction = API.Direction.INPUT)
+    @API(help="How was the model invoked.", direction = API.Direction.INOUT)
     public String rcall;
 
-    @API(help="stop_column", direction = API.Direction.INOUT)
-    public String stop_column;
-
-    @API(help="start_column", direction = API.Direction.INOUT)
+    @API(help="Start Time Column.", direction = API.Direction.INOUT)
     public String start_column;
 
-    @API(help="stratify_by", direction = API.Direction.INOUT)
+    @API(help="Stop Time Column.", direction = API.Direction.INOUT)
+    public String stop_column;
+
+    @API(help="List of columns to use for stratification.", direction = API.Direction.INOUT)
     public String[] stratify_by;
 
-    @API(help="ties", values = {"efron", "breslow"}, direction = API.Direction.INOUT)
+    @API(help="Method for Handling Ties.", values = {"efron", "breslow"}, direction = API.Direction.INOUT)
     public CoxPHParameters.CoxPHTies ties;
 
-    @API(help="init", direction = API.Direction.INOUT)
+    @API(help="Coefficient starting value.", direction = API.Direction.INOUT)
     public double init;
 
-    @API(help="lre_min", direction = API.Direction.INOUT)
+    @API(help="Minimum log-relative error.", direction = API.Direction.INOUT)
     public double lre_min;
 
-    @API(help="iter_max", direction = API.Direction.INOUT)
+    @API(help="Maximum number of iterations.", direction = API.Direction.INOUT)
     public int iter_max;
 
     @API(help="A list of columns that should only be used to create interactions but should not itself participate in model training.", direction=API.Direction.INPUT, level=API.Level.expert)
