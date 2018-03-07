@@ -122,7 +122,9 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
     if (_parms.isStratified() && (test.vec(_parms._strata_column) == null)) {
-      test.add(_parms._strata_column, test.anyVec().makeCon(Double.NaN));
+      Vec strataVec = test.anyVec().makeCon(Double.NaN);
+      _toDelete.put(strataVec._key, "adapted missing strata vector");
+      test.add(_parms._strata_column, strataVec);
     }
     return super.adaptTestForTrain(test, expensive, computeMetrics);
   }
