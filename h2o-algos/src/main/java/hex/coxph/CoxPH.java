@@ -5,8 +5,11 @@ import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 import java.util.Arrays;
 
@@ -62,6 +65,14 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         if (_parms.startVec().min() >= _parms.stopVec().max())
           error("start_column", "start times must be strictly less than stop times");
       }
+
+      if (_parms.isStratified()) {
+        for (String col : _parms._stratify_by) {
+          Vec v = _parms.train().vec(col);
+          if (v == null || v.get_type() != Vec.T_CAT)
+            error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+        }
+      }
     }
 
     if (Double.isNaN(_parms._lre_min) || _parms._lre_min <= 0)
@@ -69,6 +80,42 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     if (_parms._iter_max < 1)
       error("iter_max", "iter_max must be a positive integer");
+  }
+
+  private static class StrataTask extends MRTask<StrataTask> {
+    private IcedHashMap<AstGroup.G, IcedInt> _strata;
+    private int[] _cols;
+
+    private StrataTask(IcedHashMap<AstGroup.G, IcedInt> strata, int[] cols) { _strata = strata; _cols = cols; }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      AstGroup.G g = new AstGroup.G(_cols.length, null);
+      for (int i = 0; i < cs[0].len(); i++) {
+        g.fill(i, cs, _cols);
+        IcedInt strataId = _strata.get(g);
+        if (strataId == null)
+          nc.addNA();
+        else
+          nc.addNum(strataId._val);
+      }
+    }
+
+    static Vec makeStrata(Frame f, String[] stratifyBy) {
+      int[] idxs = f.find(stratifyBy);
+      IcedHashMap<AstGroup.G, String> groups = AstGroup.doGroups(f, idxs, AstGroup.aggNRows());
+      IcedHashMap<AstGroup.G, IcedInt> mapping = new IcedHashMap<>();
+      groups: for (AstGroup.G g : groups.keySet()) {
+        for (double val : g._gs)
+          if (Double.isNaN(val))
+            continue groups;
+        mapping.put(g, new IcedInt(mapping.size()));
+      }
+      Vec strataVec = new StrataTask(mapping, idxs).doAll(Vec.T_NUM, f).outputFrame().anyVec();
+      f.remove(idxs);
+      return strataVec;
+    }
+
   }
 
   public class CoxPHDriver extends Driver {
@@ -97,8 +144,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           f.add(names[i], vecs[i]);
       }
 
+      Vec strataVec = null;
+      if (_parms.isStratified()) {
+        strataVec = StrataTask.makeStrata(f, _parms._stratify_by);
+      }
+
       if (weightVec != null)
         f.add(_parms._weights_column, weightVec);
+      if (strataVec != null)
+        f.add("__strata", strataVec);
       if (startVec != null)
         f.add(_parms._start_column, startVec);
       if (stopVec != null)
@@ -133,13 +187,14 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
 
       final double[] time = CollectTimes.collect(p.stopVec());
+      final int n_time = time.length * (p.isStratified() ? 1 + (int) dinfo._adaptedFrame.vec(p._strata_column).max() : 1);
       o._time = time;
-      o._n_risk = MemoryManager.malloc8d(time.length);
-      o._n_event = MemoryManager.malloc8d(time.length);
-      o._n_censor = MemoryManager.malloc8d(time.length);
-      o._cumhaz_0 = MemoryManager.malloc8d(time.length);
-      o._var_cumhaz_1 = MemoryManager.malloc8d(time.length);
-      o._var_cumhaz_2 = malloc2DArray(time.length, n_coef);
+      o._n_risk = MemoryManager.malloc8d(n_time);
+      o._n_event = MemoryManager.malloc8d(n_time);
+      o._n_censor = MemoryManager.malloc8d(n_time);
+      o._cumhaz_0 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_2 = malloc2DArray(n_time, n_coef);
     }
 
     protected void calcCounts(CoxPHModel model, final CoxPHTask coxMR) {
@@ -383,8 +438,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
         Frame f = reorderTrainFrameColumns();
 
-        int nResponses = _parms.startVec() == null ? 2 : 3;
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec());
+        int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
+                .disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -406,6 +462,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           newCoef[j] = model._parms._init;
         double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
+        final boolean has_strata_column = _parms.isStratified();
         final boolean has_weights_column = (_weights != null);
         final ComputationState cs = new ComputationState(n_coef);
         Timer iterTimer = null;
@@ -415,7 +472,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           Timer aggregTimer = new Timer();
           final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
-                  n_offsets, has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+                  n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column).doAll(dinfo._adaptedFrame);
           Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
           Timer loglikTimer = new Timer();
@@ -491,8 +548,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private final double[] _time;
     private final int      _n_offsets;
     private final boolean  _has_start_column;
+    private final boolean  _has_strata_column;
     private final boolean  _has_weights_column;
     private final long     _min_event;
+    private final int      _num_strata;
 
     long         n;
     double       sumWeights;
@@ -512,19 +571,21 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[][][] rcumsumXXRisk;
 
     CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
-              final int n_offsets, final boolean has_start_column, final boolean has_weights_column) {
+              final int n_offsets, final boolean has_start_column, Vec strata_column, final boolean has_weights_column) {
       super(jobKey, dinfo);
       _beta               = beta;
       _time = time;
       _min_event          = min_event;
       _n_offsets          = n_offsets;
       _has_start_column   = has_start_column;
+      _has_strata_column  = strata_column != null;
       _has_weights_column = has_weights_column;
+      _num_strata         = _has_strata_column ? 1 + (int) strata_column.max() : 1;
     }
 
     @Override
     protected boolean chunkInit(){
-      final int n_time = _time.length;
+      final int n_time = _time.length * _num_strata;
       final int n_coef = _beta.length;
       sumWeightedCatX  = MemoryManager.malloc8d(_dinfo.numCats());
       sumWeightedNumX  = MemoryManager.malloc8d(_dinfo.numNums());
@@ -553,16 +614,24 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final double weight = _has_weights_column ? response[0] : 1.0;
       if (weight <= 0)
         throw new IllegalArgumentException("weights must be positive values");
-      final long event = (long) (response[response.length - 1] - _min_event);
-      double startTime = _has_start_column ? response[response.length - 3] : _time[0] - 1;
-      double stopTime = response[response.length - 2];
+      int respIdx = response.length - 1;
+      final long event = (long) (response[respIdx--] - _min_event);
+      double stopTime = response[respIdx--];
+      double startTime = _has_start_column ? response[respIdx--] : _time[0] - 1;
+      double strata = _has_strata_column ? response[respIdx--] : 0;
+      assert respIdx == -1 : "expected to use all response data";
+      if (Double.isNaN(strata))
+        return; // skip this row
       int t1c = Arrays.binarySearch(_time, startTime);
-      final int t1 = (t1c < 0) ? -t1c - 1 : t1c + 1;
-      final int t2 = Arrays.binarySearch(_time, stopTime);
+      int t1 = (t1c < 0) ? -t1c - 1 : t1c + 1;
+      int t2 = Arrays.binarySearch(_time, stopTime);
       if (t2 < 0)
         throw new IllegalStateException("Encountered unexpected stop time");
       if (t1 > t2)
         throw new IllegalArgumentException("start times must be strictly less than stop times");
+      final int strataOffset = _time.length * (int) strata;
+      t1 += strataOffset;
+      t2 += strataOffset;
       final int numStart = _dinfo.numStart();
       sumWeights += weight;
       for (int j = 0; j < ncats; ++j)
@@ -653,16 +722,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     protected void postGlobal() {
       if (!_has_start_column) {
         for (int t = rcumsumRisk.length - 2; t >= 0; --t)
-          rcumsumRisk[t] += rcumsumRisk[t + 1];
+          rcumsumRisk[t] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumRisk[t + 1];
 
         for (int t = rcumsumXRisk.length - 2; t >= 0; --t)
           for (int j = 0; j < rcumsumXRisk[t].length; ++j)
-            rcumsumXRisk[t][j] += rcumsumXRisk[t + 1][j];
+            rcumsumXRisk[t][j] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXRisk[t + 1][j];
 
         for (int t = rcumsumXXRisk.length - 2; t >= 0; --t)
           for (int j = 0; j < rcumsumXXRisk[t].length; ++j)
             for (int k = 0; k < rcumsumXXRisk[t][j].length; ++k)
-              rcumsumXXRisk[t][j][k] += rcumsumXXRisk[t + 1][j][k];
+              rcumsumXXRisk[t][j][k] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXXRisk[t + 1][j][k];
       }
     }
   }

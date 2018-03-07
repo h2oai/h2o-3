@@ -316,6 +316,11 @@ public class DataInfo extends Keyed<DataInfo> {
     _intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][];
   }
 
+  public DataInfo disableIntercept() {
+    _intercept = false;
+    return this;
+  }
+
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {
     this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, missingBucket, weight, offset, fold);
     _intercept = intercept;

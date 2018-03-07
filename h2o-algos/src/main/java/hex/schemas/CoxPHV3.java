@@ -18,6 +18,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "ignored_columns",
               "weights_column",
               "offset_column",
+              "stratify_by",
               "ties",
               "init",
               "lre_min",
@@ -35,6 +36,9 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 
     @API(help="start_column", direction = API.Direction.INOUT)
     public String start_column;
+
+    @API(help="stratify_by", direction = API.Direction.INOUT)
+    public String[] stratify_by;
 
     @API(help="ties", values = {"efron", "breslow"}, direction = API.Direction.INOUT)
     public CoxPHParameters.CoxPHTies ties;

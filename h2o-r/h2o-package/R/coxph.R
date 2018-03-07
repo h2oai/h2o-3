@@ -18,6 +18,7 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param stratify_by stratify_by
 #' @param ties ties Must be one of: "efron", "breslow". Defaults to efron.
 #' @param init init Defaults to 0.
 #' @param lre_min lre_min Defaults to 9.
@@ -33,6 +34,7 @@ h2o.coxph <- function(x, event_column, training_frame,
                       stop_column = NULL,
                       weights_column = NULL,
                       offset_column = NULL,
+                      stratify_by = NULL,
                       ties = c("efron", "breslow"),
                       init = 0,
                       lre_min = 9,
@@ -86,6 +88,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(stratify_by))
+    parms$stratify_by <- stratify_by
   if (!missing(ties))
     parms$ties <- ties
   if (!missing(init))
