@@ -26,6 +26,7 @@ test.CoxPH.strata2 <- function() {
     expect_equal(fit$coef, .as.survival.coxph.model(fit.hex@model)$coef, tolerance = 1e-6, scale = 1)
     expect_equal(fit$var, .as.survival.coxph.model(fit.hex@model)$var, tolerance = 1e-6, scale = 1)
 
+    # We make predictions even if the strata cannot be defined - need to revisit this later
     lp <- as.data.frame(h2o.predict(fit.hex, as.h2o(pbc.ext[! is.na(pbc.ext$ascites), ])))$lp
     expect_equal(fit$linear.predict, lp)
 }
