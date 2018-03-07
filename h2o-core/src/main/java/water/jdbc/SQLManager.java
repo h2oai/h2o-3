@@ -15,8 +15,10 @@ import static water.fvec.Vec.makeCon;
 public class SQLManager {
 
   private final static String TEMP_TABLE_NAME = "table_for_h2o_import";
-  //upper bound on number of connections to database
+  //A target upper bound on number of connections to database
   private final static int MAX_CONNECTIONS = 100;
+  //A lower bound on number of connections to database per node
+  private static final int MIN_CONNECTIONS_PER_NODE = 1;
   private static final String NETEZZA_DB_TYPE = "netezza";
   private static final String ORACLE_DB_TYPE = "oracle";
   private static final String SQL_SERVER_DB_TYPE = "sqlserver";
@@ -245,7 +247,9 @@ public class SQLManager {
     @Override
     protected void setupLocal() {
       int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
-      conPerNode = Math.min(conPerNode, SQLManager.MAX_CONNECTIONS / H2O.getCloudSize()); 
+      conPerNode = Math.min(conPerNode, SQLManager.MAX_CONNECTIONS / H2O.getCloudSize());
+      //Make sure at least some connections are available to a node
+      conPerNode = Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
       Log.info("Database connections per node: " + conPerNode);
       sqlConn = new ArrayBlockingQueue<>(conPerNode);
       try {
