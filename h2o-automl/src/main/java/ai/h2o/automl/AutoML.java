@@ -1168,7 +1168,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (allModels.length == 0) {
       this.job.update(50, "No models built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
-    } else if (ArrayUtils.contains(skipAlgosList, "StackedEnsemble")) {
+    } else if (allModels.length == 1) {
+      this.job.update(50, "One model built; StackedEnsemble builds skipped");
+      userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
+    }
+    else if (ArrayUtils.contains(skipAlgosList, "StackedEnsemble")) {
       this.job.update(50, "StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
     } else {
