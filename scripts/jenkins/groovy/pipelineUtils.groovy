@@ -63,9 +63,16 @@ class PipelineUtils {
             final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} https://${registry}/v2/${imageName}/tags/list".execute().text
 
             final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-            if (jsonResponse.errors || jsonResponse.tags == null) {
-                context.echo "response: ${response}"
-                context.error "Docker registry check failed."
+            if (jsonResponse.errors) {
+                for (Map error in jsonResponse.errors) {
+                    if (error.code == "NAME_UNKNOWN") {
+                        return false
+                    }
+                }
+                if (jsonResponse.tags == null) {
+                    context.echo "response: ${response}"
+                    context.error "Docker registry check failed."
+                }
             }
 
             return jsonResponse.tags.contains(version)
