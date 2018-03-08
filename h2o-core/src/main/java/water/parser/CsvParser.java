@@ -6,6 +6,7 @@ import water.fvec.FileVec;
 import water.Key;
 import water.util.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -516,7 +517,7 @@ MAIN_LOOP:
     while (offset < bits.length) {
       while ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_SPACE)) ++offset; // skip first whitespace
       if(offset == bits.length)break;
-      StringBuilder t = new StringBuilder();
+      final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
       byte c = bits[offset];
       if ((c == CsvParser.CHAR_DOUBLE_QUOTE) || (c == singleQuote)) {
         quotes = c;
@@ -527,7 +528,7 @@ MAIN_LOOP:
         if ((c == quotes)) {
           ++offset;
           if ((offset < bits.length) && (bits[offset] == c)) {
-            t.append((char)c);
+            byteArrayOutputStream.write(c);
             ++offset;
             continue;
           }
@@ -535,12 +536,12 @@ MAIN_LOOP:
         } else if( quotes == 0 && ((c == separator) || CsvParser.isEOL(c)) ) {
           break;
         } else {
-          t.append((char)c);
+          byteArrayOutputStream.write(c);
           ++offset;
         }
       }
       c = (offset == bits.length) ? CsvParser.CHAR_LF : bits[offset];
-      tokens.add(t.toString());
+      tokens.add(byteArrayOutputStream.toString());
       if( CsvParser.isEOL(c) || (offset == bits.length) )
         break;
       if (c != separator)
