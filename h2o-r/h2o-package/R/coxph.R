@@ -27,6 +27,8 @@
 #'        training.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
+#' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
+#'        FALSE.
 #' @export
 h2o.coxph <- function(x, event_column, training_frame,
                       model_id = NULL,
@@ -41,7 +43,8 @@ h2o.coxph <- function(x, event_column, training_frame,
                       iter_max = 20,
                       interactions_only = NULL,
                       interactions = NULL,
-                      interaction_pairs = NULL
+                      interaction_pairs = NULL,
+                      use_all_factor_levels = FALSE
                       ) 
 {
 
@@ -104,6 +107,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$interactions <- interactions
   if (!missing(interaction_pairs))
     parms$interaction_pairs <- interaction_pairs
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
   # Error check and build model
   .h2o.modelJob('coxph', parms, h2oRestApiVersion = 3) 
 }

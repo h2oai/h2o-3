@@ -40,6 +40,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public double _lre_min = 9;
     public int _iter_max = 20;
 
+    public boolean _use_all_factor_levels;
+
     public String[] _interactions_only;
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
