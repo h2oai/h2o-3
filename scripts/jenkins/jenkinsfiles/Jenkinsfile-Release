@@ -184,7 +184,7 @@ try {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, PUBLISH_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, PUBLISH_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                        insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                        insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
 
