@@ -71,6 +71,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Vec v = _parms.train().vec(col);
           if (v == null || v.get_type() != Vec.T_CAT)
             error("stratify_by", "non-categorical column '" + col + "' cannot be used for stratification");
+          if (_parms._interactions != null) {
+            for (String inter : _parms._interactions) {
+              if (col.equals(inter)) {
+                // Makes implementation simpler and should not have an actual impact anyway
+                error("stratify_by", "stratification column '" + col + "' cannot be used in an implicit interaction. " +
+                        "Use explicit (pair-wise) interactions instead");
+                break;
+              }
+            }
+          }
         }
       }
     }
@@ -111,9 +121,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             continue groups;
         mapping.put(g, new IcedInt(mapping.size()));
       }
-      Vec strataVec = new StrataTask(mapping, idxs).doAll(Vec.T_NUM, f).outputFrame().anyVec();
-      f.remove(idxs);
-      return strataVec;
+      return new StrataTask(mapping, idxs).doAll(Vec.T_NUM, f).outputFrame().anyVec();
     }
 
   }
@@ -147,12 +155,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       Vec strataVec = null;
       if (_parms.isStratified()) {
         strataVec = StrataTask.makeStrata(f, _parms._stratify_by);
+        if (_parms.interactionSpec() == null) {
+          // no interactions => we can drop the columns earlier
+          f.remove(_parms._stratify_by);
+        }
       }
 
       if (weightVec != null)
         f.add(_parms._weights_column, weightVec);
       if (strataVec != null)
-        f.add("__strata", strataVec);
+        f.add(_parms._strata_column, strataVec);
       if (startVec != null)
         f.add(_parms._start_column, startVec);
       if (stopVec != null)
@@ -462,7 +474,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           newCoef[j] = model._parms._init;
         double logLik = -Double.MAX_VALUE;
         final boolean has_start_column = (model._parms.startVec() != null);
-        final boolean has_strata_column = _parms.isStratified();
         final boolean has_weights_column = (_weights != null);
         final ComputationState cs = new ComputationState(n_coef);
         Timer iterTimer = null;
