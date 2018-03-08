@@ -6,7 +6,7 @@ final String REGISTRY_PREFIX = "${params.dockerRegistry}"
 final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-hadoop"
 
 def pipelineContext = null
-String version = null
+def version = null
 
 properties(
     [
