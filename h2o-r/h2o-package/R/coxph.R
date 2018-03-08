@@ -10,19 +10,19 @@
 #' @param event_column The name of binary data column in the training frame indicating the occurrence of an event.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
-#' @param start_column start_column
-#' @param stop_column stop_column
+#' @param start_column Start Time Column.
+#' @param stop_column Stop Time Column.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
-#' @param stratify_by stratify_by
-#' @param ties ties Must be one of: "efron", "breslow". Defaults to efron.
-#' @param init init Defaults to 0.
-#' @param lre_min lre_min Defaults to 9.
-#' @param iter_max iter_max Defaults to 20.
+#' @param stratify_by List of columns to use for stratification.
+#' @param ties Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.
+#' @param init Coefficient starting value. Defaults to 0.
+#' @param lre_min Minimum log-relative error. Defaults to 9.
+#' @param iter_max Maximum number of iterations. Defaults to 20.
 #' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
 #'        training.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
