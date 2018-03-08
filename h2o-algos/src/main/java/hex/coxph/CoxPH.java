@@ -451,7 +451,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Frame f = reorderTrainFrameColumns();
 
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, false, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
                 .disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);

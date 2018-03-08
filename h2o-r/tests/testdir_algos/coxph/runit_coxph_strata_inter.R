@@ -21,7 +21,7 @@ test.CoxPH.strata_inter <- function() {
 
     expect_equal(fit.coef, fit.ext$coefficients)
 
-    # 2. explicit interaction in H2O
+    # 3. explicit interaction in H2O
     lung.hex <- as.h2o(lung.ext)
     lung.hex$sex <- as.factor(lung.hex$sex)
     lung.hex$ph.ecog <- as.factor(lung.hex$ph.ecog)
@@ -30,6 +30,16 @@ test.CoxPH.strata_inter <- function() {
                          stratify_by = c("sex", "ph.ecog"), training_frame = lung.hex)
 
     expect_equal(fit.coef, .as.survival.coxph.model(fit.hex@model)$coef)
+
+    # 4. implicit interaction in H2O
+    fit.hex.implicit <- h2o.coxph(stop_column = "time", event_column = "status",
+                                  x = c("wt.loss", "sex", "ph.ecog"),
+                                  interaction_pairs = list(c("age", "sex")),
+                                  stratify_by = c("sex", "ph.ecog"),
+                                  training_frame = lung.hex,
+                                  use_all_factor_levels = TRUE)
+
+    expect_equal(fit.coef, .as.survival.coxph.model(fit.hex.implicit@model)$coef[names(fit.coef)])
 }
 
 doTest("CoxPH: Test Stratification with Interactions", test.CoxPH.strata_inter)

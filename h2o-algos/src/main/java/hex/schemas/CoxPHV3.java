@@ -25,7 +25,8 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "iter_max",
               "interactions_only",
               "interactions",
-              "interaction_pairs"
+              "interaction_pairs",
+              "use_all_factor_levels"
     };
 
     @API(help="How was the model invoked.", direction = API.Direction.INOUT)
@@ -60,6 +61,9 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 
     @API(help="A list of pairwise (first order) column interactions.", direction= API.Direction.INPUT, level= API.Level.expert)
     public StringPairV3[] interaction_pairs;
+
+    @API(help="(Internal. For development only!) Indicates whether to use all factor levels.", direction = API.Direction.INPUT)
+    public boolean use_all_factor_levels;
 
   }
 }
