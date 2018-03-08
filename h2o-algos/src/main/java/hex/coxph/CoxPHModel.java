@@ -13,6 +13,9 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
@@ -43,7 +46,20 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
-    InteractionSpec interactionSpec() { return InteractionSpec.create(_interactions, _interaction_pairs, _interactions_only); }
+    InteractionSpec interactionSpec() {
+      // add "stratify by" columns to "interaction only"
+      final String[] interOnly;
+      if (_interactions_only != null && _stratify_by != null) {
+        String[] io = _interactions_only.clone();
+        Arrays.sort(io);
+        String[] sb = _stratify_by.clone();
+        Arrays.sort(sb);
+        interOnly = ArrayUtils.union(io, sb, true);
+      } else {
+        interOnly = _interactions_only != null ? _interactions_only : _stratify_by;
+      }
+      return InteractionSpec.create(_interactions, _interaction_pairs, interOnly);
+    }
 
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
   }
