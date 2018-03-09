@@ -24,7 +24,7 @@ public class LogTest {
 
   @Test
   public void testSetQuiet() {
-    // default default quiet mode is false
+    // default quiet mode is false
     Assert.assertFalse(Log.getQuiet());
     Log.setQuiet(true);
     Assert.assertTrue(Log.getQuiet());
@@ -83,7 +83,7 @@ public class LogTest {
       ArrayList<String> initialMsgs = (ArrayList<String>)f.get(null);
       Assert.assertEquals(initialMsgs.size(), 2); // there are 2 buffered messages
       Log.flushStdout();
-      Assert.assertEquals(initialMsgs.size(), 0); // there are zero buffered messages
+      Assert.assertEquals(initialMsgs.size(), 0); // there are no buffered messages
     } catch (NoSuchFieldException | IllegalAccessException e) {
         throw new RuntimeException("Can't happen: " + e);
     }
@@ -91,7 +91,7 @@ public class LogTest {
 
   @Test(expected = RuntimeException.class)
   public void testGetLogFileNamesFail(){
-    // trying to get log file names without checking if the logging is initialized lead to
+    // trying to get log file names without checking if the logging is initialized leads to
     // runtime exception
     Log.getLogFileNames();
   }
@@ -105,7 +105,7 @@ public class LogTest {
 
   @Test(expected = RuntimeException.class)
   public void testGetLogFilePathFailed(){
-    // trying to get log file path without checking if the logging is initialized lead to
+    // trying to get log file path without checking if the logging is initialized leads to
     // runtime exception
     Log.getLogFilePath(Log.Level.INFO);
   }
@@ -119,7 +119,7 @@ public class LogTest {
       Method m = Log.class.getDeclaredMethod("getLogFileNamePrefix");
       m.setAccessible(true);
       m.invoke(null);
-      Assert.assertEquals(path, Log.getLogDir() + File.separator + m.invoke(null) + "-3-INFO.log");
+      Assert.assertEquals(path, Log.getLogDir() + File.separator + m.invoke(null) + "-3-info.log");
 
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       throw new RuntimeException("Can't happen: " + e);

@@ -29,7 +29,7 @@ abstract public class Log {
 
   public enum Level {
     FATAL((byte)0),
-    ERROR((byte)1),
+    ERRR((byte)1),
     WARN((byte)2),
     INFO((byte)3),
     DEBUG((byte)4),
@@ -63,7 +63,7 @@ abstract public class Log {
 
   /** Basic logging methods */
   public static void fatal(Object... objs) { log(FATAL,objs); }
-  public static void err(Object... objs) { log(ERROR, objs); }
+  public static void err(Object... objs) { log(ERRR, objs); }
   public static void warn(Object... objs) { log(WARN, objs); }
   public static void info(Object... objs) { log(INFO, objs); }
   public static void debug(Object... objs) { log(DEBUG, objs); }
@@ -143,7 +143,7 @@ abstract public class Log {
   public static String[] getLogFileNames(){
     return new String[]{
             getLogFileName(FATAL),
-            getLogFileName(ERROR),
+            getLogFileName(ERRR),
             getLogFileName(WARN),
             getLogFileName(INFO),
             getLogFileName(DEBUG),
@@ -188,7 +188,7 @@ abstract public class Log {
    * Get log file name without the path for particular log level.
    */
   public static String getLogFileName(Level level) {
-    return getLogFileNamePrefix() + getLogFileNameSuffix(level);
+    return getLogFileNamePrefix() + "-" + level.getLevel() + "-" + getLogFileNameFromlevel(level) + ".log";
   }
 
   @Deprecated
@@ -199,8 +199,23 @@ abstract public class Log {
   }
 
   /** Get suffix of the log file name specific to particular log level */
-  private static String getLogFileNameSuffix(Level level) {
-      return "-" + level.getLevel() + "-" + level.toString().toLowerCase() + ".log";
+  private static String getLogFileNameFromlevel(Level level) {
+    switch (level){
+      case FATAL:
+        return "fatal";
+      case ERRR:
+        return "error";
+      case WARN:
+        return "warn";
+      case INFO:
+        return "info";
+      case DEBUG:
+        return "debug";
+      case TRACE:
+        return "trace";
+      default:
+          throw new RuntimeException("Unknown log level");
+    }
   }
 
   public static void init(Level level, boolean quiet) {
@@ -275,7 +290,7 @@ abstract public class Log {
 
     p.setProperty("log4j.appender.R5",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R5.Threshold",                "ERROR");
-    p.setProperty("log4j.appender.R5.File",                     getLogFilePath(ERROR));
+    p.setProperty("log4j.appender.R5.File",                     getLogFilePath(ERRR));
     p.setProperty("log4j.appender.R5.MaxFileSize",              "256KB");
     p.setProperty("log4j.appender.R5.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R5.layout",                   "org.apache.log4j.PatternLayout");
@@ -417,7 +432,7 @@ abstract public class Log {
 
     switch(level) {
       case FATAL: logger.fatal(sb); break;
-      case ERROR: logger.error(sb); break;
+      case ERRR: logger.error(sb); break;
       case WARN: logger.warn (sb); break;
       case INFO: logger.info (sb); break;
       case DEBUG: logger.debug(sb); break;

@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public final class ValidationMessageV3 extends SchemaV3<ValidationMessage, ValidationMessageV3> {
 
-  @API(help = "Type of validation message (ERROR, WARN, INFO, HIDE)", direction = API.Direction.OUTPUT)
+  @API(help = "Type of validation message (ERRR, WARN, INFO, HIDE)", direction = API.Direction.OUTPUT)
   public String message_type;
 
   @API(help = "Field to which the message applies", direction = API.Direction.OUTPUT)

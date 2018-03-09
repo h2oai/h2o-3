@@ -868,7 +868,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void hide (String field_name, String message) { message(Log.Level.TRACE, field_name, message); }
   public void info (String field_name, String message) { message(Log.Level.INFO, field_name, message); }
   public void warn (String field_name, String message) { message(Log.Level.WARN, field_name, message); }
-  public void error(String field_name, String message) { message(Log.Level.ERROR, field_name, message); }
+  public void error(String field_name, String message) { message(Log.Level.ERRR, field_name, message); }
   public void clearValidationErrors() {
     _messages = new ValidationMessage[0];
     _error_count = 0;
@@ -878,7 +878,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
 
-    if (Log.Level.ERROR.equals(log_level)) {
+    if (Log.Level.ERRR.equals(log_level)) {
       _error_count++;
     }
   }
@@ -887,7 +887,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( Log.Level.ERROR.equals(vm._log_level))
+      if( Log.Level.ERRR.equals(vm._log_level))
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
