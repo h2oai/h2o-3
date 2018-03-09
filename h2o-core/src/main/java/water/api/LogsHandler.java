@@ -27,9 +27,6 @@ public class LogsHandler extends Handler {
         if (name == null || name.equals("default")) {
           name = "debug";
         }
-        if(name.equals("error")){
-          name = "errr"; // change to our logging level
-        }
 
         switch (name) {
           case "stdout":

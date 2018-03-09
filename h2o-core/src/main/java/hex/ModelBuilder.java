@@ -458,7 +458,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         cvFramesForFailedModels.add(cvValid);
 
         for (ValidationMessage vm : cv_mb._messages)
-          message(vm._log_level, vm._field_name, vm._message);
+          message(vm._level, vm._field_name, vm._message);
       }
       cvModelBuilders[i] = cv_mb;
     }
@@ -861,24 +861,45 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return isClassifier();
   }
 
+  public enum ValidationMsgLevel {
+    TRACE("TRACE"), INFO("INFO"), WARN("WARN"), ERRR("ERRR");
+
+    private String level;
+
+    ValidationMsgLevel(String level){
+      this.level = level;
+    }
+
+    public String getMsgLevel(){
+      return level;
+    }
+
+    public static ValidationMsgLevel fromString(String level) {
+      if(level == null){
+        throw new IllegalArgumentException("Unsupported log level");
+      }
+      return ValidationMsgLevel.valueOf(level.toUpperCase());
+    }
+  }
+
   /** A list of field validation issues. */
   public ValidationMessage[] _messages = new ValidationMessage[0];
   private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
   public int error_count() { assert _error_count >= 0 : "init() not run yet"; return _error_count; }
-  public void hide (String field_name, String message) { message(Log.Level.TRACE, field_name, message); }
-  public void info (String field_name, String message) { message(Log.Level.INFO, field_name, message); }
-  public void warn (String field_name, String message) { message(Log.Level.WARN, field_name, message); }
-  public void error(String field_name, String message) { message(Log.Level.ERRR, field_name, message); }
+  public void hide (String field_name, String message) { message(ValidationMsgLevel.TRACE, field_name, message); }
+  public void info (String field_name, String message) { message(ValidationMsgLevel.INFO, field_name, message); }
+  public void warn (String field_name, String message) { message(ValidationMsgLevel.WARN, field_name, message); }
+  public void error(String field_name, String message) { message(ValidationMsgLevel.ERRR, field_name, message); }
   public void clearValidationErrors() {
     _messages = new ValidationMessage[0];
     _error_count = 0;
   }
 
-  public void message(Log.Level log_level, String field_name, String message) {
+  public void message(ValidationMsgLevel level, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
-    _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
+    _messages[_messages.length - 1] = new ValidationMessage(level, field_name, message);
 
-    if (Log.Level.ERRR.equals(log_level)) {
+    if (ValidationMsgLevel.ERRR.equals(level)) {
       _error_count++;
     }
   }
@@ -887,7 +908,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( Log.Level.ERRR.equals(vm._log_level))
+      if( ValidationMsgLevel.ERRR.equals(vm._level))
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
@@ -897,17 +918,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  the values of other fields, or a WARN or INFO for informative
    *  messages to the user. */
   public static final class ValidationMessage extends Iced {
-    final Log.Level _log_level; // See util/Log.java for levels
+    final ValidationMsgLevel _level;
     final String _field_name;
     final String _message;
-    public ValidationMessage(Log.Level log_level, String field_name, String message) {
-      _log_level = log_level;
+    public ValidationMessage(ValidationMsgLevel level, String field_name, String message) {
+      _level = level;
       _field_name = field_name;
       _message = message;
-      Log.log(log_level,field_name + ": " + message);
+      Log.log(msgLevelToLoglevel(_level),field_name + ": " + message);
     }
-    public Log.Level log_level() { return _log_level; }
-    @Override public String toString() { return _log_level + " on field: " + _field_name + ": " + _message; }
+    public ValidationMsgLevel log_level() { return _level; }
+    @Override public String toString() { return _level.getMsgLevel() + " on field: " + _field_name + ": " + _message; }
+
+    private static Log.Level msgLevelToLoglevel(ValidationMsgLevel msgLevel){
+      switch (msgLevel){
+        case TRACE: return Log.Level.TRACE;
+        case INFO: return Log.Level.INFO;
+        case WARN: return Log.Level.WARN;
+        case ERRR: return Log.Level.ERROR;
+        default: throw new RuntimeException("Unknown Message level");
+      }
+    }
   }
 
   // ==========================================================================
