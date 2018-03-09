@@ -25,7 +25,7 @@ def test_glm_binomial():
                                               hyper_parameters)
         model_h2o_grid_search.train(x=list(range(2,9)), y=1, training_frame=prostate)
     except ValueError as e:
-        assert "Details: ERRR on field: _fold_assignment: Fold assignment" in e.args[0], "Wrong error messages " \
+        assert "Details: ERROR on field: _fold_assignment: Fold assignment" in e.args[0], "Wrong error messages " \
                                                                                          "received."
 
 if __name__ == "__main__":
