@@ -42,11 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
  *
- * If you choose to convert unknown categorical levels to N/A, you can see how many times this is happening
- * with the following methods:
- *
- *     getTotalUnknownCategoricalLevelsSeen()
- *     getUnknownCategoricalLevelsSeenPerColumn()
  *
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
