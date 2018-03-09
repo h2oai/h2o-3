@@ -171,7 +171,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 H2O.shutdown(-1);
             }
         }else if(node._heartbeat._client) {
-            Log.warn("Client "+ node +" disconnected!");
+            Log.warn("Client "+ node.toDebugString() +" disconnected!");
         }
 
         // in both cases remove the client since the timeout is out
