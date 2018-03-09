@@ -141,7 +141,7 @@
   validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
     error <- lapply(validation$messages, function(x) {
-      if( x$message_type == "ERRR" )
+      if( x$message_type == "ERROR" )
         paste0(x$message, ".\n")
       else ""
     })
