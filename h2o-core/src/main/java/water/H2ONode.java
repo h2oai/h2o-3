@@ -236,6 +236,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // Happy printable string
   @Override public String toString() { return _key.toString (); }
+
+  public String toDebugString() {
+    String base = _key.toString();
+    if (_heartbeat._client) {
+      return base + "(watchdog=" + _heartbeat._watchdog_client + ", cloud_name_hash=" + _heartbeat._cloud_name_hash + ")";
+    } else {
+      return base;
+    }
+  }
+
   @Override public int hashCode() { return _key.hashCode(); }
   @Override public boolean equals(Object o) { return _key.equals   (((H2ONode)o)._key); }
   @Override public int compareTo( Object o) { return _key.compareTo(((H2ONode)o)._key); }
