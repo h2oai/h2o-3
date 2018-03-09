@@ -59,7 +59,7 @@ public class LogsHandler extends Handler {
           case "debug":
           case "info":
           case "warn":
-          case "errr":
+          case "error":
           case "fatal":
             Log.Level level = Log.Level.fromString(name);
             if(!Log.isLoggingFor(level)){
