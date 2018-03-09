@@ -2,6 +2,8 @@ package water;
 
 import water.util.Log;
 
+import java.util.HashSet;
+
 
 /**
  * Extension used for checking failed nodes
@@ -128,7 +130,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
             try {
                 sleep(watchdogClientConnectTimeout);
                 boolean watchDogConnected = false;
-                for(H2ONode client: H2O.getClients()){
+                HashSet<H2ONode> clients = H2O.getClients();
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client connected to the cluster, available clients at this moment are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client.toDebugString());
+                    }
+                }
+                for(H2ONode client: clients){
                     if(client._heartbeat._watchdog_client){
                         watchDogConnected = true;
                         break;
@@ -161,7 +171,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 H2O.shutdown(-1);
             }
         }else if(node._heartbeat._client) {
-            Log.warn("Client "+ node +" disconnected!");
+            Log.warn("Client "+ node.toDebugString() +" disconnected!");
         }
 
         // in both cases remove the client since the timeout is out
@@ -219,7 +229,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             while (true) {
-                for(H2ONode client: H2O.getClients()){
+                HashSet<H2ONode> clients = H2O.getClients();
+
+                if (Log.getLogLevel() == Log.DEBUG) {
+                    Log.debug("Checking if watchdog client is connected, available clients are: ");
+                    for (H2ONode client : clients) {
+                        Log.debug("Client: " + client.toDebugString());
+                    }
+                }
+                for (H2ONode client : clients) {
                     if(isTimeoutExceeded(client, watchdogClientRetryTimeout)){
                         handleClientDisconnect(client, watchdogClientRetryTimeout);
                     }
