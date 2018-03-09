@@ -1,22 +1,21 @@
 package hex.glm;
 
+import hex.CreateFrame;
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
+import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import water.*;
-
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +27,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
   static Frame _covtype;
   static Frame _train;
   static Frame _test;
+  double _tol = 1e-10;
 
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
@@ -50,6 +50,56 @@ public class GLMBasicTestMultinomial extends TestUtil {
     if(_test != null) _test.delete();
   }
 
+  @Test
+  public void testMultinomialPredMojoPojo() {
+    try {
+      Scope.enter();
+      CreateFrame cf = new CreateFrame();
+      Random generator = new Random();
+      int numRows = generator.nextInt(10000)+15000+200;
+      int numCols = generator.nextInt(17)+3;
+      int response_factors = generator.nextInt(7)+3;
+      cf.rows= numRows;
+      cf.cols = numCols;
+      cf.factors=10;
+      cf.has_response=true;
+      cf.response_factors = response_factors;
+      cf.positive_response=true;
+      cf.missing_fraction = 0;
+      cf.seed = System.currentTimeMillis();
+      System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" response number:"
+              +response_factors+" seed: "+cf.seed);
+
+      Frame trainMultinomial = Scope.track(cf.execImpl().get());
+      SplitFrame sf = new SplitFrame(trainMultinomial, new double[]{0.8,0.2}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      Frame tr = DKV.get(ksplits[0]).get();
+      Frame te = DKV.get(ksplits[1]).get();
+      Scope.track(tr);
+      Scope.track(te);
+
+      GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial,
+              Family.multinomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
+      paramsO._train = tr._key;
+      paramsO._lambda_search = false;
+      paramsO._response_column = "response";
+      paramsO._lambda = new double[]{0};
+      paramsO._alpha = new double[]{0.001};  // l1pen
+      paramsO._objective_epsilon = 1e-6;
+      paramsO._beta_epsilon = 1e-4;
+      paramsO._standardize = false;
+
+      GLMModel model = new GLM(paramsO).trainModel().get();
+      Scope.track_generic(model);
+
+      Frame pred = model.score(te);
+      Scope.track(pred);
+      Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   public void testCovtypeNoIntercept(){
