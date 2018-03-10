@@ -3233,3 +3233,44 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
                     diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
                     assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(v1, v2, rowInd, colInd)
+
+def build_save_model_GLM(params, x, train, respName):
+    # build a model
+    model = H2OGeneralizedLinearEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+
+# generate random dataset, copied from Pasha
+def random_dataset(response_type, verbose=True, NTESTROWS=200):
+    """Create and return a random dataset."""
+    if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
+    fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] /= 3
+    fractions["time_fraction"] /= 2
+
+    sum_fractions = sum(fractions.values())
+    for k in fractions:
+        fractions[k] /= sum_fractions
+    response_factors = random.randint(3, 10)
+    df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
+                          missing_fraction=0,
+                          has_response=True, response_factors=response_factors, positive_response=True, factors=10,
+                          **fractions)
+    if verbose:
+        print()
+        df.show()
+    return df
+
+def getMojoName(modelID):
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    return regex.sub("_", modelID)
