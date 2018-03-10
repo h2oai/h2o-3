@@ -41,6 +41,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * with the data quality.
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
+ * 
+ * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
+ * in the process of {@link Config} creation.
+ * 
+ * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
  *
  * <p></p>

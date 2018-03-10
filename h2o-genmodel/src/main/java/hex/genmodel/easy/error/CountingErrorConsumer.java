@@ -40,7 +40,7 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
 
   /**
    * Counts and returns all previously unseen categorical variables across all columns.
-   * Results may vary wehen called during prediction phase.
+   * Results may vary when called during prediction phase.
    *
    * @return A sum of all previously unseen categoricals across all columns
    */
