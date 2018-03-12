@@ -12,7 +12,6 @@ import water.util.VecUtils;
 
 import java.util.*;
 
-import static water.H2O.registerResourceRoot;
 import static water.H2O.technote;
 
 public class XGBoostUtils {
@@ -142,10 +141,16 @@ public class XGBoostUtils {
     }
 
     // FIXME this and the other method should subtract rows where response is 0
-    private static int getDataRows(Chunk[] chunks, int cols) {
+    private static int getDataRows(Chunk[] chunks, Frame f, int[] chunksIds, int cols) {
         double totalRows = 0;
-        for(Chunk ch : chunks) {
-            totalRows += ch.len();
+        if(null != chunks) {
+            for (Chunk ch : chunks) {
+                totalRows += ch.len();
+            }
+        } else {
+            for(int chunkId : chunksIds) {
+                totalRows += f.anyVec().chunkLen(chunkId);
+            }
         }
         return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
     }
@@ -300,7 +305,7 @@ public class XGBoostUtils {
 
         // extract predictors
         int cols = di.fullN();
-        float[][] data = new float[getDataRows(chunks, cols)][];
+        float[][] data = new float[getDataRows(chunks, null, null, cols)][];
         data[0] = new float[1 << 20];
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
@@ -470,7 +475,7 @@ public class XGBoostUtils {
 
         long[][] rowHeaders = new long[1][nRows + 1];
         int initial_size = 1 << 20;
-        float[][] data = new float[getDataRows(chunks, di.fullN())][initial_size];
+        float[][] data = new float[getDataRows(chunks, f, chunksIds, di.fullN())][initial_size];
         int[][] colIndex = new int[1][initial_size];
 
         // extract predictors
@@ -668,7 +673,7 @@ public class XGBoostUtils {
         int currentCol = 0;
         int nz = 0;
         long[][] colHeaders = new long[1][nCols + 1];
-        float[][] data = new float[getDataRows(chunks, di.fullN())][nzCount];
+        float[][] data = new float[getDataRows(chunks, f, chunksIds, di.fullN())][nzCount];
         int[][] rowIndex = new int[1][nzCount];
         int rwRow = 0;
         // fill data for DMatrix
