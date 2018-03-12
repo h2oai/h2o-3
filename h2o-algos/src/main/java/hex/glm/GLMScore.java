@@ -77,30 +77,25 @@ public class GLMScore extends MRTask<GLMScore> {
     int lastClass = _nclasses-1;
     if(_m._parms._family == GLMModel.GLMParameters.Family.ordinal) {  // todo: change this to take various link func
       final double[][] bm = _beta_multinomial;
-      Arrays.fill(preds,1e-10); // initialize to small number
+      Arrays.fill(preds,0); // initialize to small number
       preds[0] = lastClass;  // initialize to last class by default here
       double previousCDF = 0.0;
       for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
-        double eta = r.innerProduct(bm[cInd])+o;
-        double tempExpEta = Math.exp(eta);
-        double currCDF = tempExpEta/(1+tempExpEta);
-        preds[cInd+1] = currCDF-previousCDF;
+        double eta = r.innerProduct(bm[cInd]) + o;
+        double currCDF = 1.0 / (1 + Math.exp(-eta));
+        preds[cInd + 1] = currCDF - previousCDF;
         previousCDF = currCDF;
+
         if (eta >= 0) { // found the correct class
           preds[0] = cInd;
           break;
         }
       }
-      for (int cInd = (int)preds[0]+1;cInd < lastClass; cInd++) {  // continue PDF calculation
-        double tempExpEta = Math.exp(r.innerProduct(bm[cInd])+o);
-        double currCDF = tempExpEta/(1+tempExpEta);
-        if (currCDF > previousCDF) {
-          preds[cInd + 1] = currCDF - previousCDF;
-          previousCDF = currCDF;
-        } else {
-          previousCDF = 1-1e-10;
-          break;
-        }
+      for (int cInd = (int) preds[0] + 1; cInd < lastClass; cInd++) {  // continue PDF calculation
+        double currCDF = 1.0 / (1 + Math.exp(-r.innerProduct(bm[cInd]) + o));
+        preds[cInd + 1] = currCDF - previousCDF;
+        previousCDF = currCDF;
+
       }
       preds[_nclasses] = 1-previousCDF;
     } else if (_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {

@@ -1,11 +1,12 @@
 package hex.glm;
 
+import hex.CreateFrame;
 import hex.DataInfo;
-import org.junit.*;
-import water.DKV;
-import water.MemoryManager;
-import water.Scope;
-import water.TestUtil;
+import hex.SplitFrame;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import water.*;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -56,14 +57,36 @@ public class GLMBasicTestOrdinal extends TestUtil {
   public void testOrdinalPredMojoPojo() {
     try {
       Scope.enter();
-      Frame trainMultinomial = Scope.track(parse_test_file("smalldata/glm_ordinal_logit/ordinal_multinomial_training_set_small.csv"));
-      convert2Enum(trainMultinomial, new int[]{25});
+      CreateFrame cf = new CreateFrame();
+      Random generator = new Random();
+      int numRows = generator.nextInt(10000)+15000+200;
+      int numCols = generator.nextInt(17)+3;
+      int response_factors = generator.nextInt(7)+3;
+      cf.rows= numRows;
+      cf.cols = numCols;
+      cf.factors=10;
+      cf.has_response=true;
+      cf.response_factors = response_factors;
+      cf.positive_response=true;
+      cf.missing_fraction = 0;
+      cf.seed = System.currentTimeMillis();
+      System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" response number:"
+              +response_factors+" seed: "+cf.seed);
+
+      Frame trainMultinomial = Scope.track(cf.execImpl().get());
+      SplitFrame sf = new SplitFrame(trainMultinomial, new double[]{0.8,0.2}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      Frame tr = DKV.get(ksplits[0]).get();
+      Frame te = DKV.get(ksplits[1]).get();
+      Scope.track(tr);
+      Scope.track(te);
 
       GLMModel.GLMParameters paramsO = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal,
               GLMModel.GLMParameters.Family.ordinal.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-      paramsO._train = trainMultinomial._key;
+      paramsO._train = tr._key;
       paramsO._lambda_search = false;
-      paramsO._response_column = "C26";
+      paramsO._response_column = "response";
       paramsO._lambda = new double[]{0};
       paramsO._alpha = new double[]{0.001};  // l1pen
       paramsO._objective_epsilon = 1e-6;
@@ -73,9 +96,9 @@ public class GLMBasicTestOrdinal extends TestUtil {
       GLMModel model = new GLM(paramsO).trainModel().get();
       Scope.track_generic(model);
 
-      Frame pred = model.score(trainMultinomial);
+      Frame pred = model.score(te);
       Scope.track(pred);
-      Assert.assertTrue(model.testJavaScoring(trainMultinomial, pred, _tol));
+      Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
     } finally {
       Scope.exit();
     }
