@@ -5,6 +5,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -18,10 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,12 +41,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * with the data quality.
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
+ * 
+ * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
+ * in the process of {@link Config} creation.
+ * 
+ * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
- * If you choose to convert unknown categorical levels to N/A, you can see how many times this is happening
- * with the following methods:
- *
- *     getTotalUnknownCategoricalLevelsSeen()
- *     getUnknownCategoricalLevelsSeenPerColumn()
  *
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
@@ -58,11 +56,34 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
   public final HashMap<Integer, HashMap<String, Integer>> domainMap;
+  private final ErrorConsumer errorConsumer;
 
   private final boolean convertUnknownCategoricalLevelsToNa;
   private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
-  private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
+
+  /**
+   * Observer interface with methods corresponding to errors during the prediction.
+   */
+  public static abstract class ErrorConsumer {
+    /**
+     * Observe transformation error for data from the predicted dataset.
+     *
+     * @param columnName Name of the column for which the error is raised
+     * @param value      Original value that could not be transformed properly
+     * @param message    Transformation error message
+     */
+    public abstract void dataTransformError(String columnName, Object value, String message);
+
+    /**
+     * Previously unseen categorical level has been detected
+     *
+     * @param columnName Name of the column to which the categorical value belongs
+     * @param value      Original value
+     * @param message    Reason and/or actions taken
+     */
+    public abstract void unseenCategorical(String columnName, Object value, String message);
+  }
 
   /**
    * Configuration builder for instantiating a Wrapper.
@@ -72,6 +93,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     private boolean convertUnknownCategoricalLevelsToNa = false;
     private boolean convertInvalidNumbersToNa = false;
     private boolean useExtendedOutput = false;
+    private ErrorConsumer errorConsumer;
 
     /**
      * Specify model object to wrap.
@@ -138,6 +160,25 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     public boolean getUseExtendedOutput() {
       return useExtendedOutput;
     }
+
+    /**
+     * @return An instance of ErrorConsumer used to build the {@link EasyPredictModelWrapper}. Null if there is no instance.
+     */
+    public ErrorConsumer getErrorConsumer() {
+      return errorConsumer;
+    }
+
+    /**
+     * Specify an instance of {@link ErrorConsumer} the {@link EasyPredictModelWrapper} is going to call
+     * whenever an error defined by the {@link ErrorConsumer} instance occurs.
+     *
+     * @param errorConsumer An instance of {@link ErrorConsumer}
+     * @return This {@link Config} object
+     */
+    public Config setErrorConsumer(final ErrorConsumer errorConsumer) {
+      this.errorConsumer = errorConsumer;
+      return this;
+    }
   }
 
   /**
@@ -147,6 +188,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    */
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
+    // Ensure an error consumer is always instantiated to avoid missing null-check errors.
+    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // Create map of column names to index number.
     modelColumnNameToIndexMap = new HashMap<>();
@@ -156,11 +199,9 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     }
 
     // How to handle unknown categorical levels.
-    unknownCategoricalLevelsSeenPerColumn = new ConcurrentHashMap<>();
     convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
-    setupConvertUnknownCategoricalLevelsToNa();
 
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
@@ -188,34 +229,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             .setModel(model));
   }
 
-  /**
-   * Get the total number unknown categorical levels seen.
-   *
-   * A single prediction may contribute more than one to the count.
-   * The count is only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
-   *
-   * @return A long value.
-   */
-  public long getTotalUnknownCategoricalLevelsSeen() {
-    ConcurrentHashMap<String, AtomicLong> map = getUnknownCategoricalLevelsSeenPerColumn();
-    long total = 0;
-    for (AtomicLong l : map.values()) {
-      total += l.get();
-    }
-    return total;
-  }
-
-  /**
-   * Get unknown categorical level counts.
-   *
-   * A single prediction may contribute to more than one count.
-   * Counts are only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
-   *
-   * @return A hash map with a per-column count of unknown categorical levels seen when making predictions.
-   */
-  public ConcurrentHashMap<String, AtomicLong> getUnknownCategoricalLevelsSeenPerColumn() {
-    return unknownCategoricalLevelsSeenPerColumn;
-  }
 
   /**
    * Make a prediction on a new data point.
@@ -553,20 +566,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   // Private methods below this line.
   //----------------------------------------------------------------------
 
-  private void setupConvertUnknownCategoricalLevelsToNa() {
-    if (convertUnknownCategoricalLevelsToNa) {
-      for (int i = 0; i < m.getNumCols(); i++) {
-        String[] domainValues = m.getDomainValues(i);
-        if (domainValues != null) {
-          String columnName = m.getNames()[i];
-          unknownCategoricalLevelsSeenPerColumn.put(columnName, new AtomicLong());
-        }
-      }
-    }
-    else {
-      unknownCategoricalLevelsSeenPerColumn.clear();
-    }
-  }
+
+
 
   private void validateModelCategory(ModelCategory c) throws PredictException {
     if (!m.getModelCategories().contains(c))
@@ -664,6 +665,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             rawData[i] = _destData[i];
           return rawData;
         }
+
+        if (Double.isNaN(value)) {
+          // If this point is reached, the original value remains NaN.
+          errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
+        } 
         rawData[index] = value;
       }
       else {
@@ -680,9 +686,9 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           if (levelIndex == null) {
             if (convertUnknownCategoricalLevelsToNa) {
               value = Double.NaN;
-              unknownCategoricalLevelsSeenPerColumn.get(dataColumnName).incrementAndGet();
-            }
-            else {
+              errorConsumer.unseenCategorical(dataColumnName, o, "Previously unseen categorical level detected, marking as NaN.");
+            } else {
+              errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical level detected.");
               throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
             }
           }
@@ -690,8 +696,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             value = levelIndex;
           }
         } else if (o instanceof Double && Double.isNaN((double)o)) {
+            errorConsumer.dataTransformError(dataColumnName, o, "Missing factor value detected, setting to NaN");
           value = (double)o; //Missing factor is the only Double value allowed
         } else {
+          errorConsumer.dataTransformError(dataColumnName, o, "Unknown categorical variable type.");
           throw new PredictUnknownTypeException(
                   "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
         }
