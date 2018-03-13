@@ -43,6 +43,7 @@ Default Data Sources
 - S3 
 - HDFS
 - JDBC
+- Hive
 
 Local File System
 ~~~~~~~~~~~~~~~~~
@@ -186,6 +187,35 @@ core-site.xml must be configured for at least the following properties (class, p
                 <value>mybucket</value>
         </property>
     </configuration>
+
+Hive
+~~~~
+
+Limitations
+'''''''''''
+
+H2O can only load data from Hive v2+ due to limited implementation of JDBC interface by Hive in the earlier versions.H2O can ingest data from Hive through JDBC driver. All you need to do is provide H2O with a JDBC driver for your Hive version.
+
+You can find it at
+- ``/usr/hdp/current/hive-client/lib/hive-jdbc.jar`` for Horthonworks
+- ``/usr/lib/hive/lib/hive-jdbc.jar`` for Cloudera
+- get it from maven (if you know which version to get) ``mvn dependency:get -Dartifact=groupId:artifactId:version``
+
+Provide H2O the JDBC Driver
+'''''''''''''''''''''''''''
+-Put it on H2O's Classpath
+``java -cp hive-jdbc.jar:build/h2o.jar water.H2OApp`` More here: :ref:`import-sql-table`.
+http://docs.h2o.ai/h2o/latest-stable/h2o-docs/getting-data-into-h2o.html#import-sql-table
+-Python
+Run H2O with added driver .jar file on the class-path:
+``h2o.init(extra_classpath=["hive-jdbc.jar"])``
+-R
+Same in R:
+``h2o.init(extra_classpath = "hive-jdbc.jar")``
+
+How to Use it
+'''''''''''''
+Once the jar file with JDBC driver is inserted then use the standard JDBC approach here: :ref:`jdbc-databases`.
 
 JDBC Databases
 ~~~~~~~~~~~~~~
