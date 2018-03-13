@@ -40,6 +40,15 @@ test.CoxPH.strata_inter <- function() {
                                   use_all_factor_levels = TRUE)
 
     expect_equal(fit.coef, .as.survival.coxph.model(fit.hex.implicit@model)$coef[names(fit.coef)])
+
+    # 5. implicit interaction in H2O - should figure out when to force-enable "use all factor levels"
+    fit.hex.implicit.2 <- h2o.coxph(stop_column = "time", event_column = "status",
+                                   x = c("wt.loss", "sex", "ph.ecog"),
+                                   interaction_pairs = list(c("age", "sex")),
+                                   stratify_by = c("sex", "ph.ecog"),
+                                   training_frame = lung.hex)
+
+    expect_equal(fit.coef, .as.survival.coxph.model(fit.hex.implicit.2@model)$coef[names(fit.coef)])
 }
 
 doTest("CoxPH: Test Stratification with Interactions", test.CoxPH.strata_inter)

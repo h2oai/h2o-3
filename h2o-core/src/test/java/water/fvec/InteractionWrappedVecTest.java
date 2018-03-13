@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 
 import java.util.Arrays;
@@ -219,4 +220,33 @@ public class InteractionWrappedVecTest extends TestUtil {
       if( interactionVec!=null ) interactionVec.remove();
     }
   }
+
+  @Test public void testModeOfCatNumInteraction() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(new TestFrameBuilder()
+              .withName("numCatInteraction")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_NUM, Vec.T_STR, Vec.T_CAT)
+              .withDataForCol(0, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("A", "B", "C", "E", "F", "I", "J"))
+              .withDataForCol(2, ar("A", "B", "A", "C", "B", "B", "C"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build());
+      Vec numCatInter = Scope.track(new InteractionWrappedVec(
+              fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false,
+              fr.vec(0)._key, fr.vec(2)._key));
+      Assert.assertFalse(numCatInter.isCategorical());
+      Assert.assertEquals(1, numCatInter.mode());
+      // reverse order (for symmetry):
+      Vec catNumInter = Scope.track(new InteractionWrappedVec(
+              fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false,
+              fr.vec(2)._key, fr.vec(1)._key));
+      Assert.assertFalse(catNumInter.isCategorical());
+      Assert.assertEquals(1, catNumInter.mode());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }
