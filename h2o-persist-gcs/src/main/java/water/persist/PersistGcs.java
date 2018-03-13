@@ -1,6 +1,7 @@
 package water.persist;
 
 import com.google.cloud.ReadChannel;
+import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -16,6 +17,7 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -224,5 +226,91 @@ public final class PersistGcs extends Persist {
         reader.close();
       }
     };
+  }
+
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    final GcsBlob gcsBlob = GcsBlob.of(path);
+    Log.debug("Creating: " + gcsBlob.getCanonical());
+    final WriteChannel writer = storage.create(gcsBlob.getBlobInfo()).writer();
+    return new OutputStream() {
+      @Override
+      public void write(int b) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[]{(byte) b});
+        writer.write(buffer);
+      }
+
+      @Override
+      public void write(byte[] b) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(b);
+        writer.write(buffer);
+      }
+
+      @Override
+      public void write(byte[] b, int off, int len) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+        writer.write(buffer);
+      }
+
+      @Override
+      public void close() throws IOException {
+        writer.close();
+      }
+    };
+  }
+
+  @Override
+  public boolean rename(String fromPath, String toPath) {
+    final BlobId fromBlob = GcsBlob.of(fromPath).getBlobId();
+    final BlobId toBlob = GcsBlob.of(toPath).getBlobId();
+
+    storage.get(fromBlob).copyTo(toBlob);
+    return storage.delete(fromBlob);
+  }
+
+  @Override
+  public boolean exists(String path) {
+    try {
+      final BlobId blob = GcsBlob.of(path).getBlobId();
+      return storage.get(blob).exists();
+    } catch (FSIOException e) {
+      final String bucketName = GcsBlob.removePrefix(path);
+      return storage.get(bucketName).exists();
+    } catch (NullPointerException npe) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean delete(String path) {
+    final BlobId blob = GcsBlob.of(path).getBlobId();
+    return storage.get(blob).delete();
+  }
+
+  @Override
+  public long length(String path) {
+    final BlobId blob = GcsBlob.of(path).getBlobId();
+    return storage.get(blob).getSize();
+  }
+
+  /**
+   * Lists Blobs prefixed with `path`.
+   * Prefix `path` is removed from the name of returned entries.
+   * e.g.
+   * If `path` equals gs://bucket/infix and 2 Blobs exist: "gs://bucket/infix/blob1, gs://bucket/infix/blob2,
+   * the returned array contains of Persist Entries with names set to blob1 and blob2, respectively.
+   */
+  @Override
+  public PersistEntry[] list(String path) {
+    List<String> matches = calcTypeaheadMatches(path, Integer.MAX_VALUE);
+    PersistEntry[] entries = new PersistEntry[matches.size()];
+    int pathLength = path.length() + 1; // + 1 to remove trailing "/", because we assume that path points to logical directory
+    int i = 0;
+    for (String s : matches) {
+      Blob info = storage.get(GcsBlob.of(s).getBlobId());
+      entries[i] = new PersistEntry(s.substring(pathLength), info.getSize(), info.getCreateTime());
+      i++;
+    }
+    return entries;
   }
 }

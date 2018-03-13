@@ -72,7 +72,6 @@ public class PersistManager {
         || s.startsWith("s3:")
         || s.startsWith("s3n:")
         || s.startsWith("s3a:")
-        || s.startsWith("gs:")
         || s.startsWith("maprfs:")
         || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path)) {
       return true;
@@ -84,6 +83,10 @@ public class PersistManager {
     if (I[Value.HDFS] == null) {
       throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
     }
+  }
+
+  public boolean isGcsPath(String path) {
+    return path.toLowerCase().startsWith("gs://");
   }
 
   public PersistManager(URI iceRoot) {
@@ -343,6 +346,8 @@ public class PersistManager {
       validateHdfsConfigured();
       PersistEntry[] arr = I[Value.HDFS].list(path);
       return arr;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].list(path);
     }
 
     File dir = new File(path);
@@ -365,6 +370,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].exists(path);
       return b;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].exists(path);
     }
 
     File f = new File(path);
@@ -429,6 +436,8 @@ public class PersistManager {
       validateHdfsConfigured();
       long l = I[Value.HDFS].length(path);
       return l;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].length(path);
     }
 
     File f = new File(path);
@@ -444,6 +453,8 @@ public class PersistManager {
       validateHdfsConfigured();
       InputStream os = I[Value.HDFS].open(path);
       return os;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].open(path);
     }
 
     try {
@@ -465,6 +476,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].mkdirs(path);
       return b;
+    } else if (isGcsPath(path)){
+      return true; // GCS doesn't support directories, so we don't need them to exist
     }
 
     File f = new File(path);
@@ -478,6 +491,9 @@ public class PersistManager {
       boolean b = I[Value.HDFS].rename(fromPath, toPath);
       return b;
     }
+    if (isGcsPath(fromPath) || isGcsPath(toPath)) {
+      return I[Value.GCS].rename(fromPath, toPath);
+    }
 
     File f = new File(fromPath);
     File t = new File(toPath);
@@ -489,6 +505,8 @@ public class PersistManager {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
       return I[Value.HDFS].create(path, overwrite);
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].create(path, overwrite);
     }
 
     try {
@@ -510,6 +528,8 @@ public class PersistManager {
       validateHdfsConfigured();
       boolean b = I[Value.HDFS].delete(path);
       return b;
+    } else if (isGcsPath(path)) {
+      return I[Value.GCS].delete(path);
     }
 
     File f = new File(path);

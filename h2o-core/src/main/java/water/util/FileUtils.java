@@ -31,6 +31,7 @@ public class FileUtils {
           break;
         os.write(bytes, 0, count);
       }
+      os.close();
     }
     catch(EofException eofe) {
       // no problem
