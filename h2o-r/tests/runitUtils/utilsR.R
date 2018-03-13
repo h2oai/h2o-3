@@ -824,3 +824,57 @@ calAccuracy <- function(rframe1, rframe2) {
   }
   return(correctC/fLen)
 }
+
+buildModelSaveMojoGLM <- function(params) {
+  model <- do.call("h2o.glm", params)
+  model_key <- model@model_id
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+    shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
+  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+
+  return(list("model"=model, "dirName"=tmpdir_name))
+}
+
+mojoH2Opredict<-function(model, tmpdir_name, filename) {
+  newTest <- h2o.importFile(filename)
+  predictions1 <- h2o.predict(model, newTest)
+
+  a = strsplit(tmpdir_name, '/')
+  endIndex <-(which(a[[1]]=="h2o-r"))-1
+  genJar <-
+  paste(a[[1]][1:endIndex], collapse='/')
+
+  if (.Platform$OS.type == "windows") {
+    cmd <-
+    sprintf(
+    "java -ea -cp %s/h2o-assemblies/genmodel/build/libs/genmodel.jar -Xmx4g -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --mojo %s/%s --input %s/in.csv --output %s/out_mojo.csv",
+    genJar,
+    tmpdir_name,
+    paste(model_key, "zip", sep = '.'),
+    tmpdir_name,
+    tmpdir_name
+    )
+  } else {
+    cmd <-
+    sprintf(
+    "java -ea -cp %s/h2o-assemblies/genmodel/build/libs/genmodel.jar -Xmx12g -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --mojo %s/%s --input %s/in.csv --output %s/out_mojo.csv --decimal",
+    genJar,
+    tmpdir_name,
+    paste(model@model_id, "zip", sep = '.'),
+    tmpdir_name,
+    tmpdir_name
+    )
+  }
+  safeSystem(cmd)  # perform mojo prediction
+  predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
+  '/'), header=T)
+
+  return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))
+}
