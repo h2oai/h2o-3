@@ -130,6 +130,7 @@ public final class PersistGcs extends Persist {
         keys.add(k.toString());
         files.add(path);
       } catch (Throwable t) {
+        Log.err(t);
         fails.add(path);
       }
     }
@@ -149,6 +150,7 @@ public final class PersistGcs extends Persist {
           keys.add(k.toString());
           files.add(gcsBlob.getCanonical());
         } catch (Throwable t) {
+          Log.err(t);
           fails.add(gcsBlob.getCanonical());
         }
     }
