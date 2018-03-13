@@ -188,39 +188,11 @@ core-site.xml must be configured for at least the following properties (class, p
         </property>
     </configuration>
 
-Hive
-~~~~
-
-Limitations
-'''''''''''
-
-H2O can only load data from Hive v2+ due to limited implementation of JDBC interface by Hive in the earlier versions.H2O can ingest data from Hive through JDBC driver. All you need to do is provide H2O with a JDBC driver for your Hive version.
-
-You can find it at
-- ``/usr/hdp/current/hive-client/lib/hive-jdbc.jar`` for Horthonworks
-- ``/usr/lib/hive/lib/hive-jdbc.jar`` for Cloudera
-- get it from maven (if you know which version to get) ``mvn dependency:get -Dartifact=groupId:artifactId:version``
-
-Provide H2O the JDBC Driver
-'''''''''''''''''''''''''''
--Put it on H2O's Classpath
-``java -cp hive-jdbc.jar:build/h2o.jar water.H2OApp`` More here: :ref:`import-sql-table`.
-http://docs.h2o.ai/h2o/latest-stable/h2o-docs/getting-data-into-h2o.html#import-sql-table
--Python
-Run H2O with added driver .jar file on the class-path:
-``h2o.init(extra_classpath=["hive-jdbc.jar"])``
--R
-Same in R:
-``h2o.init(extra_classpath = "hive-jdbc.jar")``
-
-How to Use it
-'''''''''''''
-Once the jar file with JDBC driver is inserted then use the standard JDBC approach here: :ref:`jdbc-databases`.
 
 JDBC Databases
 ~~~~~~~~~~~~~~
 
-Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, and Netezza. Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
+Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, and Hive. (Refer to :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
 
 Refer to the following articles for examples about using JDBC data sources with H2O.
 
@@ -304,5 +276,38 @@ The ``import_sql_select`` function accepts the following parameters:
     password = "abc123"
     my_citibike_data = h2o.import_sql_select(connection_url, select_query, username, password)
 
+.. _hive2:
 
+Using the Hive 2 JDBC Driver
+''''''''''''''''''''''''''''
 
+H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O with the JDBC driver for your Hive version.
+
+**Note**: H2O can only load data from Hive v2 due to a limited implementation of the JDBC interface by Hive in earlier versions.
+
+**Retrieve the Hive JDBC Client Jar**
+
+- For Hortonworks, Hive JDBC client jars can be found on one of the edge nodes after you have installed HDP: ``/usr/hdp/current/hive-client/lib/hive-jdbc.jar``. More information is available here: `https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.4/bk_data-access/content/hive-jdbc-odbc-drivers.html <https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.4/bk_data-access/content/hive-jdbc-odbc-drivers.html>`__
+- For Cloudera, install the JDBC package for your operating system, and then add ``/usr/lib/hive/lib/*.jar`` and ``/usr/lib/hadoop/*.jar`` to your classpath. More information is available here: `https://www.cloudera.com/documentation/enterprise/5-3-x/topics/cdh_ig_hive_jdbc_install.html <https://www.cloudera.com/documentation/enterprise/5-3-x/topics/cdh_ig_hive_jdbc_install.html>`__ 
+- You can also retrieve this from Maven for the desire version using ``mvn dependency:get -Dartifact=groupId:artifactId:version``.
+
+**Provide H2O with the JDBC Driver**
+
+Add the Hive JDBC driver to H2O's classpath:
+
+::
+  
+      java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
+
+Start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath: 
+
+.. example-code::
+   .. code-block:: r
+
+    h2o.init(extra_classpath = "hive-jdbc.jar")
+
+   .. code-block:: python
+
+    h2o.init(extra_classpath=["hive-jdbc.jar"])
+
+After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
