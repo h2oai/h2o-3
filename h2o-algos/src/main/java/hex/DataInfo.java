@@ -1008,7 +1008,7 @@ public class DataInfo extends Keyed<DataInfo> {
       val = v.mode();
     }
     if( cid < _intLvls.length && _intLvls[cid]!=null ) {
-      assert _useAllFactorLevels;
+      assert _useAllFactorLevels; // useAllFactorLevels has to be defined on a global level (not just for the interaction)
       val = Arrays.binarySearch(_intLvls[cid],val);
     }
     return val < 0?-1:val+_numOffsets[cid];
