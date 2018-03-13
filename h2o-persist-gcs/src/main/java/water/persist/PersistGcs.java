@@ -2,6 +2,9 @@ package water.persist;
 
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.*;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import water.H2O;
 import water.Key;
 import water.MemoryManager;
@@ -16,13 +19,15 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Persistence backend for GCS
  */
 public final class PersistGcs extends Persist {
 
-  private static final Storage storage = StorageOptions.getDefaultInstance().getService();
+  private final Storage storage = StorageOptions.getDefaultInstance().getService();
 
   @Override
   public byte[] load(final Value v) throws IOException {
@@ -73,39 +78,55 @@ public final class PersistGcs extends Persist {
     throw H2O.unimpl();
   }
 
-  private static final Map<String, StringCache> keyCache = new HashMap<>();
-  private static final StringCache bucketCache = new StringCache() {
-    @Override
-    List<String> update() {
-      final List<String> c = new ArrayList<>();
-      for (Bucket b : storage.list().iterateAll()) {
-        c.add(b.getName());
-      }
-      return c;
-    }
-  };
+  private final LoadingCache<String, LoadingCache<String, List<String>>> keyCache = CacheBuilder.newBuilder()
+      .maximumSize(1000)
+      .expireAfterWrite(10, TimeUnit.MINUTES)
+      .build(new CacheLoader<String, LoadingCache<String, List<String>>>() {
+        @Override
+        public LoadingCache<String, List<String>> load(String key) {
+          LoadingCache<String, List<String>> keyCacheHolder = CacheBuilder.newBuilder()
+              .build(new CacheLoader<String, List<String>>() {
+                @Override
+                public List<String> load(String key) {
+                  final List<String> fileNames = new ArrayList<>();
+                  for (Blob b : storage.get(key).list().iterateAll()) {
+                    fileNames.add(b.getName());
+                  }
+                  return fileNames;
+                }
+              });
+          return keyCacheHolder;
+        }
+      });
+
+  private final LoadingCache<String, List<String>> bucketCache = CacheBuilder.newBuilder()
+      .maximumSize(1000)
+      .expireAfterWrite(1, TimeUnit.MINUTES)
+      .build(new CacheLoader<String, List<String>>() {
+
+        @Override
+        public List<String> load(String key) {
+          final List<String> fileNames = new ArrayList<>();
+          for (Bucket b : storage.list().iterateAll()) {
+            fileNames.add(b.getName());
+          }
+          return fileNames;
+        }
+      });
 
   @Override
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     final String input = GcsBlob.removePrefix(filter);
     final String[] bk = input.split("/", 2);
-    if (bk.length == 1) {
-      return bucketCache.fetch(GcsBlob.KEY_PREFIX, bk[0], limit);
-    } else if (bk.length == 2) {
-      if (!keyCache.containsKey(bk[0])) {
-        StringCache sc = new StringCache() {
-          @Override
-          List<String> update() {
-            final List<String> cache = new ArrayList<>();
-            for (Blob b : storage.get(bk[0]).list().iterateAll()) {
-              cache.add(b.getName());
-            }
-            return cache;
-          }
-        };
-        keyCache.put(bk[0], sc);
+    try {
+      if (bk.length == 1) {
+        return bucketCache.get(filter);
+      } else if (bk.length == 2) {
+        return keyCache.get(bk[0])
+            .get(filter);
       }
-      return keyCache.get(bk[0]).fetch(GcsBlob.KEY_PREFIX + bk[0] + "/", bk[1], limit);
+    } catch (ExecutionException e) {
+      Log.err(e);
     }
     return new ArrayList<>(0);
   }
