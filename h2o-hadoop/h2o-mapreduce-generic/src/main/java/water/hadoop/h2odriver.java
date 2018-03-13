@@ -587,7 +587,7 @@ public class h2odriver extends Configured implements Tool {
                     "          o  Only one mapper may be run per host.\n" +
                     "          o  There are no combiners or reducers.\n" +
                     "          o  Each H2O cluster should have a unique jobname.\n" +
-                    "          o  -mapperXmx, -nodes and -output are required.\n" +
+                    "          o  -mapperXmx and -nodes are required.\n" +
                     "\n" +
                     "          o  -mapperXmx is set to both Xms and Xmx of the mapper to reserve\n" +
                     "             memory up front.\n" +
