@@ -20,10 +20,12 @@ public class SQLManager {
   //A lower bound on number of connections to database per node
   private static final int MIN_CONNECTIONS_PER_NODE = 1;
   private static final String NETEZZA_DB_TYPE = "netezza";
+  private static final String HIVE_DB_TYPE = "hive2";
   private static final String ORACLE_DB_TYPE = "oracle";
   private static final String SQL_SERVER_DB_TYPE = "sqlserver";
 
   private static final String NETEZZA_JDBC_DRIVER_CLASS = "org.netezza.Driver";
+  private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
 
   /**
    * @param connection_url (Input) 
@@ -213,6 +215,14 @@ public class SQLManager {
    */
   private static void initializeDatabaseDriver(String databaseType) {
     switch (databaseType) {
+      case HIVE_DB_TYPE:
+          try {
+              Class.forName(HIVE_JDBC_DRIVER_CLASS);
+            } catch (ClassNotFoundException e) {
+              throw new RuntimeException("Connection to HIVE database is not possible due to missing JDBC driver.");
+            }
+
+
       case NETEZZA_DB_TYPE:
         try {
           Class.forName(NETEZZA_JDBC_DRIVER_CLASS);
