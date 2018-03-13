@@ -878,5 +878,3 @@ mojoH2Opredict<-function(model, tmpdir_name, filename) {
 
   return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))
 }
-
-

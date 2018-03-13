@@ -3261,7 +3261,10 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200):
     sum_fractions = sum(fractions.values())
     for k in fractions:
         fractions[k] /= sum_fractions
-    response_factors = random.randint(3, 10)
+    if response_type == 'binomial':
+        response_factors = 2
+    else:
+        response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
                           missing_fraction=0,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
