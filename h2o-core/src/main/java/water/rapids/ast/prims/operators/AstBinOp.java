@@ -315,7 +315,11 @@ abstract public class AstBinOp extends AstPrimitive {
 
     for (int c = 0; c < lf.numCols(); c++) {
       if (lf.vec(c).isCategorical() && rt.vec(c).isCategorical()) {
-        alignedCategoricals[c] = alignCategoricals(lf.vec(c).domain(), rt.vec(c).domain());
+        if (lf.vec(c).domain().length >= rt.vec(c).domain().length) {
+          alignedCategoricals[c] = alignCategoricals(lf.vec(c).domain(), rt.vec(c).domain());
+        } else {
+          alignedCategoricals[c] = alignCategoricals(rt.vec(c).domain(), lf.vec(c).domain());
+        }
       }
     }
     
@@ -362,24 +366,18 @@ abstract public class AstBinOp extends AstPrimitive {
   /**
    * Produces a mapping array with indexes of the smaller pointing to the larger domain.
    *
-   * @param sourceDomain Domain to originally map from
-   * @param targetDomain Domain to originally map to
+   * @param longerDomain Domain to originally map from
+   * @param shorterDomain Domain to originally map to
    * @return Cross-domain mapping as an array of primitive integers
    */
-  private int[] alignCategoricals(String[] sourceDomain, String[] targetDomain) {
-    if (targetDomain.length > sourceDomain.length) {
-      String[] swap = targetDomain;
-      targetDomain = sourceDomain;
-      sourceDomain = swap;
-    }
+  private int[] alignCategoricals(String[] longerDomain, String[] shorterDomain) {
+    Arrays.sort(longerDomain);
+    Arrays.sort(shorterDomain);
 
-    Arrays.sort(sourceDomain);
-    Arrays.sort(targetDomain);
+    int[] transformedIndices = MemoryManager.malloc4(shorterDomain.length);
 
-    int[] transformedIndices = MemoryManager.malloc4(targetDomain.length);
-
-    for (int i = 0; i < targetDomain.length; i++) {
-      transformedIndices[i] = Arrays.binarySearch(sourceDomain, targetDomain[i]);
+    for (int i = 0; i < shorterDomain.length; i++) {
+      transformedIndices[i] = Arrays.binarySearch(longerDomain, shorterDomain[i]);
     }
 
     return transformedIndices;
