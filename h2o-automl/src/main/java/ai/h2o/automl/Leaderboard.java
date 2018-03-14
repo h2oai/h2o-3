@@ -546,35 +546,35 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colTypesMultinomial= {
           "string",
-          "string"};
+          "double"};
 
   protected static final String[] colFormatsMultinomial= {
           "%s",
-          "%s"};
+          "%d"};
 
   protected static final String[] colTypesBinomial= {
           "string",
-          "string",
-          "string"};
+          "double",
+          "double"};
 
   protected static final String[] colFormatsBinomial= {
           "%s",
-          "%s",
-          "%s"};
+          "%d",
+          "%d"};
 
   protected static final String[] colTypesRegression= {
           "string",
-          "string",
-          "string",
-          "string",
-          "string"};
+          "double",
+          "double",
+          "double",
+          "double"};
 
   protected static final String[] colFormatsRegression= {
           "%s",
-          "%s",
-          "%s",
-          "%s",
-          "%s"};
+          "%d",
+          "%d",
+          "%d",
+          "%d"};
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
@@ -625,25 +625,25 @@ public class Leaderboard extends Keyed<Leaderboard> {
     int col = 0;
     table.set(row, col++, modelIDs[row]);
     //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, String.format("%.6f", errors[row]));
+    table.set(row, col++, errors[row]);
   }
 
   public void addTwoDimTableRowBinomial(TwoDimTable table, int row, String[] modelIDs, double[] errors, double[] otherErrors) {
     int col = 0;
     table.set(row, col++, modelIDs[row]);
     //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, String.format("%.6f", errors[row]));
-    table.set(row, col++, String.format("%.6f", otherErrors[row]));
+    table.set(row, col++, errors[row]);
+    table.set(row, col++, otherErrors[row]);
 
   }
   public void addTwoDimTableRowRegression(TwoDimTable table, int row, String[] modelIDs, double[] errors, double[] rmse, double[] mae, double[] rmsle) {
     int col = 0;
     table.set(row, col++, modelIDs[row]);
     //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, String.format("%.6f", errors[row]));
-    table.set(row, col++, String.format("%.6f", rmse[row]));
-    table.set(row, col++, String.format("%.6f", mae[row]));
-    table.set(row, col++, String.format("%.6f", rmsle[row]));
+    table.set(row, col++, errors[row]);
+    table.set(row, col++, rmse[row]);
+    table.set(row, col++, mae[row]);
+    table.set(row, col++, rmsle[row]);
   }
 
   public TwoDimTable toTwoDimTable() {
