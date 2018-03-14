@@ -8,8 +8,13 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7'
+ARG HIVE_VERSION='2.2.0'
 
-ENV DISTRIBUTION='cdh' VERSION=$VERSION HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client'
+ENV DISTRIBUTION='cdh' \
+    HADOOP_HOME=/usr/lib/hadoop \
+    HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' \
+    MASTER='yarn-client' \
+    HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Prepare Cloudera repository
 RUN echo "# Packages for Cloudera's Distribution for Hadoop, Version 5, on Ubuntu 14.04 amd64\n\
@@ -39,21 +44,30 @@ ENV \
   JAVA_HOME=/usr/lib/jvm/java-8-oracle \
   PATH=/usr/lib/jvm/java-8-oracle/bin:${PATH}
 
+# Copy configs
+COPY ${PATH_PREFIX}/conf/ /etc/hadoop/conf.pseudo/
+
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init
 
-# Add jenkins user
-RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins
+# Add jenkins and users
+RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins && \
+    adduser --disabled-password --gecos "" hive
 
 # Copy scripts
 COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startup/
 
 # Copy sudoers so we can start hadoop stuff without root access to container
 COPY ${PATH_PREFIX}/../common/sudoers/jenkins /etc/sudoers.d/jenkins
+COPY ${PATH_PREFIX}/../common/hive-scripts /opt/hive-scripts/
 
 # Expose ports
 # H2O, HADOOP UI
 EXPOSE 54321 8088
 
 # Run this script on container run
-RUN chmod 700 /usr/sbin/startup.sh
+RUN chmod 700 /usr/sbin/startup.sh && \
+    chown -R hive:hive /opt/hive-scripts && \
+    chmod +x /usr/sbin/install_hive.sh && \
+    sync && \
+    usr/sbin/install_hive.sh

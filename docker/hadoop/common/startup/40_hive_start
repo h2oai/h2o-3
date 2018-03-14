@@ -1,0 +1,10 @@
+#! /bin/bash
+
+set -e -x
+
+sudo -E -u hdfs hadoop fs -mkdir -p /user/hive/warehouse
+sudo -E -u hdfs hadoop fs -chmod a+w /user/hive/warehouse
+sudo -E -u hdfs hadoop fs -chmod a+w /tmp
+
+cd /home/hive
+sudo -E -u hive nohup ${HIVE_HOME}/bin/hiveserver2 > /home/hive/hive.log & sleep 15
