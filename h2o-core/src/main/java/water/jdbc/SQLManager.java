@@ -216,19 +216,21 @@ public class SQLManager {
   private static void initializeDatabaseDriver(String databaseType) {
     switch (databaseType) {
       case HIVE_DB_TYPE:
-          try {
-              Class.forName(HIVE_JDBC_DRIVER_CLASS);
-            } catch (ClassNotFoundException e) {
-              throw new RuntimeException("Connection to HIVE database is not possible due to missing JDBC driver.");
-            }
-
-
+        try {
+          Class.forName(HIVE_JDBC_DRIVER_CLASS);
+        } catch (ClassNotFoundException e) {
+          throw new RuntimeException("Connection to HIVE database is not possible due to missing JDBC driver.");
+        }
+        break;
       case NETEZZA_DB_TYPE:
         try {
           Class.forName(NETEZZA_JDBC_DRIVER_CLASS);
         } catch (ClassNotFoundException e) {
           throw new RuntimeException("Connection to Netezza database is not possible due to missing JDBC driver.");
         }
+        break;
+      default:
+        //nothing to do
     }
   }
 
