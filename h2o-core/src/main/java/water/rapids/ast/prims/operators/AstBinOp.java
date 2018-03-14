@@ -3,6 +3,7 @@ package water.rapids.ast.prims.operators;
 import water.Futures;
 import water.H2O;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -16,7 +17,7 @@ import water.rapids.vals.ValNum;
 import water.rapids.vals.ValRow;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Binary operator.
@@ -309,13 +310,21 @@ abstract public class AstBinOp extends AstPrimitive {
       } else
         throw new IllegalArgumentException("Frames must have same rows, found " + lf.numRows() + " rows and " + rt.numRows() + " rows.");
     }
+
+    final int[][] alignedCategoricals = new int[lf.numCols()][];
+
+    for (int c = 0; c < lf.numCols(); c++) {
+      if (lf.vec(c).isCategorical() && rt.vec(c).isCategorical()) {
+        alignedCategoricals[c] = alignCategoricals(lf.vec(c).domain(), rt.vec(c).domain());
+      }
+    }
+    
     if (lf.numCols() == 0) return new ValFrame(lf);
     if (rt.numCols() == 0) return new ValFrame(rt);
     if (lf.numCols() == 1 && rt.numCols() > 1) return vec_op_frame(lf.vecs()[0], rt);
     if (rt.numCols() == 1 && lf.numCols() > 1) return frame_op_vec(lf, rt.vecs()[0]);
     if (lf.numCols() != rt.numCols())
       throw new IllegalArgumentException("Frames must have same columns, found " + lf.numCols() + " columns and " + rt.numCols() + " columns.");
-
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
@@ -329,13 +338,51 @@ abstract public class AstBinOp extends AstPrimitive {
           if (clf.vec().isString())
             for (int i = 0; i < clf._len; i++)
               cres.addNum(str_op(clf.atStr(lfstr, i), crt.atStr(rtstr, i)));
-          else
+          else if (categoricalOK() && clf.vec().isCategorical() && crt.vec().isCategorical()) {
+            // The vec with longer domain is iterated over due to categorical mapping
+            if (clf.vec().domain().length > crt.vec().domain().length) {
+              for (int i = 0; i < clf._len; i++) {
+                cres.addCategorical((int) op(clf.atd(i), alignedCategoricals[c][(int) crt.atd(i)]));
+              }
+            } else {
+              for (int i = 0; i < clf._len; i++) {
+                cres.addCategorical((int) op(alignedCategoricals[c][(int) clf.atd(i)], crt.atd(i)));
+              }
+            }
+          } else {
             for (int i = 0; i < clf._len; i++)
               cres.addNum(op(clf.atd(i), crt.atd(i)));
+          }
         }
       }
     }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names, null);
     return cleanCategorical(lf, res); // Cleanup categorical misuse
+  }
+
+  /**
+   * Produces a mapping array with indexes of the smaller pointing to the larger domain.
+   *
+   * @param sourceDomain Domain to originally map from
+   * @param targetDomain Domain to originally map to
+   * @return Cross-domain mapping as an array of primitive integers
+   */
+  private int[] alignCategoricals(String[] sourceDomain, String[] targetDomain) {
+    if (targetDomain.length > sourceDomain.length) {
+      String[] swap = targetDomain;
+      targetDomain = sourceDomain;
+      sourceDomain = swap;
+    }
+
+    Arrays.sort(sourceDomain);
+    Arrays.sort(targetDomain);
+
+    int[] unifiedIndex = MemoryManager.malloc4(targetDomain.length);
+
+    for (int i = 0; i < targetDomain.length; i++) {
+      unifiedIndex[i] = Arrays.binarySearch(sourceDomain, targetDomain[i]);
+    }
+
+    return unifiedIndex;
   }
 
   private ValFrame frame_op_row(Frame lf, Frame row) {
@@ -407,7 +454,11 @@ abstract public class AstBinOp extends AstPrimitive {
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
-  // Make sense to run this OP on an enm?
+  /**
+   * Does it make sense to run this operation on a categorical variable ?
+   *
+   * @return True if the operation may be applied on a categorical variable, otherwise false.
+   */
   public boolean categoricalOK() {
     return false;
   }
