@@ -12,6 +12,8 @@ _IS_PYBOOKLET_                = False
 _RESULTS_DIR_                 = False
 _TEST_NAME_                   = ""
 _FORCE_CONNECT_               = False
+_LDAP_USER_NAME_              = None
+_LDAP_PASSWORD_               = None
 
 def parse_args(args):
     global _H2O_IP_
@@ -25,6 +27,8 @@ def parse_args(args):
     global _RESULTS_DIR_
     global _TEST_NAME_
     global _FORCE_CONNECT_
+    global _LDAP_USER_NAME_
+    global _LDAP_PASSWORD_
 
     i = 1
     while (i < len(args)):
@@ -57,6 +61,14 @@ def parse_args(args):
             i = i + 1
             if (i > len(args)): usage()
             _TEST_NAME_ = args[i]
+        elif (s == "--ldapUsername"):
+            i = i + 1
+            if (i > len(args)): usage()
+            _LDAP_USER_NAME_ = args[i]
+        elif (s == "--ldapPassword"):
+            i = i + 1
+            if (i > len(args)): usage()
+            _LDAP_PASSWORD_ = args[i]
         elif (s == "--forceConnect"):
             _FORCE_CONNECT_ = True
         else:
@@ -87,6 +99,10 @@ def usage():
     print("    --resultsDir      the results directory.")
     print("")
     print("    --testName        name of the pydemo, pyunit, or pybooklet.")
+    print("")
+    print("    --ldapUsername    LDAP username.")
+    print("")
+    print("    --ldapPassword    LDAP password.")
     print("")
     print("    --forceConnect    h2o will attempt to connect to cluster regardless of cluster's health.")
     print("")
@@ -122,7 +138,10 @@ def h2o_test_setup(sys_args):
                                 "{0}".format(_TEST_NAME_))
 
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
-    h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False)
+    auth = None
+    if _LDAP_USER_NAME_ is not None and _LDAP_PASSWORD_ is not None:
+        auth = (_LDAP_USER_NAME_, _LDAP_PASSWORD_)
+    h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False, auth=auth)
     h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")
