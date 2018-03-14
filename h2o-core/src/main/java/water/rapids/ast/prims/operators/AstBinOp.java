@@ -376,13 +376,13 @@ abstract public class AstBinOp extends AstPrimitive {
     Arrays.sort(sourceDomain);
     Arrays.sort(targetDomain);
 
-    int[] unifiedIndex = MemoryManager.malloc4(targetDomain.length);
+    int[] transformedIndices = MemoryManager.malloc4(targetDomain.length);
 
     for (int i = 0; i < targetDomain.length; i++) {
-      unifiedIndex[i] = Arrays.binarySearch(sourceDomain, targetDomain[i]);
+      transformedIndices[i] = Arrays.binarySearch(sourceDomain, targetDomain[i]);
     }
 
-    return unifiedIndex;
+    return transformedIndices;
   }
 
   private ValFrame frame_op_row(Frame lf, Frame row) {
