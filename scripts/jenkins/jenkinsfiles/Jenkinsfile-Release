@@ -479,6 +479,23 @@ EOF
                         }
                     }
                 }
+
+                final String CLEANUP_STAGE_NAME = 'Cleanup'
+                stage(CLEANUP_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, CLEANUP_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, CLEANUP_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        sh """
+                            cd ${env.BUILD_NUMBER_DIR}
+                            rm -rf target
+                            rm -rf h2o-dist
+                        """
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, CLEANUP_STAGE_NAME)
+                        throw e
+                    }
+                }
             }
         }
     }
