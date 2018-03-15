@@ -60,7 +60,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       } else {
         interOnly = _interactions_only != null ? _interactions_only : _stratify_by;
       }
-      return InteractionSpec.create(_interactions, _interaction_pairs, interOnly);
+      return InteractionSpec.create(_interactions, _interaction_pairs, interOnly, _stratify_by);
     }
 
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
