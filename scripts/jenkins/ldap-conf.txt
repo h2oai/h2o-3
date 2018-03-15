@@ -1,0 +1,13 @@
+ldaploginmodule {
+    org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+    debug="true"
+    useLdaps="false"
+    contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
+    hostname="ldap.0xdata.loc"
+    port="389"
+    bindDn="cn=admin,dc=0xdata,dc=loc"
+    bindPassword="0xdata"
+    authenticationMethod="simple"
+    forceBindingLogin="true"
+    userBaseDn="ou=users,dc=0xdata,dc=loc";
+};

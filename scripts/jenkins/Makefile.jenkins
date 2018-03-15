@@ -258,7 +258,7 @@ benchmark:
 
 test-package-hadoop:
 	zip -q -r test-package-hadoop \
-		h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
+		scripts/jenkins/ldap-conf.txt h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
 
 test-hadoop-smoke:
-	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
+	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
