@@ -1,6 +1,6 @@
 def call(final pipelineContext, final Closure body) {
   final List<String> FILES_TO_EXCLUDE = [
-    '**/rest.log'
+    '**/rest.log', '**/*.csv'
   ]
 
   final List<String> FILES_TO_ARCHIVE = [

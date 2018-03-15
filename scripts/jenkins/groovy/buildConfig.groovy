@@ -35,6 +35,10 @@ class BuildConfig {
   // always run
   public static final String COMPONENT_ANY = 'any'
   public static final String COMPONENT_HADOOP = 'hadoop'
+  public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP]
+
+  public static final String H2O_JAR_STASH_NAME = 'h2o-3-stash-jar'
+  private static final String TEST_PACKAGE_STASH_NAME_PREFIX = 'h2o-3-stash'
 
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
   private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
@@ -238,6 +242,10 @@ class BuildConfig {
       throw new IllegalArgumentException(String.format('Cannot find expected image version for %s', image))
     }
     return version
+  }
+
+  String getStashNameForTestPackage(final String platform) {
+    return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
   }
 
   private void detectChanges(List<String> changes) {

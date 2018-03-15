@@ -67,9 +67,19 @@ def call(final pipelineContext) {
                               h2o-3/build/h2o.jar,
                               h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
                               h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-                              h2o-3/test-package-*.zip,
                               **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
                         """
+                        pipelineContext.getBuildConfig().TEST_PACKAGES_COMPONENTS.each { component ->
+                            if (pipelineContext.getBuildConfig().componentChanged(component)) {
+                                echo "********* Stash ${component} *********"
+                                pipelineContext.getUtils().stashFiles(
+                                        this,
+                                        pipelineContext.getBuildConfig().getStashNameForTestPackage(component),
+                                        "h2o-3/test-package-${component}.zip",
+                                        false
+                                )
+                            }
+                        }
                     }
                 }
             }

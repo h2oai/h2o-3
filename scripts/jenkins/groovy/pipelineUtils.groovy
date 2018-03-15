@@ -15,8 +15,12 @@ class PipelineUtils {
         return null
     }
 
+    void stashFiles(final context, final String stashName, final String includedFiles, final boolean allowEmpty) {
+        context.stash name: stashName, includes: includedFiles, allowEmpty: allowEmpty
+    }
+
     void stashFiles(final context, final String stashName, final String includedFiles) {
-        context.stash name: stashName, includes: includedFiles, allowEmpty: false
+        stashFiles(context, stashName, includedFiles, false)
     }
 
     void unstashFiles(final context, final String stashName) {
@@ -24,7 +28,7 @@ class PipelineUtils {
     }
 
     void stashScripts(final context) {
-        context.stash name: PIPELINE_SCRIPTS_STASH_NAME, includes: 'h2o-3/scripts/jenkins/groovy/*', allowEmpty: false
+        stashFiles(context, PIPELINE_SCRIPTS_STASH_NAME, 'h2o-3/scripts/jenkins/groovy/*', false)
     }
 
     void unstashScripts(final context) {
@@ -117,7 +121,7 @@ class PipelineUtils {
         return stageEndNodesInPrevBuild.find{it.getError() != null} == null
     }
 
-    void unpackTestPackage(final context, final String component, final String stageDir) {
+    void unpackTestPackage(final context, final buildConfig, final String component, final String stageDir) {
         context.echo "###### Pulling test package. ######"
         context.step([$class              : 'CopyArtifact',
                       projectName         : context.env.JOB_NAME,
@@ -126,6 +130,10 @@ class PipelineUtils {
                       selector            : [$class: 'SpecificBuildSelector', buildNumber: context.env.BUILD_ID],
                       target              : stageDir + '/'
         ])
+        dir (stageDir) {
+            unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
+            unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
+        }
         context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
     }
 
