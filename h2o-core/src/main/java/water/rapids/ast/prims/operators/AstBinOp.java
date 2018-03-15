@@ -329,6 +329,7 @@ abstract public class AstBinOp extends AstPrimitive {
     if (rt.numCols() == 1 && lf.numCols() > 1) return frame_op_vec(lf, rt.vecs()[0]);
     if (lf.numCols() != rt.numCols())
       throw new IllegalArgumentException("Frames must have same columns, found " + lf.numCols() + " columns and " + rt.numCols() + " columns.");
+
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
@@ -346,11 +347,11 @@ abstract public class AstBinOp extends AstPrimitive {
             // The vec with longer domain is iterated over due to categorical mapping
             if (clf.vec().domain().length > crt.vec().domain().length) {
               for (int i = 0; i < clf._len; i++) {
-                cres.addCategorical((int) op(clf.atd(i), alignedCategoricals[c][(int) crt.atd(i)]));
+                cres.addNum(op(clf.atd(i), alignedCategoricals[c][(int) crt.atd(i)]));
               }
             } else {
               for (int i = 0; i < clf._len; i++) {
-                cres.addCategorical((int) op(alignedCategoricals[c][(int) clf.atd(i)], crt.atd(i)));
+                cres.addNum(op(alignedCategoricals[c][(int) clf.atd(i)], crt.atd(i)));
               }
             }
           } else {
