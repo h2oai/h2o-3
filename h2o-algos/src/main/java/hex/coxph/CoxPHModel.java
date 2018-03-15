@@ -131,7 +131,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train) {
       super(coxPH, adaptFr);
       _ties = coxPH._parms._ties;
-      _rcall = coxPH._parms.toFormula(train);
+      _formula = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
     }
 
@@ -176,7 +176,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[][] _var_cumhaz_2;
 
     CoxPHParameters.CoxPHTies _ties;
-    String _rcall;
+    String _formula;
   }
 
   @Override

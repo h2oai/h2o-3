@@ -15,7 +15,7 @@
              nevent       = model$total_event,
              wald.test    = structure(model$wald_test,
              names        = if (df == 1L) coef_names else NULL),
-             call         = model$rcall)
+             call         = model$formula)
     return(model)
 
 }
@@ -24,7 +24,7 @@
     coef_names <- model$coef_names
     df <- length(model$coef)
     summary <- list(
-             call         = model$rcall,
+             call         = model$formula,
              n            = model$n,
              loglik       = model$loglik,
              nevent       = model$nevent,

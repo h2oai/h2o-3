@@ -38,8 +38,6 @@ def gen_module(schema, algo, module):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size"]:
             continue
-        if algo == "coxph" and param["name"] == "rcall":
-            continue
         if algo == "drf":
             if param["name"] == "offset_column":
                 yield "#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest."
@@ -108,8 +106,6 @@ def gen_module(schema, algo, module):
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
-        if algo == "coxph" and param["name"] == "rcall":
-            continue
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size", "training_frame"]:
             continue
         if algo == "naivebayes":
@@ -308,9 +304,6 @@ def gen_module(schema, algo, module):
             yield "   parms$%s <- eps_prob" % param["name"]
             continue
         if param["name"] == "metalearner_params":
-            continue
-        if algo == "coxph" and param["name"] == "rcall":
-            yield "  parms$rcall <- deparse(match.call())"
             continue
         if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
             yield "  if (!missing(%s))" % param["name"]
