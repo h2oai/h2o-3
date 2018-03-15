@@ -457,7 +457,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         DKV.put(dinfo);
 
         // The model to be built
-        CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame);
+        CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train());
         model = new CoxPHModel(_job._result, _parms, output);
         model.delete_and_lock(_job);
 
