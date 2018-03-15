@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -32,20 +34,20 @@ public final class PersistGcs extends Persist {
   @Override
   public byte[] load(final Value v) throws IOException {
     final BlobId blobId = GcsBlob.of(v._key).getBlobId();
-    
+
     final byte[] contentBytes = MemoryManager.malloc1(v._max);
     final ByteBuffer wrappingBuffer = ByteBuffer.wrap(contentBytes);
     final Key k = v._key;
     long offset = 0;
     // Skip offset based on chunk number
-    if(k._kb[0] == Key.CHK) {
+    if (k._kb[0] == Key.CHK) {
       offset = FileVec.chunkOffset(k); // The offset
     }
-    
+
     final ReadChannel reader = storage.reader(blobId);
     reader.seek(offset);
     reader.read(wrappingBuffer);
-    
+
     return contentBytes;
   }
 
@@ -78,34 +80,26 @@ public final class PersistGcs extends Persist {
     throw H2O.unimpl();
   }
 
-  private final LoadingCache<String, LoadingCache<String, List<String>>> keyCache = CacheBuilder.newBuilder()
+  private final LoadingCache<String, List<String>> keyCache = CacheBuilder.newBuilder()
       .maximumSize(1000)
       .expireAfterWrite(10, TimeUnit.MINUTES)
-      .build(new CacheLoader<String, LoadingCache<String, List<String>>>() {
+      .build(new CacheLoader<String, List<String>>() {
         @Override
-        public LoadingCache<String, List<String>> load(String key) {
-          LoadingCache<String, List<String>> keyCacheHolder = CacheBuilder.newBuilder()
-              .build(new CacheLoader<String, List<String>>() {
-                @Override
-                public List<String> load(String key) {
-                  final List<String> fileNames = new ArrayList<>();
-                  for (Blob b : storage.get(key).list().iterateAll()) {
-                    fileNames.add(b.getName());
-                  }
-                  return fileNames;
-                }
-              });
-          return keyCacheHolder;
+        public List<String> load(String key) {
+          final List<String> blobs = new ArrayList<>();
+          for (Blob b : storage.get(key).list().iterateAll()) {
+            blobs.add(b.getName());
+          }
+          return blobs;
         }
       });
 
-  private final LoadingCache<String, List<String>> bucketCache = CacheBuilder.newBuilder()
+  private final LoadingCache<Object, List<String>> bucketCache = CacheBuilder.newBuilder()
       .maximumSize(1000)
       .expireAfterWrite(1, TimeUnit.MINUTES)
-      .build(new CacheLoader<String, List<String>>() {
-
+      .build(new CacheLoader<Object, List<String>>() {
         @Override
-        public List<String> load(String key) {
+        public List<String> load(Object key) {
           final List<String> fileNames = new ArrayList<>();
           for (Bucket b : storage.list().iterateAll()) {
             fileNames.add(b.getName());
@@ -118,17 +112,25 @@ public final class PersistGcs extends Persist {
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     final String input = GcsBlob.removePrefix(filter);
     final String[] bk = input.split("/", 2);
+    List<String> results = new ArrayList<>();
     try {
       if (bk.length == 1) {
-        return bucketCache.get(filter);
+        List<String> buckets = bucketCache.get("all");
+        for (String s : buckets) {
+          results.add(GcsBlob.KEY_PREFIX + s);
+        }
       } else if (bk.length == 2) {
-        return keyCache.get(bk[0])
-            .get(filter);
+        List<String> objects = keyCache.get(bk[0]);
+        for (String s : objects) {
+          if(s.startsWith(bk[1])) {
+            results.add(GcsBlob.KEY_PREFIX + bk[0] + "/" + s);
+          }
+        }
       }
     } catch (ExecutionException e) {
       Log.err(e);
     }
-    return new ArrayList<>(0);
+    return results;
   }
 
   @Override
@@ -164,16 +166,16 @@ public final class PersistGcs extends Persist {
                            ArrayList<String> fails) {
     final Bucket bucket = storage.get(bucketId);
     for (Blob blob : bucket.list().iterateAll()) {
-        final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
-        Log.debug("Importing: " + gcsBlob.toString());
-        try {
-          final Key k = GcsFileVec.make(gcsBlob.getCanonical(), blob.getSize());
-          keys.add(k.toString());
-          files.add(gcsBlob.getCanonical());
-        } catch (Throwable t) {
-          Log.err(t);
-          fails.add(gcsBlob.getCanonical());
-        }
+      final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
+      Log.debug("Importing: " + gcsBlob.toString());
+      try {
+        final Key k = GcsFileVec.make(gcsBlob.getCanonical(), blob.getSize());
+        keys.add(k.toString());
+        files.add(gcsBlob.getCanonical());
+      } catch (Throwable t) {
+        Log.err(t);
+        fails.add(gcsBlob.getCanonical());
+      }
     }
   }
 
@@ -183,14 +185,15 @@ public final class PersistGcs extends Persist {
     Log.debug("Opening: " + gcsBlob.toString());
     final Blob blob = storage.get(gcsBlob.getBlobId());
     return new InputStream() {
-    final ReadChannel reader = blob.reader();
+      final ReadChannel reader = blob.reader();
+
       @Override
       public int read() throws IOException {
         // very naive version with reading byte by byte
         try {
           ByteBuffer bytes = ByteBuffer.wrap(MemoryManager.malloc1(1));
           int numRed = reader.read(bytes);
-          if(numRed == 0) return -1;
+          if (numRed == 0) return -1;
           return bytes.get(0);
         } catch (IOException e) {
           throw new FSIOException(path, e);
@@ -200,7 +203,7 @@ public final class PersistGcs extends Persist {
       @Override
       public int read(byte bytes[], int off, int len) throws IOException {
         Objects.requireNonNull(bytes);
-        
+
         if (off < 0 || len < 0 || len > bytes.length - off) {
           throw new IndexOutOfBoundsException("Length of byte array is " + bytes.length + ". Offset is " + off
               + " and length is " + len);
