@@ -443,25 +443,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private String[] _columns;
     private StringPair[] _pairs;
     private String[] _interactionsOnly;
+    private String[] _ignored; // list of columns that can be dropped if they are not used in any interaction
 
-    private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
+    private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
       _columns = columns;
       _pairs = pairs;
       _interactionsOnly = interactionsOnly;
+      if (ignored != null) {
+        _ignored = ignored.clone();
+        Arrays.sort(_ignored);
+      }
     }
 
     public static InteractionSpec allPairwise(String[] columns) {
-      return columns != null ? new InteractionSpec(columns, null, null) : null;
+      return columns != null ? new InteractionSpec(columns, null, null, null) : null;
+    }
+
+    public static InteractionSpec create(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
+      return columns == null && pairs == null ?
+              null : new InteractionSpec(columns, pairs, interactionsOnly, ignored);
     }
 
     public static InteractionSpec create(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
       return columns == null && pairs == null ?
-              null : new InteractionSpec(columns, pairs, interactionsOnly);
+              null : new InteractionSpec(columns, pairs, interactionsOnly, null);
     }
 
     public static InteractionSpec create(String[] columns, StringPair[] pairs) {
       return columns == null && pairs == null ?
-              null : new InteractionSpec(columns, pairs, null);
+              null : new InteractionSpec(columns, pairs, null, null);
     }
 
     public boolean isEmpty() {
@@ -498,12 +508,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for (int i = 0; i < _interactionsOnly.length; i++) {
         if (isUsed(_interactionsOnly[i])) {
           f.add(_interactionsOnly[i], interOnlyVecs[i]);
-        } else {
+        } else if (! isIgnored(_interactionsOnly[i])) {
           Log.warn("Column '" + _interactionsOnly[i] + "' was marked to be used for interactions only " +
                   "but it is not actually required in any interaction.");
         }
       }
       return f;
+    }
+
+    private boolean isIgnored(String column) {
+      return _ignored != null && Arrays.binarySearch(_ignored, column) >= 0;
     }
 
     public Frame removeInteractionOnlyColumns(Frame f) {
