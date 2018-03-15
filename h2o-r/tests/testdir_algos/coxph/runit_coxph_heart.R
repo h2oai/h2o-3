@@ -35,8 +35,12 @@ test.CoxPH.heart <- function() {
 
     # test print summary
     summary.out <- capture.output(print(summary.info))
-    summary.out.sanitized <- gsub("[0-9]", "?", x = summary.out)[4:18]
+    print(summary.out)
+    summary.out.sanitized <- gsub("[0-9]", "?", x = summary.out)
     summary.out.expected <- c(
+      "Call:",
+      "\"Surv(start, stop, event) ~ age\"",
+      "",
       "  n= ???",
       "",
       "       coef exp(coef) se(coef)     z Pr(>|z|)  ",

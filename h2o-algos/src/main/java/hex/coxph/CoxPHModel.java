@@ -85,6 +85,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
         add(_strata_column);
         if (_weights_column != null)
           add(_weights_column);
+        if (_ignored_columns != null)
+          addAll(Arrays.asList(_ignored_columns));
       }};
       String sep = "";
       for (String col : f._names) {

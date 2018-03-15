@@ -181,6 +181,10 @@ def gen_module(schema, algo, module):
         yield "     interactions_only <- setdiff(used, x)"
         yield "     x <- c(x, interactions_only)"
         yield "  }"
+        yield "  if (! is.null(stratify_by)) {"
+        yield "     stratify_by_only <- setdiff(stratify_by, x)"
+        yield "     x <- c(x, stratify_by_only)"
+        yield "  }"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
         yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
