@@ -550,7 +550,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colFormatsMultinomial= {
           "%s",
-          "%d"};
+          "%.6f"};
 
   protected static final String[] colTypesBinomial= {
           "string",
@@ -559,8 +559,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colFormatsBinomial= {
           "%s",
-          "%d",
-          "%d"};
+          "%.6f",
+          "%.6f"};
 
   protected static final String[] colTypesRegression= {
           "string",
@@ -571,10 +571,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colFormatsRegression= {
           "%s",
-          "%d",
-          "%d",
-          "%d",
-          "%d"};
+          "%.6f",
+          "%.6f",
+          "%.6f",
+          "%.6f"};
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
