@@ -11,7 +11,6 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     public static String[] fields = new String[] {
               "model_id",
               "training_frame",
-              "rcall",
               "start_column",
               "stop_column",
               "response_column",
@@ -28,9 +27,6 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "interaction_pairs",
               "use_all_factor_levels"
     };
-
-    @API(help="How was the model invoked.", direction = API.Direction.INOUT)
-    public String rcall;
 
     @API(help="Start Time Column.", direction = API.Direction.INOUT)
     public String start_column;

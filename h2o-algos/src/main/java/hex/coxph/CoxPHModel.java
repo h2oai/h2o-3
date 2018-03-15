@@ -38,7 +38,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
-    public String _rcall;
     public double _init = 0;
     public double _lre_min = 9;
     public int _iter_max = 20;
@@ -68,7 +67,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
 
-    String toRFormula(Frame f) {
+    String toFormula(Frame f) {
       StringBuilder sb = new StringBuilder();
       sb.append("Surv(");
       if (_start_column != null) {
@@ -78,9 +77,18 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       sb.append(") ~ ");
       Set<String> stratifyBy = _stratify_by != null ? new HashSet<>(Arrays.asList(_stratify_by)) : Collections.<String>emptySet();
       Set<String> interactionsOnly = _interactions_only != null ? new HashSet<>(Arrays.asList(_interactions_only)) : Collections.<String>emptySet();
+      Set<String> specialCols = new HashSet<String>() {{
+        add(_start_column);
+        if (_stop_column != null)
+          add(_stop_column);
+        add(_response_column);
+        add(_strata_column);
+        if (_weights_column != null)
+          add(_weights_column);
+      }};
       String sep = "";
       for (String col : f._names) {
-        if (stratifyBy.contains(col) || interactionsOnly.contains(col))
+        if (stratifyBy.contains(col) || interactionsOnly.contains(col) || specialCols.contains(col))
           continue;
         sb.append(sep).append(col);
         sep = " + ";
@@ -123,7 +131,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train) {
       super(coxPH, adaptFr);
       _ties = coxPH._parms._ties;
-      _rcall = coxPH._parms.toRFormula(train);
+      _rcall = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
     }
 

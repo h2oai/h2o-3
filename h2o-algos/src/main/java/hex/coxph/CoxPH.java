@@ -40,6 +40,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public void init(boolean expensive) {
     super.init(expensive);
 
+    if (_parms._train != null && _parms.train() == null) {
+      error("train", "Invalid training frame (Frame key = " + _parms._train + " not found)");
+    }
+
     if (_parms._train != null && _parms.train() != null) {
       if (_parms._start_column != null) {
         if (_parms.startVec().isNumeric()) {
