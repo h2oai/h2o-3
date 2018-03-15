@@ -243,12 +243,37 @@ try {
                         throw e
                     }
                 }
-                def UPDATE_LATEST_STAGE_NAME = 'Update Latest Links'
-                if ((params.UPDATE_LATEST)) {
-                    stage(UPDATE_LATEST_STAGE_NAME) {
+
+                def UPDATE_BRANCH_LATEST_STAGE_NAME = 'Update Branch Latest Links'
+                if (params.UPDATE_LATEST_BRANCH) {
+                    stage (UPDATE_BRANCH_LATEST_STAGE_NAME) {
                         try {
-                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_BRANCH_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_BRANCH_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}
+                                    tmpdir=./buildh2odev.tmp
+
+                                    s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
+                                """
+                            }
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_BRANCH_LATEST_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_BRANCH_LATEST_STAGE_NAME)
+                            throw e
+                        }
+                    }
+                }
+
+                def UPDATE_TOP_LEVEL_LATEST_STAGE_NAME = 'Update Top-level Latest Links'
+                if (params.UPDATE_LATEST) {
+                    stage(UPDATE_TOP_LEVEL_LATEST_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                             insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
@@ -299,9 +324,9 @@ EOF
                                     done
                                 """
                             }
-                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_LATEST_STAGE_NAME)
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME)
                         } catch (Exception e) {
-                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_LATEST_STAGE_NAME)
+                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME)
                             throw e
                         }
                     }
@@ -475,7 +500,8 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update latest links', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build Conda package. Also if building rel- branch, publish to Conda', name: 'UPLOAD_CONDA')
