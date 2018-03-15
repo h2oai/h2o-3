@@ -585,8 +585,8 @@ public class DataInfo extends Keyed<DataInfo> {
           if( isIWV ) {
             InteractionWrappedVec iwv = (InteractionWrappedVec)v;
             for(int offset=0;offset<iwv.expandedLength();++offset) {
-              normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
-              normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
+              normMul[idx+offset] = iwv.getMul(offset+(iwv._useAllFactorLevels?0:1));
+              normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
             }
           } else {
             normMul[idx] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
@@ -726,7 +726,7 @@ public class DataInfo extends Keyed<DataInfo> {
         InteractionWrappedVec v;
         if( i+_cats >= n || k >=n ) break;
         if (vecs[i+_cats] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i+_cats]).domain() != null)) { // in this case, get the categoricalOffset
-          for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
+          for (int j = v._useAllFactorLevels?0:1; j < v.domain().length; ++j) {
             if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
               continue;
             res[k++] = _adaptedFrame._names[i+_cats] + "." + v.domain()[j];
@@ -995,16 +995,20 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final int getCategoricalIdFromInteraction(int cid, int val) {
-    InteractionWrappedVec v;
-    if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
-    assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    InteractionWrappedVec v = (InteractionWrappedVec) _adaptedFrame.vec(cid);
+    if (v.isCategorical())
+      return getCategoricalId(cid, val);
+    assert v.domain() != null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
     cid -= _cats;
-    if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
-      assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
+    if (! v._useAllFactorLevels)
+      val--;
+    assert val >= 0;
+    if (val >= _numOffsets[cid+1]) { // previously unseen interaction (aka new domain level)
+      assert _valid : "interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
       val = v.mode();
     }
     if( cid < _intLvls.length && _intLvls[cid]!=null ) {
-      assert _useAllFactorLevels;
+      assert _useAllFactorLevels; // useAllFactorLevels has to be defined on a global level (not just for the interaction)
       val = Arrays.binarySearch(_intLvls[cid],val);
     }
     return val < 0?-1:val+_numOffsets[cid];

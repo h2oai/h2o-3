@@ -562,11 +562,31 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           allExplicit = resized;
         }
       }
-      if (allExplicit == null)
-        return allPairwise;
-      else
-        return ArrayUtils.append(allPairwise, allExplicit);
+      InteractionPair[] pairs = allExplicit == null ? allPairwise : ArrayUtils.append(allPairwise, allExplicit);
+      if (pairs != null) {
+        pairs = flagAllFactorInteractionPairs(f, pairs);
+      }
+      return pairs;
     }
+
+    private InteractionPair[] flagAllFactorInteractionPairs(Frame f, InteractionPair[] pairs) {
+      if (_interactionsOnly == null || _interactionsOnly.length == 0)
+        return pairs;
+      final String[] interOnly = _interactionsOnly.clone();
+      Arrays.sort(interOnly);
+      for (InteractionPair p : pairs) {
+        boolean v1num = f.vec(p._v1).isNumeric();
+        boolean v2num = f.vec(p._v2).isNumeric();
+        if (v1num == v2num)
+          continue;
+        // numerical-categorical interaction
+        String numVecName = v1num ? f.name(p._v1) : f.name(p._v2);
+        boolean needsAllFactorColumns = Arrays.binarySearch(interOnly, numVecName) >= 0;
+        p.setNeedsAllFactorLevels(needsAllFactorColumns);
+      }
+      return pairs;
+    }
+
   }
 
   /** Model-specific output class.  Each model sub-class contains an instance
@@ -2194,14 +2214,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   @Override public Class<KeyV3.ModelKeyV3> makeSchema() { return KeyV3.ModelKeyV3.class; }
 
-  public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+  public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions,
+                                       final boolean useAllFactorLevels, final boolean skipMissing, final boolean standardize) {
     Vec anyTrainVec = fr.anyVec();
     Vec[] interactionVecs = new Vec[interactions.length];
     String[] interactionNames  = new String[interactions.length];
     int idx = 0;
     for (InteractionPair ip : interactions) {
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
-      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+      boolean allFactLevels = useAllFactorLevels || ip.needsAllFactorLevels();
+      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, allFactLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
       interactionVecs[idx++] = iwv;
     }
     return new Frame(interactionNames, interactionVecs);
@@ -2239,6 +2261,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private String[] _v1Enums;
     private String[] _v2Enums;
     private int _hash;
+    private boolean _needsAllFactorLevels;
+
     private InteractionPair() {}
     private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
       _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
@@ -2253,6 +2277,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else
         for( String s:_v2Enums ) _hash = 31*_hash + s.hashCode();
     }
+
+    /**
+     * Indicates that Interaction should be created from all factor levels
+     * (regardless of the global setting useAllFactorLevels).
+     * @return do we need to make all factor levels?
+     */
+    public boolean needsAllFactorLevels() { return _needsAllFactorLevels; }
+    public void setNeedsAllFactorLevels(boolean needsAllFactorLevels) { _needsAllFactorLevels = needsAllFactorLevels; }
 
     /**
      * Generate all pairwise combinations of the arguments.

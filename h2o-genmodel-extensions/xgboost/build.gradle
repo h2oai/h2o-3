@@ -5,16 +5,18 @@ description = "H2O GenModel XGBoost support"
 dependencies {
     compile project(":h2o-genmodel")
 
-    // XGBoost dependencies but not officially published
-    compile files("xgblib/xgboost4j-0.7.1.jar",
-                  "xgblib/xgboost4j-native-osx_minimal-0.7.1.jar",
-                  "xgblib/xgboost4j-native-linux_minimal-0.7.1.jar",
-                  "xgblib/xgboost4j-native-linux_ompv3-0.7.1.jar",
-                  "xgblib/xgboost4j-native-linux_gpuv4-0.7.1.jar")
-
-    // These are dependencies extracted from xgboost/jvm-packages/pom.xml
-    compile 'com.esotericsoftware.kryo:kryo:2.21'
-    compile 'commons-logging:commons-logging:1.2'
+    // XGBoost dependencies published into Maven central by H2O
+    // Versioning rules may differ for XGBoost artifacts published by H2O
+    compile('ai.h2o:xgboost4j:0.7.3') {
+        exclude group: 'org.scala-lang', module: 'scala-compiler'
+        exclude group: 'org.scala-lang', module: 'scala-reflect'
+        exclude group: 'org.scala-lang', module: 'scala-library'
+        exclude group: 'com.typesafe.akka', module: 'akka-actor_2.11'
+    }
+    compile 'ai.h2o:xgboost4j-linux-gpuv4:0.7.3'
+    compile 'ai.h2o:xgboost4j-linux-minimal:0.7.3'
+    compile 'ai.h2o:xgboost4j-osx-minimal:0.7.3'
+    compile 'ai.h2o:xgboost4j-linux-ompv3:0.7.3'
 }
 
 // Disable default jar
@@ -24,12 +26,6 @@ jar {
 
 shadowJar {
     archiveName = jar.archiveName
-    dependencies {
-        exclude(dependency {
-            // Exclude everything exception the files dependencies
-            true
-        })
-    }
 }
 
 artifacts {
