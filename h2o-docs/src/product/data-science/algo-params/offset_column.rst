@@ -1,7 +1,7 @@
 ``offset_column``
 -----------------
 
-- Available in: GBM, Deep Learning, GLM, XGBoost
+- Available in: GBM, Deep Learning, GLM
 - Hyperparameter: no
 
 
@@ -17,6 +17,7 @@ When used with distributions/family-link functions, the offset corrections are a
 - An offset column can only be used for regression problems.
 - This option is not applicable for multinomial distributions
 - The offset column cannot be the same as the `fold_column <fold_column.html>`__. 
+- This option can be specified in XGBoost, but it is not supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
