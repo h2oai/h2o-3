@@ -344,8 +344,19 @@ class H2OAutoML(object):
         else:
             self._leader_id = None
 
-        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-        leaderboard = h2o.H2OFrame(res["leaderboard_table"].cell_values, column_names=res["leaderboard_table"].col_header)
+        # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+        # If any failure happens, revert back to user's original setting for progress and display the error message.
+        try:
+            # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+            leaderboard = h2o.H2OFrame(
+                res["leaderboard_table"].cell_values,
+                column_names=res["leaderboard_table"].col_header)
+        except Exception as ex:
+            raise ex
+        finally:
+            if H2OJob.__PROGRESS_BAR__ is True:
+                h2o.show_progress()
+
         self._leaderboard = leaderboard[1:]
         return self._leader_id is not None
 
