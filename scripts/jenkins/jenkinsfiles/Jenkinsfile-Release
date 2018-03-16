@@ -56,7 +56,8 @@ try {
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
                             <li><strong>PyPI Upload:</strong> ${params.UPLOAD_PYPI}</li>
                             <li><strong>Conda Upload:</strong> ${params.UPLOAD_CONDA}</li>
-                            <li><strong>Update Latest Links</strong> ${params.UPDATE_LATEST}</li>
+                            <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
+                            <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
