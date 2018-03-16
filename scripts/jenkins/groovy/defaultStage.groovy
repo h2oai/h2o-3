@@ -10,12 +10,12 @@ def call(final pipelineContext, final stageConfig) {
 
         // pull the test package unless this is a COMPONENT_ANY stage
         if (stageConfig.component != pipelineContext.getBuildConfig().COMPONENT_ANY) {
-            pipelineContext.getUtils().unpackTestPackage(this, stageConfig.component, stageConfig.stageDir)
+            pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), stageConfig.component, stageConfig.stageDir)
         }
         // pull aditional test packages
         for (additionalPackage in stageConfig.additionalTestPackages) {
             echo "Pulling additional test-package-${additionalPackage}.zip"
-            pipelineContext.getUtils().unpackTestPackage(this, additionalPackage, stageConfig.stageDir)
+            pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), additionalPackage, stageConfig.stageDir)
         }
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
