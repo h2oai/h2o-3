@@ -211,8 +211,17 @@ public final class PersistGcs extends Persist {
           return 0;
         }
         final ByteBuffer buffer = ByteBuffer.wrap(bytes, off, len);
-        final ReadChannel reader = blob.reader();
         return reader.read(buffer);
+      }
+
+      @Override
+      public int available() throws IOException {
+        return 1;
+      }
+
+      @Override
+      public void close() throws IOException {
+        reader.close();
       }
     };
   }
