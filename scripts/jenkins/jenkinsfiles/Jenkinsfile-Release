@@ -488,7 +488,7 @@ EOF
                         pipelineContext.getBuildSummary().setStageDetails(this, CLEANUP_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                         sh """
                             cd ${env.BUILD_NUMBER_DIR}
-                            rm -rf target
+                            rm -rf target/*.zip
                             rm -rf h2o-dist
                         """
                         pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
