@@ -1154,10 +1154,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             defval = parms.missingColumnsType();
             convNaN++;
           }
-          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
-          msgs.add(str);
+          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
+          if (isResponse || isWeights)
+            Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
+          else
+            msgs.add(str);
         }
       }
       if( vec != null ) {          // I have a column with a matching name
