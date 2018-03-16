@@ -346,6 +346,8 @@ class H2OAutoML(object):
 
         # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
         # If any failure happens, revert back to user's original setting for progress and display the error message.
+        is_progress = H2OJob.__PROGRESS_BAR__
+        h2o.no_progress()
         try:
             # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
             leaderboard = h2o.H2OFrame(
@@ -354,7 +356,7 @@ class H2OAutoML(object):
         except Exception as ex:
             raise ex
         finally:
-            if H2OJob.__PROGRESS_BAR__ is True:
+            if is_progress is True:
                 h2o.show_progress()
 
         self._leaderboard = leaderboard[1:]
