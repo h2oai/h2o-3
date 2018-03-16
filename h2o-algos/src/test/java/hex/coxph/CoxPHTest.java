@@ -33,6 +33,7 @@ public class CoxPHTest extends TestUtil {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -68,6 +69,7 @@ public class CoxPHTest extends TestUtil {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());
@@ -94,6 +96,7 @@ public class CoxPHTest extends TestUtil {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+      assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -130,6 +133,7 @@ public class CoxPHTest extends TestUtil {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "start"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      assertEquals("Surv(stop, event) ~ age", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -166,6 +170,7 @@ public class CoxPHTest extends TestUtil {
       parms._response_column = "event";
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "start"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+      assertEquals("Surv(stop, event) ~ age", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       model = builder.trainModel().get();
@@ -223,6 +228,7 @@ public class CoxPHTest extends TestUtil {
       // Exclude the original "age" column
       parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant", "age"};
       parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      assertEquals("Surv(start, stop, event) ~ age1:age2", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
       CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());

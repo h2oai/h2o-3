@@ -2315,6 +2315,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return false;
     }
+    public int getV1() { return _v1; }
+    public int getV2() { return _v2; }
   }
 
   /**

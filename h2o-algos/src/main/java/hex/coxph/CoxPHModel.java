@@ -16,6 +16,9 @@ import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
@@ -35,7 +38,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
-    public String _rcall;
     public double _init = 0;
     public double _lre_min = 9;
     public int _iter_max = 20;
@@ -64,14 +66,74 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     }
 
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
+
+    String toFormula(Frame f) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Surv(");
+      if (_start_column != null) {
+        sb.append(_start_column).append(", ");
+      }
+      sb.append(_stop_column).append(", ").append(_response_column);
+      sb.append(") ~ ");
+      Set<String> stratifyBy = _stratify_by != null ? new HashSet<>(Arrays.asList(_stratify_by)) : Collections.<String>emptySet();
+      Set<String> interactionsOnly = _interactions_only != null ? new HashSet<>(Arrays.asList(_interactions_only)) : Collections.<String>emptySet();
+      Set<String> specialCols = new HashSet<String>() {{
+        add(_start_column);
+        if (_stop_column != null)
+          add(_stop_column);
+        add(_response_column);
+        add(_strata_column);
+        if (_weights_column != null)
+          add(_weights_column);
+        if (_ignored_columns != null)
+          addAll(Arrays.asList(_ignored_columns));
+      }};
+      String sep = "";
+      for (String col : f._names) {
+        if (stratifyBy.contains(col) || interactionsOnly.contains(col) || specialCols.contains(col))
+          continue;
+        sb.append(sep).append(col);
+        sep = " + ";
+      }
+      InteractionSpec interactionSpec = interactionSpec();
+      if (interactionSpec != null) {
+        InteractionPair[] interactionPairs = interactionSpec().makeInteractionPairs(f);
+        for (InteractionPair ip : interactionPairs) {
+          sb.append(sep);
+          String v1 = f._names[ip.getV1()];
+          String v2 = f._names[ip.getV2()];
+          if (stratifyBy.contains(v1))
+            sb.append("strata(").append(v1).append(")");
+          else
+            sb.append(v1);
+          sb.append(":");
+          if (stratifyBy.contains(v2))
+            sb.append("strata(").append(v2).append(")");
+          else
+            sb.append(v2);
+          sep = " + ";
+        }
+      }
+      if (_stratify_by != null) {
+        final String tmp = sb.toString();
+        for (String col : _stratify_by) {
+          String strataCol = "strata(" + col + ")";
+          if (! tmp.contains(strataCol)) {
+            sb.append(sep).append(strataCol);
+            sep = " + ";
+          }
+        }
+      }
+      return sb.toString();
+    }
   }
 
   public static class CoxPHOutput extends Model.Output {
 
-    public CoxPHOutput(CoxPH coxPH, Frame adaptFr) {
+    public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train) {
       super(coxPH, adaptFr);
       _ties = coxPH._parms._ties;
-      _rcall = coxPH._parms._rcall;
+      _formula = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
     }
 
@@ -116,7 +178,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[][] _var_cumhaz_2;
 
     CoxPHParameters.CoxPHTies _ties;
-    String _rcall;
+    String _formula;
   }
 
   @Override

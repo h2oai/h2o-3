@@ -61,6 +61,10 @@ h2o.coxph <- function(x, event_column, training_frame,
      interactions_only <- setdiff(used, x)
      x <- c(x, interactions_only)
   }
+  if (! is.null(stratify_by)) {
+     stratify_by_only <- setdiff(stratify_by, x)
+     x <- c(x, stratify_by_only)
+  }
   # Required args: training_frame
   if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
@@ -82,7 +86,6 @@ h2o.coxph <- function(x, event_column, training_frame,
 
   if (!missing(model_id))
     parms$model_id <- model_id
-  parms$rcall <- deparse(match.call())
   if (!missing(start_column))
     parms$start_column <- start_column
   if (!missing(stop_column))
