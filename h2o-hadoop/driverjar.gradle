@@ -31,7 +31,10 @@ sourceSets {
 }
 
 dependencies {
-  compile "org.eclipse.jetty.aggregate:jetty-all-server:8.1.17.v20150415"
+ compile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+ compile "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
+ compile "org.eclipse.jetty:jetty-proxy:${jettyVersion}"
+
   if (project.hasProperty('notYarn')) {
     compile('org.apache.hadoop:hadoop-core:' + hadoopMavenArtifactVersion)
   }

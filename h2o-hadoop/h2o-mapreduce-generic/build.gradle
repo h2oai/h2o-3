@@ -16,7 +16,8 @@ compileJava {
 
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
-  compile "org.eclipse.jetty.aggregate:jetty-all-server:8.1.17.v20150415"
+  compile "org.eclipse.jetty:jetty-proxy:${jettyVersion}"
+
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")

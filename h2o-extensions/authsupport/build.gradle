@@ -1,5 +1,6 @@
 description = "H2O Authentication Support"
 
 dependencies {
+    compile "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
     compile project(":h2o-core")
 }
