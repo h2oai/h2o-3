@@ -4,7 +4,11 @@ package water.rapids;
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -518,13 +522,13 @@ class BinaryMerge extends DTask<BinaryMerge> {
     final int numLeftCols = _leftSB._frame.numCols();
     final int numColsInResult = _leftSB._frame.numCols() + _riteSB._frame.numCols() - _numJoinCols;
     final double[][][] frameLikeChunks = new double[numColsInResult][nbatch][]; //TODO: compression via int types
-    String[][][] frameLikeChunks4Strings = new String[numColsInResult][nbatch][]; // cannot allocate before hand
+    BufferedString[][][] frameLikeChunks4Strings = new BufferedString[numColsInResult][nbatch][]; // cannot allocate before hand
     _chunkSizes = new int[nbatch];
 
     for (int col = 0; col < numColsInResult; col++) {
       if (this._stringCols[col]) {
         for (int b = 0; b < nbatch; b++) {
-          frameLikeChunks4Strings[col][b] = new String[_chunkSizes[b] = (b == nbatch - 1 ? lastSize : batchSizeUUID)];
+          frameLikeChunks4Strings[col][b] = new BufferedString[_chunkSizes[b] = (b == nbatch - 1 ? lastSize : batchSizeUUID)];
         }
       } else {
         for (int b = 0; b < nbatch; b++) {
@@ -642,7 +646,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   // Now loop through _ret1st and _retLen and populate
-  private void chunksPopulateRetFirst(final int numColsInResult, final int numLeftCols, final long perNodeLeftLoc[], final GetRawRemoteRows grrrsLeft[][], final long perNodeRightLoc[], final GetRawRemoteRows grrrsRite[][], final double[][][] frameLikeChunks, String[][][] frameLikeChunks4String) {
+  private void chunksPopulateRetFirst(final int numColsInResult, final int numLeftCols, final long perNodeLeftLoc[], final GetRawRemoteRows grrrsLeft[][], final long perNodeRightLoc[], final GetRawRemoteRows grrrsRite[][], final double[][][] frameLikeChunks, BufferedString[][][] frameLikeChunks4String) {
     // 16 bytes for each UUID (biggest type). Enum will be long (8). 
     // TODO: How is non-Enum 'string' handled by H2O?
     final int batchSizeUUID = 256*1024*1024 / 16;  // number of rows per chunk to fit in 256GB DKV limit.
@@ -669,7 +673,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
         int b = (int)(pnl / batchSizeUUID);
         int o = (int)(pnl % batchSizeUUID);
         double[][] chks = grrrsLeft[ni][b]._chk;
-        String[][] chksString = grrrsLeft[ni][b]._chkString;
+        BufferedString[][] chksString = grrrsLeft[ni][b]._chkString;
 
         final int l1 = Math.max((int)l,1);
         for (int rep = 0; rep < l1; rep++) {
@@ -682,7 +686,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           for (int col=0; col<chks.length; col++) { // copy over left frame to frameLikeChunks
             if (this._stringCols[col]) {
               if (chksString[col][o] != null)
-                frameLikeChunks4String[col][whichChunk][offset] = new String(chksString[col][o]);
+                frameLikeChunks4String[col][whichChunk][offset] = chksString[col][o];
             } else
               frameLikeChunks[col][whichChunk][offset] = chks[col][o];  // colForBatch.atd(row);
           }
@@ -702,8 +706,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
             for (int col=0; col<numColsInResult-numLeftCols; col++) {
               int colIndex = numLeftCols + col;
               if (this._stringCols[colIndex]) {
-                frameLikeChunks4String[colIndex][toChunk][toOffset] = frameLikeChunks4String[colIndex][fromChunk][fromOffset]==null?null:
-                        new String(frameLikeChunks4String[colIndex][fromChunk][fromOffset]);
+                frameLikeChunks4String[colIndex][toChunk][toOffset] = frameLikeChunks4String[colIndex][fromChunk][fromOffset];
               } else {
                 frameLikeChunks[colIndex][toChunk][toOffset] = frameLikeChunks[colIndex][fromChunk][fromOffset];
               }
@@ -734,7 +737,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
             int colIndex = numLeftCols + col;
             if (this._stringCols[colIndex]) {
               if (chksString[_numJoinCols + col][o]!=null)
-                frameLikeChunks4String[colIndex][whichChunk][offset] = new String(chksString[_numJoinCols + col][o]);  // colForBatch.atd(row);
+                frameLikeChunks4String[colIndex][whichChunk][offset] = chksString[_numJoinCols + col][o];  // colForBatch.atd(row);
             } else
               frameLikeChunks[colIndex][whichChunk][offset] = chks[_numJoinCols + col][o];  // colForBatch.atd(row);
           }
@@ -745,7 +748,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   // compress all chunks and store them
-  private void chunksCompressAndStore(final int nbatch, final int numColsInResult, final double[][][] frameLikeChunks, String[][][] frameLikeChunks4String) {
+  private void chunksCompressAndStore(final int nbatch, final int numColsInResult, final double[][][] frameLikeChunks, BufferedString[][][] frameLikeChunks4String) {
     // compress all chunks and store them
     Futures fs = new Futures();
     for (int col = 0; col < numColsInResult; col++) {
@@ -783,7 +786,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     long[/*rows*/] _rows; //which rows to fetch from remote node, non-null on the way to remote, null on the way back
 
     double[/*col*/][] _chk; //null on the way to remote node, non-null on the way back
-    String[][] _chkString;
+    BufferedString[][] _chkString;
     double timeTaken;
     GetRawRemoteRows(Frame fr, long[] rows) { _rows = rows;  _fr = fr; }
 
@@ -794,7 +797,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
       long t0 = System.nanoTime();
       // System.out.print("Allocating _chk with " + _fr.numCols() +" by " + _rows.length + "...");
       _chk  = MemoryManager.malloc8d(_fr.numCols(),_rows.length);  // TODO: should this be transposed in memory?
-      _chkString = new String[_fr.numCols()][_rows.length];
+      _chkString = new BufferedString[_fr.numCols()][_rows.length];
       // System.out.println("done");
       int cidx[] = MemoryManager.malloc4(_rows.length);
       int offset[] = MemoryManager.malloc4(_rows.length);
@@ -809,7 +812,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
         for (int i=0; i<c.length; i++) c[i] = v.chunkKey(i).home() ? v.chunkForChunkIdx(i) : null;  // grab a chunk here
         if (v.isString()) {
           for (int row = 0; row < _rows.length; row++) {  // copy string and numeric columns
-              _chkString[col][row] = c[cidx[row]].isNA(offset[row])?null:new String(c[cidx[row]].stringAt(offset[row]));
+              _chkString[col][row] = c[cidx[row]].atStr(new BufferedString(), offset[row]); // _chkString[col][row] store by reference here
           }
         } else {
           for (int row = 0; row < _rows.length; row++) {  // extract info from chunks to one place
