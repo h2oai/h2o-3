@@ -75,11 +75,15 @@ def call(final pipelineContext) {
                                 pipelineContext.getUtils().stashFiles(
                                         this,
                                         pipelineContext.getBuildConfig().getStashNameForTestPackage(component),
-                                        "h2o-3/test-package-${component}.zip",
-                                        false
+                                        "h2o-3/test-package-${component}.zip"
                                 )
                             }
                         }
+                        pipelineContext.getUtils().stashFiles(
+                                this,
+                                pipelineContext.getBuildConfig().H2O_JAR_STASH_NAME,
+                                "h2o-3/h2o-3/build/h2o.jar"
+                        )
                     }
                 }
             }

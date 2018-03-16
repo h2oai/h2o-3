@@ -123,14 +123,7 @@ class PipelineUtils {
 
     void unpackTestPackage(final context, final buildConfig, final String component, final String stageDir) {
         context.echo "###### Pulling test package. ######"
-        context.step([$class              : 'CopyArtifact',
-                      projectName         : context.env.JOB_NAME,
-                      fingerprintArtifacts: true,
-                      filter              : "h2o-3/test-package-${component}.zip, h2o-3/build/h2o.jar",
-                      selector            : [$class: 'SpecificBuildSelector', buildNumber: context.env.BUILD_ID],
-                      target              : stageDir + '/'
-        ])
-        dir (stageDir) {
+        context.dir(stageDir) {
             unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
             unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
         }
