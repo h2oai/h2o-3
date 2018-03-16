@@ -1828,7 +1828,8 @@ class H2OFrame(object):
     def sort(self, by, ascending=[]):
         """
         Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
-        However, the original frame must not contain any String columns.  Default sorting direction is ascending.
+        However, the original frame can contain String columns but sorting cannot be done on String columns.
+        Default sorting direction is ascending.
 
         :param by: The column to sort by (either a single column name, or a list of column names, or
             a list of column indices)
@@ -1921,13 +1922,12 @@ class H2OFrame(object):
     def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
         """
         Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
-        Only one can be True or none is True.  The default merge method is auto and the program will determine
-        for you which method (hash or radix) to use automatically depending on the contents of your left and right
-        frames.  If there are duplicated rows in your rite frame, they will not be included if you use the hash method.
-        Since it is rare to perform merge with duplicated rows an the right frames, this should be okay.  On the
-        other hand, radix method will return the correct merge result regardless of duplicated rows in the right frame.
-        However, it cannot merge frames containing string columns.  User will have to convert the string columns
-        to enum before proceeding.
+        Only one can be True or none is True.  The default merge method is auto and it will default to the
+        radix method.  The radix method will return the correct merge result regardless of duplicated rows
+         in the right frame.  In addition, the radix method can perform merge even if you have string columns
+         in your frames.  If there are duplicated rows in your rite frame, they will not be included if you use
+        the hash method.  The hash method cannot perform merge if you have string columns in your left frame.
+        Hence, we consider the radix method superior to the hash method and is the default method to use.
 
         :param H2OFrame other: The frame to merge to the current one. By default, must have at least one column in common with
             this frame, and all columns in common are used as the merge key.  If you want to use only a subset of the
