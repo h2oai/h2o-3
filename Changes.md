@@ -2,6 +2,12 @@
 
 ## H2O
 
+### Wolpert (3.18.0.4) - 3/8/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html</a>
+
+- Fixed minor release process issue preventing Sparkling Water release.
+
 ### Wolpert (3.18.0.3) - 3/2/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html</a>
