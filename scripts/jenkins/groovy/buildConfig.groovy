@@ -271,6 +271,7 @@ class BuildConfig {
     changesMap.each { k,v ->
       changesMap[k] = true
     }
+    changesMap[COMPONENT_HADOOP] = buildHadoop
   }
 
   private void markAllComponentsForSkip() {
