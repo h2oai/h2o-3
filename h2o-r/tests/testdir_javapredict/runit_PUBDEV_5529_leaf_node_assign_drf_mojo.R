@@ -9,7 +9,6 @@ test.drf.leaf.assignment.mojo <-
     # Run the test
     #----------------------------------------------------------------------
     e <- tryCatch({
-      browser()
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       modelAndDir<-buildModelSaveMojoTrees(params_prob_data$params, 'drf') # build the model and save mojo

@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -30,6 +31,7 @@ public class PredictCsv {
   public char separator = ',';   // separator used to delimite input datasets
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
   public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
+  boolean returnGLRMReconstrut = false; // for GLRM, return x factor by default unless set this to true
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -104,8 +106,6 @@ public class PredictCsv {
         int numNums = this.model.m.nfeatures()-numCats;
         String[][] domainValues = this.model.m.getDomainValues();
         int lastCatIdx = numCats-1;
-        //int additionalCatCols = this.model.getUnknownCategoricalLevelsSeenPerColumn().size();
-       // ConcurrentHashMap<String, AtomicLong> temp = this.model.getUnknownCategoricalLevelsSeenPerColumn();
 
         for (int index = 0; index <= lastCatIdx  ; index++) { // add names for categorical columns
           String[] tdomains = domainValues[index]; //this.model.m.getDomainValues(index)
@@ -166,6 +166,28 @@ public class PredictCsv {
         } else
           output.write("predict");
 
+        break;
+
+      case DimReduction:  // will write factor or the precdicted value depending on what the user wants
+        int datawidth;
+        String head;
+        String[] colnames =  this.model.m.getNames();;
+        if (returnGLRMReconstrut) {
+          datawidth = ((GlrmMojoModel) model.m)._permutation.length;
+          head = "reconstr_";
+        } else {
+          datawidth = ((GlrmMojoModel) model.m)._ncolX;
+          head = "Arch";
+        }
+
+        int lastData = datawidth-1;
+        for (int index = 0; index < datawidth; index++) {  // add the numerical column names
+          String temp = returnGLRMReconstrut ? head+colnames[index] : head+(index+1);
+          output.write(temp);
+
+          if (index < lastData )
+            output.write(',');
+        }
         break;
 
       default:
@@ -265,6 +287,26 @@ public class PredictCsv {
             break;
           }
 
+          case DimReduction: {
+            DimReductionModelPrediction p = model.predictDimReduction(row);
+            double[] out;
+
+            if (returnGLRMReconstrut) {
+              out = p.reconstructed;  // reconstructed A
+            } else {
+              out = p.dimensions; // x factors
+            }
+
+            int lastOne = out.length-1;
+            for (int i=0; i < out.length; i++) {
+              output.write(myDoubleToString(out[i]));
+
+              if (i < lastOne)
+                output.write(',');
+            }
+            break;
+          }
+
           default:
             throw new Exception("Unknown model category " + category);
         }
@@ -306,16 +348,25 @@ public class PredictCsv {
   private void loadPojo(String className) throws Exception {
     GenModel genModel = (GenModel) Class.forName(className).newInstance();
     EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
+
     if (getTreePath)
       config.setEnableLeafAssignment(true);
+
+    if (returnGLRMReconstrut)
+      config.setEnableGLRMReconstrut(true);
     model = new EasyPredictModelWrapper(config);
   }
 
   private void loadMojo(String modelName) throws IOException {
     GenModel genModel = MojoModel.load(modelName);
     EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
+
     if (getTreePath)
       config.setEnableLeafAssignment(true);
+
+    if (returnGLRMReconstrut)
+      config.setEnableGLRMReconstrut(true);
+
     model = new EasyPredictModelWrapper(config);
   }
 
@@ -334,6 +385,7 @@ public class PredictCsv {
     System.out.println("     --setConvertInvalidNum Will call .setConvertInvalidNumbersToNa(true) when loading models.");
     System.out.println("     --leafNodeAssignment will show the leaf node assignment for GBM and DRF instead of the" +
             " prediction results");
+    System.out.println("     --glrmReconstruct will return the reconstructed dataset for GLRM mojo instead of X factor derived from the dataset.");
     System.out.println("");
     System.exit(1);
   }
@@ -347,6 +399,8 @@ public class PredictCsv {
         if (s.equals("--header")) continue;
         if (s.equals("--decimal"))
           useDecimalOutput = true;
+        else if (s.equals("--glrmReconstruct"))
+          returnGLRMReconstrut =true;
         else if (s.equals("--setConvertInvalidNum"))
           setInvNumNA=true;
         else if (s.equals("--leafNodeAssignment"))

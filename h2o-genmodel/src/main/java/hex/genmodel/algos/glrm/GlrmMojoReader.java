@@ -36,7 +36,6 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
     for (String line : readtext("losses")) {
       _model._losses[li++] = GlrmLoss.valueOf(line);
     }
-
     // archetypes
     _model._numLevels = readkv("num_levels_per_category");
     _model._archetypes = new double[_model._nrowY][];
@@ -46,6 +45,30 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
       _model._archetypes[i] = row;
       for (int j = 0; j < _model._ncolY; j++)
         row[j] = bb.getDouble();
+    }
+
+    // new fields added after version 1.00
+    try {
+      _model._seed = readkv("seed");
+      _model._reverse_transform = readkv("reverse_transform");
+      _model._transposed = readkv("transposed");
+      _model._catOffsets = readkv("catOffsets");
+      // load in archetypes raw
+      if (_model._transposed) {
+        _model._archetypes_raw = new double[_model._archetypes[0].length][_model._archetypes.length];
+        for (int row = 0; row < _model._archetypes.length; row++) {
+          for (int col = 0; col < _model._archetypes[0].length; col++) {
+            _model._archetypes_raw[col][row] = _model._archetypes[row][col];
+          }
+        }
+      } else
+        _model._archetypes_raw = _model._archetypes;
+    } catch (NullPointerException re) { // only expect null pointer exception.
+      _model._seed = System.currentTimeMillis();  // randomly initialize seed
+      _model._reverse_transform = true;
+      _model._transposed = true;
+      _model._catOffsets = null;
+      _model._archetypes_raw = null;
     }
   }
 

@@ -1,8 +1,12 @@
 package hex.glrm;
 
-import hex.*;
+import hex.DataInfo;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
@@ -10,7 +14,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
-import water.util.*;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -46,7 +50,6 @@ import java.util.ArrayList;
  */
 public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput>
         implements Model.GLRMArchetypes {
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // Input parameters
@@ -130,6 +133,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public String _representation_name;
     public Key<Frame> _representation_key;
     public Key<? extends Model> _init_key;
+    public Key<Frame> _x_factor_key;  // store key of x factor generated from dataset prediction
 
     // Number of categorical and numeric columns
     public int _ncats;
@@ -179,15 +183,15 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
 
-
-
   public GLRMModel(Key<GLRMModel> selfKey, GLRMParameters parms, GLRMOutput output) {
     super(selfKey, parms, output);
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (_output._init_key != null) _output._init_key.remove(fs);
+    if (_output._x_factor_key !=null) _output._x_factor_key.remove(fs);
     if (_output._representation_key != null) _output._representation_key.remove(fs);
+
     return super.remove_impl(fs);
   }
 
@@ -208,21 +212,36 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
 
-
   //--------------------------------------------------------------------------------------------------------------------
   // Scoring
   //--------------------------------------------------------------------------------------------------------------------
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
+  // Check if the frame is the same as used in training.  If yes, return the XY.  Otherwise, take the archetypes and
+  // generate new coefficients for it and then do X*Y
   private Frame reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
     int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
+    _output._x_factor_key = gen_representation_key(orig);
 
     // Need [A,X,P] where A = adaptedFr, X = loading frame, P = imputed frame
     // Note: A is adapted to original training frame, P has columns shuffled so cats come before nums!
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._representation_key).get();
+    Frame loadingFrm = null;  // get this from DKV or generate it from scratch
+    // call resconstruct only if test frame key and training frame key matches plus frame dimensions match as well
+    if (orig.checksum()!=(_parms.train().checksum())) { // compare with checksum instead of frame keys.
+      // need to generate the X matrix and put it in as a frame ID.  Mojo predict will return one row of x as a double[]
+      GLRMGenX gs = new GLRMGenX(this, _parms._k);
+      gs.doAll(gs._k, Vec.T_NUM, orig);
+      String[] loadingFrmNames = new String[gs._k];
+      for (int index=1; index <= gs._k; index++)
+        loadingFrmNames[index-1] = "Arch"+index;
+      String[][] loadingFrmDomains = new String[gs._k][];
+      DKV.put(gs.outputFrame(_output._x_factor_key,loadingFrmNames, loadingFrmDomains));
+    }
+  //  Key newXKey = gen_representation_key(orig);
+    loadingFrm = DKV.get(_output._x_factor_key).get();
     fullFrm.add(loadingFrm);
     String[][] adaptedDomme = adaptedFr.domains();
     Vec anyVec = fullFrm.anyVec();
@@ -232,7 +251,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       v.setDomain(adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm); // reconstruct X*Y
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
@@ -242,6 +261,13 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     DKV.put(f);
     gs._mb.makeModelMetrics(GLRMModel.this, orig, null, null);   // save error metrics based on imputed data
     return f;
+  }
+
+  public Key<Frame> gen_representation_key(Frame fr) {
+    if (fr._key == _parms.train()._key) // use training X factor here.
+      return _output._representation_key;
+    else
+      return Key.make("GLRMLoading_"+fr._key);
   }
 
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
@@ -353,23 +379,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     }
 
     private double[] impute_data(double[] tmp, double[] preds) {
-      assert preds.length == _output._nnums + _output._ncats;
-
-      // Categorical columns
-      for (int d = 0; d < _output._ncats; d++) {
-        double[] xyblock = _output._archetypes_raw.lmulCatBlock(tmp,d);
-        preds[_output._permutation[d]] = _output._lossFunc[d].mimpute(xyblock);
-      }
-
-      // Numeric columns
-      for (int d = _output._ncats; d < preds.length; d++) {
-        int ds = d - _output._ncats;
-        double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
-        preds[_output._permutation[d]] = _output._lossFunc[d].impute(xy);
-        if (_reverse_transform)
-          preds[_output._permutation[d]] = preds[_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
-      }
-      return preds;
+      return GlrmMojoModel.impute_data(tmp, preds, _output._nnums, _output._ncats, _output._permutation,
+              _reverse_transform, _output._normMul, _output._normSub, _output._lossFunc,
+              _output._archetypes_raw._transposed, _output._archetypes_raw._archetypes, _output._catOffsets,
+              _output._archetypes_raw._numLevels);
     }
   }
 
@@ -389,7 +402,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
     // Append loading frame X for calculating XY
     Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._representation_key).get();
+    Value tempV = DKV.get(gen_representation_key(frame));
+    if (tempV == null)
+      tempV = DKV.get(_output._representation_key);
+    Frame loadingFrm = tempV.get();
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);

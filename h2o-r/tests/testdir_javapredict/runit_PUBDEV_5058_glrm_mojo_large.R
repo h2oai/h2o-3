@@ -3,7 +3,7 @@ setwd(normalizePath(dirname(
 )))
 source("../../scripts/h2o-r-test-setup.R")
 
-test.gbm.leaf.assignment.mojo <-
+test.Glrm.mojo <-
   function() {
     #----------------------------------------------------------------------
     # Run the test
@@ -11,11 +11,14 @@ test.gbm.leaf.assignment.mojo <-
     e <- tryCatch({
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
-      modelAndDir<-buildModelSaveMojoTrees(params_prob_data$params, 'gbm') # build the model and save mojo
+      modelAndDir<-buildModelSaveMojoGLRM(params_prob_data$params) # build the model and save mojo
       filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
-      h2o.downloadCSV(params_prob_data$tDataset[,params_prob_data$params$x], filename)
-      twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, get_leaf_node_assignment=TRUE) # perform H2O and mojo prediction and return frames
-      compareStringFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1)
+      h2o.downloadCSV(params_prob_data$tDataset, filename)
+      twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, glrmReconstruct=TRUE) # perform H2O and mojo prediction and return frames
+      compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-6)
+      twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename)
+      xFactorTest <- h2o.getFrame(paste("GLRMLoading", twoFrames$frameId, sep="_"))
+      compareFrames(xFactorTest, twoFrames$mojoPredict, prob=1, tolerance =1e-6)
     }, error = function(x) x)
     if (!is.null(e)&& (!all(sapply("wget", grepl, e[[1]]))))
       FAIL(e)   # throw error unless it is the stupid wget error.
@@ -25,22 +28,20 @@ setParmsData <- function(numTest=1000) {
   #----------------------------------------------------------------------
   # Parameters for the test.
   #----------------------------------------------------------------------
-  problem <- sample(c('binomial', 'multinomial', 'regression'))[1]
-  training_file <- random_dataset(problem, testrow = numTest)
+  missing_values <- 'MeanImputation'
+  
+  training_file <- random_dataset("regression", testrow = numTest)
   ratios <- (h2o.nrow(training_file)-numTest)/h2o.nrow(training_file)
   allFrames <- h2o.splitFrame(training_file, ratios)
   training_frame <- allFrames[[1]]
   test_frame <- allFrames[[2]]
-  allNames = h2o.names(training_frame)
   
   params                  <- list()
   params$training_frame <- training_frame
-  params$x <- allNames[-which(allNames=="response")]
-  params$y <- "response"
-  params$ntrees <- 50
-  params$max_depth<-4
+  params$max_iterations <- 10
+  params$k <- 3
 
   return(list("params" = params, "tDataset" = test_frame))
 }
 
-doTest("GBM leaf assignment mojo test", test.gbm.leaf.assignment.mojo)
+doTest("GLRM mojo test", test.Glrm.mojo)

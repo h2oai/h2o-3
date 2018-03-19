@@ -5,6 +5,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -61,7 +62,7 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
-
+  private final boolean enableGLRMReconstrut;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
 
   /**
    * Observer interface with methods corresponding to errors during the prediction.
@@ -96,6 +97,7 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean useExtendedOutput = false;
     private ErrorConsumer errorConsumer;
     private boolean enableLeafAssignment = false;  // default to false
+    private boolean enableGLRMReconstrut = false;
 
     /**
      * Specify model object to wrap.
@@ -134,6 +136,18 @@ public class EasyPredictModelWrapper implements Serializable {
       enableLeafAssignment = val;
       return this;
     }
+
+    public Config setEnableGLRMReconstrut(boolean value) throws IOException {
+      if (value && (model==null))
+        throw new IOException("Cannot set enableGLRMReconstruct for a null model.  Call config.setModel() first.");
+
+      if (value && !(model instanceof GlrmMojoModel))
+        throw new IOException("enableGLRMReconstruct shall only be used with GlrmMojoModels.");
+      enableGLRMReconstrut = value;
+      return this;
+    }
+
+    public boolean getEnableGLRMReconstrut() { return enableGLRMReconstrut; }
 
     /**
      * @return Setting for unknown categorical levels handling
@@ -218,6 +232,7 @@ public class EasyPredictModelWrapper implements Serializable {
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
     enableLeafAssignment = config.getEnableLeafAssignment();
+    enableGLRMReconstrut = config.getEnableGLRMReconstrut();
 
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
@@ -373,13 +388,17 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.DimReduction, data);
+    double[] preds = preamble(ModelCategory.DimReduction, data);  // preds contains the x factor
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
-
+    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstrut)  // only for verion 1.10 or higher
+      p.reconstructed = ((GlrmMojoModel) m).impute_data(preds, new double[m.nfeatures()], ((GlrmMojoModel) m)._nnums,
+              ((GlrmMojoModel) m)._ncats, ((GlrmMojoModel) m)._permutation, ((GlrmMojoModel) m)._reverse_transform,
+              ((GlrmMojoModel) m)._normMul, ((GlrmMojoModel) m)._normSub, ((GlrmMojoModel) m)._losses,
+              ((GlrmMojoModel) m)._transposed, ((GlrmMojoModel) m)._archetypes_raw, ((GlrmMojoModel) m)._catOffsets,
+              ((GlrmMojoModel) m)._numLevels);
     return p;
-
   }
   /**
    * Lookup word embeddings for a given word (or set of words).
