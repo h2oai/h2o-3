@@ -9,13 +9,9 @@ automl.args.test <- function() {
   # 2) That the arguments are working properly
 
   # Load data and split into train, valid and test sets
-  #train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
-  #                        destination_frame = "higgs_train_5k")
-  #test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
-  #                       destination_frame = "higgs_test_5k")
-  train <- h2o.uploadFile("/Users/me/h2oai/github/backup_h2o-3/smalldata/testng/higgs_train_5k.csv",
+  train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
                           destination_frame = "higgs_train_5k")
-  test <- h2o.uploadFile("/Users/me/h2oai/github/backup_h2o-3/smalldata/testng/higgs_test_5k.csv",
+  test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
                          destination_frame = "higgs_test_5k")
   ss <- h2o.splitFrame(test, seed = 1)
   valid <- ss[[1]]
