@@ -141,7 +141,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 boolean watchDogConnected = false;
                 HashSet<H2ONode> clients = H2O.getClients();
 
-                if (Log.getLogLevel() == Log.DEBUG) {
+                if (Log.getCurrentLogLevel() == Log.Level.DEBUG) {
                     Log.debug("Checking if watchdog client connected to the cluster, available clients at this moment are: ");
                     for (H2ONode client : clients) {
                         Log.debug("Client: " + client.toDebugString());
@@ -213,7 +213,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
             while (true) {
                 HashSet<H2ONode> clients = H2O.getClients();
 
-                if (Log.getLogLevel() == Log.DEBUG) {
+                if (Log.getCurrentLogLevel() == Log.Level.DEBUG) {
                     Log.debug("Checking if watchdog client is connected, available clients are: ");
                     for (H2ONode client : clients) {
                         Log.debug("Client: " + client.toDebugString());
