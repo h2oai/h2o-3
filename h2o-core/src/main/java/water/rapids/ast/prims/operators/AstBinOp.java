@@ -311,24 +311,31 @@ abstract public class AstBinOp extends AstPrimitive {
         throw new IllegalArgumentException("Frames must have same rows, found " + lf.numRows() + " rows and " + rt.numRows() + " rows.");
     }
 
-    final int[][] alignedCategoricals = new int[lf.numCols()][];
 
-    for (int c = 0; c < lf.numCols(); c++) {
-      if (lf.vec(c).isCategorical() && rt.vec(c).isCategorical()) {
-        if (lf.vec(c).domain().length >= rt.vec(c).domain().length) {
-          alignedCategoricals[c] = alignCategoricals(lf.vec(c).domain(), rt.vec(c).domain());
-        } else {
-          alignedCategoricals[c] = alignCategoricals(rt.vec(c).domain(), lf.vec(c).domain());
-        }
-      }
-    }
-    
+
     if (lf.numCols() == 0) return new ValFrame(lf);
     if (rt.numCols() == 0) return new ValFrame(rt);
     if (lf.numCols() == 1 && rt.numCols() > 1) return vec_op_frame(lf.vecs()[0], rt);
     if (rt.numCols() == 1 && lf.numCols() > 1) return frame_op_vec(lf, rt.vecs()[0]);
     if (lf.numCols() != rt.numCols())
       throw new IllegalArgumentException("Frames must have same columns, found " + lf.numCols() + " columns and " + rt.numCols() + " columns.");
+
+    final int[][] alignedCategoricals = new int[lf.numCols()][];
+    final boolean[] categorical = new boolean[lf.numCols()];
+    final boolean[] rtDomainNotBigger = new boolean[lf.numCols()];
+    for (int c = 0; c < lf.numCols(); c++) {
+      // Store to read during iteration over lines
+      categorical[c] = categoricalOK() && lf.vec(c).isCategorical() && rt.vec(c).isCategorical();
+      if (categorical[c]) {
+        // Store to read during iteration over lines
+        rtDomainNotBigger[c] = lf.vec(c).domain().length >= rt.vec(c).domain().length;
+        if (rtDomainNotBigger[c]) {
+          alignedCategoricals[c] = alignCategoricals(lf.vec(c).domain(), rt.vec(c).domain());
+        } else {
+          alignedCategoricals[c] = alignCategoricals(rt.vec(c).domain(), lf.vec(c).domain());
+        }
+      }
+    }
 
     Frame res = new MRTask() {
       @Override
@@ -343,15 +350,25 @@ abstract public class AstBinOp extends AstPrimitive {
           if (clf.vec().isString())
             for (int i = 0; i < clf._len; i++)
               cres.addNum(str_op(clf.atStr(lfstr, i), crt.atStr(rtstr, i)));
-          else if (categoricalOK() && clf.vec().isCategorical() && crt.vec().isCategorical()) {
+          else if (categorical[c]) {
             // The vec with longer domain is iterated over due to categorical mapping
-            if (clf.vec().domain().length > crt.vec().domain().length) {
+            if (rtDomainNotBigger[c]) {
               for (int i = 0; i < clf._len; i++) {
-                cres.addNum(op(clf.atd(i), alignedCategoricals[c][(int) crt.atd(i)]));
+                double crtAtdValue = crt.atd(i);
+                if (Double.isNaN(crtAtdValue)) {
+                  cres.addNum(op(clf.atd(i), crtAtdValue));
+                } else {
+                  cres.addNum(op(clf.atd(i), alignedCategoricals[c][(int) crtAtdValue]));
+                }
               }
             } else {
               for (int i = 0; i < clf._len; i++) {
-                cres.addNum(op(alignedCategoricals[c][(int) clf.atd(i)], crt.atd(i)));
+                double clfAtdValue = clf.atd(i);
+                if (Double.isNaN(clfAtdValue)) {
+                  cres.addNum(op(clfAtdValue, crt.atd(i)));
+                } else {
+                  cres.addNum(op(alignedCategoricals[c][(int) clfAtdValue], crt.atd(i)));
+                }
               }
             }
           } else {
@@ -372,13 +389,14 @@ abstract public class AstBinOp extends AstPrimitive {
    * @return Cross-domain mapping as an array of primitive integers
    */
   private int[] alignCategoricals(String[] longerDomain, String[] shorterDomain) {
-    Arrays.sort(longerDomain);
-    Arrays.sort(shorterDomain);
+    String[] sortedLongerDomain = Arrays.copyOf(longerDomain, longerDomain.length);
+    //Sort to make sure binary search is possible
+    Arrays.sort(sortedLongerDomain);
 
     int[] transformedIndices = MemoryManager.malloc4(shorterDomain.length);
 
     for (int i = 0; i < shorterDomain.length; i++) {
-      transformedIndices[i] = Arrays.binarySearch(longerDomain, shorterDomain[i]);
+      transformedIndices[i] = Arrays.binarySearch(sortedLongerDomain, shorterDomain[i]);
     }
 
     return transformedIndices;
