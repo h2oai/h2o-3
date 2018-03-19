@@ -212,6 +212,8 @@ Defining a DRF Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
+.. _xrt:
+
 -  `histogram_type <algo-params/histogram_type.html>`__: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
 	- AUTO
@@ -219,6 +221,8 @@ Defining a DRF Model
 	- Random
 	- QuantilesGlobal
 	- RoundRobin
+
+  **Note**: H2O supports extremely randomized trees (XRT) via ``histogram_type="Random"``. When this is specified, the algorithm will sample N-1 points from min...max and use the sorted list of those to find the best split. The cut points are random rather than uniform. For example, to generate 4 bins for some feature ranging from 0-100, 3 random numbers would be generated in this range (13.2, 89.12, 45.0). The sorted list of these random numbers forms the histogram bin boundaries e.g. (0-13.2, 13.2-45.0, 45.0-89.12, 89.12-100).
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
