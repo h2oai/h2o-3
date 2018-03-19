@@ -66,6 +66,28 @@ public class EasyPredictModelWrapperTest {
   }
 
   @Test
+  public void testGetDataTransformationErrorsCount() throws Exception {
+    MyModel rawModel = makeModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(rawModel)
+        .setErrorConsumer(countingErrorConsumer));
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    m.predictBinomial(row);
+
+    Map<String, AtomicLong> errorsPerColumn = countingErrorConsumer.getDataTransformationErrorsCountPerColumn();
+    Assert.assertNotNull(errorsPerColumn);
+    Assert.assertEquals(2,errorsPerColumn.size());
+    Assert.assertEquals(1,errorsPerColumn.get("C1").get());
+
+    Assert.assertEquals(1, countingErrorConsumer.getDataTransformationErrorsCount());
+
+
+  }
+
+  @Test
   public void testUnknownCategoricalLevels() throws Exception {
     MyModel rawModel = makeModel();
     CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);

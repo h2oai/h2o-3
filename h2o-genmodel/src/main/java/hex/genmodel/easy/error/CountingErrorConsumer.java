@@ -13,13 +13,18 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer {
 
-  private AtomicLong dataTransformationErrorsCount = new AtomicLong();
+  private Map<String, AtomicLong> dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>();
   private Map<String, AtomicLong> unknownCategoricalsPerColumn = new ConcurrentHashMap<>();
 
   /**
    * @param model An instance of {@link GenModel}
    */
   public CountingErrorConsumer(GenModel model) {
+
+    for (String column : model.getNames()) {
+      if (!column.equals(model.getResponseName())) dataTransformationErrorsCountPerColumn.put(column, new AtomicLong());
+    }
+
     for (int i = 0; i < model.getNumCols(); i++) {
       String[] domainValues = model.getDomainValues(i);
       if (domainValues != null) {
@@ -30,7 +35,7 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
 
   @Override
   public void dataTransformError(String columnName, Object value, String message) {
-    dataTransformationErrorsCount.incrementAndGet();
+    dataTransformationErrorsCountPerColumn.get(columnName).incrementAndGet();
   }
 
   @Override
@@ -66,9 +71,22 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
   }
 
   /**
+   * A list of all columns (response column excluded) with counts of data transformation errors observed.
+   *
+   * @return A thread-safe instance of {@link Map}
+   */
+  public Map<String, AtomicLong> getDataTransformationErrorsCountPerColumn() {
+    return dataTransformationErrorsCountPerColumn;
+  }
+
+  /**
    * @return Number of transformation errors found
    */
   public long getDataTransformationErrorsCount() {
-    return dataTransformationErrorsCount.get();
+    long total = 0;
+    for (AtomicLong l : dataTransformationErrorsCountPerColumn.values()) {
+      total += l.get();
+    }
+    return total;
   }
 }
