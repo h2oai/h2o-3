@@ -107,6 +107,7 @@ class BuildConfig {
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
     this.buildHadoop = mode == 'MODE_HADOOP'
+    changesMap[COMPONENT_HADOOP] = buildHadoop
     this.hadoopDistributionsToBuild = distributionsToBuild
     if (ignoreChanges) {
       markAllComponentsForTest()
