@@ -53,6 +53,10 @@ public class AutoMLBuildSpec extends Iced {
     // Cross-validation fold construction
     public int nfolds = 5; 
     //public Model.Parameters.FoldAssignmentScheme fold_assignment;
+
+    // Pass through to all algorithms
+    public boolean balance_classes = false;
+
   }
 
   /**

@@ -143,10 +143,17 @@ def prostate_automl_args():
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
 
-    # TO DO
-    #print("Check that exactly two ensembles are trained")
-    #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
-    #aml.train(y="CAPSULE", training_frame=train)
+
+    print("Check balance_classes works properly")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
+    aml = H2OAutoML(project_name="py_aml_balance_classes", max_models=3, balance_classes=True, seed=1)
+    aml.train(y="CAPSULE", training_frame=train)
+    # Check that a model (DRF) has balance_classes = TRUE
+    model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
+    amodel = h2o.get_model([m for m in model_ids if 'DRF' in m][0])    
+    assert amodel.params['balance_classes']['actual'] == True
+
 
     # TO DO
     # Add a test that checks fold_column like in runit

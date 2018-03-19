@@ -15,6 +15,7 @@ class H2OAutoML(object):
 
     :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
       disable Stacked Ensemble (thus decreasing the overall model performance).
+    :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.  
     :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
     :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
@@ -66,6 +67,7 @@ class H2OAutoML(object):
     """
     def __init__(self,
                  nfolds=5,
+                 balance_classes=True,
                  max_runtime_secs=3600,
                  max_models=None,
                  stopping_metric="AUTO",
@@ -105,7 +107,12 @@ class H2OAutoML(object):
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
         assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
         self.build_control["nfolds"] = nfolds 
-        self.nfolds = nfolds   
+        self.nfolds = nfolds
+
+        # Pass through to all algorithms
+        if balance_classes is True:
+            self.build_control["balance_classes"] = balance_classes
+            self.balance_classes = balance_classes
 
         # If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:

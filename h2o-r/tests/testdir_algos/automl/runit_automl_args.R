@@ -9,9 +9,13 @@ automl.args.test <- function() {
   # 2) That the arguments are working properly
 
   # Load data and split into train, valid and test sets
-  train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
+  #train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
+  #                        destination_frame = "higgs_train_5k")
+  #test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
+  #                       destination_frame = "higgs_test_5k")
+  train <- h2o.uploadFile("/Users/me/h2oai/github/backup_h2o-3/smalldata/testng/higgs_train_5k.csv",
                           destination_frame = "higgs_train_5k")
-  test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
+  test <- h2o.uploadFile("/Users/me/h2oai/github/backup_h2o-3/smalldata/testng/higgs_test_5k.csv",
                          destination_frame = "higgs_test_5k")
   ss <- h2o.splitFrame(test, seed = 1)
   valid <- ss[[1]]
@@ -176,7 +180,19 @@ automl.args.test <- function() {
   # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
   model_ids <- as.character(as.data.frame(aml14@leaderboard[,"model_id"])[,1])
   expect_equal(sum(grepl("StackedEnsemble", model_ids)), 2)
-
+  
+  print("Check that balance_classes is working")
+  aml15 <- h2o.automl(x = x, y = y,
+                      training_frame = train,
+                      nfolds = 3,
+                      max_models = 3,
+                      balance_classes = TRUE,
+                      project_name = "aml15")
+  # Check that a model (DRF) has balance_classes = TRUE
+  model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
+  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  expect_equal(amodel@parameters$balance_classes, TRUE)
+  
 }
 
 doTest("AutoML Args Test", automl.args.test)

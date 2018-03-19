@@ -733,6 +733,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
         }
       }
+      if (buildSpec.build_control.balance_classes == true) {
+        params._balance_classes = buildSpec.build_control.balance_classes;
+      }
     }
   }
 
