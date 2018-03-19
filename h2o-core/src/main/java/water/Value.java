@@ -174,6 +174,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public  final static byte HDFS= 2<<0; // HDFS: backed by Hadoop cluster
   public  final static byte S3  = 3<<0; // Amazon S3
   public  final static byte NFS = 4<<0; // NFS: Standard file system
+  public  final static byte GCS = 5<<0; // Google Cloud Storage
   public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system
   private final static byte BACKEND_MASK = (8-1);
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }
@@ -181,6 +182,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private boolean onHDFS(){ return (backend()) == HDFS; }
   private boolean onNFS (){ return (backend()) ==  NFS; }
   private boolean onS3  (){ return (backend()) ==   S3; }
+  private boolean onGCS (){ return (backend()) ==  GCS; }
 
  // Manipulate the on-disk bit
   private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
@@ -242,7 +244,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
 
   String nameOfPersist() { return nameOfPersist(backend()); }
-  /** One of ICE, HDFS, S3, NFS or TCP, according to where this Value is persisted.
+  /** One of ICE, HDFS, S3, GCS, NFS or TCP, according to where this Value is persisted.
    *  @return Short String of the persitance name */
   public static String nameOfPersist(int x) {
     switch( x ) {
@@ -251,6 +253,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     case S3  : return "S3";
     case NFS : return "NFS";
     case TCP : return "TCP";
+    case GCS : return "GCS";
     default  : return null;
     }
   }
