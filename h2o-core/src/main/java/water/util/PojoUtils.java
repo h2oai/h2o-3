@@ -466,6 +466,8 @@ public class PojoUtils {
           f.set(o, ((Integer) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Long.class || value.getClass() == Integer.class))
           f.set(o, ((Long) value).longValue());
+        else if (f.getType() == float.class && (value instanceof Number))
+          f.set(o, ((Number) value).floatValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
