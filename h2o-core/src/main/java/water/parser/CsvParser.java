@@ -48,6 +48,7 @@ class CsvParser extends Parser {
     if (_setup._parse_type.equals(ARFF_INFO) && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
 
     int quotes = 0;
+    byte quoteCount = 0;
     long number = 0;
     int exp = 0;
     int sgnExp = 1;
@@ -103,7 +104,7 @@ MAIN_LOOP:
             state = COND_QUOTE;
             break;
           }
-          if (!isEOL(c) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
+          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0 || quoteCount == 1) || (c != CHAR_SEPARATOR))) {
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
@@ -147,12 +148,11 @@ MAIN_LOOP:
           // fallthrough to EOL
         // ---------------------------------------------------------------------
         case EOL:
-          if(quotes != 0){
-            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
-            String err = "Unmatched quote char " + ((char) quotes);
-            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
-            colIdx = 0;
-            quotes = 0;
+          if (quoteCount == 1) {
+            state = TOKEN;
+            if (!firstChunk)
+              break MAIN_LOOP; // second chunk only does the first row
+            break;
           }else if (colIdx != 0) {
             dout.newLine();
             colIdx = 0;
@@ -209,6 +209,7 @@ MAIN_LOOP:
               ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
             assert (quotes == 0);
             quotes = c;
+            quoteCount++;
             break;
           }
           // fallthrough to TOKEN
@@ -269,6 +270,7 @@ MAIN_LOOP:
           if ( c == quotes) {
             state = NUMBER_END;
             quotes = 0;
+            quoteCount = 0;
             break;
           }
           // fallthrough NUMBER_END
@@ -403,6 +405,7 @@ MAIN_LOOP:
             break;
           } else {
             quotes = 0;
+            quoteCount = 0;
             state = STRING_END;
             continue MAIN_LOOP;
           }
@@ -746,7 +749,12 @@ MAIN_LOOP:
     int offset = 0;
     while( offset < bits.length && nlines < lines.length ) {
       int lineStart = offset;
-      while( offset < bits.length && !CsvParser.isEOL(bits[offset]) ) ++offset;
+      int countQuotes = 0;
+      while (offset < bits.length) {
+        if (bits[offset] == CHAR_DOUBLE_QUOTE || bits[offset] == CHAR_SINGLE_QUOTE) countQuotes++;
+        if (CsvParser.isEOL(bits[offset]) && countQuotes % 2 == 0) break;
+        ++offset;
+      }
       int lineEnd = offset;
       ++offset;
       // For Windoze, skip a trailing LF after CR
