@@ -104,7 +104,7 @@ MAIN_LOOP:
             state = COND_QUOTE;
             break;
           }
-          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0 || quoteCount == 1) || (c != CHAR_SEPARATOR))) {
+          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
@@ -148,10 +148,14 @@ MAIN_LOOP:
           // fallthrough to EOL
         // ---------------------------------------------------------------------
         case EOL:
-          if (quoteCount == 1) {
-            state = TOKEN;
-            if (!firstChunk)
-              break MAIN_LOOP; // second chunk only does the first row
+          if (quotes != 0 && quoteCount != 1) {
+            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
+            String err = "Unmatched quote char " + ((char) quotes);
+            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
+            colIdx = 0;
+            quotes = 0;
+          } else if (quoteCount == 1) {
+            state = STRING;
             break;
           }else if (colIdx != 0) {
             dout.newLine();
