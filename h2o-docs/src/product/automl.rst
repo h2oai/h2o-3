@@ -85,7 +85,7 @@ Optional Miscellaneous Parameters
     - ``GLM``
     - ``DeepLearning``
     - ``GBM``
-    - ``DRF`` (This includes both the Random Forest and Extremely-Randomized Trees (XRT) models. Refer to the ``histogram_type`` parameter description in the `DRF chapter <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html#defining-a-drf-model>`__ and in the `Parameters Appendix <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ for more information.)
+    - ``DRF`` (This includes both the Random Forest and Extremely-Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
     - ``StackedEnsemble``
 
 

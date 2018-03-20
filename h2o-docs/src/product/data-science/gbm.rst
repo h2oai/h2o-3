@@ -138,7 +138,7 @@ Defining a GBM Model
 
 	- AUTO
 	- UniformAdaptive
-	- Random (not supported in GBM)
+	- Random
 	- QuantilesGlobal
 	- RoundRobin
 
