@@ -13,17 +13,48 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer {
 
-  private Map<String, AtomicLong> dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>();
-  private Map<String, AtomicLong> unknownCategoricalsPerColumn = new ConcurrentHashMap<>();
+  private Map<String, AtomicLong> dataTransformationErrorsCountPerColumn;
+  private Map<String, AtomicLong> unknownCategoricalsPerColumn;
 
   /**
    * @param model An instance of {@link GenModel}
    */
   public CountingErrorConsumer(GenModel model) {
+    initializeDataTransformationErrorsCount(model);
+    initializeUnknownCategoricalsPerColumn(model);
+  }
 
+  /**
+   * Initializes the map of data transformation errors for each column that is not related to response variable,
+   * excluding response and offset column. The map is initialized as unmodifiable and thread-safe.
+   *
+   * @param model {@link GenModel} the data trasnformation errors count map is initialized for
+   */
+  private void initializeDataTransformationErrorsCount(GenModel model) {
+    int predictorColumnsCount = model.isSupervised() ? model.getNames().length - 1 : model.getNames().length;
+    if (model._offsetColumn != null) predictorColumnsCount--;
+    String responseColumnName = model.isSupervised() ? model.getResponseName() : null;
+
+    dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>(predictorColumnsCount);
     for (String column : model.getNames()) {
-      if (!column.equals(model.getResponseName())) dataTransformationErrorsCountPerColumn.put(column, new AtomicLong());
+      // Do not perform check for response column if the model is unsupervised
+      // Do not perform check for response variable offset if the model is unsupervised
+      if ((model.isSupervised() && !responseColumnName.equals(column))
+          || (model.isSupervised() && model._offsetColumn != null && !responseColumnName.equals(model._offsetColumn))
+          || !model.isSupervised()) {
+        dataTransformationErrorsCountPerColumn.put(column, new AtomicLong());
+      }
     }
+    dataTransformationErrorsCountPerColumn = Collections.unmodifiableMap(dataTransformationErrorsCountPerColumn);
+  }
+
+  /**
+   * Initializes the map of unknown categoricals per column with an unmodifiable and thread-safe implementation of {@link Map}.
+   *
+   * @param model {@link GenModel} the unknown categorical per column map is initialized for
+   */
+  private void initializeUnknownCategoricalsPerColumn(GenModel model) {
+    unknownCategoricalsPerColumn = new ConcurrentHashMap<>();
 
     for (int i = 0; i < model.getNumCols(); i++) {
       String[] domainValues = model.getDomainValues(i);
@@ -31,6 +62,8 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
         unknownCategoricalsPerColumn.put(model.getNames()[i], new AtomicLong());
       }
     }
+
+    unknownCategoricalsPerColumn = Collections.unmodifiableMap(unknownCategoricalsPerColumn);
   }
 
   @Override
@@ -71,7 +104,9 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
   }
 
   /**
-   * A list of all columns (response column excluded) with counts of data transformation errors observed.
+   * An unmodifiable, thread-safe map of all columns with counts of data transformation errors observed.
+   * The map returned is a direct reference to the backing this {@link CountingErrorConsumer}.
+   * Iteration during prediction phase may end up with undefined results.
    *
    * @return A thread-safe instance of {@link Map}
    */

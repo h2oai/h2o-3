@@ -17,9 +17,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EasyPredictModelWrapperTest {
-  private static class MyModel extends GenModel {
-    MyModel(String[] names, String[][] domains) {
-      super(names, domains, null);
+  private static class SupervisedModel extends GenModel {
+    /**
+     * Supervised model for testing purpose
+     * @param names
+     * @param domains
+     */
+    SupervisedModel(String[] names, String[][] domains) {
+      super(names, domains, names[names.length - 1]);
     }
 
     @Override
@@ -52,7 +57,47 @@ public class EasyPredictModelWrapperTest {
     }
   }
 
-  private static MyModel makeModel() {
+  private static class UnsupervisedModel extends GenModel {
+    /**
+     * Supervised model for testing purpose
+     *
+     * @param names
+     * @param domains
+     */
+    UnsupervisedModel(String[] names, String[][] domains) {
+      super(names, domains, null);
+    }
+
+    @Override
+    public int nclasses() {
+      return 2;
+    }
+
+    @Override
+    public boolean isSupervised() {
+      return false;
+    }
+
+    @Override
+    public double[] score0(double[] data, double[] preds) {
+      Assert.assertEquals(preds.length, 2);
+      preds[0] = 0;
+      preds[1] = 1.0;
+      return preds;
+    }
+
+    @Override
+    public ModelCategory getModelCategory() {
+      return ModelCategory.Clustering;
+    }
+
+    @Override
+    public String getUUID() {
+      return null;
+    }
+  }
+
+  private static SupervisedModel makeSupervisedModel() {
     String[] names = {
             "C1",
             "C2",
@@ -62,20 +107,31 @@ public class EasyPredictModelWrapperTest {
             {"c2level1", "c2level2", "c2level3"},
             {"NO", "YES"}
     };
-    return new MyModel(names, domains);
+    return new SupervisedModel(names, domains);
   }
+
+    private static UnsupervisedModel makeUnsupervisedModel() {
+      String[] names = {
+          "C1",
+          "C2"};
+      String[][] domains = {
+          {"c1level1", "c1level2"},
+          {"c2level1", "c2level2", "c2level3"}
+      };
+      return new UnsupervisedModel(names, domains);
+    }
 
   @Test
   public void testGetDataTransformationErrorsCount() throws Exception {
-    MyModel rawModel = makeModel();
-    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
-    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
-        .setModel(rawModel)
+    SupervisedModel rawSupervisedModel = makeSupervisedModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawSupervisedModel);
+    EasyPredictModelWrapper supervisedModel = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(rawSupervisedModel)
         .setErrorConsumer(countingErrorConsumer));
 
     RowData row = new RowData();
     row.put("C1", Double.NaN);
-    m.predictBinomial(row);
+    supervisedModel.predictBinomial(row);
 
     Map<String, AtomicLong> errorsPerColumn = countingErrorConsumer.getDataTransformationErrorsCountPerColumn();
     Assert.assertNotNull(errorsPerColumn);
@@ -84,12 +140,24 @@ public class EasyPredictModelWrapperTest {
 
     Assert.assertEquals(1, countingErrorConsumer.getDataTransformationErrorsCount());
 
+    UnsupervisedModel rawModel = makeUnsupervisedModel();
+    CountingErrorConsumer unsupervisedCounterErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper unsupervisedModel = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(rawModel)
+        .setErrorConsumer(unsupervisedCounterErrorConsumer));
+
+    unsupervisedModel.predict(row);
+
+    Map<String, AtomicLong> errorsCountPerColumn = unsupervisedCounterErrorConsumer.getDataTransformationErrorsCountPerColumn();
+    Assert.assertNotNull(errorsPerColumn);
+    Assert.assertEquals(2, errorsCountPerColumn.size());
+    Assert.assertEquals(1, errorsCountPerColumn.get("C1").get());
 
   }
 
   @Test
   public void testUnknownCategoricalLevels() throws Exception {
-    MyModel rawModel = makeModel();
+    SupervisedModel rawModel = makeSupervisedModel();
     CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
     .setModel(rawModel)
@@ -176,7 +244,7 @@ public class EasyPredictModelWrapperTest {
 
   @Test
   public void testSortedClassProbability() throws Exception {
-    MyModel rawModel = makeModel();
+    SupervisedModel rawModel = makeSupervisedModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
 
     {
