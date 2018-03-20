@@ -36,7 +36,7 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
     dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>();
     for (String column : model.getNames()) {
       // Do not perform check for response column if the model is unsupervised
-      if (!model.isSupervised() || !responseColumnName.equals(column)) {
+      if (!model.isSupervised() || !column.equals(responseColumnName)) {
         dataTransformationErrorsCountPerColumn.put(column, new AtomicLong());
       }
     }
