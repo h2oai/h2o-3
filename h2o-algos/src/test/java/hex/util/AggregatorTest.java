@@ -493,4 +493,29 @@ public class AggregatorTest extends TestUtil {
       agg.remove();
     }
   }
+
+  @Test public void testAirlinesUuidNA() {
+    Frame frame=null,output = null, mapping=null;
+    AggregatorModel agg = null;
+    try{
+      frame = parse_test_file("smalldata/airlines/uuid_airline.csv");
+      AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+      parms._train = frame._key;
+      parms._target_num_exemplars = 10;
+      parms._rel_tol_num_exemplars = 0.5;
+      parms._save_mapping_frame = true;
+      long start = System.currentTimeMillis();
+      agg = new Aggregator(parms).trainModel().get();  // 0.179
+      System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
+      output = agg._output._output_frame.get();
+      Log.info("Exemplars: " + output.toString());
+      mapping = agg._output._mapping_frame.get();
+      checkNumExemplars(agg);
+    }finally {
+      frame.delete();
+      output.remove();
+      mapping.remove();
+      agg.remove();
+    }
+  }
 }
