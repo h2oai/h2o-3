@@ -156,7 +156,7 @@ MAIN_LOOP:
             quotes = 0;
           } else if (quoteCount == 1) {
             state = STRING;
-            break;
+            continue MAIN_LOOP;
           }else if (colIdx != 0) {
             dout.newLine();
             colIdx = 0;
