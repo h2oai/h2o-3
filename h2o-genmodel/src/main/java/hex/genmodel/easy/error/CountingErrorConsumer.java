@@ -26,22 +26,17 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
 
   /**
    * Initializes the map of data transformation errors for each column that is not related to response variable,
-   * excluding response and offset column. The map is initialized as unmodifiable and thread-safe.
+   * excluding response column. The map is initialized as unmodifiable and thread-safe.
    *
    * @param model {@link GenModel} the data trasnformation errors count map is initialized for
    */
   private void initializeDataTransformationErrorsCount(GenModel model) {
-    int predictorColumnsCount = model.isSupervised() ? model.getNames().length - 1 : model.getNames().length;
-    if (model._offsetColumn != null) predictorColumnsCount--;
     String responseColumnName = model.isSupervised() ? model.getResponseName() : null;
 
-    dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>(predictorColumnsCount);
+    dataTransformationErrorsCountPerColumn = new ConcurrentHashMap<>();
     for (String column : model.getNames()) {
       // Do not perform check for response column if the model is unsupervised
-      // Do not perform check for response variable offset if the model is unsupervised
-      if ((model.isSupervised() && !responseColumnName.equals(column))
-          || (model.isSupervised() && model._offsetColumn != null && !responseColumnName.equals(model._offsetColumn))
-          || !model.isSupervised()) {
+      if (!model.isSupervised() || !responseColumnName.equals(column)) {
         dataTransformationErrorsCountPerColumn.put(column, new AtomicLong());
       }
     }
