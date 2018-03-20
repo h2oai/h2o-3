@@ -42,7 +42,7 @@ Checkpoint restart suggestions:
 
 Options 1 and 3 should result in a good model. Of course, grid search can be used with checkpoint restarts to scan a broad range of good continuation models.
 
-**Note**: The following parameters cannot be modified during checkpointing
+**Note**: The following parameters cannot be modified during checkpointing:
 
 - activation
 - autoencoder
@@ -250,7 +250,7 @@ Checkpoint with DRF
 
 In DRF, ``checkpoint`` can be used to continue training on the same dataset for additional iterations, or continue training on new data for additional iterations.
 
-**Note**: the following parameters cannot be modified during checkpointing
+**Note**: The following parameters cannot be modified during checkpointing:
 
 - build_tree_one_node
 - max_depth
