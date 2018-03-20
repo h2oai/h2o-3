@@ -10,11 +10,9 @@ import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.vals.ValFrame;
 
-import java.util.Arrays;
 
-
-/** Sort the whole frame by the given columns.  However, an error will be thrown if there are
- * String columns within the frame.
+/** Sort the whole frame by the given columns.  String columns are allowed in the frame.  However, we do
+ * not support sorting on string columns.
  */
 public class AstSort extends AstPrimitive {
   @Override public String[] args() { return new String[]{"ary","cols"}; }
@@ -29,12 +27,8 @@ public class AstSort extends AstPrimitive {
       sortAsc = ((AstNumList) asts[3]).expand4();
     else
       sortAsc = new int[]{(int) ((AstNum) asts[3]).getNum()};  // R client can send 1 element for some reason
-
-    String[] colTypes = fr.typesStr();
+    
     assert sortAsc.length==cols.length;
-    if (Arrays.asList(colTypes).contains("String"))
-      throw new IllegalArgumentException("Input frame contains String columns.  Remove String columns before " +
-              "calling sort again.");
     return new ValFrame(Merge.sort(fr,cols, sortAsc));
   }
 }
