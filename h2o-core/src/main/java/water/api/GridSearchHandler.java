@@ -12,6 +12,7 @@ import water.Job;
 import water.Key;
 import water.TypeMap;
 import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
@@ -69,6 +70,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
     gss.parameters.init_meta();
     gss.hyper_parameters = new IcedHashMap<>();
+    gss.base_models = new KeyV3.ModelKeyV3[0];
 
     // Get default parameters, then overlay the passed-in values
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings

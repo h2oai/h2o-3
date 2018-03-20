@@ -48,6 +48,14 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
+  // Base models
+  @API(level = API.Level.critical,
+          help = "Only used in Stacked Ensemble grid search." +
+                  "List of models (or model ids) to ensemble/stack together. " +
+                  "Models must have been cross-validated using nfolds > 1, " +
+                  "and folds must be identical across models.")
+  public KeyV3.ModelKeyV3 base_models[];
+
   //
   // Outputs
   //

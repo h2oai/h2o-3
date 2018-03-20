@@ -7,7 +7,6 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import hex.Model;
 import water.api.schemas3.FrameV3;
-import water.util.IcedHashMap;
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
@@ -34,7 +33,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     
     // Metalearner algorithm
-    @API(level = API.Level.critical, direction = API.Direction.INOUT, 
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            gridable = true,
             values = {"AUTO", "glm", "gbm", "drf", "deeplearning"},
             help = "Type of algorithm to use as the metalearner. " +
                     "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
@@ -68,7 +68,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
     public String metalearner_params;
 
-    @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
+    @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number")
     public long seed;
   
   }

@@ -279,6 +279,7 @@ class H2OEstimator(ModelBase):
     # TODO: replace with a property which is overriden in subclasses
     def _compute_algo(self):
         name = self.__class__.__name__
+        if name == "H2OStackedEnsembleEstimator": return "stackedensemble"
         if name == "H2ODeepLearningEstimator": return "deeplearning"
         if name == "H2ODeepWaterEstimator": return "deepwater"
         if name == "H2OAutoEncoderEstimator": return "deeplearning"
