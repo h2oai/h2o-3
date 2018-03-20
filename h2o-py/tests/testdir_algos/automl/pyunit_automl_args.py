@@ -144,15 +144,23 @@ def prostate_automl_args():
     assert amodel.params['nfolds']['actual'] == 0
 
 
-    print("Check balance_classes works properly")
+    print("Check balance_classes & related args work properly")
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     train["CAPSULE"] = train["CAPSULE"].asfactor()
-    aml = H2OAutoML(project_name="py_aml_balance_classes", max_models=3, balance_classes=True, seed=1)
+    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3, balance_classes=True, seed=1)
+    # TO DO: Not working below
+    #aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3, 
+    #    balance_classes=True,  max_after_balance_size=3.0, seed=1)
+    #aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3, 
+    #    balance_classes=True, class_sampling_factor=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # Check that a model (DRF) has balance_classes = TRUE
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     amodel = h2o.get_model([m for m in model_ids if 'DRF' in m][0])    
     assert amodel.params['balance_classes']['actual'] == True
+    # TO DO:
+    #assert amodel.params['max_after_balance_size']['actual'] == 3.0
+    #assert amodel.params['class_sampling_factor']['actual'] == ??
 
 
     # TO DO

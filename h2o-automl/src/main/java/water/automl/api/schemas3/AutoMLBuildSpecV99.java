@@ -39,6 +39,13 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT)
     public boolean balance_classes;
+
+    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public float[] class_sampling_factors;
+
+    @API(help = "Maximum relative size of the training data after balancing class counts (defaults to 5.0 and can be less than 1.0). Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public float max_after_balance_size;
+
   } // class AutoMLBuildControlV99
 
   /**

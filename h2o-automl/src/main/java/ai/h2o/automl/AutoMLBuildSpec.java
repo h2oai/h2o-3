@@ -56,6 +56,8 @@ public class AutoMLBuildSpec extends Iced {
 
     // Pass through to all algorithms
     public boolean balance_classes = false;
+    public float[] class_sampling_factors;
+    public float max_after_balance_size = 5.0f;
 
   }
 

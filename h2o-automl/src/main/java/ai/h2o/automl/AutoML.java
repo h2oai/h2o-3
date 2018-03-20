@@ -735,7 +735,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       if (buildSpec.build_control.balance_classes == true) {
         params._balance_classes = buildSpec.build_control.balance_classes;
+        params._class_sampling_factors = buildSpec.build_control.class_sampling_factors;
+        params._max_after_balance_size = buildSpec.build_control.max_after_balance_size;
       }
+      //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
     }
   }
 

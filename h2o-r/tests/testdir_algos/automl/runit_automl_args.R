@@ -183,11 +183,15 @@ automl.args.test <- function() {
                       nfolds = 3,
                       max_models = 3,
                       balance_classes = TRUE,
+                      #max_after_balance_size = 3.0,  #not working
+                      #class_sampling_factors = c(0.2, 1.4),  #not working
                       project_name = "aml15")
   # Check that a model (DRF) has balance_classes = TRUE
   model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
   expect_equal(amodel@parameters$balance_classes, TRUE)
+  #expect_equal(amodel@parameters$class_sampling_factors, ??)
+  #expect_equal(amodel@parameters$max_after_balance_size, 3.0)
   
 }
 

@@ -16,6 +16,10 @@ class H2OAutoML(object):
     :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
       disable Stacked Ensemble (thus decreasing the overall model performance).
     :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.  
+    :param class_sampling_factor: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling 
+      factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+    :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0). 
+      Requires ``balance_classes``. Defaults to 5.0.
     :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
     :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
@@ -68,6 +72,8 @@ class H2OAutoML(object):
     def __init__(self,
                  nfolds=5,
                  balance_classes=True,
+                 class_sampling_factor=None,
+                 max_after_balance_size=5.0,
                  max_runtime_secs=3600,
                  max_models=None,
                  stopping_metric="AUTO",
@@ -113,6 +119,13 @@ class H2OAutoML(object):
         if balance_classes is True:
             self.build_control["balance_classes"] = balance_classes
             self.balance_classes = balance_classes
+        if class_sampling_factor is not None:
+            self.build_control["class_sampling_factor"] = class_sampling_factor
+            self.class_sampling_factor = class_sampling_factor
+        if max_after_balance_size != 5.0:
+            assert_is_type(max_after_balance_size,float)
+            self.build_control["max_after_balance_size"] = max_after_balance_size
+            self.max_after_balance_size = max_after_balance_size      
 
         # If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:

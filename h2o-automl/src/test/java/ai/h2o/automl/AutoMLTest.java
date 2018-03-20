@@ -21,6 +21,7 @@ public class AutoMLTest extends TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.loss = "AUTO";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
+      autoMLBuildSpec.build_control.max_after_balance_size = 5.0f;
 
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
