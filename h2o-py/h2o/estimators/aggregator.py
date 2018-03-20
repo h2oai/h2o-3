@@ -177,7 +177,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     @property
     def num_iteration_without_new_exemplar(self):
         """
-        The number of iterations to run before aggregator exits if the number of exemplars collected donot change
+        The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 
         Type: ``int``  (default: ``500``).
         """
