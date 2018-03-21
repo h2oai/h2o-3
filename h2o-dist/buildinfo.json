@@ -114,7 +114,7 @@
         {
             "name" : "H2O Documentation",
             "id"   : "doc-front",
-            "path" : "docs-website/index.html"
+            "path" : "http://docs.h2o.ai"
         },
         {
             "name" : "H2O User Guide",
