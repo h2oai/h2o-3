@@ -761,7 +761,10 @@ MAIN_LOOP:
             (!singleQuotes && bits[offset] == CHAR_DOUBLE_QUOTE)
             || (singleQuotes && bits[offset] == CHAR_SINGLE_QUOTE)))
           quoteCount++;
-        if (CsvParser.isEOL(bits[offset]) && quoteCount % 2 == 0) break;
+        if (CsvParser.isEOL(bits[offset]) && quoteCount % 2 == 0){
+          comment = false;
+          break;
+        }
         ++offset;
       }
       int lineEnd = offset;
