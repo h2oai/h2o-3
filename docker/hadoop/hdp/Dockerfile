@@ -32,7 +32,7 @@ RUN apt-get update && \
     /usr/sbin/add_hdp_repo.sh $VERSION && \
     rm /usr/sbin/add_hdp_repo.sh && \
     apt-get update && \
-    apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip && \
+    apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text && \
     rm -rf /var/lib/apt/lists/*
 
 ENV H2O_BRANCH='master'
@@ -98,3 +98,6 @@ RUN chmod 700 /usr/sbin/startup.sh && \
 # Expose ports
 # H2O, Hadoop UI, Hive
 EXPOSE 54321 8088 10000
+
+# Remove hadoop pids
+RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid

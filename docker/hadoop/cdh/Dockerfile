@@ -27,7 +27,7 @@ RUN apt-get update && \
     wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
     apt-key add archive.key && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text && \
     rm -rf /var/lib/apt/lists/*
 
 ENV H2O_BRANCH='master'
@@ -71,3 +71,10 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     chmod +x /usr/sbin/install_hive.sh && \
     sync && \
     usr/sbin/install_hive.sh
+
+# Expose ports
+# H2O, Hadoop UI, Hive
+EXPOSE 54321 8088 10000
+
+# Remove hadoop pids
+RUN rm -f tmp/*.pid /var/run/hadoop-*/*.pid

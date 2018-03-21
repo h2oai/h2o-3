@@ -18,9 +18,9 @@ def call(final pipelineContext, final stageConfig) {
             hadoop jar h2o-hadoop/h2o-${distribution}${version}-assembly/build/libs/h2odriver.jar -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 -notify h2o_one_node -ea -disown -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login
             
             IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
-            export CLOUD_IP=$CLOUD_IP
-            export CLOUD_PORT=$CLOUD_PORT
-            echo "Cloud IP:PORT ----> $CLOUD_IP:$CLOUD_PORT"
+            export CLOUD_IP=\$CLOUD_IP
+            export CLOUD_PORT=\$CLOUD_PORT
+            echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
             
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke
