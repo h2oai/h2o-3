@@ -29,12 +29,20 @@ def pubdev_5336():
     assert frame['eqInv'][2,0] == 0
     assert frame['eqInv'][3,0] == 0
 
-
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     train['Origin'].asfactor()
     train['Dest'].asfactor()
     train['eq'] = train['Origin'] == train['Dest']
     assert train[train['eq'] == 1].nrows is 0
+
+    missing = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
+    missing['GLEASON'] = missing['GLEASON'].asfactor()
+    missing['DPROS'] = missing['DPROS'].asfactor()
+    missing['eq'] = missing['GLEASON'] == missing['DPROS']
+    # Both columns have NA on this row
+    assert missing['eq'][1,0] == 1
+    # One NA on this in GLEASON column
+    assert missing['eq'][7,0] == 0
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_5336)

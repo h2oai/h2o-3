@@ -355,7 +355,7 @@ abstract public class AstBinOp extends AstPrimitive {
             if (rtDomainNotBigger[c]) {
               for (int i = 0; i < clf._len; i++) {
                 double crtAtdValue = crt.atd(i);
-                if (Double.isNaN(crtAtdValue)) {
+                if (crt.isNA(i)) {
                   cres.addNum(op(clf.atd(i), crtAtdValue));
                 } else {
                   cres.addNum(op(clf.atd(i), alignedCategoricals[c][(int) crtAtdValue]));
@@ -364,7 +364,7 @@ abstract public class AstBinOp extends AstPrimitive {
             } else {
               for (int i = 0; i < clf._len; i++) {
                 double clfAtdValue = clf.atd(i);
-                if (Double.isNaN(clfAtdValue)) {
+                if (clf.isNA(i)) {
                   cres.addNum(op(clfAtdValue, crt.atd(i)));
                 } else {
                   cres.addNum(op(alignedCategoricals[c][(int) clfAtdValue], crt.atd(i)));
