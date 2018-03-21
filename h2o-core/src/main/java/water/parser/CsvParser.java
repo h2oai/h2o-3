@@ -753,10 +753,10 @@ MAIN_LOOP:
     int offset = 0;
     while( offset < bits.length && nlines < lines.length ) {
       int lineStart = offset;
-      int countQuotes = 0;
+      int quoteCount = 0;
       while (offset < bits.length) {
-        if (bits[offset] == CHAR_DOUBLE_QUOTE || bits[offset] == CHAR_SINGLE_QUOTE) countQuotes++;
-        if (CsvParser.isEOL(bits[offset]) && countQuotes % 2 == 0) break;
+        if (bits[offset] == CHAR_DOUBLE_QUOTE || bits[offset] == CHAR_SINGLE_QUOTE) quoteCount++;
+        if (CsvParser.isEOL(bits[offset]) && quoteCount % 2 == 0) break;
         ++offset;
       }
       int lineEnd = offset;
