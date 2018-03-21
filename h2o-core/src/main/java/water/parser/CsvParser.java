@@ -468,7 +468,7 @@ MAIN_LOOP:
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
     boolean hasHdr = true;
-    String[] lines = getFirstLines(bits);
+    String[] lines = getFirstLines(bits, ps._single_quotes);
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
@@ -630,7 +630,7 @@ MAIN_LOOP:
     int lastNewline = bits.length-1;
     while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
-    String[] lines = getFirstLines(bits);
+    String[] lines = getFirstLines(bits, singleQuotes);
     if(lines.length==0 )
       throw new ParseDataset.H2OParseException("No data!");
 
@@ -746,7 +746,7 @@ MAIN_LOOP:
     return resSetup;
   }
 
-  private static String[] getFirstLines(byte[] bits) {
+  private static String[] getFirstLines(byte[] bits, boolean singleQuotes) {
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
     int nlines = 0;
@@ -755,7 +755,8 @@ MAIN_LOOP:
       int lineStart = offset;
       int quoteCount = 0;
       while (offset < bits.length) {
-        if (bits[offset] == CHAR_DOUBLE_QUOTE || bits[offset] == CHAR_SINGLE_QUOTE) quoteCount++;
+        if ((!singleQuotes && bits[offset] == CHAR_DOUBLE_QUOTE) || (singleQuotes && bits[offset] == CHAR_SINGLE_QUOTE))
+          quoteCount++;
         if (CsvParser.isEOL(bits[offset]) && quoteCount % 2 == 0) break;
         ++offset;
       }
