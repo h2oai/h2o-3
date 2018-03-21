@@ -69,7 +69,36 @@ public class SortTest extends TestUtil {
     }
   }
 
+  // test our sorting with string columns implementation.  The string columns may have NAs.
+  // Our sort results are compared with sorting done by R.
+  @Test public void testSortWithStringsColumns() {
+    Random randomVl = new Random();
+    double temp = randomVl.nextDouble();
 
+    if (temp >= 0.5)
+      testSortWithStrings("smalldata/jira/PUBDEV_5266_merge_strings/PUBDEV_5266_f1_small.csv",
+              "smalldata/jira/PUBDEV_5266_merge_strings/sortedF1_R_C1_C4_small.csv", new int[]{0, 3});
+    else
+      testSortWithStrings("smalldata/jira/PUBDEV_5266_merge_strings/PUBDEV_5266_f2_small_NAs.csv",
+              "smalldata/jira/PUBDEV_5266_merge_strings/sortedF2_R_C1_C7_C5_small_NAs.csv", new int[]{0, 6, 4});
+  }
+
+  public void testSortWithStrings(String f1Name, String f2Name, int[] sortingIndices) {
+    Scope.enter();
+    Frame fr = null, res = null, ans = null;
+    try {
+
+      fr = parse_test_file(f1Name);
+      ans = parse_test_file(f2Name);
+      Scope.track(fr);
+      Scope.track(ans);
+      res = fr.sort(sortingIndices);
+      Scope.track(res);
+      assertTrue(isBitIdentical(ans, res)); // compare our sort frame with answer from R
+    } finally {
+      Scope.exit();
+    }
+  }
   // Assert that result is indeed sorted - on all 3 columns, as this is a
   // stable sort.
   private class CheckSort extends MRTask<CheckSort> {
