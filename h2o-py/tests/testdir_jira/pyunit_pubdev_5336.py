@@ -1,21 +1,20 @@
 import h2o
 import pandas as pd
-import numpy as np
 from tests import pyunit_utils
 
 
 def pubdev_5336():
-    data = pd.DataFrame({'Origin': ['SFO', 'SAN', 'SFO', 'NYC', np.nan],
-                         'Dest': ['SFO', 'SFO', 'SAN', 'SAN', np.nan]})
+    data = pd.DataFrame({'Origin': ['SFO', 'SAN', 'SFO', 'NYC', None],
+                         'Dest': ['SFO', 'SFO', 'SAN', 'SAN', None]})
     frame = h2o.H2OFrame(data)
     frame['Origin'].asfactor()
     frame['Dest'].asfactor()
 
     # First column has one more categorical variable
-    assert frame['Origin'].nlevels() == [4]
-    assert frame['Origin'].levels() == [['NYC', 'SAN', 'SFO', 'nan']];
-    assert frame['Dest'].nlevels() == [3]
-    assert frame['Dest'].levels() == [['SAN', 'SFO', 'nan']];
+    assert frame['Origin'].nlevels() == [3]
+    assert frame['Origin'].levels() == [['NYC', 'SAN', 'SFO']];
+    assert frame['Dest'].nlevels() == [2]
+    assert frame['Dest'].levels() == [['SAN', 'SFO']];
     frame['eq'] = frame['Origin'] == frame['Dest']
     assert frame['eq'][0,0] == 1
     assert frame['eq'][1,0] == 0
