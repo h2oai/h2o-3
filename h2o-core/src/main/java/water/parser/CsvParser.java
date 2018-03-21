@@ -751,11 +751,15 @@ MAIN_LOOP:
     String[] lines = new String[10]; // Parse 10 lines
     int nlines = 0;
     int offset = 0;
+    boolean comment = false;
     while( offset < bits.length && nlines < lines.length ) {
+      if (bits[offset] == HASHTAG) comment = true;
       int lineStart = offset;
       int quoteCount = 0;
       while (offset < bits.length) {
-        if ((!singleQuotes && bits[offset] == CHAR_DOUBLE_QUOTE) || (singleQuotes && bits[offset] == CHAR_SINGLE_QUOTE))
+        if (!comment && (
+            (!singleQuotes && bits[offset] == CHAR_DOUBLE_QUOTE)
+            || (singleQuotes && bits[offset] == CHAR_SINGLE_QUOTE)))
           quoteCount++;
         if (CsvParser.isEOL(bits[offset]) && quoteCount % 2 == 0) break;
         ++offset;
