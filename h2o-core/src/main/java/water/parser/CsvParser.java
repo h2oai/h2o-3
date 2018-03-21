@@ -99,6 +99,11 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case STRING:
           if (c == quotes) {
+            if (quoteCount>1) {
+              str.addChar();
+              quoteCount--;
+            }
+
             state = COND_QUOTE;
             break;
           }
@@ -399,6 +404,7 @@ MAIN_LOOP:
           if (c == quotes) {
             str.addChar();
             state = STRING;
+            quoteCount++;
             break;
           } else {
             quotes = 0;
