@@ -11,8 +11,6 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -72,7 +70,19 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
-  private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
+  private transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker = null;
+
+  private transient MetalearnerHyperSpaceWalker<MP, ?> _metalearnerHyperSpaceWalker = null;
+
+  private GridSearch(Key<Grid> gkey, MetalearnerHyperSpaceWalker<MP, ?> metalearnerHyperSpaceWalker){
+    assert metalearnerHyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
+    _metalearnerHyperSpaceWalker = metalearnerHyperSpaceWalker;
+    _result = gkey;
+    String algoName = metalearnerHyperSpaceWalker.getParams().algoName();
+    _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
+    // Note: do not validate parameters of created model builders here!
+    // Leave it to launch time, and just mark the corresponding model builder job as failed.
+  }
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
@@ -85,7 +95,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   Job<Grid> start() {
-    final long gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
+    final long gridSize = _hyperSpaceWalker == null ?
+                          _hyperSpaceWalker.getMaxHyperSpaceSize() :
+                          _metalearnerHyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
@@ -96,14 +108,20 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
       grid = (Grid) keyed;
-      Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
+      Frame specTrainFrame =  _hyperSpaceWalker == null ?
+                              _metalearnerHyperSpaceWalker.getParams().train() :
+                              _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||
           oldTrainFrame != null && specTrainFrame.checksum() != oldTrainFrame.checksum())
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
-      grid =
+      grid = _hyperSpaceWalker == null ?
+          new Grid<>(_result,
+                  _metalearnerHyperSpaceWalker.getParams(),
+                  _metalearnerHyperSpaceWalker.getHyperParamNames(),
+                  _metalearnerHyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy()) :
           new Grid<>(_result,
                      _hyperSpaceWalker.getParams(),
                      _hyperSpaceWalker.getHyperParamNames(),
@@ -113,30 +131,60 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     Model model = null;
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+    MetalearnerHyperSpaceWalker.MetalearnerHyperSpaceIterator<MP> it_metalearner = _metalearnerHyperSpaceWalker.iterator();
     long gridWork=0;
-    if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
-      int count=0;
-      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
-        try {
-          Model.Parameters parms = it.nextModelParameters(model);
-          gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
-        } catch(Throwable ex) {
-          //swallow invalid combinations
+    if (_hyperSpaceWalker != null) {
+      if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+        int count = 0;
+        while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
+          try {
+            Model.Parameters parms = it.nextModelParameters(model);
+            gridWork += (parms._nfolds > 0 ? (parms._nfolds + 1/*main model*/) : 1) * parms.progressUnits();
+          } catch (Throwable ex) {
+            //swallow invalid combinations
+          }
         }
+      } else {
+        //TODO: Future totally unbounded search: need a time-based progress bar
+        gridWork = Long.MAX_VALUE;
       }
+      it.reset();
     } else {
-      //TODO: Future totally unbounded search: need a time-based progress bar
-      gridWork = Long.MAX_VALUE;
+      if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+        int count = 0;
+        while (it_metalearner.hasNext(model) && (it_metalearner.max_models() > 0 && count++ < it_metalearner.max_models())) { //only walk the first max_models models, if specified
+          try {
+            Model.Parameters parms = it_metalearner.nextModelParameters(model);
+            gridWork += (parms._nfolds > 0 ? (parms._nfolds + 1/*main model*/) : 1) * parms.progressUnits();
+          } catch (Throwable ex) {
+            //swallow invalid combinations
+          }
+        }
+      } else {
+        //TODO: Future totally unbounded search: need a time-based progress bar
+        gridWork = Long.MAX_VALUE;
+      }
+      it_metalearner.reset();
     }
-    it.reset();
 
     // Install this as job functions
-    return _job.start(new H2O.H2OCountedCompleter() {
-      @Override public void compute2() {
-        gridSearch(grid);
-        tryComplete();
-      }
-    }, gridWork, it.max_runtime_secs());
+    if (_hyperSpaceWalker != null) {
+      return _job.start(new H2O.H2OCountedCompleter() {
+        @Override
+        public void compute2() {
+          gridSearch(grid);
+          tryComplete();
+        }
+      }, gridWork, it.max_runtime_secs());
+    } else {
+      return _job.start(new H2O.H2OCountedCompleter() {
+        @Override
+        public void compute2() {
+          gridSearch(grid);
+          tryComplete();
+        }
+      }, gridWork, it_metalearner.max_runtime_secs());
+    }
   }
 
   /**
@@ -148,7 +196,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return expected number of models produced by this grid search
    */
   public long getModelCount() {
-    return _hyperSpaceWalker.getMaxHyperSpaceSize();
+    return _hyperSpaceWalker != null ? _hyperSpaceWalker.getMaxHyperSpaceSize() : _metalearnerHyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
   /**
@@ -166,89 +214,176 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     //                       : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
     String protoModelKey = grid._key + "_model_";
 
-    try {
-      // Get iterator to traverse hyper space
-      HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
-      // Number of traversed model parameters
-      int counter = grid.getModelCount();
-      while (it.hasNext(model)) {
-        if(_job.stop_requested() ) return;  // Handle end-user cancel request
-        double max_runtime_secs = it.max_runtime_secs();
+    if (_hyperSpaceWalker != null) {
+      try {
+        // Get iterator to traverse hyper space
+        HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+        // Number of traversed model parameters
+        int counter = grid.getModelCount();
+        while (it.hasNext(model)) {
+          if (_job.stop_requested()) return;  // Handle end-user cancel request
+          double max_runtime_secs = it.max_runtime_secs();
 
-        double time_remaining_secs = Double.MAX_VALUE;
-        if (max_runtime_secs > 0) {
-          time_remaining_secs = it.time_remaining_secs();
-          if (time_remaining_secs < 0) {
-            Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
-            return;
-          }
-        }
-
-        MP params;
-        try {
-          // Get parameters for next model
-          params = it.nextModelParameters(model);
-
-          // Sequential model building, should never propagate
-          // exception up, just mark combination of model parameters as wrong
-
-          // Do we need to limit the model build time?
+          double time_remaining_secs = Double.MAX_VALUE;
           if (max_runtime_secs > 0) {
-            Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
-            double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
-            if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = time_remaining_secs/scale;
-              Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
-            } else {
-              double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs/scale);
-              Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
+            time_remaining_secs = it.time_remaining_secs();
+            if (time_remaining_secs < 0) {
+              Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
+              return;
             }
           }
 
+          MP params;
           try {
-            ScoringInfo scoringInfo = new ScoringInfo();
-            scoringInfo.time_stamp_ms = System.currentTimeMillis();
+            // Get parameters for next model
+            params = it.nextModelParameters(model);
 
-            //// build the model!
-            model = buildModel(params, grid, counter++, protoModelKey);
+            // Sequential model building, should never propagate
+            // exception up, just mark combination of model parameters as wrong
 
-            if (model!=null) {
-              model.fillScoringInfo(scoringInfo);
-              grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
-              ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+            // Do we need to limit the model build time?
+            if (max_runtime_secs > 0) {
+              Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
+              double scale = params._nfolds > 0 ? params._nfolds + 1 : 1; //remaining time per cv model is less
+              if (params._max_runtime_secs == 0) { // unlimited
+                params._max_runtime_secs = time_remaining_secs / scale;
+                Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
+              } else {
+                double was = params._max_runtime_secs;
+                params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs / scale);
+                Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
+              }
             }
-          } catch (RuntimeException e) { // Catch everything
-            if (!Job.isCancelledException(e)) {
-              StringWriter sw = new StringWriter();
-              PrintWriter pw = new PrintWriter(sw);
-              e.printStackTrace(pw);
-              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+
+            try {
+              ScoringInfo scoringInfo = new ScoringInfo();
+              scoringInfo.time_stamp_ms = System.currentTimeMillis();
+
+              //// build the model!
+              model = buildModel(params, grid, counter++, protoModelKey);
+
+              if (model != null) {
+                model.fillScoringInfo(scoringInfo);
+                grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
+                ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+              }
+            } catch (RuntimeException e) { // Catch everything
+              if (!Job.isCancelledException(e)) {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+              }
+              grid.appendFailedModelParameters(params, e);
             }
-            grid.appendFailedModelParameters(params, e);
+          } catch (IllegalArgumentException e) {
+            Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
+            // Model parameters cannot be constructed for some reason
+            it.modelFailed(model);
+            Object[] rawParams = it.getCurrentRawParameters();
+            grid.appendFailedModelParameters(rawParams, e);
+          } finally {
+            // Update progress by 1 increment
+            _job.update(1);
+            // Always update grid in DKV after model building attempt
+            grid.update(_job);
+          } // finally
+
+          if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+                  _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+            Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+            break;
           }
-        } catch (IllegalArgumentException e) {
-          Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
-          // Model parameters cannot be constructed for some reason
-          it.modelFailed(model);
-          Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(rawParams, e);
-        } finally {
-          // Update progress by 1 increment
-          _job.update(1);
-          // Always update grid in DKV after model building attempt
-          grid.update(_job);
-        } // finally
+        } // while (it.hasNext(model))
+        Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
+      } finally {
+        grid.unlock(_job);
+      }
+    } else {
+      try {
+        // Get iterator to traverse hyper space
+        MetalearnerHyperSpaceWalker.MetalearnerHyperSpaceIterator<MP> it = _metalearnerHyperSpaceWalker.iterator();
+        // Number of traversed model parameters
+        int counter = grid.getModelCount();
+        while (it.hasNext(model)) {
+          if (_job.stop_requested()) return;  // Handle end-user cancel request
+          double max_runtime_secs = it.max_runtime_secs();
 
-        if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
-            _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
-          Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
-          break;
-        }
-      } // while (it.hasNext(model))
-      Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
-    } finally {
-      grid.unlock(_job);
+          double time_remaining_secs = Double.MAX_VALUE;
+          if (max_runtime_secs > 0) {
+            time_remaining_secs = it.time_remaining_secs();
+            if (time_remaining_secs < 0) {
+              Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
+              return;
+            }
+          }
+
+          MP params;
+          try {
+            // Get parameters for next model
+            params = it.nextModelParameters(model);
+
+            // Sequential model building, should never propagate
+            // exception up, just mark combination of model parameters as wrong
+
+            // Do we need to limit the model build time?
+            if (max_runtime_secs > 0) {
+              Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
+              double scale = params._nfolds > 0 ? params._nfolds + 1 : 1; //remaining time per cv model is less
+              if (params._max_runtime_secs == 0) { // unlimited
+                params._max_runtime_secs = time_remaining_secs / scale;
+                Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
+              } else {
+                double was = params._max_runtime_secs;
+                params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs / scale);
+                Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
+              }
+            }
+
+            try {
+              ScoringInfo scoringInfo = new ScoringInfo();
+              scoringInfo.time_stamp_ms = System.currentTimeMillis();
+
+              //// build the model!
+              model = buildModel(params, grid, counter++, protoModelKey);
+
+              if (model != null) {
+                model.fillScoringInfo(scoringInfo);
+                grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
+                ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+              }
+            } catch (RuntimeException e) { // Catch everything
+              if (!Job.isCancelledException(e)) {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+              }
+              grid.appendFailedModelParameters(params, e);
+            }
+          } catch (IllegalArgumentException e) {
+            Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
+            // Model parameters cannot be constructed for some reason
+            it.modelFailed(model);
+            Object[] rawParams = it.getCurrentRawParameters();
+            grid.appendFailedModelParameters(rawParams, e);
+          } finally {
+            // Update progress by 1 increment
+            _job.update(1);
+            // Always update grid in DKV after model building attempt
+            grid.update(_job);
+          } // finally
+
+          if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+                  _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+            Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+            break;
+          }
+        } // while (it.hasNext(model))
+        Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
+      } finally {
+        grid.unlock(_job);
+      }
     }
   }
 
