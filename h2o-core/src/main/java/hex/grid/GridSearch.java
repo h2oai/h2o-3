@@ -303,8 +303,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // checksum is being calculated: we skip them (see PUBDEV-5286)
           Log.warn("GridSearch encountered concurrent modification while searching DKV", e);
           return false;
-        } catch (RuntimeException e) {
-          if (! (e.getCause() instanceof H2OConcurrentModificationException))
+        } catch (final RuntimeException e) {
+          Throwable ex = e;
+          boolean concurrentModification = false;
+          while (ex.getCause() != null) {
+            ex = ex.getCause();
+            if (ex instanceof H2OConcurrentModificationException) {
+              concurrentModification = true;
+              break;
+            }
+          }
+          if (! concurrentModification)
             throw e;
           Log.warn("GridSearch encountered concurrent modification while searching DKV", e);
           return false;
