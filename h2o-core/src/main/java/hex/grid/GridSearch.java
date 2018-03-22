@@ -95,7 +95,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   Job<Grid> start() {
-    final long gridSize = _hyperSpaceWalker == null ?
+    final long gridSize = _hyperSpaceWalker != null ?
                           _hyperSpaceWalker.getMaxHyperSpaceSize() :
                           _metalearnerHyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
@@ -108,7 +108,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (! (keyed instanceof Grid))
         throw new H2OIllegalArgumentException("Name conflict: tried to create a Grid using the ID of a non-Grid object that's already in H2O: " + _job._result + "; it is a: " + keyed.getClass());
       grid = (Grid) keyed;
-      Frame specTrainFrame =  _hyperSpaceWalker == null ?
+      Frame specTrainFrame =  _hyperSpaceWalker != null ?
                               _metalearnerHyperSpaceWalker.getParams().train() :
                               _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
@@ -117,21 +117,22 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
-      grid = _hyperSpaceWalker == null ?
+      grid = _hyperSpaceWalker != null ?
           new Grid<>(_result,
-                  _metalearnerHyperSpaceWalker.getParams(),
-                  _metalearnerHyperSpaceWalker.getHyperParamNames(),
-                  _metalearnerHyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy()) :
+                  _hyperSpaceWalker.getParams(),
+                  _hyperSpaceWalker.getHyperParamNames(),
+                  _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy()) :
           new Grid<>(_result,
-                     _hyperSpaceWalker.getParams(),
-                     _hyperSpaceWalker.getHyperParamNames(),
-                     _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
+                     _metalearnerHyperSpaceWalker.getParams(),
+                     _metalearnerHyperSpaceWalker.getHyperParamNames(),
+                     _metalearnerHyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
 
     Model model = null;
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
-    MetalearnerHyperSpaceWalker.MetalearnerHyperSpaceIterator<MP> it_metalearner = _metalearnerHyperSpaceWalker.iterator();
+    MetalearnerHyperSpaceWalker.MetalearnerHyperSpaceIterator<MP> it_metalearner =
+            _metalearnerHyperSpaceWalker != null ? _metalearnerHyperSpaceWalker.iterator() : null;
     long gridWork=0;
     if (_hyperSpaceWalker != null) {
       if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
@@ -523,6 +524,34 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     return startGridSearch(destKey, BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
   }
 
+  /**
+   * Start a new grid search job.  This is the method that gets called by GridSearchHandler.do_train().
+   * <p>
+   * This method launches a "classical" grid search traversing cartesian grid of parameters
+   * point-by-point, <b>or</b> a random hyperparameter search, depending on the value of the <i>strategy</i>
+   * parameter.
+   *
+   * @param destKey              A key to store result of grid search under.
+   * @param params               Default parameters for model builder. This object is used to create
+   *                             a specific model parameters for a combination of hyper parameters.
+   * @param hyperParams          A set of arrays of hyper parameter values, used to specify a simple
+   *                             fully-filled-in grid search.
+   * @param paramsBuilderFactory defines a strategy for creating a new model parameters based on
+   *                             common parameters and list of hyper-parameters
+   * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
+   * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
+   * kicked off.  This is a non-blocking call.
+   */
+  public static <MP extends Model.Parameters> Job<Grid> startMetalearnerGridSearch(
+          final Key<Grid> destKey,
+          final MP params,
+          final Map<String, Object[]> hyperParams,
+          final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+          final HyperSpaceSearchCriteria search_criteria) {
+
+    return startMetalearnerGridSearch(destKey, (MetalearnerHyperSpaceWalker<Model.Parameters, ?>) BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
+  }
+
 
   /**
    * Start a new grid search job.
@@ -573,6 +602,29 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     // Start the search
     return new GridSearch(gridKey, hyperSpaceWalker).start();
+  }
+
+  /**
+   * Start a new grid search job. <p> This method launches any grid search traversing space of hyper
+   * parameters based on specified strategy.
+   *
+   * @param destKey          A key to store result of grid search under.
+   * @param metalearnerHyperSpaceWalker defines a strategy for traversing a hyper space. The object itself
+   *                         holds definition of hyper space.
+   * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
+   * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
+   * kicked off.  This is a non-blocking call.
+   */
+  public static <MP extends Model.Parameters> Job<Grid> startMetalearnerGridSearch(
+          final Key<Grid> destKey,
+          final MetalearnerHyperSpaceWalker<MP, ?> metalearnerHyperSpaceWalker) {
+    // Compute key for destination object representing grid
+    MP params = metalearnerHyperSpaceWalker.getParams();
+    Key<Grid> gridKey = destKey != null ? destKey
+            : gridKeyName(params.algoName(), params.train());
+
+    // Start the search
+    return new GridSearch(gridKey, metalearnerHyperSpaceWalker).start();
   }
 
   /**
