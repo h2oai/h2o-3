@@ -96,18 +96,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       error("iter_max", "iter_max must be a positive integer");
   }
 
-  private static class StrataTask extends MRTask<StrataTask> {
-    private IcedHashMap<AstGroup.G, IcedInt> _strata;
-    private int[] _cols;
+  static class StrataTask extends MRTask<StrataTask> {
+    private IcedHashMap<AstGroup.G, IcedInt> _strataMap;
 
-    private StrataTask(IcedHashMap<AstGroup.G, IcedInt> strata, int[] cols) { _strata = strata; _cols = cols; }
+    private StrataTask(IcedHashMap<AstGroup.G, IcedInt> strata) { _strataMap = strata; }
 
     @Override
     public void map(Chunk[] cs, NewChunk nc) {
-      AstGroup.G g = new AstGroup.G(_cols.length, null);
+      AstGroup.G g = new AstGroup.G(cs.length, null);
       for (int i = 0; i < cs[0].len(); i++) {
-        g.fill(i, cs, _cols);
-        IcedInt strataId = _strata.get(g);
+        g.fill(i, cs);
+        IcedInt strataId = _strataMap.get(g);
         if (strataId == null)
           nc.addNA();
         else
@@ -115,24 +114,30 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    static Vec makeStrata(Frame f, String[] stratifyBy) {
-      int[] idxs = f.find(stratifyBy);
-      IcedHashMap<AstGroup.G, String> groups = AstGroup.doGroups(f, idxs, AstGroup.aggNRows());
-      IcedHashMap<AstGroup.G, IcedInt> mapping = new IcedHashMap<>();
+    static Vec makeStrataVec(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping) {
+      final Frame sf = f.subframe(stratifyBy);
+      return new StrataTask(mapping).doAll(Vec.T_NUM, sf).outputFrame().anyVec();
+    }
+
+    static void setupStrataMapping(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> outMapping) {
+      final Frame sf = f.subframe(stratifyBy);
+      int[] idxs = MemoryManager.malloc4(stratifyBy.length);
+      for (int i = 0; i < idxs.length; i++)
+        idxs[i] = i;
+      IcedHashMap<AstGroup.G, String> groups = AstGroup.doGroups(sf, idxs, AstGroup.aggNRows());
       groups: for (AstGroup.G g : groups.keySet()) {
         for (double val : g._gs)
           if (Double.isNaN(val))
             continue groups;
-        mapping.put(g, new IcedInt(mapping.size()));
+        outMapping.put(g, new IcedInt(outMapping.size()));
       }
-      return new StrataTask(mapping, idxs).doAll(Vec.T_NUM, f).outputFrame().anyVec();
     }
 
   }
 
   public class CoxPHDriver extends Driver {
 
-    private Frame reorderTrainFrameColumns() {
+    private Frame reorderTrainFrameColumns(IcedHashMap<AstGroup.G, IcedInt> outStrataMap) {
       Frame f = new Frame();
 
       Vec weightVec = null;
@@ -158,7 +163,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       Vec strataVec = null;
       if (_parms.isStratified()) {
-        strataVec = StrataTask.makeStrata(f, _parms._stratify_by);
+        StrataTask.setupStrataMapping(f, _parms._stratify_by, outStrataMap);
+        strataVec = StrataTask.makeStrataVec(f, _parms._stratify_by, outStrataMap);
         if (_parms.interactionSpec() == null) {
           // no interactions => we can drop the columns earlier
           f.remove(_parms._stratify_by);
@@ -452,7 +458,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       try {
         init(true);
 
-        Frame f = reorderTrainFrameColumns();
+        IcedHashMap<AstGroup.G, IcedInt> strataMap = new IcedHashMap<>();
+        Frame f = reorderTrainFrameColumns(strataMap);
 
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
         final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
@@ -461,7 +468,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         DKV.put(dinfo);
 
         // The model to be built
-        CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train());
+        CoxPHModel.CoxPHOutput output = new CoxPHModel.CoxPHOutput(CoxPH.this, dinfo._adaptedFrame, train(), strataMap);
         model = new CoxPHModel(_job._result, _parms, output);
         model.delete_and_lock(_job);
 

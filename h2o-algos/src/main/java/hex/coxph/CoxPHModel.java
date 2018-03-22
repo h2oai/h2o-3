@@ -12,8 +12,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.IcedInt;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -130,11 +133,26 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   public static class CoxPHOutput extends Model.Output {
 
-    public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train) {
-      super(coxPH, adaptFr);
+    public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train, IcedHashMap<AstGroup.G, IcedInt> strataMap) {
+      super(coxPH, fullFrame(coxPH, adaptFr, train));
+      _strataOnlyCols = new String[_names.length - adaptFr._names.length];
+      for (int i = 0; i < _strataOnlyCols.length; i++)
+        _strataOnlyCols[i] = _names[i];
       _ties = coxPH._parms._ties;
       _formula = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
+      _strataMap = strataMap;
+    }
+
+    private static Frame fullFrame(CoxPH coxPH, Frame adaptFr, Frame train) {
+      if (! coxPH._parms.isStratified())
+        return adaptFr;
+      Frame ff = new Frame();
+      for (String col : coxPH._parms._stratify_by)
+        if (adaptFr.vec(col) == null)
+          ff.add(col, train.vec(col));
+      ff.add(adaptFr);
+      return ff;
     }
 
     @Override
@@ -145,6 +163,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     InteractionSpec _interactionSpec;
     DataInfo data_info;
+    IcedHashMap<AstGroup.G, IcedInt> _strataMap;
+    String[] _strataOnlyCols;
 
     String[] _coef_names;
     double[] _coef;
@@ -201,12 +221,21 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
-    if (_parms.isStratified() && (test.vec(_parms._strata_column) == null)) {
+    boolean createStrataVec = _parms.isStratified() && (test.vec(_parms._strata_column) == null);
+    if (createStrataVec) {
       Vec strataVec = test.anyVec().makeCon(Double.NaN);
       _toDelete.put(strataVec._key, "adapted missing strata vector");
       test.add(_parms._strata_column, strataVec);
     }
-    return super.adaptTestForTrain(test, expensive, computeMetrics);
+    String[] msgs = super.adaptTestForTrain(test, expensive, computeMetrics);
+    if (createStrataVec) {
+      Vec strataVec = CoxPH.StrataTask.makeStrataVec(test, _parms._stratify_by, _output._strataMap);
+      _toDelete.put(strataVec._key, "adapted missing strata vector");
+      test.replace(test.find(_parms._strata_column), strataVec);
+      if (_output._strataOnlyCols != null)
+        test.remove(_output._strataOnlyCols);
+    }
+    return msgs;
   }
 
   private static class CoxPHScore extends MRTask<CoxPHScore> {
