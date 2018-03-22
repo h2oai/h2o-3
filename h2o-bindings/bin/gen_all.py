@@ -33,7 +33,8 @@ cloud = run.H2OCloud(
     xmx="4g",
     cp="",
     output_dir=results_dir,
-    test_ssl=False
+    test_ssl=False,
+    ldap_config_path=None
 )
 cloud.start()
 cloud.wait_for_cloud_to_be_up()
