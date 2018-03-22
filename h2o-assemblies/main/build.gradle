@@ -10,6 +10,7 @@ configurations {
     compile.exclude module: 'zookeeper'
     compile.exclude module: 'javax.mail.glassfish'
     compile.exclude module: 'servlet-api'
+    compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
 }
 
 // Dependencies
