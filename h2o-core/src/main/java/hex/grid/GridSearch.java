@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
+import hex.grid.MetalearnerHyperSpaceWalker.BaseMetaLearnerWalker;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -130,7 +131,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     Model model = null;
-    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker != null ? _hyperSpaceWalker.iterator() : null;
     MetalearnerHyperSpaceWalker.MetalearnerHyperSpaceIterator<MP> it_metalearner =
             _metalearnerHyperSpaceWalker != null ? _metalearnerHyperSpaceWalker.iterator() : null;
     long gridWork=0;
@@ -351,7 +352,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               if (model != null) {
                 model.fillScoringInfo(scoringInfo);
                 grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
-                ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+                if (_hyperSpaceWalker != null) {
+                  ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+                } else {
+                  ScoringInfo.sort(grid.getScoringInfos(), _metalearnerHyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+                }
               }
             } catch (RuntimeException e) { // Catch everything
               if (!Job.isCancelledException(e)) {
@@ -375,12 +380,20 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             grid.update(_job);
           } // finally
 
-          if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
-                  _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
-            Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
-            break;
+          if (_hyperSpaceWalker != null) {
+            if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+                    _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+              Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+              break;
+            }
+          } else {
+            if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+                    _metalearnerHyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+              Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+              break;
+            }
           }
-        } // while (it.hasNext(model))
+        }// while (it.hasNext(model))
         Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
       } finally {
         grid.unlock(_job);
@@ -549,7 +562,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
           final HyperSpaceSearchCriteria search_criteria) {
 
-    return startMetalearnerGridSearch(destKey, (MetalearnerHyperSpaceWalker<Model.Parameters, ?>) BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
+    return startMetalearnerGridSearch(destKey, BaseMetaLearnerWalker.MetalearnerWalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
   }
 
 

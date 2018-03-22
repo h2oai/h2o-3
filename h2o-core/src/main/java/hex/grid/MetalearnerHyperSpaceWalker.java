@@ -123,7 +123,7 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
      * values, where the String is a valid field name in the corresponding Model.Parameter, and the Object is
      * the field value (boxed as needed).
      */
-    abstract class BaseWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> implements HyperSpaceWalker<MP, C> {
+    abstract class BaseMetaLearnerWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> implements MetalearnerHyperSpaceWalker<MP, C> {
 
         /**
          * @see #search_criteria()
@@ -175,21 +175,21 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
         /**
          * Java hackery so we can have a factory method on a class with type params.
          */
-        public static class WalkerFactory<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
+        public static class MetalearnerWalkerFactory<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
             /**
              * Factory method to create an instance based on the given HyperSpaceSearchCriteria instance.
              */
             public static <MP extends Model.Parameters, C extends HyperSpaceSearchCriteria>
-            HyperSpaceWalker create(MP params,
+            MetalearnerHyperSpaceWalker create(MP params,
                                     Map<String, Object[]> hyperParams,
                                     ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                     C search_criteria) {
                 HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
 
                 if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian)
-                    return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
+                    return new MetalearnerHyperSpaceWalker.CartesianMetaLearnerWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
                 else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete )
-                    return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
+                    return new MetalearnerHyperSpaceWalker.RandomDiscreteMetaLearnerValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
                 else
                     throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
             }
@@ -200,7 +200,7 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
          * @param paramsBuilderFactory
          * @param hyperParams
          */
-        public BaseWalker(MP params,
+        public BaseMetaLearnerWalker(MP params,
                           Map<String, Object[]> hyperParams,
                           ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                           C search_criteria) {
@@ -338,10 +338,10 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
     /**
      * Hyperparameter space walker which visits each combination of hyperparameters in order.
      */
-    public static class CartesianWalker<MP extends Model.Parameters>
-            extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
+    public static class CartesianMetaLearnerWalker<MP extends Model.Parameters>
+            extends BaseMetaLearnerWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
 
-        public CartesianWalker(MP params,
+        public CartesianMetaLearnerWalker(MP params,
                                Map<String, Object[]> hyperParams,
                                ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                HyperSpaceSearchCriteria.CartesianSearchCriteria search_criteria) {
@@ -349,9 +349,9 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
         }
 
         @Override
-        public HyperSpaceIterator<MP> iterator() {
+        public MetalearnerHyperSpaceIterator<MP> iterator() {
 
-            return new HyperSpaceIterator<MP>() {
+            return new MetalearnerHyperSpaceIterator<MP>() {
                 /** Hyper params permutation.
                  */
                 private int[] _currentHyperparamIndices = null;
@@ -435,21 +435,21 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
             hyperparamIndices[i]++;
             return hyperparamIndices;
         }
-    } // class CartesianWalker
+    } // class CartesianMetaLearnerWalker
 
     /**
      * Hyperparameter space walker which visits random combinations of hyperparameters whose possible values are
-     * given in explicit lists as they are with CartesianWalker.
+     * given in explicit lists as they are with CartesianMetaLearnerWalker.
      */
-    public static class RandomDiscreteValueWalker<MP extends Model.Parameters>
-            extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
+    public static class RandomDiscreteMetaLearnerValueWalker<MP extends Model.Parameters>
+            extends BaseMetaLearnerWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
         Random random;
 
         /** All visited hyper params permutations, including the current one. */
         private List<int[]> _visitedPermutations = new ArrayList<>();
         private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
-        public RandomDiscreteValueWalker(MP params,
+        public RandomDiscreteMetaLearnerValueWalker(MP params,
                                          Map<String, Object[]> hyperParams,
                                          ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                          HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
@@ -472,8 +472,8 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
         }
 
         @Override
-        public HyperSpaceIterator<MP> iterator() {
-            return new HyperSpaceIterator<MP>() {
+        public MetalearnerHyperSpaceIterator<MP> iterator() {
+            return new MetalearnerHyperSpaceIterator<MP>() {
                 /** Current hyper params permutation. */
                 private int[] _currentHyperparamIndices = null;
 
@@ -487,7 +487,7 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
                 @Override
                 public MP nextModelParameters(Model previousModel) {
                     // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
-                    // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
+                    // NOTE: in RandomDiscreteMetaLearnerValueWalker nextModelIndices() returns a new array each time, rather than
                     // mutating the last one.
                     _currentHyperparamIndices = nextModelIndices();
 
@@ -597,5 +597,5 @@ public interface MetalearnerHyperSpaceWalker<MP extends Model.Parameters, C exte
             return hyperparamIndices;
         } // nextModel
 
-    } // RandomDiscreteValueWalker
+    } // RandomDiscreteMetaLearnerValueWalker
 }

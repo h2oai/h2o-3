@@ -103,7 +103,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob;
-    if (!algoName.equals("stackedensemble")) {
+    if (!algoName.equals("StackedEnsemble")) {
       gsJob = GridSearch.startGridSearch(destKey,
               params,
               sortedMap,
