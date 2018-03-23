@@ -7,7 +7,12 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import hex.Model;
 import water.api.schemas3.FrameV3;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
@@ -34,7 +39,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     
     // Metalearner algorithm
-    @API(level = API.Level.critical, direction = API.Direction.INOUT, 
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            gridable = true,
             values = {"AUTO", "glm", "gbm", "drf", "deeplearning"},
             help = "Type of algorithm to use as the metalearner. " +
                     "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
@@ -65,11 +71,30 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             help = "Keep level one frame used for metalearner training.")
     public boolean keep_levelone_frame;
 
-    @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
-    public String metalearner_params;
+    @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT, gridable = true)
+    public IcedHashMap<String, Object[]> metalearner_params;
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
-  
+
+    public StackedEnsembleParametersV99(StackedEnsembleParametersV99 parms) {
+      if (parms.metalearner_params != null) {
+        Map<String, Object> m;
+        try {
+          m = water.util.JSONUtils.parse(parms.metalearner_params.toString());
+
+          // Convert lists and singletons into arrays
+          for (Map.Entry<String, Object> e : m.entrySet()) {
+            Object o = e.getValue();
+            Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+
+            metalearner_params.put(e.getKey(), o2);
+          }
+        } catch (Exception e) {
+          // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
+          throw new H2OIllegalArgumentException("Can't parse the metalearner_params dictionary; got error: " + e.getMessage());
+        }
+      }
+    }
   }
 }

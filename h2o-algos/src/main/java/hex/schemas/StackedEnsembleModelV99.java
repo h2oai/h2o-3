@@ -16,7 +16,7 @@ public class StackedEnsembleModelV99 extends ModelSchemaV3<StackedEnsembleModel,
     KeyV3.FrameKeyV3 levelone_frame_id;
   }
 
-  public StackedEnsembleV99.StackedEnsembleParametersV99 createParametersSchema() { return new StackedEnsembleV99.StackedEnsembleParametersV99(); }
+  public StackedEnsembleV99.StackedEnsembleParametersV99 createParametersSchema() { return new StackedEnsembleV99.StackedEnsembleParametersV99(parameters); }
   public StackedEnsembleModelOutputV99 createOutputSchema() { return new StackedEnsembleModelOutputV99(); }
 
   @Override public StackedEnsembleModel createImpl() {

@@ -26,6 +26,7 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -37,7 +38,7 @@ class Metalearner {
 
     private Frame _levelOneTrainingFrame;
     private Frame _levelOneValidationFrame;
-    private String _metalearner_params;
+    private IcedHashMap<String, Object[]> _metalearner_params;
     private StackedEnsembleModel _model;
     private Job _job;
     private Key<Model> _metalearnerKey;
@@ -45,8 +46,8 @@ class Metalearner {
     private StackedEnsembleParameters _parms;
     private boolean _hasMetalearnerParams;
     private long _metalearnerSeed;
-    
-    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, String metalearner_params,
+
+    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, IcedHashMap<String, Object[]> metalearner_params,
                        StackedEnsembleModel model, Job StackedEnsembleJob, Key<Model> metalearnerKey, Job metalearnerJob,
                        StackedEnsembleParameters parms, boolean hasMetalearnerParams, long metalearnerSeed){
 
@@ -141,12 +142,12 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-            }.getType());
-            for (Map.Entry<String, String[]> param : map.entrySet()) {
-                String[] paramVal = param.getValue();
+//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
+//            }.getType());
+            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
+                Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0]);
+                    p.setProperty(param.getKey(), paramVal[0].toString());
                 } else {
                     p.setProperty(param.getKey(), Arrays.toString(paramVal));
                 }
@@ -217,12 +218,12 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-            }.getType());
-            for (Map.Entry<String, String[]> param : map.entrySet()) {
-                String[] paramVal = param.getValue();
+//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
+//            }.getType());
+            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
+                Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0]);
+                    p.setProperty(param.getKey(), paramVal[0].toString());
                 } else {
                     p.setProperty(param.getKey(), Arrays.toString(paramVal));
                 }
@@ -291,12 +292,12 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-            }.getType());
-            for (Map.Entry<String, String[]> param : map.entrySet()) {
-                String[] paramVal = param.getValue();
+//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
+//            }.getType());
+            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
+                Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0]);
+                    p.setProperty(param.getKey(), paramVal[0].toString());
                 } else {
                     p.setProperty(param.getKey(), Arrays.toString(paramVal));
                 }
@@ -375,12 +376,12 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-            }.getType());
-            for (Map.Entry<String, String[]> param : map.entrySet()) {
-                String[] paramVal = param.getValue();
+//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
+//            }.getType());
+            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
+                Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0]);
+                    p.setProperty(param.getKey(), paramVal[0].toString());
                 } else {
                     p.setProperty(param.getKey(), Arrays.toString(paramVal));
                 }
