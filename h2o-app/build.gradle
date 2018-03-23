@@ -8,9 +8,8 @@ dependencies {
   compile project(":h2o-core")
   compile project(":h2o-algos")
   compile project(":h2o-automl")
-  compile project(":h2o-ext-krbstandalone")
   compile project(":h2o-ext-authsupport")
-  // Note: orc parser is included at the assembly level for each
-  // Hadoop distribution
+  // Note: components that depend on Hadoop libraries should be included at the assembly level
+  // eg. ORC parser is included at the assembly level for each Hadoop distribution, krbstandalone is included in the main assembly
 }
 
