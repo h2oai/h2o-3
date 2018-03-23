@@ -490,6 +490,7 @@ EOF
                             cd ${env.BUILD_NUMBER_DIR}
                             rm -rf target/*.zip
                             rm -rf h2o-dist
+                            find . -name 'h2odriver-3.*.0.jar' -delete -print
                         """
                         pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
                     } catch (Exception e) {
