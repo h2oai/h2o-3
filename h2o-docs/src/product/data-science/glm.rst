@@ -295,29 +295,29 @@ As a result, there is a small disconnect between the two. To remedy this, we hav
 Recall that during prediction, a dataset row represented by :math:`X_i` will be set to class :math:`j` if 
 
 .. math::
-   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} \geq 0 \; \text{for} \; j
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} > 0 \; \text{for} \; j
 
 and
 
 .. math::
-   \beta^{T}X_i + \theta_{j_i} < 0 \; \text{for} \; j' < j
+   beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j
 
 Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
 
 .. math::
-    L(\beta,\theta, X_i, y_i) = \Bigg\{ \; \begin{eqnarray} \text{if} \; \beta^{T}X_i + \theta_{j} \geq 0 \; \text{for all} \; j \geq y_i \\
-   \text{and} \; \beta^{T}X_i + \theta_{j} < 0 \; \text{for all} \; j < y_i \\
-   (\beta^{T}X_i + \theta_{j})^2 \; \text{if} \; \beta^{T}X_i + \theta_{j} < 0 \; \text{for all} \; j \geq y_i \\ 
-   \text{and} \; \beta^{T}X_i + \theta_{j} \geq 0 \; \text{for all} \; j < y_i \\ \end{eqnarray} 
+    L(\beta,\theta, X_i, y_i) = \Bigg\{ \; \begin{eqnarray} \text{if} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j \geq y_i \\
+   \text{and} \; \beta^{T}X_i +  \theta_{j} \geq 0 \; \text{for all} \; j < y_i \\
+   (\beta^{T}X_i + \theta_{j})^2 \; \text{if} \; \beta^{T}X_i + \theta_{j} \leq 0 \; \text{for all} \; j \geq y_i \\ 
+   \text{and} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j < y_i \\ \end{eqnarray} 
 
 .. math::
    L(\beta,\theta) = \sum_{i=1}^{n} L(\beta,\theta, X_i, y_i) \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; 
 
-Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descend. To adjust the model parameters using the likelihood function, do not choose the solver when you call the ``glm`` function. You can set the ``solver`` parameter to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj-reg``, ``alpha``, and ``lambda`` parameters.
 
-In general, the loss function methods tend to generate better accuracies than the liklihood method (from 0.001 to 0.1). In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
+In general, the loss function methods tend to generate better accuracies than the liklihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -522,7 +522,7 @@ In GLM, you can specify one of the following solvers:
 - AUTO: Sets the solver based on given data and parameters.
 - COORDINATE_DESCENT: Coordinate Decent (experimental)
 - COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
-- GRADIENT_DESCENT_LH: Gradient Descent (available for Ordinal family only)
+- GRADIENT_DESCENT_LH: Gradient Descent Liklihood (available for Ordinal family only; default for Ordinal family)
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
@@ -552,6 +552,11 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 - Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
+
+Gradient Descent
+''''''''''''''''
+
+For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the system parameters. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~
