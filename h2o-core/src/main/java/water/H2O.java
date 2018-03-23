@@ -1475,23 +1475,23 @@ final public class H2O {
   private static void startLocalNode() {
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
-    // Do not forget to put SELF into the static configuration (to simulate
-    // proper multicast behavior)
-    if( !ARGS.client && STATIC_H2OS != null && !STATIC_H2OS.contains(SELF)) {
-      Log.warn("Flatfile configuration does not include self: " + SELF+ " but contains " + STATIC_H2OS);
-      STATIC_H2OS.add(SELF);
+
+    // Do not forget to put SELF into the static configuration (to simulate proper multicast behavior)
+    if ( !ARGS.client && H2O.isFlatfileEnabled() && !H2O.isNodeInFlatfile(SELF)) {
+      Log.warn("Flatfile configuration does not include self: " + SELF + ", but contains " + H2O.getFlatfile());
+      H2O.addNodeToFlatfile(SELF);
     }
 
-    Log.info ("H2O cloud name: '" + ARGS.name + "' on " + SELF+
-              (ARGS.flatfile==null
-               ? (", discovery address "+CLOUD_MULTICAST_GROUP+":"+CLOUD_MULTICAST_PORT)
-               : ", static configuration based on -flatfile "+ARGS.flatfile));
+    Log.info("H2O cloud name: '" + ARGS.name + "' on " + SELF +
+            (H2O.isFlatfileEnabled()
+                    ? (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)
+                    : ", static configuration based on -flatfile " + ARGS.flatfile));
 
     if (!H2O.ARGS.disable_web) {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
-          "  1. Open a terminal and run 'ssh -L 55555:localhost:"
-          + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-          "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+              "  1. Open a terminal and run 'ssh -L 55555:localhost:"
+              + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
+              "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
     }
 
     // Create the starter Cloud with 1 member
@@ -1501,6 +1501,12 @@ final public class H2O {
 
     if(ARGS.client){
       reportClient(H2O.SELF); // report myself as the client to myself
+      // This is useful for the consistency and used, for example, in LogsHandler where, in case we couldn't find ip of
+      // regular worker node, we try to obtain the logs from the client.
+      //
+      // In case we wouldn't report the client to the client and the request for the logs would come to the client, we would
+      // need to handle that case differently. But since we handle this consistently like this, we do not need to worry about cases if the request
+      // came to the client node or not since we always report the client.
     }
   }
 
