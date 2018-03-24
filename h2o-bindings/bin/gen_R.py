@@ -136,7 +136,7 @@ def gen_module(schema, algo, module):
     if algo in ["deeplearning","drf", "gbm","xgboost"]:
         list.append(indent("verbose = FALSE ",17 + len(module)))
     if algo in ["stackedensemble"]:
-        list.append(indent("metalearner_params = NULL ",17 + len(module)))
+        list.append(indent("metalearner_params = list() ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
@@ -276,7 +276,7 @@ def gen_module(schema, algo, module):
         yield "  }"
         yield " "
         yield "  if (!missing(metalearner_params))"
-        yield "      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))"
+        yield "      parms$metalearner_params <- metalearner_params"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue

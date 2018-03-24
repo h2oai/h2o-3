@@ -47,7 +47,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_fold_column = NULL,
                                 keep_levelone_frame = FALSE,
                                 seed = -1,
-                                metalearner_params = NULL 
+                                metalearner_params = list() 
                                 ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -90,7 +90,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   }
  
   if (!missing(metalearner_params))
-      parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
+      parms$metalearner_params <- metalearner_params
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))

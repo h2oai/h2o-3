@@ -52,7 +52,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE),
-                   data.frame(type = "character", scalar = FALSE, row.names = "Map<Object,Object>", stringsAsFactors = FALSE))
+                   data.frame(type = "list", scalar = FALSE, row.names = "Map<Object,Object>", stringsAsFactors = FALSE))
 
 #' Capabilities endpoints
 .h2o.__ALL_CAPABILITIES  <- "Capabilities"

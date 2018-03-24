@@ -107,7 +107,6 @@
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
-
   # R treats integer as not numeric: FIXME move into checkAndUnifyModelParameters
   params <- lapply(params, function(x) { if(is.integer(x)) x <- as.numeric(x); x })
   #---------- Check user parameter types ----------#
@@ -288,7 +287,10 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
                           })
-      if (type == "character")
+      if (type == "list" && paramDef$type == "Map<Object,Object>"){
+        paramValue <- toJSON(paramValue)
+      }
+      else if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
         paramValue <- .collapse(sapply(paramValue, .collapse.tuple))
