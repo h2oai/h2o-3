@@ -30,6 +30,7 @@ public class ScoreKeeper extends Iced {
   public double _custom_metric = Double.NaN;
   public float[] _hitratio;
   public double _lift = Double.NaN; //Lift in top group
+  public double _r2 = Double.NaN;
 
   public ScoreKeeper() {}
 
@@ -75,9 +76,11 @@ public class ScoreKeeper extends Iced {
       _mean_residual_deviance = ((ModelMetricsRegression)m)._mean_residual_deviance;
       _mae = ((ModelMetricsRegression)m)._mean_absolute_error;
       _rmsle = ((ModelMetricsRegression)m)._root_mean_squared_log_error;
+      _r2 = ((ModelMetricsRegression)m).r2();
     }
     if (m instanceof ModelMetricsBinomial) {
       _logloss = ((ModelMetricsBinomial)m)._logloss;
+      _r2 = ((ModelMetricsBinomial)m).r2();
       if (((ModelMetricsBinomial)m)._auc != null) {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
@@ -93,19 +96,21 @@ public class ScoreKeeper extends Iced {
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
       _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
+      _r2 = ((ModelMetricsMultinomial)m).r2();
     } else if (m instanceof ModelMetricsOrdinal) {
       _logloss = ((ModelMetricsOrdinal)m)._logloss;
       _classError = ((ModelMetricsOrdinal)m)._cm.err();
       _mean_per_class_error = ((ModelMetricsOrdinal)m).mean_per_class_error();
       _hitratio = ((ModelMetricsOrdinal)m)._hit_ratios;
+      _r2 = ((ModelMetricsOrdinal)m).r2();
     }
     if (m._custom_metric != null )
     _custom_metric =  m._custom_metric.value;
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom, r2}
   public static boolean moreIsBetter(StoppingMetric criterion) {
-    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group);
+    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group || criterion == StoppingMetric.r2);
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
@@ -180,6 +185,9 @@ public class ScoreKeeper extends Iced {
           case lift_top_group:
             val = skj._lift;
             break;
+          case r2:
+            val = skj._r2;
+            break;
           default:
             throw H2O.unimpl("Undefined stopping criterion.");
         }
@@ -235,6 +243,7 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
             && MathUtils.compare(_mean_per_class_error, o._mean_per_class_error, 1e-6, 1e-6)
+            && MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
             && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
 
@@ -303,6 +312,13 @@ public class ScoreKeeper extends Iced {
             return (int)Math.signum(o2._lift - o1._lift); // moreIsBetter
           }
         };
+      case r2:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o2._r2 - o1._r2); // moreIsBetter
+          }
+        };
       default:
         throw H2O.unimpl("Undefined stopping criterion.");
     } // switch
@@ -321,6 +337,7 @@ public class ScoreKeeper extends Iced {
         ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
+        ", _r2=" + _r2 +
         '}';
   }
 }
