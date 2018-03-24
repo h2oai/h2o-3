@@ -51,6 +51,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
 
+    String[] responseCols() {
+      String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];
+      if (isStratified())
+        cols = ArrayUtils.append(cols, _start_column);
+      return ArrayUtils.append(cols, _stop_column, _response_column);
+    }
+
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
     InteractionSpec interactionSpec() {
@@ -182,8 +189,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double _maxrsq;
     double _lre;
     int _iter;
-    double[] _x_mean_cat;
-    double[] _x_mean_num;
+    double[][] _x_mean_cat;
+    double[][] _x_mean_num;
     double[] _mean_offset;
     String[] _offset_names;
     long _n;
@@ -214,8 +221,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm);
-    return new CoxPHScore(scoringInfo, _output).doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
+    int nResponses = 0;
+    for (String col : _parms.responseCols())
+      if (adaptFrm.find(col) != -1)
+        nResponses++;
+    DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
+    return new CoxPHScore(scoringInfo, _output, _parms.isStratified())
+            .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
             .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
   }
 
@@ -241,18 +253,23 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   private static class CoxPHScore extends MRTask<CoxPHScore> {
     private DataInfo _dinfo;
     private double[] _coef;
-    private double _lpBase;
+    private double[] _lpBase;
     private int _numStart;
+    private boolean _hasStrata;
 
-    private CoxPHScore(DataInfo dinfo, CoxPHOutput o) {
+    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata) {
+      final int strataCount = o._x_mean_cat.length;
       _dinfo = dinfo;
+      _hasStrata = hasStrata;
       _coef = o._coef;
-      _numStart = o._x_mean_cat.length;
-      _lpBase = 0;
-      for (int i = 0; i < o._x_mean_cat.length; i++)
-        _lpBase += o._x_mean_cat[i] * _coef[i];
-      for (int i = 0; i < o._x_mean_num.length; i++)
-        _lpBase += o._x_mean_num[i] * _coef[i + _numStart];
+      _numStart = o._x_mean_cat[0].length;
+      _lpBase = new double[strataCount];
+      for (int s = 0; s < strataCount; s++) {
+        for (int i = 0; i < o._x_mean_cat[s].length; i++)
+          _lpBase[s] += o._x_mean_cat[s][i] * _coef[i];
+        for (int i = 0; i < o._x_mean_num[s].length; i++)
+          _lpBase[s] += o._x_mean_num[s][i] * _coef[i + _numStart];
+      }
     }
 
     @Override
@@ -264,7 +281,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
           nc.addNA();
           continue;
         }
-        double lp = r.innerProduct(_coef) - _lpBase;
+        double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
+        if (Double.isNaN(s)) {
+          // unknown strata
+          nc.addNA();
+          continue;
+        }
+        double lp = r.innerProduct(_coef) - _lpBase[(int) s];
         nc.addNum(lp);
       }
     }

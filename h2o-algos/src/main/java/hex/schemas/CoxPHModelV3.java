@@ -46,12 +46,6 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     double lre;
     @API(help = "iter")
     int iter;
-    @API(help = "x_mean_cat")
-    double[] x_mean_cat;
-    @API(help = "x_mean_num")
-    double[] x_mean_num;
-    @API(help = "mean_offset")
-    double[] mean_offset;
     @API(help = "offset_names")
     String[] offset_names;
     @API(help = "n")

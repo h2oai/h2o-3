@@ -202,8 +202,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._se_coef = MemoryManager.malloc8d(n_coef);
       o._z_coef = MemoryManager.malloc8d(n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
-      o._x_mean_cat = MemoryManager.malloc8d(o.data_info.numCats());
-      o._x_mean_num = MemoryManager.malloc8d(o.data_info.numNums());
+      o._x_mean_cat = new double[o.data_info.numCats()][];
+      o._x_mean_num = new double[o.data_info.numNums()][];
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
@@ -225,11 +225,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       o._n_missing = o._n - coxMR.n;
       o._n = coxMR.n;
-      for (int j = 0; j < o._x_mean_cat.length; j++)
-        o._x_mean_cat[j] = coxMR.sumWeightedCatX[j] / coxMR.sumWeights;
-      for (int j = 0; j < o._x_mean_num.length; j++)
-        o._x_mean_num[j] = o.data_info._normSub[j] + coxMR.sumWeightedNumX[j] / coxMR.sumWeights;
-      System.arraycopy(o.data_info._normSub, o._x_mean_num.length, o._mean_offset, 0, o._mean_offset.length);
+      o._x_mean_cat = new double[coxMR.sumWeights.length][];
+      o._x_mean_num = new double[coxMR.sumWeights.length][];
+      for (int s = 0; s < coxMR.sumWeights.length; s++) {
+        o._x_mean_cat[s] = coxMR.sumWeightedCatX[s];
+        for (int j = 0; j < o._x_mean_cat[s].length; j++)
+          o._x_mean_cat[s][j] /= coxMR.sumWeights[s];
+        o._x_mean_num[s] = coxMR.sumWeightedNumX[s];
+        for (int j = 0; j < o._x_mean_num[s].length; j++)
+          o._x_mean_num[s][j] = o.data_info._normSub[j] + o._x_mean_num[s][j] / coxMR.sumWeights[s];
+      }
+      System.arraycopy(o.data_info._normSub, o.data_info.numNums(), o._mean_offset, 0, o._mean_offset.length);
       for (int t = 0; t < coxMR.countEvents.length; ++t) {
         o._total_event += coxMR.countEvents[t];
         if (coxMR.sizeEvents[t] > 0 || coxMR.sizeCensored[t] > 0) {
@@ -573,12 +579,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private final boolean  _has_strata_column;
     private final boolean  _has_weights_column;
     private final long     _min_event;
-    private final int      _num_strata;
+    private final int      _num_strata; // = 1 if the model is not stratified
 
     long         n;
-    double       sumWeights;
-    double[]     sumWeightedCatX;
-    double[]     sumWeightedNumX;
+    double[]     sumWeights;
+    double[][]   sumWeightedCatX;
+    double[][]   sumWeightedNumX;
     double[]     sizeRiskSet;
     double[]     sizeCensored;
     double[]     sizeEvents;
@@ -609,8 +615,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     protected boolean chunkInit(){
       final int n_time = _time.length * _num_strata;
       final int n_coef = _beta.length;
-      sumWeightedCatX  = MemoryManager.malloc8d(_dinfo.numCats());
-      sumWeightedNumX  = MemoryManager.malloc8d(_dinfo.numNums());
+
+      sumWeights       = MemoryManager.malloc8d(_num_strata);
+      sumWeightedCatX  = malloc2DArray(_num_strata, _dinfo.numCats());
+      sumWeightedNumX  = malloc2DArray(_num_strata, _dinfo.numNums());
       sizeRiskSet      = MemoryManager.malloc8d(n_time);
       sizeCensored     = MemoryManager.malloc8d(n_time);
       sizeEvents       = MemoryManager.malloc8d(n_time);
@@ -644,6 +652,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       assert respIdx == -1 : "expected to use all response data";
       if (Double.isNaN(strata))
         return; // skip this row
+      final int strataId = (int) strata;
       int t1c = Arrays.binarySearch(_time, startTime);
       int t1 = (t1c < 0) ? -t1c - 1 : t1c + 1;
       int t2 = Arrays.binarySearch(_time, stopTime);
@@ -651,15 +660,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         throw new IllegalStateException("Encountered unexpected stop time");
       if (t1 > t2)
         throw new IllegalArgumentException("start times must be strictly less than stop times");
-      final int strataOffset = _time.length * (int) strata;
+      final int strataOffset = _time.length * strataId;
       t1 += strataOffset;
       t2 += strataOffset;
       final int numStart = _dinfo.numStart();
-      sumWeights += weight;
+      sumWeights[strataId] += weight;
       for (int j = 0; j < ncats; ++j)
-        sumWeightedCatX[cats[j]] += weight;
+        sumWeightedCatX[strataId][cats[j]] += weight;
       for (int j = 0; j < nums.length; ++j)
-        sumWeightedNumX[j] += weight * nums[j];
+        sumWeightedNumX[strataId][j] += weight * nums[j];
       double logRisk = 0;
       for (int j = 0; j < ncats; ++j)
         logRisk += _beta[cats[j]];
@@ -723,8 +732,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     @Override
     public void reduce(CoxPHTask that) {
       n += that.n;
-      sumWeights += that.sumWeights;
-      ArrayUtils.add(sumWeightedCatX, that.sumWeightedCatX);
+      ArrayUtils.add(sumWeights,       that.sumWeights);
+      ArrayUtils.add(sumWeightedCatX,  that.sumWeightedCatX);
       ArrayUtils.add(sumWeightedNumX,  that.sumWeightedNumX);
       ArrayUtils.add(sizeRiskSet,      that.sizeRiskSet);
       ArrayUtils.add(sizeCensored,     that.sizeCensored);

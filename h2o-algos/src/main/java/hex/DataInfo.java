@@ -1224,7 +1224,19 @@ public class DataInfo extends Keyed<DataInfo> {
     return rows;
   }
 
-  public DataInfo scoringInfo(String [] names, Frame adaptFrame){
+  public DataInfo scoringInfo(String[] names, Frame adaptFrame) {
+    return scoringInfo(names, adaptFrame, -1, true);
+  }
+
+  /**
+   * Creates a scoringInfo from a DataInfo instance created during model training
+   * @param names column names
+   * @param adaptFrame adapted frame
+   * @param nResponses number of responses (-1 indicates autodetect: 0/1 based on presence of a single response)
+   * @param fixIVW whether to force global useFactorLevels flag to InteractionWrappedVecs (GLM behavior)
+   * @return
+   */
+  public DataInfo scoringInfo(String[] names, Frame adaptFrame, int nResponses, boolean fixIVW) {
     DataInfo res = IcedUtils.deepCopy(this);
     res._normMul = null;
     res._normRespSub = null;
@@ -1236,22 +1248,28 @@ public class DataInfo extends Keyed<DataInfo> {
     res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
     res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
     res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
-    int resId = adaptFrame.find(names[responseChunkId(0)]);
-    if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._responses = 0;
-    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._responses = 1;
+    if (nResponses != -1) {
+      res._responses = nResponses;
+    } else {
+      int resId = adaptFrame.find(names[responseChunkId(0)]);
+      if (resId == -1 || adaptFrame.vec(resId).isBad())
+        res._responses = 0;
+      else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+        res._responses = 1;
+    }
     res._valid = true;
     res._interactions=_interactions;
     res._interactionSpec=_interactionSpec;
 
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec) {
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
-        DKV.put(v);
-      }
+    if (fixIVW) {
+      // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
+      for (Vec v : res._adaptedFrame.vecs())
+        if (v instanceof InteractionWrappedVec) {
+          ((InteractionWrappedVec) v)._useAllFactorLevels = _useAllFactorLevels;
+          ((InteractionWrappedVec) v)._skipMissing = _skipMissing;
+          DKV.put(v);
+        }
+    }
     return res;
   }
 }
