@@ -1,8 +1,5 @@
 package hex.ensemble;
 
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -30,7 +27,6 @@ import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -142,8 +138,6 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
             for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
                 Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
@@ -218,8 +212,6 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
             for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
                 Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
@@ -292,8 +284,6 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
             for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
                 Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
@@ -376,8 +366,6 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
             for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
                 Object[] paramVal = param.getValue();
                 if (paramVal.length == 1) {
