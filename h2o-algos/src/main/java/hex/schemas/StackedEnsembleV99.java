@@ -77,24 +77,5 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
 
-    public StackedEnsembleParametersV99(StackedEnsembleParametersV99 parms) {
-      if (parms.metalearner_params != null) {
-        Map<String, Object> m;
-        try {
-          m = water.util.JSONUtils.parse(parms.metalearner_params.toString());
-
-          // Convert lists and singletons into arrays
-          for (Map.Entry<String, Object> e : m.entrySet()) {
-            Object o = e.getValue();
-            Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
-
-            metalearner_params.put(e.getKey(), o2);
-          }
-        } catch (Exception e) {
-          // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
-          throw new H2OIllegalArgumentException("Can't parse the metalearner_params dictionary; got error: " + e.getMessage());
-        }
-      }
-    }
   }
 }
