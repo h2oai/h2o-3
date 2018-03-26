@@ -7,7 +7,6 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import hex.Model;
 import water.api.schemas3.FrameV3;
-import water.util.IcedHashMap;
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
@@ -66,7 +65,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     public boolean keep_levelone_frame;
 
     @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT)
-    public String metalearner_params;
+    public Model.Parameters metalearner_params;
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
