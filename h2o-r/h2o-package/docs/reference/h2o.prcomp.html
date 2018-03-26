@@ -91,10 +91,11 @@ to calculate the singular value decomposition of the Gram matrix.</p>
     <pre class="usage"><span class='fu'>h2o.prcomp</span>(<span class='no'>training_frame</span>, <span class='no'>x</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>validation_frame</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>ignore_const_cols</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>score_each_iteration</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>transform</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"NONE"</span>, <span class='st'>"STANDARDIZE"</span>, <span class='st'>"NORMALIZE"</span>, <span class='st'>"DEMEAN"</span>, <span class='st'>"DESCALE"</span>),
-  <span class='kw'>pca_method</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"GramSVD"</span>, <span class='st'>"Power"</span>, <span class='st'>"Randomized"</span>, <span class='st'>"GLRM"</span>), <span class='kw'>k</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>max_iterations</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>use_all_factor_levels</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>compute_metrics</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>impute_missing</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
-  <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>)</pre>
+  <span class='kw'>pca_method</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"GramSVD"</span>, <span class='st'>"Power"</span>, <span class='st'>"Randomized"</span>, <span class='st'>"GLRM"</span>),
+  <span class='kw'>pca_impl</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"MTJ_EVD_DENSEMATRIX"</span>, <span class='st'>"MTJ_EVD_SYMMMATRIX"</span>,
+  <span class='st'>"MTJ_SVD_DENSEMATRIX"</span>, <span class='st'>"JAMA"</span>), <span class='kw'>k</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>max_iterations</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
+  <span class='kw'>use_all_factor_levels</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>compute_metrics</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>impute_missing</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -130,8 +131,20 @@ Defaults to NONE.</p></td>
     </tr>
     <tr>
       <th>pca_method</th>
-      <td><p>Method for computing PCA (Caution: GLRM is currently experimental and unstable) Must be one of: "GramSVD",
-"Power", "Randomized", "GLRM". Defaults to GramSVD.</p></td>
+      <td><p>Specify the algorithm to use for computing the principal components: GramSVD - uses a distributed computation
+of the Gram matrix, followed by a local SVD; Power - computes the SVD using the power iteration method
+(experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank
+model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
+(experimental) Must be one of: "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.</p></td>
+    </tr>
+    <tr>
+      <th>pca_impl</th>
+      <td><p>Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
+decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
+using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
+https://github.com/fommil/matrix-toolkits-java/ Must be one of: "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX",
+"MTJ_SVD_DENSEMATRIX", "JAMA".</p></td>
     </tr>
     <tr>
       <th>k</th>

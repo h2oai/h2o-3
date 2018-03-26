@@ -89,8 +89,10 @@
 
     <pre class="usage"><span class='fu'>h2o.coxph</span>(<span class='no'>x</span>, <span class='no'>event_column</span>, <span class='no'>training_frame</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>start_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stop_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>weights_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>offset_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ties</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"efron"</span>, <span class='st'>"breslow"</span>), <span class='kw'>init</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>lre_min</span> <span class='kw'>=</span> <span class='fl'>9</span>, <span class='kw'>iter_max</span> <span class='kw'>=</span> <span class='fl'>20</span>)</pre>
+  <span class='kw'>offset_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stratify_by</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ties</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"efron"</span>, <span class='st'>"breslow"</span>),
+  <span class='kw'>init</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>lre_min</span> <span class='kw'>=</span> <span class='fl'>9</span>, <span class='kw'>iter_max</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>interactions_only</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>use_all_factor_levels</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -114,11 +116,11 @@ If x is missing, then all columns except event_column, start_column and stop_col
     </tr>
     <tr>
       <th>start_column</th>
-      <td><p>start_column</p></td>
+      <td><p>Start Time Column.</p></td>
     </tr>
     <tr>
       <th>stop_column</th>
-      <td><p>stop_column</p></td>
+      <td><p>Stop Time Column.</p></td>
     </tr>
     <tr>
       <th>weights_column</th>
@@ -133,20 +135,42 @@ well. During training, rows with higher weights matter more, due to the larger l
       <td><p>Offset column. This will be added to the combination of columns before applying the link function.</p></td>
     </tr>
     <tr>
+      <th>stratify_by</th>
+      <td><p>List of columns to use for stratification.</p></td>
+    </tr>
+    <tr>
       <th>ties</th>
-      <td><p>ties Must be one of: "efron", "breslow". Defaults to efron.</p></td>
+      <td><p>Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.</p></td>
     </tr>
     <tr>
       <th>init</th>
-      <td><p>init Defaults to 0.</p></td>
+      <td><p>Coefficient starting value. Defaults to 0.</p></td>
     </tr>
     <tr>
       <th>lre_min</th>
-      <td><p>lre_min Defaults to 9.</p></td>
+      <td><p>Minimum log-relative error. Defaults to 9.</p></td>
     </tr>
     <tr>
       <th>iter_max</th>
-      <td><p>iter_max Defaults to 20.</p></td>
+      <td><p>Maximum number of iterations. Defaults to 20.</p></td>
+    </tr>
+    <tr>
+      <th>interactions_only</th>
+      <td><p>A list of columns that should only be used to create interactions but should not itself participate in model
+training.</p></td>
+    </tr>
+    <tr>
+      <th>interactions</th>
+      <td><p>A list of predictor column indices to interact. All pairwise combinations will be computed for the list.</p></td>
+    </tr>
+    <tr>
+      <th>interaction_pairs</th>
+      <td><p>A list of pairwise (first order) column interactions.</p></td>
+    </tr>
+    <tr>
+      <th>use_all_factor_levels</th>
+      <td><p><code>Logical</code>. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
+FALSE.</p></td>
     </tr>
     </table>
     

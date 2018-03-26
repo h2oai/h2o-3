@@ -92,7 +92,7 @@
   <span class='kw'>transform</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"NONE"</span>, <span class='st'>"STANDARDIZE"</span>, <span class='st'>"NORMALIZE"</span>, <span class='st'>"DEMEAN"</span>, <span class='st'>"DESCALE"</span>),
   <span class='kw'>categorical_encoding</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"Enum"</span>, <span class='st'>"OneHotInternal"</span>, <span class='st'>"OneHotExplicit"</span>,
   <span class='st'>"Binary"</span>, <span class='st'>"Eigen"</span>, <span class='st'>"LabelEncoder"</span>, <span class='st'>"SortByResponse"</span>, <span class='st'>"EnumLimited"</span>),
-  <span class='kw'>save_mapping_frame</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>save_mapping_frame</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>num_iteration_without_new_exemplar</span> <span class='kw'>=</span> <span class='fl'>500</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -134,6 +134,11 @@ Defaults to NORMALIZE.</p></td>
     <tr>
       <th>save_mapping_frame</th>
       <td><p><code>Logical</code>. Whether to export the mapping of the aggregated frame Defaults to FALSE.</p></td>
+    </tr>
+    <tr>
+      <th>num_iteration_without_new_exemplar</th>
+      <td><p>The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
+Defaults to 500.</p></td>
     </tr>
     </table>
     
