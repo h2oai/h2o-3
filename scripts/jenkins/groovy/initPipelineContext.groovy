@@ -1,9 +1,13 @@
 def call(final scmEnv, final String mode, final boolean ignoreChanges) {
+  return call(scmEnv, mode, ignoreChanges, null)
+}
+
+def call(final scmEnv, final String mode, final boolean ignoreChanges, final List<String> gradleOpts) {
 
   clearStageDirs()
 
   def pipelineContextFactory = load('h2o-3/scripts/jenkins/groovy/pipelineContext.groovy')
-  def final pipelineContext = pipelineContextFactory('h2o-3', mode, scmEnv, ignoreChanges)
+  def final pipelineContext = pipelineContextFactory('h2o-3', mode, scmEnv, ignoreChanges, gradleOpts)
 
   pipelineContext.getBuildSummary().addDetailsSection(this, mode)
   pipelineContext.getBuildSummary().addChangesSectionIfNecessary(this)

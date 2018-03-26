@@ -10,7 +10,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
   // by default, the image should be loaded
   def pullImage = true
   // First check that the image is present
-  def imagePresent = sh(script: "docker inspect ${image}", returnStatus: true) == 0
+  def imagePresent = sh(script: "docker inspect ${image} > /dev/null", returnStatus: true) == 0
   if (imagePresent) {
     echo "${image} present on host, checking versions..."
     // check that the image has expected SHA

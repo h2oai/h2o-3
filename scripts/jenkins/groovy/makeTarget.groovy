@@ -30,6 +30,12 @@ def call(final pipelineContext, final Closure body) {
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
   if (config.customBuildAction == null) {
+    def makeVars = []
+    def additionalGradleOpts = pipelineContext.getBuildConfig().getAdditionalGradleOpts()
+    if (additionalGradleOpts != null && !additionalGradleOpts.isEmpty()) {
+      makeVars += "ADDITIONAL_GRADLE_OPTS='${pipelineContext.getBuildConfig().getAdditionalGradleOpts().join(' ')}'"
+    }
+
     config.customBuildAction = """
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
@@ -42,6 +48,7 @@ def call(final pipelineContext, final Closure body) {
       fi
 
       echo "Running Make"
+      export ${makeVars.join(' ')}
       make -f ${config.makefilePath} ${config.target}
     """
   }
