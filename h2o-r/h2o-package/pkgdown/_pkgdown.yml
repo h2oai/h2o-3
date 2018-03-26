@@ -32,6 +32,7 @@ reference:
       - colnames
       - dim.H2OFrame
       - dimnames.H2OFrame
+      - h2o
       - h2o.abs
       - h2o.acos
       - h2o.aggregated_frame
@@ -140,6 +141,7 @@ reference:
       - h2o.import_sql_table
       - h2o.importFile
       - h2o.impute
+      - h2o.init
       - h2o.insertMissingValues
       - h2o.interaction
       - h2o.is_client
