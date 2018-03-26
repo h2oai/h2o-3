@@ -265,18 +265,19 @@ public final class PersistGcs extends Persist {
     final BlobId toBlob = GcsBlob.of(toPath).getBlobId();
 
     storage.get(fromBlob).copyTo(toBlob);
+    keyCache.invalidate(fromBlob.getBucket());
+    keyCache.invalidate(toBlob.getBucket());
     return storage.delete(fromBlob);
   }
 
   @Override
   public boolean exists(String path) {
-    try {
-      final BlobId blob = GcsBlob.of(path).getBlobId();
-      return storage.get(blob).exists();
-    } catch (FSIOException e) {
-      final String bucketName = GcsBlob.removePrefix(path);
-      return storage.get(bucketName).exists();
-    } catch (NullPointerException npe) {
+    final String bk[] = GcsBlob.removePrefix(path).split("/", 2);
+    if (bk.length == 1) {
+      return storage.get(bk[0]).exists();
+    } else if (bk.length == 2) {
+      return storage.get(bk[0], bk[1]).exists();
+    } else {
       return false;
     }
   }
@@ -284,6 +285,7 @@ public final class PersistGcs extends Persist {
   @Override
   public boolean delete(String path) {
     final BlobId blob = GcsBlob.of(path).getBlobId();
+    keyCache.invalidate(blob.getBucket());
     return storage.get(blob).delete();
   }
 
