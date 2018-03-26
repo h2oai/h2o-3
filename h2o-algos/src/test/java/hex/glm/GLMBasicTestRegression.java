@@ -151,6 +151,8 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._max_iterations = 1000;
     for (Solver s : GLMParameters.Solver.values()) {
 //      if(s != Solver.IRLSM)continue; //fixme: does not pass for other than IRLSM now
+      if (s.equals(Solver.GRADIENT_DESCENT_SQERR) || s.equals(Solver.GRADIENT_DESCENT_LH))
+        continue; // only used for ordinal regression
       System.out.println("===============================================================");
       System.out.println("Solver = " + s);
       System.out.println("===============================================================");
@@ -371,7 +373,8 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._tweedie_variance_power = p;
       parms._tweedie_link_power = 1 - p;
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // ignore for now, has trouble with zero columns
+        if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
+                || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // ignore for now, has trouble with zero columns
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
@@ -429,7 +432,8 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._gradient_epsilon = 1e-10;
       parms._max_iterations = 1000;
       for (Solver s : GLMParameters.Solver.values()) {
-        if(s == Solver.COORDINATE_DESCENT_NAIVE) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
+        if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
+        || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
         try {
           parms._solver = s;
           model = new GLM(parms).trainModel().get();

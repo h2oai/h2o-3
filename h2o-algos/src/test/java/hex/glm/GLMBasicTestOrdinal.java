@@ -55,6 +55,11 @@ public class GLMBasicTestOrdinal extends TestUtil {
   // both enum and numerical datasets
   @Test
   public void testOrdinalPredMojoPojo() {
+    testOrdinalMojoPojo(GLMModel.GLMParameters.Solver.AUTO);
+    testOrdinalMojoPojo(GLMModel.GLMParameters.Solver.GRADIENT_DESCENT_SQERR);
+  }
+
+  public void testOrdinalMojoPojo(GLMModel.GLMParameters.Solver sol) {
     try {
       Scope.enter();
       CreateFrame cf = new CreateFrame();
@@ -92,10 +97,9 @@ public class GLMBasicTestOrdinal extends TestUtil {
       paramsO._objective_epsilon = 1e-6;
       paramsO._beta_epsilon = 1e-4;
       paramsO._standardize = false;
-
+      paramsO._solver = sol;
       GLMModel model = new GLM(paramsO).trainModel().get();
       Scope.track_generic(model);
-
       Frame pred = model.score(te);
       Scope.track(pred);
       Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
@@ -171,7 +175,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
     Random rng = RandomUtils.getRNG(params._seed);
     double[] tempIcpt = new double[lastClass];
     for (int i = 0; i < lastClass; i++) {  // only contains nclass-2 thresholds here
-      tempIcpt[i] = rng.nextDouble() * nclass;
+      tempIcpt[i] = (-1+2*rng.nextDouble()) * nclass;
     }
     Arrays.sort(tempIcpt);
 

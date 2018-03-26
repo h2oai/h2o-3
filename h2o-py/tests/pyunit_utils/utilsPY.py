@@ -971,7 +971,7 @@ def generate_training_set_mixed_glm(csv_filename, csv_filename_true_one_hot, row
 
     if len(csv_filename) > 0:
         generate_and_save_mixed_glm(csv_filename, x_mat, enum_level_vec, enum_col, False, weight, noise_std,
-                                    family_type, class_method=class_method, class_margin=class_margin, weightChange=weightChange)
+                                    family_type, class_method=class_method, class_margin=class_margin, weightChange=False)
 
 
 def generate_and_save_mixed_glm(csv_filename, x_mat, enum_level_vec, enum_col, true_one_hot, weight, noise_std,
@@ -1121,7 +1121,7 @@ def one_hot_encoding(enum_level):
 
 
 def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='probability',
-                          class_margin=0.0, weightChange=False):
+                          class_margin=0.0, weightChange=False, even_distribution=True):
     """
     Generate response vector given weight matrix, predictors matrix for the GLM algo.
 
@@ -1157,10 +1157,28 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
             for indP in range(num_sample):
                 tresp.append(-response_y[indP,0])
             tresp.sort()
-            num_per_class = len(tresp)/lastClass
+            num_per_class = int(len(tresp)/num_class)
 
-            for indC in range(lastClass):   # put in threshold
-                weight[0,indC] = tresp[indC*num_per_class]
+            if (even_distribution):
+                for indC in range(lastClass):
+                    weight[0,indC] = tresp[(indC+1)*num_per_class]
+
+            else: # do not generate evenly distributed class, generate randomly distributed classes
+                splitInd = []
+                lowV = 0.1
+                highV = 1
+                v1 = 0
+                acc = 0
+                for indC in range(lastClass):
+                    tempf = random.uniform(lowV, highV)
+                    splitInd.append(v1+int(tempf*num_per_class))
+                    v1 = splitInd[indC] # from last class
+                    acc += 1-tempf
+                    highV = 1+acc
+
+                for indC in range(lastClass):   # put in threshold
+                    weight[0,indC] = tresp[splitInd[indC]]
+
             response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
 
         discrete_y = np.zeros((num_sample, 1), dtype=np.int)
@@ -1169,6 +1187,7 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
             for indC in range(lastClass):
                 if (response_y[indR, indC] >= 0):
                     discrete_y[indR, 0] = indC
+                    break
         return discrete_y
 
     # added more to form Multinomial response
