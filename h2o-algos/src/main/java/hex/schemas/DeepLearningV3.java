@@ -1,11 +1,10 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.api.API;
-import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
 
@@ -73,6 +72,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "score_duty_cycle",
         "classification_stop",
         "regression_stop",
+        "stopping_method",
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",

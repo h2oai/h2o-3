@@ -28,12 +28,12 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "fold_assignment", "fold_column", "response_column", "ignored_columns", "ignore_const_cols",
                       "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
                       "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth",
-                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
-                      "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
-                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                      "custom_metric_func"}
+                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_method",
+                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed",
+                      "build_tree_one_node", "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees",
+                      "checkpoint", "col_sample_rate_change_per_level", "col_sample_rate_per_tree",
+                      "min_split_improvement", "histogram_type", "categorical_encoding", "calibrate_model",
+                      "calibration_frame", "distribution", "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -444,6 +444,25 @@ class H2ORandomForestEstimator(H2OEstimator):
     def r2_stopping(self, r2_stopping):
         assert_is_type(r2_stopping, None, numeric)
         self._parms["r2_stopping"] = r2_stopping
+
+
+    @property
+    def stopping_method(self):
+        """
+        Parameter used to control what dataset is used to control early stopping.  If set to AUTO: cross-validation data
+        is used for early stopping if cv is enabled.  Otherwise, validation data set is used if it is available.
+        Otherwise, training dataset is used to determine early stopping.  If set to train: training data frame is used
+        to determine early stopping.  If set to valid: validation dataset is used to determine early stopping.  If set
+        to xval: hold out datasetin each fold of cross-validation is used to calculate early stopping conditions.
+
+        One of: ``"auto"``, ``"train"``, ``"valid"``, ``"xval"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_method")
+
+    @stopping_method.setter
+    def stopping_method(self, stopping_method):
+        assert_is_type(stopping_method, None, Enum("auto", "train", "valid", "xval"))
+        self._parms["stopping_method"] = stopping_method
 
 
     @property

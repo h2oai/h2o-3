@@ -376,7 +376,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, model.model_info().getBooster(), false);
-        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds,
+                _nclass > 1, _parms._stopping_method, _parms._stopping_metric, _parms._stopping_tolerance,
+                "model's last", true)) {
           doScoring(model, model.model_info().getBooster(), true);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           return;

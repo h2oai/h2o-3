@@ -93,6 +93,12 @@
 #' @param score_duty_cycle Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring). Defaults to 0.1.
 #' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 1e-06.
+#' @param stopping_method Parameter used to control what dataset is used to control early stopping.  If set to AUTO: cross-validation
+#'        data is used for early stopping if cv is enabled.  Otherwise, validation data set is used if it is available.
+#'        Otherwise, training dataset is used to determine early stopping.  If set to train: training data frame is used
+#'        to determine early stopping.  If set to valid: validation dataset is used to determine early stopping.  If set
+#'        to xval: hold out datasetin each fold of cross-validation is used to calculate early stopping conditions. Must
+#'        be one of: "AUTO", "train", "valid", "xval". Defaults to AUTO.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
@@ -203,6 +209,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              score_duty_cycle = 0.1,
                              classification_stop = 0,
                              regression_stop = 1e-06,
+                             stopping_method = c("AUTO", "train", "valid", "xval"),
                              stopping_rounds = 5,
                              stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "r2"),
                              stopping_tolerance = 0,
@@ -385,6 +392,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$classification_stop <- classification_stop
   if (!missing(regression_stop))
     parms$regression_stop <- regression_stop
+  if (!missing(stopping_method))
+    parms$stopping_method <- stopping_method
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))

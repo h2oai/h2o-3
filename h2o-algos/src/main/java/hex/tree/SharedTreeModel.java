@@ -1,10 +1,6 @@
 package hex.tree;
 
 import hex.*;
-
-import static hex.ModelCategory.Binomial;
-import static hex.genmodel.GenModel.createAuxKey;
-
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -21,6 +17,9 @@ import water.util.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static hex.ModelCategory.Binomial;
+import static hex.genmodel.GenModel.createAuxKey;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -153,13 +152,26 @@ public abstract class SharedTreeModel<
     public ScoreKeeper[/*ntrees+1*/] _scored_train;
     public ScoreKeeper[/*ntrees+1*/] _scored_valid;
     public ScoreKeeper[] scoreKeepers() {
+      return scoreKeepers((ScoreKeeper.StoppingMethods.AUTO));
+    }
+
+    // For trees, should not have xval here.  No need to worry about this
+    public ScoreKeeper[] scoreKeepers(ScoreKeeper.StoppingMethods stopM) {
       ArrayList<ScoreKeeper> skl = new ArrayList<>();
-      ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
+      ScoreKeeper[] ska;
+      if (stopM.equals(ScoreKeeper.StoppingMethods.AUTO)) {
+        ska = _validation_metrics != null ? _scored_valid : _scored_train;
+      } else {
+        ska = stopM.equals(ScoreKeeper.StoppingMethods.valid)?_scored_valid:_scored_train;
+      }
       for( ScoreKeeper sk : ska )
         if (!sk.isEmpty())
           skl.add(sk);
       return skl.toArray(new ScoreKeeper[skl.size()]);
     }
+
+
+
     /** Training time */
     public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
 

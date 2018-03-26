@@ -35,6 +35,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "nbins_top_level",
                 "nbins_cats",
                 "r2_stopping",
+                "stopping_method",
                 "stopping_rounds",
                 "stopping_metric",
                 "stopping_tolerance",

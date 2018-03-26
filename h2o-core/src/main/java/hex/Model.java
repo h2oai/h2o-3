@@ -196,6 +196,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
+
     public enum CategoricalEncodingScheme {
       AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true), EnumLimited(false);
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
@@ -249,6 +250,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
     public int _stopping_rounds = 0;
+    public ScoreKeeper.StoppingMethods _stopping_method = ScoreKeeper.StoppingMethods.AUTO;
 
     /**
      * Metric to use for convergence checking, only for _stopping_rounds > 0.

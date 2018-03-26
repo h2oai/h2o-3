@@ -28,9 +28,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
                       "keep_cross_validation_fold_assignment", "score_each_iteration", "fold_assignment", "fold_column",
                       "response_column", "ignored_columns", "ignore_const_cols", "offset_column", "weights_column",
-                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed",
-                      "distribution", "tweedie_power", "categorical_encoding", "quiet_mode", "ntrees", "max_depth",
-                      "min_rows", "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample",
+                      "stopping_method", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
+                      "seed", "distribution", "tweedie_power", "categorical_encoding", "quiet_mode", "ntrees",
+                      "max_depth", "min_rows", "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample",
                       "col_sample_rate", "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree",
                       "max_abs_leafnode_pred", "max_delta_step", "score_tree_interval", "min_split_improvement",
                       "gamma", "nthread", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf",
@@ -245,6 +245,25 @@ class H2OXGBoostEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
+
+
+    @property
+    def stopping_method(self):
+        """
+        Parameter used to control what dataset is used to control early stopping.  If set to AUTO: cross-validation data
+        is used for early stopping if cv is enabled.  Otherwise, validation data set is used if it is available.
+        Otherwise, training dataset is used to determine early stopping.  If set to train: training data frame is used
+        to determine early stopping.  If set to valid: validation dataset is used to determine early stopping.  If set
+        to xval: hold out datasetin each fold of cross-validation is used to calculate early stopping conditions.
+
+        One of: ``"auto"``, ``"train"``, ``"valid"``, ``"xval"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_method")
+
+    @stopping_method.setter
+    def stopping_method(self, stopping_method):
+        assert_is_type(stopping_method, None, Enum("auto", "train", "valid", "xval"))
+        self._parms["stopping_method"] = stopping_method
 
 
     @property

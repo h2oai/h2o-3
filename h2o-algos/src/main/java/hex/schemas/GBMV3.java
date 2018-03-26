@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
@@ -37,6 +36,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "nbins_top_level",
       "nbins_cats",
       "r2_stopping",
+      "stopping_method",
       "stopping_rounds",
       "stopping_metric",
       "stopping_tolerance",

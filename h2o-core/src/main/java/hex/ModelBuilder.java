@@ -903,6 +903,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
+      if (_parms._valid == null & _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
+        error("_stopping_method", " valid can only be used if provided a validation frame.  Either " +
+                "provide a validation frame, or set stopping_method to AUTO, train or xval.");
+      if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.xval) && _parms._nfolds <= 1)
+        error("_stopping_method", " xval can only be used if cross-validation is enabled." +
+                "To enable cross-validation, set nfolds > 1.");
     }
     if (_parms._categorical_encoding.needsResponse() && !isSupervised()) {
       error("_categorical_encoding", "Categorical encoding scheme cannot be "

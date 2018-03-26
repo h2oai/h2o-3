@@ -49,7 +49,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                       "initial_weight_scale", "initial_weights", "initial_biases", "loss", "distribution",
                       "quantile_alpha", "tweedie_power", "huber_alpha", "score_interval", "score_training_samples",
                       "score_validation_samples", "score_duty_cycle", "classification_stop", "regression_stop",
-                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
+                      "stopping_method", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                       "score_validation_sampling", "diagnostics", "fast_mode", "force_load_balance",
                       "variable_importances", "replicate_training_data", "single_node_mode", "shuffle_training_data",
                       "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major",
@@ -964,6 +964,25 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def regression_stop(self, regression_stop):
         assert_is_type(regression_stop, None, numeric)
         self._parms["regression_stop"] = regression_stop
+
+
+    @property
+    def stopping_method(self):
+        """
+        Parameter used to control what dataset is used to control early stopping.  If set to AUTO: cross-validation data
+        is used for early stopping if cv is enabled.  Otherwise, validation data set is used if it is available.
+        Otherwise, training dataset is used to determine early stopping.  If set to train: training data frame is used
+        to determine early stopping.  If set to valid: validation dataset is used to determine early stopping.  If set
+        to xval: hold out datasetin each fold of cross-validation is used to calculate early stopping conditions.
+
+        One of: ``"auto"``, ``"train"``, ``"valid"``, ``"xval"``  (default: ``"auto"``).
+        """
+        return self._parms.get("stopping_method")
+
+    @stopping_method.setter
+    def stopping_method(self, stopping_method):
+        assert_is_type(stopping_method, None, Enum("auto", "train", "valid", "xval"))
+        self._parms["stopping_method"] = stopping_method
 
 
     @property

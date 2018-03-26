@@ -47,6 +47,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     private double _max_runtime_secs = 0;
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+    private ScoreKeeper.StoppingMethods _stopping_method = ScoreKeeper.StoppingMethods.AUTO;
     public double _stopping_tolerance = 0.001;
 
 
@@ -71,6 +72,8 @@ public class HyperSpaceSearchCriteria extends Iced {
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
     public int stopping_rounds() { return _stopping_rounds; }
+
+    public ScoreKeeper.StoppingMethods stopping_method() { return _stopping_method; }
 
     /** Metric to use for convergence checking; only for _stopping_rounds > 0 */
     public ScoreKeeper.StoppingMetric stopping_metric() { return _stopping_metric; }
@@ -111,6 +114,10 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     public void set_stopping_rounds(int _stopping_rounds) {
       this._stopping_rounds = _stopping_rounds;
+    }
+
+    public void set_stopping_method(ScoreKeeper.StoppingMethods _stopping_method) {
+      this._stopping_method = _stopping_method;
     }
 
     public void set_stopping_metric(ScoreKeeper.StoppingMetric _stopping_metric) {

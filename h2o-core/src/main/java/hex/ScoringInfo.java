@@ -56,11 +56,26 @@ public class ScoringInfo extends Iced<ScoringInfo> {
 
   /** For a given array of ScoringInfo return an array of the cross-validation, validation or training ScoreKeepers, as available. */
   public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history) {
+    return scoreKeepers(scoring_history, ScoreKeeper.StoppingMethods.AUTO);
+  }
+
+  /**
+   * For a given array of ScoringInfo return an array of the cross-validation, validation or training ScoreKeepers, as available.
+   */
+  public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history, ScoreKeeper.StoppingMethods stopM) {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history.length];
-    for (int i=0;i<sk.length;++i) {
-      sk[i] = scoring_history[i].cross_validation ? scoring_history[i].scored_xval
-              : scoring_history[i].validation ? scoring_history[i].scored_valid
-              : scoring_history[i].scored_train;
+    if (stopM.equals(ScoreKeeper.StoppingMethods.AUTO)) {
+      for (int i = 0; i < sk.length; ++i) {
+        sk[i] = scoring_history[i].cross_validation ? scoring_history[i].scored_xval
+                : scoring_history[i].validation ? scoring_history[i].scored_valid
+                : scoring_history[i].scored_train;
+      }
+    } else {
+      for (int i = 0; i < sk.length; ++i) {
+        sk[i] = stopM.equals(ScoreKeeper.StoppingMethods.train) ? scoring_history[i].scored_train : (
+                stopM.equals(ScoreKeeper.StoppingMethods.valid) ?
+                        scoring_history[i].scored_valid : scoring_history[i].scored_xval);
+      }
     }
     return sk;
   }
