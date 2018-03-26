@@ -7,12 +7,8 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import hex.Model;
 import water.api.schemas3.FrameV3;
-import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import water.Freezable;
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
@@ -72,33 +68,9 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     public boolean keep_levelone_frame;
 
     @API(help = "Parameters for metalearner algorithm", direction = API.Direction.INOUT, gridable = true)
-    public IcedHashMap<String, Object[]> metalearner_params;
+    public IcedHashMap<String, Freezable> metalearner_params;
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
-
-    @Override public StackedEnsembleParametersV99 fillFromParms(Properties parms) {
-      if (parms.containsKey("metalearner_params")) {
-        Map<String, Object> m;
-        try {
-          m = water.util.JSONUtils.parse(parms.getProperty("metalearner_params"));
-
-          // Convert lists and singletons into arrays
-          for (Map.Entry<String, Object> e : m.entrySet()) {
-            Object o = e.getValue();
-            Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
-
-            metalearner_params.put(e.getKey(), o2);
-          }
-        } catch (Exception e) {
-          // usually JsonSyntaxException, but can also be things like IllegalStateException or NumberFormatException
-          throw new H2OIllegalArgumentException("Can't parse the metalearner_params dictionary; got error: " + e.getMessage() + " for raw value: " + parms.getProperty("metalearner_params"));
-        }
-        parms.remove("metalearner_params");
-      }
-      this.fillFromParms(parms, false);
-
-      return this;
-    }
   }
 }

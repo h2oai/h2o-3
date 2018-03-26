@@ -265,7 +265,7 @@ def gen_module(schema, algo):
             yield '        if %s is not None and %s != "":' % (pname, pname)
             yield "            for k in %s:" % (pname)
             yield '                if ("[" and "]") not in str(metalearner_params[k]):'
-            yield "                    metalearner_params[k]=[metalearner_params[k]]"
+            yield "                    metalearner_params[k]=str(metalearner_params[k])"
             yield "            self._parms[\"%s\"] = str(json.dumps(%s))" % (sname, pname)
             yield "        else:"
             yield "            self._parms[\"%s\"] = None" % (sname)

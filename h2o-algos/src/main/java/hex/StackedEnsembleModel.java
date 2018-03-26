@@ -74,7 +74,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       deeplearning
     }
     public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
-    public IcedHashMap<String, Object[]> _metalearner_params = new IcedHashMap<>();
+    public IcedHashMap<String, Freezable> _metalearner_params = new IcedHashMap<>();
     public long _seed;
 
   }

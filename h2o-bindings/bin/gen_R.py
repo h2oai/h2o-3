@@ -331,7 +331,9 @@ def gen_module(schema, algo, module):
         yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
         yield "  #Convert metalearner_params back to list if not NULL"
         yield "  if (!missing(metalearner_params)) {"
-        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))"
+        yield "      for (i in 1:length(metalearner_params)) {"
+        yield "          model@parameters$metalearner_params[i] <- as.numeric(model@parameters$metalearner_params[i])"
+        yield "      }"
         yield "  }"
         yield "  return(model)"
         yield "}"

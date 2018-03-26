@@ -24,6 +24,7 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.IcedHashMap;
+import water.Freezable;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -34,7 +35,7 @@ class Metalearner {
 
     private Frame _levelOneTrainingFrame;
     private Frame _levelOneValidationFrame;
-    private IcedHashMap<String, Object[]> _metalearner_params;
+    private IcedHashMap<String, Freezable> _metalearner_params;
     private StackedEnsembleModel _model;
     private Job _job;
     private Key<Model> _metalearnerKey;
@@ -43,7 +44,7 @@ class Metalearner {
     private boolean _hasMetalearnerParams;
     private long _metalearnerSeed;
 
-    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, IcedHashMap<String, Object[]> metalearner_params,
+    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, IcedHashMap<String, Freezable> metalearner_params,
                        StackedEnsembleModel model, Job StackedEnsembleJob, Key<Model> metalearnerKey, Job metalearnerJob,
                        StackedEnsembleParameters parms, boolean hasMetalearnerParams, long metalearnerSeed){
 
@@ -138,13 +139,9 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
-                Object[] paramVal = param.getValue();
-                if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0].toString());
-                } else {
-                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-                }
+            for (Map.Entry<String, Freezable> param : _metalearner_params.entrySet()) {
+                Object paramVal = param.getValue();
+                p.setProperty(param.getKey(), paramVal.toString());
                 params.fillFromParms(p, true);
             }
             GBMModel.GBMParameters gbmParams = params.createAndFillImpl();
@@ -212,13 +209,9 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
-                Object[] paramVal = param.getValue();
-                if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0].toString());
-                } else {
-                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-                }
+            for (Map.Entry<String, Freezable> param : _metalearner_params.entrySet()) {
+                Object paramVal = param.getValue();
+                p.setProperty(param.getKey(), paramVal.toString());
                 params.fillFromParms(p, true);
             }
             DRFModel.DRFParameters drfParams = params.createAndFillImpl();
@@ -284,13 +277,9 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
-                Object[] paramVal = param.getValue();
-                if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0].toString());
-                } else {
-                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-                }
+            for (Map.Entry<String, Freezable> param : _metalearner_params.entrySet()) {
+                Object paramVal = param.getValue();
+                p.setProperty(param.getKey(), paramVal.toString());
                 params.fillFromParms(p, true);
             }
             GLMModel.GLMParameters glmParams = params.createAndFillImpl();
@@ -366,13 +355,9 @@ class Metalearner {
         //Metalearner parameters
         if (_hasMetalearnerParams) {
             Properties p = new Properties();
-            for (Map.Entry<String, Object[]> param : _metalearner_params.entrySet()) {
-                Object[] paramVal = param.getValue();
-                if (paramVal.length == 1) {
-                    p.setProperty(param.getKey(), paramVal[0].toString());
-                } else {
-                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-                }
+            for (Map.Entry<String, Freezable> param : _metalearner_params.entrySet()) {
+                Object paramVal = param.getValue();
+                p.setProperty(param.getKey(), paramVal.toString());
                 params.fillFromParms(p, true);
             }
             DeepLearningModel.DeepLearningParameters dlParams = params.createAndFillImpl();

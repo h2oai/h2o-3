@@ -288,7 +288,10 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
                             else paste0('"',h2o.getId(x),'"')
                           })
       if (type == "list" && paramDef$type == "Map<Object,Object>"){
-        paramValue <- toJSON(paramValue)
+        for(i in 1:length(paramValue)) {
+          paramValue[i] = as.character(paramValue[i])
+        }
+        paramValue <- toJSON(paramValue, auto_unbox = T)
       }
       else if (type == "character")
         paramValue <- .collapse.char(paramValue)
