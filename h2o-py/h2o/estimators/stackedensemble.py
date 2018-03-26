@@ -233,7 +233,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         if metalearner_params is not None and metalearner_params != "":
             for k in metalearner_params:
                 if ("[" and "]") not in str(metalearner_params[k]):
-                    metalearner_params[k]=[metalearner_params[k]]
+                    metalearner_params[k]=str(metalearner_params[k])
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None
