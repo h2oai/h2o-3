@@ -343,6 +343,9 @@ final public class H2O {
     /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
     public boolean noLatestCheck = false;
 
+    /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
+    public int clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 2;
+
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -593,6 +596,14 @@ final public class H2O {
       else if (s.matches("no_latest_check")) {
         trgt.noLatestCheck = true;
       }
+      else if(s.matches(("client_disconnect_timeout"))){
+        i = s.incrementAndCheck(i, args);
+        int clientDisconnectTimeout = s.parseInt(args[i]);
+        if (clientDisconnectTimeout <= 0) {
+          throw new IllegalArgumentException("Interval for checking if client is disconnected has to be positive (milliseconds).");
+        }
+        trgt.clientDisconnectTimeout = clientDisconnectTimeout;
+        }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }

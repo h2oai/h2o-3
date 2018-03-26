@@ -31,12 +31,12 @@ class ClientDisconnectCheckThread extends Thread {
   public void run() {
     while (true) {
       for(H2ONode client: H2O.getClients()){
-        if(isTimeoutExceeded(client, HeartBeatThread.CLIENT_TIMEOUT * 2)){
+        if(isTimeoutExceeded(client, H2O.ARGS.clientDisconnectTimeout)){
           handleClientDisconnect(client);
         }
       }
       try {
-        Thread.sleep(HeartBeatThread.CLIENT_TIMEOUT * 2);
+        Thread.sleep(H2O.ARGS.clientDisconnectTimeout);
       } catch (InterruptedException ignore) {}
     }
   }
