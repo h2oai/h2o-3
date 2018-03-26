@@ -95,8 +95,9 @@ class TestGLMMultinomial:
     test_class_method = 'probability'   # for test data set
     margin = 0.0                    # only used when class_method = 'threshold'
     test_class_margin = 0.2         # for test data set
-    family = 'multinomial'         # this test is for Multinomial GLM
+    family = 'ordinal'         # this test is for Multinomial GLM
     curr_time = str(round(time.time()))
+    curr_time = 'ordinal_20'
 
     # parameters denoting filenames of interested that store training/validation/test data sets
     training_filename = family+"_"+curr_time+"_training_set.csv"
@@ -132,7 +133,7 @@ class TestGLMMultinomial:
     nan_fraction = 0.2          # denote maximum fraction of NA's to be inserted into a column
 
     # System parameters, do not change.  Dire consequences may follow if you do
-    current_dir = os.path.dirname(os.path.realpath(sys.argv[1]))    # directory of this test file
+    current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))    # directory of this test file
 
     enum_col = 0                # set maximum number of categorical columns in predictor
     enum_level_vec = []         # vector containing number of levels for each categorical column
@@ -252,13 +253,16 @@ class TestGLMMultinomial:
         self.class_number = random.randint(3, self.max_class_number)    # randomly set number of classes K
 
         # DEBUGGING setup_data, remember to comment them out once done.
-        # self.train_col_count = 3
-        # self.train_row_count = 500
+
+        self.train_col_count = 20
+        self.train_row_count = 200000
+        self.noise_std = 0.0
+
         # self.class_number = 3
         # # end DEBUGGING
 
         # randomly set number of enum and real columns in the data set
-        self.enum_col = random.randint(1, self.train_col_count-1)
+        self.enum_col = random.randint(1, int(self.train_col_count/2))
 
         # randomly set number of levels for each categorical column
         self.enum_level_vec = np.random.random_integers(2, self.enum_levels-1, [self.enum_col, 1])

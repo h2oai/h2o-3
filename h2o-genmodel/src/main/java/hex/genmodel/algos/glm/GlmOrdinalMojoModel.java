@@ -65,7 +65,7 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
       preds[cInd + 1] = currCDF - previousCDF;
       previousCDF = currCDF;
 
-      if (eta >= 0) { // found the correct class
+      if (eta > 0) { // found the correct class
         preds[0] = cInd;
         break;
       }
