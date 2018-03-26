@@ -15,8 +15,11 @@ test.CoxPH.strata1 <- function() {
     expect_equal(fit$coef, .as.survival.coxph.model(hex.fit@model)$coef, tolerance = 1e-8, scale = 1)
     expect_equal(fit$var, .as.survival.coxph.model(hex.fit@model)$var, tolerance = 1e-8, scale = 1)
 
-    lp <- h2o.predict(hex.fit, ovarian.hex)
-    expect_equal(fit$linear.predict, as.data.frame(lp)$lp)
+    lp.r <- predict(fit, ovarian, type = "lp")
+    names(lp.r) <- NULL
+
+    lp.hex <- h2o.predict(hex.fit, ovarian.hex)
+    expect_equal(lp.r, as.data.frame(lp.hex)$lp, tolerance = 1e-7, scale = 1)
 }
 
 doTest("CoxPH: Test Stratification with 1 column", test.CoxPH.strata1)
