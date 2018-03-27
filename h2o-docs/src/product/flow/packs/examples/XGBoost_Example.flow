@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "# XGBoost Tutorial\n\nThis tutorial walks you through XGBoost usage in H2O Flow.\n\nThose who have never used H2O before should refer to <a href=\"https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md\" target=\"_blank\">Getting Started</a> for additional instructions on how to run H2O Flow.\n\n## Getting Started\n\nThis tutorial uses a publicly available data set that can be found at:\n\n<a href=\"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" target=\"_blank\">https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip</a>.\n\n\nThe original data are the Diabetes data set made available by UCI Machine Learning repository. They are composed of 101 766 observations and 50 attriutes.\n\nIf you don't have any data of your own to work with, you can find some example datasets at <a href=\"http://data.h2o.ai\" target=\"_blank\">http://data.h2o.ai</a>.\n\n### Importing Data\nBefore creating a model, import data into H2O:\n\n0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). ![Assist Me](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/Flow_AssistMeButton.png) \n0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. For this example, the file path is http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz. \n0. Click the **Add all** link to add the file to the import queue, then click the **Import** button."
+    },
+    {
+      "type": "cs",
+      "input": "assist"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" ]"
+    },
+    {
+      "type": "md",
+      "input": "### Parsing Data\nNow, parse the imported data: \n\n0. Click the **Parse these files...** button. \n\n   **NOTE**: The default options typically do not need to be changed unless the data does not parse correctly. \n0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). \n\n0. If the data uses a separator, select it from the drop-down **Separator** list. \n\n0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. \n\n0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. \n\n0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. \n\n   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.\n\n0. Review the data in the **Edit Column Names and Types** section, then click the **Parse** button.\n\n   **NOTE**: Make sure the parse is complete by clicking the **View Job** button and confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse."
+    },
+    {
+      "type": "cs",
+      "input": "setupParse source_frames: [ \"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  source_frames: [\"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\"]\n  destination_frame: \"dataset_diabetes.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 50\n  single_quotes: false\n  column_names: [\"encounter_id\",\"patient_nbr\",\"race\",\"gender\",\"age\",\"weight\",\"admission_type_id\",\"discharge_disposition_id\",\"admission_source_id\",\"time_in_hospital\",\"payer_code\",\"medical_specialty\",\"num_lab_procedures\",\"num_procedures\",\"num_medications\",\"number_outpatient\",\"number_emergency\",\"number_inpatient\",\"diag_1\",\"diag_2\",\"diag_3\",\"number_diagnoses\",\"max_glu_serum\",\"A1Cresult\",\"metformin\",\"repaglinide\",\"nateglinide\",\"chlorpropamide\",\"glimepiride\",\"acetohexamide\",\"glipizide\",\"glyburide\",\"tolbutamide\",\"pioglitazone\",\"rosiglitazone\",\"acarbose\",\"miglitol\",\"troglitazone\",\"tolazamide\",\"examide\",\"citoglipton\",\"insulin\",\"glyburide-metformin\",\"glipizide-metformin\",\"glimepiride-pioglitazone\",\"metformin-rosiglitazone\",\"metformin-pioglitazone\",\"change\",\"diabetesMed\",\"readmitted\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+    },
+    {
+      "type": "md",
+      "input": "### Inspecting the Data Set\n\n Clicking on the **View** button opens the frame summary where you can examine the column summaries. "
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"dataset_diabetes.hex\""
+    },
+    {
+      "type": "md",
+      "input": "### Inspecting the Selected Column\n\n Clicking on one of the colums you can examine the distribution of values of the specified column.\n Let's try that for the **readmitted** column."
+    },
+    {
+      "type": "cs",
+      "input": "getColumnSummary \"dataset_diabetes.hex\", \"readmitted\""
+    },
+    {
+      "type": "md",
+      "input": "### Splitting the Frame\n\n Clicking on **Split** action in the frame summary you can split the frame to several frames specifying the distribution of portions of the original dataset.\nLet's split the frame in 25:75 ratio and use the newly created frames as training and validation frame."
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame"
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"dataset_diabetes.hex\", [0.75], [\"frame_0.750\",\"frame_0.250\"], 198247"
+    },
+    {
+      "type": "md",
+      "input": "### Building a Model\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `XGBoost` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. Select the splited data set `frame_0.750` as the **training_frame** and the `frame_0.250` as the **validation_frame**. 0. From the **Ignored_columns** section, select the columns to ignore. For this example, ignore the `encounter_id` and `patient_nbr` columns as we don't want to build model based on these columns. \n0. From the drop-down **response_column** list, select column 1 (`readmitted`).  \n0. Make sure you set the correct value for **backend** and possibly **gpu_id** to run the computation on GPU if available. \n0. TODO: what other parameters should be selected? \n0. Click the **Build Model** button."
+    },
+    {
+      "type": "cs",
+      "input": "buildModel \"xgboost\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'xgboost', {\"model_id\":\"xgboost-3f01a724-83be-4016-82ea-a774575f05d7\",\"training_frame\":\"frame_0.750\",\"validation_frame\":\"frame_0.250\",\"nfolds\":0,\"response_column\":\"readmitted\",\"ignored_columns\":[\"encounter_id\",\"patient_nbr\"],\"ignore_const_cols\":true,\"seed\":-1,\"ntrees\":50,\"max_depth\":6,\"min_rows\":1,\"min_child_weight\":1,\"learn_rate\":0.3,\"eta\":0.3,\"sample_rate\":1,\"subsample\":1,\"col_sample_rate\":1,\"colsample_bylevel\":1,\"score_each_iteration\":false,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"distribution\":\"AUTO\",\"categorical_encoding\":\"AUTO\",\"col_sample_rate_per_tree\":1,\"colsample_bytree\":1,\"score_tree_interval\":0,\"min_split_improvement\":0,\"gamma\":0,\"max_leaves\":0,\"tree_method\":\"auto\",\"grow_policy\":\"depthwise\",\"dmatrix_type\":\"auto\",\"quiet_mode\":true,\"max_abs_leafnode_pred\":0,\"max_delta_step\":0,\"max_bins\":256,\"min_sum_hessian_in_leaf\":100,\"min_data_in_leaf\":0,\"sample_type\":\"uniform\",\"normalize_type\":\"tree\",\"rate_drop\":0,\"one_drop\":false,\"skip_drop\":0,\"booster\":\"gbtree\",\"reg_lambda\":0,\"reg_alpha\":0,\"backend\":\"auto\",\"gpu_id\":0}"
+    },
+    {
+      "type": "md",
+      "input": "### Viewing XGBoost Results\n\nTo view the results, click the **View** button. The output for XGBoost includes the following: \n\n- Model parameters (hidden)\n- A graph of the scoring history (training MSE vs number of trees)\n- A graph of the variable importances\n- Output (model category, cross validation metrics)\n- Model summary (number of trees)\n- Scoring history in tabular format\n- Training metrics (model name, model checksum name, frame name, description, model category, scoring time, predictions, MSE, R2)\n- Variable importances in tabular format\n- **NOTE**: Since XGBoost is run as a native code no POJO preview is available. However, MOJO download is available in the **Actions** pane."
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\""
+    },
+    {
+      "type": "md",
+      "input": "### Viewing Predictions\n\nTo view predictions, click the **Predict** button. From the drop-down **Frame** list, select the `diabetic_data.hex` file and click the **Predict** button. "
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\", frame: \"diabetic_data.hex\", predictions_frame: \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
+    }
+  ]
+}
