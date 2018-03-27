@@ -300,7 +300,7 @@ class BuildSummary {
             if (result.isEmpty()) {
                 return 'There are no failed tests.'
             }
-            return result.join("\n")
+            return result.join("<br/>")
         }
     }
 
