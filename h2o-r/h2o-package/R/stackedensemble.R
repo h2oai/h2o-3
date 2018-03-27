@@ -113,7 +113,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99)
   #Convert metalearner_params back to list if not NULL
   if (!missing(metalearner_params)) {
-      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]]
+      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list
   }
   return(model)
 }
