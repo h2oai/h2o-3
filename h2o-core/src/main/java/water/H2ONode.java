@@ -40,6 +40,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public int _tcp_readers;               // Count of started TCP reader threads
 
   public boolean _removed_from_cloud;
+
   public void stopSendThread(){
     if(_sendThread != null) {
       _sendThread._stopRequested = true;
@@ -47,6 +48,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     _removed_from_cloud = true;
   }
+
+  public void startSendThread(){
+    _sendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread
+    _sendThread.start();
+  }
+
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
 
@@ -149,8 +156,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       if(h2o._heartbeat._client && h2o._removed_from_cloud){
         // the client has reconnected, we need to restore the state
         h2o._removed_from_cloud = false;
-        h2o._sendThread = h2o.new UDP_TCP_SendThread(); // Launch the UDP send thread
-        h2o._sendThread.start();
+        h2o.startSendThread();
       }else{
         return h2o;
       }
@@ -165,8 +171,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         IDX = Arrays.copyOf(IDX,IDX.length<<1);
       IDX[idx] = h2o;
     }
-    h2o._sendThread = h2o.new UDP_TCP_SendThread(); // Launch the UDP send thread
-    h2o._sendThread.start();
+    h2o.startSendThread();
     return h2o;
   }
   public static H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
