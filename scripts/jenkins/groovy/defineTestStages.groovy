@@ -103,7 +103,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'INFO Check', target: 'test-info',
