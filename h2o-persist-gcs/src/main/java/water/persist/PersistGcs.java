@@ -114,7 +114,7 @@ public final class PersistGcs extends Persist {
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     final String input = GcsBlob.removePrefix(filter);
     final String[] bk = input.split("/", 2);
-    List<String> results = new ArrayList<>(limit);
+    List<String> results = limit > 0 ? new ArrayList<String>(limit) : new ArrayList<String>();
     try {
       if (bk.length == 1) {
         List<String> buckets = bucketCache.get("all");
