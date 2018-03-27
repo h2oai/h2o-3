@@ -55,7 +55,7 @@
     },
     {
       "type": "md",
-      "input": "### Building a Model\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `XGBoost` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. Select the splited data set `frame_0.750` as the **training_frame** and the `frame_0.250` as the **validation_frame**. 0. From the **Ignored_columns** section, select the columns to ignore. For this example, ignore the `encounter_id` and `patient_nbr` columns as we don't want to build model based on these columns. \n0. From the drop-down **response_column** list, select column 1 (`readmitted`).  \n0. Make sure you set the correct value for **backend** and possibly **gpu_id** to run the computation on GPU if available. \n0. TODO: what other parameters should be selected? \n0. Click the **Build Model** button."
+      "input": "### Building a Model\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `XGBoost` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. Select the splited data set `frame_0.750` as the **training_frame** and the `frame_0.250` as the **validation_frame**. 0. From the **Ignored_columns** section, select the columns to ignore. For this example, ignore the `encounter_id` and `patient_nbr` columns as we don't want to build model based on these columns. \n0. From the drop-down **response_column** list, select column 1 (`readmitted`).  \n0. Make sure you set the correct value for **backend** and possibly **gpu_id** to run the computation on GPU if available. \n0. Click the **Build Model** button."
     },
     {
       "type": "cs",
