@@ -282,7 +282,8 @@ public final class PersistGcs extends Persist {
     if (bk.length == 1) {
       return storage.get(bk[0]).exists();
     } else if (bk.length == 2) {
-      return storage.get(bk[0], bk[1]).exists();
+      Blob blob = storage.get(bk[0], bk[1]);
+      return blob != null && blob.exists();
     } else {
       return false;
     }
@@ -310,15 +311,23 @@ public final class PersistGcs extends Persist {
    */
   @Override
   public PersistEntry[] list(String path) {
-    List<String> matches = calcTypeaheadMatches(path, Integer.MAX_VALUE);
-    PersistEntry[] entries = new PersistEntry[matches.size()];
-    int pathLength = path.length() + 1; // + 1 to remove trailing "/", because we assume that path points to logical directory
-    int i = 0;
-    for (String s : matches) {
-      Blob info = storage.get(GcsBlob.of(s).getBlobId());
-      entries[i] = new PersistEntry(s.substring(pathLength), info.getSize(), info.getCreateTime());
-      i++;
+    final String input = GcsBlob.removePrefix(path);
+    final String[] bk = input.split("/", 2);
+    int substrLen = bk.length == 2 ? bk[1].length() : 0;
+    List<PersistEntry> results = new ArrayList<>();
+    try {
+      for (Blob b : storage.list(bk[0]).iterateAll()) {
+        if (bk.length == 1 || (bk.length == 2 && b.getName().startsWith(bk[1]))) {
+          String relativeName = b.getName().substring(substrLen);
+          if (relativeName.startsWith("/")) {
+            relativeName = relativeName.substring(1);
+          }
+          results.add(new PersistEntry(relativeName, b.getSize(), b.getUpdateTime()));
+        }
+      }
+    } catch (StorageException e) {
+      Log.err(e);
     }
-    return entries;
+    return results.toArray(new PersistEntry[results.size()]);
   }
 }
