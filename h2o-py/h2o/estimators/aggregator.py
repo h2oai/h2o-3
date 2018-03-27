@@ -25,7 +25,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
                       "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
-                      "save_mapping_frame"}
+                      "save_mapping_frame", "num_iteration_without_new_exemplar"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -172,6 +172,21 @@ class H2OAggregatorEstimator(H2OEstimator):
     def save_mapping_frame(self, save_mapping_frame):
         assert_is_type(save_mapping_frame, None, bool)
         self._parms["save_mapping_frame"] = save_mapping_frame
+
+
+    @property
+    def num_iteration_without_new_exemplar(self):
+        """
+        The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
+
+        Type: ``int``  (default: ``500``).
+        """
+        return self._parms.get("num_iteration_without_new_exemplar")
+
+    @num_iteration_without_new_exemplar.setter
+    def num_iteration_without_new_exemplar(self, num_iteration_without_new_exemplar):
+        assert_is_type(num_iteration_without_new_exemplar, None, int)
+        self._parms["num_iteration_without_new_exemplar"] = num_iteration_without_new_exemplar
 
 
 
