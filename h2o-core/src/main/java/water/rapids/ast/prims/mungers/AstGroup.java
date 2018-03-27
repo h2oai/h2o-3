@@ -558,6 +558,13 @@ public class AstGroup extends AstPrimitive {
       }
     }
 
+    public G fill(int row, Chunk chks[]) {
+      for (int c = 0; c < chks.length; c++) // For all selection cols
+        _gs[c] = chks[c].atd(row); // Load into working array
+      _hash = hash();
+      return this;
+    }
+
     public G fill(int row, Chunk chks[], int cols[]) {
       for (int c = 0; c < cols.length; c++) // For all selection cols
         _gs[c] = chks[cols[c]].atd(row); // Load into working array

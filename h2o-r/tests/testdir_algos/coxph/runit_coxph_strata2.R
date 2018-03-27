@@ -12,7 +12,6 @@ test.CoxPH.strata2 <- function() {
     pbc.ext$log_albumin <- log(pbc$albumin)
 
     fit <- coxph(Surv(time, status == 2) ~ age + edema + log_bili + log_protime + log_albumin + strata(ascites), data = pbc.ext)
-    print(fit)
 
     pbc.hex <- as.h2o(pbc.ext)
     pbc.hex$status <- pbc.hex$status == 2
@@ -26,9 +25,11 @@ test.CoxPH.strata2 <- function() {
     expect_equal(fit$coef, .as.survival.coxph.model(fit.hex@model)$coef, tolerance = 1e-6, scale = 1)
     expect_equal(fit$var, .as.survival.coxph.model(fit.hex@model)$var, tolerance = 1e-6, scale = 1)
 
-    # We make predictions even if the strata cannot be defined - need to revisit this later
-    lp <- as.data.frame(h2o.predict(fit.hex, as.h2o(pbc.ext[! is.na(pbc.ext$ascites), ])))$lp
-    expect_equal(fit$linear.predict, lp)
+    lp.r <- predict(fit, pbc.ext, na.action = na.exclude, type = "lp")
+    names(lp.r) <- NULL
+    lp.hex <- h2o.predict(fit.hex, pbc.hex)
+
+    expect_equal(lp.r, as.data.frame(lp.hex)$lp)
 }
 
 doTest("CoxPH: Test Stratification with 1 strata columns (with NAs)", test.CoxPH.strata2)

@@ -12,8 +12,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.IcedInt;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +50,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String[] _interactions_only;
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
+
+    String[] responseCols() {
+      String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];
+      if (isStratified())
+        cols = ArrayUtils.append(cols, _start_column);
+      return ArrayUtils.append(cols, _stop_column, _response_column);
+    }
 
     Vec startVec() { return train().vec(_start_column); }
     Vec stopVec() { return train().vec(_stop_column); }
@@ -130,11 +140,26 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   public static class CoxPHOutput extends Model.Output {
 
-    public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train) {
-      super(coxPH, adaptFr);
+    public CoxPHOutput(CoxPH coxPH, Frame adaptFr, Frame train, IcedHashMap<AstGroup.G, IcedInt> strataMap) {
+      super(coxPH, fullFrame(coxPH, adaptFr, train));
+      _strataOnlyCols = new String[_names.length - adaptFr._names.length];
+      for (int i = 0; i < _strataOnlyCols.length; i++)
+        _strataOnlyCols[i] = _names[i];
       _ties = coxPH._parms._ties;
       _formula = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
+      _strataMap = strataMap;
+    }
+
+    private static Frame fullFrame(CoxPH coxPH, Frame adaptFr, Frame train) {
+      if (! coxPH._parms.isStratified())
+        return adaptFr;
+      Frame ff = new Frame();
+      for (String col : coxPH._parms._stratify_by)
+        if (adaptFr.vec(col) == null)
+          ff.add(col, train.vec(col));
+      ff.add(adaptFr);
+      return ff;
     }
 
     @Override
@@ -145,6 +170,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     InteractionSpec _interactionSpec;
     DataInfo data_info;
+    IcedHashMap<AstGroup.G, IcedInt> _strataMap;
+    String[] _strataOnlyCols;
 
     String[] _coef_names;
     double[] _coef;
@@ -162,8 +189,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double _maxrsq;
     double _lre;
     int _iter;
-    double[] _x_mean_cat;
-    double[] _x_mean_num;
+    double[][] _x_mean_cat;
+    double[][] _x_mean_num;
     double[] _mean_offset;
     String[] _offset_names;
     long _n;
@@ -194,36 +221,55 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm);
-    return new CoxPHScore(scoringInfo, _output).doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
+    int nResponses = 0;
+    for (String col : _parms.responseCols())
+      if (adaptFrm.find(col) != -1)
+        nResponses++;
+    DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
+    return new CoxPHScore(scoringInfo, _output, _parms.isStratified())
+            .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
             .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
   }
 
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
-    if (_parms.isStratified() && (test.vec(_parms._strata_column) == null)) {
+    boolean createStrataVec = _parms.isStratified() && (test.vec(_parms._strata_column) == null);
+    if (createStrataVec) {
       Vec strataVec = test.anyVec().makeCon(Double.NaN);
       _toDelete.put(strataVec._key, "adapted missing strata vector");
       test.add(_parms._strata_column, strataVec);
     }
-    return super.adaptTestForTrain(test, expensive, computeMetrics);
+    String[] msgs = super.adaptTestForTrain(test, expensive, computeMetrics);
+    if (createStrataVec) {
+      Vec strataVec = CoxPH.StrataTask.makeStrataVec(test, _parms._stratify_by, _output._strataMap);
+      _toDelete.put(strataVec._key, "adapted missing strata vector");
+      test.replace(test.find(_parms._strata_column), strataVec);
+      if (_output._strataOnlyCols != null)
+        test.remove(_output._strataOnlyCols);
+    }
+    return msgs;
   }
 
   private static class CoxPHScore extends MRTask<CoxPHScore> {
     private DataInfo _dinfo;
     private double[] _coef;
-    private double _lpBase;
+    private double[] _lpBase;
     private int _numStart;
+    private boolean _hasStrata;
 
-    private CoxPHScore(DataInfo dinfo, CoxPHOutput o) {
+    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata) {
+      final int strataCount = o._x_mean_cat.length;
       _dinfo = dinfo;
+      _hasStrata = hasStrata;
       _coef = o._coef;
-      _numStart = o._x_mean_cat.length;
-      _lpBase = 0;
-      for (int i = 0; i < o._x_mean_cat.length; i++)
-        _lpBase += o._x_mean_cat[i] * _coef[i];
-      for (int i = 0; i < o._x_mean_num.length; i++)
-        _lpBase += o._x_mean_num[i] * _coef[i + _numStart];
+      _numStart = o._x_mean_cat[0].length;
+      _lpBase = new double[strataCount];
+      for (int s = 0; s < strataCount; s++) {
+        for (int i = 0; i < o._x_mean_cat[s].length; i++)
+          _lpBase[s] += o._x_mean_cat[s][i] * _coef[i];
+        for (int i = 0; i < o._x_mean_num[s].length; i++)
+          _lpBase[s] += o._x_mean_num[s][i] * _coef[i + _numStart];
+      }
     }
 
     @Override
@@ -235,7 +281,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
           nc.addNA();
           continue;
         }
-        double lp = r.innerProduct(_coef) - _lpBase;
+        double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
+        if (Double.isNaN(s)) {
+          // unknown strata
+          nc.addNA();
+          continue;
+        }
+        double lp = r.innerProduct(_coef) - _lpBase[(int) s];
         nc.addNum(lp);
       }
     }
