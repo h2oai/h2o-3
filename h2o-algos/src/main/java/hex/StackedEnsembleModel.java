@@ -74,7 +74,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       deeplearning
     }
     public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
-    public Model.Parameters _metalearner_params;
+    public Model.Parameters _metalearner_parameters;
     public long _seed;
 
   }

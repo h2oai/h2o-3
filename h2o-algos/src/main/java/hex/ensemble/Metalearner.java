@@ -1,8 +1,5 @@
 package hex.ensemble;
 
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -28,16 +25,11 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
 class Metalearner {
 
     private Frame _levelOneTrainingFrame;
     private Frame _levelOneValidationFrame;
-    private Model.Parameters _metalearner_params;
+    private Model.Parameters _metalearner_parameters;
     private StackedEnsembleModel _model;
     private Job _job;
     private Key<Model> _metalearnerKey;
@@ -45,14 +37,14 @@ class Metalearner {
     private StackedEnsembleParameters _parms;
     private boolean _hasMetalearnerParams;
     private long _metalearnerSeed;
-    
-    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, Model.Parameters metalearner_params,
+
+    Metalearner(Frame levelOneTrainingFrame, Frame levelOneValidationFrame, Model.Parameters metalearner_parameters,
                        StackedEnsembleModel model, Job StackedEnsembleJob, Key<Model> metalearnerKey, Job metalearnerJob,
                        StackedEnsembleParameters parms, boolean hasMetalearnerParams, long metalearnerSeed){
 
         _levelOneTrainingFrame = levelOneTrainingFrame;
         _levelOneValidationFrame = levelOneValidationFrame;
-        _metalearner_params = metalearner_params;
+        _metalearner_parameters = metalearner_parameters;
         _model = model;
         _job = StackedEnsembleJob;
         _metalearnerKey = metalearnerKey;
@@ -140,24 +132,11 @@ class Metalearner {
 
         //Metalearner parameters
         if (_hasMetalearnerParams) {
-            params.fillFromImpl((GBMModel.GBMParameters) _metalearner_params);
-//            Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
-//            for (Map.Entry<String, String[]> param : map.entrySet()) {
-//                String[] paramVal = param.getValue();
-//                if (paramVal.length == 1) {
-//                    p.setProperty(param.getKey(), paramVal[0]);
-//                } else {
-//                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-//                }
-//                params.fillFromParms(p, true);
-//            }
-            GBMModel.GBMParameters gbmParams = params.createAndFillImpl();
+            GBMModel.GBMParameters gbmParams = (GBMModel.GBMParameters) _metalearner_parameters;
             metaGBMBuilder._parms = gbmParams;
         }
 
-        if(metaGBMBuilder._parms._seed == -1){ //Seed is not set in metalearner_params
+        if(metaGBMBuilder._parms._seed == -1){ //Seed is not set in metalearner_parameters
             metaGBMBuilder._parms._seed = _metalearnerSeed;
         }
         metaGBMBuilder._parms._seed = _metalearnerSeed;
@@ -217,24 +196,11 @@ class Metalearner {
 
         //Metalearner parameters
         if (_hasMetalearnerParams) {
-            params.fillFromImpl((DRFModel.DRFParameters) _metalearner_params);
-//            Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
-//            for (Map.Entry<String, String[]> param : map.entrySet()) {
-//                String[] paramVal = param.getValue();
-//                if (paramVal.length == 1) {
-//                    p.setProperty(param.getKey(), paramVal[0]);
-//                } else {
-//                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-//                }
-//                params.fillFromParms(p, true);
-//            }
-            DRFModel.DRFParameters drfParams = params.createAndFillImpl();
+            DRFModel.DRFParameters drfParams = (DRFModel.DRFParameters) _metalearner_parameters;
             metaDRFBuilder._parms = drfParams;
         }
 
-        if(metaDRFBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+        if(metaDRFBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
             metaDRFBuilder._parms._seed = _metalearnerSeed;
         }
         metaDRFBuilder._parms._train = _levelOneTrainingFrame._key;
@@ -292,24 +258,11 @@ class Metalearner {
 
         //Metalearner parameters
         if (_hasMetalearnerParams) {
-            params.fillFromImpl((GLMModel.GLMParameters) _metalearner_params);
-//            Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
-//            for (Map.Entry<String, String[]> param : map.entrySet()) {
-//                String[] paramVal = param.getValue();
-//                if (paramVal.length == 1) {
-//                    p.setProperty(param.getKey(), paramVal[0]);
-//                } else {
-//                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-//                }
-//                params.fillFromParms(p, true);
-//            }
-            GLMModel.GLMParameters glmParams = params.createAndFillImpl();
+            GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) _metalearner_parameters;
             metaGLMBuilder._parms = glmParams;
         }
 
-        if(metaGLMBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+        if(metaGLMBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
             metaGLMBuilder._parms._seed = _metalearnerSeed;
         }
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
@@ -377,24 +330,11 @@ class Metalearner {
 
         //Metalearner parameters
         if (_hasMetalearnerParams) {
-            params.fillFromImpl((DeepLearningModel.DeepLearningParameters) _metalearner_params);
-//            Properties p = new Properties();
-//            HashMap<String, String[]> map = new Gson().fromJson(_metalearner_params, new TypeToken<HashMap<String, String[]>>() {
-//            }.getType());
-//            for (Map.Entry<String, String[]> param : map.entrySet()) {
-//                String[] paramVal = param.getValue();
-//                if (paramVal.length == 1) {
-//                    p.setProperty(param.getKey(), paramVal[0]);
-//                } else {
-//                    p.setProperty(param.getKey(), Arrays.toString(paramVal));
-//                }
-//                params.fillFromParms(p, true);
-//            }
-            DeepLearningModel.DeepLearningParameters dlParams = params.createAndFillImpl();
+            DeepLearningModel.DeepLearningParameters dlParams = (DeepLearningModel.DeepLearningParameters) _metalearner_parameters;
             metaDeepLearningBuilder._parms = dlParams;
         }
 
-        if(metaDeepLearningBuilder._parms._seed == -1) {//Seed is not set in metalearner_params
+        if(metaDeepLearningBuilder._parms._seed == -1) {//Seed is not set in metalearner_parameters
             metaDeepLearningBuilder._parms._seed = _metalearnerSeed;
         }
         metaDeepLearningBuilder._parms._train = _levelOneTrainingFrame._key;

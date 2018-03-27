@@ -329,10 +329,6 @@ def gen_module(schema, algo, module):
     if algo in ["stackedensemble"]:
         yield "  # Error check and build model"
         yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
-        yield "  #Convert metalearner_params back to list if not NULL"
-        yield "  if (!missing(metalearner_params)) {"
-        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))"
-        yield "  }"
         yield "  return(model)"
         yield "}"
     if algo in ["deeplearning", "drf", "gbm", "xgboost"]:

@@ -253,10 +253,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Job metalearnerJob = new Job<>(metalearnerKey, ModelBuilder.javaName(metalearnerAlgoImpl.toString()),
                 "StackingEnsemble metalearner (" + metalearnerAlgoSpec + ")");
         //Check if metalearner_params are passed in
-        boolean hasMetaLearnerParams = _model._parms._metalearner_params != null;
+        boolean hasMetaLearnerParams = _model._parms._metalearner_parameters != null;
         long metalearnerSeed = _model._parms._seed;
         Metalearner metalearner = new Metalearner(levelOneTrainingFrame, levelOneValidationFrame,
-                                                  _model._parms._metalearner_params, _model, _job,
+                                                  _model._parms._metalearner_parameters, _model, _job,
                                                   metalearnerKey, metalearnerJob, _parms,
                                                   hasMetaLearnerParams, metalearnerSeed);
 
