@@ -77,6 +77,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       case misclassification: { return cross_validation ? scored_xval._classError : validation ? scored_valid._classError : scored_train._classError; }
       case lift_top_group:    { return cross_validation ? scored_xval._lift : validation ? scored_valid._lift : scored_train._lift; }
       case mean_per_class_error: { return cross_validation ? scored_xval._mean_per_class_error : validation ? scored_valid._mean_per_class_error : scored_train._mean_per_class_error; }
+      case r2: { return cross_validation ? scored_xval._r2 : validation ? scored_valid._r2 : scored_train._r2; }
       default:                throw H2O.unimpl("Undefined stopping criterion: " + criterion);
     }
   }
@@ -151,17 +152,15 @@ public class ScoringInfo extends Iced<ScoringInfo> {
     colHeaders.add("Training RMSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (modelCategory == ModelCategory.Regression) {
       colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
-    }
-    if(modelCategory == ModelCategory.Regression) {
       colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training r2"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (isClassifier) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training r2"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (modelCategory == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
-    }
-    if (modelCategory == ModelCategory.Binomial) {
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (isClassifier) {
@@ -175,14 +174,14 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       if (modelCategory == ModelCategory.Regression) {
         colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation r2"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (isClassifier) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation r2"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (modelCategory == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
-      }
-      if (modelCategory == ModelCategory.Binomial) {
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (isClassifier) {
@@ -197,14 +196,14 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       if (modelCategory == ModelCategory.Regression) {
         colHeaders.add("Cross-Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Cross-Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Cross-Validation r2"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (isClassifier) {
         colHeaders.add("Cross-Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Cross-Validation r2"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (modelCategory == ModelCategory.Binomial) {
         colHeaders.add("Cross-Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
-      }
-      if (modelCategory == ModelCategory.Binomial) {
         colHeaders.add("Cross-Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (isClassifier) {
@@ -253,12 +252,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       table.set(row, col++, si.scored_train != null ? si.scored_train._rmse : Double.NaN);
       if (modelCategory == ModelCategory.Regression) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._mean_residual_deviance : Double.NaN);
-      }
-      if (modelCategory == ModelCategory.Regression) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._mae : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._r2 : Double.NaN);
       }
       if (isClassifier) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._logloss : Double.NaN);
+        table.set(row, col++, si.scored_train != null ? si.scored_train._r2 : Double.NaN);
       }
       if (modelCategory == ModelCategory.Binomial) {
         table.set(row, col++, si.training_AUC != null ? si.training_AUC._auc : Double.NaN);
@@ -274,12 +273,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         table.set(row, col++, si.scored_valid != null ? si.scored_valid._rmse : Double.NaN);
         if (modelCategory == ModelCategory.Regression) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._mean_residual_deviance : Double.NaN);
-        }
-        if (modelCategory == ModelCategory.Regression) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._mae : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._r2 : Double.NaN);
         }
         if (isClassifier) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._logloss : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._r2 : Double.NaN);
         }
         if (modelCategory == ModelCategory.Binomial) {
           table.set(row, col++, si.validation_AUC != null ? si.validation_AUC._auc : Double.NaN);
@@ -296,12 +295,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         table.set(row, col++, si.scored_xval != null ? si.scored_xval._rmse : Double.NaN);
         if (modelCategory == ModelCategory.Regression) {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._mean_residual_deviance : Double.NaN);
-        }
-        if (modelCategory == ModelCategory.Regression) {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._mae : Double.NaN);
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
         if (isClassifier) {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._logloss : Double.NaN);
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
         if (modelCategory == ModelCategory.Binomial) {
           table.set(row, col++, si.validation_AUC != null ? si.validation_AUC._auc : Double.NaN);

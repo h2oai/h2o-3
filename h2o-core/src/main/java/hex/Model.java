@@ -875,6 +875,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case r2:
+        return (float)(1-r2());
       case mean_per_class_error:
         return (float)mean_per_class_error();
       case lift_top_group:
@@ -914,6 +916,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double mse() {
     if (scoringInfo != null)
       return last_scored().cross_validation ? last_scored().scored_xval._mse : last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return mm.mse();
+  }
+
+  public double r2() {
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._r2 : last_scored().validation ? last_scored().scored_valid._r2 : last_scored().scored_train._r2;
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
