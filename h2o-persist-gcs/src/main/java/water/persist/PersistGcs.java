@@ -330,4 +330,24 @@ public final class PersistGcs extends Persist {
     }
     return results.toArray(new PersistEntry[results.size()]);
   }
+
+  @Override
+  public boolean mkdirs(String path) {
+    try {
+      final String input = GcsBlob.removePrefix(path);
+      final String[] bk = input.split("/", 2);
+      if (bk.length > 0) {
+        Bucket b = storage.get(bk[0]);
+        if (b == null || !b.exists()) {
+          storage.create(BucketInfo.of(bk[0]));
+        }
+        return true;
+      } else {
+        return false;
+      }
+    } catch (StorageException e) {
+      Log.err(e);
+      return false;
+    }
+  }
 }

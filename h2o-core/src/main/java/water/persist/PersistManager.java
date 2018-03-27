@@ -477,7 +477,7 @@ public class PersistManager {
       boolean b = I[Value.HDFS].mkdirs(path);
       return b;
     } else if (isGcsPath(path)){
-      return true; // GCS doesn't support directories, so we don't need them to exist
+      return I[Value.GCS].mkdirs(path);
     }
 
     File f = new File(path);
