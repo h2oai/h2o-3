@@ -103,6 +103,26 @@ public class ParserTest2 extends TestUtil {
     Assert.assertEquals(fr.numRows(), 7);
     fr.delete();
   }
+
+  @Test public void testDoubleQuotes() {
+    Frame fr = null;
+   try {
+    String[] data  = new String[]{"Tomass,test,\"Feline says \"\"meh\"\".\",line\nTomass,test2,second,line\nTomass,test3,last,line"};
+    Key k = ParserTest.makeByteVec(data);
+    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, ParseSetup.NO_HEADER, 4, null, null));
+    gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"String", "String", "String", "String"});
+    fr = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupF);
+     BufferedString str = new BufferedString();
+     Vec[] vecs = fr.vecs();
+     Assert.assertEquals(fr.numCols(),4);
+     Assert.assertEquals(fr.numRows(), 3);
+     Assert.assertEquals("Feline says \"\"meh\"\".", vecs[2].atStr(str, 0).toString());
+     fr.delete();
+   }
+   finally {
+     if( fr != null ) fr.delete();
+   }
+  }
   
   // Test very sparse data
   @Test public void testSparse() {
