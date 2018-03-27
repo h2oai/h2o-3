@@ -402,7 +402,19 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Binomial, data);
+    return predictBinomial(data, 0.0);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Binomial model.
+   *
+   * @param data A new data point.
+   * @param offset An offset for the prediction.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
     double d = preds[0];
@@ -576,8 +588,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   // This should have been called predict(), because that's what it does
   protected double[] preamble(ModelCategory c, RowData data) throws PredictException {
+    return preamble(c, data, 0.0);
+  }
+  protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    return predict(data, new double[m.getPredsSize(c)]);
+    return predict(data, offset, new double[m.getPredsSize(c)]);
   }
 
   private static double[] nanArray(int len) {
@@ -709,10 +724,15 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return rawData;
   }
 
-  protected double[] predict(RowData data, double[] preds) throws PredictException {
+  protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    preds = m.score0(rawData, preds);
+    if (offset == 0) {
+      preds = m.score0(rawData, preds);
+    }
+    else {
+      preds = m.score0(rawData, offset, preds);
+    }
     return preds;
   }
 
