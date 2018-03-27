@@ -752,8 +752,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return res;
   }
 
-  protected  boolean ignoreStringColumns(){return true;}
-  protected  boolean ignoreConstColumns(){return _parms._ignore_const_cols;}
+  protected boolean ignoreStringColumns() {
+    return true;
+  }
+  protected boolean ignoreConstColumns() {
+    return _parms._ignore_const_cols;
+  }
+  protected boolean ignoreUuidColumns() {
+    return true;
+  }
 
   /**
    * Ignore constant columns, columns with all NAs and strings.
@@ -768,7 +775,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst();
           boolean skipString = ignoreStringColumns() && v.isString();
-          boolean skip = isBad || skipConst || skipString;
+          boolean skipUuid = ignoreUuidColumns() && v.isUUID();
+          boolean skip = isBad || skipConst || skipString || skipUuid;
           return skip;
         }
       }.doIt(_train,"Dropping bad and constant columns: ",expensive);
