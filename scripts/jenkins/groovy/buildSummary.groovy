@@ -1,3 +1,5 @@
+import hudson.tasks.test.AbstractTestResultAction
+
 def call(final boolean updateJobDescription) {
     return new BuildSummary(updateJobDescription)
 }
@@ -79,6 +81,10 @@ class BuildSummary {
               <li><strong>Git SHA:</strong> ${context.env.GIT_SHA}</li>
             </ul>
           """)
+    }
+
+    Section addFailedTestsSection(final context) {
+        return addSection(context, new TestsOverviewSection())
     }
 
     Section addChangesSectionIfNecessary(final context) {
@@ -176,7 +182,7 @@ class BuildSummary {
 
         String sectionsHTML = ''
         sections.eachWithIndex { Section section, int i ->
-            sectionsHTML += createHTMLForSection(section.getTitle(), section.getContent(), (i + 1) < sections.size(), false)
+            sectionsHTML += createHTMLForSection(section.getTitle(), section.getContent(context), (i + 1) < sections.size(), false)
         }
 
         return """
@@ -246,9 +252,9 @@ class BuildSummary {
     }
 
     static class Section {
-        private final String id
-        private String title
-        private String content
+        protected final String id
+        protected String title
+        protected String content
 
         Section(final String id, final String title, final String content) {
             this.id = id
@@ -264,7 +270,7 @@ class BuildSummary {
             return title
         }
 
-        String getContent() {
+        String getContent(final context) {
             return content
         }
 
@@ -274,6 +280,27 @@ class BuildSummary {
 
         void setContent(String content) {
             this.content = content
+        }
+    }
+
+    static class TestsOverviewSection extends Section{
+        TestsOverviewSection() {
+            super('tests-overview', 'Failed Test', '')
+        }
+
+        @NonCPS
+        String getContent(final context) {
+            List<String> result = []
+            AbstractTestResultAction testResultAction = context.currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+            if (testResultAction != null) {
+                testResultAction.getFailedTests().each{failedTest ->
+                    result += failedTest.getDisplayName()
+                }
+            }
+            if (result.isEmpty()) {
+                return 'There are no failed tests.'
+            }
+            return result.join("<br/>")
         }
     }
 
