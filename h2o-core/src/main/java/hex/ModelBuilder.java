@@ -1190,7 +1190,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
-    if (original_fr.anyVec().nChunks() >= chunks) {
+    if (original_fr.anyVec().nonEmptyChunks() >= chunks) {
       if (chunks>1)
         Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
               " chunks. No need to rebalance.");

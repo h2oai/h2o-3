@@ -51,10 +51,12 @@ public class ModelBuilderTest extends TestUtil {
       // expensive init - should include rebalance
       mb.init(true);
 
+      // check that dataset was rebalanced
       long[] espc = mb.train().anyVec().espc();
       assertEquals(nChunks + 1, espc.length);
       assertEquals(nRows, espc[nChunks]);
-      assertEquals(0, espc[nChunks - 1]); // Frame was not rebalanced!!! Scary!!!
+      for (int i = 0; i < espc.length; i++)
+        assertEquals(i * 1000, espc[i]);
     } finally {
       Scope.exit();
     }

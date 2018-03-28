@@ -271,6 +271,18 @@ public class Vec extends Keyed<Vec> {
    *  @return Number of chunks */
   public int nChunks() { return espc().length-1; }
 
+  /**
+   * Number of non-empty chunks, also see {@link #nChunks}
+   * @return Number of non-empty chunks
+   */
+  public int nonEmptyChunks() {
+    int nonEmptyCnt = nChunks();
+    for (int i = 1; i < _espc.length; i++)
+      if (_espc[i-1] == _espc[i])
+        nonEmptyCnt--;
+    return nonEmptyCnt;
+  }
+
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
    *  table lookup. */
