@@ -3,7 +3,7 @@
   "cells": [
     {
       "type": "md",
-      "input": "# XGBoost Tutorial\n\nThis tutorial walks you through XGBoost usage in H2O Flow.\n\nThose who have never used H2O before should refer to <a href=\"https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md\" target=\"_blank\">Getting Started</a> for additional instructions on how to run H2O Flow.\n\n## Getting Started\n\nThis tutorial uses a publicly available data set that can be found at:\n\n<a href=\"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" target=\"_blank\">https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip</a>.\n\n\nThe original data are the Diabetes data set made available by UCI Machine Learning repository. They are composed of 101 766 observations and 50 attriutes.\n\nIf you don't have any data of your own to work with, you can find some example datasets at <a href=\"http://data.h2o.ai\" target=\"_blank\">http://data.h2o.ai</a>.\n\n### Importing Data\nBefore creating a model, import data into H2O:\n\n0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). ![Assist Me](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/Flow_AssistMeButton.png) \n0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. For this example, the file path is https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip. \n0. Click the **Add all** link to add the file to the import queue, then click the **Import** button."
+      "input": "# XGBoost Tutorial\n\nThis tutorial walks you through XGBoost usage in H2O Flow.\n\nThose who have never used H2O before should refer to <a href=\"https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md\" target=\"_blank\">Getting Started</a> for additional instructions on how to run H2O Flow.\n\n## Getting Started\n\nThis tutorial uses a publicly available data set that can be found at:\n\n<a href=\"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" target=\"_blank\">https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip</a>.\n\n\nThe original data are the Diabetes data set made available by UCI Machine Learning repository. They are composed of 101,766 observations and 50 attriutes.\n\nIf you don't have any data of your own to work with, you can find some example datasets at <a href=\"https://archive.ics.uci.edu/ml/index.php\" target=\"_blank\">https://archive.ics.uci.edu/ml/index.php</a>.\n\n### Importing Data\nBefore creating a model, import data into H2O:\n\n0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). ![Assist Me](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/Flow_AssistMeButton.png) \n0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field. For this example, the file path is https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip. \n0. Click the **Add all** link to add the file to the import queue, then click the **Import** button."
     },
     {
       "type": "cs",
@@ -55,7 +55,7 @@
     },
     {
       "type": "md",
-      "input": "### Building a Model\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `XGBoost` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. Select the splited data set `frame_0.750` as the **training_frame** and the `frame_0.250` as the **validation_frame**. 0. From the **Ignored_columns** section, select the columns to ignore. For this example, ignore the `encounter_id` and `patient_nbr` columns as we don't want to build model based on these columns. \n0. From the drop-down **response_column** list, select column 1 (`readmitted`).  \n0. Make sure you set the correct value for **backend** and possibly **gpu_id** to run the computation on GPU if available. \n0. Click the **Build Model** button."
+      "input": "### Building a Model\n\n0. Once data are parsed, click the **View** button, then click the **Build Model** button. \n0. Select `XGBoost` from the drop-down **Select an algorithm** menu, then click the **Build model** button. \n0. Select the splited data set `frame_0.750` as the **training_frame** and the `frame_0.250` as the **validation_frame**. 0. From the **Ignored_columns** section, select the columns to ignore. For this example, ignore the `encounter_id` and `patient_nbr` columns as we don't want to build model using ID columns as predictors. \n0. From the drop-down **response_column** list, select column 1 (`readmitted`).  \n0. Make sure you set the correct value for **backend** and possibly **gpu_id** to run the computation on GPU if available. \n0. Click the **Build Model** button."
     },
     {
       "type": "cs",
@@ -63,7 +63,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'xgboost', {\"model_id\":\"xgboost-3f01a724-83be-4016-82ea-a774575f05d7\",\"training_frame\":\"frame_0.750\",\"validation_frame\":\"frame_0.250\",\"nfolds\":0,\"response_column\":\"readmitted\",\"ignored_columns\":[\"encounter_id\",\"patient_nbr\"],\"ignore_const_cols\":true,\"seed\":-1,\"ntrees\":50,\"max_depth\":6,\"min_rows\":1,\"min_child_weight\":1,\"learn_rate\":0.3,\"eta\":0.3,\"sample_rate\":1,\"subsample\":1,\"col_sample_rate\":1,\"colsample_bylevel\":1,\"score_each_iteration\":false,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"distribution\":\"AUTO\",\"categorical_encoding\":\"AUTO\",\"col_sample_rate_per_tree\":1,\"colsample_bytree\":1,\"score_tree_interval\":0,\"min_split_improvement\":0,\"gamma\":0,\"max_leaves\":0,\"tree_method\":\"auto\",\"grow_policy\":\"depthwise\",\"dmatrix_type\":\"auto\",\"quiet_mode\":true,\"max_abs_leafnode_pred\":0,\"max_delta_step\":0,\"max_bins\":256,\"min_sum_hessian_in_leaf\":100,\"min_data_in_leaf\":0,\"sample_type\":\"uniform\",\"normalize_type\":\"tree\",\"rate_drop\":0,\"one_drop\":false,\"skip_drop\":0,\"booster\":\"gbtree\",\"reg_lambda\":0,\"reg_alpha\":0,\"backend\":\"auto\",\"gpu_id\":0}"
+      "input": "buildModel 'xgboost', {\"model_id\":\"xgboost_diabetes_demo\",\"training_frame\":\"frame_0.750\",\"validation_frame\":\"frame_0.250\",\"nfolds\":0,\"response_column\":\"readmitted\",\"ignored_columns\":[\"encounter_id\",\"patient_nbr\"],\"ignore_const_cols\":true,\"seed\":-1,\"ntrees\":50,\"max_depth\":6,\"min_rows\":1,\"min_child_weight\":1,\"learn_rate\":0.3,\"eta\":0.3,\"sample_rate\":1,\"subsample\":1,\"col_sample_rate\":1,\"colsample_bylevel\":1,\"score_each_iteration\":false,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"distribution\":\"AUTO\",\"categorical_encoding\":\"AUTO\",\"col_sample_rate_per_tree\":1,\"colsample_bytree\":1,\"score_tree_interval\":0,\"min_split_improvement\":0,\"gamma\":0,\"max_leaves\":0,\"tree_method\":\"auto\",\"grow_policy\":\"depthwise\",\"dmatrix_type\":\"auto\",\"quiet_mode\":true,\"max_abs_leafnode_pred\":0,\"max_delta_step\":0,\"max_bins\":256,\"min_sum_hessian_in_leaf\":100,\"min_data_in_leaf\":0,\"sample_type\":\"uniform\",\"normalize_type\":\"tree\",\"rate_drop\":0,\"one_drop\":false,\"skip_drop\":0,\"booster\":\"gbtree\",\"reg_lambda\":0,\"reg_alpha\":0,\"backend\":\"auto\",\"gpu_id\":0}"
     },
     {
       "type": "md",
@@ -71,7 +71,7 @@
     },
     {
       "type": "cs",
-      "input": "getModel \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\""
+      "input": "getModel \"xgboost_diabetes_demo\""
     },
     {
       "type": "md",
@@ -79,11 +79,11 @@
     },
     {
       "type": "cs",
-      "input": "predict model: \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\""
+      "input": "predict model: \"xgboost_diabetes_demo\""
     },
     {
       "type": "cs",
-      "input": "predict model: \"xgboost-725a859e-ea23-4bc5-8005-c1048d08a51b\", frame: \"diabetic_data.hex\", predictions_frame: \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
+      "input": "predict model: \"xgboost_diabetes_demo\", frame: \"diabetic_data.hex\", predictions_frame: \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
     },
     {
       "type": "cs",
