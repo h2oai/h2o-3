@@ -142,7 +142,7 @@ class PipelineUtils {
         context.junit testResults: "${h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
     }
 
-    List<hudson.slaves.DumbSlave> getH2O3Slaves() {
+    List<String> getH2O3Slaves() {
         // get all slaves
         def allSlaves = hudson.model.Hudson.instance.slaves
         // filter only slaves with label docker
@@ -153,11 +153,7 @@ class PipelineUtils {
         def h2o3Slaves = dockerSlaves.findAll {it ->
             it.getNodeName() != 'mr-0xc8'
         }
-        return h2o3Slaves
-    }
-
-    List<String> getH2O3SlavesNodeNames() {
-        return getH2O3Slaves().collect {it ->
+        return h2o3Slaves.collect {it ->
             it.getNodeName()
         }
     }

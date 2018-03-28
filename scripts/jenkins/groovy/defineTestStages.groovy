@@ -241,7 +241,7 @@ def call(final pipelineContext) {
     }
     for (node in pipelineContext.getUtils().getH2O3Slaves()) {
       SINGLE_TEST_STAGES += [
-        stageName: "Test ${params.testPath} on ${node}", target: target, timeoutValue: 25,
+        stageName: "Test ${params.testPath.split('/').last()} on ${node}", target: target, timeoutValue: 25,
         component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
         pythonVersion: params.pyVersion, rVersion: params.rVersion, nodeLabel: node
       ]
