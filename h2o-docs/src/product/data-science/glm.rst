@@ -81,7 +81,7 @@ Defining a GLM Model
 -  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
    for **Family**) Specify the Tweedie link power.
 
--  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
+-  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family.
 
 -  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2.
 
@@ -140,7 +140,7 @@ Defining a GLM Model
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
--  **obj_reg**: Specifies the liklihood divider in objective value computation. This defaults to 1/nobs.
+-  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
 
 Interpreting a GLM Model
@@ -219,7 +219,7 @@ Linear regression corresponds to the Gaussian family model. The link function :m
 
  \hat {y} = {x^T}\beta + {\beta_0}
 
-The model is fitted by solving the least squares problem, which is equivalent to maximizing the liklihood for the Gaussian family.
+The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the Gaussian family.
 
 .. math::
    
@@ -269,7 +269,7 @@ Logistic Ordinal Regression (Ordinal Family)
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
-Let :math:`X_i\in\rm \Bbb I \!\Bbb R^{(p)}`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative probability that :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
 
 .. math::
 
@@ -285,13 +285,44 @@ To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log
 
   L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
 
-**Note**: Be careful when using ordinal regression. H2O's GLM uses a likelihood function to adjust the system parameters. However, during prediction, we look at the log CDF odds. As a result, there is a small disconnect between the two. Please also consider using recommendation methods as well. 
+Conventional ordinal regression uses a likelihood function to adjust the system parameters. However, during prediction, GLM looks at the log CDF odds. 
+
+.. math::
+   \big( log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} \big)
+
+As a result, there is a small disconnect between the two. To remedy this, we have implemented a new algorithm to set and adjust the system parameters. 
+
+Recall that during prediction, a dataset row represented by :math:`X_i` will be set to class :math:`j` if 
+
+.. math::
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} > 0 \; \text{for} \; j
+
+and
+
+.. math::
+   beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j
+
+Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
+
+.. math::
+    L(\beta,\theta, X_i, y_i) = \Bigg\{ \; \begin{eqnarray} \text{if} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j \geq y_i \\
+   \text{and} \; \beta^{T}X_i +  \theta_{j} \geq 0 \; \text{for all} \; j < y_i \\
+   (\beta^{T}X_i + \theta_{j})^2 \; \text{if} \; \beta^{T}X_i + \theta_{j} \leq 0 \; \text{for all} \; j \geq y_i \\ 
+   \text{and} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j < y_i \\ \end{eqnarray} 
+
+.. math::
+   L(\beta,\theta) = \sum_{i=1}^{n} L(\beta,\theta, X_i, y_i) \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; 
+
+Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+
+Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj-reg``, ``alpha``, and ``lambda`` parameters.
+
+In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The quasibinomial family option works in the same way as the aforementioned binomial family. The difference is that binomial models only support 0/1 for the values of the target. A quasibinomial model supports "pseudo" logistic regression and allows for two arbitrary integer values (for example -4, 7). Additional information about the quasibinomial option can be found in the `"Estimating Effects on Rare Outcomes: Knowledge is Power" <http://biostats.bepress.com/ucbbiostat/paper310/>`__ paper.
-
 
 Multiclass Classification (Multinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -368,7 +399,7 @@ The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal t
 
 .. math::
 
- D = -2 \sum_{i=1}^{N} y_i(y_i^{1-p} - \hat{y}_1^{1-p}) - \dfrac {(y_i^{2-p} - \hat{y}_i^{2-p})} {(2-p)}
+ D = -2 \sum_{i=1}^{N} y_i(y_i^{1-p} - \hat{y}_i^{1-p}) - \dfrac {(y_i^{2-p} - \hat{y}_i^{2-p})} {(2-p)}
 
 Links
 '''''
@@ -491,6 +522,8 @@ In GLM, you can specify one of the following solvers:
 - AUTO: Sets the solver based on given data and parameters.
 - COORDINATE_DESCENT: Coordinate Decent (experimental)
 - COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
+- GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
+- GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
 ''''''''''''''''
@@ -519,6 +552,11 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 - Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
+
+Gradient Descent
+''''''''''''''''
+
+For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the system parameters. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~
