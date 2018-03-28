@@ -45,7 +45,8 @@ try {
                       choice(choices: ['Python', 'R'].join("\n"), description: 'Component which will be tested', name: 'testComponent'),
                       choice(choices: ['2.7', '3.5', '3.6'].join("\n"), description: 'Component which will be tested', name: 'pyVersion'),
                       choice(choices: ['3.3.3', '3.4.1'].join("\n"), description: 'Component which will be tested', name: 'rVersion'),
-                      string(defaultValue: '', description: 'Path to test which will be executed. For example <code>testdir_algos/gbm/pyunit_bernoulli_gbm.py</code> - <strong>no h2o-py/test/</strong> in the beginning.', name: 'testPath')
+                      string(defaultValue: null, description: 'Path to test which will be executed. For example <code>testdir_algos/gbm/pyunit_bernoulli_gbm.py</code> - <strong>no h2o-py/test/</strong> in the beginning.', name: 'testPath'),
+                      string(defaultValue: '10', description: 'Max number of nodes to test on. If there are some unhealthy nodes in selected nodes, then the actual number of executions might be lower.', name: 'maxNodes')
               ]))
               // Load the defineTestStages script
               defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')

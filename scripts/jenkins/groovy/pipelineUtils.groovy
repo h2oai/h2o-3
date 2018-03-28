@@ -158,6 +158,19 @@ class PipelineUtils {
         }
     }
 
+    boolean isLabelSatisfiable(final label) {
+        def parts = label.split('&&')
+        parts.each{ it->
+            it.trim()
+        }
+        for (part in parts) {
+            if (parts.contains("!${part}")) {
+                return false
+            }
+        }
+        return true
+    }
+
 }
 
 return this

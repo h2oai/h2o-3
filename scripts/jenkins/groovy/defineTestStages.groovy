@@ -239,12 +239,21 @@ def call(final pipelineContext) {
       default:
         error "Test Component ${params.testComponent} not supported"
     }
+    int maxNodesNum = -1
+    try {
+      maxNodesNum = Integer.parseInt(params.maxNodes)
+    } catch (NumberFormatException e) {
+      error "maxNodes must be a valid number"
+    }
     for (node in pipelineContext.getUtils().getH2O3Slaves()) {
       SINGLE_TEST_STAGES += [
         stageName: "Test ${params.testPath.split('/').last()} on ${node}", target: target, timeoutValue: 25,
         component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
         pythonVersion: params.pyVersion, rVersion: params.rVersion, nodeLabel: node
       ]
+      if (SINGLE_TEST_STAGES.size() >= maxNodesNum) {
+        break
+      }
     }
   }
 
@@ -346,6 +355,9 @@ private void invokeStage(final pipelineContext, final body) {
           try {
             while (!healthCheckPassed) {
               attempt += 1
+              if (!pipelineContext.getUtils().isLabelSatisfiable(nodeLabel)) {
+                error "There is no node for label ${nodeLabel}"
+              }
               if (attempt > HEALTH_CHECK_RETRIES) {
                 error "Too many attempts to pass initial health check"
               }
