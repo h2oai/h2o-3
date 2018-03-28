@@ -75,7 +75,7 @@
     },
     {
       "type": "md",
-      "input": "### Viewing Predictions\n\nTo view predictions, click the **Predict** button. From the drop-down **Frame** list, select the `diabetic_data.hex` file and click the **Predict** button. "
+      "input": "### Viewing Predictions\n\nTo view predictions, click the **Predict** button. From the drop-down **Frame** list, select the `dataset_diabetes.hex` file and click the **Predict** button. "
     },
     {
       "type": "cs",
@@ -83,7 +83,7 @@
     },
     {
       "type": "cs",
-      "input": "predict model: \"xgboost_diabetes_demo\", frame: \"diabetic_data.hex\", predictions_frame: \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
+      "input": "predict model: \"xgboost_diabetes_demo\", frame: \"dataset_diabetes.hex\", predictions_frame: \"prediction-ac7a206e-1fec-4c27-9ee4-c17870749206\""
     },
     {
       "type": "cs",
