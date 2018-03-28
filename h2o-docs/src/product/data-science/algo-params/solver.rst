@@ -16,7 +16,7 @@ In GLM, you can specify one of the following solvers:
 - COORDINATE_DESCENT: Coordinate Decent
 - COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive
 - AUTO: Sets the solver based on given data and parameters (default)
-- GRADIENT_DESCENT_LH: Gradient Descent Liklihood (available for Ordinal family only; default for Ordinal family)
+- GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 Detailed information about each of these options is available in the `Solvers <../glm.html#solvers>`__ section. The bullets below describe GLM chooses the solver when ``solver=AUTO``:

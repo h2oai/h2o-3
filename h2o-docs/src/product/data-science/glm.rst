@@ -140,7 +140,7 @@ Defining a GLM Model
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
--  **obj_reg**: Specifies the liklihood divider in objective value computation. This defaults to 1/nobs.
+-  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
 
 Interpreting a GLM Model
@@ -219,7 +219,7 @@ Linear regression corresponds to the Gaussian family model. The link function :m
 
  \hat {y} = {x^T}\beta + {\beta_0}
 
-The model is fitted by solving the least squares problem, which is equivalent to maximizing the liklihood for the Gaussian family.
+The model is fitted by solving the least squares problem, which is equivalent to maximizing the likelihood for the Gaussian family.
 
 .. math::
    
@@ -317,7 +317,7 @@ Again, you can add the Regularization Penalty to the loss function. The model pa
 
 Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj-reg``, ``alpha``, and ``lambda`` parameters.
 
-In general, the loss function methods tend to generate better accuracies than the liklihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
+In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
 Pseudo-Logistic Regression (Quasibinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -522,7 +522,7 @@ In GLM, you can specify one of the following solvers:
 - AUTO: Sets the solver based on given data and parameters.
 - COORDINATE_DESCENT: Coordinate Decent (experimental)
 - COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
-- GRADIENT_DESCENT_LH: Gradient Descent Liklihood (available for Ordinal family only; default for Ordinal family)
+- GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
 IRLSM and L-BFGS
