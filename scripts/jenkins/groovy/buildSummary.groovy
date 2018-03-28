@@ -73,8 +73,16 @@ class BuildSummary {
         if (mode != null) {
             modeItem = "<li><strong>Mode:</strong> ${mode}</li>\n"
         }
+        String singleTestInfo = ""
+        if (mode == 'MODE_SINGLE_TEST') {
+            singleTestInfo = "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
+            singleTestInfo += "<li><strong>Python:</strong> ${context.params.pyVersion}"
+            singleTestInfo += "<li><strong>R:</strong> ${context.params.rVersion}"
+            singleTestInfo += "<li><strong># Nodes:</strong> ${context.params.maxNodes}"
+        }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
+              ${singleTestInfo}
               ${modeItem}
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>

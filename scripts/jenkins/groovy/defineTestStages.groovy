@@ -4,12 +4,14 @@ def call(final pipelineContext) {
   def MODE_BENCHMARK_CODE = 1
   def MODE_HADOOP_CODE = 2
   def MODE_XGB_CODE = 3
+  def MODE_SINGLE_TEST_CODE = 5
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
     [name: 'MODE_XGB', code: MODE_XGB_CODE],
+    [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
@@ -216,12 +218,53 @@ def call(final pipelineContext) {
   }
 
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
+
+  def SINGLE_TEST_STAGES = []
+  if (modeCode == MODE_SINGLE_TEST_CODE) {
+    if (params.testPath == null || params.testPath == '') {
+      error 'Parameter testPath must be set.'
+    }
+    env.SINGLE_TEST_PATH = params.testPath
+    def target
+    def additionalTestPackage
+    switch (params.testComponent) {
+      case 'Python':
+        target = 'test-py-single-test'
+        additionalTestPackage = pipelineContext.getBuildConfig().COMPONENT_PY
+        break
+      case 'R':
+        target = 'test-r-single-test'
+        additionalTestPackage = pipelineContext.getBuildConfig().COMPONENT_R
+        break
+      default:
+        error "Test Component ${params.testComponent} not supported"
+    }
+    int maxNodesNum = -1
+    try {
+      maxNodesNum = Integer.parseInt(params.maxNodes)
+    } catch (NumberFormatException e) {
+      error "maxNodes must be a valid number"
+    }
+    for (node in pipelineContext.getUtils().getH2O3Slaves()) {
+      SINGLE_TEST_STAGES += [
+        stageName: "Test ${params.testPath.split('/').last()} on ${node}", target: target, timeoutValue: 25,
+        component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
+        pythonVersion: params.pyVersion, rVersion: params.rVersion, nodeLabel: node
+      ]
+      if (SINGLE_TEST_STAGES.size() >= maxNodesNum) {
+        break
+      }
+    }
+  }
+
   if (modeCode == MODE_BENCHMARK_CODE) {
     executeInParallel(BENCHMARK_STAGES, pipelineContext)
   } else if (modeCode == MODE_HADOOP_CODE) {
     executeInParallel(HADOOP_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
+  } else if (modeCode == MODE_SINGLE_TEST_CODE) {
+    executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
   } else {
     executeInParallel(SMOKE_STAGES, pipelineContext)
     def jobs = PR_STAGES
@@ -312,6 +355,9 @@ private void invokeStage(final pipelineContext, final body) {
           try {
             while (!healthCheckPassed) {
               attempt += 1
+              if (!pipelineContext.getUtils().isLabelSatisfiable(nodeLabel)) {
+                error "There is no node for label ${nodeLabel}"
+              }
               if (attempt > HEALTH_CHECK_RETRIES) {
                 error "Too many attempts to pass initial health check"
               }
