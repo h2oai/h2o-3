@@ -9,8 +9,15 @@ import water.rapids.ast.AstExec;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstId;
+import water.rapids.ast.prims.mungers.AstColPySlice;
+
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class H2OColOp extends Transform<H2OColOp> {
+
+  private static final String FRAME_ID_PLACEHOLDER = "dummy";
+
   protected final String _fun;
   private final String _oldCol;
   private String[] _newCol;
@@ -20,7 +27,7 @@ public class H2OColOp extends Transform<H2OColOp> {
   public H2OColOp(String name, String ast, boolean inplace, String[] newNames) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace,newNames);
     _fun = _ast._asts[0].str();
-    _oldCol = ((AstExec)_ast._asts[1])._asts[2].str();
+    _oldCol = findOldName((AstExec)_ast._asts[1]);
     setupParams();
   }
 
@@ -38,7 +45,8 @@ public class H2OColOp extends Transform<H2OColOp> {
 
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
-    ((AstExec)_ast._asts[1])._asts[1] = new AstId(f);
+    substitutePlaceholders(_ast, f);
+
     Session ses = new Session();
     Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
@@ -56,6 +64,45 @@ public class H2OColOp extends Transform<H2OColOp> {
     }
     DKV.put(f);
     return f;
+  }
+
+  private void substitutePlaceholders(AstExec root, Frame f) {
+    Queue<AstExec> execs = new LinkedList<>();
+    execs.add(root);
+    while (! execs.isEmpty()) {
+      AstExec exec = execs.poll();
+      for (int i = 1; i < exec._asts.length; i++) {
+        AstRoot<?> ast = exec._asts[i];
+        if (ast instanceof AstExec)
+          execs.add((AstExec) ast);
+        else if (ast instanceof AstId) {
+          AstId id = (AstId) ast;
+          if (FRAME_ID_PLACEHOLDER.equals(id.str()))
+            exec._asts[i] = new AstId(f);
+        }
+      }
+    }
+  }
+
+  private static String findOldName(AstExec root) {
+    AstColPySlice py = new AstColPySlice();
+    Queue<AstExec> execs = new LinkedList<>();
+    execs.add(root);
+    String oldName = null;
+    while (! execs.isEmpty()) {
+      AstExec exec = execs.poll();
+      // (cols_py dummy <oldName>)
+      if (exec._asts.length == 3 && py.str().equals(exec._asts[0].str()) && FRAME_ID_PLACEHOLDER.equals(exec._asts[1].str())) {
+        oldName = exec._asts[2].str();
+        break;
+      }
+      for (int i = 1; i < exec._asts.length; i++) {
+        AstRoot<?> ast = exec._asts[i];
+        if (ast instanceof AstExec)
+          execs.add((AstExec) ast);
+      }
+    }
+    return oldName;
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
