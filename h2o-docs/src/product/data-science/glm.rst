@@ -269,13 +269,13 @@ Logistic Ordinal Regression (Ordinal Family)
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
-Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belongs to class :math:`j`, given :math:`X_i` as the logistic function:
+Let :math:`X_i\in\rm \Bbb I \!\Bbb R^p`, :math:`y` can belong to any of the :math:`K` classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of :math:`y` belonging to class :math:`j`, given :math:`X_i` as the logistic function:
 
 .. math::
 
   P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}
 
-Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the thresholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j \geq 0` for the lowest class label :math:`j`.
+Compared to multiclass logistic regression, all classes share the same :math:`\beta` vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will :math:`X_i` be predicted, we use the thresholds vector :math:`\theta`. If there are :math:`K` different classes, then :math:`\theta` is a non-decreasing vector (that is, :math:`\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})` of size :math:`K-1`. We then assign :math:`X_i` to the class :math:`j` if :math:`\beta^{T}X_i + \theta_j > 0` for the lowest class label :math:`j`.
 
 We choose a logistic function to model the probability :math:`P(y \leq j|X_i)` but other choices are possible. 
 
@@ -285,12 +285,12 @@ To determine the values of :math:`\beta` and :math:`\theta`, we maximize the log
 
   L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)
 
-Conventional ordinal regression uses a likelihood function to adjust the system parameters. However, during prediction, GLM looks at the log CDF odds. 
+Conventional ordinal regression uses a likelihood function to adjust the model parameters. However, during prediction, GLM looks at the log CDF odds. 
 
 .. math::
-   \big( log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} \big)
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} 
 
-As a result, there is a small disconnect between the two. To remedy this, we have implemented a new algorithm to set and adjust the system parameters. 
+As a result, there is a small disconnect between the two. To remedy this, we have implemented a new algorithm to set and adjust the model parameters. 
 
 Recall that during prediction, a dataset row represented by :math:`X_i` will be set to class :math:`j` if 
 
@@ -300,20 +300,17 @@ Recall that during prediction, a dataset row represented by :math:`X_i` will be 
 and
 
 .. math::
-   beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j
+   \beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j
 
 Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
 
-.. math::
-    L(\beta,\theta, X_i, y_i) = \Bigg\{ \; \begin{eqnarray} \text{if} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j \geq y_i \\
-   \text{and} \; \beta^{T}X_i +  \theta_{j} \geq 0 \; \text{for all} \; j < y_i \\
-   (\beta^{T}X_i + \theta_{j})^2 \; \text{if} \; \beta^{T}X_i + \theta_{j} \leq 0 \; \text{for all} \; j \geq y_i \\ 
-   \text{and} \; \beta^{T}X_i + \theta_{j} > 0 \; \text{for all} \; j < y_i \\ \end{eqnarray} 
+.. figure:: ../images/ordinal_equation.png 
+   :align: center
+   :height: 243
+   :width: 565
+   :alt: Loss function 
 
-.. math::
-   L(\beta,\theta) = \sum_{i=1}^{n} L(\beta,\theta, X_i, y_i) \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; \; 
-
-Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH`` and use the log-likelihood function. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj_reg``, ``alpha``, and ``lambda`` parameters.
 
@@ -556,7 +553,7 @@ Both of the above method are explained in the `glmnet paper <https://core.ac.uk/
 Gradient Descent
 ''''''''''''''''
 
-For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the system parameters. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
+For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~
