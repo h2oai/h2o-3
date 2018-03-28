@@ -123,7 +123,6 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
             w.write('"Dependency","File","License Name","License URL"\n')
             licenses.dependencies.each { dep ->
                 dep.licenses.each {
-                    xgboostDefined |= dep.file.startsWith("xgboost4j")
                     boolean licenseValid = it.name != "No license found"
                     if (! licenseValid) {
                         if (dep.name == "asm:asm-parent:3.1") {
@@ -134,11 +133,6 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
                     }
                     w.write("${dep.name},${dep.file},\"${it.name}\",${it.url}\n")
                 }
-            }
-            if (! xgboostDefined) {
-                // Manually add XGBoost
-                logger.error('ERROR: XGBoost dependency is manually defined, please consider changing it!')
-                w.write("ml.dmlc:xgboost-jvm:0.7,xgboost4j-0.7.jar,\"Apache License 2.0\",http://opensource.org/licenses/Apache-2.0\n")
             }
         }
     }
