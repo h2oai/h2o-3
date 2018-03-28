@@ -315,7 +315,7 @@ Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model p
 
 Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
-Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj-reg``, ``alpha``, and ``lambda`` parameters.
+Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the ``obj_reg``, ``alpha``, and ``lambda`` parameters.
 
 In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
