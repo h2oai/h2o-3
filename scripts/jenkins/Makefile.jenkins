@@ -68,7 +68,7 @@ test-pyunit-medium-large:
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
 
 test-py-single-test:
-	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --jvm.xmx 30g
 
 test-r-smoke:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
@@ -123,7 +123,7 @@ test-r-demos-medium-large:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
 
 test-r-single-test:
-	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --jvm.xmx 30g
 
 r-generate-docs-jenkins:
 	@$(MAKE) -f $(THIS_FILE) r-generate-docs

@@ -151,7 +151,7 @@ class PipelineUtils {
         }
         // filter only slaves usable by h2o-3
         def h2o3Slaves = dockerSlaves.findAll {it ->
-            it.getNodeName() != 'mr-0xc8'
+            it.getNodeName() != 'mr-0xc8' && !it.getLabelString().split(' ').contains('micro')
         }
         return h2o3Slaves.collect {it ->
             it.getNodeName()
