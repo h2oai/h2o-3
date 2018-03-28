@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.easy.error.CountingErrorConsumer;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.prediction.*;
@@ -13,7 +14,6 @@ import org.junit.Test;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EasyPredictModelWrapperTest {
@@ -68,8 +68,11 @@ public class EasyPredictModelWrapperTest {
   @Test
   public void testUnknownCategoricalLevels() throws Exception {
     MyModel rawModel = makeModel();
-    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
-
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+    .setModel(rawModel)
+    .setErrorConsumer(countingErrorConsumer));
+    
     {
       RowData row = new RowData();
       row.put("C1", "c1level1");
@@ -78,7 +81,7 @@ public class EasyPredictModelWrapperTest {
       } catch (PredictUnknownCategoricalLevelException e) {
         Assert.fail("Caught exception but should not have");
       }
-      ConcurrentHashMap<String, AtomicLong> unknown = m.getUnknownCategoricalLevelsSeenPerColumn();
+      Map<String, AtomicLong> unknown = countingErrorConsumer.getUnknownCategoricalsPerColumn();
       long total = 0;
       for (AtomicLong l : unknown.values()) {
         total += l.get();
@@ -97,7 +100,7 @@ public class EasyPredictModelWrapperTest {
         caught = true;
       }
       Assert.assertEquals(caught, true);
-      ConcurrentHashMap<String, AtomicLong> unknown = m.getUnknownCategoricalLevelsSeenPerColumn();
+      Map<String, AtomicLong> unknown = countingErrorConsumer.getUnknownCategoricalsPerColumn();
       long total = 0;
       for (AtomicLong l : unknown.values()) {
         total += l.get();
@@ -105,7 +108,7 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(total, 0);
     }
 
-    CountingErrorConsumer errorConsumer = new CountingErrorConsumer();
+    CountingErrorConsumer errorConsumer = new CountingErrorConsumer(rawModel);
     m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(rawModel)
             .setErrorConsumer(errorConsumer)
@@ -115,37 +118,37 @@ public class EasyPredictModelWrapperTest {
     {
       RowData row0 = new RowData();
       m.predict(row0);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 0);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 0);
 
       RowData row1 = new RowData();
       row1.put("C1", "c1level1");
       row1.put("C2", "unknownLevel");
       m.predictBinomial(row1);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       RowData row2 = new RowData();
       row2.put("C1", "c1level1");
       row2.put("C2", "c2level3");
       m.predictBinomial(row2);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       RowData row3 = new RowData();
       row3.put("C1", "c1level1");
       row3.put("unknownColumn", "unknownLevel");
       m.predictBinomial(row3);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       m.predictBinomial(row1);
       m.predictBinomial(row1);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 3);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 3);
 
       RowData row4 = new RowData();
       row4.put("C1", "unknownLevel");
       m.predictBinomial(row4);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 4);
-      Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C1").get(), 1);
-      Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C2").get(), 3);
-      Assert.assertEquals(4, errorConsumer.unseenCategoricalConsumed);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 4);
+      Assert.assertEquals(errorConsumer.getUnknownCategoricalsPerColumn().get("C1").get(), 1);
+      Assert.assertEquals(errorConsumer.getUnknownCategoricalsPerColumn().get("C2").get(), 3);
+      Assert.assertEquals(4, errorConsumer.getTotalUnknownCategoricalLevelsSeen());
     }
   }
 
@@ -312,27 +315,6 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(result.length, preds.length);
       System.arraycopy(result, 0, preds, 0, result.length);
       return result;
-    }
-  }
-
-  private class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer {
-    public int errorsConsumed = 0;
-    public int unseenCategoricalConsumed = 0;
-
-    @Override
-    public void dataTransformError(String columnName, Object value, String message) {
-      Assert.assertNotNull(columnName);
-      Assert.assertNotNull(value);
-      Assert.assertNotNull(message);
-      errorsConsumed++;
-    }
-
-    @Override
-    public void unseenCategorical(String columnName, Object value, String message) {
-      Assert.assertNotNull(columnName);
-      Assert.assertNotNull(value);
-      Assert.assertNotNull(message);
-      unseenCategoricalConsumed++;
     }
   }
 
