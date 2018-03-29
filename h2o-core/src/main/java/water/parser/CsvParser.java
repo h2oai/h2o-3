@@ -440,7 +440,7 @@ MAIN_LOOP:
         if( !firstChunk || bits1 == null ) { // No more data available or allowed
           // If we are mid-parse of something, act like we saw a LF to end the
           // current token.
-          if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
+          if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE) && quoteCount == 0) {
             c = CHAR_LF;  continue; // MAIN_LOOP;
           }
           break; // MAIN_LOOP;      // Else we are just done
