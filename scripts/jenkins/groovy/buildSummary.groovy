@@ -81,7 +81,7 @@ class BuildSummary {
             singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
             singleTestInfo += "<li><strong># H2O Clouds:</strong> ${context.params.singleTestNumClouds}"
             singleTestInfo += "<li><strong># H2O Nodes:</strong> ${context.params.singleTestNumNodes}"
-            singleTestInfo += "<li><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
+            singleTestInfo += "<li style=\"border-bottom: 1px dashed lightgray;margin-bottom: 5px;padding-bottom: 5px;\"><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
         }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
