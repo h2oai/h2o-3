@@ -1,0 +1,13 @@
+dn: cn=jenkins,ou=users,dc=0xdata,dc=loc
+cn: jenkins
+gidnumber: 2117
+givenname: jenkins
+homedirectory: /home/users/jenkins
+loginshell: /bin/sh
+objectclass: inetOrgPerson
+objectclass: posixAccount
+objectclass: top
+sn: Jenkins
+uid: jenkins
+uidnumber: 2117
+userpassword: jenkins
