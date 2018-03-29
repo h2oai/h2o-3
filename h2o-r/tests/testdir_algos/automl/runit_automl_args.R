@@ -22,7 +22,7 @@ automl.args.test <- function() {
   train[,y] <- as.factor(train[,y])
   test[,y] <- as.factor(test[,y])
   max_runtime_secs <- 10
-
+  max_models <- 2
   print("Check arguments to H2OAutoML class")
 
   #print("Try without a y")
@@ -94,7 +94,7 @@ automl.args.test <- function() {
   aml8 <- h2o.automl(x = x, y = y,
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
-                     max_models = 3,
+                     max_models = max_models,
                      project_name = "aml8")
   expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb, TRUE)
 
@@ -109,7 +109,7 @@ automl.args.test <- function() {
   aml9 <- h2o.automl(x = x, y = y,
                      training_frame = train,
                      fold_column = fold_column,
-                     max_models = 2,
+                     max_models = max_models,
                      project_name = "aml9")
   model_ids <- as.character(as.data.frame(aml9@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -150,7 +150,7 @@ automl.args.test <- function() {
   aml12 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
-                      max_models = 3,
+                      max_models = max_models,
                       project_name = "aml12")
   model_ids <- as.character(as.data.frame(aml12@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -160,7 +160,7 @@ automl.args.test <- function() {
   aml13 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 0,
-                      max_models = 3,
+                      max_models = max_models,
                       project_name = "aml13")
   # Check that leaderboard does not contain any SEs
   model_ids <- as.character(as.data.frame(aml13@leaderboard[,"model_id"])[,1])
@@ -171,7 +171,7 @@ automl.args.test <- function() {
   aml14 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
-                      max_models = 6,
+                      max_models = max_models,
                       project_name = "aml14")
   # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
   model_ids <- as.character(as.data.frame(aml14@leaderboard[,"model_id"])[,1])
