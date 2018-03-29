@@ -180,17 +180,21 @@ Building a MOJO from sparkling water
 
    .. code:: scala
 
-       implicit val hc = H2OContext.getOrCreate(spark)
-       import spark.implicits._
-       import h2oContext.implicits._
-       spark.sparkContext.addFile(new File("prostate.csv").getAbsolutePath)
-       val df = spark.read.csv(SparkFiles.get("dataset.csv"))
-       val table: H2OFrame = df
+       // Prepare the environment
+       import org.apache.spark.h2o._
+       import hex.genmodel.utils.DistributionFamily
+       import hex.tree.gbm.GBMModel.GBMParameters
+       import hex.tree.gbm.GBM
+       val hc = H2OContext.getOrCreate(spark)
+
+       // Load and preapre the data
+       val table: H2OFrame = new H2OFrame(new java.io.File("examples/smalldata/prostate/prostate.csv"))
        val target = "CAPSULE"
        table.replace(table.find(target), table.vec(target).toCategoricalVec).remove()
+
        // Build GBM model
        val gbmParams = new GBMParameters()
-       gbmParams._train = table
+       gbmParams._train = table._key
        gbmParams._response_column = target
        gbmParams._ntrees = 5
        gbmParams._nfolds = 3
@@ -199,18 +203,15 @@ Building a MOJO from sparkling water
        val gbm = new GBM(gbmParams)
        val model = gbm.trainModel.get
 
- 3. Download the MOJO to an **experiment** folder.
-
-   .. code:: scala
-
-       val outputStream = new FileOutputStream(new File("~/experiments/model.mojo"))
+        // Export the mojo
+       val outputStream = new FileOutputStream(new File("model.mojo"))
        try {
          gbmModel.getMojo.writeTo(outputStream)
        }
        finally if (outputStream != null) outputStream.close()
 
  **Step 2: Compile and run the MOJO**
- 4. Create a new file called main.scala. This file will be able to load the previously generated model.
+ 1. Create a new file called main.scala. This file will be able to load the previously generated model.
 
    .. code:: scala
 
@@ -223,13 +224,18 @@ Building a MOJO from sparkling water
        object Main extends App {
 
          override def main(args: Array[String]): Unit = {
-           val is = new FileInputStream(new File("./model.mojo"))
+           // Load the MOJO
+           val is = new FileInputStream(new File("model.mojo"))
            val reader = MojoReaderBackendFactory.createReaderBackend(is, MojoReaderBackendFactory.CachingStrategy.MEMORY)
            val mojoModel = ModelMojoReader.readFrom(reader)
+
+           // Setup predictor
            val config = new EasyPredictModelWrapper.Config()
            config.setModel(mojoModel)
            config.setConvertUnknownCategoricalLevelsToNa(true)
            val model = new EasyPredictModelWrapper(config)
+
+           // Score a new sample
            val row = new RowData
            row.put("AGE", "68")
            row.put("RACE", "2")
@@ -237,21 +243,9 @@ Building a MOJO from sparkling water
            row.put("VOL", "0")
            row.put("GLEASON", "6")
            val p = model.predictBinomial(row)
-           println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label)
-           print("Class probabilities: ")
-           var i = 0
-           while ( {
-             i < p.classProbabilities.length
-           }) {
-             if (i > 0) System.out.print(",")
-             System.out.print(p.classProbabilities(i))
 
-             {
-               i += 1
-               i - 1
-             }
-           }
-           println("")
+           println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label)
+           println("Class probabilities: " + p.classProbabilities.mkString(", "))
          }
        }
 
