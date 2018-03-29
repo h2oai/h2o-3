@@ -2,6 +2,93 @@
 
 ## H2O
 
+### Wolpert (3.18.0.5) - 3/28/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4933'>PUBDEV-4933</a>] - AutoML no longer trains a Stacked Ensemble with only one model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5028'>PUBDEV-5028</a>] - GBM and GLM grids no longer fail in AutoML for multinomial problems. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5266'>PUBDEV-5266</a>] -  Users can now merge/sort frames that contain string columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5303'>PUBDEV-5303</a>] - Fixed an issue that occured with multinomial GLM POJO/MOJO models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5334'>PUBDEV-5334</a>] - Users can no longer specify a value of 0 for the col_sample_rate_change_per_level parameter. The value for this parameter must be greater than 0 and <= 2.0.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5336'>PUBDEV-5336</a>] - The H2O-3 Python client no longer returns an incorrect answer when running a conditional statement.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5365'>PUBDEV-5365</a>] - Added support for CDH 5.14.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5366'>PUBDEV-5366</a>] - Fixed an issue that caused XGBoost to fail when running the airlines dataset on a single-node H2O cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5370'>PUBDEV-5370</a>] - The H2O-3 parser can now handle utf-8 characters that appear in the header.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5394'>PUBDEV-5394</a>] - The H2O-3 parser no longer treats the "Ctr-M" character as an end of line on Linux. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5414'>PUBDEV-5414</a>] - H2O no longer generates a warning when predicting without a weights column.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5402'>PUBDEV-5402</a>] - The AutoML leaderboard no longer prints NaNs for non-US locales.
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5235'>PUBDEV-5235</a>] - Added a demo of XGBoost in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5386'>PUBDEV-5386</a>] - Improved the ordinal regression parameter optimization by changing the implementation.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3978'>PUBDEV-3978</a>] - In Flow, improved the vertical scrolling for training and validation metrics for thresholds.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5364'>PUBDEV-5364</a>] - Added more logging regarding the WatchDog client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5383'>PUBDEV-5383</a>] - Replaced  unknownCategoricalLevelsSeenPerColumn with ErrorConsumer events in POJO log messages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5400'>PUBDEV-5400</a>] - Improved the logic that triggers rebalance.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5404'>PUBDEV-5404</a>] - AutoML now uses correct datatypes in the AutoML leaderboard TwoDimTable.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5292'>PUBDEV-5292</a>] - Added ``beta constraints`` and ``prior`` entries to the Parameters Appendix, along with examples in R and Python. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5369'>PUBDEV-5369</a>] - Added CDH 5.14 to the list of supported Hadoop platforms in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5413'>PUBDEV-5413</a>] - Updated the documenation for the Ordinal ``family`` option in GLM based on the new implementation. Also added new solvers to the documenation: GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5416'>PUBDEV-5416</a>] - Added information about Extremely Randomized Trees (XRT) to the DRF chapter in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5421'>PUBDEV-5421</a>] - On the H2O-3 and Sparkling Water download pages, the link to documentation site now points to the most updated version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5432'>PUBDEV-5432</a>] - The ``target_encode_create`` and ``target_encode_apply`` are now included in the R HTML documentation.
+</li>
+</ul>
+                
+<h4>Fault</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5367'>PUBDEV-5367</a>] - Fixed an issue that caused SQLManager import to break on cluster with over 100 nodes.
+</li>
+</ul>
+
+
 ### Wolpert (3.18.0.4) - 3/8/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html</a>
