@@ -11,6 +11,7 @@ import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstId;
 import water.rapids.ast.prims.mungers.AstColPySlice;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -108,7 +109,10 @@ public class H2OColOp extends Transform<H2OColOp> {
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }
 
   @Override public String genClassImpl() {
-    String typeCast = _inTypes[ArrayUtils.indexOf(_inNames, _oldCol)].equals("Numeric")?"Double":"String";
+    final int typeId = ArrayUtils.indexOf(_inNames, _oldCol);
+    if (typeId < 0)
+      throw new IllegalStateException("Unknown column " + _oldCol + " (known: " + Arrays.toString(_inNames));
+    String typeCast = _inTypes[typeId].equals("Numeric")?"Double":"String";
 
     if( _multiColReturn ) {
       StringBuilder sb = new StringBuilder(
