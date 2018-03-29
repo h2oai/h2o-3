@@ -224,7 +224,12 @@ def call(final pipelineContext) {
     if (params.testPath == null || params.testPath == '') {
       error 'Parameter testPath must be set.'
     }
+
     env.SINGLE_TEST_PATH = params.testPath
+    env.SINGLE_TEST_XMX = params.singleTestXmx
+    env.SINGLE_TEST_NUM_CLOUDS = params.singleTestNumClouds
+    env.SINGLE_TEST_NUM_NODES = params.singleTestNumNodes
+
     def target
     def additionalTestPackage
     switch (params.testComponent) {
@@ -239,21 +244,18 @@ def call(final pipelineContext) {
       default:
         error "Test Component ${params.testComponent} not supported"
     }
-    int maxNodesNum = -1
+    def numRunsNum = -1
     try {
-      maxNodesNum = Integer.parseInt(params.maxNodes)
+      numRunsNum = Integer.parseInt(params.singleTestNumRuns)
     } catch (NumberFormatException e) {
-      error "maxNodes must be a valid number"
+      error "singleTestNumRuns must be a valid number"
     }
-    for (node in pipelineContext.getUtils().getH2O3Slaves()) {
+    numRunsNum.times {
       SINGLE_TEST_STAGES += [
         stageName: "Test ${params.testPath.split('/').last()} on ${node}", target: target, timeoutValue: 25,
         component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
-        pythonVersion: params.pyVersion, rVersion: params.rVersion, nodeLabel: node
+        pythonVersion: params.singleTestPyVersion, rVersion: params.singleTestRVersion, nodeLabel: node
       ]
-      if (SINGLE_TEST_STAGES.size() >= maxNodesNum) {
-        break
-      }
     }
   }
 
