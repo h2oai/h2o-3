@@ -79,7 +79,6 @@ class BuildSummary {
             singleTestInfo += "<li><strong>R:</strong> ${context.params.singleTestRVersion}"
             singleTestInfo += "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
             singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
-            singleTestInfo += "<li><strong># H2O Clouds:</strong> ${context.params.singleTestNumClouds}"
             singleTestInfo += "<li><strong># H2O Nodes:</strong> ${context.params.singleTestNumNodes}"
             singleTestInfo += "<li style=\"border-bottom: 1px dashed lightgray;margin-bottom: 5px;padding-bottom: 5px;\"><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
         }

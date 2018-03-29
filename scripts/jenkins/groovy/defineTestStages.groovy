@@ -225,9 +225,8 @@ def call(final pipelineContext) {
       error 'Parameter testPath must be set.'
     }
 
-    env.SINGLE_TEST_PATH = params.testPath
+    env.SINGLE_TEST_PATH = params.testPath.trim()
     env.SINGLE_TEST_XMX = params.singleTestXmx
-    env.SINGLE_TEST_NUM_CLOUDS = params.singleTestNumClouds
     env.SINGLE_TEST_NUM_NODES = params.singleTestNumNodes
 
     def target
@@ -252,7 +251,7 @@ def call(final pipelineContext) {
     }
     numRunsNum.times {
       SINGLE_TEST_STAGES += [
-        stageName: "Test ${params.testPath.split('/').last()} #${it}", target: target, timeoutValue: 25,
+        stageName: "Test ${params.testPath.split('/').last()} #${(it + 1)}", target: target, timeoutValue: 25,
         component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
         pythonVersion: params.singleTestPyVersion, rVersion: params.singleTestRVersion
       ]
