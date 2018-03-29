@@ -16,13 +16,14 @@ glmOrdinal <- function() {
   alphaL <- c(0,0.5,1)
   bestAccLH <- 0
   bestAccSQERR <- 0
+  seeds<-12345
   
   for (reg in obj_regL) {
     for (lambda in lambdaL) {
       for (alpha in alphaL) {
         print(c(reg, lambda, alpha))
     m1 <- h2o.glm(y = Y, x = X, training_frame = D, lambda=c(reg/10), alpha=c(0.5), family = "ordinal", beta_epsilon=1e-8, 
-                objective_epsilon=1e-6, obj_reg=reg,max_iterations=8000 )  
+                objective_epsilon=1e-6, obj_reg=reg,max_iterations=8000, seed=seeds)  
     predh2o = as.data.frame(h2o.predict(m1,D))
     Ddata <- as.data.frame(D)
     confusionH2O <- table(Ddata$apply, predh2o$predict)
@@ -35,7 +36,7 @@ glmOrdinal <- function() {
       bestAccLH <- accRH2O
     
     m1 <- h2o.glm(y = Y, x = X, training_frame = D, lambda=c(reg/100), alpha=c(0.8), family = "ordinal", beta_epsilon=1e-8, 
-                  objective_epsilon=1e-6, obj_reg=reg,max_iterations=8000, solver='GRADIENT_DESCENT_SQERR')  
+                  objective_epsilon=1e-6, obj_reg=reg,max_iterations=8000, solver='GRADIENT_DESCENT_SQERR', seed=seeds)  
     predh2o = as.data.frame(h2o.predict(m1,D))
     Ddata <- as.data.frame(D)
     confusionH2O <- table(Ddata$apply, predh2o$predict)
