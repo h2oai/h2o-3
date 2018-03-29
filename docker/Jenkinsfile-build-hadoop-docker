@@ -73,12 +73,13 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                             error "Tag ${imageName}:${version} already exists in the repository"
                         }
 
-                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        withCredentials([file(credentialsId: 'jenkins.ldif', variable: 'JENKINS_LDIF_PATH'), usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
                             sh """
                                 cd docker
                                 pwd
                                 ls -alh
+                                cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/
                                 docker build \
                                     -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                                     -f hadoop/${distribution.name}/Dockerfile \

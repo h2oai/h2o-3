@@ -27,7 +27,7 @@ RUN apt-get update && \
     wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
     apt-key add archive.key && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils && \
     rm -rf /var/lib/apt/lists/*
 
 ENV H2O_BRANCH='master'
@@ -60,21 +60,21 @@ COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startu
 # Copy sudoers so we can start hadoop stuff without root access to container
 COPY ${PATH_PREFIX}/../common/sudoers/jenkins /etc/sudoers.d/jenkins
 COPY ${PATH_PREFIX}/../common/hive-scripts /opt/hive-scripts/
-
-# Expose ports
-# H2O, HADOOP UI
-EXPOSE 54321 8088
+COPY ${PATH_PREFIX}/../common/ldap /opt/ldap-scripts/
 
 # Run this script on container run
 RUN chmod 700 /usr/sbin/startup.sh && \
     chown -R hive:hive /opt/hive-scripts && \
     chmod +x /usr/sbin/install_hive.sh && \
+    chmod 700 /usr/sbin/install_ldap.sh && \
     sync && \
-    usr/sbin/install_hive.sh
+    /usr/sbin/install_hive.sh
+
+RUN /usr/sbin/install_ldap.sh
 
 # Expose ports
-# H2O, Hadoop UI, Hive
-EXPOSE 54321 8088 10000
+# H2O, Hadoop UI, Hive, LDAP
+EXPOSE 54321 8088 10000 389
 
 # Remove hadoop pids
 RUN rm -f tmp/*.pid /var/run/hadoop-*/*.pid

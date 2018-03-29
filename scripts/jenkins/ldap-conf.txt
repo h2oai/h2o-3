@@ -3,10 +3,10 @@ ldaploginmodule {
     debug="true"
     useLdaps="false"
     contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
-    hostname="ldap.0xdata.loc"
+    hostname="localhost"
     port="389"
     bindDn="cn=admin,dc=0xdata,dc=loc"
-    bindPassword="0xdata"
+    bindPassword="admin"
     authenticationMethod="simple"
     forceBindingLogin="true"
     userBaseDn="ou=users,dc=0xdata,dc=loc";
