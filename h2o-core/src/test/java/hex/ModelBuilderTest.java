@@ -3,6 +3,9 @@ package hex;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.BufferedString;
 
 import static org.junit.Assert.assertEquals;
@@ -11,6 +14,53 @@ public class ModelBuilderTest extends TestUtil {
 
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }
+
+  @Test
+  public void testRebalancePubDev5400() {
+    try {
+      Scope.enter();
+      // create a frame where only the last chunk has data and the rest is empty
+      final int nChunks = H2O.NUMCPUS;
+      final int nRows = nChunks * 1000;
+      double[] colA = new double[nRows];
+      String[] resp = new String[nRows];
+      for (int i = 0; i < colA.length; i++) {
+        colA[i] = i % 7;
+        resp[i] = i % 3 == 0 ? "A" : "B";
+      }
+      long[] layout = new long[nChunks];
+      layout[nChunks - 1] = colA.length;
+      final Frame train = Scope.track(new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, colA)
+              .withDataForCol(1, resp)
+              .withChunkLayout(layout)
+              .build());
+      assertEquals(nChunks, train.anyVec().nChunks());
+      assertEquals(colA.length, train.numRows());
+
+      DummyModelParameters parms = new DummyModelParameters("Rebalance Test", Key.make( "rebalance-test"));
+      parms._train = train._key;
+      ModelBuilder<?, ?, ?> mb = new DummyModelBuilder(parms);
+
+      // the frame looks ideal (it has as many chunks as desired)
+      assertEquals(nChunks, mb.desiredChunks(train, true));
+
+      // expensive init - should include rebalance
+      mb.init(true);
+
+      // check that dataset was rebalanced
+      long[] espc = mb.train().anyVec().espc();
+      assertEquals(nChunks + 1, espc.length);
+      assertEquals(nRows, espc[nChunks]);
+      for (int i = 0; i < espc.length; i++)
+        assertEquals(i * 1000, espc[i]);
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   @SuppressWarnings("unchecked")
@@ -68,6 +118,7 @@ public class ModelBuilderTest extends TestUtil {
   public static class DummyModelBuilder extends ModelBuilder<DummyModel, DummyModelParameters, DummyModelOutput> {
     public DummyModelBuilder(DummyModelParameters parms) {
       super(parms);
+      init(false);
     }
 
     @Override
