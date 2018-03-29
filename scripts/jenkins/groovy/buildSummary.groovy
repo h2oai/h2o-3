@@ -75,14 +75,13 @@ class BuildSummary {
         }
         String singleTestInfo = ""
         if (mode == 'MODE_SINGLE_TEST') {
-            singleTestInfo = "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
-            singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
-            singleTestInfo += "<li><strong># Clouds:</strong> ${context.params.singleTestNumClouds}"
-            singleTestInfo += "<li><strong># Nodes:</strong> ${context.params.singleTestNumNodes}"
-            singleTestInfo += "<li><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
             singleTestInfo += "<li><strong>Python:</strong> ${context.params.singleTestPyVersion}"
             singleTestInfo += "<li><strong>R:</strong> ${context.params.singleTestRVersion}"
-            singleTestInfo += "<li><strong># Nodes:</strong> ${context.params.maxNodes}"
+            singleTestInfo += "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
+            singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
+            singleTestInfo += "<li><strong># H2O Clouds:</strong> ${context.params.singleTestNumClouds}"
+            singleTestInfo += "<li><strong># H2O Nodes:</strong> ${context.params.singleTestNumNodes}"
+            singleTestInfo += "<li><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
         }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
