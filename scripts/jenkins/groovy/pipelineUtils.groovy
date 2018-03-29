@@ -142,35 +142,6 @@ class PipelineUtils {
         context.junit testResults: "${h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
     }
 
-    List<String> getH2O3Slaves() {
-        // get all slaves
-        def allSlaves = hudson.model.Hudson.instance.slaves
-        // filter only slaves with label docker
-        def dockerSlaves = allSlaves.findAll {it ->
-            it.getLabelString().split(' ').contains('docker')
-        }
-        // filter only slaves usable by h2o-3
-        def h2o3Slaves = dockerSlaves.findAll {it ->
-            it.getNodeName() != 'mr-0xc8'
-        }
-        return h2o3Slaves.collect {it ->
-            it.getNodeName()
-        }
-    }
-
-    boolean isLabelSatisfiable(final label) {
-        def parts = label.split('&&')
-        parts.each{ it->
-            it.trim()
-        }
-        for (part in parts) {
-            if (parts.contains("!${part}")) {
-                return false
-            }
-        }
-        return true
-    }
-
 }
 
 return this

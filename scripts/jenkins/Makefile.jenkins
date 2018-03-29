@@ -68,7 +68,10 @@ test-pyunit-medium-large:
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
 
 test-py-single-test:
-	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH
+	@echo "test=$$SINGLE_TEST_PATH"
+	@echo "numnodes=$$SINGLE_TEST_NUM_NODES"
+	@echo "jvm.xmx=$$SINGLE_TEST_XMX"
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
 
 test-r-smoke:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
@@ -123,7 +126,10 @@ test-r-demos-medium-large:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
 
 test-r-single-test:
-	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH
+	@echo "test=$$SINGLE_TEST_PATH"
+	@echo "numnodes=$$SINGLE_TEST_NUM_NODES"
+	@echo "jvm.xmx=$$SINGLE_TEST_XMX"
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
 
 r-generate-docs-jenkins:
 	@$(MAKE) -f $(THIS_FILE) r-generate-docs

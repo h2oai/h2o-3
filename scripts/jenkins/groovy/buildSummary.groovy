@@ -75,10 +75,12 @@ class BuildSummary {
         }
         String singleTestInfo = ""
         if (mode == 'MODE_SINGLE_TEST') {
-            singleTestInfo = "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
-            singleTestInfo += "<li><strong>Python:</strong> ${context.params.pyVersion}"
-            singleTestInfo += "<li><strong>R:</strong> ${context.params.rVersion}"
-            singleTestInfo += "<li><strong># Nodes:</strong> ${context.params.maxNodes}"
+            singleTestInfo += "<li><strong>Python:</strong> ${context.params.singleTestPyVersion}"
+            singleTestInfo += "<li><strong>R:</strong> ${context.params.singleTestRVersion}"
+            singleTestInfo += "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
+            singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
+            singleTestInfo += "<li><strong># H2O Nodes:</strong> ${context.params.singleTestNumNodes}"
+            singleTestInfo += "<li style=\"border-bottom: 1px dashed lightgray;margin-bottom: 5px;padding-bottom: 5px;\"><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
         }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
