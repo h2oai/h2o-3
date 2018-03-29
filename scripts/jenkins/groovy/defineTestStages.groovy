@@ -357,9 +357,6 @@ private void invokeStage(final pipelineContext, final body) {
           try {
             while (!healthCheckPassed) {
               attempt += 1
-              if (!pipelineContext.getUtils().isLabelSatisfiable(nodeLabel)) {
-                error "There is no node for label ${nodeLabel}"
-              }
               if (attempt > HEALTH_CHECK_RETRIES) {
                 error "Too many attempts to pass initial health check"
               }
