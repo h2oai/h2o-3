@@ -254,7 +254,7 @@ def call(final pipelineContext) {
       SINGLE_TEST_STAGES += [
         stageName: "Test ${params.testPath.split('/').last()} #${it}", target: target, timeoutValue: 25,
         component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
-        pythonVersion: params.singleTestPyVersion, rVersion: params.singleTestRVersion, nodeLabel: node
+        pythonVersion: params.singleTestPyVersion, rVersion: params.singleTestRVersion
       ]
     }
   }
