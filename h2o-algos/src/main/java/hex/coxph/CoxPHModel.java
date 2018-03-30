@@ -173,12 +173,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     IcedHashMap<AstGroup.G, IcedInt> _strataMap;
     String[] _strataOnlyCols;
 
-    String[] _coef_names;
-    double[] _coef;
-    double[] _exp_coef;
-    double[] _exp_neg_coef;
-    double[] _se_coef;
-    double[] _z_coef;
+    public String[] _coef_names;
+    public double[] _coef;
+    public double[] _exp_coef;
+    public double[] _exp_neg_coef;
+    public double[] _se_coef;
+    public double[] _z_coef;
+
     double[][] _var_coef;
     double _null_loglik;
     double _loglik;

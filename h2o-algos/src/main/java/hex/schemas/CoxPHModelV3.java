@@ -4,6 +4,8 @@ import hex.coxph.CoxPHModel;
 import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
+import water.api.schemas3.TwoDimTableV3;
+import water.util.TwoDimTable;
 
 public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
                                               CoxPHModelV3,
@@ -14,19 +16,9 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
 
   public static final class CoxPHModelOutputV3 extends ModelOutputSchemaV3<CoxPHModel.CoxPHOutput, CoxPHModelOutputV3> {
 
-    @API(help = "coef_names")
-    String[] coef_names;
-    @API(help = "coef")
-    double[] coef;
-    @API(help = "exp_coef")
-    double[] exp_coef;
-    @API(help = "exp_neg_coef")
-    double[] exp_neg_coef;
-    @API(help = "se_coef")
-    double[] se_coef;
-    @API(help = "z_coef")
-    double[] z_coef;
-    @API(help = "var_coef")
+    @API(help="Table of Coefficients")
+    TwoDimTableV3 coefficients_table;
+
     double[][] var_coef;
     @API(help = "null_loglik")
     double null_loglik;
@@ -73,6 +65,25 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     @API(help = "ties", values = {"efron", "breslow"})
     CoxPHModel.CoxPHParameters.CoxPHTies ties;
 
+    @Override
+    public CoxPHModelOutputV3 fillFromImpl(CoxPHModel.CoxPHOutput impl) {
+      super.fillFromImpl(impl);
+      String[] names = impl._coef_names;
+      String[] colTypes = new String[]{"double", "double", "double", "double", "double"};
+      String[] colFormats = new String[]{"%5f", "%5f", "%5f", "%5f", "%5f"};
+      String[] colNames = new String[]{"Coefficients", "exp_coef", "exp_neg_coef", "se_coef", "z_coef"};
+      TwoDimTable tdt = new TwoDimTable("Coefficients","CoxPH Coefficients", names, colNames, colTypes, colFormats, "names");
+      // fill in coefficients
+      for (int i = 0; i < names.length; i++) {
+        tdt.set(i, 0, impl._coef[i]);
+        tdt.set(i, 1, impl._exp_coef[i]);
+        tdt.set(i, 2, impl._exp_neg_coef[i]);
+        tdt.set(i, 3, impl._se_coef[i]);
+        tdt.set(i, 4, impl._z_coef[i]);
+      }
+      coefficients_table = new TwoDimTableV3().fillFromImpl(tdt);
+      return this;
+    }
   } // CoxPHModelOutputV3
 
   public CoxPHV3.CoxPHParametersV3 createParametersSchema() { return new CoxPHV3.CoxPHParametersV3(); }

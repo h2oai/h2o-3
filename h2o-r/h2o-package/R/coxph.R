@@ -23,10 +23,10 @@
 #' @param init Coefficient starting value. Defaults to 0.
 #' @param lre_min Minimum log-relative error. Defaults to 9.
 #' @param iter_max Maximum number of iterations. Defaults to 20.
-#' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
-#'        training.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
+#' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
+#'        training.
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
 #' @export
@@ -41,9 +41,9 @@ h2o.coxph <- function(x, event_column, training_frame,
                       init = 0,
                       lre_min = 9,
                       iter_max = 20,
-                      interactions_only = NULL,
                       interactions = NULL,
                       interaction_pairs = NULL,
+                      interactions_only = NULL,
                       use_all_factor_levels = FALSE
                       ) 
 {
@@ -104,12 +104,12 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$lre_min <- lre_min
   if (!missing(iter_max))
     parms$iter_max <- iter_max
-  if (!missing(interactions_only))
-    parms$interactions_only <- interactions_only
   if (!missing(interactions))
     parms$interactions <- interactions
   if (!missing(interaction_pairs))
     parms$interaction_pairs <- interaction_pairs
+  if (!missing(interactions_only))
+    parms$interactions_only <- interactions_only
   if (!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
   # Error check and build model

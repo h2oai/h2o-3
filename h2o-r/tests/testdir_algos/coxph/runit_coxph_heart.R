@@ -12,10 +12,11 @@ test.CoxPH.heart <- function() {
 
 
     output <- coxph.h2o@model
+    coefs <- output$coefficients
+    coefficients.h2o <- coefs$coefficients
+    names(coefficients.h2o) <- coefs$names
 
-    names(output$coef) <- output$coef_names
-
-    expect_equal(output$coef, coxph.r$coefficients, tolerance = 1e-8)
+    expect_equal(coefficients.h2o, coxph.r$coefficients, tolerance = 1e-8)
     expect_equal(output$var_coef, coxph.r$var, tolerance = 1e-8)
     expect_equal(output$loglik, tail(coxph.r$loglik, 1), tolerance = 1e-8)
     expect_equal(output$score, coxph.r$score, tolerance = 1e-8)
