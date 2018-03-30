@@ -20,7 +20,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
   private static final int MAX_TIME_BINS = 10000;
 
-  @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH, }; }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   @Override public boolean isSupervised() { return true; }
 
