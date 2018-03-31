@@ -4,6 +4,8 @@ import Jama.Matrix;
 import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -11,6 +13,8 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -21,7 +25,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   private static final int MAX_TIME_BINS = 10000;
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH }; }
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
   @Override public boolean isSupervised() { return true; }
 
   public CoxPH(boolean startup_once) {
@@ -59,10 +63,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         }
       }
 
-      if (! _parms.stopVec().isNumeric())
+      if ((_parms._start_column != null) && ! _parms.stopVec().isNumeric())
         error("stop_column", "stop time must be of type numeric");
 
-      if (! _response.isInt() && (! _response.isCategorical()))
+      if ((_parms._response_column != null) && ! _response.isInt() && (! _response.isCategorical()))
         error("response_column", "response/event column must be of type integer or factor");
 
       if (_parms._start_column != null && _parms._stop_column != null) {
@@ -479,6 +483,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         initStats(model, dinfo);
+        ScoringHistory sc = new ScoringHistory(_parms._iter_max);
 
         final int n_offsets = (_offset == null) ? 0 : 1;
         final int n_coef = dinfo.fullN() - n_offsets;
@@ -506,6 +511,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Timer loglikTimer = new Timer();
           final double newLoglik = calcLoglik(cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", " + loglikTimer.toString());
+          model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i);
 
           if (newLoglik > logLik) {
             if (i == 0)
@@ -539,6 +545,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           for (int j = 0; j < n_coef; ++j)
             newCoef[j] = oldCoef[j] - step[j];
 
+          model.update(_job);
           _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
           if (i != model._parms._iter_max)
             Log.info("CoxPH Iteration: iter=" + i + ", " + iterTimer.toString());
@@ -808,6 +815,38 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           _hessian[j][k] = 0;
     }
 
+  }
+
+  private static class ScoringHistory {
+    private long[]_scoringTimes;
+    private double[] _logLiks;
+
+    public ScoringHistory(int maxIter) {
+      _scoringTimes = new long[maxIter];
+      _logLiks = new double[maxIter];
+    }
+
+    public ScoringHistory addIterationScore(int iter, double logLik) {
+      _scoringTimes[iter] = System.currentTimeMillis();
+      _logLiks[iter] = logLik;
+      return this;
+    }
+
+    public TwoDimTable to2dTable(int iterCnt) {
+      String[] cnames = new String[]{"timestamp", "duration", "iterations", "logLik"};
+      String[] ctypes = new String[]{"string", "string", "int", "double"};
+      String[] cformats = new String[]{"%s", "%s", "%d", "%.5f"};
+      TwoDimTable res = new TwoDimTable("Scoring History", "", new String[iterCnt], cnames, ctypes, cformats, "");
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      for (int i = 0; i < iterCnt; i++) {
+        int col = 0;
+        res.set(i, col++, fmt.print(_scoringTimes[i]));
+        res.set(i, col++, PrettyPrint.msecs(_scoringTimes[i] - _scoringTimes[0], true));
+        res.set(i, col++, i);
+        res.set(i, col++, _logLiks[iterCnt]);
+      }
+      return res;
+    }
   }
 
 }
