@@ -2807,7 +2807,7 @@ h2o.tabulate <- function(data, x, y,
 #' @param base_size  Base font size for plot.
 #' @param ... additional arguments to pass on.
 #' @return Returns a ggplot2-based heatmap of co-occurance.
-#' @seealso \code{link{h2o.tabulate}}
+#' @seealso \code{\link{h2o.tabulate}}
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -3018,8 +3018,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' @param layer Index (for DeepLearning, integer) or Name (for DeepWater, String) of the hidden layer to extract
 #' @return Returns an H2OFrame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
-#' @seealso \code{link{h2o.deeplearning}} for making H2O Deep Learning models.
-#' @seealso \code{link{h2o.deepwater}} for making H2O DeepWater models.
+#' @seealso \code{\link{h2o.deeplearning}} for making H2O Deep Learning models.
+#' @seealso \code{\link{h2o.deepwater}} for making H2O DeepWater models.
 #' @examples
 #' \donttest{
 #' library(h2o)
