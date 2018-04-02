@@ -510,7 +510,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
           Timer loglikTimer = new Timer();
           final double newLoglik = calcLoglik(cs, _parms, coxMR)._logLik;
-          Log.info("LogLik: iter=" + i + ", " + loglikTimer.toString());
+          Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
           model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i);
 
           if (newLoglik > logLik) {
@@ -843,7 +843,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         res.set(i, col++, fmt.print(_scoringTimes[i]));
         res.set(i, col++, PrettyPrint.msecs(_scoringTimes[i] - _scoringTimes[0], true));
         res.set(i, col++, i);
-        res.set(i, col++, _logLiks[iterCnt]);
+        res.set(i, col++, _logLiks[i]);
       }
       return res;
     }
