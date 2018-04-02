@@ -538,7 +538,13 @@ MAIN_LOOP:
       }
       while (offset < bits.length) {
         c = bits[offset];
-        if ((c == quotes)) {
+        //for example ("xx \"xxx\" x,x") -> (xx "xxx" x,x)
+        if ((c=='\\') && (bits[offset+1] == quotes)) {
+          byteArrayOutputStream.write( bits[offset+1] );
+          offset+=2;
+        }
+        //-----------------------
+        else if ((c == quotes)) {
           ++offset;
           if ((offset < bits.length) && (bits[offset] == c)) {
             byteArrayOutputStream.write(c);
