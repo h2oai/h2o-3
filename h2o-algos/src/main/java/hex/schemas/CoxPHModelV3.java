@@ -18,7 +18,7 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
 
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
-
+    @API(help = "var_coef")
     double[][] var_coef;
     @API(help = "null_loglik")
     double null_loglik;
