@@ -79,6 +79,8 @@ test.mojo_predict_api_test <- function() {
             unlink(other_sandbox_dir, recursive=T)
         }
     )
+    file.remove(input_csv)
+    file.remove(output_csv)
 }
 
 test.mojo_predict_csv <- function() {
@@ -176,6 +178,8 @@ test.mojo_predict_csv <- function() {
     expect_equal(multinomial_prediction_2, mojo_prediction_2, info="expected predictions to be the same for binary and MOJO model for Multinomial - p1")
     expect_equal(multinomial_prediction_3, mojo_prediction_3, info="expected predictions to be the same for binary and MOJO model for Multinomial - p2")
 
+    file.remove(input_csv)
+    file.remove(output_csv)
 }
 
 test.mojo_predict_df <- function() {
@@ -188,7 +192,6 @@ test.mojo_predict_df <- function() {
     # Getting first row from test data frame
     pdf <- test[2,]
     input_csv <- sprintf("%s/in.csv", sandbox())
-    output_csv <- sprintf("%s/prediction.csv", sandbox())
     h2o.exportFile(pdf, input_csv)
 
     train[,2] <- as.factor(train[,2])
@@ -203,14 +206,20 @@ test.mojo_predict_df <- function() {
     frame <- read.csv(input_csv)
     mojo_prediction <- h2o.mojo_predict_df(frame=frame, mojo_zip_path=model_zip_path)
     print(mojo_prediction)
-    print(paste0("Binomial Prediction (Binary) - p0: %f", h2o_prediction[1,2]))
-    print(paste0("Binomial Prediction (Binary) - p1: %f", h2o_prediction[1,3]))
-    print(paste0("Binomial Prediction (MOJO) - p0: %f", mojo_prediction$X0))
-    print(paste0("Binomial Prediction (MOJO) - p1: %f", mojo_prediction$X1))
+    print(paste0("Binomial Prediction (Binary) - p0: ", h2o_prediction[1,2]))
+    print(paste0("Binomial Prediction (Binary) - p1: ", h2o_prediction[1,3]))
+    print(paste0("Binomial Prediction (MOJO) - p0: ", mojo_prediction$X0))
+    print(paste0("Binomial Prediction (MOJO) - p1: ", mojo_prediction$X1))
     expect_equal(h2o_prediction[1,2], mojo_prediction$X0, info="expected predictions to be the same for binary and MOJO model - p0")
     expect_equal(h2o_prediction[1,3], mojo_prediction$X1, info="expected predictions to be the same for binary and MOJO model - p0")
+
+    file.remove(input_csv)
 }
 
-doTest("Test mojo_predict API", test.mojo_predict_api_test)
-doTest("Test h2o.mojo_predict_csv", test.mojo_predict_csv)
-doTest("Test h2o.mojo_predict_df", test.mojo_predict_df)
+test.mojo_predict_suite <- function() {
+    test.mojo_predict_api_test()
+    test.mojo_predict_csv()
+    test.mojo_predict_df()
+}
+
+doTest("Test mojo_predict", test.mojo_predict_suite)
