@@ -483,7 +483,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         initStats(model, dinfo);
-        ScoringHistory sc = new ScoringHistory(_parms._iter_max);
+        ScoringHistory sc = new ScoringHistory(_parms._iter_max + 1);
 
         final int n_offsets = (_offset == null) ? 0 : 1;
         final int n_coef = dinfo.fullN() - n_offsets;
@@ -821,9 +821,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private long[]_scoringTimes;
     private double[] _logLiks;
 
-    public ScoringHistory(int maxIter) {
-      _scoringTimes = new long[maxIter];
-      _logLiks = new double[maxIter];
+    public ScoringHistory(int iterCnt) {
+      _scoringTimes = new long[iterCnt];
+      _logLiks = new double[iterCnt];
     }
 
     public ScoringHistory addIterationScore(int iter, double logLik) {

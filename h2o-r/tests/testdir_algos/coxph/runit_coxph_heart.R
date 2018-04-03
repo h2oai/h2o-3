@@ -23,7 +23,7 @@ test.CoxPH.heart <- function() {
     expect_true(output$iter >= 1)
 
     expect_equal(output$n, coxph.r$n)
-    expect_equal(sum(output$n_event), coxph.r$nevent)
+    expect_equal(output$total_event, coxph.r$nevent)
 
     expect_equal(output$wald.test, coxph.r$wald_test, tolerance = 1e-8)
 
@@ -39,7 +39,7 @@ test.CoxPH.heart <- function() {
       "Call:",
       "\"Surv(start, stop, event) ~ age\"",
       "",
-      "  n= ???",
+      "  n= ???, number of events= ?? ",
       "",
       "       coef exp(coef) se(coef)     z Pr(>|z|)  ",
       "age ?.?????   ?.?????  ?.????? ?.???   ?.???? *",
