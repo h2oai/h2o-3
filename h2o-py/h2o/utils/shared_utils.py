@@ -413,7 +413,7 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     folder as the MOJO zip will be used.
     :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
     (default) then the default classpath for this MOJO model will be used.
-    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g' is used. 
+    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g -XX:ReservedCodeCacheSize=256m' is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :return: List of computed predictions
     """
