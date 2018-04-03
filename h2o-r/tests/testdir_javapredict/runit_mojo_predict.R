@@ -44,11 +44,10 @@ test.mojo_predict_api_test <- function() {
                          genmodel_jar_path=file.path(sandbox(), genmodel_name), verbose=T)
     expect_true(file.exists(output_csv), paste0('output csv cannot be found at ', output_csv))
     file.remove(model_zip_path)
-    file.remove(genmodel_name)
+    file.remove(file.path(sandbox(), genmodel_name))
     file.remove(output_csv)
-    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()))
-    print(other_sandbox_dir)
-    dir.create(other_sandbox_dir)
+    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()), mustWork=F)
+    dir.create(other_sandbox_dir, showWarnings=F)
     tryCatch(
         {
             download.mojo(regression_gbm1, normalizePath(sandbox()),
@@ -79,8 +78,8 @@ test.mojo_predict_api_test <- function() {
             unlink(other_sandbox_dir, recursive=T)
         }
     )
+
     file.remove(input_csv)
-    file.remove(output_csv)
 }
 
 test.mojo_predict_csv <- function() {
