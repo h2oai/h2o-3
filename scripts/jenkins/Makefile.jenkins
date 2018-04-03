@@ -221,30 +221,34 @@ test-package-java:
 	find . -name "*test*.sh" | zip -q -r test-package-java -@
 	find . -name "*test*.jar" | zip -q -r test-package-java -@
 
-test-junit-jenkins:
+define sed_test_scripts
 	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+endef
+
+test-junit-jenkins:
+	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
 test-junit:
 	./gradlew test
 
 test-junit-smoke-jenkins:
-	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
 
 test-junit-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test
 
 test-xgb-smoke-minimal-jenkins:
-	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-minimal
 
 test-xgb-smoke-omp-jenkins:
-	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-omp
 
 test-xgb-smoke-gpu-jenkins:
-	find . -name 'test*Node.sh' -type f -exec sed -i 's/cat $$OUTDIR\/out*/echo "###### Printing last 400 lines of logs. Check artifacts for more. ######"; tail -n 400 $$OUTDIR\/out*/g' {} +
+	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-gpu
 
 test-xgb-smoke-minimal:
