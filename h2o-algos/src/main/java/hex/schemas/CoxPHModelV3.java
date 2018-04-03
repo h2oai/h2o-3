@@ -18,7 +18,7 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
 
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
-
+    @API(help = "var_coef")
     double[][] var_coef;
     @API(help = "null_loglik")
     double null_loglik;
@@ -38,28 +38,12 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     double lre;
     @API(help = "iter")
     int iter;
-    @API(help = "offset_names")
-    String[] offset_names;
     @API(help = "n")
     long n;
     @API(help = "n_missing")
     long n_missing;
     @API(help = "total_event")
     long total_event;
-    @API(help = "time")
-    double[] time;
-    @API(help = "n_risk")
-    double[] n_risk;
-    @API(help = "n_event")
-    double[] n_event;
-    @API(help = "n_censor")
-    double[] n_censor;
-    @API(help = "cumhaz_0")
-    double[] cumhaz_0;
-    @API(help = "var_cumhaz_1")
-    double[] var_cumhaz_1;
-    @API(help = "var_cumhaz_2")
-    double[][] var_cumhaz_2;
     @API(help = "formula")
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})

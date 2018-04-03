@@ -24,7 +24,7 @@
              call         = model$formula,
              n            = model$n,
              loglik       = model$loglik,
-             nevent       = model$nevent,
+             nevent       = model$total_event,
              coefficients = structure(cbind(coefs$coefficients, coefs$exp_coef, coefs$se_coef, coefs$z_coef, 1 - stats::pchisq(coefs$z_coef^2, 1)),
              dimnames     = list(coefs$names, c("coef", "exp(coef)", "se(coef)", "z", "Pr(>|z|)"))),
              conf.int     = NULL,

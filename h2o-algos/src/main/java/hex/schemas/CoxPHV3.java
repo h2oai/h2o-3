@@ -29,10 +29,12 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "use_all_factor_levels"
     };
 
-    @API(help="Start Time Column.", direction = API.Direction.INOUT)
+    @API(help="Start Time Column.", direction = API.Direction.INOUT,
+         is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
     public FrameV3.ColSpecifierV3 start_column;
 
-    @API(help="Stop Time Column.", direction = API.Direction.INOUT)
+    @API(help="Stop Time Column.", direction = API.Direction.INOUT,
+            is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
     public FrameV3.ColSpecifierV3 stop_column;
 
     @API(help="List of columns to use for stratification.", direction = API.Direction.INOUT)
