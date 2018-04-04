@@ -110,7 +110,7 @@ MAIN_LOOP:
             break;
           }
           if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
-            if (str.getBuffer() == null) str.set(bits, offset, 0);
+            if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
