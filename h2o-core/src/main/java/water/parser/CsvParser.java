@@ -1,16 +1,16 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import water.fvec.Vec;
-import water.fvec.FileVec;
 import water.Key;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.*;
+import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -217,6 +217,7 @@ MAIN_LOOP:
           if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
               ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
             assert (quotes == 0);
+            if (quoteCount == 0) str.set(bits, offset, 0);
             quotes = c;
             quoteCount++;
             break;
