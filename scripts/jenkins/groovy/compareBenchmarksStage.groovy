@@ -1,56 +1,72 @@
 def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) {
 
     def EXPECTED_VALUES = [
+        'gbm': [
             'paribas': [
-                    50: [
-                            'train_time_min': 9.1,
-                            'train_time_max': 11.7
-                    ],
-                    200: [
-                            'train_time_min': 30,
-                            'train_time_max': 35.1
-                    ]
+                50: [
+                    'train_time_min': 9.1,
+                    'train_time_max': 11.7
+                ],
+                200: [
+                    'train_time_min': 30,
+                    'train_time_max': 35.1
+                ]
             ],
             'homesite': [
-                    50: [
-                            'train_time_min': 11.4,
-                            'train_time_max': 13.3
-                    ],
-                    200: [
-                            'train_time_min': 41.2,
-                            'train_time_max': 48.0
-                    ]
+                50: [
+                    'train_time_min': 11.4,
+                    'train_time_max': 13.3
+                ],
+                200: [
+                    'train_time_min': 41.2,
+                    'train_time_max': 48.0
+                ]
             ],
             'redhat': [
-                    50: [
-                            'train_time_min': 28,
-                            'train_time_max': 33.5
-                    ],
-                    200: [
-                            'train_time_min': 128.0,
-                            'train_time_max': 136
-                    ]
+                50: [
+                    'train_time_min': 28,
+                    'train_time_max': 33.5
+                ],
+                200: [
+                    'train_time_min': 128.0,
+                    'train_time_max': 136
+                ]
             ],
             'springleaf': [
-                    50: [
-                            'train_time_min': 55.0,
-                            'train_time_max': 63.5
-                    ],
-                    200: [
-                            'train_time_min': 463.0,
-                            'train_time_max': 497.0
-                    ]
+                50: [
+                    'train_time_min': 55.0,
+                    'train_time_max': 63.5
+                ],
+                200: [
+                    'train_time_min': 463.0,
+                    'train_time_max': 497.0
+                ]
             ],
             'higgs': [
-                    50: [
-                            'train_time_min': 88.0,
-                            'train_time_max': 95.0
-                    ],
-                    200: [
-                            'train_time_min': 502.0,
-                            'train_time_max': 549.0
-                    ]
+                50: [
+                    'train_time_min': 88.0,
+                    'train_time_max': 95.0
+                ],
+                200: [
+                    'train_time_min': 502.0,
+                    'train_time_max': 549.0
+                ]
             ]
+        ],
+        'xgb': [
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 120,
+                    'train_time_max': 150
+                ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 1970,
+                    'train_time_max': 2130
+                ]
+            ]
+        ]
     ]
 
     def TESTED_COLUMNS = ['train_time']
@@ -64,7 +80,10 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         List failures = []
         for (column in TESTED_COLUMNS) {
             for (line in csvData) {
-                def datasetValues = EXPECTED_VALUES[line.dataset]
+                if (EXPECTED_VALUES[line.algorithm] == null) {
+                    error("Cannot find EXPECTED VALUES for ${line.algorithm}")
+                }
+                def datasetValues = EXPECTED_VALUES[line.algorithm][line.dataset]
                 if (datasetValues) {
                     def ntreesValues = datasetValues[Integer.parseInt(line.ntrees)]
                     if (ntreesValues) {
@@ -81,6 +100,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                         if ((lineValue < minValue) || (lineValue > maxValue)) {
                             echo "Check failed. Expected interval is ${minValue}..${maxValue}. Actual value ${lineValue}"
                             failures += [
+                                    algorithm: line.algorithm,
                                     dataset: line.dataset,
                                     ntrees: line.ntrees,
                                     column: column,
@@ -169,6 +189,7 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
     for (failure in failures) {
         rowsHTML += """
             <tr>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.algorithm}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.column}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.dataset.capitalize()} ${failure.ntrees} Trees</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.value}</td>
@@ -181,6 +202,7 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
         <table style="${benchmarksSummary.TABLE_STYLE}">
             <thead>
                 <tr>
+                    <th style=\"${benchmarksSummary.TH_STYLE}\">Algorithm</th>
                     <th style=\"${benchmarksSummary.TH_STYLE}\">Column</th>
                     <th style=\"${benchmarksSummary.TH_STYLE}\">Test Case</th>
                     <th style=\"${benchmarksSummary.TH_STYLE}\">Value</th>
