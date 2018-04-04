@@ -110,6 +110,7 @@ MAIN_LOOP:
             break;
           }
           if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
+            if (str.getBuffer() == null) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
@@ -217,7 +218,6 @@ MAIN_LOOP:
           if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
               ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
             assert (quotes == 0);
-            if (quoteCount == 0) str.set(bits, offset, 0);
             quotes = c;
             quoteCount++;
             break;
