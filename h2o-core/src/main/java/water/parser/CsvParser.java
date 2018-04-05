@@ -1,16 +1,16 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import water.fvec.Vec;
-import water.fvec.FileVec;
 import water.Key;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.*;
+import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -110,6 +110,7 @@ MAIN_LOOP:
             break;
           }
           if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
+            if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
@@ -440,7 +441,7 @@ MAIN_LOOP:
         if( !firstChunk || bits1 == null ) { // No more data available or allowed
           // If we are mid-parse of something, act like we saw a LF to end the
           // current token.
-          if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
+          if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE) && quoteCount == 0) {
             c = CHAR_LF;  continue; // MAIN_LOOP;
           }
           break; // MAIN_LOOP;      // Else we are just done
