@@ -63,7 +63,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         }
       }
 
-      if ((_parms._start_column != null) && ! _parms.stopVec().isNumeric())
+      if ((_parms._stop_column != null) && ! _parms.stopVec().isNumeric())
         error("stop_column", "stop time must be of type numeric");
 
       if ((_parms._response_column != null) && ! _response.isInt() && (! _response.isCategorical()))
