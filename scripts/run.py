@@ -900,6 +900,8 @@ class Test(object):
             r_test_driver = g_r_test_setup
         cmd = ["R", "-f", r_test_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        if g_rest_log:
+            cmd += ['--restLog']
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]
@@ -2006,6 +2008,7 @@ g_test_ssl = False
 g_ldap_config = None
 g_ldap_username = None
 g_ldap_password = None
+g_rest_log = False
 
 # globals added to support better reporting in xml files
 g_use_xml2 = False  # by default, use the original xml file output
@@ -2146,6 +2149,9 @@ def usage():
     print("")
     print("    --ldap.config    Path to LDAP config. If set, all nodes will be started with LDAP support.")
     print("")
+    print("    --restLog        If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
+    print("                     Please note, that enablig REST API logging will increase the execution time and that")
+    print("                     the log file might be large (> 2GB).")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -2267,6 +2273,7 @@ def parse_args(argv):
     global g_ldap_username
     global g_ldap_password
     global g_ldap_config
+    global g_rest_log
 
     i = 1
     while i < len(argv):
@@ -2450,6 +2457,8 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_ldap_password = argv[i]
+        elif s == '--restLog':
+            g_rest_log = True
         else:
             unknown_arg(s)
 
