@@ -1,16 +1,23 @@
 package water.parser;
 
+import de.siegmar.fastcsv.reader.CsvReader;
+import de.siegmar.fastcsv.reader.CsvRow;
 import org.apache.commons.lang.math.NumberUtils;
-import water.fvec.Vec;
-import water.fvec.FileVec;
 import water.Key;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.util.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.*;
+import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -24,451 +31,54 @@ class CsvParser extends Parser {
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-    BufferedString str = new BufferedString();
+    if (din.getChunkData(cidx) == null) return dout;
+    CsvReader csvParser = new CsvReader();
+    csvParser.setFieldSeparator((char) _setup._separator);
+    if (_setup._single_quotes) csvParser.setTextDelimiter((char) Parser.CHAR_SINGLE_QUOTE);
+    de.siegmar.fastcsv.reader.CsvParser parser;
     byte[] bits = din.getChunkData(cidx);
-    if( bits == null ) return dout;
-    int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
-    final byte[] bits0 = bits;  // Bits for chunk0
-    boolean firstChunk = true;  // Have not rolled into the 2nd chunk
-    byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
-    int state;
-    boolean isNa = false;
-    boolean isAllASCII = true;
-    // If handed a skipping offset, then it points just past the prior partial line.
-    if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
-    else {
-      offset = 0; // Else start skipping at the start
-      // Starting state.  Are we skipping the first (partial) line, or not?  Skip
-      // a header line, or a partial line if we're in the 2nd and later chunks.
-      if (_setup._check_header == ParseSetup.HAS_HEADER || cidx > 0) state = SKIP_LINE;
-      else state = WHITESPACE_BEFORE_TOKEN;
-    }
+    boolean headerSkipped = false;
 
-    // For parsing ARFF
-    if (_setup._parse_type.equals(ARFF_INFO) && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
+    try {
+      parser = csvParser.parse(new InputStreamReader(new ByteArrayInputStream(bits)));
+      CsvRow row;
+      int rowNum = 0;
 
-    int quotes = 0;
-    byte quoteCount = 0;
-    long number = 0;
-    int exp = 0;
-    int sgnExp = 1;
-    boolean decimal = false;
-    int fractionDigits = 0;
-    int tokenStart = 0; // used for numeric token to backtrace if not successful
-    int colIdx = 0;
-    byte c = bits[offset];
-    // skip comments for the first chunk (or if not a chunk)
-    if( cidx == 0 ) {
-      while ( c == '#'
-              || isEOL(c)
-              || c == '@' /*also treat as comments leading '@' from ARFF format*/
-              || c == '%' /*also treat as comments leading '%' from ARFF format*/) {
-        while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
-//          System.out.print(String.format("%c",bits[offset]));
-          ++offset;
+      while ((row = parser.nextRow()) != null) {
+        if (row.getFieldCount() != _setup._column_names.length) {
+          throw new IllegalStateException("");
         }
-        if ((offset + 1 < bits.length) && (bits[offset] == CHAR_CR) && (bits[offset + 1] == CHAR_LF)) ++offset;
-        ++offset;
-//        System.out.println();
-        if (offset >= bits.length)
-          return dout;
-        c = bits[offset];
-      }
-    }
-    dout.newLine();
-
-    final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
-MAIN_LOOP:
-    while (true) {
-      boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
-      boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
-
-      switch (state) {
-        // ---------------------------------------------------------------------
-        case SKIP_LINE:
-          if (isEOL(c)) {
-            state = EOL;
-          } else {
-            break;
-          }
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case EXPECT_COND_LF:
-          state = POSSIBLE_EMPTY_LINE;
-          if (c == CHAR_LF)
-            break;
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case STRING:
-          if (c == quotes) {
-            if (quoteCount>1) {
-              str.addChar();
-              quoteCount--;
-            }
-
-            state = COND_QUOTE;
-            break;
-          }
-          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
-            str.addChar();
-            if ((c & 0x80) == 128) //value beyond std ASCII
-              isAllASCII = false;
-            break;
-          }
-          // fallthrough to STRING_END
-        // ---------------------------------------------------------------------
-        case STRING_END:
-          if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
-            break;
-          // we have parsed the string categorical correctly
-          if((str.getOffset() + str.length()) > str.getBuffer().length){ // crossing chunk boundary
-            assert str.getBuffer() != bits;
-            str.addBuff(bits);
-          }
-          if( !isNa &&
-              _setup.isNA(colIdx, str)) {
-            isNa = true;
-          }
-          if (!isNa) {
-            dout.addStrCol(colIdx, str);
-            if (!isAllASCII)
-              dout.setIsAllASCII(colIdx, isAllASCII);
-          } else {
-            dout.addInvalidCol(colIdx);
-            isNa = false;
-          }
-          str.set(null, 0, 0);
-          isAllASCII = true;
-          ++colIdx;
-          state = SEPARATOR_OR_EOL;
-          // fallthrough to SEPARATOR_OR_EOL
-        // ---------------------------------------------------------------------
-        case SEPARATOR_OR_EOL:
-          if (c == CHAR_SEPARATOR) {
-            state = WHITESPACE_BEFORE_TOKEN;
-            break;
-          }
-          if (c==CHAR_SPACE)
-            break;
-          // fallthrough to EOL
-        // ---------------------------------------------------------------------
-        case EOL:
-          if (quotes != 0 && quoteCount != 1) {
-            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
-            String err = "Unmatched quote char " + ((char) quotes);
-            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
-            colIdx = 0;
-            quotes = 0;
-          } else if (quoteCount == 1) {
-            state = STRING;
-            continue MAIN_LOOP;
-          }else if (colIdx != 0) {
-            dout.newLine();
-            colIdx = 0;
-          }
-          state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
-          if( !firstChunk )
-            break MAIN_LOOP; // second chunk only does the first row
-          break;
-        // ---------------------------------------------------------------------
-        case POSSIBLE_CURRENCY:
-          if (((c >= '0') && (c <= '9')) || (c == '-') || (c == CHAR_DECIMAL_SEP) || (c == '+')) {
-            state = TOKEN;
-          } else {
-            str.set(bits, offset - 1, 0);
-            str.addChar();
-            if (c == quotes) {
-              state = COND_QUOTE;
-              break;
-            }
-            if ((quotes != 0) || ((!isEOL(c) && (c != CHAR_SEPARATOR)))) {
-              state = STRING;
-            } else {
-              state = STRING_END;
-            }
-          }
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case POSSIBLE_EMPTY_LINE:
-          if (isEOL(c)) {
-            if (c == CHAR_CR)
-              state = EXPECT_COND_LF;
-            break;
-          }
-          state = WHITESPACE_BEFORE_TOKEN;
-          // fallthrough to WHITESPACE_BEFORE_TOKEN
-        // ---------------------------------------------------------------------
-        case WHITESPACE_BEFORE_TOKEN:
-          if (c == CHAR_SPACE || (c == CHAR_TAB && CHAR_TAB!=CHAR_SEPARATOR)) {
-              break;
-          } else if (c == CHAR_SEPARATOR) {
-            // we have empty token, store as NaN
-            dout.addInvalidCol(colIdx++);
-            break;
-          } else if (isEOL(c)) {
-            dout.addInvalidCol(colIdx++);
-            state = EOL;
-            continue MAIN_LOOP;
-          }
-          // fallthrough to COND_QUOTED_TOKEN
-        // ---------------------------------------------------------------------
-        case COND_QUOTED_TOKEN:
-          state = TOKEN;
-          if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
-              ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
-            assert (quotes == 0);
-            quotes = c;
-            quoteCount++;
-            break;
-          }
-          // fallthrough to TOKEN
-        // ---------------------------------------------------------------------
-        case TOKEN:
-          if( dout.isString(colIdx) ) { // Forced already to a string col?
-            state = STRING; // Do not attempt a number parse, just do a string parse
-            str.set(bits, offset, 0);
-            continue MAIN_LOOP;
-          } else if (((c >= '0') && (c <= '9')) || (c == '-') || (c == CHAR_DECIMAL_SEP) || (c == '+')) {
-            state = NUMBER;
-            number = 0;
-            fractionDigits = 0;
-            decimal = false;
-            tokenStart = offset;
-            if (c == '-') {
-              exp = -1;
-              break;
-            } else if(c == '+'){
-              exp = 1;
-              break;
-            } else {
-              exp = 1;
-            }
-            // fallthrough
-          } else if (c == '$') {
-            state = POSSIBLE_CURRENCY;
-            break;
-          } else {
-            state = STRING;
-            str.set(bits, offset, 0);
-            continue MAIN_LOOP;
-          }
-          // fallthrough to NUMBER
-        // ---------------------------------------------------------------------
-        case NUMBER:
-          if ((c >= '0') && (c <= '9')) {
-            if (number >= LARGEST_DIGIT_NUMBER)  state = NUMBER_SKIP;
-            else  number = (number*10)+(c-'0');
-            break;
-          } else if (c == CHAR_DECIMAL_SEP) {
-            state = NUMBER_FRACTION;
-            fractionDigits = offset;
-            decimal = true;
-            break;
-          } else if ((c == 'e') || (c == 'E')) {
-            state = NUMBER_EXP_START;
-            sgnExp = 1;
-            break;
-          }
-          if (exp == -1) {
-            number = -number;
-          }
-          exp = 0;
-          // fallthrough to COND_QUOTED_NUMBER_END
-        // ---------------------------------------------------------------------
-        case COND_QUOTED_NUMBER_END:
-          if ( c == quotes) {
-            state = NUMBER_END;
-            quotes = 0;
-            quoteCount = 0;
-            break;
-          }
-          // fallthrough NUMBER_END
-        case NUMBER_END:
-
-          // forced
-          if (forcedString || forcedCategorical ) {
-            state = STRING;
-            offset = tokenStart - 1;
-            str.set(bits, tokenStart, 0);
-            break; // parse as String token now
-          }
-
-          if (c == CHAR_SEPARATOR && quotes == 0) {
-            exp = exp - fractionDigits;
-            dout.addNumCol(colIdx,number,exp);
-            ++colIdx;
-            // do separator state here too
-            state = WHITESPACE_BEFORE_TOKEN;
-            break;
-          } else if (isEOL(c)) {
-            exp = exp - fractionDigits;
-            dout.addNumCol(colIdx,number,exp);
-            // do EOL here for speedup reasons
-            colIdx = 0;
-            dout.newLine();
-            state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
-            if( !firstChunk )
-              break MAIN_LOOP; // second chunk only does the first row
-            break;
-          } else if ((c == '%')) {
-            state = NUMBER_END;
-            exp -= 2;
-            break;
-          } else if ((c != CHAR_SEPARATOR) && ((c == CHAR_SPACE) || (c == CHAR_TAB))) {
-            state = NUMBER_END;
-            break;
-          } else {
-            state = STRING;
-            offset = tokenStart-1;
-            str.set(bits, tokenStart, 0);
-            break; // parse as String token now
-          }
-        // ---------------------------------------------------------------------
-        case NUMBER_SKIP:
-          if ((c >= '0') && (c <= '9')) {
-            exp++;
-            break;
-          } else if (c == CHAR_DECIMAL_SEP) {
-            state = NUMBER_SKIP_NO_DOT;
-            break;
-          } else if ((c == 'e') || (c == 'E')) {
-            state = NUMBER_EXP_START;
-            sgnExp = 1;
-            break;
-          }
-          state = COND_QUOTED_NUMBER_END;
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case NUMBER_SKIP_NO_DOT:
-          if ((c >= '0') && (c <= '9')) {
-            break;
-          } else if ((c == 'e') || (c == 'E')) {
-            state = NUMBER_EXP_START;
-            sgnExp = 1;
-            break;
-          }
-          state = COND_QUOTED_NUMBER_END;
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case NUMBER_FRACTION:
-          if ((c >= '0') && (c <= '9')) {
-            if (number >= LARGEST_DIGIT_NUMBER) {
-              if (decimal)
-                fractionDigits = offset - 1 - fractionDigits;
-              if (exp == -1) number = -number;
-              exp = 0;
-              state = NUMBER_SKIP_NO_DOT;
-            } else {
-              number = (number*10)+(c-'0');
-            }
-            break;
-          } else if ((c == 'e') || (c == 'E')) {
-            if (decimal)
-              fractionDigits = offset - 1 - fractionDigits;
-            state = NUMBER_EXP_START;
-            sgnExp = 1;
-            break;
-          }
-          state = COND_QUOTED_NUMBER_END;
-          if (decimal)
-            fractionDigits = offset - fractionDigits-1;
-          if (exp == -1) {
-            number = -number;
-          }
-          exp = 0;
-          continue MAIN_LOOP;
-        // ---------------------------------------------------------------------
-        case NUMBER_EXP_START:
-          if (exp == -1) {
-            number = -number;
-          }
-          exp = 0;
-          if (c == '-') {
-            sgnExp *= -1;
-            break;
-          } else if (c == '+'){
-            break;
-          }
-          if ((c < '0') || (c > '9')){
-            state = STRING;
-            offset = tokenStart-1;
-            str.set(bits, tokenStart, 0);
-            break; // parse as String token now
-          }
-          state = NUMBER_EXP;  // fall through to NUMBER_EXP
-        // ---------------------------------------------------------------------
-        case NUMBER_EXP:
-          if ((c >= '0') && (c <= '9')) {
-            exp = (exp*10)+(c-'0');
-            break;
-          }
-          exp *= sgnExp;
-          state = COND_QUOTED_NUMBER_END;
-          continue MAIN_LOOP;
-
-        // ---------------------------------------------------------------------
-        case COND_QUOTE:
-          if (c == quotes) {
-            str.addChar();
-            state = STRING;
-            quoteCount++;
-            break;
-          } else {
-            quotes = 0;
-            quoteCount = 0;
-            state = STRING_END;
-            continue MAIN_LOOP;
-          }
-        // ---------------------------------------------------------------------
-        default:
-          assert (false) : " We have wrong state "+state;
-      } // end NEXT_CHAR
-//      System.out.print(String.format("%c",bits[offset]));
-      ++offset; // do not need to adjust for offset increase here - the offset is set to tokenStart-1!
-      if (offset < 0) {         // Offset is negative?
-        assert !firstChunk;     // Caused by backing up from 2nd chunk into 1st chunk
-        firstChunk = true;
-        bits = bits0;
-        offset += bits.length;
-        str.set(bits, offset, 0);
-      } else if (offset >= bits.length) { // Off end of 1st chunk?  Parse into 2nd chunk
-        // Attempt to get more data.
-        if( firstChunk && bits1 == null )
-          bits1 = din.getChunkData(cidx+1);
-        // if we can't get further we might have been the last one and we must
-        // commit the latest guy if we had one.
-        if( !firstChunk || bits1 == null ) { // No more data available or allowed
-          // If we are mid-parse of something, act like we saw a LF to end the
-          // current token.
-          if ((state != EXPECT_COND_LF) && (state != POSSIBLE_EMPTY_LINE)) {
-            c = CHAR_LF;  continue; // MAIN_LOOP;
-          }
-          break; // MAIN_LOOP;      // Else we are just done
+        if (_setup._check_header == ParseSetup.HAS_HEADER && cidx == 0 && !headerSkipped) {
+          headerSkipped = true;
+          continue;
         }
 
-        // Now parsing in the 2nd chunk.  All offsets relative to the 2nd chunk start.
-        firstChunk = false;
-        if (state == NUMBER_FRACTION)
-          fractionDigits -= bits.length;
-        offset -= bits.length;
-        tokenStart -= bits.length;
-        bits = bits1;           // Set main parsing loop bits
-        if( bits[0] == CHAR_LF && state == EXPECT_COND_LF )
-          break; // MAIN_LOOP; // when the first character we see is a line end
-      }
-      c = bits[offset];
-      if(isEOL(c) && state != COND_QUOTE && quotes != 0) // quoted string having newline character => fail the line!
-        state = EOL;
+        int i = 0;
+        for (String cell : row.getFields()) {
 
-    } // end MAIN_LOOP
-    if (colIdx == 0)
-      dout.rollbackLine();
-    // If offset is still validly within the buffer, save it so the next pass
-    // can start from there.
-    if( offset+1 < bits.length ) {
-      if( state == EXPECT_COND_LF && bits[offset+1] == CHAR_LF ) offset++;
-      if( offset+1 < bits.length ) din.setChunkDataStart(cidx+1, offset+1 );
+          if (_setup.isNA(i, new BufferedString(cell))) {
+            dout.addNAs(i++, rowNum);
+            continue;
+          }
+
+          try {
+            double d = Double.valueOf(cell);
+            dout.addNumCol(i++, d);
+            continue;
+          } catch (NumberFormatException e) {
+          }
+
+          dout.addStrCol(i++, new BufferedString(cell));
+        }
+        rowNum++;
+      }
+      System.out.println("Number of rows parsed : " + rowNum);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
+
+
+
     return dout;
   }
 

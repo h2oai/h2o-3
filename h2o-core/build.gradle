@@ -37,6 +37,7 @@ dependencies {
   
   // Duke library: collection of String comparators
   compile ('no.priv.garshol.duke:duke:1.2') { transitive = false }
+  compile 'de.siegmar:fastcsv:1.0.2'
 
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
