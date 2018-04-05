@@ -17,6 +17,7 @@ IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
 IS.RIPYNB                   <<- FALSE
 RESULTS.DIR                 <<- NULL
+REST.LOG                    <<- FALSE
 TEST.NAME                   <<- "RTest"
 SEED                        <<- NULL
 PROJECT.ROOT                <<- "h2o-3"
@@ -59,7 +60,9 @@ function(args) {
         i <- i + 1
         if (i > length(args)) usage()
         TEST.NAME <<- args[i]
-      } else {
+      } else if (s == '--restLog') {
+        REST.LOG <<- TRUE
+      }else {
         unknownArg(s)
       }
       i <- i + 1
@@ -75,26 +78,30 @@ function() {
   print("")
   print("Usage for:  R -f rtest.R --args [...options...]")
   print("")
-  print("    --usecloud        connect to h2o on specified ip and port, where ip and port are specified as follows:")
-  print("                      IP:PORT")
+  print("    --usecloud         connect to h2o on specified ip and port, where ip and port are specified as follows:")
+  print("                       IP:PORT")
   print("")
-  print("    --onHadoop        Indication that tests will be run on h2o multinode hadoop clusters.")
-  print("                      `locate` and `sandbox` runit test utilities use this indication in order to")
-  print("                      behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
-  print("    --hadoopNamenode  Specifies that the runit tests have access to this hadoop namenode.")
-  print("                      `hadoop.namenode` runit test utility returns this value.")
+  print("    --onHadoop         Indication that tests will be run on h2o multinode hadoop clusters.")
+  print("                       `locate` and `sandbox` runit test utilities use this indication in order to")
+  print("                       behave properly. --hadoopNamenode must be specified if --onHadoop option is used.")
+  print("    --hadoopNamenode   Specifies that the runit tests have access to this hadoop namenode.")
+  print("                       `hadoop.namenode` runit test utility returns this value.")
   print("")
-  print("    --rDemo           test is R demo")
+  print("    --rDemo            test is R demo")
   print("")
-  print("    --rUnit           test is R unit test")
+  print("    --rUnit            test is R unit test")
   print("")
-  print("    --rBooklet        test is R booklet")
+  print("    --rBooklet         test is R booklet")
   print("")
   print("    --rIPythonNotebook test is R IPython Notebook")
   print("")
-  print("    --resultsDir      the results directory.")
+  print("    --resultsDir       the results directory.")
   print("")
-  print("    --testName        name of the rdemo, runit, or rbooklet.")
+  print("    --testName         name of the rdemo, runit, or rbooklet.")
+  print("")
+  print("    --restLog          If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
+  print("                       Please note, that enablig REST API logging will increase the execution time and that")
+  print("                       the log file might be large (> 2GB).")
   print("")
   q("no",1,FALSE) #exit with nonzero exit code
 }
@@ -182,9 +189,10 @@ function() {
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT)))
     h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE, strict_version_check = strict_version_check)
 
-    if (!is.null(RESULTS.DIR)) {
+    if (!is.null(RESULTS.DIR) && REST.LOG) {
         h2o.startLogging(paste(RESULTS.DIR, "/rest.log", sep = ""))
-        cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",RESULTS.DIR,"/rest.log."))) }
+        cat(sprintf("[%s] %s\n", Sys.time(),paste0("Started rest logging in: ",RESULTS.DIR,"/rest.log.")))
+    }
 
     h2o.logAndEcho("------------------------------------------------------------")
     h2o.logAndEcho("")
