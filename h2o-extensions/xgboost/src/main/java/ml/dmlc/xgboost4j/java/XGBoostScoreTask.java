@@ -127,6 +127,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
         DMatrix data = null;
+        Booster booster = null;
         try {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
@@ -148,7 +149,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 return;
             }
 
-            Booster booster = null;
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
                 booster.setParams(params);
@@ -204,6 +204,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } catch (XGBoostError xgBoostError) {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
+            if (booster != null) {
+                booster.dispose();
+            }
             if (data != null) {
                 data.dispose();
             }
