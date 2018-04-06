@@ -79,7 +79,7 @@ public class XGBoostUtils {
             featureMap[0] = sb.toString();
         }
 
-        DMatrix trainMat;
+        final DMatrix trainMat;
         Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
         Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
         for (int i = 0; i < vecs.length; ++i) {
