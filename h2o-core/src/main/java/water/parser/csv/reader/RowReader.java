@@ -43,49 +43,45 @@ public final class RowReader implements Closeable {
     // get fields local for higher performance
     final Line localLine = line.reset();
     final ReusableStringBuilder localCurrentField = currentField;
-    final char[] localBuf = buf;
-    int localBufPos = bufPos;
-    int localPrevChar = prevChar;
-    int localCopyStart = copyStart;
 
     int copyLen = 0;
     int fieldMode = FIELD_MODE_RESET;
     int lines = 1;
 
     while (true) {
-      if (bufLen == localBufPos) {
+      if (bufLen == bufPos) {
         // end of buffer
 
         if (copyLen > 0) {
-          localCurrentField.append(localBuf, localCopyStart, copyLen);
+          localCurrentField.append(buf, copyStart, copyLen);
         }
-        bufLen = reader.read(localBuf, 0, localBuf.length);
+        bufLen = reader.read(buf, 0, buf.length);
 
         if (bufLen < 0) {
           // end of data
           finished = true;
 
-          if (localPrevChar == fieldSeparator || localCurrentField.hasContent()) {
+          if (prevChar == fieldSeparator || localCurrentField.hasContent()) {
             localLine.addField(localCurrentField.toStringAndReset());
           }
 
           break;
         }
 
-        localCopyStart = localBufPos = copyLen = 0;
+        copyStart = bufPos = copyLen = 0;
       }
 
-      final char c = localBuf[localBufPos++];
+      final char c = buf[bufPos++];
 
       if ((fieldMode & FIELD_MODE_QUOTE_ON) != 0) {
         if (c == textDelimiter) {
           // End of quoted text
           fieldMode &= ~FIELD_MODE_QUOTE_ON;
           if (copyLen > 0) {
-            localCurrentField.append(localBuf, localCopyStart, copyLen);
+            localCurrentField.append(buf, copyStart, copyLen);
             copyLen = 0;
           }
-          localCopyStart = localBufPos;
+          copyStart = bufPos;
         } else {
           if (c == CR || c == LF && prevChar != CR) {
             lines++;
@@ -95,41 +91,41 @@ public final class RowReader implements Closeable {
       } else {
         if (c == fieldSeparator) {
           if (copyLen > 0) {
-            localCurrentField.append(localBuf, localCopyStart, copyLen);
+            localCurrentField.append(buf, copyStart, copyLen);
             copyLen = 0;
           }
           localLine.addField(localCurrentField.toStringAndReset());
-          localCopyStart = localBufPos;
+          copyStart = bufPos;
           fieldMode = FIELD_MODE_RESET;
         } else if (c == textDelimiter && (fieldMode & FIELD_MODE_NON_QUOTED) == 0) {
           // Quoted text starts
           fieldMode = FIELD_MODE_QUOTED | FIELD_MODE_QUOTE_ON;
 
-          if (localPrevChar == textDelimiter) {
+          if (prevChar == textDelimiter) {
             // escaped quote
             copyLen++;
           } else {
-            localCopyStart = localBufPos;
+            copyStart = bufPos;
           }
         } else if (c == CR) {
           if (copyLen > 0) {
-            localCurrentField.append(localBuf, localCopyStart, copyLen);
+            localCurrentField.append(buf, copyStart, copyLen);
           }
           localLine.addField(localCurrentField.toStringAndReset());
-          localPrevChar = c;
-          localCopyStart = localBufPos;
+          prevChar = c;
+          copyStart = bufPos;
           break;
         } else if (c == LF) {
-          if (localPrevChar != CR) {
+          if (prevChar != CR) {
             if (copyLen > 0) {
-              localCurrentField.append(localBuf, localCopyStart, copyLen);
+              localCurrentField.append(buf, copyStart, copyLen);
             }
             localLine.addField(localCurrentField.toStringAndReset());
-            localPrevChar = c;
-            localCopyStart = localBufPos;
+            prevChar = c;
+            copyStart = bufPos;
             break;
           }
-          localCopyStart = localBufPos;
+          copyStart = bufPos;
         } else {
           copyLen++;
           if (fieldMode == FIELD_MODE_RESET) {
@@ -138,14 +134,8 @@ public final class RowReader implements Closeable {
         }
       }
 
-      localPrevChar = c;
+      prevChar = c;
     }
-
-
-    // restore fields
-    bufPos = localBufPos;
-    prevChar = localPrevChar;
-    copyStart = localCopyStart;
 
     localLine.setLines(lines);
     return localLine;
