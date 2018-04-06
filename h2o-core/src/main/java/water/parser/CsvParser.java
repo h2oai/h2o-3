@@ -1,23 +1,20 @@
 package water.parser;
 
-import de.siegmar.fastcsv.reader.CsvReader;
-import de.siegmar.fastcsv.reader.CsvRow;
 import org.apache.commons.lang.math.NumberUtils;
 import water.Key;
 import water.fvec.FileVec;
 import water.fvec.Vec;
+import water.parser.csv.reader.CsvReader;
+import water.parser.csv.reader.RowReader;
 import water.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -32,29 +29,34 @@ class CsvParser extends Parser {
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
     if (din.getChunkData(cidx) == null) return dout;
-    CsvReader csvParser = new CsvReader();
-    csvParser.setFieldSeparator((char) _setup._separator);
-    if (_setup._single_quotes) csvParser.setTextDelimiter((char) Parser.CHAR_SINGLE_QUOTE);
-    de.siegmar.fastcsv.reader.CsvParser parser;
     byte[] bits = din.getChunkData(cidx);
+    RowReader rowReader = new RowReader(new InputStreamReader(new ByteArrayInputStream(bits)), (char) _setup._separator, (char) (_setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE));
     boolean headerSkipped = false;
+    boolean isLastLine = false;
 
     try {
-      parser = csvParser.parse(new InputStreamReader(new ByteArrayInputStream(bits)));
-      CsvRow row;
       int rowNum = 0;
 
-      while ((row = parser.nextRow()) != null) {
-        if (row.getFieldCount() != _setup._column_names.length) {
-          throw new IllegalStateException("");
+      while (!rowReader.isFinished() && !isLastLine) {
+        RowReader.Line line = rowReader.readLine();
+
+
+        if (line.getFieldCount() != _setup._column_names.length) {
+          rowReader.revertLastLine();
+          byte[] chunkData = din.getChunkData(cidx + 1);
+          rowReader.appendBytes(chunkData);
+          line = rowReader.readLine();
+          isLastLine = true;
         }
+
+
         if (_setup._check_header == ParseSetup.HAS_HEADER && cidx == 0 && !headerSkipped) {
           headerSkipped = true;
           continue;
         }
 
         int i = 0;
-        for (String cell : row.getFields()) {
+        for (String cell : line.getFields()) {
 
           if (_setup.isNA(i, new BufferedString(cell))) {
             dout.addNAs(i++, rowNum);
