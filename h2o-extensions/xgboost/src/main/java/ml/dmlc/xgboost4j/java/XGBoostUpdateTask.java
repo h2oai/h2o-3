@@ -72,21 +72,22 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
-        DMatrix trainMat = XGBoostUtils.convertFrameToDMatrix(
-                _sharedModel._dataInfoKey,
-                _fr,
-                true,
-                _parms._response_column,
-                _parms._weights_column,
-                _parms._fold_column,
-                _featureMap,
-                _output._sparse);
-
-        if (null == trainMat) {
-            return;
-        }
-
+        DMatrix trainMat = null;
         try {
+            trainMat = XGBoostUtils.convertFrameToDMatrix(
+                    _sharedModel._dataInfoKey,
+                    _fr,
+                    true,
+                    _parms._response_column,
+                    _parms._weights_column,
+                    _parms._fold_column,
+                    _featureMap,
+                    _output._sparse);
+
+            if (null == trainMat) {
+                return;
+            }
+
             // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
@@ -113,10 +114,14 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             }
             _rawBooster = _booster.toByteArray();
         } finally {
-            try {
-                Rabit.shutdown();
-            } catch (XGBoostError xgBoostError) {
-                Log.debug("Rabit shutdown during update failed", xgBoostError);
+            if (trainMat != null) {
+                trainMat.dispose();
+                // Rabit was not started if the matrix was not properly initialized
+                try {
+                    Rabit.shutdown();
+                } catch (XGBoostError xgBoostError) {
+                    Log.debug("Rabit shutdown during update failed", xgBoostError);
+                }
             }
         }
     }
