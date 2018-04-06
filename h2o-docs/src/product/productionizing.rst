@@ -16,6 +16,7 @@ Users can refer to the Quick Start topics that follow for more information about
 
 Developers can refer to the the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
 
+.. _mojo-quickstart:
 
 MOJO Quick Start
 ~~~~~~~~~~~~~~~~
@@ -168,6 +169,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
 
+.. _pojo-quickstart:
 
 POJO Quick Start
 ~~~~~~~~~~~~~~~~
