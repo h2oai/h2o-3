@@ -62,16 +62,20 @@ public final class XGBoostMojoModel extends MojoModel {
       GenModel.setInput(doubles[i], floats[i], _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
     }
     float[][] out = null;
+    DMatrix dmat = null;
     try {
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
-      DMatrix dmat = new DMatrix(floats,doubles.length,floats[0].length, _sparse ? 0 : Float.NaN);
+      dmat = new DMatrix(floats,doubles.length,floats[0].length, _sparse ? 0 : Float.NaN);
 //      dmat.setWeight(new float[]{(float)weight});
       out = _booster.predict(dmat);
       Rabit.shutdown();
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
+    } finally {
+      if (dmat != null)
+        dmat.dispose();
     }
 
     for(int r = 0; r < out.length; r++) {
@@ -103,17 +107,21 @@ public final class XGBoostMojoModel extends MojoModel {
     // convert dense doubles to expanded floats
     floats = new float[_nums + cats]; //TODO: use thread-local storage
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
-    float[][] out = null;
+    float[][] out;
+    DMatrix dmat = null;
     try {
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
-      DMatrix dmat = new DMatrix(floats,1,floats.length, _sparse ? 0 : Float.NaN);
+      dmat = new DMatrix(floats,1,floats.length, _sparse ? 0 : Float.NaN);
 //      dmat.setWeight(new float[]{(float)weight});
       out = _booster.predict(dmat);
       Rabit.shutdown();
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
+    } finally {
+      if (dmat != null)
+        dmat.dispose();
     }
 
     if (nclasses > 2) {
