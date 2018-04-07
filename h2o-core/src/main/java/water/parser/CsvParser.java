@@ -4,14 +4,11 @@ import org.apache.commons.lang.math.NumberUtils;
 import water.Key;
 import water.fvec.FileVec;
 import water.fvec.Vec;
-import water.parser.csv.reader.CsvReader;
 import water.parser.csv.reader.RowReader;
 import water.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -30,7 +27,8 @@ class CsvParser extends Parser {
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
     if (din.getChunkData(cidx) == null) return dout;
     byte[] bits = din.getChunkData(cidx);
-    RowReader rowReader = new RowReader(new InputStreamReader(new ByteArrayInputStream(bits)), (char) _setup._separator, (char) (_setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE));
+    System.out.println("CIDX: " + cidx + " bits: " + bits.length);
+    RowReader rowReader = new RowReader(bits, (char) _setup._separator, (char) (_setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE));
     boolean headerSkipped = false;
     boolean isLastLine = false;
 
@@ -40,13 +38,18 @@ class CsvParser extends Parser {
       while (!rowReader.isFinished() && !isLastLine) {
         RowReader.Line line = rowReader.readLine();
 
-
         if (line.getFieldCount() != _setup._column_names.length) {
-          rowReader.revertLastLine();
           byte[] chunkData = din.getChunkData(cidx + 1);
-          rowReader.appendBytes(chunkData);
-          line = rowReader.readLine();
-          isLastLine = true;
+          if (chunkData != null) {
+            rowReader.revertLastLine();
+            rowReader.appendBytes(chunkData);
+            line = rowReader.readLine();
+            isLastLine = true;
+          } else if (rowNum == 0) {
+            continue;
+          } else {
+            break;
+          }
         }
 
 
@@ -74,7 +77,7 @@ class CsvParser extends Parser {
         }
         rowNum++;
       }
-      System.out.println("Number of rows parsed : " + rowNum);
+      System.out.println("Number of rows parsed " + cidx + " :" + rowNum);
     } catch (IOException e) {
       e.printStackTrace();
     }

@@ -1,6 +1,8 @@
 
 package water.parser.csv.reader;
 
+import water.util.ArrayUtils;
+
 import java.util.Arrays;
 
 /**
@@ -15,40 +17,17 @@ final class ReusableStringBuilder {
 
     private static final String EMPTY = "";
 
-    private char[] buf;
+    private byte[] buf;
     private int pos;
 
-    /**
-     * Initializes the buffer with the specified capacity.
-     *
-     * @param initialCapacity the initial buffer capacity.
-     */
-    ReusableStringBuilder(final int initialCapacity) {
-        buf = new char[initialCapacity];
+    ReusableStringBuilder() {
+        buf = new byte[]{};
     }
 
-    /**
-     * Appends a character to the buffer, resizing the buffer if needed.
-     *
-     * @param c the character to add to the buffer
-     */
-    public void append(final char c) {
-        if (pos == buf.length) {
-            buf = Arrays.copyOf(buf, buf.length * 2);
-        }
-        buf[pos++] = c;
-    }
 
-    public void append(final char[] src, final int srcPos, final int length) {
-        if (pos + length > buf.length) {
-            int newSize = buf.length * 2;
-            while (pos + length > newSize) {
-                newSize *= 2;
-            }
-            buf = Arrays.copyOf(buf, newSize);
-        }
-        System.arraycopy(src, srcPos, buf, pos, length);
-        pos += length;
+    public void append(final byte[] src) {
+        buf = ArrayUtils.append(buf, src);
+        pos += src.length;
     }
 
     /**
@@ -66,10 +45,13 @@ final class ReusableStringBuilder {
     public String toStringAndReset() {
         if (pos > 0) {
             final String s = new String(buf, 0, pos);
+            buf = new byte[]{};
             pos = 0;
             return s;
+        } else {
+            buf = new byte[]{};
+            return EMPTY;
         }
-        return EMPTY;
     }
 
 }
