@@ -1,6 +1,7 @@
 package water.parser.csv.reader;
 
 import org.apache.commons.lang.ArrayUtils;
+import water.parser.ParseReader;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -8,8 +9,8 @@ import java.util.Objects;
 
 public final class RowReader {
 
-  private static final char LF = '\n';
-  private static final char CR = '\r';
+  public static final char LF = '\n';
+  public static final char CR = '\r';
 
   private static final int FIELD_MODE_RESET = 0;
   private static final int FIELD_MODE_QUOTED = 1;
@@ -26,22 +27,26 @@ public final class RowReader {
   private long bufferLength;
   private long copyStart;
   private boolean finished;
-  private long lastLineStart = 0;
+  private ParseReader parseReader;
+  private int chunkId;
+  private boolean chunkOverflow = false;
 
-  public RowReader(final byte[] bytes, final char fieldSeparator, final char textDelimiter) {
+  public RowReader(final ParseReader parseReader, final int chunkId, final char fieldSeparator, final char textDelimiter) {
     Objects.requireNonNull(fieldSeparator);
     Objects.requireNonNull(textDelimiter);
 
+    this.parseReader = parseReader;
+    this.chunkId = chunkId;
+
     this.fieldSeparator = fieldSeparator;
     this.textDelimiter = textDelimiter;
-    this.buf[0] = bytes;
+    this.buf[0] = parseReader.getChunkData(chunkId);
     this.buf[1] = new byte[]{};
-    this.bufferLength = buf[0].length + buf[1].length;
+    this.bufferLength = buf[0].length;
   }
 
 
   public Line readLine() throws IOException {
-    this.lastLineStart = bufPos;
     // get fields local for higher performance
     final Line localLine = line.reset();
     final ReusableStringBuilder localCurrentField = currentField;
@@ -51,10 +56,17 @@ public final class RowReader {
     int lines = 1;
 
     while (true) {
-      if (bufferLength == bufPos) {
+      if (bufferLength == bufPos && !chunkOverflow) {
+        fetchNextChunk();
+      }
+
+      if (bufferLength == bufPos && !chunkOverflow) {
+        localCurrentField.append(getRange(copyStart, copyLen));
+        localLine.addField(localCurrentField.toStringAndReset());
           finished = true;
           break;
       }
+
 
       final byte c = getCharAt(bufPos++);
 
@@ -126,8 +138,12 @@ public final class RowReader {
     return localLine;
   }
 
+  public boolean isChunkOverflow() {
+    return chunkOverflow;
+  }
+
   public byte[] getRange(long start, long length) {
-    if (length < buf[0].length) {
+    if (start + length <= buf[0].length) {
       return ArrayUtils.subarray(buf[0], (int) start, (int) (start + length));
     } else {
       byte[] mainArrayChunk = ArrayUtils.subarray(buf[0], (int) start, buf[0].length);
@@ -135,26 +151,22 @@ public final class RowReader {
 
       return water.util.ArrayUtils.append(mainArrayChunk, overflowChunkArray);
     }
-
-
   }
 
   public byte getCharAt(long position) {
     if (position > buf[0].length - 1) {
-      return buf[1][(int) position - (buf[0].length - 1)];
+      return buf[1][(int) position - (buf[0].length)];
     } else {
       return buf[0][(int) position];
     }
   }
 
-  public void revertLastLine() {
-    this.bufPos = lastLineStart;
-    this.prevChar = getCharAt(Math.max(bufPos - 1, 0));
-  }
-
-  public void appendBytes(byte[] bytes) {
-    buf[1] = bytes;
-    bufferLength = buf[0].length + buf[1].length;
+  public void fetchNextChunk() {
+    buf[1] = parseReader.getChunkData(chunkId + 1);
+    if (buf[1] != null) {
+      bufferLength = buf[0].length + buf[1].length;
+      this.chunkOverflow = true;
+    }
   }
 
 
@@ -167,7 +179,7 @@ public final class RowReader {
     @Override
     public String toString() {
       return "Line{" +
-          "fields=" + Arrays.toString(fields) +
+          "fields=" + Arrays.toString(getFields()) +
           '}';
     }
 
@@ -193,7 +205,8 @@ public final class RowReader {
     }
 
     public String[] getFields() {
-      return Arrays.copyOf(fields, linePos);
+      String[] strings = Arrays.copyOf(fields, linePos);
+      return strings;
     }
 
     public int getFieldCount() {

@@ -28,36 +28,21 @@ class CsvParser extends Parser {
     if (din.getChunkData(cidx) == null) return dout;
     byte[] bits = din.getChunkData(cidx);
     System.out.println("CIDX: " + cidx + " bits: " + bits.length);
-    RowReader rowReader = new RowReader(bits, (char) _setup._separator, (char) (_setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE));
+    RowReader rowReader = new RowReader(din,cidx, (char) _setup._separator, (char) (_setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE));
     boolean headerSkipped = false;
-    boolean isLastLine = false;
 
     try {
       int rowNum = 0;
 
-      while (!rowReader.isFinished() && !isLastLine) {
+      while (!rowReader.isFinished() && !rowReader.isChunkOverflow()) {
         RowReader.Line line = rowReader.readLine();
 
-        if (line.getFieldCount() != _setup._column_names.length) {
-          byte[] chunkData = din.getChunkData(cidx + 1);
-          if (chunkData != null) {
-            rowReader.revertLastLine();
-            rowReader.appendBytes(chunkData);
-            line = rowReader.readLine();
-            isLastLine = true;
-          } else if (rowNum == 0) {
-            continue;
-          } else {
-            break;
-          }
-        }
 
-
-        if (_setup._check_header == ParseSetup.HAS_HEADER && cidx == 0 && !headerSkipped) {
+        if (cidx == 0 && _setup._check_header == ParseSetup.HAS_HEADER && !headerSkipped) {
           headerSkipped = true;
           continue;
         }
-
+        dout.newLine();
         int i = 0;
         for (String cell : line.getFields()) {
 
@@ -66,6 +51,7 @@ class CsvParser extends Parser {
             continue;
           }
 
+          // This way of parsing is slow
           try {
             double d = Double.valueOf(cell);
             dout.addNumCol(i++, d);
@@ -77,13 +63,10 @@ class CsvParser extends Parser {
         }
         rowNum++;
       }
-      System.out.println("Number of rows parsed " + cidx + " :" + rowNum);
-    } catch (IOException e) {
+      System.out.println("Number of rows CIDX " + cidx + " is " + rowNum);
+    } catch (Exception e) {
       e.printStackTrace();
     }
-
-
-
     return dout;
   }
 
