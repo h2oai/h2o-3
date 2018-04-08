@@ -133,7 +133,9 @@ public final class RowReader {
 
       prevChar = c;
     }
-
+    if(finished){
+      System.out.println("Overflow line: " + localLine.getFieldCount());
+    }
     localLine.setLines(lines);
     return localLine;
   }
