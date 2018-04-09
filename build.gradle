@@ -181,6 +181,7 @@ allprojects {
 
     // Support different IDEs
     apply plugin: 'idea'
+    idea.module.inheritOutputDirs = true
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
 
