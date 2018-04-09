@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -e
+set -ex
 
 case $1 in
 8)
@@ -14,10 +14,11 @@ case $1 in
     ;;
 9)
     JAVA_INSTALL_VERSION_MAJOR='9'
-    JAVA_INSTALL_VERSION='9.0.1'
+    JAVA_INSTALL_VERSION='9.0.4'
     MAGIC_NUM=11
+    JAVA_INSTALL_LINK_HASH=c2514751926b4512b076cc82f959763f
     JAVA_INSTALL_PATH=/usr/opt/java-9-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/9.0.1+${MAGIC_NUM}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
+    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/${JAVA_INSTALL_VERSION}+${MAGIC_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
     echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
     ;;
 *)
@@ -44,7 +45,5 @@ echo "Creating activation script"
 echo """ #! /bin/bash
 
 rm -f /usr/lib/jvm/java-current-oracle
-ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle """ > /usr/opt/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
-chmod a+x /usr/opt/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
-
-
+ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle """ > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+chmod a+x /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
