@@ -7,7 +7,6 @@ import hex.tree.xgboost.XGBoostUtils;
 import water.ExtensionManager;
 import water.H2O;
 import water.MRTask;
-import water.util.FileUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -26,20 +25,16 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
 
-    private String[] _featureMap;
-
     public XGBoostUpdateTask(Booster booster,
                       XGBoostModelInfo inputModel,
                       XGBoostOutput _output,
                       XGBoostModel.XGBoostParameters _parms,
                       int tid,
-                      Map<String, String> workerEnvs,
-                      String[] featureMap) {
+                      Map<String, String> workerEnvs) {
         this._sharedModel = inputModel;
         this._output = _output;
         this._parms = _parms;
         this._tid = tid;
-        this._featureMap = featureMap;
         this._rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
     }
@@ -81,7 +76,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                     _parms._response_column,
                     _parms._weights_column,
                     _parms._fold_column,
-                    _featureMap,
                     _output._sparse);
 
             if (null == trainMat) {
@@ -131,30 +125,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     public void reduce(XGBoostUpdateTask mrt) {
         if(null == _rawBooster) {
             _rawBooster = mrt._rawBooster;
-            _featureMap = mrt._featureMap;
-        }
-    }
-
-    private void updateFeatureMapFile(File featureMapFile) {
-        // For feature importances - write out column info
-        OutputStream os = null;
-        try {
-            os = new FileOutputStream(featureMapFile);
-            os.write(_featureMap[0].getBytes());
-            os.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot generate " + featureMapFile, e);
-        } finally {
-            FileUtils.close(os);
         }
     }
 
     // This is called from driver
     public Booster getBooster() {
-        return getBooster(null);
-    }
-
-    public Booster getBooster(File featureMapFile) {
         if (null == _booster) {
             try {
                 _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
@@ -162,9 +137,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             } catch (XGBoostError | IOException xgBoostError) {
                 throw new IllegalStateException("Failed to load the booster.", xgBoostError);
             }
-        }
-        if (featureMapFile != null) {
-            updateFeatureMapFile(featureMapFile);
         }
         return _booster;
     }
