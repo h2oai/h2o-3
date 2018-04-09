@@ -4,6 +4,7 @@ def call(final pipelineContext) {
   def MODE_BENCHMARK_CODE = 1
   def MODE_HADOOP_CODE = 2
   def MODE_XGB_CODE = 3
+  def MODE_COVERAGE_CODE = 4
   def MODE_SINGLE_TEST_CODE = 5
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
@@ -11,6 +12,7 @@ def call(final pipelineContext) {
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
     [name: 'MODE_XGB', code: MODE_XGB_CODE],
+    [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
     [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
@@ -217,6 +219,15 @@ def call(final pipelineContext) {
     }
   }
 
+  def COVERAGE_STAGES = [
+    [
+      stageName: 'h2o-algos Coverage', target: 'coverage-junit-algos', pythonVersion: '2.7', timeoutValue: 5 * 60,
+      executionScript: 'h2o-3/scripts/jenkins/groovy/coverageStage.groovy',
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, archiveAdditionalFiles: ['build/reports/jacoco/*.exec'],
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY], nodeLabel: "${pipelineContext.getBuildConfig().getDefaultNodeLabel()} && !micro"
+    ]
+  ]
+
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
   def SINGLE_TEST_STAGES = []
@@ -264,6 +275,8 @@ def call(final pipelineContext) {
     executeInParallel(HADOOP_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
+  } else if (modeCode == MODE_COVERAGE_CODE) {
+    executeInParallel(COVERAGE_STAGES, pipelineContext)
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
     executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
   } else {

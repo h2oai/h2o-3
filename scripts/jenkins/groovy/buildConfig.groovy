@@ -1,6 +1,6 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges, final List<String> distributionsToBuild) {
+def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts) {
   def buildConfig = new BuildConfig()
-  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges, distributionsToBuild)
+  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges, distributionsToBuild, gradleOpts)
   return buildConfig
 }
 
@@ -86,6 +86,8 @@ class BuildConfig {
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos7.4': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:b53f7a8ca0247ea92723ba1cc343e9b474702bf345f8afebf48c8a7d6d6185b3',
   ]
 
+  private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
+
   private String mode
   private String nodeLabel
   private String commitMessage
@@ -100,20 +102,23 @@ class BuildConfig {
     (COMPONENT_JAVA): false,
     (COMPONENT_ANY): true
   ]
+  private List<String> additionalGradleOpts
 
   void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
-                  final boolean ignoreChanges, final List<String> distributionsToBuild) {
+                  final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
     this.buildHadoop = mode == 'MODE_HADOOP'
-    changesMap[COMPONENT_HADOOP] = buildHadoop
+    this.additionalGradleOpts = gradleOpts
     this.hadoopDistributionsToBuild = distributionsToBuild
     if (ignoreChanges) {
       markAllComponentsForTest()
     } else {
       detectChanges(changes)
     }
+    changesMap[COMPONENT_HADOOP] = buildHadoop
+
     master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
     nodeLabels = NodeLabels.findByJenkinsMaster(master)
     supportedXGBEnvironments = [
@@ -247,6 +252,10 @@ class BuildConfig {
 
   String getStashNameForTestPackage(final String platform) {
     return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
+  }
+
+  List<String> getAdditionalGradleOpts() {
+    return additionalGradleOpts
   }
 
   private void detectChanges(List<String> changes) {
