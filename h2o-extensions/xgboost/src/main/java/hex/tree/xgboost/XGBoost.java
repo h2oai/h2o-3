@@ -288,7 +288,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
-      IRabitTracker rt = null;
+      final IRabitTracker rt;
+      XGBoostSetupTask setupTask = null;
       try {
         // Count on how many nodes the data resides
         Set<H2ONode> nodesHoldingFrame = new HashSet<>();
@@ -312,10 +313,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         String featureMap = XGBoostUtils.makeFeatureMap(_train, model.model_info()._dataInfoKey.get());
         featureMapFile = createFeatureMapFile(featureMap);
 
+        setupTask = new XGBoostSetupTask(model.model_info(), _parms, model._output._sparse).doAll(_train);
+
         try {
           model.model_info().setBooster(new XGBoostUpdateTask(
+                  setupTask,
                   model.model_info().getBooster(),
-                  model.model_info(),
                   model._output,
                   _parms,
                   0,
@@ -329,7 +332,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // train the model
-        scoreAndBuildTrees(model, rt);
+        scoreAndBuildTrees(setupTask, model, rt);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -338,6 +341,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
+        if (setupTask != null) {
+          try {
+            XGBoostCleanupTask.cleanUp(setupTask);
+          } catch (Exception e) {
+            Log.err("XGBoost clean-up failed - this could leak memory!", e);
+          }
+        }
         // Unlock & save results
         model.unlock(_job);
       }
@@ -360,7 +370,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, IRabitTracker rt) throws XGBoostError {
+    private void scoreAndBuildTrees(XGBoostSetupTask setupTask, XGBoostModel model, IRabitTracker rt) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, model.model_info().getBooster(), false);
@@ -374,8 +384,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         startRabitTracker(rt);
         try {
           model.model_info().setBooster(new XGBoostUpdateTask(
+              setupTask,
               model.model_info().getBooster(),
-              model.model_info(),
               model._output,
               _parms,
               tid,
