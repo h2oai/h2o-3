@@ -103,6 +103,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             } else {
                 try {
                     _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
+                    Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
                     // Set the parameters, some seem to get lost on save/load
                     _booster.setParams(params);
                 } catch (IOException e) {
@@ -157,6 +158,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         if (null == _booster) {
             try {
                 _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
+                Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
             } catch (XGBoostError | IOException xgBoostError) {
                 throw new IllegalStateException("Failed to load the booster.", xgBoostError);
             }
