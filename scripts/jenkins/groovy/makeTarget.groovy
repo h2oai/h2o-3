@@ -32,7 +32,7 @@ def call(final pipelineContext, final Closure body) {
   if (config.customBuildAction == null) {
     config.customBuildAction = """
       echo "Activating Java ${env.JAVA_VERSION}"
-      . /usr/opt/activate_java_${env.JAVA_VERSION}
+      . /usr/bin/activate_java_${env.JAVA_VERSION}
       java -version 
       javac -version
 
