@@ -3,7 +3,6 @@ package ml.dmlc.xgboost4j.java;
 import hex.tree.xgboost.XGBoostExtension;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import hex.tree.xgboost.XGBoostUtils;
 import water.ExtensionManager;
 import water.H2O;
 import water.MRTask;
@@ -15,7 +14,7 @@ import java.util.*;
 
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
-    private final XGBoostModelInfo _sharedModel;
+    private final IcedHashMapGeneric.IcedHashMapStringObject _nodeToMatrixWrapper;
     private final XGBoostOutput _output;
     private transient Booster _booster;
     private byte[] _rawBooster;
@@ -25,17 +24,18 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
 
-    public XGBoostUpdateTask(Booster booster,
-                      XGBoostModelInfo inputModel,
-                      XGBoostOutput _output,
-                      XGBoostModel.XGBoostParameters _parms,
+    public XGBoostUpdateTask(
+                      XGBoostSetupTask setupTask,
+                      Booster booster,
+                      XGBoostOutput output,
+                      XGBoostModel.XGBoostParameters parms,
                       int tid,
                       Map<String, String> workerEnvs) {
-        this._sharedModel = inputModel;
-        this._output = _output;
-        this._parms = _parms;
-        this._tid = tid;
-        this._rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
+        _nodeToMatrixWrapper = setupTask._nodeToMatrixWrapper;
+        _output = output;
+        _parms = parms;
+        _tid = tid;
+        _rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
     }
 
@@ -50,7 +50,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             throw new IllegalStateException("XGBoost is not available on the node " + H2O.SELF);
         }
         try {
-            update();
+            PersistentDMatrix.Wrapper wrapper = (PersistentDMatrix.Wrapper) _nodeToMatrixWrapper.get(H2O.SELF.toString());
+            if (wrapper == null)
+                return;
+            DMatrix matrix = wrapper.get();
+            update(matrix);
         } catch (XGBoostError xgBoostError) {
             try {
                 Rabit.shutdown();
@@ -62,26 +66,12 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         }
     }
 
-    private void update() throws XGBoostError {
+    private void update(DMatrix trainMat) throws XGBoostError {
         HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
-        DMatrix trainMat = null;
         try {
-            trainMat = XGBoostUtils.convertFrameToDMatrix(
-                    _sharedModel._dataInfoKey,
-                    _fr,
-                    true,
-                    _parms._response_column,
-                    _parms._weights_column,
-                    _parms._fold_column,
-                    _output._sparse);
-
-            if (null == trainMat) {
-                return;
-            }
-
             // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
@@ -109,14 +99,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             }
             _rawBooster = _booster.toByteArray();
         } finally {
-            if (trainMat != null) {
-                BoosterHelper.dispose(trainMat);
-                // Rabit was not started if the matrix was not properly initialized
-                try {
-                    Rabit.shutdown();
-                } catch (XGBoostError xgBoostError) {
-                    Log.debug("Rabit shutdown during update failed", xgBoostError);
-                }
+            try {
+                Rabit.shutdown();
+            } catch (XGBoostError xgBoostError) {
+                Log.debug("Rabit shutdown during update failed", xgBoostError);
             }
         }
     }
