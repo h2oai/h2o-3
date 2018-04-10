@@ -1,0 +1,5 @@
+# NFF1
+# nrows = 4
+filename,stype,meta,colname
+c1,r8,,"A"
+c2,s4,,"C"
