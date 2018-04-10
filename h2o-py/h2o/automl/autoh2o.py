@@ -71,7 +71,7 @@ class H2OAutoML(object):
     """
     def __init__(self,
                  nfolds=5,
-                 balance_classes=True,
+                 balance_classes=False,
                  class_sampling_factor=None,
                  max_after_balance_size=5.0,
                  max_runtime_secs=3600,

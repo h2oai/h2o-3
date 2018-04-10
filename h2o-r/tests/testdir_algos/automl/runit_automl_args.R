@@ -183,7 +183,7 @@ automl.args.test <- function() {
                       nfolds = 3,
                       max_models = 3,
                       balance_classes = TRUE,
-                      #max_after_balance_size = 3.0,  #not working
+                      max_after_balance_size = 3.0,  #not working
                       #class_sampling_factors = c(0.2, 1.4),  #not working
                       project_name = "aml15")
   # Check that a model (DRF) has balance_classes = TRUE
