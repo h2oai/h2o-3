@@ -337,6 +337,9 @@ EOF
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
                     if (params.UPLOAD_CONDA) {
+
+                        final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+
                         // build for all Python versions
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
                             def uploadToCondaStageName = "Upload Py${pyVersion} to Conda"
@@ -356,6 +359,12 @@ EOF
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
                                                 # Convert conda package for all other platforms
                                                 conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+                                                
+                                                s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
+                                                s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
+                                                s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
                                                 
                                                 if [ "\$TEST_RELEASE" = true ]; then
                                                     echo '****** WARNING! Upload to Conda suppressed ******'
