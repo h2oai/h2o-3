@@ -198,8 +198,14 @@ public abstract class AbstractHTTPD {
 
   protected abstract RuntimeException failEx(String message);
 
+  private Server makeServer() {
+    Server s = new Server();
+    s.setSendServerVersion(false);
+    return s;
+  }
+
   protected void startHttp() throws Exception {
-    _server = new Server();
+    _server = makeServer();
 
     Connector connector=new SocketConnector();
     connector.setHost(_ip);
@@ -214,7 +220,7 @@ public abstract class AbstractHTTPD {
    * @throws Exception
    */
   private void startHttps() throws Exception {
-    _server = new Server();
+    _server = makeServer();
 
     SslContextFactory sslContextFactory = new SslContextFactory(_args.jks);
     sslContextFactory.setKeyStorePassword(_args.jks_pass);
