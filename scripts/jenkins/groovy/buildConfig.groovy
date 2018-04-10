@@ -14,7 +14,7 @@ class BuildConfig {
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
 
   private static final String BENCHMARK_IMAGE_NAME = 'h2o-3-benchmark'
-  private static final String BENCHMARK_IMAGE_VERSION_TAG = '117'
+  private static final String BENCHMARK_IMAGE_VERSION_TAG = 'latest'
   // Use this image for benchmark stages
   public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
@@ -53,7 +53,7 @@ class BuildConfig {
 
   private static final Map EXPECTED_IMAGE_VERSIONS= [
           (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:c53d46f1ffd1e835620a68b0a2c3e3ab390b216817be44d2988f15b3f0ef35b5',
-          (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:411fd6beb53fa41eec93b6ae34313252e9bbd39556fe74518377b4a4b73c744c',
+          (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:2bb6c322827c7be914d69c2b49576d77fce21fbc5e056e05386f9af557304a4a',
 
           'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:a699fc2b06bec2f6b5f180f318b11d70d61c05b0c1fcb8f992ee5e159001c423',
           'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:46a012a791ef31cdc604b7e630c9ab3cdf6247fdaba27c62d45af36ba201d8c3',

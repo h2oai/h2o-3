@@ -19,6 +19,8 @@ def call(final pipelineContext) {
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
 
+  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
+
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
@@ -133,7 +135,15 @@ def call(final pipelineContext) {
       stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R], image: pipelineContext.getBuildConfig().BENCHMARK_IMAGE,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), customData: [model: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH
+      customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+    ],
+    [
+      stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R], image: pipelineContext.getBuildConfig().BENCHMARK_IMAGE,
+      customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
     ]
   ]
 
@@ -227,8 +237,6 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY], nodeLabel: "${pipelineContext.getBuildConfig().getDefaultNodeLabel()} && !micro"
     ]
   ]
-
-  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
   def SINGLE_TEST_STAGES = []
   if (modeCode == MODE_SINGLE_TEST_CODE) {
