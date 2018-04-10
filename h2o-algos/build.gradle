@@ -9,6 +9,32 @@ dependencies {
   if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
       compile files("${rootDir}/lib/deepwater-all.jar")
   }
+
+  // Jama dependencies
+  compile "gov.nist.math:jama:1.0.3"
+
+  // netlib-java / MTJ dependencies
+
+  // Manually define all dependencies in com.github.fommil.netlib:all:1.1.2 to make Databricks maven resolver happy
+  compile('com.github.fommil.netlib:core:1.1.2')
+  compile('net.sourceforge.f2j:arpack_combined_all:0.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-osx-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-linux-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-linux-i686:1.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-win-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-win-i686:1.1')
+  compile('com.github.fommil.netlib:netlib-native_ref-linux-armhf:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-osx-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-linux-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-linux-i686:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-linux-armhf:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-win-x86_64:1.1')
+  compile('com.github.fommil.netlib:netlib-native_system-win-i686:1.1')
+
+  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4'){
+    exclude group: 'com.github.fommil.netlib', module: 'all'
+  }
+
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")

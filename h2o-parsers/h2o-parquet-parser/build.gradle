@@ -6,15 +6,33 @@ description = "H2O Parquet Parser"
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
   binding.variables.get("hadoopVersion") : defaultHadoopClientVersion
 
+configurations{
+    // Configuration used to get all transitive dependencies for org.apache.hadoop:hadoop-common
+    hadoopCommonExclude
+}
+
 dependencies {
+  hadoopCommonExclude("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}")
+
   compile project(":h2o-core")
   compile(project(":h2o-persist-hdfs")) {
-    transitive = false
+    exclude group: 'ai.h2o', module: 'h2o-core'
+    exclude group: 'net.java.dev.jets3t', module: 'jets3t'
+    exclude group: 'org.apache.hadoop', module: 'hadoop-client'
+    exclude group: 'org.apache.hadoop', module: 'hadoop-aws'
   }
+
   // Parquet support
   compile("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
+
+
   compile("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
-    transitive = false
+    // we can't use transitive=false so we need to exclude the dependencies manually
+    configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().forEach {
+      if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
+        exclude group: it.moduleVersion.id.group, module: it.moduleVersion.id.module.name
+      }
+    }
   }
 
   testCompile "junit:junit:${junitVersion}"
