@@ -108,14 +108,17 @@ public class NffParser {
             v.read(offset_bytes);
             s4_current_offset = get_i(offset_bytes);
 
+            if (s4_current_offset<-1) {
+                data = null;
+                continue;
+            }
+
             if (s4_previous_offset!=-1){
                 s4_length = s4_current_offset-s4_previous_offset;
             }else{
                 s4_length = s4_current_offset-1;
             }
-//            System.out.println(k);
-//            System.out.println(s4_length);
-//            System.out.println(s4_current_offset);
+
             data = new byte[(int)s4_length];
             dataBuffer.read(data); // read the actual string
             s4_previous_offset = s4_current_offset;
@@ -123,7 +126,11 @@ public class NffParser {
         v.close();
         dataBuffer.close();
         // todo - remove count from return value - not needed
-        return new ReturnValuesS4(count, new String(data));
+        if(data!=null) {
+            return new ReturnValuesS4(count, new String(data));
+        }else {
+            return new ReturnValuesS4(count, null);
+        }
     }
 
     public static void main(String args[]) throws FileNotFoundException,IOException {
@@ -205,7 +212,6 @@ public class NffParser {
             int s4_count , s8_count = 0;
             for (int numRowsRead = 0; numRowsRead <= totalRows-1; numRowsRead++) {
             //Loop over all rows and create the data file file
-//                 System.out.println(outputRow);
             for ( String k : filePointers.keySet()) {
                 BufferedInputStream v = filePointers.get(k);
                 try {
