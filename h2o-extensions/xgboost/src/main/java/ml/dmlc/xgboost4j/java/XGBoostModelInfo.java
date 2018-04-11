@@ -7,6 +7,7 @@ import ml.dmlc.xgboost4j.java.BoosterHelper;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 import water.Key;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.io.ByteArrayInputStream;
@@ -30,6 +31,7 @@ final public class XGBoostModelInfo extends Iced {
     if(null == _booster && null != _boosterBytes) {
       try {
         _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+        Log.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
       } catch (XGBoostError | IOException exception) {
         throw new IllegalStateException("Failed to load the booster.", exception);
       }
@@ -54,9 +56,7 @@ final public class XGBoostModelInfo extends Iced {
   }
 
   public void nukeBackend() {
-    if (_booster != null) {
-      _booster.dispose();
-    }
+    BoosterHelper.dispose(_booster);
     _booster = null;
   }
 
