@@ -26,6 +26,10 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile "org.slf4j:slf4j-log4j12:1.7.10"
+    compile project(":h2o-ext-krbstandalone")
+    def hadoopVersion = project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true" ?
+            orcDefaultHadoopClientVersion : defaultHadoopClientVersion
+    compile("org.apache.hadoop:hadoop-client:$hadoopVersion")
 }
 
 //
