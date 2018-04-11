@@ -82,7 +82,8 @@ public class NffParser {
         //all strings read
         boolean allRead = false;
         //state variables for reading s4 type
-        int s4_current_offset, s4_previous_offset, s4_length, count=0;
+        long s4_current_offset, s4_previous_offset, s4_length;
+        int count=0;
         byte[] data = new byte[0], offset_bytes = new byte[fieldLength];
         BufferedInputStream v = new BufferedInputStream(new FileInputStream(dirPath + k),16384);
         BufferedInputStream dataBuffer = new BufferedInputStream(new FileInputStream(dirPath + k + "_str"),16384); // todo - fix buffer size
@@ -94,7 +95,7 @@ public class NffParser {
             v.read(offset_bytes);
             s4_current_offset = get_i(offset_bytes);
             s4_length = s4_current_offset-1;
-            data = new byte[s4_length];
+            data = new byte[(int)s4_length];
             dataBuffer.read(data); // read the actual string
             s4_previous_offset = s4_current_offset;
             count++;
@@ -112,11 +113,16 @@ public class NffParser {
             }else{
                 s4_length = s4_current_offset-1;
             }
-            data = new byte[s4_length];
+//            System.out.println(k);
+//            System.out.println(s4_length);
+//            System.out.println(s4_current_offset);
+            data = new byte[(int)s4_length];
             dataBuffer.read(data); // read the actual string
             s4_previous_offset = s4_current_offset;
         }
-
+        v.close();
+        dataBuffer.close();
+        // todo - remove count from return value - not needed
         return new ReturnValuesS4(count, new String(data));
     }
 
@@ -144,10 +150,10 @@ public class NffParser {
         // Read the .meta_nff file into a map
         BufferedReader br = null;
         TreeMap<String, List<String>> metaNff = new TreeMap<>();
-        String dirPath = "src/test/resources/";
+        String dirPath = "/home/nikhil/repos/backup/test_datatable_nff/weather/";
         String seperator = ",";
         // TODO - currently opens the n files simultaneously- each having data of a column
-        HashMap<String, BufferedInputStream> filePointers = new HashMap();
+        TreeMap<String, BufferedInputStream> filePointers = new TreeMap<>();
         try {
 
             br = new BufferedReader(new FileReader(dirPath + "_meta.nff"));
@@ -190,10 +196,16 @@ public class NffParser {
             // Can use something like - (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)
             int totalRows = Integer.parseInt(numRows.split("=")[1].trim());
             System.out.println("Number of rows:"+totalRows);
+
+            // Map for count of bytes read for s4,s8 and sx
+            HashMap<String,Integer> s4CountMap = new HashMap<>();
+            HashMap<String,Integer> s8CountMap = new HashMap<>();
+
             // count of number of string read
-            int s4_count = 0;
+            int s4_count , s8_count = 0;
             for (int numRowsRead = 0; numRowsRead <= totalRows-1; numRowsRead++) {
             //Loop over all rows and create the data file file
+//                 System.out.println(outputRow);
             for ( String k : filePointers.keySet()) {
                 BufferedInputStream v = filePointers.get(k);
                 try {
@@ -223,10 +235,11 @@ public class NffParser {
                             outputRow.append(get_i8(bytes));
                             break;
                         case "b1":
-                            int ss = v.read();
-                            if (ss == 1) outputRow.append(true);
-                            else if (ss == 0) outputRow.append(false);
-                            else outputRow.append("null");
+                            int value = v.read();
+//                            if (ss == 1) outputRow.append(true);
+//                            else if (ss == 0) outputRow.append(false);
+//                            else outputRow.append("null");
+                            outputRow.append(Integer.toString(value));
                             break;
                         case "r4": // todo - can't generate test data from datatable - not sure if implemented
                             bytes = new byte[4];
@@ -255,13 +268,28 @@ public class NffParser {
                             v.read(bytes);
                             break;
                         case "s4":
+                            if (!s4CountMap.containsKey(k)){
+                                s4_count=0;
+                                s4CountMap.put(k,0);
+                            }else{
+                                s4_count = s4CountMap.get(k);
+                            }
                             ReturnValuesS4 returnS4 = readTest(s4_count, v, dirPath, k, 4);
+                            // update the offset of bytes read for this column in the map
                             s4_count++;
+                            s4CountMap.put(k,s4_count);
                             outputRow.append(returnS4.getFieldRead());
                             break;
                         case "s8": // todo - not sure if implemented in datatable - but the below should work
-                            ReturnValuesS4 returnS8 = readTest(s4_count, v, dirPath, k, 8);
-                            s4_count++;
+                            if (!s8CountMap.containsKey(k)){
+                                s8_count=0;
+                                s8CountMap.put(k,0);
+                            }else{
+                                s8_count = s8CountMap.get(k);
+                            }
+                            ReturnValuesS4 returnS8 = readTest(s8_count, v, dirPath, k, 8);
+                            s8_count++;
+                            s8CountMap.put(k,s8_count);
                             outputRow.append(returnS8.getFieldRead());
                             break;
                         case "sx": // todo - implement this
