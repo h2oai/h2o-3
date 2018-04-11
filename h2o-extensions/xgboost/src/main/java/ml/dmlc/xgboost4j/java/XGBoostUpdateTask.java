@@ -116,7 +116,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             _rawBooster = _booster.toByteArray();
         } finally {
             if (trainMat != null) {
-                trainMat.dispose();
+                BoosterHelper.dispose(trainMat);
                 // Rabit was not started if the matrix was not properly initialized
                 try {
                     Rabit.shutdown();

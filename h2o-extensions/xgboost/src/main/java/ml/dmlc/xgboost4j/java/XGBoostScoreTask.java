@@ -204,12 +204,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } catch (XGBoostError xgBoostError) {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
-            if (booster != null) {
-                booster.dispose();
-            }
-            if (data != null) {
-                data.dispose();
-            }
+            BoosterHelper.dispose(booster, data);
             try {
                 Rabit.shutdown();
             } catch (XGBoostError xgBoostError) {
