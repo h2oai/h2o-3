@@ -180,11 +180,15 @@ public abstract class AbstractHTTPD {
 
   protected abstract RuntimeException failEx(String message);
 
+  protected ConnectionFactory makeHttpConnectionFactory() {
+    HttpConfiguration http_config = new HttpConfiguration();
+    http_config.setSendServerVersion(false);
+    return new HttpConnectionFactory(http_config);
+  }
+
   protected void startHttp() throws Exception {
     _server = new Server();
-
-    HttpConfiguration http_config = new HttpConfiguration();
-    ServerConnector httpConnector = new ServerConnector(_server, new HttpConnectionFactory(http_config));
+    ServerConnector httpConnector = new ServerConnector(_server, makeHttpConnectionFactory());
     httpConnector.setHost(_ip);
     httpConnector.setPort(_port);
     createServer(httpConnector);
@@ -197,10 +201,10 @@ public abstract class AbstractHTTPD {
    */
   private void startHttps() throws Exception {
     _server = new Server();
-    
+
     SslContextFactory sslContextFactory = new SslContextFactory(_args.jks);
     sslContextFactory.setKeyStorePassword(_args.jks_pass);
-    ServerConnector httpsConnector = new ServerConnector(_server, sslContextFactory);
+    ServerConnector httpsConnector = new ServerConnector(_server, sslContextFactory, makeHttpConnectionFactory());
     if (getIp() != null) {
       httpsConnector.setHost(getIp());
     }
