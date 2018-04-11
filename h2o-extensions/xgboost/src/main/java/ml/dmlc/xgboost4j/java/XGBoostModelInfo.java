@@ -56,9 +56,7 @@ final public class XGBoostModelInfo extends Iced {
   }
 
   public void nukeBackend() {
-    if (_booster != null) {
-      _booster.dispose();
-    }
+    BoosterHelper.dispose(_booster);
     _booster = null;
   }
 

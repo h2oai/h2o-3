@@ -2,19 +2,20 @@ package hex.genmodel.algos.xgboost;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.Rabit;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import ml.dmlc.xgboost4j.java.*;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 
 /**
  * "Gradient Boosting Machine" MojoModel
+ *
+ * Please note: user is advised to explicitly release the native resources of XGBoost by calling close method on the instance.
  */
-public final class XGBoostMojoModel extends MojoModel {
+public final class XGBoostMojoModel extends MojoModel implements Closeable {
   Booster _booster;
 
   public int _nums;
@@ -74,8 +75,7 @@ public final class XGBoostMojoModel extends MojoModel {
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     } finally {
-      if (dmat != null)
-        dmat.dispose();
+      BoosterHelper.dispose(dmat);
     }
 
     for(int r = 0; r < out.length; r++) {
@@ -120,8 +120,7 @@ public final class XGBoostMojoModel extends MojoModel {
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     } finally {
-      if (dmat != null)
-        dmat.dispose();
+      BoosterHelper.dispose(dmat);
     }
 
     if (nclasses > 2) {
@@ -138,6 +137,11 @@ public final class XGBoostMojoModel extends MojoModel {
       preds[0] = out[0][0];
     }
     return preds;
+  }
+
+  @Override
+  public void close() {
+    BoosterHelper.dispose(_booster);
   }
 
 }
