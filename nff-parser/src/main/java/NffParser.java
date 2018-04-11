@@ -360,7 +360,6 @@ public class NffParser {
         }
         v.close();
         dataBuffer.close();
-        // todo - remove count from return value - not needed
         if(data!=null) {
             return new String(data);
         }else {
