@@ -17,7 +17,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     private final IcedHashMapGeneric.IcedHashMapStringObject _nodeToMatrixWrapper;
     private final XGBoostOutput _output;
     private transient Booster _booster;
-    private byte[] _rawBooster;
+//    private byte[] _rawBooster;
 
     private final XGBoostModel.XGBoostParameters _parms;
     private final int _tid;
@@ -35,7 +35,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         _output = output;
         _parms = parms;
         _tid = tid;
-        _rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
+        _booster = booster;
+        //_rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
     }
 
@@ -75,8 +76,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
-
-            if (_rawBooster == null) {
+            if (_tid == 0 && _booster == null) {
                 HashMap<String, DMatrix> watches = new HashMap<>();
                 _booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat,
                         params,
@@ -84,20 +84,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                         watches,
                         null,
                         null);
-            } else {
-                try {
-                    _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
-                    Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
-                    // Set the parameters, some seem to get lost on save/load
-                    _booster.setParams(params);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new IllegalStateException("Failed to load the booster.", e);
-                }
-
+            } else
                 _booster.update(trainMat, _tid);
-            }
-            _rawBooster = _booster.toByteArray();
         } finally {
             try {
                 Rabit.shutdown();
@@ -109,21 +97,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     @Override
     public void reduce(XGBoostUpdateTask mrt) {
-        if(null == _rawBooster) {
-            _rawBooster = mrt._rawBooster;
-        }
     }
 
     // This is called from driver
     public Booster getBooster() {
-        if (null == _booster) {
-            try {
-                _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
-                Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
-            } catch (XGBoostError | IOException xgBoostError) {
-                throw new IllegalStateException("Failed to load the booster.", xgBoostError);
-            }
-        }
         return _booster;
     }
 }
