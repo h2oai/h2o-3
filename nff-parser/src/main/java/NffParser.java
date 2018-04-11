@@ -158,6 +158,7 @@ public class NffParser {
         BufferedReader br = null;
         TreeMap<String, List<String>> metaNff = new TreeMap<>();
         String dirPath = "/home/nikhil/repos/backup/test_datatable_nff/weather/";
+        String outputPath = "/home/nikhil/repos/backup/test_datatable_nff/out.csv";
         String seperator = ",";
         // TODO - currently opens the n files simultaneously- each having data of a column
         TreeMap<String, BufferedInputStream> filePointers = new TreeMap<>();
@@ -195,8 +196,8 @@ public class NffParser {
 //            filePointers.forEach((k, v) -> System.out.println(k + v));
 
             // start creating rows of data
-            String outputPath = "out.csv";
-            BufferedWriter output = new BufferedWriter(new FileWriter(outputPath));
+//            String outputPath = "out.csv";
+//            BufferedWriter output = new BufferedWriter(new FileWriter(outputPath));
             StringBuilder outputRow = new StringBuilder();
 
             //TODO - take care of big-endian < - > little-endian conversions as bytes need to be read and decoded properly
@@ -211,135 +212,135 @@ public class NffParser {
             // count of number of string read
             int s4_count , s8_count = 0;
             for (int numRowsRead = 0; numRowsRead <= totalRows-1; numRowsRead++) {
-            //Loop over all rows and create the data file file
-            for ( String k : filePointers.keySet()) {
-                BufferedInputStream v = filePointers.get(k);
-                try {
-                    // Read the byte stream of the line
-                    String colType = metaNff.get(k).get(0);
-//                    System.out.println("TYPE:"+colType);
-                    // C types - http://en.cppreference.com/w/cpp/types/integer
-                    switch (colType) {
-                        case "i1":
-                            byte[] bytes = new byte[1];
-                            v.read(bytes);
-                            outputRow.append(get_i(bytes)); // read 1 byte
-                            break;
-                        case "i2": // todo - check if it can be implemented using ByteBuffer
-                            bytes = new byte[2];
-                            v.read(bytes);
-                            outputRow.append(get_i(bytes));
-                            break;
-                        case "i4":
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            outputRow.append(get_i(bytes));
-                            break;
-                        case "i8":
-                            bytes = new byte[8];
-                            v.read(bytes);
-                            outputRow.append(get_i8(bytes));
-                            break;
-                        case "b1":
-                            int value = v.read();
-//                            if (ss == 1) outputRow.append(true);
-//                            else if (ss == 0) outputRow.append(false);
-//                            else outputRow.append("null");
-                            outputRow.append(Integer.toString(value));
-                            break;
-                        case "r4": // todo - can't generate test data from datatable - not sure if implemented
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            float value_r4 = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-                            outputRow.append(value_r4);
-                            break;
-                        case "r8":
-                            bytes = new byte[8];
-                            v.read(bytes);
-                            double value_r8 = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
-//                            System.out.println("ppp:"+value_r8);
-//                            System.out.println("Result: " + Arrays.toString(bytes));
-                            outputRow.append(value_r8);
-                            break;
-                        case "d2": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[2];
-                            v.read(bytes);
-                            break;
-                        case "d4": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            break;
-                        case "d8": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[8];
-                            v.read(bytes);
-                            break;
-                        case "s4":
-                            if (!s4CountMap.containsKey(k)){
-                                s4_count=0;
-                                s4CountMap.put(k,0);
-                            }else{
-                                s4_count = s4CountMap.get(k);
-                            }
-                            ReturnValuesS4 returnS4 = readTest(s4_count, v, dirPath, k, 4);
-                            // update the offset of bytes read for this column in the map
-                            s4_count++;
-                            s4CountMap.put(k,s4_count);
-                            outputRow.append(returnS4.getFieldRead());
-                            break;
-                        case "s8": // todo - not sure if implemented in datatable - but the below should work
-                            if (!s8CountMap.containsKey(k)){
-                                s8_count=0;
-                                s8CountMap.put(k,0);
-                            }else{
-                                s8_count = s8CountMap.get(k);
-                            }
-                            ReturnValuesS4 returnS8 = readTest(s8_count, v, dirPath, k, 8);
-                            s8_count++;
-                            s8CountMap.put(k,s8_count);
-                            outputRow.append(returnS8.getFieldRead());
-                            break;
-                        case "sx": // todo - implement this
-                            break;
-                        case "e1": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[1];
-                            v.read(bytes);
-                            break;
-                        case "e2": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[2];
-                            v.read(bytes);
-                            break;
-                        case "e4": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            break;
-                        case "t8": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[8];
-                            v.read(bytes);
-                            break;
-                        case "T4": //todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            break;
-                        case "t4": //todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[4];
-                            v.read(bytes);
-                            break;
-                        case "t2": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[2];
-                            v.read(bytes);
-                            break;
-                        case "o8": // todo - not implemented as it is not used in datatable as of now
-                            bytes = new byte[8];
-                            v.read(bytes);
-                            break;
+                //Loop over all rows and create the data file file
+                for ( String k : filePointers.keySet()) {
+                    BufferedInputStream v = filePointers.get(k);
+                    try {
+                        // Read the byte stream of the line
+                        String colType = metaNff.get(k).get(0);
+    //                    System.out.println("TYPE:"+colType);
+                        // C types - http://en.cppreference.com/w/cpp/types/integer
+                        switch (colType) {
+                            case "i1":
+                                byte[] bytes = new byte[1];
+                                v.read(bytes);
+                                outputRow.append(get_i(bytes)); // read 1 byte
+                                break;
+                            case "i2": // todo - check if it can be implemented using ByteBuffer
+                                bytes = new byte[2];
+                                v.read(bytes);
+                                outputRow.append(get_i(bytes));
+                                break;
+                            case "i4":
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                outputRow.append(get_i(bytes));
+                                break;
+                            case "i8":
+                                bytes = new byte[8];
+                                v.read(bytes);
+                                outputRow.append(get_i8(bytes));
+                                break;
+                            case "b1":
+                                int value = v.read();
+    //                            if (ss == 1) outputRow.append(true);
+    //                            else if (ss == 0) outputRow.append(false);
+    //                            else outputRow.append("null");
+                                outputRow.append(Integer.toString(value));
+                                break;
+                            case "r4": // todo - can't generate test data from datatable - not sure if implemented
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                float value_r4 = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                                outputRow.append(value_r4);
+                                break;
+                            case "r8":
+                                bytes = new byte[8];
+                                v.read(bytes);
+                                double value_r8 = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+    //                            System.out.println("ppp:"+value_r8);
+    //                            System.out.println("Result: " + Arrays.toString(bytes));
+                                outputRow.append(value_r8);
+                                break;
+                            case "d2": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[2];
+                                v.read(bytes);
+                                break;
+                            case "d4": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                break;
+                            case "d8": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[8];
+                                v.read(bytes);
+                                break;
+                            case "s4":
+                                if (!s4CountMap.containsKey(k)){
+                                    s4_count=0;
+                                    s4CountMap.put(k,0);
+                                }else{
+                                    s4_count = s4CountMap.get(k);
+                                }
+                                ReturnValuesS4 returnS4 = readTest(s4_count, v, dirPath, k, 4);
+                                // update the offset of bytes read for this column in the map
+                                s4_count++;
+                                s4CountMap.put(k,s4_count);
+                                outputRow.append("\"" + returnS4.getFieldRead() + "\"");
+                                break;
+                            case "s8": // todo - not sure if implemented in datatable - but the below should work
+                                if (!s8CountMap.containsKey(k)){
+                                    s8_count=0;
+                                    s8CountMap.put(k,0);
+                                }else{
+                                    s8_count = s8CountMap.get(k);
+                                }
+                                ReturnValuesS4 returnS8 = readTest(s8_count, v, dirPath, k, 8);
+                                s8_count++;
+                                s8CountMap.put(k,s8_count);
+                                outputRow.append("\"" + returnS8.getFieldRead() + "\"");
+                                break;
+                            case "sx": // todo - implement this
+                                break;
+                            case "e1": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[1];
+                                v.read(bytes);
+                                break;
+                            case "e2": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[2];
+                                v.read(bytes);
+                                break;
+                            case "e4": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                break;
+                            case "t8": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[8];
+                                v.read(bytes);
+                                break;
+                            case "T4": //todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                break;
+                            case "t4": //todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[4];
+                                v.read(bytes);
+                                break;
+                            case "t2": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[2];
+                                v.read(bytes);
+                                break;
+                            case "o8": // todo - not implemented as it is not used in datatable as of now
+                                bytes = new byte[8];
+                                v.read(bytes);
+                                break;
 
+                        }
+                        outputRow.append(seperator);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    outputRow.append(seperator);
-                } catch (IOException e) {
-                    e.printStackTrace();
+    //            });
                 }
-//            });
-            }
             outputRow.setLength(outputRow.length() - 1); // chop off trailing comma
             outputRow.append("\n"); //new line after generating one row // todo - fix the newline character
             }
@@ -348,6 +349,19 @@ public class NffParser {
         outputRow.setLength(outputRow.length()-1); // to strip off the extra new line at the end
         System.out.println(outputRow.toString());
         System.out.println("OUTPUT ROWS");
+        int len = outputRow.toString().length();
+        System.out.println("len:"+len);
+        BufferedWriter output = new BufferedWriter(new FileWriter(outputPath));
+        StringBuilder headerOutput = new StringBuilder();
+        for(String k: metaNff.keySet()){
+            headerOutput.append(metaNff.get(k).get(2));
+            headerOutput.append(",");
+        }
+        headerOutput.setLength(headerOutput.length()-1);
+        output.write(headerOutput.toString());
+        output.write("\n");
+        output.write(outputRow.toString());
+        output.close();
     }
 
         finally {
