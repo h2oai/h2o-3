@@ -259,6 +259,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           buildModelImpl();
         }
       } else {
+        if (XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend))
+          Log.info("GPU backend is not supported on this H2O cluster, using CPU backend instead.");
+        _parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
         buildModelImpl();
       }
     }
