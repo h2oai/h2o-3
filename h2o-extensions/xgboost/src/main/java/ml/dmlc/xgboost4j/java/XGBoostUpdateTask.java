@@ -3,9 +3,7 @@ package ml.dmlc.xgboost4j.java;
 import hex.tree.xgboost.XGBoostExtension;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import water.ExtensionManager;
-import water.H2O;
-import water.MRTask;
+import water.*;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -16,8 +14,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private final IcedHashMapGeneric.IcedHashMapStringObject _nodeToMatrixWrapper;
     private final XGBoostOutput _output;
-    private transient Booster _booster;
-    private byte[] _rawBooster;
+    private IcedBooster _boosterWrapper;
 
     private final XGBoostModel.XGBoostParameters _parms;
     private final int _tid;
@@ -32,16 +29,17 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                       int tid,
                       Map<String, String> workerEnvs) {
         _nodeToMatrixWrapper = setupTask._nodeToMatrixWrapper;
+        _boosterWrapper = IcedBooster.wrap(booster);
         _output = output;
         _parms = parms;
         _tid = tid;
-        _rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
     }
 
     @Override
     protected void setupLocal() {
         if(H2O.ARGS.client) {
+            _boosterWrapper = null; // to be sure that old booster will not be returned on the client
             return;
         }
 
@@ -76,28 +74,20 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
 
-            if (_rawBooster == null) {
+            if (_boosterWrapper == null) {
                 HashMap<String, DMatrix> watches = new HashMap<>();
-                _booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat,
+                _boosterWrapper = IcedBooster.wrap(ml.dmlc.xgboost4j.java.XGBoost.train(trainMat,
                         params,
                         0,
                         watches,
                         null,
-                        null);
+                        null));
             } else {
-                try {
-                    _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
-                    Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
-                    // Set the parameters, some seem to get lost on save/load
-                    _booster.setParams(params);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new IllegalStateException("Failed to load the booster.", e);
-                }
-
-                _booster.update(trainMat, _tid);
+                // Set the parameters, some seem to get lost on save/load
+                _boosterWrapper._booster.setParams(params);
+                // Do one iteration
+                _boosterWrapper._booster.update(trainMat, _tid);
             }
-            _rawBooster = _booster.toByteArray();
         } finally {
             try {
                 Rabit.shutdown();
@@ -109,21 +99,48 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     @Override
     public void reduce(XGBoostUpdateTask mrt) {
-        if(null == _rawBooster) {
-            _rawBooster = mrt._rawBooster;
-        }
+        // always take the "other" booster - client doesn't have one
+        _boosterWrapper = mrt._boosterWrapper;
     }
 
     // This is called from driver
     public Booster getBooster() {
-        if (null == _booster) {
+        return _boosterWrapper != null ? _boosterWrapper._booster : null;
+    }
+
+    private static class IcedBooster extends Iced<IcedBooster> {
+
+        private Booster _booster;
+
+        public IcedBooster() {}
+
+        private IcedBooster(Booster booster) {
+            _booster = booster;
+        }
+
+        public final AutoBuffer write_impl(AutoBuffer ab) {
+            byte[] rawBooster = hex.tree.xgboost.XGBoost.getRawArray(_booster);
+            return ab.putA1(rawBooster);
+        }
+
+        public final IcedBooster read_impl(AutoBuffer ab) {
             try {
-                _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
-                Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
+                byte[] rawBooster = ab.getA1();
+                if (rawBooster != null) {
+                    _booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                    Log.debug("Booster created from bytes, raw size = " + rawBooster.length);
+                }
+                return this;
             } catch (XGBoostError | IOException xgBoostError) {
                 throw new IllegalStateException("Failed to load the booster.", xgBoostError);
             }
         }
-        return _booster;
+
+        private static IcedBooster wrap(Booster booster) {
+            if (booster == null)
+                return null;
+            return new IcedBooster(booster);
+        }
     }
+
 }
