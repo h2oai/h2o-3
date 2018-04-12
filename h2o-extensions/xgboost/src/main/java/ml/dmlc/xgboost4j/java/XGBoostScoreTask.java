@@ -126,6 +126,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+        DMatrix data = null;
+        Booster booster = null;
         try {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
@@ -134,7 +136,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             // This might be fixed in future versions of XGBoost
             Rabit.init(rabitEnv);
 
-            DMatrix data = XGBoostUtils.convertChunksToDMatrix(
+            data = XGBoostUtils.convertChunksToDMatrix(
                     _sharedmodel._dataInfoKey,
                     cs,
                     _fr.find(_parms._response_column),
@@ -147,7 +149,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 return;
             }
 
-            Booster booster = null;
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
                 booster.setParams(params);
@@ -203,6 +204,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } catch (XGBoostError xgBoostError) {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
+            BoosterHelper.dispose(booster, data);
             try {
                 Rabit.shutdown();
             } catch (XGBoostError xgBoostError) {

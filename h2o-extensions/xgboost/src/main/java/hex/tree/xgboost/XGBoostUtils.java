@@ -16,6 +16,25 @@ import static water.H2O.technote;
 
 public class XGBoostUtils {
 
+    public static String makeFeatureMap(Frame f, DataInfo di) {
+        // set the names for the (expanded) columns
+        String[] coefnames = di.coefNames();
+        StringBuilder sb = new StringBuilder();
+        assert(coefnames.length == di.fullN());
+        for (int i = 0; i < di.fullN(); ++i) {
+            sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
+            int catCols = di._catOffsets[di._catOffsets.length-1];
+            if (i < catCols || f.vec(i-catCols).isBinary())
+                sb.append("i");
+            else if (f.vec(i-catCols).isInt())
+                sb.append("int");
+            else
+                sb.append("q");
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
     /**
      * convert an H2O Frame to a sparse DMatrix
      * @param f H2O Frame
@@ -23,7 +42,6 @@ public class XGBoostUtils {
      * @param response name of the response column
      * @param weight name of the weight column
      * @param fold name of the fold assignment column
-     * @param featureMap featureMap[0] will be populated with the column names and types
      * @return DMatrix
      * @throws XGBoostError
      */
@@ -33,7 +51,6 @@ public class XGBoostUtils {
                                          String response,
                                          String weight,
                                          String fold,
-                                         String[] featureMap,
                                          boolean sparse) throws XGBoostError {
 
         int[] chunks;
@@ -59,27 +76,8 @@ public class XGBoostUtils {
 
         int nRows = (int) nRowsL;
 
-        DataInfo di = dataInfoKey.get();
-        // set the names for the (expanded) columns
-        if (featureMap!=null) {
-            String[] coefnames = di.coefNames();
-            StringBuilder sb = new StringBuilder();
-            assert(coefnames.length == di.fullN());
-            for (int i = 0; i < di.fullN(); ++i) {
-                sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
-                int catCols = di._catOffsets[di._catOffsets.length-1];
-                if (i < catCols || f.vec(i-catCols).isBinary())
-                    sb.append("i");
-                else if (f.vec(i-catCols).isInt())
-                    sb.append("int");
-                else
-                    sb.append("q");
-                sb.append("\n");
-            }
-            featureMap[0] = sb.toString();
-        }
-
-        DMatrix trainMat;
+        final DataInfo di = dataInfoKey.get();
+        final DMatrix trainMat;
         Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
         Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
         for (int i = 0; i < vecs.length; ++i) {
