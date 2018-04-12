@@ -4,6 +4,7 @@ import hex.tree.xgboost.XGBoostExtension;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
 import water.*;
+import water.util.IcedBoolean;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
@@ -82,9 +83,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                         watches,
                         null,
                         null));
+                _boosterWrapper.setParams(params);
             } else {
-                // Set the parameters, some seem to get lost on save/load
-                _boosterWrapper._booster.setParams(params);
+                // Refresh the parameters - for the cases when booster was freshly deserialized
+                _boosterWrapper.setParams(params);
                 // Do one iteration
                 _boosterWrapper._booster.update(trainMat, _tid);
             }
@@ -105,42 +107,97 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     // This is called from driver
     public Booster getBooster() {
-        return _boosterWrapper != null ? _boosterWrapper._booster : null;
+        return IcedBooster.unwrap(_boosterWrapper);
     }
 
     private static class IcedBooster extends Iced<IcedBooster> {
 
-        private Booster _booster;
+        private transient boolean _initialized;
+        private transient Booster _booster;
+        private transient Map<String, Object> _params;
 
         public IcedBooster() {}
 
         private IcedBooster(Booster booster) {
+            assert booster != null;
             _booster = booster;
+            _initialized = true; // assume it is already initialized
+            _params = null;
         }
 
         public final AutoBuffer write_impl(AutoBuffer ab) {
             byte[] rawBooster = hex.tree.xgboost.XGBoost.getRawArray(_booster);
-            return ab.putA1(rawBooster);
+            ab.putA1(rawBooster);
+            ab.put(toIcedMap(_params));
+            return ab;
         }
 
         public final IcedBooster read_impl(AutoBuffer ab) {
             try {
                 byte[] rawBooster = ab.getA1();
-                if (rawBooster != null) {
-                    _booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
-                    Log.debug("Booster created from bytes, raw size = " + rawBooster.length);
-                }
+                assert rawBooster != null;
+                _initialized = false; // We will need to re-initialize the booster, some of the parameters seem to get lost on save/load
+                _booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                _params = fromIcedMap(ab.get(IcedHashMapGeneric.IcedHashMapStringObject.class));
+                Log.debug("Booster created from bytes, raw size = " + rawBooster.length);
                 return this;
             } catch (XGBoostError | IOException xgBoostError) {
                 throw new IllegalStateException("Failed to load the booster.", xgBoostError);
             }
         }
 
-        private static IcedBooster wrap(Booster booster) {
+        private IcedHashMapGeneric.IcedHashMapStringObject toIcedMap(Map<String, Object> m) {
+            if (m == null)
+                return null;
+            IcedHashMapGeneric.IcedHashMapStringObject result = new IcedHashMapGeneric.IcedHashMapStringObject();
+            for (Map.Entry<String, Object> entry : m.entrySet()) {
+                if (entry.getValue() instanceof Boolean)
+                    result.put(entry.getKey(), new IcedBoolean((boolean) entry.getValue()));
+                else
+                    result.put(entry.getKey(), entry.getValue());
+            }
+            return result;
+        }
+
+        private Map<String, Object> fromIcedMap(IcedHashMapGeneric.IcedHashMapStringObject m) {
+            if (m == null)
+                return null;
+            Map<String, Object> result = new HashMap<>();
+            for (Map.Entry<String, Object> entry : m.entrySet()) {
+                if (entry.getValue() instanceof IcedBoolean)
+                    result.put(entry.getKey(), ((IcedBoolean) entry.getValue())._val);
+                else
+                    result.put(entry.getKey(), entry.getValue());
+            }
+            return result;
+        }
+
+        private void setParams(Map<String, Object> params) {
+            _params = params;
+        }
+
+        private Booster get() {
+            if ((! _initialized) && (_params != null)) {
+                try {
+                    _booster.setParams(_params);
+                    _initialized = true;
+                } catch (XGBoostError xgBoostError) {
+                    throw new IllegalStateException("Failed to initialize the booster.", xgBoostError);
+                }
+            }
+            return _booster;
+        }
+
+        static Booster unwrap(IcedBooster icedBooster) {
+            return icedBooster != null ? icedBooster.get() : null;
+        }
+
+        static IcedBooster wrap(Booster booster) {
             if (booster == null)
                 return null;
             return new IcedBooster(booster);
         }
+
     }
 
 }
