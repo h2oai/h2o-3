@@ -153,7 +153,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info._dataInfoKey = dinfo._key;
   }
 
-  public static HashMap<String, Object> createParams(XGBoostParameters p, XGBoostOutput output) {
+  public static HashMap<String, Object> createParams(XGBoostParameters p, int nClasses) {
     HashMap<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -264,9 +264,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
 
-    if (output.nclasses()==2) {
+    if (nClasses == 2) {
       params.put("objective", "binary:logistic");
-    } else if (output.nclasses()==1) {
+    } else if (nClasses == 1) {
       if (p._distribution == DistributionFamily.gamma) {
         params.put("objective", "reg:gamma");
       } else if (p._distribution == DistributionFamily.tweedie) {
@@ -281,7 +281,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     } else {
       params.put("objective", "multi:softprob");
-      params.put("num_class", output.nclasses());
+      params.put("num_class", nClasses);
     }
     Log.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
