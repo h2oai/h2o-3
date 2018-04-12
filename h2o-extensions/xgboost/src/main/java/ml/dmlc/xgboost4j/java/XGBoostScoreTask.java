@@ -129,7 +129,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         DMatrix data = null;
         Booster booster = null;
         try {
-            HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+            HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output.nclasses());
 
             Map<String, String> rabitEnv = new HashMap<>();
             // Rabit has to be initialized as parts of booster.predict() are using Rabit

@@ -13,7 +13,7 @@ import java.util.*;
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private final IcedHashMapGeneric.IcedHashMapStringObject _nodeToMatrixWrapper;
-    private final XGBoostOutput _output;
+    private final int _nClasses;
     private IcedBooster _boosterWrapper;
 
     private final XGBoostModel.XGBoostParameters _parms;
@@ -30,7 +30,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                       Map<String, String> workerEnvs) {
         _nodeToMatrixWrapper = setupTask._nodeToMatrixWrapper;
         _boosterWrapper = IcedBooster.wrap(booster);
-        _output = output;
+        _nClasses = output.nclasses();
         _parms = parms;
         _tid = tid;
         rabitEnv.putAll(workerEnvs);
@@ -65,7 +65,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     }
 
     private void update(DMatrix trainMat) throws XGBoostError {
-        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _nClasses);
 
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
