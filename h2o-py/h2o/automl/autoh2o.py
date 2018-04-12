@@ -1,5 +1,7 @@
 # -*- encoding: utf-8 -*-
 import h2o
+import os
+from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, is_type
@@ -331,6 +333,52 @@ class H2OAutoML(object):
             self._model = h2o.get_model(self._leader_id)
             return self._model.predict(test_data)
         print("No model built yet...")
+
+    #---------------------------------------------------------------------------
+    # Download POJO/MOJO with AutoML
+    #---------------------------------------------------------------------------
+
+    def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
+        """
+        Download the POJO for the leader model in AutoML to the directory specified by path.
+
+        If path is an empty string, then dump the output to screen.
+
+        :param path:  An absolute path to the directory where POJO should be saved.
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
+        :returns: name of the POJO file written.
+        """
+        assert_is_type(path, str)
+        assert_is_type(get_genmodel_jar, bool)
+        path = path.rstrip("/")
+
+        if not self.leader.have_pojo:
+            raise H2OValueError("Export to POJO for " + str(self.leader.algo) + " is not supported")
+
+        return h2o.download_pojo(self.leader, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
+
+    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
+        """
+        Download the leader model in AutoML in MOJO format.
+
+        :param path: the path where MOJO file should be saved.
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
+        :returns: name of the MOJO file written.
+        """
+        assert_is_type(path, str)
+        assert_is_type(get_genmodel_jar, bool)
+
+        if not self.leader.have_mojo:
+            raise H2OValueError("Export to MOJO for " + str(self.leader.algo) + " is not supported")
+
+        if get_genmodel_jar:
+            if genmodel_name == "":
+                h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+            else:
+                h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
+        return h2o.api("GET /3/Models/%s/mojo" % self.leader.model_id, save_to=path)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Private

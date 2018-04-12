@@ -242,7 +242,11 @@ h2o.getModel <- function(model_id) {
 #' }
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
-
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
   if (!(model@have_pojo)){
     stop(paste0(model@algrithm, ' does not support export to POJO'))
   }
@@ -315,7 +319,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' }
 #' @export
 h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="") {
-
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
   if (!(model@have_mojo)){
     stop(paste0(model@algorithm, ' does not support export to MOJO'))
   }
