@@ -73,34 +73,6 @@ test.XGBoost.bernoulli.SyntheticData <- function() {
     expect_equal(num_models,6)
     print("XGBoost models summary")
     print(tru.xgboost)
-
-    gg_models <- lapply(tru.xgboost@model_ids, function(mid) { model = h2o.getModel(mid) })
-    for(i in 1:num_models){
-        model <- gg_models[[i]]
-        # Built R GBM models to compare against
-        print("yo")
-        print("model@parameters$ntrees:")
-        print(model@parameters$ntrees)
-        print("model@parameters$max_depth:")
-        print(model@parameters$max_depth)
-        print("model@parameters$min_rows:")
-        print(model@parameters$min_rows)
-        print("model@parameters$learn_rate:")
-        print(model@parameters$learn_rate)
-        gg<-gbm(y~., data=all.data2, distribution="bernoulli", n.trees=model@parameters$ntrees,
-                      interaction.depth=model@parameters$max_depth,n.minobsinnode=model@parameters$min_rows,
-                      shrinkage=model@parameters$learn_rate,bag.fraction=1)                # R gbm model
-        print("oy")
-        mm_y <- predict.gbm(gg,newdata=test.data2,n.trees=model@parameters$ntrees,type='response')  # R Predict
-        print("foo")
-        R_auc <- round(gbm.roc.area(test.data2$y,mm_y), digits=3)
-        pred <- predict(model,test)                                                                #H2O Predict
-        H2O_perf <- h2o.performance(model,test)
-        H2O_auc <- round(h2o.auc(H2O_perf), digits=3)
-        print(paste ( " H2O_auc:", H2O_auc,
-                      " R_auc:", R_auc, sep=''),quote=F)
-                      expect_that(H2O_auc >= (R_auc-.01), is_true()) # Compare H2O and R auc's; here tolerance is 0.01
-    }
     
 }
 doTest("XGBoost Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.XGBoost.bernoulli.SyntheticData)

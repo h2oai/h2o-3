@@ -40,9 +40,9 @@ xgboost.random.grid.test <- function() {
       ## Not available in XGBoost:      histogram_type = c("UniformAdaptive","QuantilesGlobal","RoundRobin")
 
       ## Some XGBoost-specific parameters:
-      tree_method = c("auto", "exact", "approx", "hist"),
+      tree_method = c("auto", "exact", "hist", "approx"),
       grow_policy = c("depthwise", "lossguide"),
-      booster = c("gbtree", "gblinear", "dart")  
+      booster = c("gbtree")
         
     )
 
@@ -76,63 +76,14 @@ xgboost.random.grid.test <- function() {
     print(air.grid)
     expect_that(length(air.grid@model_ids) <= 5, is_true())
 
-    # test that predictions work on one of the individual models:
-    first_id <- air.grid@model_ids[[1]]
-    print("first model in grid: ")
-    print(first_id)
-    first <- h2o.getModel(first_id)
-
-    first_predictions <- h2o.predict(first, air.hex)  # training data
-    print("predictions for single model are in: ")
-    print(h2o.getId(first_predictions))
-
-    print("creating StackedEnsemble 1 of models: ")
-    print(air.grid@model_ids)
-    stacker1 <- h2o.stackedEnsemble(x = myX, y = "IsDepDelayed", 
+    stacker <- h2o.stackedEnsemble(x = myX, y = "IsDepDelayed", 
                                    training_frame = air.hex,
-                                   model_id = "my_ensemble_1",
+                                   model_id = "my_ensemble",
                                    base_models = air.grid@model_ids)
 
-    print("calling predict() on StackedEnsemble 1...")
-    predictions = h2o.predict(stacker1, air.hex)  # training data
-    print("predictions for ensemble 1 are in: ")
+    predictions = h2o.predict(stacker, air.hex)  # training data
+    print("predictions for ensemble are in: ")
     print(h2o.getId(predictions))
-
-    # StackedEnsemble including GLM, GBM and DL models, which use different CategoricalEncodingSchemes;
-    # one-hot for GLM and DL and Enum for GBM.
-    # See PUBDEV-5253, which was caused by XGBoost using LabelEncoder.
-    gbm <- h2o.gbm(x = myX, y = "IsDepDelayed", 
-                   training_frame = air.hex,
-                   nfolds = 5, fold_assignment = 'Modulo', keep_cross_validation_predictions = TRUE,
-                   model_id = "my_gbm",
-                   ntrees = 3,
-                   max_depth = 3)
-
-    glm <- h2o.glm(x = myX, y = "IsDepDelayed", 
-                   training_frame = air.hex,
-                   nfolds = 5, fold_assignment = 'Modulo', keep_cross_validation_predictions = TRUE,
-                   model_id = "my_glm",
-                   family = "binomial")
-
-    dl <- h2o.deeplearning(x = myX, y = "IsDepDelayed", 
-                           training_frame = air.hex,
-                           nfolds = 5, fold_assignment = 'Modulo', keep_cross_validation_predictions = TRUE,
-                           model_id = "my_dl",
-                           hidden=c(5))
-
-    all_model_ids <- c(air.grid@model_ids, gbm@model_id, glm@model_id, dl@model_id)
-    print("creating StackedEnsemble 2 of models: ")
-    print(all_model_ids)
-    stacker2 <- h2o.stackedEnsemble(x = myX, y = "IsDepDelayed", 
-                                   training_frame = air.hex,
-                                   model_id = "my_ensemble_2",
-                                   base_models = all_model_ids)
-
-    print("calling predict() on StackedEnsemble 2...")
-    predictions = h2o.predict(stacker2, air.hex)  # training data
-    print("predictions for ensemble 2 are in: ")
-    print(h2o.getId(predictions))
-
 }
 
 doTest("XGBoost Grid Test: Airlines Smalldata", xgboost.random.grid.test)
