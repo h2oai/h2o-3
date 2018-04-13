@@ -128,6 +128,35 @@ Open a terminal window and run the following command to install H2O on the Anaco
 
 After H2O is installed, refer to the `Starting H2O from Anaconda <starting-h2o.html#from-anaconda>`__ section for information on how to start H2O and to view a GBM example run in Jupyter Notebook. 
 
+**Note**: For users who do not have access to anaconda.org, it is still possible to download H2O-3 conda package from S3 and install it locally.
+
+1. Install dependencies described above.
+2. Retrieve the H2O-3 conda package for your Python version and environment. Available packages are described below. In these package URLs, "rel-wolpert" is the branch, "6" is the branch version, and "3.18.0.6" is the H2O-3 version. Replace these values with your desired branch and version. 
+
+ ::
+   
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-64/h2o-3.18.0.6-py36_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-64/h2o-3.18.0.6-py35_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-64/h2o-3.18.0.6-py27_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-32/h2o-3.18.0.6-py36_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-32/h2o-3.18.0.6-py35_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/linux-32/h2o-3.18.0.6-py27_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/osx-64/h2o-3.18.0.6-py36_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/osx-64/h2o-3.18.0.6-py35_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/osx-64/h2o-3.18.0.6-py27_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-64/h2o-3.18.0.6-py36_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-64/h2o-3.18.0.6-py35_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-64/h2o-3.18.0.6-py27_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-32/h2o-3.18.0.6-py36_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-32/h2o-3.18.0.6-py35_0.tar.bz2
+  wget https://s3.amazonaws.com/h2o-release/h2o/rel-wolpert/6/Python/Conda/win-32/h2o-3.18.0.6-py27_0.tar.bz2
+
+3. Use the ``conda`` command to install the package. 
+
+ ::
+
+  conda install h2o-3.18.0.6-py35_0.tar.gz2 --offline
+
 Install on Hadoop
 -----------------
 
