@@ -131,7 +131,7 @@ After H2O is installed, refer to the `Starting H2O from Anaconda <starting-h2o.h
 **Note**: For users who do not have access to anaconda.org, it is still possible to download H2O-3 conda package from S3 and install it locally.
 
 1. Install dependencies described above.
-2. Retrieve the H2O-3 conda package for your Python version and environment. Available packages are described below. In these URLs, "rel-wolpert" is the branch, "6" is the branch version, and "3.18.0.6" is the H2O-3 version. Replace these with your desired branch and version. 
+2. Retrieve the H2O-3 conda package for your Python version and environment. Available packages are described below. In these package URLs, "rel-wolpert" is the branch, "6" is the branch version, and "3.18.0.6" is the H2O-3 version. Replace these values with your desired branch and version. 
 
  ::
    
