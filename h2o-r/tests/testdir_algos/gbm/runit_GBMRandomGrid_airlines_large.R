@@ -76,7 +76,7 @@ gbm.random.grid.test <- function() {
                                    base_models = air.grid@model_ids)
 
     predictions = h2o.predict(stacker, air.hex)  # training data
-    print("preditions for ensemble are in: ")
+    print("predictions for ensemble are in: ")
     print(h2o.getId(predictions))
 }
 
