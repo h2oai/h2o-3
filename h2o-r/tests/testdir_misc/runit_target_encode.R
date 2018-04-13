@@ -42,16 +42,16 @@ test <- function() {
   expect_that(map_y_df$denominator, equals(denominator_expected$y))
   
   Log.info("Calculating Target Encoding Mapping with fold_column")
-  iris$fold <- rep(c(1:3), 50)
+  iris$my_fold <- rep(c(1:3), 50)
   iris.hex <- as.h2o(iris)
-  map_fold <- h2o.target_encode_create(iris.hex, list("Species"), "y", "fold")
+  map_fold <- h2o.target_encode_create(iris.hex, list("Species"), "y", fold_column = "my_fold")
   
   Log.info("Expect that numerator matches sum of y = yes by fold and Species in original file")
-  numerator_fold_expected <- aggregate(y ~ fold + Species, data = iris[(iris$y == "yes"), ], length)
+  numerator_fold_expected <- aggregate(y ~ my_fold + Species, data = iris[(iris$y == "yes"), ], length)
   expect_that(as.matrix(map_fold[["Species"]]$numerator)[, 1], equals(numerator_fold_expected$y))
   
   Log.info("Expect that denominator matches frequency by fold and Species in original file")
-  denominator_fold_expected <- aggregate(y ~ fold + Species, data = iris, length)
+  denominator_fold_expected <- aggregate(y ~ my_fold + Species, data = iris, length)
   expect_that(as.matrix(map_fold[["Species"]]$denominator)[, 1], equals(denominator_fold_expected$y))
   
   
@@ -126,7 +126,7 @@ test <- function() {
   expect_that(frame_indices, equals(frame_sepallen))
   
   Log.info("Calculating Target Encoding Frame with Fold")
-  frame_y_fold <- h2o.target_encode_apply(iris.hex, x = list("Species"), y = "y", map_fold, holdout_type = "KFold", fold_column = "fold", noise_level = 0, blended_avg = FALSE)
+  frame_y_fold <- h2o.target_encode_apply(iris.hex, x = list("Species"), y = "y", map_fold, holdout_type = "KFold", fold_column = "my_fold", noise_level = 0, blended_avg = FALSE)
   expect_that(nrow(frame_y_fold), equals(nrow(iris)))
   
   Log.info("Calculating Target Encoding Frame with String Columns")
@@ -135,7 +135,7 @@ test <- function() {
   
   Log.info("Expect that string column dropped from frame")
   expect_that(ncol(frame_strings), equals(ncol(iris.hex)))
-  expect_that(colnames(frame_strings), equals(c("Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "TargetEncode_Species")))
+  expect_that(colnames(frame_strings), equals(c("Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "my_fold", "TargetEncode_Species")))
   
   
   Log.info("Calculating Target Encoding for multiple columns")
@@ -144,14 +144,14 @@ test <- function() {
   frame_multiple <- h2o.target_encode_apply(iris.hex, list(c("Species"), c("y")), "Sepal.Length", mapping_multiple, holdout_type = "None")
   
   Log.info("Expect that there are two target encoding columns")
-  expect_that(colnames(frame_multiple), equals(c("y", "Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "TargetEncode_Species", "TargetEncode_y")))
+  expect_that(colnames(frame_multiple), equals(c("y", "Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "my_fold", "TargetEncode_Species", "TargetEncode_y")))
   
   Log.info("Calculating Target Encoding for interaction columns")
   mapping_interaction <- h2o.target_encode_create(iris.hex, list(c("Species", "y")), "Sepal.Length")
   frame_interaction <- h2o.target_encode_apply(iris.hex, list(c("Species", "y")), "Sepal.Length", mapping_interaction, holdout_type = "None")
   
   Log.info("Expect that there are two target encoding columns")
-  expect_that(colnames(frame_interaction), equals(c("Species", "y", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "fold", "TargetEncode_Species:y")))
+  expect_that(colnames(frame_interaction), equals(c("Species", "y", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "my_fold", "TargetEncode_Species:y")))
   
 }
 

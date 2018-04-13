@@ -4568,7 +4568,7 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
     if (is.null(fold_column)) {
       x_mapping <- h2o.group_by(encoding_data, cols, sum(y), nrow(y))
     } else {
-      x_mapping <- h2o.group_by(encoding_data, c(cols, "fold"), sum(y), nrow(y))
+      x_mapping <- h2o.group_by(encoding_data, c(cols, fold_column), sum(y), nrow(y))
     }
     
     colnames(x_mapping)[which(colnames(x_mapping) == paste0("sum_", y))] <- "numerator"
@@ -4689,11 +4689,12 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
         colnames(out_fold)[which(colnames(out_fold) == "sum_numerator")] <- "numerator"
         colnames(out_fold)[which(colnames(out_fold) == "sum_denominator")] <- "denominator"
         out_fold$fold <- i
+        colnames(out_fold)[ncol(out_fold)] <- fold_column
         
         holdout_encode_map <- h2o.rbind(holdout_encode_map, out_fold)
       }
       
-      te_frame <- h2o.merge(te_frame, holdout_encode_map, by = c(cols, "fold"), all.x = TRUE)
+      te_frame <- h2o.merge(te_frame, holdout_encode_map, by = c(cols, fold_column), all.x = TRUE)
     }
     
     if (holdout_type == "LeaveOneOut") {
