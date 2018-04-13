@@ -1014,7 +1014,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
-    stackedEnsembleParameters._keep_levelone_frame = true;
+    stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
     // Add cross-validation args
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
@@ -1199,6 +1199,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
+        if (!buildSpec.build_control.keep_cross_validation_predictions) {
+          cleanUpStackedEnsemblesCVPreds(ensembleJob);
+        }
+        if (!buildSpec.build_control.keep_cross_validation_models) {
+          cleanUpStackedEnsemblesCVModels(ensembleJob);
+        }
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
         // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
@@ -1218,6 +1224,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
         Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
+        if (!buildSpec.build_control.keep_cross_validation_predictions) {
+          cleanUpStackedEnsemblesCVPreds(bestEnsembleJob);
+        }
+        if (!buildSpec.build_control.keep_cross_validation_models) {
+          cleanUpStackedEnsemblesCVModels(bestEnsembleJob);
+        }
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
       }
     }
@@ -1252,6 +1264,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     possiblyVerifyImmutability();
+
+    if (!buildSpec.build_control.keep_cross_validation_predictions) {
+      cleanUpModelsCVPreds();
+    }
+
+    if (!buildSpec.build_control.keep_cross_validation_models) {
+      cleanUpModelsCVModels();
+    }
 
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
@@ -1498,5 +1518,50 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private String getModelType(Model m) {
     return m._key.toString().startsWith("XRT_") ? "XRT" : m._parms.algoName();
+  }
+  
+  private void cleanUpStackedEnsemblesCVPreds(Job<StackedEnsembleModel> ensembleJob) {
+    Log.info("Remove CV Preds & Models from " + ensembleJob.get()._key.toString() + "'s metalearner");
+    //Clear out all CV preds and CV models
+    if (ensembleJob.get()._output._metalearner._output._cross_validation_predictions != null) {
+      for (Key k : ensembleJob.get()._output._metalearner._output._cross_validation_predictions) {
+        Log.info("Remove CV Predictions for " + ensembleJob.get()._output._metalearner._key.toString());
+        k.remove();
+      }
+    }
+    if (ensembleJob.get()._output._metalearner._output._cross_validation_holdout_predictions_frame_id != null) {
+      Log.info("Remove CV Prediction Frame for " + ensembleJob.get()._output._metalearner._key.toString());
+      ensembleJob.get()._output._metalearner._output._cross_validation_holdout_predictions_frame_id.remove();
+    }
+  }
+
+  private void cleanUpStackedEnsemblesCVModels(Job<StackedEnsembleModel> ensembleJob) {
+    Log.info("Remove CV Models for " + ensembleJob.get()._output._metalearner._key.toString());
+    ensembleJob.get()._output._metalearner.deleteCrossValidationModels();
+  }
+
+  private void cleanUpModelsCVPreds() {
+    //Clear out all CV preds and CV models
+    for (Model model : leaderboard().getModels()) {
+      if (!model._parms.algoName().equals("stackedensemble")) {
+        if (model._output._cross_validation_predictions != null) {
+          for (Key k : model._output._cross_validation_predictions) {
+            Log.info("Remove CV Predictions for " + model._key.toString());
+            k.remove();
+          }
+        }
+        if (model._output._cross_validation_holdout_predictions_frame_id != null) {
+          Log.info("Remove CV Prediction Frame for " + model._key.toString());
+          model._output._cross_validation_holdout_predictions_frame_id.remove();
+        }
+      }
+    }
+  }
+
+  private void cleanUpModelsCVModels() {
+    for (Model model : leaderboard().getModels()) {
+      Log.info("Remove CV Models for " + model._key.toString());
+      model.deleteCrossValidationModels();
+    }
   }
 }

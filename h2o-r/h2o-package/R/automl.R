@@ -33,6 +33,8 @@
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"), 
 #'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the cross-validated models. Defaults to TRUE.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -58,7 +60,9 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL,
-                       exclude_algos = NULL)
+                       exclude_algos = NULL,
+                       keep_cross_validation_predictions = TRUE,
+                       keep_cross_validation_models = TRUE)
 {
 
   tryCatch({
@@ -182,7 +186,9 @@ h2o.automl <- function(x, y, training_frame,
     stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
   }
   build_control$nfolds <- nfolds
-  
+  build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  build_control$keep_cross_validation_models <- keep_cross_validation_models
+
   # Create the parameter list to POST to the AutoMLBuilder 
   if (length(build_models) == 0) {
       params <- list(input_spec = input_spec, build_control = build_control)
