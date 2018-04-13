@@ -68,33 +68,18 @@ randomParams <- function(distribution, train, test, x, y) {
   parms$max_depth <- parm_set("max_depth")
   parms$min_rows <- parm_set("min_rows")
   parms$learn_rate <- parm_set("learn_rate")
-# balance_classes and nbins are not implemented for XGBoost:
-#  parms$nbins <- parm_set("nbins")
-# parms$nbins_cats <- parm_set("nbins_cats")
-#  parms$balance_classes <- parm_set("balance_classes",
-#    dep = distribution %in% c("multinomial", "bernoulli"))
-#  parms$max_after_balance_size <- parm_set("max_after_balance_size",
-#    dep = !is.null(parms$balance_classes) && parms$balance_classes)
   parms$score_each_iteration <- parm_set("score_each_iteration")
 
   t <- system.time(hh <- do.call("h2o.xgboost", parms))
-  print(hh)
 
   h2o.rm(hh@model_id)
-  print("#########################################################################################")
-  print("")
-  print(t)
-  print("")
 
 }
 
 test.XGBoost.rand_attk_forloop <- function() {
   expect_true(h2o.xgboost.available())
-  Log.info("Import and data munging...")
   pros.hex <- h2o.uploadFile(locate("smalldata/prostate/prostate.csv"))
-  seed <- as.integer(runif(1,1,.Machine$integer.max))
-  print("SEED: ")
-  print(seed)
+  seed <- 1
   p.sid <- h2o.runif(pros.hex,seed=seed)
 
   pros.hex[,2] <- as.factor(pros.hex[,2])
@@ -114,13 +99,10 @@ test.XGBoost.rand_attk_forloop <- function() {
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 
-  Log.info("### Binomial ###")
   for(i in 1:3)
     randomParams("bernoulli", pros.train, pros.test, 3:9, 2)
-  Log.info("### Multinomial ###")
   for(i in 1:3)
     randomParams("multinomial", iris.train, iris.test, 1:4, 5)
-  Log.info("### Regression ###")
   for(i in 1:3)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
