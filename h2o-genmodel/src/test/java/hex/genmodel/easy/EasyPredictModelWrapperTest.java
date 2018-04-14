@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -160,6 +161,10 @@ public class EasyPredictModelWrapperTest {
   public void testSerializeWrapper() throws Exception {
     MyModel rawModel = makeModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    Assert.assertTrue(m instanceof Serializable);
+    ensureAllFieldsSerializable(EasyPredictModelWrapper.class.getDeclaredFields());
+
     checkSerialization(m);
   }
 
@@ -171,6 +176,14 @@ public class EasyPredictModelWrapperTest {
             .setModel(rawModel)
             .setErrorConsumer(countingErrorConsumer));
     checkSerialization(m);
+  }
+
+  private static byte[] serialize(Object o) throws Exception {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
+      out.writeObject(o);
+      out.flush();
+      return bos.toByteArray();
+    }
   }
 
   private static void checkSerialization(final EasyPredictModelWrapper m1) throws Exception {
@@ -441,19 +454,11 @@ public class EasyPredictModelWrapperTest {
     }
   }
 
-  private static byte[] serialize(Object o) throws Exception {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try {
-      ObjectOutput out = new ObjectOutputStream(bos);
-      out.writeObject(o);
-      out.flush();
-      return bos.toByteArray();
-    } finally {
-      try {
-        bos.close();
-      } catch (IOException ex) {
-        // ignore close exception
-      }
+  private static void ensureAllFieldsSerializable(Field[] declaredFields) {
+
+    for (Field field : declaredFields) {
+      Assert.assertFalse(Modifier.isTransient(field.getModifiers()));
+      Assert.assertTrue(Serializable.class.isAssignableFrom(field.getDeclaringClass()));
     }
   }
 
