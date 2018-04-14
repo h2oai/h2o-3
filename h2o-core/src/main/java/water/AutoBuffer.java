@@ -1837,6 +1837,8 @@ public final class AutoBuffer {
   public AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
   public AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
 
+  public AutoBuffer putJSONZ(boolean b) { return putJStr(Boolean.toString(b)); }
+
   public AutoBuffer putJSON4(int i) { return putJStr(Integer.toString(i)); }
   AutoBuffer putJSONA4( int[] a) {
     if( a == null ) return putJNULL();
@@ -1873,7 +1875,7 @@ public final class AutoBuffer {
   public AutoBuffer putJSONAA4( String name, int[][] a ) { return putJSONStr(name).put1(':').putJSONAA4(a); }
   public AutoBuffer putJSONAAA4( String name, int[][][] a ) { return putJSONStr(name).put1(':').putJSONAAA4(a); }
 
-  AutoBuffer putJSON4f ( float f ) { return f==Float.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(f==Float.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Float.isNaN(f)?putJSONStr(JSON_NAN):putJStr(Float .toString(f)))); }
+  public AutoBuffer putJSON4f ( float f ) { return f==Float.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(f==Float.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Float.isNaN(f)?putJSONStr(JSON_NAN):putJStr(Float .toString(f)))); }
   public AutoBuffer putJSON4f ( String name, float f ) { return putJSONStr(name).put1(':').putJSON4f(f); }
   AutoBuffer putJSONA4f( float[] a ) {
     if( a == null ) return putJNULL();
@@ -1899,7 +1901,7 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putJSON8d( double d ) {
+  public AutoBuffer putJSON8d( double d ) {
     if (TwoDimTable.isEmpty(d)) return putJNULL();
     return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d))));
   }
