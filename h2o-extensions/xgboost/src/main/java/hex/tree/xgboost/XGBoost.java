@@ -315,12 +315,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         setupTask = new XGBoostSetupTask(model.model_info(), _parms, model._output._sparse).doAll(_train);
 
+        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+
         try {
           model.model_info().setBooster(new XGBoostUpdateTask(
                   setupTask,
                   model.model_info().getBooster(),
-                  model._output,
-                  _parms,
+                  boosterParms,
                   0,
                   getWorkerEnvs(rt)).doAll(_train).getBooster());
           // Wait for results
@@ -332,7 +333,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // train the model
-        scoreAndBuildTrees(setupTask, model, rt);
+        scoreAndBuildTrees(setupTask, boosterParms, model, rt);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -370,7 +371,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    private void scoreAndBuildTrees(XGBoostSetupTask setupTask, XGBoostModel model, IRabitTracker rt) throws XGBoostError {
+    private void scoreAndBuildTrees(XGBoostSetupTask setupTask, BoosterParms boosterParms,
+                                    XGBoostModel model, IRabitTracker rt) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, model.model_info().getBooster(), false);
@@ -386,8 +388,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           model.model_info().setBooster(new XGBoostUpdateTask(
               setupTask,
               model.model_info().getBooster(),
-              model._output,
-              _parms,
+              boosterParms,
               tid,
               getWorkerEnvs(rt)).doAll(_train).getBooster());
           // Wait for successful completion
@@ -488,6 +489,33 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static Set<Integer> GPUS = new HashSet<>();
+
+  static boolean hasGPU(H2ONode node, int gpu_id) {
+    final boolean hasGPU;
+    if (H2O.SELF.equals(node)) {
+      hasGPU = hasGPU(gpu_id);
+    } else {
+      HasGPUTask t = new HasGPUTask(gpu_id);
+      new RPC<>(node, t).call().get();
+      hasGPU = t._hasGPU;
+    }
+    Log.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
+    return hasGPU;
+  }
+
+  private static class HasGPUTask extends DTask<HasGPUTask> {
+    private final int _gpu_id;
+    // OUT
+    private boolean _hasGPU;
+
+    private HasGPUTask(int gpu_id) { _gpu_id = gpu_id; }
+
+    @Override
+    public void compute2() {
+      _hasGPU = hasGPU(_gpu_id);
+      tryComplete();
+    }
+  }
 
   // helper
   static synchronized boolean hasGPU(int gpu_id) {

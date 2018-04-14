@@ -11,11 +11,13 @@ import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.IcedHashMapGeneric.IcedHashMapStringObject;
 import water.util.Log;
 import hex.ModelMetrics;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -153,8 +155,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info._dataInfoKey = dinfo._key;
   }
 
-  public static HashMap<String, Object> createParams(XGBoostParameters p, XGBoostOutput output) {
-    HashMap<String, Object> params = new HashMap<>();
+  public static BoosterParms createParams(XGBoostParameters p, int nClasses) {
+    Map<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
     if (p._n_estimators != 0) {
@@ -225,7 +227,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
         Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
-      } else if (XGBoost.hasGPU(p._gpu_id)) {
+      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
         Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         params.put("gpu_id", p._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
@@ -264,9 +266,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
 
-    if (output.nclasses()==2) {
+    if (nClasses==2) {
       params.put("objective", "binary:logistic");
-    } else if (output.nclasses()==1) {
+    } else if (nClasses==1) {
       if (p._distribution == DistributionFamily.gamma) {
         params.put("objective", "reg:gamma");
       } else if (p._distribution == DistributionFamily.tweedie) {
@@ -281,7 +283,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     } else {
       params.put("objective", "multi:softprob");
-      params.put("num_class", output.nclasses());
+      params.put("num_class", nClasses);
     }
     Log.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
@@ -289,25 +291,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     Log.info("");
 
-    localizeDecimalParams(params);
-    return params;
-  }
-
-  /**
-   * Iterates over a set of parameters and applies locale-specific formatting
-   * to decimal ones (Floats and Doubles).
-   *
-   * @param params Parameters to localize
-   */
-  private static void localizeDecimalParams(final HashMap<String, Object> params) {
-    final NumberFormat localizedNumberFormatter = DecimalFormat.getNumberInstance();
-    for (String key : params.keySet()) {
-      final Object value = params.get(key);
-      if (value instanceof Float || value instanceof Double) {
-        final String localizedValue = localizedNumberFormatter.format(value);
-        params.put(key, localizedValue);
-      }
-    }
+    return BoosterParms.fromMap(Collections.unmodifiableMap(params));
   }
 
   @Override
