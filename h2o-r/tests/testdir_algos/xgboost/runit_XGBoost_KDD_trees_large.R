@@ -20,8 +20,8 @@ check.test_KDD_trees <- function(){
     len <- length(keep) -1 
     
     # using minimum number of tree/max depth to get consistent error reproducibility
-    test1 <- h2o.gbm(x = 1:len, y = 'TARGET_D', training_frame =  cup98Train, ntrees = 2, max_depth = 8, distribution = "gaussian")
-    test2 <- h2o.gbm(x = 1:len, y = 'TARGET_D', training_frame =  cup98Train, ntrees = 2, max_depth = 8, distribution = "gaussian")
+    test1 <- h2o.xgboost(x = 1:len, y = 'TARGET_D', training_frame =  cup98Train, ntrees = 2, max_depth = 8, distribution = "gaussian")
+    test2 <- h2o.xgboost(x = 1:len, y = 'TARGET_D', training_frame =  cup98Train, ntrees = 2, max_depth = 8, distribution = "gaussian")
     
     Log.info(paste("Test1 MSEs:", test1@model$mse_train))
     Log.info(paste("Test2 MSEs:", test2@model$mse_train))
@@ -31,4 +31,4 @@ check.test_KDD_trees <- function(){
     
 }
 
-doTest("GBM Test: KDD trees", check.test_KDD_trees)
+doTest("XGBoost Test: KDD trees", check.test_KDD_trees)

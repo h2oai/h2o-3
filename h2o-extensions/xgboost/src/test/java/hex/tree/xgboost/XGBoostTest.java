@@ -64,24 +64,24 @@ public class XGBoostTest extends TestUtil {
 
       if (vecs.length != fm.vecs.length) {
         Log.warn("Training frame vec count has changed from: " +
-                fm.vecs.length + " to: " + fm.vecs.length);
+                vecs.length + " to: " + fm.vecs.length);
         error = true;
       }
-      if (fm.names.length != fm.names.length) {
+      if (names.length != fm.names.length) {
         Log.warn("Training frame vec count has changed from: " +
-                fm.names.length + " to: " + fm.names.length);
+                names.length + " to: " + fm.names.length);
         error = true;
       }
 
       for (int i = 0; i < fm.vecs.length; i++) {
         if (!fm.vecs[i].equals(fm.vecs[i])) {
           Log.warn("Training frame vec number " + i + " has changed keys.  Was: " +
-                  fm.vecs[i] + " , now: " + fm.vecs[i]);
+                  vecs[i] + " , now: " + fm.vecs[i]);
           error = true;
         }
         if (!fm.names[i].equals(fm.names[i])) {
           Log.warn("Training frame vec number " + i + " has changed names.  Was: " +
-                  fm.names[i] + " , now: " + fm.names[i]);
+                  names[i] + " , now: " + fm.names[i]);
           error = true;
         }
         if (checksums[i] != fm.vecs[i].checksum()) {
@@ -363,7 +363,6 @@ public class XGBoostTest extends TestUtil {
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);
       // define special columns
       String response = "RainTomorrow";
 //      String weight = null;
@@ -372,6 +371,7 @@ public class XGBoostTest extends TestUtil {
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
+      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
       DKV.put(tfr);
 
       // split into train/test
@@ -392,8 +392,7 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
-      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
+      Assert.assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
@@ -425,7 +424,6 @@ public class XGBoostTest extends TestUtil {
       Scope.enter();
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);
       // define special columns
       String response = "RainTomorrow";
 //      String weight = null;
@@ -434,6 +432,7 @@ public class XGBoostTest extends TestUtil {
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
+      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
       DKV.put(tfr);
 
       // split into train/test
@@ -456,8 +455,7 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
-      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
+      Assert.assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
