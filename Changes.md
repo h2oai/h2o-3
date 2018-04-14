@@ -2,6 +2,17 @@
 
 ## H2O
 
+### Wolpert (3.18.0.7) - 4/14/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5485'>PUBDEV-5485</a>] - Fixed a MOJO/POJO scoring issue caused by a serialization bug in EasyPredictModelWrapper.
+</li>
+</ul>
+
 ### Wolpert (3.18.0.6) - 4/13/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html</a>
