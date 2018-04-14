@@ -14,14 +14,9 @@ import hex.genmodel.easy.prediction.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -51,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
  */
-public class EasyPredictModelWrapper implements java.io.Serializable {
+public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
@@ -65,7 +60,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   /**
    * Observer interface with methods corresponding to errors during the prediction.
    */
-  public static abstract class ErrorConsumer implements java.io.Serializable {
+  public static abstract class ErrorConsumer implements Serializable {
     /**
      * Observe transformation error for data from the predicted dataset.
      *
