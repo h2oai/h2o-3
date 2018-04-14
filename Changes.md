@@ -2,6 +2,46 @@
 
 ## H2O
 
+### Wolpert (3.18.0.6) - 4/13/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5484'>PUBDEV-5484</a>] - In XGBoost, fixed a memory issue that caused training to fail even when running on small datasets.            
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5441'>PUBDEV-5441</a>] - When files have a Ctr-M character as part of data in the row and Ctr-M also signifies the end of line in that file, it is now parsed correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5458'>PUBDEV-5458</a>] - H2O-3 no longer displays the server version in HTTP response headers.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5460'>PUBDEV-5460</a>] - Updated the Mockito library.
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5449'>PUBDEV-5449</a>] - Conda packages are now availabe on S3, enabling installation for users who cannot access anaconda.org.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5473'>PUBDEV-5473</a>] - Added an offset to predictBinomial Easy wrapper.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5227'>PUBDEV-5227</a>] - Updated the AutoML chapter of the User Guide to include a link to H2O World AutoML Tutorials and updated code examples that do not use leaderboard_frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5457'>PUBDEV-5457</a>] - Fixed links to POJO/MOJO tutorials in the GBM FAQ > Scoring section.
+</li>
+</ul>
+
 ### Wolpert (3.18.0.5) - 3/28/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html</a>
