@@ -65,7 +65,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   /**
    * Observer interface with methods corresponding to errors during the prediction.
    */
-  public static abstract class ErrorConsumer {
+  public static abstract class ErrorConsumer implements java.io.Serializable {
     /**
      * Observe transformation error for data from the predicted dataset.
      *

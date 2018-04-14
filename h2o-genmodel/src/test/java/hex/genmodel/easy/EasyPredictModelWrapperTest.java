@@ -11,6 +11,7 @@ import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -153,6 +154,38 @@ public class EasyPredictModelWrapperTest {
     Assert.assertEquals(2, errorsCountPerColumn.size());
     Assert.assertEquals(1, errorsCountPerColumn.get("C1").get());
 
+  }
+
+  @Test
+  public void testSerializeWrapper() throws Exception {
+    MyModel rawModel = makeModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+    checkSerialization(m);
+  }
+
+  @Test
+  public void testSerializeWrapperWithCountingConsumer() throws Exception {
+    MyModel rawModel = makeModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+            .setModel(rawModel)
+            .setErrorConsumer(countingErrorConsumer));
+    checkSerialization(m);
+  }
+
+  private static void checkSerialization(final EasyPredictModelWrapper m1) throws Exception {
+    RowData row = new RowData() {{
+      put("C1", "c1level1");
+      put("C2", "c2level3");
+    }};
+
+    // serialize & deserialize wrapper
+    EasyPredictModelWrapper m1deser = (EasyPredictModelWrapper) deserialize(serialize(m1));
+
+    // check that the new wrapper can be used to predict
+    BinomialModelPrediction p1 = (BinomialModelPrediction) m1.predict(row);
+    BinomialModelPrediction p1deser = (BinomialModelPrediction) m1deser.predict(row);
+    Assert.assertEquals(p1.label, p1deser.label);
   }
 
   @Test
@@ -405,6 +438,32 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(result.length, preds.length);
       System.arraycopy(result, 0, preds, 0, result.length);
       return result;
+    }
+  }
+
+  private static byte[] serialize(Object o) throws Exception {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    try {
+      ObjectOutput out = new ObjectOutputStream(bos);
+      out.writeObject(o);
+      out.flush();
+      return bos.toByteArray();
+    } finally {
+      try {
+        bos.close();
+      } catch (IOException ex) {
+        // ignore close exception
+      }
+    }
+  }
+
+  private static Object deserialize(byte[] bs) throws Exception {
+    ByteArrayInputStream bis = new ByteArrayInputStream(bs);
+    try {
+      ObjectInput in = new ObjectInputStream(bis);
+      return in.readObject();
+    } finally {
+      bis.close();
     }
   }
 
