@@ -229,6 +229,43 @@ public class SortTest extends TestUtil {
   }
 
 
+  @Test public void testSortOverflows2() throws IOException {
+    Scope.enter();
+    Frame fr, sorted1, sorted2;
+    long ts=1485333188427000000L;
+    try {
+
+      Vec dz = Vec.makeZero(1000);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, r + ts + c.start());
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+      Vec rand = dz.makeRand(12345678);
+
+      fr = new Frame(v, rand);
+      sorted1 = fr.sort(new int[]{1});
+      sorted2 = sorted1.sort(new int[]{0});
+
+      for(long i=0; i < fr.numRows(); i++) {
+        assertTrue(fr.vec(0).at8(i) == sorted2.vec(0).at8(i));
+      }
+
+      Scope.track(fr);
+      Scope.track(sorted1);
+      Scope.track(sorted2);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   @Test public void testSortIntegersFloats() throws IOException {
     // test small integers sort
     testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
