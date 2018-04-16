@@ -159,7 +159,7 @@ public class EasyPredictModelWrapperTest {
 
   @Test
   public void testSerializeWrapper() throws Exception {
-    MyModel rawModel = makeModel();
+    SupervisedModel rawModel = makeSupervisedModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
 
     Assert.assertTrue(m instanceof Serializable);
@@ -170,7 +170,7 @@ public class EasyPredictModelWrapperTest {
 
   @Test
   public void testSerializeWrapperWithCountingConsumer() throws Exception {
-    MyModel rawModel = makeModel();
+    SupervisedModel rawModel = makeSupervisedModel();
     CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(rawModel)
