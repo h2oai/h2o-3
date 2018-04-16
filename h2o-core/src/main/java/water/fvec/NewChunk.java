@@ -9,7 +9,11 @@ import water.util.PrettyPrint;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
 
-import java.util.*;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.UUID;
 
 import static water.H2OConstants.MAX_STR_LEN;
 
@@ -1052,6 +1056,13 @@ public class NewChunk extends Chunk {
     return res < 0 ? 0 /*happens for rare FP roundoff computation of min & max */: res;
   }
 
+  private static BigInteger pow10bi(int x) {
+    BigInteger v = BigInteger.ONE;
+    while(x-->0)
+      v = v.multiply(BigInteger.TEN);
+    return v;
+  }
+
   private Chunk compress2() {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
@@ -1158,6 +1169,9 @@ public class NewChunk extends Chunk {
     boolean floatOverflow = false;
     double min = Double.POSITIVE_INFINITY;
     double max = Double.NEGATIVE_INFINITY;
+    BigInteger MAX = BigInteger.valueOf(Long.MAX_VALUE);
+    BigInteger min_l = MAX.multiply(MAX);
+    BigInteger max_l = BigInteger.valueOf(-1L).multiply(MAX.multiply(MAX));
     int p10iLength = PrettyPrint.powers10i.length;
     long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
     int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
@@ -1170,32 +1184,39 @@ public class NewChunk extends Chunk {
       assert l!=0 || x==0:"l == 0 while x = " + x + " ms = " + _ms.toString();      // Exponent of zero is always zero
       long t;                   // Remove extra scaling
       while( l!=0 && (t=l/10)*10==l ) { l=t; x++; }
+      BigInteger ll = BigInteger.valueOf(l).multiply(pow10bi(x));
       // Compute per-chunk min/max
-      double d = PrettyPrint.pow10(l,x);
+      double d = PrettyPrint.pow10(l,x);  // WARNING: this is lossy!!
       if(d == 0) {
         hasZero = true;
         continue;
       }
-      if( d < min ) { min = d; llo=l; xlo=x; }
-      if( d > max ) { max = d; lhi=l; xhi=x; }
+      if( x >=0 && ((long)d != ll.longValue()) ) {
+        if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; }
+        if( ll.compareTo(max_l)== 1 ) { max=d; max_l=ll; lhi=l; xhi=x; }
+      } else {
+        if( d < min ) { min = d; min_l=ll; llo=l; xlo=x; }
+        if( d > max ) { max = d; max_l=ll; lhi=l; xhi=x; }
+      }
+
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
-    boolean hasNonZero = min != Double.POSITIVE_INFINITY && max != Double.NEGATIVE_INFINITY;
+    boolean hasNonZero = min != Double.POSITIVE_INFINITY &&
+                         max != Double.NEGATIVE_INFINITY;
 
     if(hasZero){ // sparse?  then compare vs implied 0s
-      if( min > 0 ) { min = 0; llo=0; }
-      if( max < 0 ) { max = 0; lhi=0; }
+      if( min > 0 ) { min = 0; llo=0; min_l=BigInteger.ZERO; }
+      if( max < 0 ) { max = 0; lhi=0; max_l=BigInteger.ZERO; }
     }
     if(!hasNonZero) xlo = xhi = xmin = 0;
+
     // Constant column?
-    if( _naCnt==0 && (min==max)) {
-      if (llo == lhi && xlo == 0 && xhi == 0)
-        return new C0LChunk(llo, _len);
-      else if ((long)min == min)
-        return new C0LChunk((long)min, _len);
-      else
-        return new C0DChunk(min, _len);
+    if( _naCnt==0 && (min_l.compareTo(max_l)==0) && xmin >=0 ) {
+      return new C0LChunk(min_l.longValue(), _len);
+    }
+    if( _naCnt==0 && (min==max) && xmin<0 ) {
+      return new C0DChunk(min, _len);
     }
     // Compute min & max, as scaled integers in the xmin scale.
     // Check for overflow along the way
@@ -1213,6 +1234,10 @@ public class NewChunk extends Chunk {
       if( (lemin/pow10lo) != llo ) overflow = true;
     }
     final long leRange = leRange(lemin,lemax);
+
+    // put min_l in xmin scale
+    if( xmin > 0 )
+      min_l = min_l.divide(BigInteger.valueOf(PrettyPrint.pow10i(xmin)));
 
     // Boolean column?
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
@@ -1282,7 +1307,7 @@ public class NewChunk extends Chunk {
     if( leRange < 255 ) {    // Span fits in a byte?
       if(0 <= min && max < 255 ) // Span fits in an unbiased byte?
         return new C1Chunk( bufX(0,0,C1Chunk._OFF,0));
-      return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),lemin,xmin);
+      return new C1SChunk( bufX(min_l.longValue(),xmin,C1SChunk._OFF,0),min_l.longValue(),xmin);
     }
 
     // Compress column into a short

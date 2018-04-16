@@ -1,11 +1,18 @@
 package water.fvec;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.Futures;
+import water.MRTask;
+import water.Scope;
 import water.TestUtil;
+
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
+
+import static org.junit.Assert.assertTrue;
 
 public class C1SChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -179,11 +186,12 @@ public class C1SChunkTest extends TestUtil {
           expected[i] = Double.parseDouble((i + bias) + "e" + exponent);
         }
         Chunk c = nc.compress();
+        String msg = "exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName();
         if(!(c instanceof C1SChunk))
-          System.out.println("exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName());
+          System.out.println(msg);
         Assert.assertTrue(c instanceof C1SChunk);
         for (int i = 0; i < expected.length; ++i) {
-          Assert.assertEquals(expected[i], c.atd(i), 0);
+          Assert.assertEquals(msg, expected[i], c.atd(i), 0);
         }
       }
     }
@@ -225,6 +233,58 @@ public class C1SChunkTest extends TestUtil {
       System.out.println("sum = " + sum + ", tsum = " + tsum + ", tmin = " + tmin);
     }
 
+  }
+
+  @Test public void testOverflow() throws IOException {
+    Scope.enter();
+    long min = 1485333188427000000L;
+    int len = 100;
+    try {
+      Vec dz = Vec.makeZero(len);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, r + min + c.start());
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+
+      for(int i=0; i<len; i++)
+        assertTrue(v.at8(i)==min+i);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testOverflowConst() throws IOException {
+    Scope.enter();
+    long min = 1485333188427000000L;
+    int len = 100;
+    try {
+      Vec dz = Vec.makeZero(len);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, min);
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+
+      for(int i=0; i<len; i++)
+        assertTrue(v.at8(i)==min);
+
+    } finally {
+      Scope.exit();
+    }
   }
 
 }
