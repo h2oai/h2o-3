@@ -1,6 +1,7 @@
 package water.persist;
 
 import com.google.cloud.ReadChannel;
+import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -16,6 +17,7 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -112,18 +114,24 @@ public final class PersistGcs extends Persist {
   public List<String> calcTypeaheadMatches(String filter, int limit) {
     final String input = GcsBlob.removePrefix(filter);
     final String[] bk = input.split("/", 2);
-    List<String> results = new ArrayList<>();
+    List<String> results = limit > 0 ? new ArrayList<String>(limit) : new ArrayList<String>();
     try {
       if (bk.length == 1) {
         List<String> buckets = bucketCache.get("all");
         for (String s : buckets) {
           results.add(GcsBlob.KEY_PREFIX + s);
+          if (--limit == 0) {
+            break;
+          }
         }
       } else if (bk.length == 2) {
         List<String> objects = keyCache.get(bk[0]);
         for (String s : objects) {
-          if(s.startsWith(bk[1])) {
+          if (s.startsWith(bk[1])) {
             results.add(GcsBlob.KEY_PREFIX + bk[0] + "/" + s);
+          }
+          if (--limit == 0) {
+            break;
           }
         }
       }
@@ -224,5 +232,122 @@ public final class PersistGcs extends Persist {
         reader.close();
       }
     };
+  }
+
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    final GcsBlob gcsBlob = GcsBlob.of(path);
+    Log.debug("Creating: " + gcsBlob.getCanonical());
+    final WriteChannel writer = storage.create(gcsBlob.getBlobInfo()).writer();
+    return new OutputStream() {
+      @Override
+      public void write(int b) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[]{(byte) b});
+        writer.write(buffer);
+      }
+
+      @Override
+      public void write(byte[] b) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(b);
+        writer.write(buffer);
+      }
+
+      @Override
+      public void write(byte[] b, int off, int len) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+        writer.write(buffer);
+      }
+
+      @Override
+      public void close() throws IOException {
+        writer.close();
+      }
+    };
+  }
+
+  @Override
+  public boolean rename(String fromPath, String toPath) {
+    final BlobId fromBlob = GcsBlob.of(fromPath).getBlobId();
+    final BlobId toBlob = GcsBlob.of(toPath).getBlobId();
+
+    storage.get(fromBlob).copyTo(toBlob);
+    keyCache.invalidate(fromBlob.getBucket());
+    keyCache.invalidate(toBlob.getBucket());
+    return storage.delete(fromBlob);
+  }
+
+  @Override
+  public boolean exists(String path) {
+    final String bk[] = GcsBlob.removePrefix(path).split("/", 2);
+    if (bk.length == 1) {
+      return storage.get(bk[0]).exists();
+    } else if (bk.length == 2) {
+      Blob blob = storage.get(bk[0], bk[1]);
+      return blob != null && blob.exists();
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean delete(String path) {
+    final BlobId blob = GcsBlob.of(path).getBlobId();
+    keyCache.invalidate(blob.getBucket());
+    return storage.get(blob).delete();
+  }
+
+  @Override
+  public long length(String path) {
+    final BlobId blob = GcsBlob.of(path).getBlobId();
+    return storage.get(blob).getSize();
+  }
+
+  /**
+   * Lists Blobs prefixed with `path`.
+   * Prefix `path` is removed from the name of returned entries.
+   * e.g.
+   * If `path` equals gs://bucket/infix and 2 Blobs exist: "gs://bucket/infix/blob1, gs://bucket/infix/blob2,
+   * the returned array contains of Persist Entries with names set to blob1 and blob2, respectively.
+   */
+  @Override
+  public PersistEntry[] list(String path) {
+    final String input = GcsBlob.removePrefix(path);
+    final String[] bk = input.split("/", 2);
+    int substrLen = bk.length == 2 ? bk[1].length() : 0;
+    List<PersistEntry> results = new ArrayList<>();
+    try {
+      for (Blob b : storage.list(bk[0]).iterateAll()) {
+        if (bk.length == 1 || (bk.length == 2 && b.getName().startsWith(bk[1]))) {
+          String relativeName = b.getName().substring(substrLen);
+          if (relativeName.startsWith("/")) {
+            relativeName = relativeName.substring(1);
+          }
+          results.add(new PersistEntry(relativeName, b.getSize(), b.getUpdateTime()));
+        }
+      }
+    } catch (StorageException e) {
+      Log.err(e);
+    }
+    return results.toArray(new PersistEntry[results.size()]);
+  }
+
+  @Override
+  public boolean mkdirs(String path) {
+    try {
+      final String input = GcsBlob.removePrefix(path);
+      final String[] bk = input.split("/", 2);
+      if (bk.length > 0) {
+        Bucket b = storage.get(bk[0]);
+        if (b == null || !b.exists()) {
+          storage.create(BucketInfo.of(bk[0]));
+        }
+        return true;
+      } else {
+        return false;
+      }
+    } catch (StorageException e) {
+      Log.err(e);
+      return false;
+    }
   }
 }

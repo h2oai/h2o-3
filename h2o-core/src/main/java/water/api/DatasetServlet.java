@@ -3,6 +3,8 @@ package water.api;
 import water.DKV;
 import water.JettyHTTPD;
 import water.fvec.Frame;
+import water.util.FileUtils;
+import water.util.Log;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -47,8 +49,20 @@ public class DatasetServlet extends HttpServlet {
       f_name = suggested_fname;
       response.addHeader("Content-Disposition", "attachment; filename=" + f_name);
       JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_OK);
-      OutputStream os = response.getOutputStream();
-      water.util.FileUtils.copyStream(is, os, 2048);
+      OutputStream os = null;
+      try {
+        os = response.getOutputStream();
+        FileUtils.copyStream(is, os, 2048);
+      } finally {
+        if (os != null) {
+          try {
+            os.close();
+          }
+          catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
     } catch (Exception e) {
       JettyHTTPD.sendErrorResponse(response, e, uri);
     } finally {
