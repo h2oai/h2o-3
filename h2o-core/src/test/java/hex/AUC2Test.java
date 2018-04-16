@@ -25,7 +25,6 @@ public class AUC2Test {
     auc2.checkRecallValidity(); // expect no failure
 
     // now corrupt the data
-    ArrayUtils.reverse(auc2._fps);
     ArrayUtils.reverse(auc2._tps);
     thrown.expect(H2OIllegalArgumentException.class);
     thrown.expectMessage("Illegal argument: 1 of function: recall: 1.0 > 0.8333333333333334");
