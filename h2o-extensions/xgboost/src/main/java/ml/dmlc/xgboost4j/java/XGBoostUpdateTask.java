@@ -1,12 +1,12 @@
 package ml.dmlc.xgboost4j.java;
 
+import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostExtension;
-import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostOutput;
 import water.ExtensionManager;
 import water.H2O;
 import water.MRTask;
-import water.util.IcedHashMapGeneric;
+import static water.util.IcedHashMapGeneric.IcedHashMapStringObject;
+import static water.util.IcedHashMapGeneric.IcedHashMapStringString;
 import water.util.Log;
 
 import java.io.*;
@@ -14,26 +14,23 @@ import java.util.*;
 
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
-    private final IcedHashMapGeneric.IcedHashMapStringObject _nodeToMatrixWrapper;
-    private final XGBoostOutput _output;
+    private final IcedHashMapStringObject _nodeToMatrixWrapper;
     private transient Booster _booster;
     private byte[] _rawBooster;
 
-    private final XGBoostModel.XGBoostParameters _parms;
+    private final BoosterParms _boosterParms;
     private final int _tid;
 
-    private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
+    private IcedHashMapStringString rabitEnv = new IcedHashMapStringString();
 
     public XGBoostUpdateTask(
                       XGBoostSetupTask setupTask,
                       Booster booster,
-                      XGBoostOutput output,
-                      XGBoostModel.XGBoostParameters parms,
+                      BoosterParms boosterParms,
                       int tid,
                       Map<String, String> workerEnvs) {
         _nodeToMatrixWrapper = setupTask._nodeToMatrixWrapper;
-        _output = output;
-        _parms = parms;
+        _boosterParms = boosterParms;
         _tid = tid;
         _rawBooster = hex.tree.xgboost.XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
@@ -67,8 +64,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     }
 
     private void update(DMatrix trainMat) throws XGBoostError {
-        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
-
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
         try {
@@ -79,7 +74,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             if (_rawBooster == null) {
                 HashMap<String, DMatrix> watches = new HashMap<>();
                 _booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat,
-                        params,
+                        _boosterParms.get(),
                         0,
                         watches,
                         null,
@@ -89,7 +84,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                     _booster = Booster.loadModel(new ByteArrayInputStream(_rawBooster));
                     Log.debug("Booster created from bytes, raw size = " + _rawBooster.length);
                     // Set the parameters, some seem to get lost on save/load
-                    _booster.setParams(params);
+                    _booster.setParams(_boosterParms.get());
                 } catch (IOException e) {
                     e.printStackTrace();
                     throw new IllegalStateException("Failed to load the booster.", e);
