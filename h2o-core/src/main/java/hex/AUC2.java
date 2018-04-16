@@ -169,14 +169,14 @@ public class AUC2 extends Iced {
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
 
-  // Checks that recall is monotonic function.
-  // According to Leland, it should be; otherwise it's an error.
+  // Checks that recall is a non-decreasing function
   void checkRecallValidity() {
     double x0 = recall.exec(this, 0);
     for (int i = 1; i < _nBins; i++) {
       double x1 = recall.exec(this, i);
-      if (x0 >= x1) 
-        throw new H2OIllegalArgumentException(""+i, "recall", ""+x1 + "<" + x0);
+      if (x0 > x1)
+        throw new H2OIllegalArgumentException(String.valueOf(i), "recall", x0 + " > " + x1);
+      x0 = x1;
     }
   }
 
