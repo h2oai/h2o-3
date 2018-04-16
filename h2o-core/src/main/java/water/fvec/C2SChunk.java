@@ -22,6 +22,13 @@ public class C2SChunk extends CSChunk {
     }
   }
 
+  @Override protected final long at8_impl( int i ) {
+    int x = getMantissa(i);
+    if( x==C2Chunk._NA )
+      throw new IllegalArgumentException("at8_abs but value is missing");
+    return get8(x);
+  }
+
   private int getMantissa(int i){return UnsafeUtils.get2(_mem,_OFF+2*i);}
   private void setMantissa(int i, short s){
     UnsafeUtils.set2(_mem,(i*2)+_OFF,s);
