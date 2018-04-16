@@ -1,13 +1,18 @@
 package water.fvec;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.Futures;
+import water.MRTask;
+import water.Scope;
 import water.TestUtil;
 import water.util.PrettyPrint;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
+
+import static org.junit.Assert.assertTrue;
 
 public class C2SChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -197,13 +202,41 @@ public class C2SChunkTest extends TestUtil {
           }
           assert j == nvals;
           Chunk c = nc.compress().deepCopy();
-          if (!(c instanceof C2SChunk))
-            System.out.println("exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName());
-          Assert.assertTrue(c instanceof C2SChunk);
+          String msg = "exp = " + exponent + " b = " + bias + " c = " + c.getClass().getSimpleName();
+          Assert.assertTrue(msg, c instanceof C2SChunk);
           for (int i = 0; i < expected.length; ++i)
-            Assert.assertEquals(expected[i], c.atd(i), 0);
+            Assert.assertEquals(msg + " i: " + i, expected[i], c.atd(i), 0);
         }
       }
+    }
+  }
+
+  @Test public void testOverflow() throws IOException {
+    Scope.enter();
+    long min = 1485333188427000000L;
+    int len = 10000;
+    try {
+      Vec dz = Vec.makeZero(len);
+      Vec z = dz.makeZero(); // make a vec consisting of C0LChunks
+      Vec v = new MRTask() {
+        @Override public void map(Chunk[] cs) {
+          for (Chunk c : cs)
+            for (int r = 0; r < c._len; r++)
+              c.set(r, r + min + c.start());
+        }
+      }.doAll(z)._fr.vecs()[0];
+      Scope.track(dz);
+      Scope.track(z);
+      Scope.track(v);
+
+      for(long i=0; i<len; i++) {
+        if( v.isNA(i) )
+          System.out.println("MISSING: " + i);
+        assertTrue("i/total: " + i + "/" + len + " min+i: " + (min+i) + " v.at8(i): " + v.at8(i) + " chk= " + v.elem2ChunkIdx(i), v.at8(i) == min + i);
+      }
+
+    } finally {
+      Scope.exit();
     }
   }
 }
