@@ -1,5 +1,5 @@
-def call() {
-    return new HealthChecker()
+def call(final insideDockerScript) {
+    return new HealthChecker(insideDockerScript)
 }
 
 class HealthChecker {
@@ -11,6 +11,11 @@ class HealthChecker {
 
 
     private List<HealthProblem> healthProblems = []
+    private insideDockerScript
+    
+    private HealthChecker(final insideDockerScript) {
+        this.insideDockerScript = insideDockerScript
+    }
 
     boolean checkHealth(final context, final String node, final String dockerImage, final String dockerRegistry, final buildConfig) {
         boolean healthy = true
@@ -29,9 +34,8 @@ class HealthChecker {
             healthy = false
         }
 
-        def insideDocker = context.load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
         try {
-            insideDocker([], dockerImage, dockerRegistry, buildConfig, 90, 'SECONDS') {
+            insideDockerScript.call([], dockerImage, dockerRegistry, buildConfig, 90, 'SECONDS') {
                 context.echo 'Docker health check passed'
             }
         } catch (Exception e) {

@@ -5,7 +5,6 @@ def call(final pipelineContext) {
     final String JAVA_VERSION = '8'
 
     // Load required scripts
-    def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
     def makeTarget = load('h2o-3/scripts/jenkins/groovy/makeTarget.groovy')
 
     def stageName = 'Build H2O-3'
@@ -17,7 +16,14 @@ def call(final pipelineContext) {
             def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}" + "JAVA_VERSION=${JAVA_VERSION}"
             def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 15
             stage(stageName) {
-                insideDocker(buildEnv, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
+                def isolationArgs = [
+                        customEnv: buildEnv, 
+                        image: pipelineContext.getBuildConfig().getDefaultImage(), 
+                        registry: pipelineContext.getBuildConfig().DOCKER_REGISTRY, 
+                        buildConfig: pipelineContext.getBuildConfig(),
+                        timeoutValue: timeoutMinutes
+                ]
+                pipelineContext.getIsolationProvider().withIsolation(this, pipelineContext.getBuildIsolation(), isolationArgs) {
                     try {
                         makeTarget(pipelineContext) {
                             target = 'build-h2o-3'

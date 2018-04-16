@@ -1,0 +1,97 @@
+@Library('test-shared-library') _
+
+def defineTestStages = null
+def pipelineContext = null
+def result = 'FAILURE'
+def scmEnv = null
+
+final String buildPodYaml = """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: h2o-3-small
+spec:
+  securityContext:
+    runAsUser: 2117
+    fsGroup: 2117
+  containers:
+  - args:
+    - cat
+    command:
+    - /bin/sh
+    - -c
+    image: harbor.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-4.10.1:8
+    imagePullPolicy: Always
+    name: h2o-3-container
+    resources:
+      limits:
+        cpu: "8"
+        memory: 16Gi
+      requests:
+        cpu: "8"
+        memory: 16Gi
+    securityContext:
+      privileged: false
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    tty: true
+    volumeMounts:
+    - mountPath: /home/0xdiag
+      name: datasets
+  imagePullSecrets:
+  - name: regcred
+  volumes:
+  - hostPath:
+      path: /home/0xdiag
+      type: ""
+    name: datasets
+"""
+
+ansiColor('xterm') {
+    timestamps {
+        stage('Checkout and Build') {
+            final def label = "h2o-3-pod-build-${UUID.randomUUID().toString()}"
+            echo "######### NodeLabel: ${label} #########"
+            podTemplate(label: label, name: 'h2o-3-pod-build', yaml: buildPodYaml) {
+                node(label) {
+                    container('h2o-3-container') {
+                        dir('h2o-3') {
+                            // clear the folder
+                            deleteDir()
+                            // checkout H2O-3
+                            retryWithTimeout(60, 3) {
+                                echo "###### Checkout H2O-3 ######"
+                                scmEnv = checkout scm
+                            }
+                        }
+
+                        if (pipelineContext == null) {
+                            def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
+                            pipelineContext = initPipelineContext(
+                                    scmEnv, 
+                                    'MODE_NIGHTLY', 
+                                    true, // ignore changes so all stages are executed 
+                                    null, // no additional gradle args
+                                    'k8s' // isolation backend
+                            )
+                            // Execute nightly for master at 22:XX, 0:XX, 2:XX, 4:XX and 6:XX
+                            // for rel- branches at 21:XX
+                            String scheduleString = 'H */4 * * *'
+                            if (env.BRANCH_NAME.startsWith('rel-')) {
+                                scheduleString = 'H 21 * * *'
+                            }
+                            pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
+                            // Load the defineTestStages script
+                            defineTestStages = load('h2o-3/scripts/jenkins/groovy/defineTestStages.groovy')
+                        }
+                        def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
+                        buildH2O3(pipelineContext)
+                    }
+                }
+
+                defineTestStages(pipelineContext)
+                result = 'SUCCESS'
+            }
+        }
+    }
+}

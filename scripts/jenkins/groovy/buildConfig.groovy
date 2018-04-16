@@ -334,17 +334,14 @@ class BuildConfig {
   }
 
   static enum JenkinsMaster {
-    C1, // indicates we are running under mr-0xc1 master - master or nightly build
-    B4  // indicates we are running under mr-0xb4 master - PR build
+    C1, // indicates we are running under mr-0xc1 master
 
     private static JenkinsMaster findByName(final String name) {
       switch(name.toLowerCase()) {
         case 'c1':
           return C1
-        case 'b4':
-          return B4
         default:
-          throw new IllegalArgumentException(String.format("Master %s is unknown", name))
+          return C1 // assume default jenkins master
       }
     }
 
@@ -356,7 +353,6 @@ class BuildConfig {
 
   static enum NodeLabels {
     LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
@@ -380,12 +376,10 @@ class BuildConfig {
       return gpuNodeLabel
     }
 
-    private static findByJenkinsMaster(final JenkinsMaster master) {
+    private static NodeLabels findByJenkinsMaster(final JenkinsMaster master) {
       switch (master) {
         case JenkinsMaster.C1:
           return LABELS_C1
-        case JenkinsMaster.B4:
-          return LABELS_B4
         default:
           throw new IllegalArgumentException(String.format("Master %s is unknown", master))
       }

@@ -119,6 +119,7 @@ private void execMake(final String buildAction, final String h2o3dir) {
     unset CHANGE_AUTHOR_DISPLAY_NAME
     unset CHANGE_TITLE
 
+    id
     printenv | sort
     ${buildAction}
   """
