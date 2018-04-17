@@ -45,7 +45,6 @@ Initial Application Creation
 This section describes how to create the following applications. Note that when specifying the Docker repository, H2O.ai principal repo is "opsh2oai", and all h2o images have "nae" appended. 
 
 - H2o3 Core: Docker repository opsh2oai/h2o3-nae
-- H2o3 Deepwater: Docker repository opsh2oai/h2o3_deepwater_nae
 - H2oAI: Docker repository opsh2oai/h2oai_nae
 
 1. In the right-side menu, select the **PushToCompute™** menu option, then click the **New** icon. 
@@ -67,7 +66,6 @@ This section describes how to create the following applications. Note that when 
 5. Click **OK** when you are done. 
 6. Repeat steps 1 through 5 for the following applications:
 
- - H2o3 Deepwater: Docker repository opsh2oai/h2o3_deepwater_nae
  - H2oAI: Docker repository opsh2oai/h2oai_nae
  - H2o3 for Power8: Docker repository opsh2oai/h2o3_power_nae. **Note**: For H2o3 for Power8, DO NOT use "Intel x86 64-bit (x86_64)". Instead, select "IBM Power 64-bit, Little Endian (ppc64le)" from the **System Architecture** drop-down menu.
 
