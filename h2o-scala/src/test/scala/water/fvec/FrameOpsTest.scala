@@ -18,7 +18,6 @@ class FrameOpsTest extends TestUtil {
     try {
       assert(fr.numCols() == 12)
       assert(fr.numRows() == 2691)
-      assert(fr.anyVec().nChunks() == 1)
     } finally {
       fr.delete()
     }
@@ -33,7 +32,6 @@ class FrameOpsTest extends TestUtil {
     try {
       assert(fr.numCols() == 12)
       assert(fr.numRows() == 5382)
-      assert(fr.anyVec().nChunks() == 2)
     } finally {
       fr.delete()
     }
