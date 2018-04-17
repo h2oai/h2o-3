@@ -213,6 +213,7 @@ public class C1SChunkTest extends TestUtil {
           for (int i = 0; i < 1000000; ++i)
             nc.addNum(bias + (i%255), exponent);
           Chunk c = nc.compress();
+
           Assert.assertTrue(c instanceof C1SChunk);
           long t0 = System.currentTimeMillis();
           sum += count_sum((C1SChunk)c);
