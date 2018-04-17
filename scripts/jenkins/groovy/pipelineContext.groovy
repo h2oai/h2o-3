@@ -1,4 +1,8 @@
 def call(final String h2o3Root, final String mode, final scmEnv, final boolean ignoreChanges) {
+    return call(h2o3Root, mode, scmEnv, ignoreChanges, null)
+}
+
+def call(final String h2o3Root, final String mode, final scmEnv, final boolean ignoreChanges, final List<String> gradleOpts) {
     final String BUILD_SUMMARY_SCRIPT_NAME = 'buildSummary.groovy'
     final String BUILD_CONFIG_SCRIPT_NAME = 'buildConfig.groovy'
     final String PIPELINE_UTILS_SCRIPT_NAME = 'pipelineUtils.groovy'
@@ -22,7 +26,8 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
 
     return new PipelineContext(
             buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
-                    pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath)
+                    pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath), gradleOpts,
+                    pipelineUtils.readCurrentXGBVersion(this, h2o3Root)
             ),
             buildSummaryFactory(true),
             pipelineUtils,
