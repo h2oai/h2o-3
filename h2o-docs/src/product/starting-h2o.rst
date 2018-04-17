@@ -58,7 +58,7 @@ Example
 
   R is connected to the H2O cluster: 
       H2O cluster uptime:         2 seconds 812 milliseconds 
-      H2O cluster version:        3.10.4.3 
+      H2O cluster version:        3.20.0.1 
       H2O cluster version age:    9 days  
       H2O cluster name:           H2O_started_from_R_techwriter_awt197 
       H2O cluster total nodes:    1 
@@ -115,7 +115,7 @@ Example
   Connecting to H2O server at http://127.0.0.1:54323... successful.
   --------------------------  ---------------------------------
   H2O cluster uptime:         02 secs
-  H2O cluster version:        3.10.4.3
+  H2O cluster version:        3.20.0.1
   H2O cluster version age:    9 days
   H2O cluster name:           H2O_from_python_techwriter_pu6lbs
   H2O cluster total nodes:    1
@@ -236,13 +236,9 @@ JVM Options
 ~~~~~~~~~~~
 
 -  ``-version``: Display Java version info.
--  ``-Xmx<Heap Size>``: To set the total heap size for an H2O node,
-   configure the memory allocation option ``-Xmx``. By default, this
-   option is set to 1 Gb (``-Xmx1g``). When launching nodes, we
-   recommend allocating a total of four times the memory of your data.
+-  ``-Xmx<Heap Size>``: To set the total heap size for an H2O node, configure the memory allocation option ``-Xmx``. By default, this option is set to 1 Gb (``-Xmx1g``). When launching nodes, we recommend allocating a total of four times the memory of your data.
 
-    **Note**: Do not try to launch H2O with more memory than you have
-    available.
+    **Note**: Do not try to launch H2O with more memory than you have available.
 
 H2O Options
 ~~~~~~~~~~~
