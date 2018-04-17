@@ -21,7 +21,6 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.drf    .DRF         (true),
             new hex.tree.gbm    .GBM         (true),
             new hex.aggregator  .Aggregator  (true),
-            new hex.deepwater   .DeepWater   (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
