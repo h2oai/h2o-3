@@ -1199,12 +1199,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-        if (!buildSpec.build_control.keep_cross_validation_predictions) {
-          cleanUpModelsCVPreds();
-        }
-        if (!buildSpec.build_control.keep_cross_validation_models) {
-          cleanUpModelsCVModels();
-        }
+
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
         // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
