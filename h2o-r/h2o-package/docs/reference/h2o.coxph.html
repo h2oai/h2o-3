@@ -90,8 +90,8 @@
     <pre class="usage"><span class='fu'>h2o.coxph</span>(<span class='no'>x</span>, <span class='no'>event_column</span>, <span class='no'>training_frame</span>, <span class='kw'>model_id</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>start_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stop_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>weights_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>offset_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>stratify_by</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ties</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"efron"</span>, <span class='st'>"breslow"</span>),
-  <span class='kw'>init</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>lre_min</span> <span class='kw'>=</span> <span class='fl'>9</span>, <span class='kw'>iter_max</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>interactions_only</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>init</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>lre_min</span> <span class='kw'>=</span> <span class='fl'>9</span>, <span class='kw'>iter_max</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>interactions_only</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>use_all_factor_levels</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
@@ -155,17 +155,17 @@ well. During training, rows with higher weights matter more, due to the larger l
       <td><p>Maximum number of iterations. Defaults to 20.</p></td>
     </tr>
     <tr>
-      <th>interactions_only</th>
-      <td><p>A list of columns that should only be used to create interactions but should not itself participate in model
-training.</p></td>
-    </tr>
-    <tr>
       <th>interactions</th>
       <td><p>A list of predictor column indices to interact. All pairwise combinations will be computed for the list.</p></td>
     </tr>
     <tr>
       <th>interaction_pairs</th>
       <td><p>A list of pairwise (first order) column interactions.</p></td>
+    </tr>
+    <tr>
+      <th>interactions_only</th>
+      <td><p>A list of columns that should only be used to create interactions but should not itself participate in model
+training.</p></td>
     </tr>
     <tr>
       <th>use_all_factor_levels</th>
@@ -187,7 +187,7 @@ FALSE.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

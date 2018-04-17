@@ -88,7 +88,7 @@
     
 
     <pre class="usage"><span class='fu'>h2o.download_mojo</span>(<span class='no'>model</span>, <span class='kw'>path</span> <span class='kw'>=</span> <span class='fu'>getwd</span>(), <span class='kw'>get_genmodel_jar</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>genmodel_name</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
+  <span class='kw'>genmodel_name</span> <span class='kw'>=</span> <span class='st'>""</span>, <span class='kw'>genmodel_path</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -103,11 +103,15 @@
     </tr>
     <tr>
       <th>get_genmodel_jar</th>
-      <td><p>If TRUE, then also download h2o-genmodel.jar and store it in folder ``path``.</p></td>
+      <td><p>If TRUE, then also download h2o-genmodel.jar and store it in either in the same folder</p></td>
     </tr>
     <tr>
       <th>genmodel_name</th>
       <td><p>Custom name of genmodel jar.</p></td>
+    </tr>
+    <tr>
+      <th>genmodel_path</th>
+      <td><p>Path to store h2o-genmodel.jar. If left blank and ``get_genmodel_jar`` is TRUE, then the h2o-genmodel.jar</p></td>
     </tr>
     </table>
     
@@ -140,7 +144,7 @@
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

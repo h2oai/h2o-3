@@ -115,8 +115,8 @@
   <span class='kw'>score_validation_samples</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>score_duty_cycle</span> <span class='kw'>=</span> <span class='fl'>0.1</span>,
   <span class='kw'>classification_stop</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>regression_stop</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>5</span>,
   <span class='kw'>stopping_metric</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"deviance"</span>, <span class='st'>"logloss"</span>, <span class='st'>"MSE"</span>, <span class='st'>"RMSE"</span>, <span class='st'>"MAE"</span>,
-  <span class='st'>"RMSLE"</span>, <span class='st'>"AUC"</span>, <span class='st'>"lift_top_group"</span>, <span class='st'>"misclassification"</span>,
-  <span class='st'>"mean_per_class_error"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='st'>"RMSLE"</span>, <span class='st'>"AUC"</span>, <span class='st'>"lift_top_group"</span>, <span class='st'>"misclassification"</span>, <span class='st'>"mean_per_class_error"</span>,
+  <span class='st'>"r2"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>score_validation_sampling</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"Uniform"</span>, <span class='st'>"Stratified"</span>),
   <span class='kw'>diagnostics</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>fast_mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>force_load_balance</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>variable_importances</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>replicate_training_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
@@ -406,7 +406,7 @@ stopping_metric does not improve for k:=stopping_rounds scoring events (0 to dis
       <th>stopping_metric</th>
       <td><p>Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-"mean_per_class_error". Defaults to AUTO.</p></td>
+"mean_per_class_error", "r2". Defaults to AUTO.</p></td>
     </tr>
     <tr>
       <th>stopping_tolerance</th>
@@ -555,7 +555,7 @@ propagation, but might slow down backpropagation. Defaults to FALSE.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

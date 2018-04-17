@@ -100,16 +100,16 @@
   <span class='kw'>nbins</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>nbins_top_level</span> <span class='kw'>=</span> <span class='fl'>1024</span>, <span class='kw'>nbins_cats</span> <span class='kw'>=</span> <span class='fl'>1024</span>,
   <span class='kw'>r2_stopping</span> <span class='kw'>=</span> <span class='fl'>Inf</span>, <span class='kw'>stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>stopping_metric</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>,
   <span class='st'>"deviance"</span>, <span class='st'>"logloss"</span>, <span class='st'>"MSE"</span>, <span class='st'>"RMSE"</span>, <span class='st'>"MAE"</span>, <span class='st'>"RMSLE"</span>, <span class='st'>"AUC"</span>, <span class='st'>"lift_top_group"</span>,
-  <span class='st'>"misclassification"</span>, <span class='st'>"mean_per_class_error"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0.001</span>,
-  <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>build_tree_one_node</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>mtries</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>sample_rate</span> <span class='kw'>=</span> <span class='fl'>0.6320000291</span>, <span class='kw'>sample_rate_per_class</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>binomial_double_trees</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>checkpoint</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>col_sample_rate_change_per_level</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>col_sample_rate_per_tree</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>min_split_improvement</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>histogram_type</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>,
-  <span class='st'>"UniformAdaptive"</span>, <span class='st'>"Random"</span>, <span class='st'>"QuantilesGlobal"</span>, <span class='st'>"RoundRobin"</span>),
-  <span class='kw'>categorical_encoding</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"Enum"</span>, <span class='st'>"OneHotInternal"</span>, <span class='st'>"OneHotExplicit"</span>,
-  <span class='st'>"Binary"</span>, <span class='st'>"Eigen"</span>, <span class='st'>"LabelEncoder"</span>, <span class='st'>"SortByResponse"</span>, <span class='st'>"EnumLimited"</span>),
-  <span class='kw'>calibrate_model</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>calibration_frame</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='st'>"misclassification"</span>, <span class='st'>"mean_per_class_error"</span>, <span class='st'>"r2"</span>),
+  <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0.001</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
+  <span class='kw'>build_tree_one_node</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>mtries</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>sample_rate</span> <span class='kw'>=</span> <span class='fl'>0.6320000291</span>,
+  <span class='kw'>sample_rate_per_class</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>binomial_double_trees</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>checkpoint</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>col_sample_rate_change_per_level</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>col_sample_rate_per_tree</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>min_split_improvement</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>histogram_type</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"UniformAdaptive"</span>, <span class='st'>"Random"</span>, <span class='st'>"QuantilesGlobal"</span>,
+  <span class='st'>"RoundRobin"</span>), <span class='kw'>categorical_encoding</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"Enum"</span>, <span class='st'>"OneHotInternal"</span>,
+  <span class='st'>"OneHotExplicit"</span>, <span class='st'>"Binary"</span>, <span class='st'>"Eigen"</span>, <span class='st'>"LabelEncoder"</span>, <span class='st'>"SortByResponse"</span>,
+  <span class='st'>"EnumLimited"</span>), <span class='kw'>calibrate_model</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>calibration_frame</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>distribution</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"bernoulli"</span>, <span class='st'>"multinomial"</span>, <span class='st'>"gaussian"</span>, <span class='st'>"poisson"</span>,
   <span class='st'>"gamma"</span>, <span class='st'>"tweedie"</span>, <span class='st'>"laplace"</span>, <span class='st'>"quantile"</span>, <span class='st'>"huber"</span>),
   <span class='kw'>custom_metric_func</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
@@ -247,7 +247,7 @@ stopping_metric does not improve for k:=stopping_rounds scoring events (0 to dis
       <th>stopping_metric</th>
       <td><p>Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-"mean_per_class_error". Defaults to AUTO.</p></td>
+"mean_per_class_error", "r2". Defaults to AUTO.</p></td>
     </tr>
     <tr>
       <th>stopping_tolerance</th>
@@ -360,7 +360,7 @@ accurate estimates of class probabilities. Defaults to FALSE.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">
