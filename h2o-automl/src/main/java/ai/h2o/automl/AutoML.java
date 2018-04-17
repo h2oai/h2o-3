@@ -1523,16 +1523,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void cleanUpStackedEnsemblesCVPreds(Job<StackedEnsembleModel> ensembleJob) {
     Log.info("Remove CV Preds & Models from " + ensembleJob.get()._key.toString() + "'s metalearner");
     //Clear out all CV preds and CV models
-    if (ensembleJob.get()._output._metalearner._output._cross_validation_predictions != null) {
-      for (Key k : ensembleJob.get()._output._metalearner._output._cross_validation_predictions) {
-        Log.info("Remove CV Predictions for " + ensembleJob.get()._output._metalearner._key.toString());
-        k.remove();
-      }
-    }
-    if (ensembleJob.get()._output._metalearner._output._cross_validation_holdout_predictions_frame_id != null) {
-      Log.info("Remove CV Prediction Frame for " + ensembleJob.get()._output._metalearner._key.toString());
-      ensembleJob.get()._output._metalearner._output._cross_validation_holdout_predictions_frame_id.remove();
-    }
+    ensembleJob.get()._output._metalearner.deleteCrossValidationPreds();
   }
 
   private void cleanUpStackedEnsemblesCVModels(Job<StackedEnsembleModel> ensembleJob) {
@@ -1544,16 +1535,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     //Clear out all CV preds and CV models
     for (Model model : leaderboard().getModels()) {
       if (!model._parms.algoName().equals("stackedensemble")) {
-        if (model._output._cross_validation_predictions != null) {
-          for (Key k : model._output._cross_validation_predictions) {
-            Log.info("Remove CV Predictions for " + model._key.toString());
-            k.remove();
-          }
-        }
-        if (model._output._cross_validation_holdout_predictions_frame_id != null) {
-          Log.info("Remove CV Prediction Frame for " + model._key.toString());
-          model._output._cross_validation_holdout_predictions_frame_id.remove();
-        }
+        model.deleteCrossValidationPreds();
       }
     }
   }
