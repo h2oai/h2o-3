@@ -236,15 +236,29 @@ test-junit-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
+test-junit-9-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit
+
 test-junit:
+	./gradlew test -x h2o-scala_2.11:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-9:
 	./gradlew test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
 
+test-junit-9-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
+
 test-junit-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-9-smoke:
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.11:test $$ADDITIONAL_GRADLE_OPTS
 
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
