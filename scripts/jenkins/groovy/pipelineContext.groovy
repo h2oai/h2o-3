@@ -47,6 +47,7 @@ class PipelineContext{
     private final pipelineUtils
     private final emailer
     private final healthChecker
+    private prepareBenchmarkDirStruct
 
     private PipelineContext(final buildConfig, final buildSummary, final pipelineUtils, final emailer, final healthChecker) {
         this.buildConfig = buildConfig
@@ -74,6 +75,13 @@ class PipelineContext{
 
     def getHealthChecker() {
         return healthChecker
+    }
+
+    def getPrepareBenchmarkDirStruct(final context, final mlBenchmarkRoot) {
+        if (prepareBenchmarkDirStruct == null) {
+            prepareBenchmarkDirStruct = context.load("${mlBenchmarkRoot}/jenkins/groovy/prepareBenchmarkDirStruct.groovy")
+        }
+        return prepareBenchmarkDirStruct
     }
 
 }

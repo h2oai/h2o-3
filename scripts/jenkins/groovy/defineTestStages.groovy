@@ -4,16 +4,22 @@ def call(final pipelineContext) {
   def MODE_BENCHMARK_CODE = 1
   def MODE_HADOOP_CODE = 2
   def MODE_XGB_CODE = 3
+  def MODE_COVERAGE_CODE = 4
+  def MODE_SINGLE_TEST_CODE = 5
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
     [name: 'MODE_XGB', code: MODE_XGB_CODE],
+    [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
+    [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
   ]
+
+  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
@@ -129,7 +135,15 @@ def call(final pipelineContext) {
       stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R], image: pipelineContext.getBuildConfig().BENCHMARK_IMAGE,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), customData: [model: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH
+      customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+    ],
+    [
+      stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R], image: pipelineContext.getBuildConfig().BENCHMARK_IMAGE,
+      customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
     ]
   ]
 
@@ -186,7 +200,7 @@ def call(final pipelineContext) {
   for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
     HADOOP_STAGES += [
       stageName: "${distribution.name.toUpperCase()} ${distribution.version} Smoke", target: 'test-hadoop-smoke',
-      timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [
         distribution: distribution.name,
@@ -215,13 +229,64 @@ def call(final pipelineContext) {
     }
   }
 
-  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
+  def COVERAGE_STAGES = [
+    [
+      stageName: 'h2o-algos Coverage', target: 'coverage-junit-algos', pythonVersion: '2.7', timeoutValue: 5 * 60,
+      executionScript: 'h2o-3/scripts/jenkins/groovy/coverageStage.groovy',
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, archiveAdditionalFiles: ['build/reports/jacoco/*.exec'],
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY], nodeLabel: "${pipelineContext.getBuildConfig().getDefaultNodeLabel()} && !micro"
+    ]
+  ]
+
+  def SINGLE_TEST_STAGES = []
+  if (modeCode == MODE_SINGLE_TEST_CODE) {
+    if (params.testPath == null || params.testPath == '') {
+      error 'Parameter testPath must be set.'
+    }
+
+    env.SINGLE_TEST_PATH = params.testPath.trim()
+    env.SINGLE_TEST_XMX = params.singleTestXmx
+    env.SINGLE_TEST_NUM_NODES = params.singleTestNumNodes
+
+    def target
+    def additionalTestPackage
+    switch (params.testComponent) {
+      case 'Python':
+        target = 'test-py-single-test'
+        additionalTestPackage = pipelineContext.getBuildConfig().COMPONENT_PY
+        break
+      case 'R':
+        target = 'test-r-single-test'
+        additionalTestPackage = pipelineContext.getBuildConfig().COMPONENT_R
+        break
+      default:
+        error "Test Component ${params.testComponent} not supported"
+    }
+    def numRunsNum = -1
+    try {
+      numRunsNum = Integer.parseInt(params.singleTestNumRuns)
+    } catch (NumberFormatException e) {
+      error "singleTestNumRuns must be a valid number"
+    }
+    numRunsNum.times {
+      SINGLE_TEST_STAGES += [
+        stageName: "Test ${params.testPath.split('/').last()} #${(it + 1)}", target: target, timeoutValue: 25,
+        component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [additionalTestPackage],
+        pythonVersion: params.singleTestPyVersion, rVersion: params.singleTestRVersion
+      ]
+    }
+  }
+
   if (modeCode == MODE_BENCHMARK_CODE) {
     executeInParallel(BENCHMARK_STAGES, pipelineContext)
   } else if (modeCode == MODE_HADOOP_CODE) {
     executeInParallel(HADOOP_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
+  } else if (modeCode == MODE_COVERAGE_CODE) {
+    executeInParallel(COVERAGE_STAGES, pipelineContext)
+  } else if (modeCode == MODE_SINGLE_TEST_CODE) {
+    executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
   } else {
     executeInParallel(SMOKE_STAGES, pipelineContext)
     def jobs = PR_STAGES
