@@ -78,6 +78,9 @@ def call(final pipelineContext) {
                                         pipelineContext.getBuildConfig().getStashNameForTestPackage(component),
                                         "h2o-3/test-package-${component}.zip"
                                 )
+                                if (component == pipelineContext.getBuildConfig().COMPONENT_PY) {
+                                    pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext.getBuildConfig().getCurrentXGBVersion())
+                                }
                             }
                         }
                         pipelineContext.getUtils().stashFiles(
