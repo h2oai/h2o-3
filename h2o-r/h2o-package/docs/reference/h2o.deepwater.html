@@ -107,13 +107,13 @@
   <span class='kw'>score_duty_cycle</span> <span class='kw'>=</span> <span class='fl'>0.1</span>, <span class='kw'>classification_stop</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>regression_stop</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>stopping_metric</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"deviance"</span>, <span class='st'>"logloss"</span>,
   <span class='st'>"MSE"</span>, <span class='st'>"RMSE"</span>, <span class='st'>"MAE"</span>, <span class='st'>"RMSLE"</span>, <span class='st'>"AUC"</span>, <span class='st'>"lift_top_group"</span>, <span class='st'>"misclassification"</span>,
-  <span class='st'>"mean_per_class_error"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>ignore_const_cols</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>shuffle_training_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>mini_batch_size</span> <span class='kw'>=</span> <span class='fl'>32</span>, <span class='kw'>clip_gradient</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>network</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"auto"</span>, <span class='st'>"user"</span>,
-  <span class='st'>"lenet"</span>, <span class='st'>"alexnet"</span>, <span class='st'>"vgg"</span>, <span class='st'>"googlenet"</span>, <span class='st'>"inception_bn"</span>, <span class='st'>"resnet"</span>),
-  <span class='kw'>backend</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"mxnet"</span>, <span class='st'>"caffe"</span>, <span class='st'>"tensorflow"</span>), <span class='kw'>image_shape</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0</span>, <span class='fl'>0</span>),
-  <span class='kw'>channels</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>gpu</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>device_id</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0</span>),
-  <span class='kw'>cache_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>network_definition_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='st'>"mean_per_class_error"</span>, <span class='st'>"r2"</span>), <span class='kw'>stopping_tolerance</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>ignore_const_cols</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>shuffle_training_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>mini_batch_size</span> <span class='kw'>=</span> <span class='fl'>32</span>, <span class='kw'>clip_gradient</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>network</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"auto"</span>, <span class='st'>"user"</span>, <span class='st'>"lenet"</span>, <span class='st'>"alexnet"</span>, <span class='st'>"vgg"</span>, <span class='st'>"googlenet"</span>,
+  <span class='st'>"inception_bn"</span>, <span class='st'>"resnet"</span>), <span class='kw'>backend</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"mxnet"</span>, <span class='st'>"caffe"</span>, <span class='st'>"tensorflow"</span>),
+  <span class='kw'>image_shape</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0</span>, <span class='fl'>0</span>), <span class='kw'>channels</span> <span class='kw'>=</span> <span class='fl'>3</span>, <span class='kw'>sparse</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>gpu</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>device_id</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>0</span>), <span class='kw'>cache_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>network_definition_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>network_parameters_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mean_image_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>export_native_parameters_prefix</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>activation</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"Rectifier"</span>,
   <span class='st'>"Tanh"</span>), <span class='kw'>hidden</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>input_dropout_ratio</span> <span class='kw'>=</span> <span class='fl'>0</span>,
@@ -299,7 +299,7 @@ stopping_metric does not improve for k:=stopping_rounds scoring events (0 to dis
       <th>stopping_metric</th>
       <td><p>Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-"mean_per_class_error". Defaults to AUTO.</p></td>
+"mean_per_class_error", "r2". Defaults to AUTO.</p></td>
     </tr>
     <tr>
       <th>stopping_tolerance</th>
@@ -417,7 +417,7 @@ Model and builds a model on the provided H2OFrame (non-String columns). Must be 
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

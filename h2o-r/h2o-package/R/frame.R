@@ -4489,7 +4489,9 @@ h2o.stringdist <- function(x, y, method = c("lv", "lcs", "qgram", "jaccard", "jw
 #'
 #' Create Target Encoding Map
 #' 
-#' Creates a target encoding map based on group-by columns (`x`) and a numeric or binary target column (`y`). Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
+#' Creates a target encoding map based on group-by columns (`x`) and a numeric or binary target column (`y`). 
+#' Computing target encoding for high cardinality categorical columns can improve performance of supervised 
+#' learning models. A Target Encoding tutorial is available here: \url{https://github.com/h2oai/h2o-tutorials/blob/master/best-practices/categorical-predictors/target_encoding.md}.
 #' 
 #' @param data An H2OFrame object with which to create the target encoding map.
 #' @param x A list containing the names or indices of the variables to encode.  A target encoding map will be created for each element in the list.  Items in the list can be multiple columns.  For example, if `x = list(c("A"), c("B", "C"))`, then there will be one mapping frame for A and one mapping frame for B & C (in this case, we group by two columns). 
@@ -4584,7 +4586,9 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 
 #' Apply Target Encoding Map to Frame
 #' 
-#' Applies a target encoding map to an H2OFrame object.  Computing target encoding for high cardinality categorical columns can improve performance of supervised learning models.
+#' Applies a target encoding map to an H2OFrame object.  Computing target encoding for high cardinality 
+#' categorical columns can improve performance of supervised learning models. A Target Encoding tutorial 
+#' is available here: \url{https://github.com/h2oai/h2o-tutorials/blob/master/best-practices/categorical-predictors/target_encoding.md}.
 #' 
 #' @param data An H2OFrame object with which to apply the target encoding map.
 #' @param x A list containing the names or indices of the variables to encode.  A target encoding column will be created for each element in the list.  Items in the list can be multiple columns.  For example, if `x = list(c("A"), c("B", "C"))`, then the resulting frame will have a target encoding column for A and a target encoding column for B & C (in this case, we group by two columns). 

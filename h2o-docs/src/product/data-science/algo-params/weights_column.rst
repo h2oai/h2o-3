@@ -14,7 +14,6 @@ For scoring, all computed metrics will take the observation weights into account
 **Notes**: 
 
 - Weights can be specified as integers or as non-integers.
-- You do not have to specify a weight when calling ``model.predict()``. New test data will have the weights column with the same column name. 
 - The weights column cannot be the same as the `fold_column <fold_column.html>`__. 
 - Example unit test scripts are available on GitHub:
 
