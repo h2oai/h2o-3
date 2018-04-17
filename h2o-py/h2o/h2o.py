@@ -23,7 +23,6 @@ from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tm
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
-from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
@@ -703,7 +702,6 @@ def get_model(model_id):
     elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
-    elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "xgboost":      m = H2OXGBoostEstimator()
     elif algo == "word2vec":     m = H2OWord2vecEstimator()
     elif algo == "deeplearning":

@@ -11,7 +11,6 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.word2vec import H2OWord2vecEstimator
-from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 model_runtime = []  # store actual model runtime in seconds
 model_maxRuntime = []   # store given maximum runtime restrictions placed on building models for different algos
@@ -70,17 +69,6 @@ def algo_max_runtime_secs():
     model = H2ORandomForestEstimator(ntrees=100, score_tree_interval=0)
     grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([model, training1_data])
-
-    # deepwater
-    if H2ODeepWaterEstimator.available():
-        training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
-        training1_data = training1_data.drop('Site')
-        training1_data['Angaus'] = training1_data['Angaus'].asfactor()
-        y_index = "Angaus"
-        x_indices = list(range(1, training1_data.ncol))
-        model = H2ODeepWaterEstimator(epochs=50, hidden=[4096, 4096, 4096], hidden_dropout_ratios=[0.2, 0.2, 0.2])
-        grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices, y_index)
-        cleanUp([training1_data, model])
 
     # PCA
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
