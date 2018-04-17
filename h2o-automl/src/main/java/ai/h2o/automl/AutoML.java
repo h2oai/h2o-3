@@ -1200,10 +1200,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
         Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
         if (!buildSpec.build_control.keep_cross_validation_predictions) {
-          cleanUpStackedEnsemblesCVPreds(ensembleJob);
+          cleanUpModelsCVPreds();
         }
         if (!buildSpec.build_control.keep_cross_validation_models) {
-          cleanUpStackedEnsemblesCVModels(ensembleJob);
+          cleanUpModelsCVModels();
         }
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
@@ -1225,10 +1225,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
         Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
         if (!buildSpec.build_control.keep_cross_validation_predictions) {
-          cleanUpStackedEnsemblesCVPreds(bestEnsembleJob);
+          cleanUpModelsCVPreds();
         }
         if (!buildSpec.build_control.keep_cross_validation_models) {
-          cleanUpStackedEnsemblesCVModels(bestEnsembleJob);
+          cleanUpModelsCVModels();
         }
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
       }
@@ -1519,24 +1519,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String getModelType(Model m) {
     return m._key.toString().startsWith("XRT_") ? "XRT" : m._parms.algoName();
   }
-  
-  private void cleanUpStackedEnsemblesCVPreds(Job<StackedEnsembleModel> ensembleJob) {
-    Log.info("Remove CV Preds & Models from " + ensembleJob.get()._key.toString() + "'s metalearner");
-    //Clear out all CV preds and CV models
-    ensembleJob.get()._output._metalearner.deleteCrossValidationPreds();
-  }
-
-  private void cleanUpStackedEnsemblesCVModels(Job<StackedEnsembleModel> ensembleJob) {
-    Log.info("Remove CV Models for " + ensembleJob.get()._output._metalearner._key.toString());
-    ensembleJob.get()._output._metalearner.deleteCrossValidationModels();
-  }
 
   private void cleanUpModelsCVPreds() {
     //Clear out all CV preds and CV models
     for (Model model : leaderboard().getModels()) {
-      if (!model._parms.algoName().equals("stackedensemble")) {
+        Log.info("Remove CV Preds for " + model._key.toString());
         model.deleteCrossValidationPreds();
-      }
     }
   }
 

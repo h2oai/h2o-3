@@ -2211,7 +2211,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
       for (Key k : _output._cross_validation_predictions) {
-        k.remove();
+        Frame f = DKV.getGet(k);
+        if (f!=null) f.delete();
       }
     }
     if (_output._cross_validation_holdout_predictions_frame_id != null) {

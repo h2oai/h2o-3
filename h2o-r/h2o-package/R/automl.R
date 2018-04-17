@@ -34,7 +34,7 @@
 #'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the cross-validated models. Defaults to TRUE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.

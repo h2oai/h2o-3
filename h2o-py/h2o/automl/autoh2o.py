@@ -43,8 +43,8 @@ class H2OAutoML(object):
       An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "GLM", "GBM", "DRF" 
       (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
-    :param keep_cross_validation_models: Whether to keep the cross-validated models. Defaults to ``True``.
+    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
+    :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
 
     :examples:
     >>> import h2o
