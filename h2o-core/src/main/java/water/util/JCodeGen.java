@@ -13,15 +13,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import javax.tools.FileObject;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileManager;
-import javax.tools.JavaFileObject;
-import javax.tools.JavaFileObject.Kind;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
+import javax.tools.*;
 
 import water.H2O;
 import water.exceptions.JCodeSB;
@@ -462,20 +454,16 @@ public class JCodeGen {
   // Strings, the output files are simple byte[]'s holding the classes.  Things
   // other than Java source strings are routed through the standard fileManager
   // so javac can look up related class files.
-  static class JavacFileManager implements JavaFileManager {
+  static class JavacFileManager extends ForwardingJavaFileManager<JavaFileManager> {
     private final StandardJavaFileManager _fileManager;
     final HashMap<String, ByteArrayOutputStream> _buffers = new HashMap<>();
-    JavacFileManager(StandardJavaFileManager fileManager) { _fileManager = fileManager; }
+    JavacFileManager(StandardJavaFileManager fileManager) { super(fileManager); _fileManager = fileManager; }
     public ClassLoader getClassLoader(Location location) { return _fileManager.getClassLoader(location);  }
-    public Iterable<JavaFileObject> list(Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
-      return _fileManager.list(location, packageName, kinds, recurse);
-    }
     public String inferBinaryName(Location location, JavaFileObject file) { return _fileManager.inferBinaryName(location, file); }
     public boolean isSameFile(FileObject a, FileObject b) { return _fileManager.isSameFile(a, b); }
-    public boolean handleOption(String current, Iterator<String> remaining) { return _fileManager.handleOption(current, remaining); }
     public boolean hasLocation(Location location) { return _fileManager.hasLocation(location); }
-    public JavaFileObject getJavaFileForInput(Location location, String className, Kind kind) throws IOException {
-      if( location == StandardLocation.CLASS_OUTPUT && _buffers.containsKey(className) && kind == Kind.CLASS ) {
+    public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind) throws IOException {
+      if( location == StandardLocation.CLASS_OUTPUT && _buffers.containsKey(className) && kind == JavaFileObject.Kind.CLASS ) {
         final byte[] bytes = _buffers.get(className).toByteArray();
         return new SimpleJavaFileObject(URI.create(className), kind) {
           public InputStream openInputStream() {
@@ -485,7 +473,7 @@ public class JCodeGen {
       }
       return _fileManager.getJavaFileForInput(location, className, kind);
     }
-    public JavaFileObject getJavaFileForOutput(Location location, final String className, Kind kind, FileObject sibling) throws IOException {
+    public JavaFileObject getJavaFileForOutput(Location location, final String className, JavaFileObject.Kind kind, FileObject sibling) throws IOException {
       return new SimpleJavaFileObject(URI.create(className), kind) {
         public OutputStream openOutputStream() {
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
