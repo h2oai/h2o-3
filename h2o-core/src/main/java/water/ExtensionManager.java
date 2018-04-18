@@ -5,6 +5,7 @@ import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.util.*;
 
@@ -36,6 +37,33 @@ public class ExtensionManager {
   private boolean restApiExtensionsRegistered = false;
   private boolean listenerExtensionsRegistered = false;
 
+  public StringBuilder makeExtensionReport(StringBuilder sb) {
+    try {
+      // Core
+      String[] coreExts = getCoreExtensionNames().clone();
+      for (int i = 0; i < coreExts.length; i++)
+        if (! isCoreExtensionEnabled(coreExts[i]))
+          coreExts[i] = coreExts[i] + "(disabled)";
+      sb.append("Core Extensions: ").append(StringUtils.join(",", coreExts)).append("; ");
+      // Rest
+      String[] restExts = getRestApiExtensionNames().clone();
+      for (int i = 0; i < restExts.length; i++) {
+        RestApiExtension restExt = restApiExtensions.get(restExts[i]);
+        if (restExt == null)
+          restExts[i] = restExts[i] + "(???)";
+        else if (! isEnabled(restExt))
+          restExts[i] = restExts[i] + "(disabled)";
+      }
+      sb.append("Rest Extensions: ").append(StringUtils.join(",", restExts)).append("; ");
+      // Listeners
+      String[] listernerExts = getListenerExtensionNames();
+      sb.append("Listener Extensions: ").append(StringUtils.join(",", listernerExts)).append("; ");
+    } catch (Exception e) {
+      Log.err("Failed to generate the extension report", e);
+      sb.append(e.getMessage());
+    }
+    return sb;
+  }
 
   public Collection<AbstractH2OExtension> getCoreExtensions() {
     return coreExtensions.values();
