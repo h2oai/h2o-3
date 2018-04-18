@@ -733,6 +733,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
         }
       }
+      params._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
+      params._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
+      params._stopping_rounds = buildSpec.build_control.stopping_criteria.stopping_rounds();
     }
   }
 
@@ -760,8 +763,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     setCommonModelBuilderParams(drfParameters);
 
-    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
-
     Job randomForestJob = trainModel(null, "drf", drfParameters);
     return randomForestJob;
   }
@@ -774,8 +775,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     setCommonModelBuilderParams(drfParameters);
 
     drfParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
-
-    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     Job randomForestJob = trainModel(modelKey("XRT"), "drf", drfParameters);
     return randomForestJob;
@@ -851,7 +850,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     DeepLearningModel.DeepLearningParameters deepLearningParameters = new DeepLearningModel.DeepLearningParameters();
     setCommonModelBuilderParams(deepLearningParameters);
 
-    deepLearningParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
     deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
 
     Job deepLearningJob = trainModel(null, "deeplearning", deepLearningParameters);
