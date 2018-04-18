@@ -36,7 +36,7 @@ def automl_leaderboard():
     print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
-    assert lb.names == ["model_id", "auc", "logloss"]
+    assert lb.names == ["model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     # check that no exluded algos are present in leaderboard
     assert len([a for a in exclude_algos if len([b for b in model_ids if a in b])>0]) == 0
@@ -56,7 +56,7 @@ def automl_leaderboard():
     print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
-    assert lb.names == ["model_id", "mean_residual_deviance","rmse", "mae", "rmsle"]
+    assert lb.names == ["model_id", "mean_residual_deviance","rmse", "mse", "mae", "rmsle"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     # check that no exluded algos are present in leaderboard
     assert len([a for a in exclude_algos if len([b for b in model_ids if a in b])>0]) == 0
@@ -75,7 +75,7 @@ def automl_leaderboard():
     print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
-    assert lb.names == ["model_id", "mean_per_class_error"]
+    assert lb.names == ["model_id", "mean_per_class_error", "logloss", "rmse", "mse"]
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     # check that no exluded algos are present in leaderboard
     assert len([a for a in exclude_algos if len([b for b in model_ids if a in b])>0]) == 0
@@ -95,7 +95,7 @@ def automl_leaderboard():
     print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
-    assert lb.names == ["model_id", "auc", "logloss"]
+    assert lb.names == ["model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"]
     assert lb.nrows == 0
 
 
