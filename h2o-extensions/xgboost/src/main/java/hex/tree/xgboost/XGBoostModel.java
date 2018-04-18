@@ -90,6 +90,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _min_split_improvement = 0;
     public float _gamma;
 
+    // Runtime options
+    public int _nthread = -1;
+
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
     public int _max_leaves = 0;
@@ -291,7 +294,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     Log.info("");
 
+    final int nthreadMax = getMaxNThread();
+    final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
+    if (nthread < p._nthread) {
+      Log.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
+              "Training will use nthread=" + nthreadMax + " instead of the user specified value.");
+    }
+    params.put("nthread", nthread);
+
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
+  }
+
+  private static int getMaxNThread() {
+    return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
   @Override

@@ -63,6 +63,8 @@
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
+#' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
+#'        parameter). Defaults to maximum available Defaults to -1.
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
@@ -123,6 +125,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
+                        nthread = -1,
                         max_bins = 256,
                         max_leaves = 0,
                         min_sum_hessian_in_leaf = 100.0,
@@ -252,6 +255,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
+  if (!missing(nthread))
+    parms$nthread <- nthread
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
