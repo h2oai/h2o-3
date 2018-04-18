@@ -33,6 +33,7 @@ def automl_leaderboard():
     aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y="CAPSULE", training_frame=fr1)
     lb = aml.leaderboard
+    print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "auc", "logloss"]
@@ -52,6 +53,7 @@ def automl_leaderboard():
     aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y=4, training_frame=fr2)
     lb = aml.leaderboard
+    print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "mean_residual_deviance","rmse", "mae", "rmsle"]
@@ -70,6 +72,7 @@ def automl_leaderboard():
     aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y=4, training_frame=fr3)
     lb = aml.leaderboard
+    print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "mean_per_class_error"]
@@ -89,6 +92,7 @@ def automl_leaderboard():
     aml = H2OAutoML(max_runtime_secs=5, project_name="py_lb_test_aml4", exclude_algos=exclude_algos, seed=automl_seed)
     aml.train(y="CAPSULE", training_frame=fr4)
     lb = aml.leaderboard
+    print("AutoML leaderboard")
     print(lb)
     # check that correct leaderboard columns exist
     assert lb.names == ["model_id", "auc", "logloss"]
@@ -101,6 +105,7 @@ def automl_leaderboard():
     aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5", seed=automl_seed)
     aml.train(y=4, training_frame=fr5)
     lb = aml.leaderboard
+    print("AutoML leaderboard")
     print(lb)
     model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
     include_algos = list(set(all_algos) - set(exclude_algos)) + ["XRT"]
