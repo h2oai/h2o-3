@@ -43,6 +43,8 @@ class H2OAutoML(object):
       An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "GLM", "GBM", "DRF" 
       (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
+    :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
 
     :examples:
     >>> import h2o
@@ -76,7 +78,9 @@ class H2OAutoML(object):
                  stopping_rounds=3,
                  seed=None,
                  project_name=None,
-                 exclude_algos=None):
+                 exclude_algos=None,
+                 keep_cross_validation_predictions = True,
+                 keep_cross_validation_models = True):
 
         # Check if H2O jar contains AutoML
         try:
@@ -107,7 +111,7 @@ class H2OAutoML(object):
             assert_is_type(nfolds,int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
         assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
-        self.build_control["nfolds"] = nfolds 
+        self.build_control["nfolds"] = nfolds
         self.nfolds = nfolds   
 
         # If max_runtime_secs is not provided, then it is set to default (3600 secs)
@@ -154,6 +158,12 @@ class H2OAutoML(object):
             for elem in exclude_algos:
                 assert_is_type(elem,str)
             self.build_models['exclude_algos'] = exclude_algos
+
+        assert_is_type(keep_cross_validation_predictions, bool)
+        self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
+
+        assert_is_type(keep_cross_validation_models, bool)
+        self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
 
         self._job = None
         self._automl_key = None
@@ -221,7 +231,7 @@ class H2OAutoML(object):
             (unless max_models or max_runtime_secs overrides metric-based early stopping).
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
-            rankings instead.  
+            rankings instead.
 
         :returns: An H2OAutoML object.
 
