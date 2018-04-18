@@ -177,6 +177,23 @@ automl.args.test <- function() {
   model_ids <- as.character(as.data.frame(aml14@leaderboard[,"model_id"])[,1])
   expect_equal(sum(grepl("StackedEnsemble", model_ids)), 2)
 
+  print("Check that cv preds/models are deleted")
+  nfolds <- 3
+  aml15 <- h2o.automl(x = x, y = y,
+  training_frame = train,
+  nfolds = nfolds,
+  max_models = max_models,
+  project_name = "aml15",
+  keep_cross_validation_models = FALSE,
+  keep_cross_validation_predictions = FALSE)
+  model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
+  model_ids <- setdiff(model_ids, grep("StackedEnsemble", model_ids, value = TRUE))
+  cv_model_ids <- list(NULL)
+  for(i in 1:nfolds) {
+      cv_model_ids[[i]] <- paste0(model_ids, "_cv_", i)
+  }
+  cv_model_ids <- unlist(cv_model_ids)
+  expect_equal(sum(sapply(cv_model_ids, function(i) grepl(i, h2o.ls()))), 0)
 }
 
 doTest("AutoML Args Test", automl.args.test)
