@@ -66,9 +66,6 @@ def installXGBWheel(final String xgbVersion, final String h2o3dir) {
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
         
-        # FIXME remove once the docker image does not contain pre-installed XGBoost.
-        pip uninstall -y xgboost
-        
         pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-${xgbVersion}-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
     """
 }

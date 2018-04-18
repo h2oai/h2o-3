@@ -90,8 +90,8 @@ class PipelineUtils {
         return distributionsToBuild
     }
 
-    def readCurrentXGBVersion(final context) {
-        final def xgbVersion = context.sh(script: "cd h2o-3 && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+    def readCurrentXGBVersion(final context, final h2o3Root) {
+        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
         context.echo "XGBoost Version: ${xgbVersion}"
         if (xgbVersion == null || xgbVersion == '') {
             context.error("XGBoost version cannot be read")
