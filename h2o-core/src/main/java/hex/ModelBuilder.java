@@ -83,15 +83,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
-    assert startup_once;
+    String base = getClass().getSimpleName().toLowerCase();
+    if (! startup_once)
+      throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;
     _result = null;
     _parms = parms;
     init(false); // Default cheap init
-    String base = getClass().getSimpleName().toLowerCase();
     if( ArrayUtils.find(ALGOBASES,base) != -1 )
       throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
     // FIXME: this is not thread safe!
+    // michalk: this note ^^ is generally true (considering 3rd parties), however, in h2o-3 code base we have a sequential ModelBuilder initialization
     ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
     BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
     SCHEMAS   = Arrays.copyOf(SCHEMAS  ,SCHEMAS  .length+1);
@@ -146,7 +148,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
     int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
-    assert idx != -1 : "Unregistered algorithm "+algo;
+    if (idx < 0) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Unknown algo: ").append(algo).append("Extension report: ");
+      Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
+      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: " +
+              StringUtils.join(",", ALGOBASES));
+    }
     B mb = (B)BUILDERS[idx].clone();
     mb._job = job;
     mb._result = result;
