@@ -211,6 +211,7 @@ reference:
       - h2o.r2
       - h2o.randomForest
       - h2o.range
+      - h2o.rank_within_group_by
       - h2o.rbind
       - h2o.reconstruct
       - h2o.relevel
