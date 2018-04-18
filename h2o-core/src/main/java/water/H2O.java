@@ -1842,8 +1842,8 @@ final public class H2O {
    */
   public static boolean checkUnsupportedJava() {
     String version = System.getProperty("java.version");
-    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8"))) {
-      System.err.println("Only Java 1.7-1.8 is supported, system version is " + version);
+    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9"))) {
+      System.err.println("Only Java 1.7-1.8 and 9 is supported, system version is " + version);
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -1995,7 +1995,9 @@ final public class H2O {
     long time7 = System.currentTimeMillis();
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
     Log.debug("H2O launch parameters: "+ARGS.toString());
-    Log.debug("Boot class path: "+ rtBean.getBootClassPath());
+    if (rtBean.isBootClassPathSupported()) {
+      Log.debug("Boot class path: " + rtBean.getBootClassPath());
+    }
     Log.debug("Java class path: "+ rtBean.getClassPath());
     Log.debug("Java library path: "+ rtBean.getLibraryPath());
 
