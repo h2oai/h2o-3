@@ -150,10 +150,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
     if (idx < 0) {
       StringBuilder sb = new StringBuilder();
-      sb.append("Unknown algo: ").append(algo).append("Extension report: ");
+      sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
       Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
-      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: " +
-              StringUtils.join(",", ALGOBASES));
+      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: [" +
+              StringUtils.join(",", ALGOBASES)  + "]");
     }
     B mb = (B)BUILDERS[idx].clone();
     mb._job = job;
