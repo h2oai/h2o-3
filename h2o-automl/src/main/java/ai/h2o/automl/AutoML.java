@@ -324,15 +324,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
-      throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
+      throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
               "the training frame.");
     }
     if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
-      throw new H2OIllegalArgumentException("Fold column " + buildSpec.input_spec.fold_column + "is not in " +
+      throw new H2OIllegalArgumentException("Fold column '" + buildSpec.input_spec.fold_column + "' is not in " +
               "the training frame.");
     }
     if (buildSpec.input_spec.weights_column != null && this.origTrainingFrame.find(buildSpec.input_spec.weights_column) == -1) {
-      throw new H2OIllegalArgumentException("Weights column " + buildSpec.input_spec.weights_column + "is not in " +
+      throw new H2OIllegalArgumentException("Weights column '" + buildSpec.input_spec.weights_column + "' is not in " +
               "the training frame.");
     }
 
