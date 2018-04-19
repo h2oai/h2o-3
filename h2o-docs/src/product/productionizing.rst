@@ -146,6 +146,8 @@ The examples below describe how to start H2O and create a model using R and Pyth
          }
        }
 
+  Note that not all MOJOs will return a ``classProbabilities`` field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
+
  3. Compile in terminal window 2.
 
    .. code:: bash
@@ -176,7 +178,7 @@ POJO Quick Start
 
 This section describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__ for more information, including packages.
 
-**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the `FAQ <#POJO_Err>`__ below. POJOs are also not supported for XGBoost, Stacked Ensembles, or AutoML models. 
+**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the :ref:`pojo_faq` section below. POJOs are also not supported for XGBoost, GLRM, Stacked Ensembles, or AutoML models. 
 
 What is a POJO?
 '''''''''''''''
@@ -351,6 +353,8 @@ The following use cases are demonstrated with code examples:
 -  **Reading new data from a CSV file and predicting on it**: The PredictCsv class is used by the H2O test harness to make predictions on new data points.
 -  **Getting a new observation from a JSON request and returning a prediction**
 -  **Calling a user-defined function directly from hive**: See the `H2O-3 training github repository <https://github.com/h2oai/h2o-world-2015-training/tree/master/tutorials/hive_udf_template>`__.
+
+.. _pojo_faq:
 
 FAQ
 '''

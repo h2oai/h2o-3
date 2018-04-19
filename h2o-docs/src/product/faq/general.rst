@@ -194,12 +194,6 @@ vec that loads the file when necessary, and returns a key.
 
 --------------
 
-**Does H2O support GPUs?**
-
-H2O supports GPUs as part of our Deep Water offering. Refer to the `Deep Water <https://www.h2o.ai/deep-water/>`__ product section of the H2O.ai site for more information. Users with an AWS account can also follow the `"H2O + TensorFlow on AWS GPU" <https://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ tutorial. 
-
---------------
-
 **How can I continue working on a model in H2O after restarting?**
 
 There are a number of ways you can save your model in H2O:
