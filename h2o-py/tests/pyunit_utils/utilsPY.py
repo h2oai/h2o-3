@@ -1524,7 +1524,9 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
                         if isinstance(val1, float) and isinstance(val2, float):
                             compare_val_ratio = abs(val1-val2)/max(1, abs(val1), abs(val2))
                             if compare_val_ratio > tolerance:
-                                print("Table entry difference is {0}".format(compare_val_ratio))
+                                print("Table entry difference is {0} at dimension {1} and eigenvector number "
+                                      "{2}".format(compare_val_ratio, name_ind1, indC))
+                                print("The first vector is {0} and the second vector is {1}".format(table1.cell_values[name_ind1], table2.cell_values[name_ind2]))
                                 assert False, "Table entries are not equal within tolerance."
 
                             worst_error = max(worst_error, compare_val_ratio)

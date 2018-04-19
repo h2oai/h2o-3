@@ -93,7 +93,7 @@ def pca_wideDataset_rotterdam():
                                                  ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
                                                  tolerance=1e-1, check_all=False)
 
-        print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
+        print("@@@@@@  Comparing eigenvectors between GramSVD and Randomized...\n")
         # compare singular vectors
         pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                                  randomizedPCA._model_json["output"]["eigenvectors"],
