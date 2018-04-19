@@ -84,7 +84,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
     String base = getClass().getSimpleName().toLowerCase();
-    if (! startup_once)
+    if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;
     _result = null;
