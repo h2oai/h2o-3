@@ -20,7 +20,8 @@ def prostate_automl():
     valid = fr[1]
     test = fr[2]
 
-    aml = H2OAutoML(max_runtime_secs = 30,stopping_rounds=3,stopping_tolerance=0.001)
+    #Use same project_name so we add to leaderboard for each run
+    aml = H2OAutoML(max_runtime_secs = 30, stopping_rounds=3, stopping_tolerance=0.001, project_name="aml1")
 
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
@@ -30,23 +31,30 @@ def prostate_automl():
     x = ["AGE","RACE","DPROS"]
     y = "CAPSULE"
     names = train.names
-    aml.train(x=x,y=y, training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(x=x, y=y, training_frame=train, validation_frame=valid, leaderboard_frame=test)
+    print("AutoML leaderboard")
+    print(aml.leaderboard)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
     print("AutoML with x and y as col indexes, train, valid, and test")
-    aml.train(x=[2,3,4],y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(x=[2,3,4], y=1, training_frame=train, validation_frame=valid, leaderboard_frame=test)
+    print("AutoML leaderboard")
+    print(aml.leaderboard)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
-
     print("AutoML with x as a str list, y as a col index, train, valid, and test")
-    aml.train(x=x,y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(x=x, y=1, training_frame=train, validation_frame=valid, leaderboard_frame=test)
+    print("AutoML leaderboard")
+    print(aml.leaderboard)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
     print("AutoML with x as col indexes, y as a str, train, valid, and test")
-    aml.train(x=[2,3,4],y=y, training_frame=train,validation_frame=valid, leaderboard_frame=test)
+    aml.train(x=[2,3,4], y=y, training_frame=train, validation_frame=valid, leaderboard_frame=test)
+    print("AutoML leaderboard")
+    print(aml.leaderboard)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
