@@ -6,8 +6,7 @@ import java.lang.management.ManagementFactory;
 
 public class TelemetryExtension extends AbstractH2OExtension {
     //sampling period in seconds
-    int samplingTimeout = 10;
-    boolean isEnabled = false;
+    private int samplingTimeout = -1;
 
     @Override
     public String getExtensionName() {
@@ -16,41 +15,28 @@ public class TelemetryExtension extends AbstractH2OExtension {
 
     @Override
     public String[] parseArguments(String[] args) {
-        return parseTelemetrySamplingPeriod(parseTelemetryEnabled(args));
+        return parseTelemetrySamplingPeriod(args);
     }
 
     @Override
     public void printHelp() {
         System.out.println(
                 "\nTelemetry extension:\n" +
-                        "    -enable_telemetry\n" +
-                        "          Switches telementry on (=true/false)\n" +
-                        "    -telemetry_sampling_period\n" +
-                        "          How often sampling is done (in seconds).\n");
+                        "    -telemetry_window\n" +
+                        "          How often the sampling is done (in seconds). If not set, telemetry is off.\n");
     }
 
     @Override
     public void onLocalNodeStarted() {
-        new TelemetryThread().start();
+        if (samplingTimeout > 0) {
+            new TelemetryThread().start();
+        }
     }
 
-    private String[] parseTelemetryEnabled(String[] args){
-        for (int i = 0; i < args.length; i++) {
-            H2O.OptString s = new H2O.OptString(args[i]);
-            if(s.matches("enable_telemetry")){
-                isEnabled = true;
-                String[] new_args = new String[args.length - 1];
-                System.arraycopy(args, 0, new_args, 0, i);
-                System.arraycopy(args, i + 1, new_args, i, args.length - (i + 1));
-                return new_args;
-            }
-        }
-        return args;
-    }
     private String[] parseTelemetrySamplingPeriod(String args[]){
         for (int i = 0; i < args.length; i++) {
             H2O.OptString s = new H2O.OptString(args[i]);
-            if(s.matches("telemetry_sampling_period")){
+            if(s.matches("telemetry_window")){
                 samplingTimeout = s.parseInt(args[i + 1]);
                 String[] new_args = new String[args.length - 2];
                 System.arraycopy(args, 0, new_args, 0, i);
@@ -61,12 +47,11 @@ public class TelemetryExtension extends AbstractH2OExtension {
         return args;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return isEnabled;
-    }
-
     private class TelemetryThread extends Thread {
+        private static final String formatDecimal = "|                       |%1$10d|%2$10d|%3$10d|%4$10d|%5$10d|\n";
+        private static final String header =        "|Mem[MB]/GC[ms] metrics:|Total mem | Free mem |  Max Mem |  GC Cnt  |  GC Dur  |\n";
+        private final static int mb = 1024*1024;
+
         public TelemetryThread() {
             super("TelemetryThread");
             // don't prevent JVM exit with this thread
@@ -74,21 +59,8 @@ public class TelemetryExtension extends AbstractH2OExtension {
         }
 
         private String getMemInfo(){
-            int mb = 1024*1024;
             Runtime runtime = Runtime.getRuntime();
-            String format = "|%1$-23s|%2$-10s|%3$-10s|%4$-10s|%5$-10s|%6$-10s\n";
-            String ex[] = {"Mem[MB]/GC[ms] metrics:", "Total mem", "Free mem", "Max Mem","GC Cnt","GC Dur"};
-            String result = String.format(format, ex);
-
-            String ex2[] = {"",
-                    String.valueOf(runtime.totalMemory()/mb),
-                    String.valueOf(runtime.freeMemory() / mb),
-                    String.valueOf(runtime.maxMemory() / mb),
-                    String.valueOf(getGcCount()),
-                    String.valueOf(getGcTime())};
-
-            result += String.format(format, ex2);
-            return result;
+            return header + String.format(formatDecimal, runtime.totalMemory()/mb, runtime.freeMemory() / mb, runtime.maxMemory() / mb, getGcCount(), getGcTime());
         }
 
         private long getGcTime(){
@@ -112,7 +84,6 @@ public class TelemetryExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             Log.debug("H2O Telemetry thread started.");
-            Log.debug("Collecting metrics: Used mem | Free mem | Total Mem| Max Mem| GC Cnt| GC Dur");
             while (true) {
                 if (Log.getLogLevel() == Log.DEBUG) {
                     Log.debug(getMemInfo());
