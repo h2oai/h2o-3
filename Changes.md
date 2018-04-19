@@ -2,6 +2,17 @@
 
 ## H2O
 
+### Wolpert (3.18.0.8) - 4/19/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html</a>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5465'>PUBDEV-5465</a>] - Release for CRAN submission.
+</li>
+</ul>
+
 ### Wolpert (3.18.0.7) - 4/14/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html</a>
