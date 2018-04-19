@@ -281,6 +281,7 @@ public class Env extends Iced {
     // Miscellaneous
     init(new AstComma());
     init(new AstLs());
+    init(new AstSetProperty());
 
     // Search
     init(new AstMatch());
