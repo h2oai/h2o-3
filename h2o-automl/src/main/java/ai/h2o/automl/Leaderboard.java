@@ -63,7 +63,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /**
    * Additional metrics for the models in this leaderboard, in the same order as the models
-   * rmse, mse, mae, and rmsle for regression & logloss, mean_per_class_error, rmse, & mse for binomial classification
+   * Regression metrics: rmse, mse, mae, and rmsle
+   * Binomial metrics: logloss, mean_per_class_error, rmse, & mse
+   * Multinomial metrics: logloss, mean_per_class_error, rmse, & mse
    * <p>
    * Updated inside addModels().
    */
@@ -80,7 +82,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private String sort_metric;
 
   /**
-   * Other metrics reported in leaderboard (logloss, mean_per_class_error, rmse, & mse for binomial, rmse, mse, mae, and rmsle for regression)
+   * Other metrics reported in leaderboard
+   * Regression metrics: rmse, mse, mae, and rmsle
+   * Binomial metrics: logloss, mean_per_class_error, rmse, & mse
+   * Multinomial metrics: logloss, mean_per_class_error, rmse, & mse
    */
   private String[] other_metrics;
 
