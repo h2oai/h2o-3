@@ -22,7 +22,7 @@ echo "###### Activate R 3.4.1 ######"
 activate_R_${R_VERSION}
 
 echo "###### Activate Java 8 ######"
-/usr/opt/activate_java_8
+/usr/bin/activate_java_8
 
 echo '###### Clone H2O-3 ######'
 git clone https://github.com/h2oai/h2o-3
