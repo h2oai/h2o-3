@@ -267,6 +267,13 @@ def gen_module(schema, algo, module):
     #    yield "  if (!missing(model_id))"
     #    yield "    parms$model_id <- model_id"
     if algo == "stackedensemble":
+        yield " # Get the base models from model IDs (if any) that will be used for constructing model summary"
+        yield " baselearners <- lapply(base_models, function(base_model) {"
+        yield "   if (is.character(base_model))"
+        yield "     base_model <- h2o.getModel(base_model)"
+        yield "   base_model"
+        yield " })"
+        yield " # Get base model IDs that will be passed to REST API later"
         yield " if (length(base_models) == 0) stop('base_models is empty')"
         yield "  # If base_models contains models instead of ids, replace with model id"
         yield "  for (i in 1:length(base_models)) {"
@@ -329,10 +336,42 @@ def gen_module(schema, algo, module):
     if algo in ["stackedensemble"]:
         yield "  # Error check and build model"
         yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
-        yield "  #Convert metalearner_params back to list if not NULL"
+        yield "  # Convert metalearner_params back to list if not NULL"
         yield "  if (!missing(metalearner_params)) {"
         yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list"
         yield "  }"
+        yield """
+  model@model$model_summary <- capture.output({
+
+    print_ln <- function(...) cat(..., sep = "\n")
+
+    print_ln(paste0("Number of Base Models: ", length(baselearners)))
+    print_ln("\nBase Models (count by algorithm type):")
+    print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
+    
+    
+    print_ln("\nMetalearner:\n")
+    print_ln(paste0(
+      "Metalearner algorithm: ",
+      ifelse(length(metalearner_algorithm) > 1, "glm", metalearner_algorithm)))
+
+    if (metalearner_nfolds != 0) {
+      print_ln("Metalearner cross-validation fold assignment:")
+      print_ln(paste0(
+        "  Fold assignment scheme: ",
+        ifelse(length(metalearner_fold_assignment) > 1, "Random", metalearner_fold_assignment)))
+      print_ln(paste0("  Number of folds: ", metalearner_nfolds))
+      print_ln(paste0(
+        "  Fold column: ",
+        ifelse(is.null(metalearner_fold_column), "NULL", metalearner_fold_column )))
+    }
+    
+    if (!missing(metalearner_params))
+      print_ln(paste0("Metalearner hyperparameters: ", parms$metalearner_params))
+    
+  })
+  class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
+        """
         yield "  return(model)"
         yield "}"
     if algo in ["deeplearning", "drf", "gbm", "xgboost"]:
