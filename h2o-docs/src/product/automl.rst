@@ -85,7 +85,7 @@ Optional Miscellaneous Parameters
     - ``GLM``
     - ``DeepLearning``
     - ``GBM``
-    - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
+    - ``DRF`` (This includes both the Random Forest and Extremely-Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
     - ``StackedEnsemble``
 
 
@@ -138,7 +138,6 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     aml <- h2o.automl(x = x, y = y, 
                       training_frame = train,
-                      leaderboard_frame = test,
                       max_runtime_secs = 30)
 
     # View the AutoML Leaderboard
@@ -193,8 +192,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # Run AutoML for 30 seconds
     aml = H2OAutoML(max_runtime_secs = 30)
     aml.train(x = x, y = y, 
-              training_frame = train, 
-              leaderboard_frame = test)
+              training_frame = train)
 
     # View the AutoML Leaderboard
     lb = aml.leaderboard
@@ -228,11 +226,13 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     preds = aml.leader.predict(test)
 
 
+The code above is the quickest way to get started, however to learn more about H2O AutoML we recommend taking a look at our more in-depth `AutoML tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (available in R and Python).
+
 
 AutoML Output
 -------------
 
-The AutoML object includes a "leaderboard" of models that were trained in the process, including the performance of the model on the ``leaderboard_frame`` test set.  If the user did not specify the ``leaderboard_frame`` argument, then a frame will be automatically partitioned, as explained in the `Auto-Generated Frames <#auto-generated-frames>`__ section.  In the `future <https://0xdata.atlassian.net/browse/PUBDEV-5071>`__, the leaderboard will be created using cross-validation metrics, unless a scoring frame is provided explicitly by the user.
+The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If the user would like to score the models on a specific dataset, they can specify the ``leaderboard_frame`` argument, and then the leaderboard will show scores on that dataset instead. 
 
 The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
 
@@ -268,7 +268,7 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates a default Random Forest (DRF), Extremely Randomized Trees (XRT), a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models. Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument.  This is useful if you already have some idea of the algorithms that will do well on your dataset.  As a recommendation, if you have really wide or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF).
+  The current version of AutoML trains and cross-validates a default Random Forest (DRF), an Extremely-Randomized Forest (XRT), a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models. Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument.  This is useful if you already have some idea of the algorithms that will do well on your dataset.  As a recommendation, if you have really wide or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF).
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More details about the hyperparamter ranges for the models will be added to the appendix at a later date.
 
@@ -277,6 +277,15 @@ FAQ
 -  **How do I save AutoML runs?**
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
+
+
+Resources
+~~~~~~~~~
+
+- `AutoML Tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (R and Python notebooks)
+- Intro to AutoML + Hands-on Lab `(1 hour video) <https://www.youtube.com/watch?v=42Oo8TOl85I>`__ `(slides) <https://www.slideshare.net/0xdata/intro-to-automl-handson-lab-erin-ledell-machine-learning-scientist-h2oai>`__
+- Scalable Automatic Machine Learning in H2O `(1 hour video) <https://www.youtube.com/watch?v=j6rqrEYQNdo>`__ `(slides) <https://www.slideshare.net/0xdata/scalable-automatic-machine-learning-in-h2o-89130971>`__
+- `AutoML Roadmap <https://0xdata.atlassian.net/issues/?filter=21603>`__
 
 
 Appendix: Grid Search Parameters
