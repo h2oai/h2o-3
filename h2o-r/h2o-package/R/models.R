@@ -3059,3 +3059,6 @@ h2o.deepfeatures <- function(object, data, layer) {
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
 }
+
+#' @export
+print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
