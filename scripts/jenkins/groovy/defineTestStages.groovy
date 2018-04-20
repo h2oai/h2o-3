@@ -36,10 +36,12 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java8 Smoke', target: 'test-junit-smoke', javaVersion: 8, timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      stageName: 'Java 8 Smoke', target: 'test-junit-smoke', javaVersion: 8, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java9 Smoke', target: 'test-junit-9-smoke', javaVersion: 9,timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      stageName: 'Java 10 Smoke', target: 'test-junit-9-smoke', javaVersion: 10,timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
@@ -146,7 +148,7 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
-      stageName: 'Java 9 JUnit', target: 'test-junit-9-jenkins', pythonVersion: '2.7', javaVersion: 9,
+      stageName: 'Java 10 JUnit', target: 'test-junit-9-jenkins', pythonVersion: '2.7', javaVersion: 10,
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
