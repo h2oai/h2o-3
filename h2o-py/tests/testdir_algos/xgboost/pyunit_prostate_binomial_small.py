@@ -10,7 +10,7 @@ def xgboost_prostate_small():
     y = 'CAPSULE'
     prostate_frame[y] = prostate_frame[y].asfactor()
 
-    prostate_frame.split_frame(ratios=[0.75], destination_frames=['prostate_training', 'prostate_validation'])
+    prostate_frame.split_frame(ratios=[0.75], destination_frames=['prostate_training', 'prostate_validation'], seed=1)
 
     training_frame = h2o.get_frame('prostate_training')
     test_frame = h2o.get_frame('prostate_validation')

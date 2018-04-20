@@ -13,7 +13,7 @@ def xgboost_cup98_medium():
 
     data[y] = data[y].asfactor()
 
-    data.split_frame(ratios=[0.75], destination_frames=['training', 'validation'])
+    data.split_frame(ratios=[0.75], destination_frames=['training', 'validation'], seed=1)
 
     training_frame = h2o.get_frame('training')
     test_frame = h2o.get_frame('validation')

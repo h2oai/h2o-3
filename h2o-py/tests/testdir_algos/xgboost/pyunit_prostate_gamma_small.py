@@ -1,10 +1,6 @@
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
 
-import pandas as pd
-import zipfile
-import statsmodels.api as sm
-
 
 def xgboost_prostate_gamma_small():
     assert H2OXGBoostEstimator.available()
@@ -14,7 +10,7 @@ def xgboost_prostate_gamma_small():
     x = ["ID","AGE","RACE","GLEASON","DCAPS","PSA","VOL","CAPSULE"]
     y = 'DPROS'
 
-    prostate_frame.split_frame(ratios=[0.75], destination_frames=['prostate_training', 'prostate_validation'])
+    prostate_frame.split_frame(ratios=[0.75], destination_frames=['prostate_training', 'prostate_validation'], seed=1)
 
     training_frame = h2o.get_frame('prostate_training')
     test_frame = h2o.get_frame('prostate_validation')
