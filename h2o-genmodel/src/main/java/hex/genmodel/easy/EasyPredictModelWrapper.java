@@ -554,6 +554,18 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
+    return predictRegression(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Regression model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public RegressionModelPrediction predictRegression(RowData data, double offset) throws PredictException {
     double[] preds = preamble(ModelCategory.Regression, data);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
