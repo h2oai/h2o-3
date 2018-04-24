@@ -34,25 +34,26 @@ test.CoxPH.heart <- function() {
     # test print summary
     summary.out <- capture.output(print(summary.info))
     print(summary.out)
-    summary.out.sanitized <- gsub("[0-9]", "?", x = summary.out)
+    summary.out.sanitized <- gsub("[0-9]+", "?", x = summary.out)
+    summary.out.sanitized <- gsub("[^a-zA-Z~=?|() *>.,-:\"]", "_", x = summary.out.sanitized) #keep only "safe" characters (see #9)
     summary.out.expected <- c(
       "Call:",
       "\"Surv(start, stop, event) ~ age\"",
       "",
-      "  n= ???, number of events= ?? ",
+      "  n= ?, number of events= ? ",
       "",
       "       coef exp(coef) se(coef)     z Pr(>|z|)  ",
-      "age ?.?????   ?.?????  ?.????? ?.???   ?.???? *",
+      "age ?.?   ?.?  ?.? ?.?   ?.? *",
       "---",
-      "Signif. codes:  ? ‘***’ ?.??? ‘**’ ?.?? ‘*’ ?.?? ‘.’ ?.? ‘ ’ ?",
+      "Signif. codes:  ? _***_ ?.? _**_ ?.? _*_ ?.? _._ ?.? _ _ ?", #9, locale specific (single quotes)
       "",
-      "    exp(coef) exp(-coef) lower .?? upper .??",
-      "age     ?.???     ?.????     ?.???      ?.??",
+      "    exp(coef) exp(-coef) lower .? upper .?",
+      "age     ?.?     ?.?     ?.?      ?.?",
       "",
-      "Rsquare= ?.??   (max possible= ?.??? )",
-      "Likelihood ratio test= ?.??  on ? df,   p=?.?????",
-      "Wald test            = ?.??  on ? df,   p=?.?????",
-      "Score (logrank) test = ?.??  on ? df,   p=?.?????",
+      "Rsquare= ?.?   (max possible= ?.? )",
+      "Likelihood ratio test= ?.?  on ? df,   p=?.?",
+      "Wald test            = ?.?  on ? df,   p=?.?",
+      "Score (logrank) test = ?.?  on ? df,   p=?.?",
       ""
     )
     expect_equal(summary.out.expected, summary.out.sanitized)
