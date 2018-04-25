@@ -9,16 +9,42 @@ import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 public class EasyPredictModelWrapperTest {
+
+  private GenModel mockGenModel;
+
+  @Before
+  public void setUp(){
+    mockGenModel = mock(GenModel.class);
+    String[][] domains = {
+        {"c1level1", "c1level2"},
+        {"c2level1", "c2level2", "c2level3"},
+        {"NO", "YES"}};
+    when(mockGenModel.getNames()).thenReturn(new String[]{"C1", "C2", "RESPONSE"});
+    when(mockGenModel.score0(any(double[].class), any(double[].class)))
+        .thenReturn(new double[]{1});
+    when(mockGenModel.score0(any(double[].class),eq(1D), any(double[].class)))
+        .thenReturn(new double[]{1});
+    when(mockGenModel.getDomainValues(0)).thenReturn(domains[0]);
+    when(mockGenModel.getDomainValues(1)).thenReturn(domains[1]);
+    when(mockGenModel.getDomainValues(2)).thenReturn(domains[2]);
+  }
+
   private static class SupervisedModel extends GenModel {
     /**
      * Supervised model for testing purpose
@@ -169,6 +195,70 @@ public class EasyPredictModelWrapperTest {
   }
 
   @Test
+  public void testScoreOffsetBinomial() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Binomial));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    BinomialModelPrediction binomialModelPrediction = model.predictBinomial(row);
+    Assert.assertNotNull(row);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    BinomialModelPrediction predictionWithOffset = model.predictBinomial(row, 1D);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
+  public void testScoreOffsetOrdinal() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Ordinal));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    OrdinalModelPrediction modelPrediction = model.predictOrdinal(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    OrdinalModelPrediction predictionWithOffset = model.predictOrdinal(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+
+  @Test
+  public void testScoreOffsetMultinomial() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Multinomial));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    MultinomialModelPrediction modelPrediction = model.predictMultinomial(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    MultinomialModelPrediction predictionWithOffset = model.predictMultinomial(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
+  public void testScoreOffsetRegression() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Regression));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    RegressionModelPrediction modelPrediction = model.predictRegression(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    RegressionModelPrediction predictionWithOffset = model.predictRegression(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
   public void testSerializeWrapperWithCountingConsumer() throws Exception {
     SupervisedModel rawModel = makeSupervisedModel();
     CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
@@ -208,7 +298,7 @@ public class EasyPredictModelWrapperTest {
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
     .setModel(rawModel)
     .setErrorConsumer(countingErrorConsumer));
-    
+
     {
       RowData row = new RowData();
       row.put("C1", "c1level1");
@@ -414,7 +504,7 @@ public class EasyPredictModelWrapperTest {
     Assert.assertNotNull(errorConsumer);
     Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
   }
-  
+
 
   private static class MyAutoEncoderModel extends GenModel {
 

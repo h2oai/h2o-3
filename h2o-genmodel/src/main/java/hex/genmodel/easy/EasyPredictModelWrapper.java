@@ -435,7 +435,19 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public MultinomialModelPrediction predictMultinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Multinomial, data);
+    return predictMultinomial(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Multinomial model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public MultinomialModelPrediction predictMultinomial(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Multinomial, data, offset);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
     p.classProbabilities = new double[m.getNumResponseClasses()];
@@ -455,7 +467,19 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public OrdinalModelPrediction predictOrdinal(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Ordinal, data);
+    return predictOrdinal(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Ordinal model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public OrdinalModelPrediction predictOrdinal(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Ordinal, data, offset);
 
     OrdinalModelPrediction p = new OrdinalModelPrediction();
     p.classProbabilities = new double[m.getNumResponseClasses()];
@@ -530,7 +554,19 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+    return predictRegression(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Regression model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public RegressionModelPrediction predictRegression(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Regression, data, offset);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
     p.value = preds[0];
