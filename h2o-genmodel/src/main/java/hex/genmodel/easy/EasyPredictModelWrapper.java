@@ -566,7 +566,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data, double offset) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+    double[] preds = preamble(ModelCategory.Regression, data, offset);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
     p.value = preds[0];
