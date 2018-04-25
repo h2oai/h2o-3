@@ -136,6 +136,11 @@ RUN \
   conda clean --all --yes
 ENV PATH /opt/conda/bin:$PATH
 
+# Remove unnecessary files
+RUN \
+    rm -rf /usr/share/man /usr/share/doc && \
+    apt-get remove -y --purge man-db
+
 # Expose ports for services
 EXPOSE 54321
 EXPOSE 8080

@@ -288,7 +288,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '4.6'
+  gradleVersion = '4.7'
   distributionType = Wrapper.DistributionType.ALL
 }
 
