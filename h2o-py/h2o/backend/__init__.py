@@ -52,9 +52,11 @@ if not hasattr(colorama, '__version__'):
     print("[WARNING] H2O requires colorama module of version 0.3.8 or newer. You have older version .\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade colorama" % (sys.version_info[0]))
+    sys.exit(1)
 elif StrictVersion(colorama.__version__) < StrictVersion("0.3.8"):
     print("[WARNING] H2O requires colorama module of version 0.3.8 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade colorama" % (colorama.__version__, sys.version_info[0]))
+    sys.exit(1)
     
 __all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer", "H2OConnectionConf")
