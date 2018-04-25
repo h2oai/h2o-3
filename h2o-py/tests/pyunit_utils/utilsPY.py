@@ -4,8 +4,6 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
-import numpy as np
-import operator
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
