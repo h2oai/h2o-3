@@ -108,6 +108,7 @@ public class RabitTrackerH2O implements IRabitTracker {
 
         @Override
         public void interrupt() {
+            super.interrupt();
             for (SocketChannel channel : socketChannels) {
                 try {
                     channel.close();
@@ -197,7 +198,6 @@ public class RabitTrackerH2O implements IRabitTracker {
                     }
                 } catch (IOException e) {
                     Log.info("Exception in Rabit tracker.", e);
-                    Log.err(e);
                 }
             }
             Log.debug("All Rabit nodes finished.");
