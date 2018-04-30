@@ -27,7 +27,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private XGBoostModelInfo model_info;
 
-  XGBoostModelInfo model_info() { return model_info; }
+  public XGBoostModelInfo model_info() { return model_info; }
 
   public static class XGBoostParameters extends Model.Parameters {
     public enum TreeMethod {
