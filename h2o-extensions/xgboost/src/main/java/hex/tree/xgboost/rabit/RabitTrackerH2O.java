@@ -7,6 +7,7 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
@@ -81,6 +82,7 @@ public class RabitTrackerH2O implements IRabitTracker {
     public void stop() {
         if(null != this.trackerThread) {
             this.trackerThread.interrupt();
+            this.trackerThread.terminateSocketChannels();
             this.trackerThread = null;
 
             try {
@@ -98,7 +100,7 @@ public class RabitTrackerH2O implements IRabitTracker {
 
         private LinkMap linkMap;
         private Map<String, Integer> jobToRankMap = new HashMap<>();
-        private List<SocketChannel> socketChannels = new ArrayList<>();
+        private final List<SocketChannel> socketChannels = new ArrayList<>();
 
         private RabitTrackerH2OThread(RabitTrackerH2O tracker) {
             setPriority(MAX_PRIORITY-1);
@@ -106,9 +108,7 @@ public class RabitTrackerH2O implements IRabitTracker {
             this.tracker = tracker;
         }
 
-        @Override
-        public void interrupt() {
-            super.interrupt();
+        private final void terminateSocketChannels(){
             for (SocketChannel channel : socketChannels) {
                 try {
                     channel.close();
@@ -132,7 +132,7 @@ public class RabitTrackerH2O implements IRabitTracker {
             Queue<Integer> todoNodes = new ArrayDeque<>(tracker.workers);
             while (!interrupted() && shutdown.size() != tracker.workers) {
                 try{
-                    final SocketChannel channel = tracker.sock.accept();
+                    final SocketChannel channel = tracker.sock.accept(); // Does not proceed when interrupt() is called.
                     socketChannels.add(channel);
                     final RabitWorker worker = new RabitWorker(channel);
 
