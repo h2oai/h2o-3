@@ -7,7 +7,6 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
@@ -197,7 +196,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                         }
                     }
                 } catch (IOException e) {
-                    Log.info("Exception in Rabit tracker.", e);
+                    Log.err("Exception in Rabit tracker.", e);
                 }
             }
             Log.debug("All Rabit nodes finished.");
