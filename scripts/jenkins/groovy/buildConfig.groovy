@@ -1,6 +1,6 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges, final List<String> distributionsToBuild) {
+def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts, final String xgbVersion) {
   def buildConfig = new BuildConfig()
-  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges, distributionsToBuild)
+  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges, distributionsToBuild, gradleOpts, xgbVersion)
   return buildConfig
 }
 
@@ -9,7 +9,7 @@ class BuildConfig {
   public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
-  private static final String DEFAULT_IMAGE_VERSION_TAG = '107'
+  private static final String DEFAULT_IMAGE_VERSION_TAG = '107.hotfix'
   // This is the default image used for tests, build, etc.
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
 
@@ -52,23 +52,23 @@ class BuildConfig {
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
   private static final Map EXPECTED_IMAGE_VERSIONS= [
-          (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:1d27f492d4f0645c6826abdb59b3395c006842f47e2b86e142d6930b73d15500',
-          (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:2bb6c322827c7be914d69c2b49576d77fce21fbc5e056e05386f9af557304a4a',
+          (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:808606a3ced1d461c5cbdaba5c131511677b11dd2e67ca93d258ea1a27252150',
+          (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:dfcf7a2d0949dfe81e61074b12dc161b15348aee946a7901f596e09b811d9652',
 
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:242e33debb0e95eb577675c9a08c578e171d3a223a54a3514adbb659b68c552d',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:2fa9261d166f35705c1f5f7d484e8b868b32abe7b13cfbd6f99ba6915cc44993',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:65c5b17abb58a3b6b148824dd4a9d40ddc6124cdb722692aaca5146642aa5d8a',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:d426f7ce4328f16407a5cfdab85c45976fb0a37ee68f3fc03b20a66773552cdc',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:e2b10c4e17bc80f1fdddff5244c33433df176da9f62ff5aedec3227919d5525a',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:a699fc2b06bec2f6b5f180f318b11d70d61c05b0c1fcb8f992ee5e159001c423',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:46a012a791ef31cdc604b7e630c9ab3cdf6247fdaba27c62d45af36ba201d8c3',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:8f51e08b1260894962a08b2d6afd91f446eef4a97576e5e4512f83225050f5e4',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:8a444473ccfc3104091b04680c17d3ff7b1f1e817b2f3c4aa17702c3d8702aaf',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:d80d5ffdb3cad63839bf3b5df3f3e4e09205029e9bebf5bb4dfc0ea6004cce6d',
 
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:e80164e8063a294ffedebba7a8a8a45b8757947f9011d5f017ce6a3f4e73b7fc',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:239e36ddf9327f2254f7d85200a699a88efb93080d893739a72366388271e162',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:420254c1e1c065a8849a948afa26b010f84eae4be8ab079f21e9abfc18141810',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:712b1ae93322e3522271b17842b1fa03961a77fd6ced4c262df47d0c305127a3',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:74e0c07a3da89aa1be635465712b0cd1a5ad6956c0cbe0706f224220b8f15f41',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:7f60d6926479219709b5c3a60e3a7f00aae1eb9f63232731f5dd29fb632d2467',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:0151f2b5bd4ceccca96e8a06a4c2c425533f92e292fbf548a32c4ada0fa49159',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:308fc21520cfd7c17a33d1c47ee26e26f926ff04532fef9890fa5c1cba1f801e',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:ce2c2a9ad5645f8bffe12271211b7760f14141bf657f25847c3edeebbf02e3a2',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:67c2ba335a0f9e64688075a2c3be6e2707fbee8bb5b2f80ecc7e21c95af7d88f',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:c38530492f4e06d90fbf53398908ce61910c685150c726d85798eb8fd02a3db9',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:6d354a4be21b6fccf644d14aac1b6b18a1f7648ec2acf28f09bbda20f439c1fd',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:389d252f21742012f39c5761f263b25dae0904430ce4dd5758d56482aa152287',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:40362f64a528ebccfdaec0daae3142a4610cff6d15d37c5128f3635b617e3cc3',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:6ac81bd4084a7832c5ae99dd4460afae763e7f28d74805c594a36d5562505287',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:961db5976d48196577cd07cae1157fc3106832cc793a86bab78295b93944802d',
 
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:eb6ebbaf58b03e203bc4d72752180d88a5bf8518a257a0bac19faabd467672e3',
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:7e737e2209e07f047044a43efe6411a6e9a6dcd82b95654b7adaf04b03a474bc',
@@ -86,6 +86,8 @@ class BuildConfig {
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos7.4': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:b53f7a8ca0247ea92723ba1cc343e9b474702bf345f8afebf48c8a7d6d6185b3',
   ]
 
+  private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
+
   private String mode
   private String nodeLabel
   private String commitMessage
@@ -100,20 +102,25 @@ class BuildConfig {
     (COMPONENT_JAVA): false,
     (COMPONENT_ANY): true
   ]
+  private List<String> additionalGradleOpts
+  private String xgbVersion
 
   void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
-                  final boolean ignoreChanges, final List<String> distributionsToBuild) {
+                  final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts, final String xgbVersion) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
     this.buildHadoop = mode == 'MODE_HADOOP'
-    changesMap[COMPONENT_HADOOP] = buildHadoop
+    this.additionalGradleOpts = gradleOpts
+    this.xgbVersion = xgbVersion
     this.hadoopDistributionsToBuild = distributionsToBuild
     if (ignoreChanges) {
       markAllComponentsForTest()
     } else {
       detectChanges(changes)
     }
+    changesMap[COMPONENT_HADOOP] = buildHadoop
+
     master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
     nodeLabels = NodeLabels.findByJenkinsMaster(master)
     supportedXGBEnvironments = [
@@ -247,6 +254,14 @@ class BuildConfig {
 
   String getStashNameForTestPackage(final String platform) {
     return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
+  }
+
+  List<String> getAdditionalGradleOpts() {
+    return additionalGradleOpts
+  }
+
+  String getCurrentXGBVersion() {
+    return xgbVersion
   }
 
   private void detectChanges(List<String> changes) {

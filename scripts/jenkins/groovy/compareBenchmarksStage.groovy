@@ -54,18 +54,32 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ]
         ],
         'xgb': [
-            'airlines-1m': [
-                100: [
-                    'train_time_min': 120,
-                    'train_time_max': 150
+                'airlines-1m': [
+                    100: [
+                        'train_time_min': 40,
+                        'train_time_max': 44
+                    ]
+                ],
+                'airlines-10m': [
+                    100: [
+                        'train_time_min': 650,
+                        'train_time_max': 675
+                    ]
                 ]
-            ],
-            'airlines-10m': [
-                100: [
-                    'train_time_min': 1970,
-                    'train_time_max': 2130
+        ],
+        'xgb-vanilla': [
+                'airlines-1m': [
+                    100: [
+                        'train_time_min': 4,
+                        'train_time_max': 8
+                    ]
+                ],
+                'airlines-10m': [
+                    100: [
+                        'train_time_min': 60,
+                        'train_time_max': 75
+                    ]
                 ]
-            ]
         ]
     ]
 

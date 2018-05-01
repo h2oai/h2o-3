@@ -23,8 +23,36 @@ class PipelineUtils {
         stashFiles(context, stashName, includedFiles, false)
     }
 
+    void stashXGBoostWheels(final context, final String xgbVersion) {
+        context.echo "Preparing to stash whls for XGBoost ${xgbVersion}"
+        try {
+            context.echo "Trying to pull from Jenkins archives"
+            context.copyArtifacts(
+                    projectName: 'h2o-3-xgboost4j-release-pipeline/h2o3',
+                    selector: context.specific(xgbVersion.split('\\.').last()),
+                    filter: 'linux-ompv4/ci-build/*.whl',
+                    flatten: true,
+                    fingerprintArtifacts: true,
+                    target: 'h2o-3/xgb-whls'
+            )
+        } catch (ignore) {
+            context.echo "Pull from Jenkins archives failed, loading from S3"
+            context.sh """
+                mkdir -p h2o-3/xgb-whls
+                s3cmd get s3://h2o-release/xgboost/h2o3/${xgbVersion}/*.whl h2o-3/xgb-whls/
+            """
+        }
+        final String whlsPath = 'h2o-3/xgb-whls/*.whl'
+        context.echo "********* Stash XGBoost wheels *********"
+        stashFiles(context, 'xgb-whls', whlsPath, false)
+    }
+
     void unstashFiles(final context, final String stashName) {
         context.unstash stashName
+    }
+
+    void pullXGBWheels(final context) {
+        unstashFiles(context, 'xgb-whls')
     }
 
     void stashScripts(final context) {
@@ -60,6 +88,15 @@ class PipelineUtils {
         }
 
         return distributionsToBuild
+    }
+
+    def readCurrentXGBVersion(final context, final h2o3Root) {
+        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+        context.echo "XGBoost Version: ${xgbVersion}"
+        if (xgbVersion == null || xgbVersion == '') {
+            context.error("XGBoost version cannot be read")
+        }
+        return xgbVersion
     }
 
     boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
