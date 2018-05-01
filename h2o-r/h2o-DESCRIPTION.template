@@ -4,7 +4,7 @@ Type: Package
 Title: R Interface for 'H2O'
 Date: SUBST_PROJECT_DATE
 Authors@R: c(
-    person("Tom Kraljevic", role = c("aut", "cre"), email = "tomk@0xdata.com"),
+    person("Tom", "Kraljevic", role = c("aut", "cre"), email = "tomk@0xdata.com"),
     person(family = "H2O.ai", role = c("cph"))
     )
 Description: R scripting functionality for 'H2O', the open source
