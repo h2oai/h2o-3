@@ -44,6 +44,7 @@ abstract public class MemoryManager {
   // Track timestamp of last oom log to avoid spamming the logs with junk.
   private static volatile long oomLastLogTimestamp = 0;
   private static final long SIXTY_SECONDS_IN_MILLIS = 60 * 1000;
+  private static final Runtime RUNTIME = Runtime.getRuntime();
 
   // max heap memory
   public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
@@ -249,6 +250,7 @@ abstract public class MemoryManager {
         case 10: return new Object [elems];
         case -1: return Arrays.copyOfRange((byte  [])orig,from,elems);
         case -4: return Arrays.copyOfRange((int   [])orig,from,elems);
+        case -5: return Arrays.copyOfRange((float [])orig,from,elems);
         case -8: return Arrays.copyOfRange((long  [])orig,from,elems);
         case -9: return Arrays.copyOfRange((double[])orig,from,elems);
         default: throw H2O.fail();
@@ -291,10 +293,12 @@ abstract public class MemoryManager {
   public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)  ,-1,orig,from); }
   public static int    [] arrayCopyOfRange(int   [] orig, int from, int sz) { return (int   []) malloc(sz,(sz-from)*4,-4,orig,from); }
   public static long   [] arrayCopyOfRange(long  [] orig, int from, int sz) { return (long  []) malloc(sz,(sz-from)*8,-8,orig,from); }
+  public static float  [] arrayCopyOfRange(float  [] orig, int from, int sz){ return (float []) malloc(sz,(sz-from)*8,-5,orig,from); }
   public static double [] arrayCopyOfRange(double[] orig, int from, int sz) { return (double[]) malloc(sz,(sz-from)*8,-9,orig,from); }
   public static byte   [] arrayCopyOf( byte  [] orig, int sz) { return arrayCopyOfRange(orig,0,sz); }
   public static int    [] arrayCopyOf( int   [] orig, int sz) { return arrayCopyOfRange(orig,0,sz); }
   public static long   [] arrayCopyOf( long  [] orig, int sz) { return arrayCopyOfRange(orig,0,sz); }
+  public static float  [] arrayCopyOf( float [] orig, int sz) { return arrayCopyOfRange(orig,0,sz); }
   public static double [] arrayCopyOf( double[] orig, int sz) { return arrayCopyOfRange(orig,0,sz); }
 
   // Memory available for tasks (we assume 3/4 of the heap is available for tasks)
@@ -352,5 +356,9 @@ abstract public class MemoryManager {
     synchronized(_taskMemLock){
       _taskMemLock.notifyAll();
     }
+  }
+
+  public static long getFreeMemory(){
+    return RUNTIME.freeMemory();
   }
 }

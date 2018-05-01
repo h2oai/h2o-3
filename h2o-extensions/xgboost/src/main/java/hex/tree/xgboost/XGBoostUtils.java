@@ -4,6 +4,7 @@ import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Key;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -13,8 +14,13 @@ import water.util.VecUtils;
 import java.util.*;
 
 import static water.H2O.technote;
+import static water.MemoryManager.getFreeMemory;
+import static water.MemoryManager.malloc4;
+import static water.MemoryManager.malloc4f;
 
 public class XGBoostUtils {
+
+    private static final int ALLOCATED_ARRAY_LEN = 1048576; // 1 << 20
 
     public static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
@@ -86,10 +92,10 @@ public class XGBoostUtils {
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
-        float[] resp = new float[nRows];
+        float[] resp = malloc4f(nRows);
         float[] weights = null;
         if(null != w) {
-            weights = new float[nRows];
+            weights = malloc4f(nRows);
         }
         try {
             if (sparse) {
@@ -111,7 +117,7 @@ public class XGBoostUtils {
 
                 int cols = di.fullN();
                 float[][] data = new float[getDataRows(chunks, vec, cols)][];
-                data[0] = new float[1 << 20];
+                data[0] = malloc4f(ALLOCATED_ARRAY_LEN);
                 long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
                 int lastRowSize = (int)(actualRows * cols % ARRAY_MAX);
                 if(data[data.length - 1].length > lastRowSize) {
@@ -255,10 +261,10 @@ public class XGBoostUtils {
 
         DataInfo di = dataInfoKey.get();
 
-        float[] resp = new float[(int)nRows];
+        float[] resp = malloc4f((int) nRows);
         float[] weights = null;
         if(-1 != weight) {
-            weights = new float[(int)nRows];
+            weights = malloc4f((int) nRows);
         }
         try {
             if (sparse) {
@@ -304,7 +310,7 @@ public class XGBoostUtils {
         // extract predictors
         int cols = di.fullN();
         float[][] data = new float[getDataRows(chunks, null, null, cols)][];
-        data[0] = new float[1 << 20];
+        data[0] = malloc4f(ALLOCATED_ARRAY_LEN);
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
         int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
@@ -739,10 +745,10 @@ public class XGBoostUtils {
                 currentCol = 0;
                 cols -= (data[currentRow].length - currentCol);
                 currentRow++;
-                data[currentRow] = new float[1 << 20];
-                rowIndex[currentRow] = new int[1 << 20];
+                data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
+                rowIndex[currentRow] = malloc4(ALLOCATED_ARRAY_LEN);
             } else {
-                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
+                int newLen = (int) Math.min(Math.min((long) data[currentRow].length << 1L, getFreeMemory() / 4), (long) ARRAY_MAX);
                 Log.info("Enlarging dense data structures row from " + data[currentRow].length + " float entries to " + newLen + " entries.");
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
@@ -756,11 +762,10 @@ public class XGBoostUtils {
                 currentCol = 0;
                 cols -= (data[currentRow].length - currentCol);
                 currentRow++;
-                data[currentRow] = new float[1 << 20];
+                data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
             } else {
                 int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
-                Log.info("Enlarging dense data structure row from " + data[currentRow].length + " bytes to " + newLen + " bytes.");
-                data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
+                data[currentRow] = MemoryManager.arrayCopyOf(data[currentRow], newLen);
             }
         }
     }
