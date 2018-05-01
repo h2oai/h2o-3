@@ -603,13 +603,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _names = names;
     }
     
-    public String _origNames[];
+    public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
      *  response col categoricals for SupervisedModels.  */
     public String _domains[][];
-    public String _origDomains[][];
+    public String _origDomains[][]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     public Key _cross_validation_models[];
