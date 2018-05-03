@@ -85,8 +85,12 @@ Optional Miscellaneous Parameters
     - ``GLM``
     - ``DeepLearning``
     - ``GBM``
-    - ``DRF`` (This includes both the Random Forest and Extremely-Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
+    - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
     - ``StackedEnsemble``
+
+- **keep_cross_validation_predictions**: Specify whether to keep the predictions of the cross-validation predictions. If set to FALSE, then running the same AutoML object for repeated runs will cause an exception because CV predictions are are required to build additional Stacked Ensemble models in AutoML. This option defaults to TRUE.
+
+- **keep_cross_validation_models**: Specify whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. This option defaults to TRUE.
 
 
 Auto-Generated Frames
@@ -138,25 +142,32 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     aml <- h2o.automl(x = x, y = y, 
                       training_frame = train,
-                      max_runtime_secs = 30)
+                      max_runtime_secs = 30,
+                      keep_cross_validation_models=FALSE)
 
     # View the AutoML Leaderboard
     lb <- aml@leaderboard
     lb
 
-    #                                                       model_id      auc  logloss
-    #  1          StackedEnsemble_AllModels_0_AutoML_20171121_012135 0.788321 0.554019
-    #  2       StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135 0.783099 0.559286
-    #  3                   GBM_grid_0_AutoML_20171121_012135_model_1 0.780554 0.560248
-    #  4                   GBM_grid_0_AutoML_20171121_012135_model_0 0.779713 0.562142
-    #  5                   GBM_grid_0_AutoML_20171121_012135_model_2 0.776206 0.564970
-    #  6                   GBM_grid_0_AutoML_20171121_012135_model_3 0.771026 0.570270
+    #                                                model_id       auc   logloss
+    # 1    StackedEnsemble_AllModels_0_AutoML_20180503_085035 0.7816995 0.5603380
+    # 2 StackedEnsemble_BestOfFamily_0_AutoML_20180503_085035 0.7780683 0.5636519
+    # 3             GBM_grid_0_AutoML_20180503_085035_model_1 0.7742967 0.5656552
+    # 4             GBM_grid_0_AutoML_20180503_085035_model_0 0.7736082 0.5667454
+    # 5             GBM_grid_0_AutoML_20180503_085035_model_2 0.7704520 0.5695492
+    # 6             GBM_grid_0_AutoML_20180503_085035_model_3 0.7662087 0.5759679
+    #  mean_per_class_error      rmse       mse
+    # 1            0.3250067 0.4361930 0.1902644
+    # 2            0.3261921 0.4377744 0.1916464
+    # 3            0.3233579 0.4390083 0.1927283
+    # 4            0.3196441 0.4394696 0.1931335
+    # 5            0.3443406 0.4411033 0.1945721
+    # 6            0.3348417 0.4439429 0.1970853
 
-    #  [10 rows x 3 columns] 
+    # [9 rows x 6 columns] 
 
     # The leader model is stored here
     aml@leader
-
 
     # If you need to generate predictions on a test set, you can make 
     # predictions directly on the `"H2OAutoML"` object, or on the leader 
@@ -190,7 +201,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     test[y] = test[y].asfactor()
     
     # Run AutoML for 30 seconds
-    aml = H2OAutoML(max_runtime_secs = 30)
+    aml = H2OAutoML(max_runtime_secs = 30, keep_cross_validation_models=False)
     aml.train(x = x, y = y, 
               training_frame = train)
 
@@ -198,23 +209,23 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
     lb
 
-    #  model_id                                                    auc    logloss
-    #  ----------------------------------------------------   --------  ---------
-    #  StackedEnsemble_AllModels_0_AutoML_20171121_010846     0.786063   0.555833
-    #  StackedEnsemble_BestOfFamily_0_AutoML_20171121_010846  0.783367   0.558511
-    #  GBM_grid_0_AutoML_20171121_010846_model_1              0.779242   0.562157
-    #  GBM_grid_0_AutoML_20171121_010846_model_0              0.778855   0.562648
-    #  GBM_grid_0_AutoML_20171121_010846_model_3              0.769666   0.572165
-    #  GBM_grid_0_AutoML_20171121_010846_model_2              0.769147   0.572064
-    #  XRT_0_AutoML_20171121_010846                           0.744612   0.593885
-    #  DRF_0_AutoML_20171121_010846                           0.733039   0.608609
-    #  GLM_grid_0_AutoML_20171121_010846_model_0              0.685211   0.635138
+    # model_id                                                    auc    logloss    mean_per_class_error      rmse       mse 
+    # -----------------------------------------------------  --------  ---------  ----------------------  --------  -------- 
+    # StackedEnsemble_AllModels_0_AutoML_20180503_084454     0.782946   0.558928                0.32715   0.4356    0.189747 
+    # StackedEnsemble_BestOfFamily_0_AutoML_20180503_084454  0.780806   0.561076                0.323633  0.436574  0.190597 
+    # GBM_grid_0_AutoML_20180503_084454_model_0              0.776487   0.563984                0.333979  0.438194  0.192014 
+    # GBM_grid_0_AutoML_20180503_084454_model_1              0.772745   0.566795                0.340894  0.439841  0.19346  
+    # GBM_grid_0_AutoML_20180503_084454_model_2              0.76977    0.569913                0.326976  0.441285  0.194732 
+    # GBM_grid_0_AutoML_20180503_084454_model_3              0.762904   0.577676                0.346248  0.444726  0.197781 
+    # XRT_0_AutoML_20180503_084454                           0.743111   0.603862                0.364812  0.452799  0.205027 
+    # DRF_0_AutoML_20180503_084454                           0.735039   0.605574                0.359245  0.455728  0.207688 
+    # GLM_grid_0_AutoML_20180503_084454_model_0              0.68048    0.639935                0.393134  0.473447  0.224152 
 
-    #  [9 rows x 3 columns]
+    # [9 rows x 6 columns]
+
 
     # The leader model is stored here
     aml.leader
-
 
     # If you need to generate predictions on a test set, you can make 
     # predictions directly on the `"H2OAutoML"` object, or on the leader 
@@ -238,29 +249,27 @@ The models are ranked by a default metric based on the problem type (the second 
 
 Here is an example leaderboard for a binary classification task:
 
-+-------------------------------------------------------------+----------+----------+
-|                                                    model_id |      auc |  logloss |
-+=============================================================+==========+==========+
-| StackedEnsemble_AllModels_0_AutoML_20171121_012135          | 0.788321 | 0.554019 | 
-+-------------------------------------------------------------+----------+----------+
-| StackedEnsemble_BestOfFamily_0_AutoML_20171121_012135       | 0.783099 | 0.559286 |
-+-------------------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_1                   | 0.780554 | 0.560248 |
-+-------------------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_0                   | 0.779713 | 0.562142 |
-+-------------------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_2                   | 0.776206 | 0.564970 |
-+-------------------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_3                   | 0.771026 | 0.570270 |
-+-------------------------------------------------------------+----------+----------+
-| DRF_0_AutoML_20171121_012135                                | 0.734653 | 0.601520 |
-+-------------------------------------------------------------+----------+----------+
-| XRT_0_AutoML_20171121_012135                                | 0.730457 | 0.611706 |
-+-------------------------------------------------------------+----------+----------+
-| GBM_grid_0_AutoML_20171121_012135_model_4                   | 0.727098 | 0.666513 |
-+-------------------------------------------------------------+----------+----------+
-| GLM_grid_0_AutoML_20171121_012135_model_0                   | 0.685211 | 0.635138 |
-+-------------------------------------------------------------+----------+----------+
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+|                                               model_id |      auc |  logloss | mean_per_class_error |     rmse |      mse |
++========================================================+==========+==========+======================+==========+==========+
+| StackedEnsemble_AllModels_0_AutoML_20180503_084454     | 0.782946 | 0.558928 | 0.32715              | 0.4356   | 0.189747 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| StackedEnsemble_BestOfFamily_0_AutoML_20180503_084454  | 0.780806 | 0.561076 | 0.323633             | 0.436574 | 0.190597 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| GBM_grid_0_AutoML_20180503_084454_model_0              | 0.776487 | 0.563984 | 0.333979             | 0.438194 | 0.192014 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| GBM_grid_0_AutoML_20180503_084454_model_1              | 0.772745 | 0.566795 | 0.340894             | 0.439841 | 0.19346  |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| GBM_grid_0_AutoML_20180503_084454_model_2              | 0.76977  | 0.569913 | 0.326976             | 0.441285 | 0.194732 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| GBM_grid_0_AutoML_20180503_084454_model_3              | 0.762904 | 0.577676 | 0.346248             | 0.444726 | 0.197781 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| XRT_0_AutoML_20180503_084454                           | 0.743111 | 0.603862 | 0.364812             | 0.452799 | 0.205027 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| DRF_0_AutoML_20180503_084454                           | 0.735039 | 0.605574 | 0.359245             | 0.455728 | 0.207688 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
+| GLM_grid_0_AutoML_20180503_084454_model_0              | 0.68048  | 0.639935 | 0.393134             | 0.473447 | 0.224152 |
++--------------------------------------------------------+----------+----------+----------------------+----------+----------+
 
 
 FAQ
@@ -268,7 +277,7 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates a default Random Forest (DRF), an Extremely-Randomized Forest (XRT), a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs, and then trains two Stacked Ensemble models. Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument.  This is useful if you already have some idea of the algorithms that will do well on your dataset.  As a recommendation, if you have really wide or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF).
+  The current version of AutoML trains and cross-validates a default Random Forest (DRF), an Extremely Randomized Forest (XRT), a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, a fixed grid of GLMs. AutoML then trains two Stacked Ensemble models. Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset. As a recommendation, if you have really wide or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF).
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More details about the hyperparamter ranges for the models will be added to the appendix at a later date.
 
