@@ -255,6 +255,21 @@ The list of limitations include:
 
   5. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
+Disabling XGBoost
+~~~~~~~~~~~~~~~~~
+
+Some environments may required disabling XGBoost. This can be done by setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` when launching the H2O jar. For example:
+
+::
+
+  # Disable XGBoost in the regular H2O jar
+  java -Xmx10g -Dsys.ai.h2o.ext.core.toggle.XGBoost=False -jar  h2o.jar -name ni  -ip 127.0.0.1 -port 54321
+
+  # Disable XGBoost in the Hadoop H2O driver jar
+  hadoop jar h2odriver.jar -JJ "-Dsys.ai.h2o.ext.core.toggle.XGBoost=False" -nodes 1  -mapperXmx 3g  -output tmp/a39
+
+Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
+
 FAQs
 ~~~~
 
