@@ -510,4 +510,28 @@ h2o.download_mojo(model, getwd(), FALSE)
 # open model.png
 </pre>
 
+<h1><u>Using an XGBoost MOJO with Maven</u></h1>
+If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
+<p></p>
+<pre>
+<xmp>
+<groupId>ai.h2o</groupId>
+<artifactId>xgboost-mojo-example</artifactId>
+<version>1.0-SNAPSHOT</version>
+
+<dependencies>
+    <dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel-ext-xgboost</artifactId>
+        <version>3.18.0.8</version>
+    </dependency>
+    <dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel</artifactId>
+        <version>3.18.0.8</version>
+    </dependency>
+</dependencies>
+</xmp>
+</pre>
+
 </body>
