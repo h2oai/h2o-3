@@ -68,7 +68,10 @@ h2o.grid <- function(algorithm,
     if(!missing(y)) {
       dots$y <- y
     } else {
-      stop("Must specify response, y")
+      # deeplearning with autoencoder param set to T is also okay.  Check this case before whining
+      if (!((algorithm %in% c("deeplearning") && dots$autoencoder==TRUE))) { # only complain if not DL autoencoder
+        stop("Must specify response, y")
+      }
     }
   } 
   if(!missing(training_frame)) {
