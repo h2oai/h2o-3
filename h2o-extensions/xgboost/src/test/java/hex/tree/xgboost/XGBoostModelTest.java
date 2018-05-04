@@ -1,7 +1,10 @@
 package hex.tree.xgboost;
 
+import org.junit.Assert;
 import org.junit.Test;
 import water.H2O;
+
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -26,6 +29,32 @@ public class XGBoostModelTest {
     pOver._nthread = H2O.ARGS.nthreads + 1;
     BoosterParms bpOver = XGBoostModel.createParams(pOver, 2);
     assertEquals((int) H2O.ARGS.nthreads, bpOver.get().get("nthread"));
+  }
+
+  @Test
+  public void gpuIncompatibleParametersMaxDepth(){
+    XGBoostModel.XGBoostParameters xgBoostParameters = new XGBoostModel.XGBoostParameters();
+    xgBoostParameters._max_depth = 16;
+
+    Map<String, Object> incompatibleParams = xgBoostParameters.gpuIncompatibleParams();
+    assertEquals(incompatibleParams.size(), 1);
+    assertEquals(incompatibleParams.get("max_depth"), 16 + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
+
+    xgBoostParameters._max_depth = 0;
+    incompatibleParams = xgBoostParameters.gpuIncompatibleParams();
+    assertEquals(incompatibleParams.size(), 1);
+    assertEquals(incompatibleParams.get("max_depth"), 0 + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
+  }
+
+
+  @Test
+  public void gpuIncompatibleParametersGrowPolicy(){
+    XGBoostModel.XGBoostParameters xgBoostParameters = new XGBoostModel.XGBoostParameters();
+    xgBoostParameters._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
+
+    Map<String, Object> incompatibleParams = xgBoostParameters.gpuIncompatibleParams();
+    assertEquals(incompatibleParams.size(), 1);
+    assertEquals(incompatibleParams.get("grow_policy"), XGBoostModel.XGBoostParameters.GrowPolicy.lossguide);
   }
 
 }

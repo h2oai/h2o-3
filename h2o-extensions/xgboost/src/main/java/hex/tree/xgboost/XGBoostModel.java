@@ -11,12 +11,9 @@ import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.IcedHashMapGeneric.IcedHashMapStringObject;
 import water.util.Log;
 import hex.ModelMetrics;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
