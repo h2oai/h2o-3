@@ -11,12 +11,9 @@ import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.IcedHashMapGeneric.IcedHashMapStringObject;
 import water.util.Log;
 import hex.ModelMetrics;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,6 +129,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
      */
     Map<String, Object> gpuIncompatibleParams() {
       Map<String, Object> incompat = new HashMap<>();
+      if (_max_depth > 15 || _max_depth < 1) {
+        incompat.put("max_depth",  _max_depth + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
+      }
       if (_grow_policy == GrowPolicy.lossguide)
         incompat.put("grow_policy", GrowPolicy.lossguide); // See PUBDEV-5302 (param.grow_policy != TrainParam::kLossGuide Loss guided growth policy not supported. Use CPU algorithm.)
       return incompat;
