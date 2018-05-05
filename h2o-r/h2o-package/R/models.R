@@ -504,7 +504,8 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given
-#' dataset
+#' dataset.  However, if the dataset does not contain the response/target column, no performance will be returned.
+#' Instead, a warning message will be printed.
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
@@ -553,7 +554,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE") 
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
-  
+
+  if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
+    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+    return(NULL)
+  }
+
   missingNewdata <- missing(newdata) || is.null(newdata)
   
   if( !missingNewdata ) {
@@ -2766,7 +2772,7 @@ h2o.sdev <- function(object) {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' df <- as.h2o(iris)
+#' df <- as.h2o(iris)frame
 #' tab <- h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
 #' plot(tab)              
