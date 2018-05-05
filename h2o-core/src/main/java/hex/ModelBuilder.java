@@ -942,12 +942,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
 
+
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
     ignoreInvalidColumns(separateFeatureVecs(), expensive);
+
+    if (_response != null && _response.isString()) {
+      error("_response_column", "Response variable can not be of type String. Please choose different variable or convert it.");
+    }
+
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
