@@ -4,7 +4,6 @@ import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Key;
-import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -14,7 +13,6 @@ import water.util.VecUtils;
 import java.util.*;
 
 import static water.H2O.technote;
-import static water.MemoryManager.getFreeMemory;
 import static water.MemoryManager.malloc4;
 import static water.MemoryManager.malloc4f;
 
@@ -98,6 +96,7 @@ public class XGBoostUtils {
             weights = malloc4f(nRows);
         }
         try {
+            sparse = false;
             if (sparse) {
                 Log.info("Treating matrix as sparse.");
                 // 1 0 2 0
@@ -116,13 +115,8 @@ public class XGBoostUtils {
                 Log.info("Treating matrix as dense.");
 
                 int cols = di.fullN();
-                float[][] data = new float[getDataRows(chunks, vec, cols)][];
-                data[0] = malloc4f(ALLOCATED_ARRAY_LEN);
+                float[][] data = allocateData(frameRowCount(chunks, vec), di);
                 long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
-                int lastRowSize = (int)(actualRows * cols % ARRAY_MAX);
-                if(data[data.length - 1].length > lastRowSize) {
-                    data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
-                }
                 trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
                 assert trainMat.rowNum() == actualRows;
             }
@@ -165,6 +159,35 @@ public class XGBoostUtils {
             totalRows += vec.chunkLen(ch);
         }
         return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
+    }
+
+    private static long frameRowCount(int[] chunkIds, Vec vec) {
+        long totalRows = 0;
+        for (int chunk : chunkIds) {
+            totalRows += vec.chunkLen(chunk);
+        }
+        return totalRows;
+    }
+
+    private static long frameRowCount(final Chunk[] chunks, final Frame f, final int[] chunksIds, final int weightVectorIndex) {
+        long totalRows = 0;
+        if (null != chunks) {
+            for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+                if (weightVectorIndex == chunkIndex) {
+                    for (int rowIndex = 0; rowIndex < chunks[chunkIndex].len(); rowIndex++) {
+                        if (chunks[chunkIndex].at8(rowIndex) != 0) totalRows++;
+                    }
+                } else {
+                    totalRows += chunks[chunkIndex].len();
+                }
+            }
+        } else {
+            final Vec frameVector = f.anyVec();
+            for (int chunkId : chunksIds) {
+                totalRows += frameVector.chunkLen(chunkId);
+            }
+        }
+        return totalRows;
     }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
@@ -266,6 +289,7 @@ public class XGBoostUtils {
         if(-1 != weight) {
             weights = malloc4f((int) nRows);
         }
+        sparse = false;
         try {
             if (sparse) {
                 Log.info("Treating matrix as sparse.");
@@ -309,8 +333,7 @@ public class XGBoostUtils {
 
         // extract predictors
         int cols = di.fullN();
-        float[][] data = new float[getDataRows(chunks, null, null, cols)][];
-        data[0] = malloc4f(ALLOCATED_ARRAY_LEN);
+        float[][] data = allocateData(frameRowCount(chunks, null, null, weight), di);
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
         int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
@@ -337,7 +360,6 @@ public class XGBoostUtils {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
 
-                enlargeFloatTable(data, cols, currentRow, currentCol);
 
                 for (int j = 0; j < di._cats; ++j) {
                     int offset = di._catOffsets[j+1] - di._catOffsets[j];
@@ -361,9 +383,9 @@ public class XGBoostUtils {
 
                         if(currentRow > ARRAY_MAX) {
                             throw new IllegalStateException(
-                                    "Data too big to be used in XGBoost. Currently we can handle only up to "  +
-                                            ((double)ARRAY_MAX * (double)ARRAY_MAX) +
-                                            " entries (after encodings etc.)."
+                                "Data too big to be used in XGBoost. Currently we can handle only up to "  +
+                                    ((double)ARRAY_MAX * (double)ARRAY_MAX) +
+                                    " entries (after encodings etc.)."
                             );
                         }
 
@@ -402,8 +424,6 @@ public class XGBoostUtils {
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-            // Enlarge the table if necessary
-            enlargeFloatTable(data, cols, currentRow, currentCol);
 
             for (int j = 0; j < di._cats; ++j) {
                 int offset = di._catOffsets[j+1] - di._catOffsets[j];
@@ -748,7 +768,7 @@ public class XGBoostUtils {
                 data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
                 rowIndex[currentRow] = malloc4(ALLOCATED_ARRAY_LEN);
             } else {
-                int newLen = (int) Math.min(Math.min((long) data[currentRow].length << 1L, getFreeMemory() / 4), (long) ARRAY_MAX);
+                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
                 Log.info("Enlarging dense data structures row from " + data[currentRow].length + " float entries to " + newLen + " entries.");
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
@@ -756,18 +776,23 @@ public class XGBoostUtils {
         }
     }
 
-    private static void enlargeFloatTable(float[][] data, int cols, int currentRow, int currentCol) {
-        while (data[currentRow].length < (long)currentCol + cols) {
-            if(data[currentRow].length == ARRAY_MAX) {
-                currentCol = 0;
-                cols -= (data[currentRow].length - currentCol);
-                currentRow++;
-                data[currentRow] = malloc4f(ALLOCATED_ARRAY_LEN);
-            } else {
-                int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
-                data[currentRow] = MemoryManager.arrayCopyOf(data[currentRow], newLen);
-            }
+    private static float[][] allocateData(long chunkLength, DataInfo dataInfo) {
+        long totalValues = chunkLength * dataInfo.fullN();
+        int noOfLines = (int)  totalValues / ARRAY_MAX;
+
+        int lastLineSize = (int) (totalValues % ARRAY_MAX);
+        float[][] data = new float[lastLineSize > 0 ? noOfLines + 1 : noOfLines][];
+
+        for (int i = 0; i < noOfLines; i++) {
+            data[i] = malloc4f(ARRAY_MAX);
         }
+
+        if (lastLineSize > 0) {
+            data[data.length - 1] = malloc4f(lastLineSize);
+        }
+
+        return data;
+
     }
 
 }

@@ -44,7 +44,6 @@ abstract public class MemoryManager {
   // Track timestamp of last oom log to avoid spamming the logs with junk.
   private static volatile long oomLastLogTimestamp = 0;
   private static final long SIXTY_SECONDS_IN_MILLIS = 60 * 1000;
-  private static final Runtime RUNTIME = Runtime.getRuntime();
 
   // max heap memory
   public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
@@ -356,9 +355,5 @@ abstract public class MemoryManager {
     synchronized(_taskMemLock){
       _taskMemLock.notifyAll();
     }
-  }
-
-  public static long getFreeMemory(){
-    return RUNTIME.freeMemory();
   }
 }
