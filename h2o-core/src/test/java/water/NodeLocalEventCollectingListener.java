@@ -1,9 +1,9 @@
 package water;
 
-import org.junit.Ignore;
+        import org.junit.Ignore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+        import java.util.ArrayList;
+        import java.util.HashMap;
 
 @Ignore
 public class NodeLocalEventCollectingListener implements H2OListenerExtension{
@@ -16,7 +16,7 @@ public class NodeLocalEventCollectingListener implements H2OListenerExtension{
 
   @Override
   public void init() {
-      reports = new HashMap<>();
+    reports = new HashMap<>();
   }
 
   @Override

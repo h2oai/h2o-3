@@ -78,6 +78,14 @@ public class LogsHandler extends Handler {
               log = "H2O logging not configured.";
             }
             break;
+          case "telemetry":
+            try{
+              logPathFilename = Log.getLogFilePath(name);
+            } catch (Exception e){
+              log = "H2O logging not configured.";
+            }
+            break;
+
           default:
             throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
         }

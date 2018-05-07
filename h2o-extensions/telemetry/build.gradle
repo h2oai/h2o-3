@@ -1,0 +1,5 @@
+description = "H2O Telemetry"
+
+dependencies {
+    compile project(":h2o-core")
+}
