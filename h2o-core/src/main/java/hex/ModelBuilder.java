@@ -791,6 +791,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
+   * Checks response variable attributes and adds errors if response variable is unusable.
+   */
+  protected void checkResponseVariable() {
+
+    if (_response != null && (!_response.isNumeric() && !_response.isCategorical())) {
+      error("_response_column", "Use numerical or categorical variable. Currently used " + _response.get_type_str());
+    }
+
+  }
+
+  /**
    * Ignore invalid columns (columns that have a very high max value, which can cause issues in DHistogram)
    * @param npredictors
    * @param expensive
@@ -965,10 +976,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
     ignoreInvalidColumns(separateFeatureVecs(), expensive);
-
-    if (_response != null && _response.isString()) {
-      error("_response_column", "Response variable can not be of type String. Please choose different variable or convert it.");
-    }
+    checkResponseVariable();
 
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
