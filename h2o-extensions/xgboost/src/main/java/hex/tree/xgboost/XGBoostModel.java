@@ -127,6 +127,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
      */
     Map<String, Object> gpuIncompatibleParams() {
       Map<String, Object> incompat = new HashMap<>();
+      if (_max_depth > 15 || _max_depth < 1) {
+        incompat.put("max_depth",  _max_depth + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
+      }
       if (_grow_policy == GrowPolicy.lossguide)
         incompat.put("grow_policy", GrowPolicy.lossguide); // See PUBDEV-5302 (param.grow_policy != TrainParam::kLossGuide Loss guided growth policy not supported. Use CPU algorithm.)
       return incompat;
