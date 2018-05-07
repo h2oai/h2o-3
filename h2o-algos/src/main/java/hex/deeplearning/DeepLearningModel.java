@@ -483,7 +483,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!get_params()._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = get_params()._stopping_method.equals(ScoreKeeper.StoppingMethods.AUTO)?
+              DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
+                      false, _output.getModelCategory(), _output.isAutoencoder()):
+              DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
+                      (get_params()._nfolds>1||get_params()._is_cv_model), _output.getModelCategory(),
+                      _output.isAutoencoder());
+
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 

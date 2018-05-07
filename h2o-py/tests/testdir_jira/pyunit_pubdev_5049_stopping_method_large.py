@@ -8,15 +8,14 @@ from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 from h2o.exceptions import H2OResponseError
 
 def test_stopping_methods():
-    seed = 12345
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training1_set.csv"))
     validation_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training2_set.csv"))
     y_index = training1_data.ncol - 1
     x_indices = list(range(y_index))
-    testStoppingMethod(0, training1_data, x_indices, y_index, validation_data, seed)
+    testStoppingMethod(0, training1_data, x_indices, y_index, validation_data)
 
 
-def testStoppingMethod(model_index, training_data, x_indices, y_index, validation_data, seed):
+def testStoppingMethod(model_index, training_data, x_indices, y_index, validation_data):
     '''
     This function will test if the stopping_method has been implemented correctly for the model type what was
     sent.  In particular, it will perform the following tests:
@@ -37,26 +36,26 @@ def testStoppingMethod(model_index, training_data, x_indices, y_index, validatio
     :param validation_data: validation dataset
     :return: pass or fail the test
     '''
-    models_sm_valid_bad = ["H2ODeepLearningEstimator(distribution='gaussian', seed=seed, hidden=[3], "
+    models_sm_valid_bad = ["H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], "
                            "stopping_method='valid', stopping_rounds=3, stopping_tolerance=0.01, nfolds=3)"]
-    models_sm_xval_bad = ["H2ODeepLearningEstimator(distribution='gaussian', seed=seed, hidden=[3], "
+    models_sm_xval_bad = ["H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], "
                           "stopping_method='xval', stopping_rounds=3, stopping_tolerance=0.01)"]
 
     models_sm_xval = [
-        "H2ODeepLearningEstimator(distribution='gaussian', seed=seed, hidden=[3], stopping_method='xval', "
+        "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_method='xval', "
         "stopping_rounds=3, stopping_tolerance=0.01, nfolds=3)"]
     models_sm_valid = [
-        "H2ODeepLearningEstimator(distribution='gaussian', seed=seed, hidden=[3], stopping_method='valid',"
+        "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_method='valid',"
         " stopping_rounds=3, stopping_tolerance=0.01, nfolds=3)"]
     models_sm_train = [
-        "H2ODeepLearningEstimator(distribution='gaussian', seed=seed, hidden=[3], stopping_method='train',"
+        "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_method='train',"
         " stopping_rounds=3, stopping_tolerance=0.01, nfolds=3)"]
 
     models_auto_CV = [
-        "H2ODeepLearningEstimator(distribution='gaussian', seed=123456, hidden=[3], stopping_rounds=3,"
+        "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_rounds=3,"
         " stopping_tolerance=0.01, nfolds=3)"]
     models_auto_noCV = [
-        "H2ODeepLearningEstimator(distribution='gaussian', seed=123456, hidden=[3], stopping_rounds=3,"
+        "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_rounds=3,"
         " stopping_tolerance=0.01)"]
 
     # test 1, set stopping method to valid without a validation set
