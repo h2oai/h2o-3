@@ -1494,7 +1494,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
     worst_error = 0
 
     assert size1==size2, "The two H2OTwoDimTables are of different size!"
-    assert num_comparison<=size1, "H2OTwoDimTable do not have all the attributes specified in col_header_list."
+    assert num_comparison<=len(table1.cell_values[0]), "H2OTwoDimTable do not have all the attributes specified in col_header_list."
     flip_sign_vec = generate_sign_vec(table1, table2) if check_sign else [1]*len(table1.cell_values[0])  # correct for sign change for eigenvector comparisons
     randRange1 = generate_for_indices(len(table1.cell_values), check_all, num_per_dim, 0)
     randRange2 = generate_for_indices(len(table2.cell_values), check_all, num_per_dim, 0)
