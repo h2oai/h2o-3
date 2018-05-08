@@ -31,6 +31,9 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     _model._catOffsets = readkv("cat_offsets");
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
     _model._sparse = readkv("sparse");
+    if (exists("feature_map")) {
+      _model._featureMap = new String(readblob("feature_map"), "UTF-8");
+    }
   }
 
   @Override
