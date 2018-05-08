@@ -74,7 +74,7 @@ def testStoppingMethod(model_index, training_data, x_indices, y_index, validatio
 
     # test 3, compare scoring history of auto with cross-validation and stopping method to xval
     compareBothModels(models_auto_CV[model_index], models_sm_xval[model_index], training_data, validation_data,
-                      validation_data, x_indices, y_index)
+                      None, x_indices, y_index)
 
     # test 4, compare scoring history of auto without cross-valiation but with validation dataset and stopping method set to valid
     compareBothModels(models_auto_noCV[model_index], models_sm_valid[model_index], training_data, validation_data,
@@ -87,14 +87,16 @@ def testStoppingMethod(model_index, training_data, x_indices, y_index, validatio
 def compareBothModels(modelAutoStr, modelSMStr, training_data, validation_data, validation_data_auto,
                       x_indices, y_index):
     col_header_list = ["training_rmse", "training_deviance", "training_mae", "training_r2"]
+    model = eval(modelSMStr)
+    model.train(x=x_indices, y=y_index, training_frame=training_data, validation_frame=validation_data)
+
     model_auto=eval(modelAutoStr)
     model_auto.train(x=x_indices, y=y_index, training_frame=training_data, validation_frame=validation_data_auto)
 
-    model = eval(modelSMStr)
-    model_auto.train(x=x_indices, y=y_index, training_frame=training_data, validation_frame=validation_data)
-
-    pyunit_utils.assert_H2OTwoDimTable_equal(model_auto._model_json["output"]["scoring_history"],
-                                             model._model_json["output"]["scoring_history"], col_header_list)
+    for cnames in col_header_list:
+        c1 = pyunit_utils.extract_scoring_history_field(model, cnames)
+        c2 = pyunit_utils.extract_scoring_history_field(model_auto, cnames)
+        assert pyunit_utils.equal_two_arrays(c1, c2, 1e-6, 1e-6, False), "Scoring history for {2} expected {0} but received {1}".format(c1, c2, cnames)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_stopping_methods)
