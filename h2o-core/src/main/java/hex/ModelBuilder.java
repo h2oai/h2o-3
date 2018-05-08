@@ -1214,17 +1214,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Rebalance a frame for load balancing
    * @param original_fr Input frame
    * @param local Whether to only create enough chunks to max out all cores on one node only
+   *              WARNING: This behavior is not actually implemented in the methods defined in this class, the default logic
+   *              doesn't take this parameter into consideration.
    * @param name Name of rebalanced frame
    * @return Frame that has potentially more chunks
    */
-
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
-    if (original_fr.anyVec().nonEmptyChunks() >= chunks) {
+    double rebalanceRatio = rebalanceRatio();
+    int nonEmptyChunks = original_fr.anyVec().nonEmptyChunks();
+    if (nonEmptyChunks >= chunks * rebalanceRatio) {
       if (chunks>1)
-        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
-              " chunks. No need to rebalance.");
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + nonEmptyChunks + " (non-empty) " +
+              " chunks. No need to rebalance. [desiredChunks=" + chunks, ", rebalanceRatio=" + rebalanceRatio + "]");
       return original_fr;
     }
     Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
@@ -1236,12 +1239,51 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return rebalanced_fr;
   }
 
+  private double rebalanceRatio() {
+    String mode = H2O.getCloudSize() == 1 ? "single" : "multi";
+    String ratioStr = getSysProperty("rebalance.ratio." + mode, "1.0");
+    return Double.parseDouble(ratioStr);
+  }
+
   /**
    * Find desired number of chunks. If fewer, dataset will be rebalanced.
    * @return Lower bound on number of chunks after rebalancing.
    */
   protected int desiredChunks(final Frame original_fr, boolean local) {
-    return Math.min((int) Math.ceil(original_fr.numRows() / 1e3), H2O.NUMCPUS);
+    if (H2O.getCloudSize() > 1 && Boolean.parseBoolean(getSysProperty("rebalance.enableMulti", "false")))
+      return desiredChunkMulti(original_fr);
+    else
+      return desiredChunkSingle(original_fr);
+  }
+
+  // single-node version (original version)
+  private int desiredChunkSingle(final Frame originalFr) {
+    return Math.min((int) Math.ceil(originalFr.numRows() / 1e3), H2O.NUMCPUS);
+  }
+
+  // multi-node version (experimental version)
+  private int desiredChunkMulti(final Frame fr) {
+    for (int type : fr.types()) {
+      if (type != Vec.T_NUM && type != Vec.T_CAT) {
+        Log.warn("Training frame contains columns non-numeric/categorical columns. Using old rebalance logic.");
+        return desiredChunkSingle(fr);
+      }
+    }
+    // estimate size of the Frame on disk as if it was represented in a binary _uncompressed_ format with no overhead
+    long itemCnt = 0;
+    for (Vec v : fr.vecs())
+      itemCnt += v.length() - v.naCnt();
+    final int itemSize = 4; // magic constant size of both Numbers and Categoricals
+    final long size = Math.max(itemCnt * itemSize, fr.byteSize());
+    final int desiredChunkSize = FileVec.calcOptimalChunkSize(size, fr.numCols(),
+            fr.numCols() * itemSize, H2O.NUMCPUS, H2O.getCloudSize(), false, true);
+    final int desiredChunks = (int) ((size / desiredChunkSize) + (size % desiredChunkSize > 0 ? 1 : 0));
+    Log.info("Calculated optimal number of chunks = " + desiredChunks);
+    return desiredChunks;
+  }
+
+  protected String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
   }
 
   public void checkDistributions() {
