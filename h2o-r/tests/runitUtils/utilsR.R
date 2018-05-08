@@ -769,6 +769,60 @@ random_dataset <-
   }
 
 #----------------------------------------------------------------------
+# This function will generate a random dataset containing enum columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_enum_only <-
+function(numFactors, num_rows, num_cols) {
+
+  random_frame <-
+  h2o.createFrame(
+  rows = num_rows,
+  cols = num_cols,
+  randomize = TRUE,
+  has_response = FALSE,
+  categorical_fraction = 1,
+  integer_fraction = 0,
+  binary_fraction = 0,
+  time_fraction = 0,
+  string_fraction = 0,
+  factor = numFactors,
+  missing_fraction = runif(1, 0, 0.05)
+  )
+
+  return(random_frame)
+}
+
+#----------------------------------------------------------------------
+# This function will generate a random dataset containing real and integer columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_numerics_only <-
+function(integerRange, num_rows, num_cols) {
+
+  random_frame <-
+  h2o.createFrame(
+  rows = num_rows,
+  cols = num_cols,
+  randomize = TRUE,
+  has_response = FALSE,
+  categorical_fraction = 0,
+  integer_fraction = 0.9,
+  binary_fraction = 0,
+  time_fraction = 0,
+  string_fraction = 0,
+  integer_ranger = integerRange,
+  missing_fraction = runif(1, 0, 0.05)
+  )
+
+  return(random_frame)
+}
+
+#----------------------------------------------------------------------
 # This function will generate a random neural network in the form of
 # a hidden layer matrix specifying the number of nodes per layer.
 #
