@@ -4,6 +4,10 @@ import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.ModelMetricsRegression;
 import hex.SplitFrame;
+import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -22,14 +26,13 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.Log;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.locateFile;
 
 public class XGBoostTest extends TestUtil {
@@ -893,6 +896,44 @@ public class XGBoostTest extends TestUtil {
           model.delete();
         }
       }
+  }
+
+  @Test
+  public void testMojoBoosterDump() throws XGBoostError, IOException {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
+      Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 42;
+      parms._ntrees = 7;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Log.info(model);
+
+      XGBoostMojoModel mojo = getMojo(model);
+
+      String[] dump = mojo.getBoosterDump(false, "text");
+      assertEquals(parms._ntrees, dump.length);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static XGBoostMojoModel getMojo(XGBoostModel model) throws IOException {
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    model.getMojo().writeTo(os);
+    os.close();
+    MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+            new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+    return (XGBoostMojoModel) MojoModel.load(mojoReaderBackend);
   }
 
 }

@@ -21,11 +21,20 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
+  public String _featureMap;
   public byte[] _boosterBytes; // internal state of native backend
 
   private TwoDimTable summaryTable;
 
   private transient Booster _booster;  //pointer to C++ process
+
+  public String getFeatureMap() {
+    return _featureMap;
+  }
+
+  public void setFeatureMap(String featureMap) {
+    _featureMap = featureMap;
+  }
 
   public Booster getBooster() {
     if(null == _booster && null != _boosterBytes) {

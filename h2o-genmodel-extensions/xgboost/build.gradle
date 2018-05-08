@@ -3,6 +3,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 description = "H2O GenModel XGBoost support"
 
 dependencies {
+    testCompile "junit:junit:${junitVersion}"
+
     compile project(":h2o-genmodel")
 
     // XGBoost dependencies published into Maven central by H2O

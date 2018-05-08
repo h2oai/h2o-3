@@ -309,8 +309,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                                              + "make sure you have python installed!");
         }
 
-        // Create a temporary file with "feature map"
-        String featureMap = XGBoostUtils.makeFeatureMap(_train, model.model_info()._dataInfoKey.get());
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info()._dataInfoKey.get();
+        String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
         featureMapFile = createFeatureMapFile(featureMap);
 
         setupTask = new XGBoostSetupTask(model.model_info(), _parms, model._output._sparse).doAll(_train);

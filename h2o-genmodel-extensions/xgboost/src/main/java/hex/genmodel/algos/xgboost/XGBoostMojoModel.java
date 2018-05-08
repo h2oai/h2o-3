@@ -6,6 +6,11 @@ import ml.dmlc.xgboost4j.java.*;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +28,7 @@ public final class XGBoostMojoModel extends MojoModel implements Closeable {
   public int[] _catOffsets;
   public boolean _useAllFactorLevels;
   public boolean _sparse;
+  public String _featureMap;
 
   public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -142,6 +148,64 @@ public final class XGBoostMojoModel extends MojoModel implements Closeable {
   @Override
   public void close() {
     BoosterHelper.dispose(_booster);
+  }
+
+  public String[] getBoosterDump(final boolean withStats, final String format) {
+    final Path featureMapFile;
+    if (_featureMap != null && ! _featureMap.isEmpty())
+      try {
+        featureMapFile = Files.createTempFile("featureMap", ".txt");
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to write a temporary file with featureMap");
+      }
+    else
+      featureMapFile = null;
+
+    try {
+      if (featureMapFile != null) {
+        Files.write(featureMapFile, Collections.singletonList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
+      }
+
+      BoosterHelper.BoosterOp<String[]> dumpOp = new BoosterHelper.BoosterOp<String[]>() {
+        @Override
+        public String[] apply(Booster booster) throws XGBoostError {
+          String featureMap = featureMapFile != null ? featureMapFile.toFile().getAbsolutePath() : null;
+          return booster.getModelDump(featureMap, withStats, format);
+        }
+      };
+
+      return BoosterHelper.doWithLocalRabit(dumpOp, _booster);
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to write feature map file", e);
+    } catch (XGBoostError e) {
+      throw new IllegalStateException("Failed to dump model", e);
+    } finally {
+      if (featureMapFile != null) {
+        try {
+          Files.deleteIfExists(featureMapFile);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  public static void main(String[] args) throws IOException {
+    if (args.length < 2 || ! "--dump".equals(args[0])) {
+      usage();
+      System.exit(1);
+    }
+    String mojoFile = args[1];
+    boolean withStats = args.length > 2 ? Boolean.valueOf(args[2]) : false;
+    String format = args.length > 3 ? args[3] : "text";
+
+    XGBoostMojoModel mojoModel = (XGBoostMojoModel) MojoModel.load(mojoFile);
+    for (String dumpLine : mojoModel.getBoosterDump(withStats, format))
+      System.out.println(dumpLine);
+  }
+
+  private static void usage() {
+    System.out.println("java -cp h2o-genmodel.jar " + XGBoostMojoModel.class.getCanonicalName() + " --dump <mojo> [withStats?] [format]");
   }
 
 }
