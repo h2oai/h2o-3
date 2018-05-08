@@ -3254,6 +3254,26 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
                     assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(v1, v2, rowInd, colInd)
 
+# frame compare with NAs in column
+def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,f2.nrow):
+            if (random.uniform(0,1) < prob):
+                if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
+                    assert len(temp1[rowInd]) == len(temp2[rowInd]), "Failed frame values check at row {2} ! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd], temp2[rowInd], rowInd)
+                else:
+                    v1 = float(temp1[rowInd][colInd])
+                    v2 = float(temp2[rowInd][colInd])
+                    diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
+                    assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                      "{1}".format(v1, v2, rowInd, colInd)
+
+
 def build_save_model_GLM(params, x, train, respName):
     # build a model
     model = H2OGeneralizedLinearEstimator(**params)
@@ -3292,6 +3312,65 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200):
     if verbose:
         print()
         df.show()
+    return df
+
+# generate random dataset of ncolumns of Strings, copied from Pasha
+def random_dataset_strings_only(nrow, ncol):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 1  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0, has_response=False, **fractions)
+    return df
+
+# generate random dataset of ncolumns of enums only, copied from Pasha
+def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 1
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, factors=factorL,
+                          **fractions)
+    return df
+
+# generate random dataset of ncolumns of enums only, copied from Pasha
+def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 1
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=rangeR,
+                          **fractions)
+    return df
+
+# generate random dataset of ncolumns of integer and reals, copied from Pasha
+def random_dataset_numeric_only(nrow, ncol, integerR=100):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0.25  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0.75
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0.01, has_response=False, integer_range=integerR, **fractions)
     return df
 
 def getMojoName(modelID):
