@@ -555,14 +555,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
 
-  if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
-    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
-    return(NULL)
-  }
-
   missingNewdata <- missing(newdata) || is.null(newdata)
-  
   if( !missingNewdata ) {
+    if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
+      print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+      return(NULL)
+    }
     newdata.id <- h2o.getId(newdata)
     parms <- list()
     parms[["model"]] <- model@model_id
