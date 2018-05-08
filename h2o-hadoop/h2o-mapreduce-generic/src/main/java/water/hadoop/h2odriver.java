@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -40,6 +39,9 @@ import java.lang.reflect.Method;
  */
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
+
+  final static String SYS_ARGS_FILE = "/etc/h2odriver.args";
+
   static {
     String javaVersionString = System.getProperty("java.version");
     Pattern p = Pattern.compile("1\\.([0-9]*)(.*)");
@@ -1295,6 +1297,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
+    args = ArrayUtils.append(getSystemArgs(), args); // prepend "system-level" args to user specified args
     String[] otherArgs = parseArgs(args);
     validateArgs();
 
@@ -1680,6 +1683,27 @@ public class h2odriver extends Configured implements Tool {
       System.out.println("Exiting with nonzero exit status");
     }
     return exitStatus;
+  }
+
+  private static String[] getSystemArgs() {
+    String[] args = new String[0];
+    File sysArgs = new File(SYS_ARGS_FILE);
+    if (! sysArgs.exists())
+      return args;
+
+    try (BufferedReader r = new BufferedReader(new FileReader(sysArgs))) {
+      String arg;
+      while ((arg = r.readLine()) != null) {
+        args = ArrayUtils.append(args, arg.trim());
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      System.out.println("ERROR: System level H2O arguments cannot be read from file " + sysArgs.getAbsolutePath() + "; "
+              + (e.getMessage() != null ? e.getMessage() : "(null)"));
+      System.exit(1);
+    }
+
+    return args;
   }
 
   /**
