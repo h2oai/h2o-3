@@ -9,6 +9,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ModelBuilderTest extends TestUtil {
 
@@ -59,6 +60,16 @@ public class ModelBuilderTest extends TestUtil {
         assertEquals(i * 1000, espc[i]);
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMakeUnknownModel() {
+    try {
+      ModelBuilder.make("invalid", null, null);
+      fail();
+    } catch (IllegalStateException e) {
+      assertEquals("Algorithm 'invalid' is not registered. Available algos: []", e.getMessage()); // core doesn't have any algos
     }
   }
 
