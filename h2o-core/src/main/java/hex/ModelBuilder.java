@@ -955,12 +955,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _train.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-    // Rebalance train and valid datasets
-    if (expensive && error_count() == 0 && _parms._auto_rebalance) {
-      setTrain(rebalance(_train, false, _result + ".temporary.train"));
-      _valid = rebalance(_valid, false, _result + ".temporary.valid");
-    }
-
 
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
@@ -969,6 +963,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ignoreBadColumns(separateFeatureVecs(), expensive);
     ignoreInvalidColumns(separateFeatureVecs(), expensive);
     checkResponseVariable();
+
+    // Rebalance train and valid datasets (after invalid/bad columns are dropped)
+    if (expensive && error_count() == 0 && _parms._auto_rebalance) {
+      setTrain(rebalance(_train, false, _result + ".temporary.train"));
+      separateFeatureVecs(); // need to reset MB's fields (like response) after rebalancing
+      _valid = rebalance(_valid, false, _result + ".temporary.valid");
+    }
 
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
