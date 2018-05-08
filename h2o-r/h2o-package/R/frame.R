@@ -3782,7 +3782,7 @@ h2o.arrange <- function(x, ...) {
   .newExpr("sort", x, by-1L, as.numeric(ascend))
 }
 
-generateColInd <-function(data, by) {
+generate_col_index <-function(data, by) {
   ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
   if(base::is.character(by)) {
@@ -3901,8 +3901,8 @@ generateColInd <-function(data, by) {
 #'
 #' @export
 h2o.rank_within_group_by <- function(x, group_by_cols, sort_cols, ascending=NULL, new_col_name="New_Rank_column", sort_cols_sorted=FALSE) {
-  group.cols = generateColInd(x, group_by_cols)
-  sort.cols = generateColInd(x, sort_cols)
+  group.cols = generate_col_index(x, group_by_cols)
+  sort.cols = generate_col_index(x, sort_cols)
   numSort <- length(sort.cols)
   sortdir <- 1^(runif(numSort,1,1)) # default sort direction is ascending
   if (length(ascending) > 0) {
