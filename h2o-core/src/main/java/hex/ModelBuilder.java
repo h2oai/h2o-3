@@ -238,7 +238,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
-    if( !nFoldCV() )
+    if( !nFoldCV() || _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.train) ||
+            _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
