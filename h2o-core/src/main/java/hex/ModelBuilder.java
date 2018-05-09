@@ -1222,6 +1222,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               " chunks. No need to rebalance. [desiredChunks=" + chunks, ", rebalanceRatio=" + rebalanceRatio + "]");
       return original_fr;
     }
+    _job.update(0,"Load balancing " + name.substring(name.length() - 5) + " data...");
     Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
     Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
     RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
@@ -1233,7 +1234,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private double rebalanceRatio() {
     String mode = H2O.getCloudSize() == 1 ? "single" : "multi";
-    String ratioStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "rebalance.ratio." + mode, "1.0");
+    String ratioStr = getSysProperty("rebalance.ratio." + mode, "1.0");
     return Double.parseDouble(ratioStr);
   }
 
@@ -1242,7 +1243,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return Lower bound on number of chunks after rebalancing.
    */
   protected int desiredChunks(final Frame original_fr, boolean local) {
-    if (H2O.getCloudSize() > 1 && Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "rebalance.enableMulti"))
+    if (H2O.getCloudSize() > 1 && Boolean.parseBoolean(getSysProperty("rebalance.enableMulti", "false")))
       return desiredChunkMulti(original_fr);
     else
       return desiredChunkSingle(original_fr);
@@ -1262,11 +1263,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     // estimate size of the Frame on disk as if it was represented in a binary _uncompressed_ format with no overhead
-    long nzCnt = 0;
+    long itemCnt = 0;
     for (Vec v : fr.vecs())
-      nzCnt += v.nzCnt();
+      itemCnt += v.length() - v.naCnt();
     final int itemSize = 4; // magic constant size of both Numbers and Categoricals
-    final long size = Math.max(nzCnt * itemSize, fr.byteSize());
+    final long size = Math.max(itemCnt * itemSize, fr.byteSize());
     final int desiredChunkSize = FileVec.calcOptimalChunkSize(size, fr.numCols(),
             fr.numCols() * itemSize, H2O.NUMCPUS, H2O.getCloudSize(), false, true);
     final int desiredChunks = (int) ((size / desiredChunkSize) + (size % desiredChunkSize > 0 ? 1 : 0));
@@ -1274,6 +1275,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return desiredChunks;
   }
 
+  protected String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
+  }
 
   public void checkDistributions() {
     if (_parms._distribution == DistributionFamily.quasibinomial) {
