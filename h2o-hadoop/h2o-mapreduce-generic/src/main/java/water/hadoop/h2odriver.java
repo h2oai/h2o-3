@@ -40,7 +40,7 @@ import java.lang.reflect.Method;
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
 
-  final static String SYS_ARGS_FILE = "/etc/h2odriver.args";
+  final static String SYS_ARGS_FILE = "/etc/h2o/h2odriver.args";
 
   static {
     String javaVersionString = System.getProperty("java.version");
