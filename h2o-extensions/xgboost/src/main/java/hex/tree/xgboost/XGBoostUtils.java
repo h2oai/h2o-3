@@ -69,16 +69,7 @@ public class XGBoostUtils {
             chunks = VecUtils.getLocalChunkIds(f.anyVec());
         }
 
-        long nRowsL = 0;
-        for(int chId : chunks) {
-            nRowsL += vec.chunkLen(chId);
-        }
-
-        if(0 == nRowsL) {
-            return null;
-        }
-
-        int nRows = (int) nRowsL;
+        int nRows = sumChunksLength(chunks, vec);
 
         final DataInfo di = dataInfoKey.get();
         final DMatrix trainMat;
@@ -95,36 +86,29 @@ public class XGBoostUtils {
         if(null != w) {
             weights = malloc4f(nRows);
         }
-        try {
-            sparse = false;
-            if (sparse) {
-                Log.info("Treating matrix as sparse.");
-                // 1 0 2 0
-                // 4 0 0 3
-                // 3 1 2 0
-                boolean csc = false; //di._cats == 0;
 
-                // truly sparse matrix - no categoricals
-                // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-                if (csc) {
-                    trainMat = csc(f, chunks, w, f.vec(response).new Reader(), nRows, di, resp, weights);
-                } else {
-                    trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), nRows, di, resp, weights);
-                }
+        if (sparse) {
+            Log.info("Treating matrix as sparse.");
+            // 1 0 2 0
+            // 4 0 0 3
+            // 3 1 2 0
+            boolean csc = false; //di._cats == 0;
+
+            // truly sparse matrix - no categoricals
+            // collect all nonzeros column by column (in parallel), then stitch together into final data structures
+            if (csc) {
+                trainMat = csc(f, chunks, w, f.vec(response).new Reader(), nRows, di, resp, weights);
             } else {
-                Log.info("Treating matrix as dense.");
-
-                int cols = di.fullN();
-                float[][] data = allocateData(frameRowCount(chunks, vec), di);
-                long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
-                trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
-                assert trainMat.rowNum() == actualRows;
+                trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), nRows, di, resp, weights);
             }
-        } catch (NegativeArraySizeException e) {
-            throw new IllegalArgumentException(
-                    technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."),
-                    e
-            );
+        } else {
+            Log.info("Treating matrix as dense.");
+
+            int cols = di.fullN();
+            float[][] data = allocateData(nRows, di);
+            long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
+            trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
+            assert trainMat.rowNum() == actualRows;
         }
 
         int len = (int) trainMat.rowNum();
@@ -161,33 +145,19 @@ public class XGBoostUtils {
         return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
     }
 
-    private static long frameRowCount(int[] chunkIds, Vec vec) {
-        long totalRows = 0;
+    /**
+     * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are considered.
+     *
+     * @param chunkIds Chunk identifier of a vector
+     * @param vec      Vector containing given chunk identifiers
+     * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
+     */
+    private static int sumChunksLength(int[] chunkIds, Vec vec) {
+        int totalChunkLength = 0;
         for (int chunk : chunkIds) {
-            totalRows += vec.chunkLen(chunk);
+            totalChunkLength += vec.chunkLen(chunk);
         }
-        return totalRows;
-    }
-
-    private static long frameRowCount(final Chunk[] chunks, final Frame f, final int[] chunksIds, final int weightVectorIndex) {
-        long totalRows = 0;
-        if (null != chunks) {
-            for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-                if (weightVectorIndex == chunkIndex) {
-                    for (int rowIndex = 0; rowIndex < chunks[chunkIndex].len(); rowIndex++) {
-                        if (chunks[chunkIndex].at8(rowIndex) != 0) totalRows++;
-                    }
-                } else {
-                    totalRows += chunks[chunkIndex].len();
-                }
-            }
-        } else {
-            final Vec frameVector = f.anyVec();
-            for (int chunkId : chunksIds) {
-                totalRows += frameVector.chunkLen(chunkId);
-            }
-        }
-        return totalRows;
+        return totalChunkLength;
     }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
@@ -289,7 +259,6 @@ public class XGBoostUtils {
         if(-1 != weight) {
             weights = malloc4f((int) nRows);
         }
-        sparse = false;
         try {
             if (sparse) {
                 Log.info("Treating matrix as sparse.");
@@ -333,19 +302,23 @@ public class XGBoostUtils {
 
         // extract predictors
         int cols = di.fullN();
-        float[][] data = allocateData(frameRowCount(chunks, null, null, weight), di);
+        float[][] data = allocateData(chunks[0].len(), di);
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
+        assert actualRows == chunks[0].len();
+
         int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
         if(data[data.length - 1].length > lastRowSize) {
             data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
         }
+
         trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
     }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
+    private static final long MAX_ELEMENTS = ARRAY_MAX * ARRAY_MAX;
 
     private static long denseChunk(float[][] data,
                                   int[] chunks, Frame f, // for MR task
@@ -769,7 +742,6 @@ public class XGBoostUtils {
                 rowIndex[currentRow] = malloc4(ALLOCATED_ARRAY_LEN);
             } else {
                 int newLen = (int) Math.min((long) data[currentRow].length << 1L, (long) ARRAY_MAX);
-                Log.info("Enlarging dense data structures row from " + data[currentRow].length + " float entries to " + newLen + " entries.");
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
             }
@@ -778,6 +750,10 @@ public class XGBoostUtils {
 
     private static float[][] allocateData(long chunkLength, DataInfo dataInfo) {
         long totalValues = chunkLength * dataInfo.fullN();
+        if (totalValues > MAX_ELEMENTS) {
+            new IllegalArgumentException(
+                technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+        }
         int noOfLines = (int)  totalValues / ARRAY_MAX;
 
         int lastLineSize = (int) (totalValues % ARRAY_MAX);
