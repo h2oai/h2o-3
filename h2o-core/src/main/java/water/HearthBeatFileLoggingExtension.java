@@ -12,13 +12,10 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
 
     @Override
     public void init() {
-
     }
 
     @Override
     public void report(HeartBeat data) {
-        if (Log.getLogLevel() == Log.DEBUG) {
-            Log.debug(data.toJsonString());
-        }
+        Log.telemetry(data.toJsonString());
     }
 }

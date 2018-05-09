@@ -98,6 +98,11 @@ abstract public class Log {
     l.info(s);
   }
 
+  public static void telemetry( String record){
+    org.apache.log4j.Logger l = LogManager.getLogger("Telemetry");
+    l.info(record);
+  }
+
   public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, new String[]{s}); }
 
   // This call *throws* an unchecked exception and never returns (after logging).
@@ -228,6 +233,7 @@ abstract public class Log {
       case "error": return "-5-error.log";
       case "fatal": return "-6-fatal.log";
       case "httpd": return "-httpd.log";
+      case "telemetry": return "-telemetry.log";
       default:
         throw new RuntimeException("Unknown level " + level);
     }
@@ -301,6 +307,18 @@ abstract public class Log {
     p.setProperty("log4j.appender.R6.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R6.layout.ConversionPattern", "%m%n");
+
+    // Telemetry logging
+    p.setProperty("log4j.logger.Telemetry",                             "TRACE, Telemetry");
+    p.setProperty("log4j.additivity.Telemetry",                         "false");
+
+    p.setProperty("log4j.appender.Telemetry",                           "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.Telemetry.Threshold",                 "TRACE");
+    p.setProperty("log4j.appender.Telemetry.File",                      getLogFilePath("telemetry"));
+    p.setProperty("log4j.appender.Telemetry.MaxFileSize",               "1MB");
+    p.setProperty("log4j.appender.Telemetry.MaxBackupIndex",            "3");
+    p.setProperty("log4j.appender.Telemetry.layout",                    "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.Telemetry.layout.ConversionPattern",  "%m%n");
 
     // HTTPD logging
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
