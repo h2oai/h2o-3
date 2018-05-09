@@ -1205,7 +1205,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /**
    * Rebalance a frame for load balancing
    * @param original_fr Input frame
-   * @param local Whether to only create enough chunks to max out all cores on one node only; Warning: IGNORED in the code!
+   * @param local Whether to only create enough chunks to max out all cores on one node only
+   *              WARNING: This behavior is not actually implemented in the methods defined in this class, the default logic
+   *              doesn't take this parameter into consideration.
    * @param name Name of rebalanced frame
    * @return Frame that has potentially more chunks
    */
@@ -1241,22 +1243,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected int desiredChunks(final Frame original_fr, boolean local) {
     if (H2O.getCloudSize() > 1 && Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "rebalance.enableMulti"))
-      return desiredChunk_multi(original_fr);
+      return desiredChunkMulti(original_fr);
     else
-      return desiredChunk_single(original_fr);
+      return desiredChunkSingle(original_fr);
   }
 
   // single-node version (original version)
-  private int desiredChunk_single(final Frame originalFr) {
+  private int desiredChunkSingle(final Frame originalFr) {
     return Math.min((int) Math.ceil(originalFr.numRows() / 1e3), H2O.NUMCPUS);
   }
 
   // multi-node version (experimental version)
-  private int desiredChunk_multi(final Frame fr) {
+  private int desiredChunkMulti(final Frame fr) {
     for (int type : fr.types()) {
       if (type != Vec.T_NUM && type != Vec.T_CAT) {
         Log.warn("Training frame contains columns non-numeric/categorical columns. Using old rebalance logic.");
-        return desiredChunk_single(fr);
+        return desiredChunkSingle(fr);
       }
     }
     // estimate size of the Frame on disk as if it was represented in a binary _uncompressed_ format with no overhead
