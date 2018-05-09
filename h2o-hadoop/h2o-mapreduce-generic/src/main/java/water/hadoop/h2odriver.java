@@ -40,7 +40,9 @@ import java.lang.reflect.Method;
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
 
-  final static String SYS_ARGS_FILE = "/etc/h2o/h2odriver.args";
+  final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
+  final static String DEFAULT_ARGS_CONFIG = "h2odriver";
+  final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
 
   static {
     String javaVersionString = System.getProperty("java.version");
@@ -1685,20 +1687,30 @@ public class h2odriver extends Configured implements Tool {
     return exitStatus;
   }
 
-  private static String[] getSystemArgs() {
+  private String[] getSystemArgs() {
     String[] args = new String[0];
-    File sysArgs = new File(SYS_ARGS_FILE);
-    if (! sysArgs.exists())
+    String config = getConf().get(ARGS_CONFIG_PROP, DEFAULT_ARGS_CONFIG);
+    File argsConfig = new File(String.format(ARGS_CONFIG_FILE_PATTERN, config));
+    if (! argsConfig.exists()) {
+      File defaultArgsConfig = new File(String.format(ARGS_CONFIG_FILE_PATTERN, DEFAULT_ARGS_CONFIG));
+      if (defaultArgsConfig.exists()) {
+        System.out.println("ERROR: There is no arguments file for configuration '" + config + "', however, " +
+                "the arguments file exists for the default configuration.\n       " +
+                "Please create an arguments file also for configuration '" + config + "' and store it in '" +
+                argsConfig.getAbsolutePath() + "' (the file can be empty).");
+        System.exit(1);
+      }
       return args;
+    }
 
-    try (BufferedReader r = new BufferedReader(new FileReader(sysArgs))) {
+    try (BufferedReader r = new BufferedReader(new FileReader(argsConfig))) {
       String arg;
       while ((arg = r.readLine()) != null) {
         args = ArrayUtils.append(args, arg.trim());
       }
     } catch (IOException e) {
       e.printStackTrace();
-      System.out.println("ERROR: System level H2O arguments cannot be read from file " + sysArgs.getAbsolutePath() + "; "
+      System.out.println("ERROR: System level H2O arguments cannot be read from file " + argsConfig.getAbsolutePath() + "; "
               + (e.getMessage() != null ? e.getMessage() : "(null)"));
       System.exit(1);
     }
