@@ -11,8 +11,6 @@ import water.util.Log;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
 
 import static water.H2O.technote;
@@ -749,14 +747,14 @@ public class XGBoostUtils {
             }
         }
     }
-
+    private static final IllegalArgumentException TOO_BIG_DATASET_EXCEPTION = new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
     private static float[][] allocateData(long chunkLength, DataInfo dataInfo) {
-        long totalValues = 0;
+        long totalValues;
         try {
             totalValues = MathUtils.multiplyExact(chunkLength, dataInfo.fullN());
+            if (totalValues > MAX_ELEMENTS) throw TOO_BIG_DATASET_EXCEPTION;
         } catch (ArithmeticException e){
-            throw new IllegalArgumentException(
-                technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+            throw TOO_BIG_DATASET_EXCEPTION;
 
         }
         int noOfLines = (int) (totalValues / ARRAY_MAX);
