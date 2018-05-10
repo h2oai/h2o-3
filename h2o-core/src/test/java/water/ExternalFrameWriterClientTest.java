@@ -29,7 +29,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     @Test
-    public void testWriting() throws IOException{
+    public void testWriting() {
         // The api expects that empty frame has to be in the DKV before we start working with it
         final Timestamp time = new Timestamp(Calendar.getInstance().getTime().getTime());
         WriteOperation testOp = new WriteOperation() {
@@ -101,27 +101,27 @@ public class ExternalFrameWriterClientTest extends TestUtil {
             BufferedString buff = new BufferedString();
             for (int i = 0; i < connStrings.length; i++) { // Writer segment (=chunk)
                 for (int localRow = 0; localRow < 997; localRow++) { // Local row in segment
-                    assertEquals(localRow, frame.vec(0).at8(localRow));
-                    assertEquals(1, frame.vec(1).at8(localRow));
-                    assertEquals("str_" + localRow, frame.vec(2).atStr(buff, localRow).toString());
-                    assertEquals(time.getTime(), frame.vec(3).at8(localRow));
+                    assertEquals(localRow, frame.vec(0).at8(localRow + testOp.nrows() * i));
+                    assertEquals(1, frame.vec(1).at8(localRow + testOp.nrows() * i));
+                    assertEquals("str_" + localRow, frame.vec(2).atStr(buff, localRow + testOp.nrows() * i).toString());
+                    assertEquals(time.getTime(), frame.vec(3).at8(localRow + testOp.nrows() * i));
                 }
                 // Row 997
                 int row = 997;
-                assertEquals(0, frame.vec(0).at8(row));
-                assertEquals(0, frame.vec(1).at8(row));
-                assertTrue(frame.vec(2).isNA(row));
-                assertEquals(time.getTime(), frame.vec(3).at8(row));
+                assertEquals(0, frame.vec(0).at8(row + testOp.nrows() * i));
+                assertEquals(0, frame.vec(1).at8(row + testOp.nrows() * i));
+                assertTrue(frame.vec(2).isNA(row + testOp.nrows() * i));
+                assertEquals(time.getTime(), frame.vec(3).at8(row + testOp.nrows() * i));
                 // Row 998
                 row = 998;
-                assertEquals(1, frame.vec(0).at8(row));
-                assertEquals(1, frame.vec(1).at8(row));
-                assertEquals("\u0080" , frame.vec(2).atStr(buff, row).toString());
-                assertEquals(time.getTime(), frame.vec(3).at8(row));
+                assertEquals(1, frame.vec(0).at8(row + testOp.nrows() * i));
+                assertEquals(1, frame.vec(1).at8(row + testOp.nrows() * i));
+                assertEquals("\u0080" , frame.vec(2).atStr(buff, row + testOp.nrows() * i).toString());
+                assertEquals(time.getTime(), frame.vec(3).at8(row + testOp.nrows() * i));
                 // Row 999
                 row = 999;
                 for (int c = 0; c < 4; c++) {
-                    assertTrue(frame.vec(c).isNA(row));
+                    assertTrue(frame.vec(c).isNA(row + testOp.nrows() * i));
                 }
             }
         } finally {
@@ -268,6 +268,13 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                     }
                 }
             }
+            assertEquals(frame.vecs().length, 100); // vector size
+            for(int idx = 0; idx< frame.vecs().length; idx++) {
+                assertEquals(frame.vec(idx).nChunks(), connStrings.length);
+                for(int chnkIdx = 0; chnkIdx < connStrings.length; chnkIdx++){
+                    assertEquals(frame.vec(idx).chunkForChunkIdx(chnkIdx)._len, 10); // 10 rows
+                }
+            }
         } finally {
             frame.delete();
         }
@@ -313,7 +320,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                             op.doWrite(writer);
 
                             writer.waitUntilAllWritten(10);
-                            
+
                             rowsPerChunk[currentIndex] = op.nrows();
                         } finally {
                             sock.close();
