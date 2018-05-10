@@ -8,8 +8,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.VecUtils;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 import static water.H2O.technote;
@@ -318,7 +321,7 @@ public class XGBoostUtils {
     }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
-    private static final long MAX_ELEMENTS = ARRAY_MAX * ARRAY_MAX;
+    private static final long MAX_ELEMENTS = (long) ARRAY_MAX * ARRAY_MAX;
 
     private static long denseChunk(float[][] data,
                                   int[] chunks, Frame f, // for MR task
@@ -749,13 +752,15 @@ public class XGBoostUtils {
     }
 
     private static float[][] allocateData(long chunkLength, DataInfo dataInfo) {
-        long totalValues = chunkLength * dataInfo.fullN();
-        if (totalValues > MAX_ELEMENTS) {
-            new IllegalArgumentException(
+        long totalValues = 0;
+        try {
+            totalValues = MathUtils.multiplyExact(chunkLength, dataInfo.fullN());
+        } catch (ArithmeticException e){
+            throw new IllegalArgumentException(
                 technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-        }
-        int noOfLines = (int)  totalValues / ARRAY_MAX;
 
+        }
+        int noOfLines = (int) (totalValues / ARRAY_MAX);
         int lastLineSize = (int) (totalValues % ARRAY_MAX);
         float[][] data = new float[lastLineSize > 0 ? noOfLines + 1 : noOfLines][];
 

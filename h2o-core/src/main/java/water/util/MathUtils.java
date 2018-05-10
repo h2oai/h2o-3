@@ -694,4 +694,29 @@ public class MathUtils {
     return Math.min(MAXLL, -Math.log(1.0-err));
   }
   final static double MAXLL = -Math.log(1e-15); //34.53878
+
+  /**
+   * Returns the product of the arguments,
+   * throwing an exception if the result overflows a {@code long}. Taken from Java 8.
+   *
+   * @param x the first value
+   * @param y the second value
+   * @return the result
+   * @throws ArithmeticException if the result overflows a long
+   */
+  public static long multiplyExact(long x, long y) throws ArithmeticException {
+    long r = x * y;
+    long ax = Math.abs(x);
+    long ay = Math.abs(y);
+    if (((ax | ay) >>> 31 != 0)) {
+      // Some bits greater than 2^31 that might cause overflow
+      // Check the result using the divide operator
+      // and check for the special case of Long.MIN_VALUE * -1
+      if (((y != 0) && (r / y != x)) ||
+          (x == Long.MIN_VALUE && y == -1)) {
+        throw new ArithmeticException("long overflow");
+      }
+    }
+    return r;
+  }
 }
