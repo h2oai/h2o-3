@@ -17,44 +17,10 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
 
     @Override
     public void init() {
-        new TelemetryThread().start();
     }
 
     @Override
     public void report(HeartBeat data) {
-        try {
-            heartBeats.put(data);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private class TelemetryThread extends Thread {
-        public TelemetryThread(){
-            super("Telemetry Thread HB Consumer");
-            setDaemon(true);
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                StringBuilder sb = new StringBuilder();
-                while (!heartBeats.isEmpty()) {
-                    try {
-                        HeartBeat hb = heartBeats.poll(samplingTimeout, TimeUnit.SECONDS);
-                        sb.append(hb.toJsonString());
-                    } catch (InterruptedException ignore) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-                try {
-                    Log.telemetry(sb.toString());
-                    Thread.sleep(samplingTimeout);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        Log.telemetry(data.toJsonString());
     }
 }
