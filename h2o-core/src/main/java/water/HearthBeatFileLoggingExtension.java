@@ -6,7 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     //sampling period in seconds
-    private int samplingTimeout = 10;
+    //TODO: allow to configure
+    private int samplingTimeout = 10000;
     private BlockingQueue<HeartBeat> heartBeats = new LinkedBlockingQueue<>();
 
     @Override
@@ -37,15 +38,21 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
         @Override
         public void run() {
             while (true) {
+                StringBuilder sb = new StringBuilder();
                 while (!heartBeats.isEmpty()) {
                     try {
                         HeartBeat hb = heartBeats.poll(samplingTimeout, TimeUnit.SECONDS);
-                        Log.telemetry(hb.toJsonString());
-
+                        sb.append(hb.toJsonString());
                     } catch (InterruptedException ignore) {
                         Thread.currentThread().interrupt();
                         return;
                     }
+                }
+                try {
+                    Log.telemetry(sb.toString());
+                    Thread.sleep(samplingTimeout);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
