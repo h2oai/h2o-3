@@ -251,16 +251,15 @@ public class XGBoostUtils {
                                           int weight,
                                           int fold,
                                           boolean sparse) throws XGBoostError {
-        long nRows = chunks[0]._len;
+        int nRows = chunks[0]._len;
 
         DMatrix trainMat;
-
         DataInfo di = dataInfoKey.get();
 
-        float[] resp = malloc4f((int) nRows);
+        float[] resp = malloc4f(nRows);
         float[] weights = null;
         if(-1 != weight) {
-            weights = malloc4f((int) nRows);
+            weights = malloc4f(nRows);
         }
         try {
             if (sparse) {
