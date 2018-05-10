@@ -14,7 +14,6 @@ import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -22,7 +21,7 @@ import java.util.Arrays;
  */
 public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
 
-  private static final int MAX_TIME_BINS = 10000;
+  private static final int MAX_TIME_BINS = 100000;
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
@@ -218,9 +217,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._n_risk = MemoryManager.malloc8d(n_time);
       o._n_event = MemoryManager.malloc8d(n_time);
       o._n_censor = MemoryManager.malloc8d(n_time);
-      o._cumhaz_0 = MemoryManager.malloc8d(n_time);
-      o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
-      o._var_cumhaz_2 = malloc2DArray(n_time, n_coef);
     }
 
     protected void calcCounts(CoxPHModel model, final CoxPHTask coxMR) {
@@ -405,6 +401,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
+      final int n_time = coxMR.sizeEvents.length;
+
+      o._cumhaz_0 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
+      o._var_cumhaz_2 = malloc2DArray(n_time, o._coef.length);
+
       final int n_coef = o._coef.length;
       int nz = 0;
       switch (p._ties) {
@@ -499,12 +501,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         final boolean has_weights_column = (_weights != null);
         final ComputationState cs = new ComputationState(n_coef);
         Timer iterTimer = null;
+        CoxPHTask coxMR = null;
         for (int i = 0; i <= model._parms._iter_max; ++i) {
           iterTimer = new Timer();
           model._output._iter = i;
 
           Timer aggregTimer = new Timer();
-          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
+          coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column).doAll(dinfo._adaptedFrame);
           Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
@@ -518,7 +521,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               calcCounts(model, coxMR);
 
             calcModelStats(model, newCoef, cs);
-            calcCumhaz_0(model, coxMR);
 
             if (newLoglik == 0)
               model._output._lre = -Math.log10(Math.abs(logLik - newLoglik));
@@ -549,6 +551,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
           if (i != model._parms._iter_max)
             Log.info("CoxPH Iteration: iter=" + i + ", " + iterTimer.toString());
+        }
+
+        if (_parms._calc_cumhaz && coxMR != null) {
+          calcCumhaz_0(model, coxMR);
         }
 
         if (iterTimer != null)
