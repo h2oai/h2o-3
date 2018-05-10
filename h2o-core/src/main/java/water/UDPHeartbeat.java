@@ -20,11 +20,6 @@ class UDPHeartbeat extends UDP {
 
       if (H2O.ARGS.client){
         TelemetryService.getInstance().report(ab._h2o._heartbeat);
-        // send the HB to a service that possibly delegates down to other writers
-        // ab._h2o._heartbeat(ASYNC!!)
-        //A la
-//        ListenerService.getInstance().log();
-        // todo2: store as json to some other log file
       }
     }
     return ab;

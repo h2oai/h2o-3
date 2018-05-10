@@ -27,6 +27,7 @@ include 'h2o-automl'
 include 'h2o-genmodel-ext-xgboost'
 include 'h2o-ext-xgboost'
 include 'h2o-ext-krbstandalone'
+include 'h2o-ext-telemetry'
 include 'h2o-ext-authsupport'
 include 'h2o-ext-jython-cfunc'
 

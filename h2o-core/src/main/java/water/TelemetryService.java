@@ -14,6 +14,7 @@ public class TelemetryService {
     }
 
     public void report(HeartBeat heartBeat){
+        //TODO: cache the collection and do the calls async
         for (H2OTelemetryExtension ext : ExtensionManager.getInstance().getTelemetryExtensions()) {
             ext.report(heartBeat);
         }
