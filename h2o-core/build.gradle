@@ -36,7 +36,12 @@ dependencies {
   compile 'commons-lang:commons-lang:2.6'
   
   // Duke library: collection of String comparators
-  compile ('no.priv.garshol.duke:duke:1.2') { transitive = false }
+  compile ('no.priv.garshol.duke:duke:1.2'){
+    exclude group: 'org.apache.lucene', module: 'lucene-core'
+    exclude group: 'org.apache.lucene', module: 'lucene-analyzers-common'
+    exclude group: 'org.apache.lucene', module: 'lucene-spatial'
+    exclude group: 'org.mapdb', module: 'mapdb'
+  }
 
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
