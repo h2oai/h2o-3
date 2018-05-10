@@ -10,7 +10,7 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     //sampling period in miliseconds
     //TODO: allow to configure
     private int samplingTimeout = 10000;
-
+    private boolean initializedLogger = false;
     @Override
     public String getName() {
         return "HearthBeatFileLoggingExtension";
@@ -18,7 +18,6 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
 
     @Override
     public void init() {
-        registerRollingFileAppenderToAsyncAppender();
     }
 
     private static void registerRollingFileAppenderToAsyncAppender() {
@@ -40,6 +39,10 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
 
     @Override
     public void report(HeartBeat data) {
+        if (!initializedLogger){
+            registerRollingFileAppenderToAsyncAppender();
+            initializedLogger = false;
+        }
         Log.telemetry(data.toJsonString());
     }
 }

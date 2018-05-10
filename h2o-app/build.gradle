@@ -10,6 +10,7 @@ dependencies {
   compile project(":h2o-automl")
   compile project(":h2o-ext-krbstandalone")
   compile project(":h2o-ext-authsupport")
+  compile project(":h2o-ext-telemetry")
   // Note: orc parser is included at the assembly level for each
   // Hadoop distribution
 }
