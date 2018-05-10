@@ -205,17 +205,26 @@ def call(final pipelineContext) {
 
   def HADOOP_STAGES = []
   for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
-    HADOOP_STAGES += [
-      stageName: "${distribution.name.toUpperCase()} ${distribution.version} Smoke", target: 'test-hadoop-smoke',
-      timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    def stageTemplate = [
+      target: 'test-hadoop-smoke', timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [
         distribution: distribution.name,
         version: distribution.version,
         ldapConfigPath: 'scripts/jenkins/ldap-conf.txt'
-      ], pythonVersion: '2.7',
+      ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
     ]
+    def standaloneStage = evaluate(stageTemplate.inspect())
+    standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
+    standaloneStage.customData.mode = 'STANDALONE'
+
+    def onHadoopStage = evaluate(stageTemplate.inspect())
+    onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
+    onHadoopStage.customData.mode = 'ON_HADOOP'
+
+    HADOOP_STAGES += standaloneStage
+    HADOOP_STAGES += onHadoopStage
   }
 
   def XGB_STAGES = []
