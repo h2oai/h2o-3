@@ -9,6 +9,7 @@ dependencies {
   if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
       compile files("${rootDir}/lib/deepwater-all.jar")
   }
+  
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
