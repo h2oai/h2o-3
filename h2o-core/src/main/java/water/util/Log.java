@@ -1,8 +1,6 @@
 package water.util;
 
-import org.apache.log4j.H2OPropertyConfigurator;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.*;
 import water.H2O;
 import water.persist.PersistManager;
 
@@ -308,17 +306,21 @@ abstract public class Log {
     p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R6.layout.ConversionPattern", "%m%n");
 
-    // Telemetry logging
-    p.setProperty("log4j.logger.Telemetry",                             "TRACE, Telemetry");
-    p.setProperty("log4j.additivity.Telemetry",                         "false");
 
-    p.setProperty("log4j.appender.Telemetry",                           "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.Telemetry.Threshold",                 "TRACE");
-    p.setProperty("log4j.appender.Telemetry.File",                      getLogFilePath("telemetry"));
-    p.setProperty("log4j.appender.Telemetry.MaxFileSize",               "1MB");
-    p.setProperty("log4j.appender.Telemetry.MaxBackupIndex",            "3");
-    p.setProperty("log4j.appender.Telemetry.layout",                    "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.Telemetry.layout.ConversionPattern",  "%m%n");
+//    p.setProperty("log4j.appender.Telemetry",                           "org.apache.log4j.RollingFileAppender");
+//    p.setProperty("log4j.appender.Telemetry.Threshold",                 "TRACE");
+//    p.setProperty("log4j.appender.Telemetry.File",                      getLogFilePath("telemetry"));
+//    p.setProperty("log4j.appender.Telemetry.MaxFileSize",               "1MB");
+//    p.setProperty("log4j.appender.Telemetry.MaxBackupIndex",            "3");
+//    p.setProperty("log4j.appender.Telemetry.layout",                    "org.apache.log4j.PatternLayout");
+//    p.setProperty("log4j.appender.Telemetry.layout.ConversionPattern",  "%m%n");
+
+
+    // Telemetry logging
+    p.setProperty("log4j.logger.Telemetry",                             "TRACE, AsyncTelemetryAppender");
+    p.setProperty("log4j.additivity.Telemetry",                         "false");
+    p.setProperty("log4j.appender.AsyncTelemetryAppender",              "org.apache.log4j.AsyncAppender");
+    p.setProperty("log4j.appender.AsyncTelemetryAppender.Threshold",    "TRACE");
 
     // HTTPD logging
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
@@ -402,8 +404,28 @@ abstract public class Log {
         PropertyConfigurator.configure(p);
       }
     }
-    
+
+    registerRollingFileAppenderToAsyncAppender();
+
     return (_logger = LogManager.getLogger("water.default"));
+  }
+
+  //TODO Stefan: this is most likely temporary solution
+  private static void registerRollingFileAppenderToAsyncAppender() {
+    AsyncAppender asyncAppender = (AsyncAppender) LogManager.getLogger("Telemetry").getAppender("AsyncTelemetryAppender");
+    RollingFileAppender telemetryAppender = new RollingFileAppender();
+    telemetryAppender.setThreshold(Priority.INFO);
+    try {
+      telemetryAppender.setFile(getLogDir() + File.separator + getLogFileName("telemetry"));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    telemetryAppender.setName("Telemetry");
+    telemetryAppender.setMaxFileSize("1MB");
+    telemetryAppender.setMaxBackupIndex(3);
+    telemetryAppender.setLayout(new PatternLayout("%m%n"));
+    telemetryAppender.activateOptions();
+    asyncAppender.addAppender(telemetryAppender);
   }
 
   public static String fixedLength(String s, int length) {
