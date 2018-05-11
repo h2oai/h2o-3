@@ -19,7 +19,9 @@ class UDPHeartbeat extends UDP {
       Paxos.doHeartbeat(ab._h2o);
 
       if (H2O.ARGS.client){
-        TelemetryService.getInstance().report(ab._h2o._heartbeat);
+        long timestamp = ab._h2o._last_heard_from;
+        String ipAndPort = ab._h2o.getIpPortString();
+        TelemetryService.getInstance().report(ab._h2o._heartbeat, timestamp, ipAndPort);
       }
     }
     return ab;

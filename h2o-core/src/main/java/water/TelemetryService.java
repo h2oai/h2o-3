@@ -13,10 +13,10 @@ public class TelemetryService {
         return service;
     }
 
-    public void report(HeartBeat heartBeat){
+    public void report(HeartBeat heartBeat, long timestamp, String ipAndPort){
         //TODO: cache the collection and do the calls async
         for (H2OTelemetryExtension ext : ExtensionManager.getInstance().getTelemetryExtensions()) {
-            ext.report(heartBeat);
+            ext.report(heartBeat, timestamp, ipAndPort);
         }
     }
 }

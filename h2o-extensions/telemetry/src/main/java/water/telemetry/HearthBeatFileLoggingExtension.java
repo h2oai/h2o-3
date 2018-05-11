@@ -4,12 +4,10 @@ import water.H2OTelemetryExtension;
 import water.HeartBeat;
 import water.util.Log;
 import java.io.File;
+import java.util.Date;
 
 
 public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
-    //sampling period in miliseconds
-    //TODO: allow to configure
-    private int samplingTimeout = 10000;
     private boolean initializedLogger = false;
     @Override
     public String getName() {
@@ -38,12 +36,22 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     }
 
     @Override
-    public void report(HeartBeat data) {
+    public void report(HeartBeat data, long timestamp, String ipAndPort) {
         if (!initializedLogger){
             registerRollingFileAppenderToAsyncAppender();
             initializedLogger = false;
         }
-        Log.telemetry(data.toJsonString());
+
+        String s = enhanceHeartBeatJson(data, timestamp, ipAndPort);
+        Log.telemetry(s);
+    }
+
+    private String enhanceHeartBeatJson(HeartBeat hb, long timestamp, String ipAndPort){
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"timestamp\":").append(new Date(timestamp)).append(timestamp).append(",\"ip_port\":\"").append(ipAndPort).append("\", \"heart_beat\":")
+        .append(hb.toJsonString())
+        .append("}\n");
+        return sb.toString();
     }
 }
 
