@@ -295,12 +295,12 @@ As a result, there is a small disconnect between the two. To remedy this, we hav
 Recall that during prediction, a dataset row represented by :math:`X_i` will be set to class :math:`j` if 
 
 .. math::
-   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} > 0 \; \text{for} \; j
+   log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{j} > 0
 
 and
 
 .. math::
-   \beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j
+   \beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j
 
 Hence, for each training data sample :math:`(X_{i}, y_i)`, we adjust the model parameters :math:`\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}` by considering the thresholds :math:`\beta^{T}X_i + \theta_j` directly. The following loss function is used to adjust the model parameters:
 
