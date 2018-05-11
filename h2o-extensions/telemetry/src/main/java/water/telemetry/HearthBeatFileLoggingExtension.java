@@ -39,7 +39,7 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     public void report(HeartBeat data, long timestamp, String ipAndPort) {
         if (!initializedLogger){
             registerRollingFileAppenderToAsyncAppender();
-            initializedLogger = false;
+            initializedLogger = true;
         }
 
         String s = enhanceHeartBeatJson(data, timestamp, ipAndPort);
