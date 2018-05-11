@@ -396,11 +396,11 @@ As a result, there is a small disconnect between the two. To remedy this, we hav
 
 Recall that during prediction, a dataset row represented by $X_i$ will be set to class $j$ if 
 
-$$log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j} > 0 \; \text{for} \; j$$
+$$log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{j} > 0 $$
 
 and
 
-$$\beta^{T}X_i + \theta_{j_i} \leq 0 \; \text{for} \; j' < j$$
+$$\beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j$$
 
 Hence, for each training data sample $(X_{i}, y_i)$, we adjust the model parameters $\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}$ by considering the thresholds $`\beta^{T}X_i + \theta_j$ directly. The following loss function is used to adjust the model parameters:
 
