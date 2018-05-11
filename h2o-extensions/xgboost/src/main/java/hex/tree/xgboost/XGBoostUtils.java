@@ -11,6 +11,7 @@ import water.util.Log;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
+import java.math.BigInteger;
 import java.util.*;
 
 import static water.H2O.technote;
@@ -19,6 +20,9 @@ import static water.MemoryManager.malloc4f;
 
 public class XGBoostUtils {
 
+    /**
+     * Initial size of array allocated for XGBoost's purpose
+     */
     private static final int ALLOCATED_ARRAY_LEN = 1048576; // 1 << 20
 
     public static String makeFeatureMap(Frame f, DataInfo di) {
@@ -51,12 +55,12 @@ public class XGBoostUtils {
      * @throws XGBoostError
      */
     public static DMatrix convertFrameToDMatrix(Key<DataInfo> dataInfoKey,
-                                         Frame f,
-                                         boolean onlyLocal,
-                                         String response,
-                                         String weight,
-                                         String fold,
-                                         boolean sparse) throws XGBoostError {
+                                                Frame f,
+                                                boolean onlyLocal,
+                                                String response,
+                                                String weight,
+                                                String fold,
+                                                boolean sparse) throws XGBoostError {
 
         int[] chunks;
         Vec vec = f.anyVec();
@@ -272,13 +276,14 @@ public class XGBoostUtils {
                 if (csc) {
                     trainMat = csc(chunks, weight, nRows, di, resp, weights);
                 } else {
-                    trainMat = csr(chunks, weight, response, (int) nRows, di, resp, weights);
+                    trainMat = csr(chunks, weight, response, nRows, di, resp, weights);
                 }
             } else {
                 trainMat = dense(chunks, weight, di, response, resp, weights);
             }
         } catch (NegativeArraySizeException e) {
-            throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+            throw new IllegalArgumentException(technote(11,
+                "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
         }
 
         int len = (int) trainMat.rowNum();
@@ -318,7 +323,7 @@ public class XGBoostUtils {
     }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
-    private static final long MAX_ELEMENTS = (long) ARRAY_MAX * ARRAY_MAX;
+    private static final BigInteger MAX_DMATRIX_SIZE = BigInteger.valueOf((long) ARRAY_MAX * ARRAY_MAX);
 
     private static long denseChunk(float[][] data,
                                   int[] chunks, Frame f, // for MR task
@@ -747,21 +752,27 @@ public class XGBoostUtils {
             }
         }
     }
-    private static final IllegalArgumentException TOO_BIG_DATASET_EXCEPTION = new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-    private static float[][] allocateData(long chunkLength, DataInfo dataInfo) {
-        long totalValues;
-        try {
-            totalValues = MathUtils.multiplyExact(chunkLength, dataInfo.fullN());
-            if (totalValues > MAX_ELEMENTS) throw TOO_BIG_DATASET_EXCEPTION;
-        } catch (ArithmeticException e){
-            throw TOO_BIG_DATASET_EXCEPTION;
 
+    private static float[][] allocateData(long rowCount, DataInfo dataInfo) {
+        BigInteger totalValues = BigInteger.valueOf(rowCount)
+            .multiply(BigInteger.valueOf(dataInfo.fullN()));
+        Log.info("An attempt to allocate DMatrix backing array with " + totalValues.toString() + " elements.");
+
+        if (totalValues.compareTo(MAX_DMATRIX_SIZE) > 0) {
+            throw new IllegalArgumentException(
+                technote(11, "Data won't fit into XGBoost's DMatrix. Please use H2O GBM instead. Maximumum size is " + MAX_DMATRIX_SIZE.toString()
+                    + ", required matrix size is " + totalValues.toString()));
         }
-        int noOfLines = (int) (totalValues / ARRAY_MAX);
-        int lastLineSize = (int) (totalValues % ARRAY_MAX);
-        float[][] data = new float[lastLineSize > 0 ? noOfLines + 1 : noOfLines][];
 
-        for (int i = 0; i < noOfLines; i++) {
+        long totalValuesLong = totalValues.longValue();
+
+        int noFullLines = (int) (totalValuesLong / ARRAY_MAX);
+        int lastLineSize = (int) (totalValuesLong % ARRAY_MAX);
+        float[][] data = new float[lastLineSize > 0 ? noFullLines + 1 : noFullLines][];
+        Log.info("XGBoost DMatrix backing array rows " + data.length + ". Row size: " + ARRAY_MAX);
+        Log.info("Last row length: " + data[data.length - 1].length);
+
+        for (int i = 0; i < noFullLines; i++) {
             data[i] = malloc4f(ARRAY_MAX);
         }
 
