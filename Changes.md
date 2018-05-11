@@ -2,6 +2,51 @@
 
 ## H2O
 
+### Wolpert (3.18.0.9) - 5/11/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5290'>PUBDEV-5290</a>] - Fixed an issue that caused distributed XGBoost to not be registered in the REST API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5325'>PUBDEV-5325</a>] - Fixed an issue that caused XGBoost to crash due "too many open files."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5444'>PUBDEV-5444</a>] - Frames are now rebalanced correctly on multinode clusters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5464'>PUBDEV-5464</a>] - Fixed an issue that prevented H2O libraries to load in DBC.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5507'>PUBDEV-5507</a>] - Added more robust checks for Colorama version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5510'>PUBDEV-5510</a>] - Added more robust checks for Colorama version in H2O Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5518'>PUBDEV-5518</a>] - A response column is no longer required when performing Deep Learning grid search with autoencoder enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5527'>PUBDEV-5527</a>] - Fixed a KeyV3 error message that incorrectly referenced KeyV1.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5544'>PUBDEV-5544</a>] - The external backend now stores sparse vector values correctly.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5456'>PUBDEV-5456</a>] - Added a new rank_within_group_by function in R and Python for ranking groups and storing the ranks in a new column.
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5500'>PUBDEV-5500</a>] - Improved warning messages in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5537'>PUBDEV-5537</a>] - System administrators can now create a configuration file with implicit arguments of h2odriver and use it to make sure the h2o cluster is started with proper security settings. 
+</li>
+</ul>
+
+
 ### Wolpert (3.18.0.8) - 4/19/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html</a>
