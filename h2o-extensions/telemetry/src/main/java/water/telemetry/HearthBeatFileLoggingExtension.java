@@ -47,8 +47,10 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     }
 
     private String enhanceHeartBeatJson(HeartBeat hb, long timestamp, String ipAndPort){
+        String result = hb.toJsonString();
+
         StringBuilder sb = new StringBuilder();
-        sb.append("{\"timestamp\":").append(new Date(timestamp)).append(timestamp).append(",\"ip_port\":\"").append(ipAndPort).append("\", \"heart_beat\":")
+        sb.append("{\"timestamp\":\"").append(new Date(timestamp)).append(timestamp).append("\",\"ip_port\":\"").append(ipAndPort).append("\", \"heart_beat\":")
         .append(hb.toJsonString())
         .append("}\n");
         return sb.toString();
