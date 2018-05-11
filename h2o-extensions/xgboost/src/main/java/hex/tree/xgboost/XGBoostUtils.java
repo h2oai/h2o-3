@@ -8,7 +8,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import water.util.MathUtils;
 import water.util.VecUtils;
 
 import java.math.BigInteger;
@@ -21,9 +20,10 @@ import static water.MemoryManager.malloc4f;
 public class XGBoostUtils {
 
     /**
-     * Initial size of array allocated for XGBoost's purpose
+     * Arbitrary chosen initial size of array allocated for XGBoost's purpose.
+     * Used in case of sparse matrices.
      */
-    private static final int ALLOCATED_ARRAY_LEN = 1048576; // 1 << 20
+    private static final int ALLOCATED_ARRAY_LEN = 1048576;
 
     public static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
@@ -753,8 +753,16 @@ public class XGBoostUtils {
         }
     }
 
-    private static float[][] allocateData(long rowCount, DataInfo dataInfo) {
-        BigInteger totalValues = BigInteger.valueOf(rowCount)
+    /**
+     * Allocated an exactly-sized float[] array serving as a backing array for XGBoost's {@link DMatrix}.
+     * The backing array created by this method does not contain any actual data and needs to be filled.
+     *
+     * @param rowCount Number of rows to allocate data for
+     * @param dataInfo An instance of {@link DataInfo}
+     * @return An exactly-sized Float[] backing array for XGBoost's {@link DMatrix} to be filled with data.
+     */
+    private static float[][] allocateData(final long rowCount, final DataInfo dataInfo) {
+        final BigInteger totalValues = BigInteger.valueOf(rowCount)
             .multiply(BigInteger.valueOf(dataInfo.fullN()));
         Log.info("An attempt to allocate DMatrix backing array with " + totalValues.toString() + " elements.");
 
@@ -764,13 +772,13 @@ public class XGBoostUtils {
                     + ", required matrix size is " + totalValues.toString()));
         }
 
-        long totalValuesLong = totalValues.longValue();
+        final long totalValuesLong = totalValues.longValue();
 
-        int noFullLines = (int) (totalValuesLong / ARRAY_MAX);
-        int lastLineSize = (int) (totalValuesLong % ARRAY_MAX);
-        float[][] data = new float[lastLineSize > 0 ? noFullLines + 1 : noFullLines][];
-        Log.info("XGBoost DMatrix backing array rows " + data.length + ". Row size: " + ARRAY_MAX);
-        Log.info("Last row length: " + data[data.length - 1].length);
+        final int noFullLines = (int) (totalValuesLong / ARRAY_MAX);
+        final int lastLineSize = (int) (totalValuesLong % ARRAY_MAX);
+        final float[][] data = new float[lastLineSize > 0 ? noFullLines + 1 : noFullLines][];
+        Log.info("XGBoost's DMatrix float[][] backing array has " + data.length + " row(s). Row size: "
+            + ARRAY_MAX + ". Last row length: " + lastLineSize);
 
         for (int i = 0; i < noFullLines; i++) {
             data[i] = malloc4f(ARRAY_MAX);
