@@ -874,6 +874,9 @@ public class XGBoostTest extends TestUtil {
         Assert.assertNotNull("Validation metrics are not null", model._output._validation_metrics);
         Assert.assertEquals("Initial model output metrics contains 2 model metrics",
                             2, model._output.getModelMetrics().length);
+        for(String name : model._output._names){
+          Assert.assertNotEquals(parms._ignored_columns[0], name);
+        }
 
         model.score(testFrame).remove();
         Assert.assertEquals("After scoring on test data, model output metrics contains 2 model metrics",
