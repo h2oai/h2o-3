@@ -3782,6 +3782,13 @@ h2o.arrange <- function(x, ...) {
   .newExpr("sort", x, by-1L, as.numeric(ascend))
 }
 
+
+#' CHeck to see if the column names/indices entered is valid for the dataframe given.  This is an internal function
+#'
+#' @param data The H2OFrame whose column names or indices are entered as a list
+#' @param by The column names/indices in a list.
+#'
+#' @export
 generate_col_ind <-function(data, by) {
   ### handle the columns
   # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
@@ -3816,7 +3823,7 @@ generate_col_ind <-function(data, by) {
 #'
 #'
 #' @param x The H2OFrame input to be sorted.
-#' @param groupby_cols a list of column names or indices to form the groupby groups
+#' @param group_by_cols a list of column names or indices to form the groupby groups
 #' @param sort_cols a list of column names or indices for sorting
 #' @param ascending a list of Boolean to determine if ascending sort (set to TRUE) is needed for each column in
 #'  sort_cols (optional).  Default is ascending sort for all.  To perform descending sort, set value to FALSE
