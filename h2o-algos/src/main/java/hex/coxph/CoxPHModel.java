@@ -51,6 +51,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
 
+    public boolean _calc_cumhaz = false; // not needed yet; exposed to tests only
+
     String[] responseCols() {
       String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];
       if (isStratified())
@@ -201,6 +203,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _n_risk;
     double[] _n_event;
     double[] _n_censor;
+
     double[] _cumhaz_0;
     double[] _var_cumhaz_1;
     double[][] _var_cumhaz_2;
