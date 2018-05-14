@@ -24,12 +24,14 @@ def call(final pipelineContext) {
                         archiveFiles = false
                         makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                     }
+                    findAutoMLTests(pipelineContext, pipelineContext.getBuildConfig().COMPONENT_PY)
                     makeTarget(pipelineContext) {
                         target = 'test-package-py'
                         hasJUnit = false
                         archiveFiles = false
                         makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                     }
+                    findAutoMLTests(pipelineContext, pipelineContext.getBuildConfig().COMPONENT_R)
                     makeTarget(pipelineContext) {
                         target = 'test-package-r'
                         hasJUnit = false
@@ -95,6 +97,20 @@ def call(final pipelineContext) {
         pipelineContext.getBuildSummary().markStageFailed(this, stageName)
         throw e
     }
+}
+
+/**
+ * Finds all AutoML tests for given component and writes them to "tests/${component}unitAutoMLList". Test is considered
+ * AutoML-related, if its name contains *automl*.
+ * @param pipelineContext
+ * @param component component to find AutoML tests for
+ */
+private def findAutoMLTests(final pipelineContext, final component) {
+    final def supportedComponents = [pipelineContext.getBuildConfig().COMPONENT_PY, pipelineContext.getBuildConfig().COMPONENT_R]
+    if (!supportedComponents.contains(component)) {
+        error "Component ${component} is not supported. Supported components are ${supportedComponents.join(', ')}"
+    }
+    sh "find h2o-3/h2o-${component}/tests -name '*automl*' -type f -exec basename {} \\; > h2o-3/tests/${component}unitAutoMLList"
 }
 
 return this
