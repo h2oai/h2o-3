@@ -19,7 +19,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -269,23 +271,30 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.dense) {
         model._output._sparse = false;
       } else {
-        float fillRatio = 0;
-        int col = 0;
+        BigDecimal nonZeroCount = BigDecimal.ZERO;
+        int nonCategoricalCols = 0;
         long numOneHotEncodedCols = 0;
         for (int i = 0; i < _train.numCols(); ++i) {
           if (_train.name(i).equals(_parms._response_column)) continue;
           if (_train.name(i).equals(_parms._weights_column)) continue;
           if (_train.name(i).equals(_parms._fold_column)) continue;
           if (_train.name(i).equals(_parms._offset_column)) continue;
+          // This may overflow and will need to be fixed in production code
           numOneHotEncodedCols += Math.max(0, _train.vec(i).cardinality());
-          fillRatio += _train.vec(i).nzCnt() / _train.numRows();
-          col++;
+          if(_train.vec(i).isCategorical()){
+            nonZeroCount = nonZeroCount.add(BigDecimal.valueOf(_train.numRows()));
+          }else {
+            nonZeroCount = nonZeroCount.add(BigDecimal.valueOf(_train.vec(i).nzCnt()));
+          }
+          if(!_train.vec(i).isCategorical()) {
+            nonCategoricalCols++;
+          }
         }
-        final double categoricalRatio = (double) numOneHotEncodedCols / col;
-        fillRatio /= col;
+        BigDecimal denominator = BigDecimal.valueOf(numOneHotEncodedCols).add(BigDecimal.valueOf(nonCategoricalCols));
+        denominator = denominator.multiply(BigDecimal.valueOf(_train.numRows()), MathContext.DECIMAL128);
+        double fillRatio = nonZeroCount.divide(denominator, MathContext.DECIMAL128).doubleValue();
         Log.info("fill ratio: " + fillRatio);
-        Log.info("Categorical columns ratio (one-hot encoded): " + categoricalRatio);
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE) || (categoricalRatio > 0.5);
+        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
