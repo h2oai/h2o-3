@@ -251,13 +251,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     private class EfronUpdateFun extends MrFun<EfronUpdateFun> {
       transient CoxPHTask _coxMR;
+      transient XXRiskTask _xxRisk;
       int _n_coef;
       double _logLik;
       double[] _gradient;
       double[][] _hessian;
 
-      private EfronUpdateFun(ComputationState cs, CoxPHTask coxMR) {
+      private EfronUpdateFun(ComputationState cs, CoxPHTask coxMR, XXRiskTask xxRisk) {
         _coxMR = coxMR;
+        _xxRisk = xxRisk;
         _n_coef = cs._n_coef;
         _logLik = cs._logLik;
         _gradient = cs._gradient;
@@ -286,7 +288,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               _gradient[j] -= avgSize * djLogTerm;
               for (int k = 0; k < _n_coef; ++k) {
                 final double dkTerm  = _coxMR.rcumsumXRisk[t][k] - frac * _coxMR.sumXRiskEvents[t][k];
-                final double djkTerm = _coxMR.rcumsumXXRisk[t][j][k] - frac * _coxMR.sumXXRiskEvents[t][j][k];
+                final double djkTerm = _xxRisk.rcumsumXXRisk[t][j][k] - frac * _xxRisk.sumXXRiskEvents[t][j][k];
                 _hessian[j][k] -= avgSize * (djkTerm / term - (djLogTerm * (dkTerm / term)));
               }
             }
@@ -306,7 +308,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       @Override
       protected MrFun<EfronUpdateFun> makeCopy() {
-        return new EfronUpdateFun(new ComputationState(_n_coef), _coxMR);
+        return new EfronUpdateFun(new ComputationState(_n_coef), _coxMR, _xxRisk);
       }
 
       ComputationState toComputationState(ComputationState cs) {
@@ -324,7 +326,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       cs.reset();
       switch (p._ties) {
         case efron:
-          EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
+          EfronUpdateFun f = new EfronUpdateFun(cs, coxMR, coxMR._xxRisk);
           H2O.submitTask(new LocalMR(f, n_time)).join();
           return f.toComputationState(cs);
         case breslow:
@@ -342,7 +344,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                 cs._gradient[j] -= sizeEvents_t * dlogTerm;
                 for (int k = 0; k < n_coef; ++k)
                   cs._hessian[j][k] -= sizeEvents_t *
-                          (((coxMR.rcumsumXXRisk[t][j][k] / rcumsumRisk_t) -
+                          (((coxMR._xxRisk.rcumsumXXRisk[t][j][k] / rcumsumRisk_t) -
                                   (dlogTerm * (coxMR.rcumsumXRisk[t][k] / rcumsumRisk_t))));
               }
             }
@@ -594,6 +596,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private final long     _min_event;
     private final int      _num_strata; // = 1 if the model is not stratified
 
+    XXRiskTask _xxRisk;
+
     long         n;
     double[]     sumWeights;
     double[][]   sumWeightedCatX;
@@ -605,11 +609,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[][]   sumXEvents;
     double[]     sumRiskEvents;
     double[][]   sumXRiskEvents;
-    double[][][] sumXXRiskEvents;
     double[]     sumLogRiskEvents;
     double[]     rcumsumRisk;
     double[][]   rcumsumXRisk;
-    double[][][] rcumsumXXRisk;
 
     CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
               final int n_offsets, final boolean has_start_column, Vec strata_column, final boolean has_weights_column) {
@@ -622,6 +624,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       _has_strata_column  = strata_column != null;
       _has_weights_column = has_weights_column;
       _num_strata         = _has_strata_column ? 1 + (int) strata_column.max() : 1;
+      _xxRisk             = new XXRiskTask(jobKey, dinfo, has_start_column, time.length, _num_strata, _beta.length);
     }
 
     @Override
@@ -642,8 +645,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sumXEvents       = malloc2DArray(n_time, n_coef);
       sumXRiskEvents   = malloc2DArray(n_time, n_coef);
       rcumsumXRisk     = malloc2DArray(n_time, n_coef);
-      sumXXRiskEvents  = malloc3DArray(n_time, n_coef, n_coef);
-      rcumsumXXRisk    = malloc3DArray(n_time, n_coef, n_coef);
+
+      _xxRisk.chunkInit();
+
       return true;
     }
 
@@ -658,7 +662,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (weight <= 0)
         throw new IllegalArgumentException("weights must be positive values");
       int respIdx = response.length - 1;
-      final long event = (long) (response[respIdx--] - _min_event);
+      final boolean event = (response[respIdx--] - _min_event) > 0;
       double stopTime = response[respIdx--];
       double startTime = _has_start_column ? response[respIdx--] : _time[0] - 1;
       double strata = _has_strata_column ? response[respIdx--] : 0;
@@ -691,7 +695,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         logRisk += nums[j];
       final double risk = weight * Math.exp(logRisk);
       logRisk *= weight;
-      if (event > 0) {
+      if (event) {
         countEvents[t2]++;
         sizeEvents[t2]       += weight;
         sumLogRiskEvents[t2] += logRisk;
@@ -715,7 +719,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         final int j          = jIsCat ? cats[jit] : numStartIter + jit;
         final double x1      = jIsCat ? 1.0 : nums[jit - ncats];
         final double xRisk   = x1 * risk;
-        if (event > 0) {
+        if (event) {
           sumXEvents[t2][j]     += weight * x1;
           sumXRiskEvents[t2][j] += xRisk;
         }
@@ -725,20 +729,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         } else {
           rcumsumXRisk[t2][j]   += xRisk;
         }
-        for (int kit = 0; kit < ntotal; ++kit) {
-          final boolean kIsCat = kit < ncats;
-          final int k          = kIsCat ? cats[kit] : numStartIter + kit;
-          final double x2      = kIsCat ? 1.0 : nums[kit - ncats];
-          final double xxRisk  = x2 * xRisk;
-          if (event > 0)
-            sumXXRiskEvents[t2][j][k] += xxRisk;
-          if (_has_start_column) {
-            for (int t = t1; t <= t2; ++t)
-              rcumsumXXRisk[t][j][k]  += xxRisk;
-          } else {
-            rcumsumXXRisk[t2][j][k]   += xxRisk;
-          }
-        }
+        _xxRisk.updateSums(t1, t2, event, xRisk, j, ntotal, ncats, cats, nums, numStartIter);
       }
     }
 
@@ -755,11 +746,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(sumXEvents,       that.sumXEvents);
       ArrayUtils.add(sumRiskEvents,    that.sumRiskEvents);
       ArrayUtils.add(sumXRiskEvents,   that.sumXRiskEvents);
-      ArrayUtils.add(sumXXRiskEvents,  that.sumXXRiskEvents);
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
       ArrayUtils.add(rcumsumXRisk,     that.rcumsumXRisk);
-      ArrayUtils.add(rcumsumXXRisk,    that.rcumsumXXRisk);
+      _xxRisk.reduce(that._xxRisk);
     }
 
     @Override
@@ -771,13 +761,75 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int t = rcumsumXRisk.length - 2; t >= 0; --t)
           for (int j = 0; j < rcumsumXRisk[t].length; ++j)
             rcumsumXRisk[t][j] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXRisk[t + 1][j];
+      }
+      _xxRisk.postGlobal();
+    }
+  }
 
+  private static class XXRiskTask extends FrameTask<XXRiskTask> {
+    double[][][] sumXXRiskEvents;
+    double[][][] rcumsumXXRisk;
+
+    boolean _hasStartColumn;
+    int _timeLength;
+    int _numStrata;
+    int _nCoef;
+
+    public XXRiskTask(Key<Job> jobKey, DataInfo dinfo, boolean hasStartColumn, int timeLength, int numStrata, int nCoef) {
+      super(jobKey, dinfo);
+      _hasStartColumn = hasStartColumn;
+      _timeLength = timeLength;
+      _numStrata = numStrata;
+      _nCoef = nCoef;
+    }
+
+    @Override
+    protected boolean chunkInit() {
+      final int nTime = _timeLength * _numStrata;
+      sumXXRiskEvents = malloc3DArray(nTime, _nCoef, _nCoef);
+      rcumsumXXRisk = malloc3DArray(nTime, _nCoef, _nCoef);
+      return true;
+    }
+
+    @Override
+    protected void processRow(long gid, Row r) {
+      throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    private void updateSums(int t1, int t2, boolean event, double xRisk, int j,
+                            int ntotal, int ncats, int[] cats, double[] nums, int numStartIter) {
+      for (int kit = 0; kit < ntotal; ++kit) {
+        final boolean kIsCat = kit < ncats;
+        final int k          = kIsCat ? cats[kit] : numStartIter + kit;
+        final double x2      = kIsCat ? 1.0 : nums[kit - ncats];
+        final double xxRisk  = x2 * xRisk;
+        if (event)
+          sumXXRiskEvents[t2][j][k] += xxRisk;
+        if (_hasStartColumn) {
+          for (int t = t1; t <= t2; ++t)
+            rcumsumXXRisk[t][j][k]  += xxRisk;
+        } else {
+          rcumsumXXRisk[t2][j][k]   += xxRisk;
+        }
+      }
+    }
+
+    @Override
+    public void reduce(XXRiskTask that) {
+      ArrayUtils.add(sumXXRiskEvents,  that.sumXXRiskEvents);
+      ArrayUtils.add(rcumsumXXRisk,    that.rcumsumXXRisk);
+    }
+
+    @Override
+    protected void postGlobal() {
+      if (!_hasStartColumn) {
         for (int t = rcumsumXXRisk.length - 2; t >= 0; --t)
           for (int j = 0; j < rcumsumXXRisk[t].length; ++j)
             for (int k = 0; k < rcumsumXXRisk[t][j].length; ++k)
-              rcumsumXXRisk[t][j][k] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXXRisk[t + 1][j][k];
+              rcumsumXXRisk[t][j][k] += ((t + 1) % _timeLength) == 0 ? 0 : rcumsumXXRisk[t + 1][j][k];
       }
     }
+
   }
 
   private static class CollectTimes extends VecUtils.CollectDoubleDomain {
