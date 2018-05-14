@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -270,17 +271,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else {
         float fillRatio = 0;
         int col = 0;
+        long numOneHotEncodedCols = 0;
         for (int i = 0; i < _train.numCols(); ++i) {
           if (_train.name(i).equals(_parms._response_column)) continue;
           if (_train.name(i).equals(_parms._weights_column)) continue;
           if (_train.name(i).equals(_parms._fold_column)) continue;
           if (_train.name(i).equals(_parms._offset_column)) continue;
+          numOneHotEncodedCols += Math.max(0, _train.vec(i).cardinality());
           fillRatio += _train.vec(i).nzCnt() / _train.numRows();
           col++;
         }
+        final double categoricalRatio = (double) numOneHotEncodedCols / col;
         fillRatio /= col;
         Log.info("fill ratio: " + fillRatio);
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+        Log.info("Categorical columns ratio (one-hot encoded): " + categoricalRatio);
+        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE) || (categoricalRatio > 0.5);
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
