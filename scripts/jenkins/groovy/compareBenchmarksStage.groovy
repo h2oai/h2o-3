@@ -4,7 +4,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'gbm': [
             'paribas': [
                 50: [
-                    'train_time_min': 9.1,
+                    'train_time_min': 9.0,
                     'train_time_max': 11.7
                 ],
                 200: [
@@ -28,7 +28,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 33.5
                 ],
                 200: [
-                    'train_time_min': 128.0,
+                    'train_time_min': 124.0,
                     'train_time_max': 136
                 ]
             ],
@@ -39,7 +39,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 463.0,
-                    'train_time_max': 497.0
+                    'train_time_max': 512.0
                 ]
             ],
             'higgs': [
@@ -76,7 +76,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 'airlines-10m': [
                     100: [
-                        'train_time_min': 60,
+                        'train_time_min': 58,
                         'train_time_max': 83
                     ]
                 ]
