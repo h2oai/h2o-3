@@ -68,6 +68,18 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
       timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -77,6 +89,14 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.4 Small AutoML', target: 'test-r-small-automl', rVersion: '3.4.1',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.4 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.4.1',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -191,6 +211,14 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.3 Small AutoML', target: 'test-r-small-automl', rVersion: '3.3.3',
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+    ],
+    [
+      stageName: 'R3.3 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.3.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
