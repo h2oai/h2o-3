@@ -787,8 +787,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void checkResponseVariable() {
 
-    if (_response != null && (!_response.isNumeric() && !_response.isCategorical())) {
-      error("_response_column", "Use numerical or categorical variable. Currently used " + _response.get_type_str());
+    if (_response != null && (!_response.isNumeric() && !_response.isCategorical() && !_response.isTime())) {
+      error("_response_column", "Use numerical, categorical or time variable. Currently used " + _response.get_type_str());
     }
 
   }
