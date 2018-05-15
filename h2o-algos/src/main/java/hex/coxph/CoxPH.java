@@ -206,7 +206,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._z_coef = MemoryManager.malloc8d(n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
       o._x_mean_cat = new double[o.data_info.numCats()][];
-      o._x_mean_num = new double[o.data_info.numNums()][];
+      o._x_mean_num = new double[o.data_info.numNums() - n_offsets][];
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
@@ -235,7 +235,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int j = 0; j < o._x_mean_num[s].length; j++)
           o._x_mean_num[s][j] = o.data_info._normSub[j] + o._x_mean_num[s][j] / coxMR.sumWeights[s];
       }
-      System.arraycopy(o.data_info._normSub, o.data_info.numNums(), o._mean_offset, 0, o._mean_offset.length);
+      System.arraycopy(o.data_info._normSub, o.data_info.numNums() - o._mean_offset.length, o._mean_offset, 0, o._mean_offset.length);
       for (int t = 0; t < coxMR.countEvents.length; ++t) {
         o._total_event += coxMR.countEvents[t];
         if (coxMR.sizeEvents[t] > 0 || coxMR.sizeCensored[t] > 0) {
