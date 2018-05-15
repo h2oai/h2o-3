@@ -12,6 +12,7 @@ import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.*;
 import water.util.Timer;
 
@@ -271,30 +272,32 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.dense) {
         model._output._sparse = false;
       } else {
-        BigDecimal nonZeroCount = BigDecimal.ZERO;
-        int nonCategoricalCols = 0;
-        long numOneHotEncodedCols = 0;
+        long nonZeroCount = 0;
+        int nonCategoricalColumns = 0;
+        long oneHotEncodedColumns = 0;
         for (int i = 0; i < _train.numCols(); ++i) {
           if (_train.name(i).equals(_parms._response_column)) continue;
           if (_train.name(i).equals(_parms._weights_column)) continue;
           if (_train.name(i).equals(_parms._fold_column)) continue;
           if (_train.name(i).equals(_parms._offset_column)) continue;
-          // This may overflow and will need to be fixed in production code
-          numOneHotEncodedCols += Math.max(0, _train.vec(i).cardinality());
-          if(_train.vec(i).isCategorical()){
-            nonZeroCount = nonZeroCount.add(BigDecimal.valueOf(_train.numRows()));
+          final Vec vector = _train.vec(i);
+          if(vector.isCategorical()){
+            nonZeroCount += _train.numRows();
           }else {
-            nonZeroCount = nonZeroCount.add(BigDecimal.valueOf(_train.vec(i).nzCnt()));
+            nonZeroCount += vector.nzCnt();
           }
-          if(!_train.vec(i).isCategorical()) {
-            nonCategoricalCols++;
+          if(vector.isCategorical()) {
+            oneHotEncodedColumns += vector.cardinality();
+          } else {
+            nonCategoricalColumns++;
           }
         }
-        BigDecimal denominator = BigDecimal.valueOf(numOneHotEncodedCols).add(BigDecimal.valueOf(nonCategoricalCols));
-        denominator = denominator.multiply(BigDecimal.valueOf(_train.numRows()), MathContext.DECIMAL128);
-        double fillRatio = nonZeroCount.divide(denominator, MathContext.DECIMAL128).doubleValue();
+        final long totalColumns = oneHotEncodedColumns + nonCategoricalColumns;
+        final double denominator = (double) totalColumns * _train.numRows();
+        final double fillRatio = (double) nonZeroCount / denominator;
         Log.info("fill ratio: " + fillRatio);
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+
+        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
