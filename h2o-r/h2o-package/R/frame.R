@@ -3214,14 +3214,13 @@ destination_frame.guess <- function(x) {
 #' options(op)
 use.package <- function(package, 
                         version="1.9.8"[package=="data.table"], 
-                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+                        use=getOption("h2o.use.data.table", TRUE)[package=="data.table"]) {
   ## methods that depends on use.package default arguments (to have control in single place):
   # as.h2o.data.frame
   # as.data.frame.H2OFrame
   stopifnot(is.character(package), length(package)==1L,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
-
   # if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
   #   if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
   #      # print out warning to install bit64 in order to use data.table
