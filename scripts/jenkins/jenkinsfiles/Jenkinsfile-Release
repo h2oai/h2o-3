@@ -474,10 +474,7 @@ EOF
                                                 echo '****** WARNING! Upload to PyPI suppressed ******'
                                             else
                                                 echo '****** Upload to PyPI ******'
-                                                echo 'Because PyPI returns HTTP 503 although upload has been successfull, ignore this error. The package will be checked afterwards'
-                                                set +e
                                                 twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
-                                                set -e
                                             fi
                                         """
                                     }
@@ -487,36 +484,6 @@ EOF
                                 pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
                                 throw e
                             }
-                        }
-                        // check that pip package for each Python version reports correct H2O version
-                        if (!params.TEST_RELEASE) {
-                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
-                                def checkPyPIStageName = "Check Py${pyVersion} PyPI Package"
-                                stage(checkPyPIStageName) {
-                                    try {
-                                        pipelineContext.getBuildSummary().addStageSummary(this, checkPyPIStageName, env.BUILD_NUMBER_DIR)
-                                        pipelineContext.getBuildSummary().setStageDetails(this, checkPyPIStageName, env.NODE_NAME, env.WORKSPACE)
-                                        insideDocker(["PYTHON_VERSION=${pyVersion}"], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
-                                            echo "Check PyPI package for Python ${pyVersion}"
-                                            sh """
-                                            export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-                                            echo "Activating Python ${env.PYTHON_VERSION}"
-                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-    
-                                            pip install h2o
-                                            python --version
-                                            python h2o_test.py
-                                        """
-                                        }
-                                        pipelineContext.getBuildSummary().markStageSuccessful(this, checkPyPIStageName)
-                                    } catch (Exception e) {
-                                        pipelineContext.getBuildSummary().markStageFailed(this, checkPyPIStageName)
-                                        throw e
-                                    }
-                                }
-                            }
-                        } else {
-                            echo 'Marked as TEST_RELEASE, don\'t check uploaded PyPI packages'
                         }
                     }
                 }
