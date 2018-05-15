@@ -20,9 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -34,6 +31,9 @@ import static water.H2O.technote;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+
+  private static final double FILL_RATIO_THRESHOLD = 0.3D;
+
   @Override public boolean haveMojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
@@ -297,7 +297,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         final double fillRatio = (double) nonZeroCount / denominator;
         Log.info("fill ratio: " + fillRatio);
 
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
+        model._output._sparse = fillRatio < FILL_RATIO_THRESHOLD
+            || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
