@@ -3816,7 +3816,7 @@ generate_col_index <-function(data, by) {
 #'
 #'
 #' @param x The H2OFrame input to be sorted.
-#' @param groupby_cols a list of column names or indices to form the groupby groups
+#' @param group_by_cols a list of column names or indices to form the groupby groups
 #' @param sort_cols a list of column names or indices for sorting
 #' @param ascending a list of Boolean to determine if ascending sort (set to TRUE) is needed for each column in
 #'  sort_cols (optional).  Default is ascending sort for all.  To perform descending sort, set value to FALSE
