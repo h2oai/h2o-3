@@ -849,11 +849,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
     searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
-/*
-    if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
-      searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
-*/
-
     Job<Grid>gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
     return gbmJob;
   }
@@ -1225,14 +1220,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 lastStartTime.getHours() == startTime.getHours() &&
                 lastStartTime.getMinutes() == startTime.getMinutes() &&
                 lastStartTime.getSeconds() == startTime.getSeconds())
-/*
-          // Sleep is causing a deadlock; busy-wait instead.
-          try {
-            Thread.currentThread().sleep(1000);
-          }
-          catch (InterruptedException e) {
-          }
-*/
           startTime = new Date();
       }
       lastStartTime = startTime;
@@ -1305,16 +1292,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       validationFrame.delete();
     }
   }
-
-  /*
-  private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
-    // TODO: handle validation frame if present
-    Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr, fm.weights());
-    ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
-    mb._parms._ignored_columns = fm.ignoredCols();
-    return mb;
-  }
-  */
 
   public Job job() {
     if (null == this.job) return null;
