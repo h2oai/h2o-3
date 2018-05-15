@@ -48,8 +48,14 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     if (_parms._train != null && _parms.train() != null) {
-      if (_parms._start_column != null) {
-        if (_parms.startVec().isNumeric()) {
+      if ((_parms._start_column != null) && (! _parms.startVec().isNumeric())) {
+        error("start_column", "start time must be undefined or of type numeric");
+      }
+
+      if (_parms._stop_column != null) {
+        if (! _parms.stopVec().isNumeric())
+          error("stop_column", "stop time must be of type numeric");
+        else
           if (expensive) {
             try {
               CollectTimes.collect(_parms.stopVec());
@@ -57,13 +63,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               error("stop_column", e.getMessage());
             }
           }
-        } else {
-          error("start_column", "start time must be undefined or of type numeric");
-        }
       }
-
-      if ((_parms._stop_column != null) && ! _parms.stopVec().isNumeric())
-        error("stop_column", "stop time must be of type numeric");
 
       if ((_parms._response_column != null) && ! _response.isInt() && (! _response.isCategorical()))
         error("response_column", "response/event column must be of type integer or factor");
