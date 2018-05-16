@@ -194,6 +194,11 @@ public class XGBoostUtils {
       }
     }
 
+    @Override
+    public void reduce(ChunkZeroCounter mrt) {
+      this._zeroCount += mrt._zeroCount;
+    }
+
     private boolean countedChunk(int checkedCID) {
       for (int cid : localChunkIDs) {
         if (checkedCID == cid) return true;
