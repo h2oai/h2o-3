@@ -585,11 +585,6 @@ public class XGBoostUtils {
                     data[currentRow][currentCol] = 1; //one-hot encoding
                     colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
                     nz++;
-                } else {
-                    // NA == 0 for sparse -> no need to fill
-//            data[nz] = 1; //one-hot encoding
-//            colIndex[nz] = di.getCategoricalId(j, Double.NaN); //Fill NA bucket
-//            nz++;
                 }
             }
             for (int j = 0; j < di._nums; ++j) {
@@ -676,7 +671,7 @@ public class XGBoostUtils {
         int rwRow = 0;
         // fill data for DMatrix
         for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            List sparseCol = col[i];
+            List<SparseItem> sparseCol = col[i];
             colHeaders[0][i] = nz;
 
             enlargeTables(data, rowIndex, sparseCol.size(), currentRow, currentCol);
@@ -687,7 +682,7 @@ public class XGBoostUtils {
                     currentRow++;
                 }
 
-                SparseItem si = (SparseItem)sparseCol.get(j);
+                SparseItem si = sparseCol.get(j);
                 rowIndex[currentRow][currentCol] = si.pos;
                 data[currentRow][currentCol] = (float)si.val;
                 assert(si.val != 0);
