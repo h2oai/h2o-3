@@ -19,7 +19,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 41.2,
-                    'train_time_max': 46.0
+                    'train_time_max': 48.0
                 ]
             ],
             'redhat': [
@@ -29,7 +29,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 124.0,
-                    'train_time_max': 134.5
+                    'train_time_max': 138.5
                 ]
             ],
             'springleaf': [
@@ -49,7 +49,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 502.0,
-                    'train_time_max': 549.0
+                    'train_time_max': 555.0
                 ]
             ]
         ],
@@ -62,7 +62,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 'airlines-10m': [
                     100: [
-                        'train_time_min': 650,
+                        'train_time_min': 643,
                         'train_time_max': 675
                     ]
                 ]
@@ -77,7 +77,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 'airlines-10m': [
                     100: [
                         'train_time_min': 58,
-                        'train_time_max': 75
+                        'train_time_max': 79
                     ]
                 ]
         ]
