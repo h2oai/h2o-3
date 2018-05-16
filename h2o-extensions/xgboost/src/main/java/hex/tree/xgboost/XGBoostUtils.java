@@ -198,7 +198,6 @@ public class XGBoostUtils {
       @Override
       protected void map(int tid) {
           Chunk c = chunks[tid];
-          if (!isCountedChunk(c.cidx())) return;
         // First element can not be iterated by c.nextNz method
         if (c.atd(0) == 0) _zeroCount++;
         int nzIndex = 0;
@@ -213,14 +212,6 @@ public class XGBoostUtils {
       public void reduce(ChunkZeroCounter mrt) {
           this._zeroCount += mrt._zeroCount;
     }
-
-      private boolean isCountedChunk(int checkedCID) {
-      for (int cid : localChunkIDs) {
-        if (checkedCID == cid) return true;
-      }
-      return false;
-    }
-
   }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
