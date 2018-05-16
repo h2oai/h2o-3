@@ -868,6 +868,22 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
   }
 }
 
+compareStringFrames <- function(frame1, frame2, prob=0.5) {
+  expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
+  dframe1 <- as.data.frame(frame1)
+  cnames1 <- names(dframe1)
+  dframe2 <- as.data.frame(frame2)
+  for (colInd in range(1, ncol(frame1))) {
+    tempName = cnames1[colInd]
+    temp1 <- dframe1[tempName]
+    temp2 <- dframe2[tempName]
+    for (rowInd in range(1,nrow(frame1))) {
+      if (runif(1,0,1) < prob)
+        expect_true(temp1[rowInd,1]==temp2[rowInd,1], info=paste0("Errow at row ", rowInd, ". Frame is value is ", temp1[rowInd,1], " , but Frame 2 value is ", temp2[rowInd, 1]))
+    }
+  }
+}
+
 calAccuracy <- function(rframe1, rframe2) {
   correctC = 0.0
   fLen = length(rframe1)
@@ -877,6 +893,27 @@ calAccuracy <- function(rframe1, rframe2) {
     }
   }
   return(correctC/fLen)
+}
+
+buildModelSaveMojoTrees <- function(params, model_name) {
+  if (model_name == "glm") {
+    model <- do.call("h2o.gbm", params)
+  } else {
+    model <- do.call("h2o.randomForest", params)
+  }
+  model_key <- model@model_id
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+    shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
+  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+
+  return(list("model"=model, "dirName"=tmpdir_name))
 }
 
 buildModelSaveMojoGLM <- function(params) {
@@ -896,7 +933,7 @@ buildModelSaveMojoGLM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename) {
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -926,6 +963,12 @@ mojoH2Opredict<-function(model, tmpdir_name, filename) {
     tmpdir_name
     )
   }
+
+  if (get_leaf_node_assignment) {
+    cmd<-paste(cmd, "--leafNodeAssignment")
+    predictions1 = h2o.predict_leaf_node_assignment(model, newTest)
+  }
+
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
   '/'), header=T)

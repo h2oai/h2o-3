@@ -30,6 +30,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 from decimal import *
 import urllib.request, urllib.error, urllib.parse
 import numpy as np
@@ -159,7 +160,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-def mojo_predict(model,tmpdir, mojoname):
+def mojo_predict(model, tmpdir, mojoname, get_leaf_node_assignment=False):
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
     It is assumed that the input data set is saved as in.csv in tmpdir directory.
@@ -181,6 +182,9 @@ def mojo_predict(model,tmpdir, mojoname):
                 "-Xmx12g", "-XX:MaxPermSize=2g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
                 "--input", os.path.join(tmpdir, 'in.csv'), "--output",
                 outFileName, "--mojo", mojoZip, "--decimal"]
+    if get_leaf_node_assignment:
+        java_cmd.append("--leafNodeAssignment")
+        predict_h2o = model.predict_leaf_node_assignment(newTest)
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
     pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
@@ -3236,6 +3240,21 @@ def cumop(items, op, colInd=0):   # take in one column only
         res[index] = op(res[index-1], items[index, colInd]) if index > 0 else items[index, colInd]
     return res
 
+def compare_string_frames_local(f1, f2, prob=0.5):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    cname1 = temp1[0]
+    cname2 = temp2[0]
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        name1 = cname1[colInd]
+        for rowInd in range(1, f2.nrow):
+            if random.uniform(0,1) < prob:
+                assert temp1[rowInd][colInd]==temp2[rowInd][cname2.index(name1)], "Failed frame values check at row {2} and column {3}! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
+
+
 def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
@@ -3277,6 +3296,34 @@ def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6):
 def build_save_model_GLM(params, x, train, respName):
     # build a model
     model = H2OGeneralizedLinearEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+def build_save_model_GBM(params, x, train, respName):
+    # build a model
+    model = H2OGradientBoostingEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+def build_save_model_DRF(params, x, train, respName):
+    # build a model
+    model = H2ORandomForestEstimator(**params)
     model.train(x=x, y=respName, training_frame=train)
     # save model
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
