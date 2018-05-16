@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static water.util.FileUtils.locateFile;
 
 public class XGBoostTest extends TestUtil {
@@ -900,6 +901,43 @@ public class XGBoostTest extends TestUtil {
         }
       }
   }
+
+  @Test
+  public void testCrossValidation() {
+    Scope.enter();
+    XGBoostModel denseModel = null;
+    XGBoostModel sparseModel = null;
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 42;
+      parms._ntrees = 5;
+      parms._weights_column = "CAPSULE";
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.dense;
+
+      // Dense model utilizes fold column zero values to calculate precise memory requirements
+      denseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(denseModel);
+
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.sparse;
+      sparseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(sparseModel);
+
+
+      Log.info(denseModel);
+    } finally {
+      if(denseModel != null) denseModel.deleteCrossValidationModels();
+      if(sparseModel != null) sparseModel.deleteCrossValidationModels();
+      Scope.exit();
+    }
+  }
+
+
 
   @Test
   public void testMojoBoosterDump() throws XGBoostError, IOException {
