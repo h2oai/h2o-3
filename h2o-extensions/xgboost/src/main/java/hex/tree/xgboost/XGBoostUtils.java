@@ -179,7 +179,7 @@ public class XGBoostUtils {
    */
   static class ChunkZeroCounter extends MRTask<ChunkZeroCounter> {
     int _zeroCount = 0;
-    int[] localChunkIDs;
+      final int[] localChunkIDs;
 
     public ChunkZeroCounter(final int[] localChunkIDs) {
       this.localChunkIDs = localChunkIDs;
@@ -188,15 +188,19 @@ public class XGBoostUtils {
     @Override
     public void map(Chunk c) {
       if (!countedChunk(c.cidx())) return;
-
-      for (int i = 0; i < c._len; i++) {
-        if (c.atd(i) == 0) _zeroCount++;
-      }
+        // First element can not be iterated by c.nextNz method
+        if (c.atd(0) == 0) _zeroCount++;
+        int nzIndex = 0;
+        do {
+            nzIndex = c.nextNZ(nzIndex, true);
+            if(nzIndex < 0 || nzIndex >= c._len) break;
+            if (nzIndex < c._len && c.atd(nzIndex) == 0) _zeroCount++;
+        } while (true);
     }
 
-    @Override
-    public void reduce(ChunkZeroCounter mrt) {
-      this._zeroCount += mrt._zeroCount;
+      @Override
+      public void reduce(ChunkZeroCounter mrt) {
+          this._zeroCount += mrt._zeroCount;
     }
 
     private boolean countedChunk(int checkedCID) {
