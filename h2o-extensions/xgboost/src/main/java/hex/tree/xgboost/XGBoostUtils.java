@@ -3,8 +3,10 @@ package hex.tree.xgboost;
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import water.H2O;
 import water.Key;
-import water.MRTask;
+import water.LocalMR;
+import water.MrFun;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -163,7 +165,9 @@ public class XGBoostUtils {
       int totalChunkLength = 0;
       final int zerosInWeightsVec;
       if (weightsVector != null) {
-        zerosInWeightsVec = new ChunkZeroCounter(chunkIds).doAll(weightsVector)._zeroCount;
+          ChunkZeroCounter chunkZeroCounter = new ChunkZeroCounter(weightsVector, chunkIds);
+          H2O.submitTask(new LocalMR(chunkZeroCounter, chunkIds.length)).join();
+          zerosInWeightsVec = chunkZeroCounter._zeroCount;
       } else {
         zerosInWeightsVec = 0;
       }
@@ -177,17 +181,24 @@ public class XGBoostUtils {
   /**
    * Counts zero-valued elements on a chunk
    */
-  static class ChunkZeroCounter extends MRTask<ChunkZeroCounter> {
-    int _zeroCount = 0;
+  static class ChunkZeroCounter extends MrFun<ChunkZeroCounter> {
+      int _zeroCount = 0;
       final int[] localChunkIDs;
+      final Chunk[] chunks;
 
-    public ChunkZeroCounter(final int[] localChunkIDs) {
-      this.localChunkIDs = localChunkIDs;
+      public ChunkZeroCounter(final Vec weightsVector, final int[] localChunkIDs) {
+          this.localChunkIDs = localChunkIDs;
+
+          chunks = new Chunk[localChunkIDs.length];
+          for (int i = 0; i < localChunkIDs.length; i++) {
+              chunks[i] = weightsVector.chunkForChunkIdx(localChunkIDs[i]);
+          }
     }
 
-    @Override
-    public void map(Chunk c) {
-      if (!countedChunk(c.cidx())) return;
+      @Override
+      protected void map(int tid) {
+          Chunk c = chunks[tid];
+          if (!isCountedChunk(c.cidx())) return;
         // First element can not be iterated by c.nextNz method
         if (c.atd(0) == 0) _zeroCount++;
         int nzIndex = 0;
@@ -196,14 +207,14 @@ public class XGBoostUtils {
             if(nzIndex < 0 || nzIndex >= c._len) break;
             if (nzIndex < c._len && c.atd(nzIndex) == 0) _zeroCount++;
         } while (true);
-    }
+      }
 
       @Override
       public void reduce(ChunkZeroCounter mrt) {
           this._zeroCount += mrt._zeroCount;
     }
 
-    private boolean countedChunk(int checkedCID) {
+      private boolean isCountedChunk(int checkedCID) {
       for (int cid : localChunkIDs) {
         if (checkedCID == cid) return true;
       }
