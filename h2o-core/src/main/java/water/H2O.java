@@ -321,7 +321,7 @@ final public class H2O {
     public String ga_hadoop_ver = null;
 
     /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
+    public boolean ga_opt_out = true;
 
     //-----------------------------------------------------------------------------------
     // Debugging
