@@ -342,14 +342,46 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           o._n_risk[t] += o._n_risk[t + 1];
     }
 
+    private class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
+
+      private CoxPHTask _coxMR;
+      private double[] _riskTermT2;
+      private double[] _cumsumRiskTerm;
+
+      public EfronDJKSetupFun(CoxPHTask coxMR) {
+        _coxMR = coxMR;
+        _riskTermT2 = new double[coxMR.sizeEvents.length];
+        _cumsumRiskTerm = new double[coxMR.sizeEvents.length];
+      }
+
+      @Override
+      protected void map(int t) {
+        final double sizeEvents_t = _coxMR.sizeEvents[t];
+        final long countEvents_t = _coxMR.countEvents[t];
+        final double sumRiskEvents_t = _coxMR.sumRiskEvents[t];
+        final double rcumsumRisk_t = _coxMR.rcumsumRisk[t];
+        final double avgSize = sizeEvents_t / countEvents_t;
+
+        for (long e = 0; e < countEvents_t; ++e) {
+          final double frac = ((double) e) / ((double) countEvents_t);
+          final double term = rcumsumRisk_t - frac * sumRiskEvents_t;
+          _riskTermT2[t] += avgSize * frac / term;
+          _cumsumRiskTerm[t] += avgSize / term;
+        }
+      }
+
+    }
+
     private class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
 
       private CoxPHTask _coxMR;
+      private EfronDJKSetupFun _setup;
       private double[][] _djkTerm;
 
-      public EfronDJKTermTask(Key<Job> jobKey, DataInfo dinfo, CoxPHTask coxMR) {
+      public EfronDJKTermTask(Key<Job> jobKey, DataInfo dinfo, CoxPHTask coxMR, EfronDJKSetupFun setup) {
         super(jobKey, dinfo);
         _coxMR = coxMR;
+        _setup = setup;
       }
 
       @Override
@@ -394,38 +426,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         final int ntotal = ncats + (nums.length - _coxMR._n_offsets);
         final int numStartIter = numStart - ncats;
 
-        double riskTermT2 = 0;
-        if (event > 0) {
-          final double sizeEvents_t = _coxMR.sizeEvents[t2];
-          final long countEvents_t = _coxMR.countEvents[t2];
-          final double sumRiskEvents_t = _coxMR.sumRiskEvents[t2];
-          final double rcumsumRisk_t = _coxMR.rcumsumRisk[t2];
-          final double avgSize = sizeEvents_t / countEvents_t;
-          for (long e = 0; e < countEvents_t; ++e) {
-            final double frac = ((double) e) / ((double) countEvents_t);
-            final double term = rcumsumRisk_t - frac * sumRiskEvents_t;
-            riskTermT2 += avgSize * frac / term;
-          }
-        }
 
         if (! _coxMR._has_start_column) {
           // FIXME: this can be optimized and pre-calculated; slow & ugly solution for now
           t1 = strataId * _coxMR._time.length;
         }
 
+        double riskTermT2 = event > 0 ? _setup._riskTermT2[t2] : 0;
         double cumsumRiskTerm = 0;
-        for (int t = t1; t <= t2; ++t) {
-          final double sizeEvents_t = _coxMR.sizeEvents[t];
-          final long countEvents_t = _coxMR.countEvents[t];
-          final double sumRiskEvents_t = _coxMR.sumRiskEvents[t];
-          final double rcumsumRisk_t = _coxMR.rcumsumRisk[t];
-          final double avgSize = sizeEvents_t / countEvents_t;
-          for (long e = 0; e < countEvents_t; ++e) {
-            final double frac = ((double) e) / ((double) countEvents_t);
-            final double term = rcumsumRisk_t - frac * sumRiskEvents_t;
-            cumsumRiskTerm += avgSize / term;
-          }
-        }
+        for (int t = t1; t <= t2; ++t)
+          cumsumRiskTerm += _setup._cumsumRiskTerm[t];
         double mult = (riskTermT2 - cumsumRiskTerm) * risk;
 
         for (int jit = 0; jit < ntotal; ++jit) {
@@ -523,9 +533,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       cs.reset();
       switch (p._ties) {
         case efron:
+          EfronDJKSetupFun djkTermSetup = new EfronDJKSetupFun(coxMR);
+          H2O.submitTask(new LocalMR(djkTermSetup, n_time)).join();
+          EfronDJKTermTask djkTermTask = new EfronDJKTermTask(coxMR._job_key, coxMR._dinfo, coxMR, djkTermSetup).doAll(coxMR._fr);
           EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
           H2O.submitTask(new LocalMR(f, n_time)).join();
-          EfronDJKTermTask djkTermTask = new EfronDJKTermTask(coxMR._job_key, coxMR._dinfo, coxMR).doAll(coxMR._fr);
           for (int i = 0; i < f._n_coef; i++)
             for (int j = 0; j < f._n_coef; j++)
               f._hessian[i][j] += djkTermTask._djkTerm[i][j];
