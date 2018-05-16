@@ -4,6 +4,7 @@ import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -159,14 +160,48 @@ public class XGBoostUtils {
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
     private static int sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector) {
-        final long nullsInVec = weightsVector != null ? weightsVector.length() - weightsVector.nzCnt() : 0;
+      int totalChunkLength = 0;
+      final int zerosInWeightsVec;
+      if (weightsVector != null) {
+        zerosInWeightsVec = new ChunkZeroCounter(chunkIds).doAll(weightsVector)._zeroCount;
+      } else {
+        zerosInWeightsVec = 0;
+      }
 
-        int totalChunkLength = 0;
-        for (int chunk : chunkIds) {
+      for (int chunk : chunkIds) {
             totalChunkLength += vec.chunkLen(chunk);
         }
-        return totalChunkLength - (int) nullsInVec;
+      return totalChunkLength - zerosInWeightsVec;
     }
+
+  /**
+   * Counts zero-valued elements on a chunk
+   */
+  static class ChunkZeroCounter extends MRTask<ChunkZeroCounter> {
+    int _zeroCount = 0;
+    int[] localChunkIDs;
+
+    public ChunkZeroCounter(final int[] localChunkIDs) {
+      this.localChunkIDs = localChunkIDs;
+    }
+
+    @Override
+    public void map(Chunk c) {
+      if (!countedChunk(c.cidx())) return;
+
+      for (int i = 0; i < c._len; i++) {
+        if (c.atd(i) == 0) _zeroCount++;
+      }
+    }
+
+    private boolean countedChunk(int checkedCID) {
+      for (int cid : localChunkIDs) {
+        if (checkedCID == cid) return true;
+      }
+      return false;
+    }
+
+  }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
         if (weightIdx != -1) {
