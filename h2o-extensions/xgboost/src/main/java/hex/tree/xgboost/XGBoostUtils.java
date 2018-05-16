@@ -73,12 +73,12 @@ public class XGBoostUtils {
         } else {
             chunks = VecUtils.getLocalChunkIds(f.anyVec());
         }
-
-        int nRows = sumChunksLength(chunks, vec);
+        final Vec weightVector = f.vec(weight);
+        int nRows = sumChunksLength(chunks, vec, weightVector);
 
         final DataInfo di = dataInfoKey.get();
         final DMatrix trainMat;
-        Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
+        Vec.Reader w = weight == null ? null : weightVector.new Reader();
         Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
         for (int i = 0; i < vecs.length; ++i) {
             vecs[i] = f.vec(i).new Reader();
@@ -155,14 +155,17 @@ public class XGBoostUtils {
      *
      * @param chunkIds Chunk identifier of a vector
      * @param vec      Vector containing given chunk identifiers
+     * @param weightsVector Vector with row weights, possibly null
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    private static int sumChunksLength(int[] chunkIds, Vec vec) {
+    private static int sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector) {
+        final long nullsInVec = weightsVector != null ? weightsVector.length() - weightsVector.nzCnt() : 0;
+
         int totalChunkLength = 0;
         for (int chunk : chunkIds) {
             totalChunkLength += vec.chunkLen(chunk);
         }
-        return totalChunkLength;
+        return totalChunkLength - (int) nullsInVec;
     }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
