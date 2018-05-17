@@ -343,13 +343,12 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           o._n_risk[t] += o._n_risk[t + 1];
     }
 
-    protected ComputationState calcLoglik(Key<Job> jobKey, DataInfo dinfo,
-                                          ComputationState cs, CoxPHModel.CoxPHParameters p, CoxPHTask coxMR) {
+    protected ComputationState calcLoglik(DataInfo dinfo, ComputationState cs, CoxPHModel.CoxPHParameters p, CoxPHTask coxMR) {
 
       cs.reset();
       switch (p._ties) {
         case efron:
-          return EfronMethod.calcLoglik(jobKey, dinfo, coxMR, cs);
+          return EfronMethod.calcLoglik(_job._key, dinfo, coxMR, cs);
         case breslow:
           final int n_coef = cs._n_coef;
           final int n_time = coxMR.sizeEvents.length;
@@ -537,10 +536,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           coxMR = new CoxPHTask(_job._key, dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
                   _parms._ties).doAll(dinfo._adaptedFrame);
-          Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
+          Log.info("CoxPHTask: iter=" + i + ", time=" + aggregTimer.toString());
 
           Timer loglikTimer = new Timer();
-          final double newLoglik = calcLoglik(_job._key, dinfo, cs, _parms, coxMR)._logLik;
+          final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
           Log.info("LogLik: iter=" + i + ", time=" + loglikTimer.toString() + ", logLig=" + newLoglik);
           model._output._scoring_history = sc.addIterationScore(i, newLoglik).to2dTable(i);
 

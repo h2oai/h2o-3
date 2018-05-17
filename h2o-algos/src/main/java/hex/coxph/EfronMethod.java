@@ -54,10 +54,22 @@ class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
     }
   }
 
+  private EfronDJKSetupFun postProcess() {
+    if (_coxMR._has_start_column)
+      return this;
+
+    final int timeLen = _coxMR._time.length;
+    for (int t = 1; t < _cumsumRiskTerm.length; t++) {
+      _cumsumRiskTerm[t] += (t % timeLen) == 0 ? 0 : _cumsumRiskTerm[t - 1];
+    }
+
+    return this;
+  }
+
   static EfronDJKSetupFun setupEfron(CoxPHTask coxMR) {
     EfronDJKSetupFun djkTermSetup = new EfronDJKSetupFun(coxMR);
     H2O.submitTask(new LocalMR(djkTermSetup, coxMR.sizeEvents.length)).join();
-    return djkTermSetup;
+    return djkTermSetup.postProcess();
   }
 
 }
@@ -102,7 +114,6 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
     if (Double.isNaN(strata))
       return; // skip this row
 
-    final int strataId = (int) strata;
     final int numStart = _dinfo.numStart();
 
     // risk is cheaper to recalculate than trying to re-use risk calculated in CoxPHTask
@@ -118,17 +129,17 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
     final int ntotal = ncats + (nums.length - _coxMR._n_offsets);
     final int numStartIter = numStart - ncats;
 
-
-    if (! _coxMR._has_start_column) {
-      // FIXME: this can be optimized and pre-calculated; slow & ugly solution for now
-      t1 = strataId * _coxMR._time.length;
+    final double cumsumRiskTerm;
+    if (_coxMR._has_start_column) {
+      double s = 0;
+      for (int t = t1; t <= t2; ++t)
+        s += _setup._cumsumRiskTerm[t];
+      cumsumRiskTerm = s;
+    } else {
+      cumsumRiskTerm = _setup._cumsumRiskTerm[t2];
     }
-
-    double riskTermT2 = event > 0 ? _setup._riskTermT2[t2] : 0;
-    double cumsumRiskTerm = 0;
-    for (int t = t1; t <= t2; ++t)
-      cumsumRiskTerm += _setup._cumsumRiskTerm[t];
-    double mult = (riskTermT2 - cumsumRiskTerm) * risk;
+    final double riskTermT2 = event > 0 ? _setup._riskTermT2[t2] : 0;
+    final double mult = (riskTermT2 - cumsumRiskTerm) * risk;
 
     for (int jit = 0; jit < ntotal; ++jit) {
       final boolean jIsCat = jit < ncats;
