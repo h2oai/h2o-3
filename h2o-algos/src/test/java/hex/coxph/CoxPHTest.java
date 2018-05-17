@@ -78,7 +78,7 @@ public class CoxPHTest extends TestUtil {
 
       assertNotNull(model);
       Frame linearPredictors = Scope.track(model.score(fr));
-
+      assertEquals(fr.numRows(), linearPredictors.numRows());
     } finally {
       Scope.exit();
     }
