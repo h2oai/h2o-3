@@ -909,7 +909,6 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel sparseModel = null;
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
-      DKV.put(tfr);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;

@@ -159,13 +159,22 @@ public class XGBoostUtils {
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
     private static int sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector) {
-        final long nullsInVec = weightsVector != null ? weightsVector.length() - weightsVector.nzCnt() : 0;
-
         int totalChunkLength = 0;
+
         for (int chunk : chunkIds) {
             totalChunkLength += vec.chunkLen(chunk);
+
+            if(weightsVector == null) continue;
+            Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
+            if (weightVecChunk.atd(0) == 0) totalChunkLength--;
+            int nzIndex = 0;
+            do {
+                nzIndex = weightVecChunk.nextNZ(nzIndex, true);
+                if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
+                if (weightVecChunk.atd(nzIndex) == 0) totalChunkLength--;
+            } while (true);
         }
-        return totalChunkLength - (int) nullsInVec;
+        return totalChunkLength;
     }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
