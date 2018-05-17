@@ -496,6 +496,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
         final double[] time = CollectTimes.collect(_parms.stopVec());
 
+        _job.update(0, "Initializing model training");
+
         IcedHashMap<AstGroup.G, IcedInt> strataMap = new IcedHashMap<>();
         Frame f = reorderTrainFrameColumns(strataMap, time);
 
@@ -528,6 +530,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         final ComputationState cs = new ComputationState(n_coef);
         Timer iterTimer = null;
         CoxPHTask coxMR = null;
+        _job.update(1, "Running iteration 0");
         for (int i = 0; i <= model._parms._iter_max; ++i) {
           iterTimer = new Timer();
           model._output._iter = i;
@@ -537,6 +540,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
                   _parms._ties).doAll(dinfo._adaptedFrame);
           Log.info("CoxPHTask: iter=" + i + ", time=" + aggregTimer.toString());
+          _job.update(1);
 
           Timer loglikTimer = new Timer();
           final double newLoglik = calcLoglik(dinfo, cs, _parms, coxMR)._logLik;
@@ -623,7 +627,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[][]   rcumsumXRisk;
 
     // Breslow only
-    double[][][] sumXXRiskEvents;
     double[][][] rcumsumXXRisk;
 
     CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
