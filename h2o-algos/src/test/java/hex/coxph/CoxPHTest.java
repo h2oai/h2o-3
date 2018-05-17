@@ -2,7 +2,6 @@ package hex.coxph;
 
 import hex.StringPair;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
 import water.MRTask;
@@ -86,7 +85,6 @@ public class CoxPHTest extends TestUtil {
   }
 
   @Test
-  @Ignore
   public void testCoxPHBreslow1Var()  {
     CoxPHModel model = null;
     Frame fr = null;
@@ -163,7 +161,6 @@ public class CoxPHTest extends TestUtil {
   }
 
   @Test
-  @Ignore
   public void testCoxPHBreslow1VarNoStart() {
     CoxPHModel model = null;
     Frame fr = null;

@@ -10,9 +10,10 @@ import static hex.coxph.CoxPH.ComputationState;
 import static hex.coxph.CoxPHUtils.*;
 
 class EfronMethod {
+
   static ComputationState calcLoglik(Key<Job> jobKey, DataInfo dinfo, CoxPHTask coxMR, ComputationState cs) {
     EfronDJKSetupFun djkTermSetup = EfronDJKSetupFun.setupEfron(coxMR);
-    EfronDJKTermTask djkTermTask = new EfronDJKTermTask(jobKey, dinfo, coxMR, djkTermSetup).doAll(coxMR._fr);
+    EfronDJKTermTask djkTermTask = new EfronDJKTermTask(jobKey, dinfo, coxMR, djkTermSetup).doAll(dinfo._adaptedFrame);
     EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
     H2O.submitTask(new LocalMR(f, coxMR.sizeEvents.length)).join();
     for (int i = 0; i < f._n_coef; i++)
@@ -21,6 +22,7 @@ class EfronMethod {
 
     return f.toComputationState(cs);
   }
+
 }
 
 class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {

@@ -345,13 +345,35 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     protected ComputationState calcLoglik(Key<Job> jobKey, DataInfo dinfo,
                                           ComputationState cs, CoxPHModel.CoxPHParameters p, CoxPHTask coxMR) {
-      final int n_coef = cs._n_coef;
-      final int n_time = coxMR.sizeEvents.length;
 
       cs.reset();
       switch (p._ties) {
         case efron:
           return EfronMethod.calcLoglik(jobKey, dinfo, coxMR, cs);
+        case breslow:
+          final int n_coef = cs._n_coef;
+          final int n_time = coxMR.sizeEvents.length;
+          double newLoglik = 0;
+          for (int t = n_time - 1; t >= 0; --t) {
+            final double sizeEvents_t = coxMR.sizeEvents[t];
+            if (sizeEvents_t > 0) {
+              final double sumLogRiskEvents_t = coxMR.sumLogRiskEvents[t];
+              final double rcumsumRisk_t      = coxMR.rcumsumRisk[t];
+              newLoglik += sumLogRiskEvents_t;
+              newLoglik -= sizeEvents_t * Math.log(rcumsumRisk_t);
+              for (int j = 0; j < n_coef; ++j) {
+                final double dlogTerm = coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t;
+                cs._gradient[j] += coxMR.sumXEvents[t][j];
+                cs._gradient[j] -= sizeEvents_t * dlogTerm;
+                for (int k = 0; k < n_coef; ++k)
+                  cs._hessian[j][k] -= sizeEvents_t *
+                          (((coxMR.rcumsumXXRisk[t][j][k] / rcumsumRisk_t) -
+                                  (dlogTerm * (coxMR.rcumsumXRisk[t][k] / rcumsumRisk_t))));
+              }
+            }
+          }
+          cs._logLik =  newLoglik;
+          return cs;
         default:
           throw new IllegalArgumentException("_ties method must be either efron or breslow");
       }
@@ -512,8 +534,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           model._output._iter = i;
 
           Timer aggregTimer = new Timer();
-          coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output._time, (long) response().min() /* min event */,
-                  n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column).doAll(dinfo._adaptedFrame);
+          coxMR = new CoxPHTask(_job._key, dinfo, newCoef, time, (long) response().min() /* min event */,
+                  n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
+                  _parms._ties).doAll(dinfo._adaptedFrame);
           Log.info("CoxPHTask: iter=" + i + ", " + aggregTimer.toString());
 
           Timer loglikTimer = new Timer();
@@ -582,6 +605,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     final boolean  _has_weights_column;
     final long     _min_event;
     final int      _num_strata; // = 1 if the model is not stratified
+    final boolean  _isBreslow;
 
     // OUT
     long         n;
@@ -599,8 +623,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[]     rcumsumRisk;
     double[][]   rcumsumXRisk;
 
+    // Breslow only
+    double[][][] sumXXRiskEvents;
+    double[][][] rcumsumXXRisk;
+
     CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
-              final int n_offsets, final boolean has_start_column, Vec strata_column, final boolean has_weights_column) {
+              final int n_offsets, final boolean has_start_column, Vec strata_column, final boolean has_weights_column,
+              final CoxPHModel.CoxPHParameters.CoxPHTies ties) {
       super(jobKey, dinfo);
       _beta               = beta;
       _time = time;
@@ -610,6 +639,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       _has_strata_column  = strata_column != null;
       _has_weights_column = has_weights_column;
       _num_strata         = _has_strata_column ? 1 + (int) strata_column.max() : 1;
+      _isBreslow          = CoxPHModel.CoxPHParameters.CoxPHTies.breslow.equals(ties);
     }
 
     @Override
@@ -630,6 +660,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sumXEvents       = malloc2DArray(n_time, n_coef);
       sumXRiskEvents   = malloc2DArray(n_time, n_coef);
       rcumsumXRisk     = malloc2DArray(n_time, n_coef);
+
+      if (_isBreslow) { // Breslow only
+        rcumsumXXRisk = malloc3DArray(n_time, n_coef, n_coef);
+      }
 
       return true;
     }
@@ -690,18 +724,32 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final int numStartIter = numStart - ncats;
       for (int jit = 0; jit < ntotal; ++jit) {
         final boolean jIsCat = jit < ncats;
-        final int j          = jIsCat ? cats[jit] : numStartIter + jit;
-        final double x1      = jIsCat ? 1.0 : nums[jit - ncats];
-        final double xRisk   = x1 * risk;
+        final int j = jIsCat ? cats[jit] : numStartIter + jit;
+        final double x1 = jIsCat ? 1.0 : nums[jit - ncats];
+        final double xRisk = x1 * risk;
         if (event > 0) {
-          sumXEvents[t2][j]     += weight * x1;
+          sumXEvents[t2][j] += weight * x1;
           sumXRiskEvents[t2][j] += xRisk;
         }
         if (_has_start_column) {
           for (int t = t1; t <= t2; ++t)
-            rcumsumXRisk[t][j]  += xRisk;
+            rcumsumXRisk[t][j] += xRisk;
         } else {
-          rcumsumXRisk[t2][j]   += xRisk;
+          rcumsumXRisk[t2][j] += xRisk;
+        }
+        if (_isBreslow) { // Breslow only
+          for (int kit = 0; kit < ntotal; ++kit) {
+            final boolean kIsCat = kit < ncats;
+            final int k = kIsCat ? cats[kit] : numStartIter + kit;
+            final double x2 = kIsCat ? 1.0 : nums[kit - ncats];
+            final double xxRisk = x2 * xRisk;
+            if (_has_start_column) {
+              for (int t = t1; t <= t2; ++t)
+                rcumsumXXRisk[t][j][k] += xxRisk;
+            } else {
+              rcumsumXXRisk[t2][j][k] += xxRisk;
+            }
+          }
         }
       }
     }
@@ -722,6 +770,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
       ArrayUtils.add(rcumsumXRisk,     that.rcumsumXRisk);
+      if (_isBreslow) { // Breslow only
+        ArrayUtils.add(rcumsumXXRisk,    that.rcumsumXXRisk);
+      }
     }
 
     @Override
@@ -733,6 +784,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         for (int t = rcumsumXRisk.length - 2; t >= 0; --t)
           for (int j = 0; j < rcumsumXRisk[t].length; ++j)
             rcumsumXRisk[t][j] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXRisk[t + 1][j];
+
+        if (_isBreslow) { // Breslow only
+          for (int t = rcumsumXXRisk.length - 2; t >= 0; --t)
+            for (int j = 0; j < rcumsumXXRisk[t].length; ++j)
+              for (int k = 0; k < rcumsumXXRisk[t][j].length; ++k)
+                rcumsumXXRisk[t][j][k] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXXRisk[t + 1][j][k];
+        }
       }
     }
   }
