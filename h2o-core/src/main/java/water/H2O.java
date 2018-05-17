@@ -119,8 +119,8 @@ final public class H2O {
             "          Launch H2O node in client mode.\n" +
             "\n" +
             "    -notify <fileSystemPath>" +
-            "          Specifies a file to write when the cluster is up. The file contains one line with the IP and" +
-            "          port of the embedded web server.  e.g. 192.168.1.100:54321" +
+            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
+            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
             "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
@@ -314,7 +314,7 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
-    /** specifies a file to write when the cluster is up. */
+    /** specifies a file to write when the node is up */
     public String notify;
 
     //-----------------------------------------------------------------------------------
