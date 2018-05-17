@@ -16,7 +16,9 @@ import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -115,6 +117,10 @@ final public class H2O {
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
+            "\n" +
+            "    -notify <fileSystemPath>" +
+            "          Specifies a file to write when the cluster is up. The file contains one line with the IP and" +
+            "          port of the embedded web server.  e.g. 192.168.1.100:54321" +
             "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
@@ -308,6 +314,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** specifies a file to write when the cluster is up. */
+    public String notify;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -482,6 +491,10 @@ final public class H2O {
       }
       else if (s.matches("client")) {
         trgt.client = true;
+      }
+      else if (s.matches("notify")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.notify = args[i];
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -1963,6 +1976,27 @@ final public class H2O {
     // Start the local node.  Needed before starting logging.
     long time5 = System.currentTimeMillis();
     startLocalNode();
+
+    if (ARGS.notify != null && !ARGS.notify.trim().isEmpty()) {
+      final File notifyFile = new File(ARGS.notify);
+      final File parentDir = notifyFile.getParentFile();
+      if (parentDir != null && !parentDir.isDirectory()) {
+        if (!parentDir.mkdirs()) {
+          Log.err("Cannot make parent dir for notify file.");
+          H2O.exit(-1);
+        }
+      }
+      try {
+        BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile));
+        output.write(SELF_ADDRESS.getHostAddress());
+        output.write(':');
+        output.write(Integer.toString(API_PORT));
+        output.flush();
+        output.close();
+      } catch ( IOException e ) {
+        e.printStackTrace();
+      }
+    }
 
     // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
