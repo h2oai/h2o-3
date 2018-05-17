@@ -1986,13 +1986,11 @@ final public class H2O {
           H2O.exit(-1);
         }
       }
-      try {
-        BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile));
+      try(BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile))) {
         output.write(SELF_ADDRESS.getHostAddress());
         output.write(':');
         output.write(Integer.toString(API_PORT));
         output.flush();
-        output.close();
       } catch ( IOException e ) {
         e.printStackTrace();
       }
