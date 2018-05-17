@@ -37,11 +37,12 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activati
 import static water.Key.make;
 
 /**
- * Initial draft of AutoML
+ * H2O AutoML
  *
- * AutoML is a node-local driver class that is responsible for managing concurrent
- * strategies of execution in an effort to discover an optimal supervised model for some
- * given (dataset, response, loss) combo.
+ * AutoML  is used for automating the machine learning workflow, which includes automatic training and
+ * tuning of many models within a user-specified time-limit. Stacked Ensembles will be automatically
+ * trained on collections of individual models to produce highly predictive ensemble models which, in most cases,
+ * will be the top performing models in the AutoML Leaderboard.
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
@@ -251,58 +252,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         }
       }
     }
-
-
-    /*
-    if (null == this.validationFrame && null == this.leaderboardFrame) {
-      // case 1:
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-              new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                      Key.make("automl_validation_" + origTrainingFrame._key),
-                      Key.make("automl_leaderboard_" + origTrainingFrame._key)},
-              new double[] { 0.7, 0.15, 0.15 },
-              buildSpec.build_control.stopping_criteria.seed());
-      this.trainingFrame = splits[0];
-      this.validationFrame = splits[1];
-      this.leaderboardFrame = splits[2];
-      this.didValidationSplit = true;
-      this.didLeaderboardSplit = true;
-      userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and leaderboard datasets in the ratio 0.70:0.15:0.15");
-
-    } else if (null != this.validationFrame && null == this.leaderboardFrame) {
-      // case 2:
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
-              new Key[] { Key.make("automl_validation_" + origTrainingFrame._key),
-                      Key.make("automl_leaderboard_" + origTrainingFrame._key)},
-              new double[] { 0.5, 0.5 },
-              buildSpec.build_control.stopping_criteria.seed());
-      this.validationFrame = splits[0];
-      this.leaderboardFrame = splits[1];
-      this.didValidationSplit = true;
-      this.didLeaderboardSplit = true;
-      userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and leaderboard datasets in the ratio 0.5:0.5");
-
-    } else if (null == this.validationFrame && null != this.leaderboardFrame) {
-      // case 3:
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-              new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
-                      Key.make("automl_validation_" + origTrainingFrame._key)},
-              new double[] { 0.7, 0.3 },
-              buildSpec.build_control.stopping_criteria.seed());
-
-      this.trainingFrame = splits[0];
-      this.validationFrame = splits[1];
-      this.didValidationSplit = true;
-      this.didLeaderboardSplit = false;
-      userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation datasets in the ratio 0.5:0.5");
-    } else if (null != this.validationFrame && null != this.leaderboardFrame) {
-      // case 4: leave things as-is
-      userFeedback.info(Stage.DataImport, "Training, validation and leaderboard datasets were all specified; not auto-splitting.");
-    } else {
-      // can't happen
-      throw new UnsupportedOperationException("Bad code in handleDatafileParameters");
-    }
-    */
   }
 
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
@@ -374,21 +323,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-    // if (buildSpec.input_spec.parse_setup == null)
-    //   buildSpec.input_spec.parse_setup = ParseSetup.guessSetup(); // use defaults!
 
     AutoML autoML = new AutoML(key, startTime, buildSpec);
 
     if (null == autoML.trainingFrame)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
-
-    /*
-      TODO: joins
-    Frame[] relations = null==relationPaths?null:new Frame[relationPaths.length];
-    if( null!=relationPaths )
-      for(int i=0;i<relationPaths.length;++i)
-        relations[i] = importParseFrame(relationPaths[i]);
-        */
 
     return autoML;
   }
@@ -910,11 +849,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
     searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
-/*
-    if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
-      searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
-*/
-
     Job<Grid>gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
     return gbmJob;
   }
@@ -1230,6 +1164,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (0 < this.leaderboard().getModelKeys().length) {
 
+      //TODO Below should really be a parameter, but needs more thought...
       // We should not spend time computing train/valid leaderboards until we are ready to expose them to the user
       // Commenting this section out for now
       /*
@@ -1285,14 +1220,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 lastStartTime.getHours() == startTime.getHours() &&
                 lastStartTime.getMinutes() == startTime.getMinutes() &&
                 lastStartTime.getSeconds() == startTime.getSeconds())
-/*
-          // Sleep is causing a deadlock; busy-wait instead.
-          try {
-            Thread.currentThread().sleep(1000);
-          }
-          catch (InterruptedException e) {
-          }
-*/
           startTime = new Date();
       }
       lastStartTime = startTime;
@@ -1365,16 +1292,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       validationFrame.delete();
     }
   }
-
-  /*
-  private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
-    // TODO: handle validation frame if present
-    Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr, fm.weights());
-    ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
-    mb._parms._ignored_columns = fm.ignoredCols();
-    return mb;
-  }
-  */
 
   public Job job() {
     if (null == this.job) return null;

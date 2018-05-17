@@ -30,7 +30,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String fullName() { return "Cox Proportional Hazards"; }
     public String javaName() { return CoxPHModel.class.getName(); }
 
-    @Override public long progressUnits() { return _iter_max; }
+    @Override public long progressUnits() { return (_iter_max * 2) + 1; }
 
     public String _start_column;
     public String _stop_column;
@@ -102,11 +102,15 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       }};
       String sep = "";
       for (String col : f._names) {
+        if (_offset_column != null && _offset_column.equals(col))
+          continue;
         if (stratifyBy.contains(col) || interactionsOnly.contains(col) || specialCols.contains(col))
           continue;
         sb.append(sep).append(col);
         sep = " + ";
       }
+      if (_offset_column != null)
+        sb.append(sep).append("offset(").append(_offset_column).append(")");
       InteractionSpec interactionSpec = interactionSpec();
       if (interactionSpec != null) {
         InteractionPair[] interactionPairs = interactionSpec().makeInteractionPairs(f);
