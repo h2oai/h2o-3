@@ -544,16 +544,9 @@ public class XGBoostUtils {
                 enlargeTables(data, colIndex, di._cats + di._nums, currentRow, currentCol);
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if (!vecs[j].isNA(i)) {
                         data[currentRow][currentCol] = 1; //one-hot encoding
-                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at8(i));
+                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at(i));
                         nz++;
-                    } else {
-                        // NA == 0 for sparse -> no need to fill
-//            data[nz] = 1; //one-hot encoding
-//            colIndex[nz] = di.getCategoricalId(j, Double.NaN); //Fill NA bucket
-//            nz++;
-                    }
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
