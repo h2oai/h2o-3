@@ -35,8 +35,12 @@ def xgboost_categorical_zero_nan_handling_test():
     dense_based_prediction = dense_trained_model.predict(prediction_frame['col1'])
     print(dense_based_prediction)
 
+    assert len(dense_based_prediction['predict']) == len(sparse_based_prediction['predict'])
+
     # Predictions by both models (sparse and dense) should be the same
-    assert  dense_based_prediction['predict'] == sparse_based_prediction['predict']
+    assert dense_based_prediction['predict'][0,0] == sparse_based_prediction['predict'][0,0]
+    assert dense_based_prediction['predict'][1,0] == sparse_based_prediction['predict'][1,0]
+    assert dense_based_prediction['predict'][2,0] == sparse_based_prediction['predict'][2,0]
 
 
 if __name__ == "__main__":
