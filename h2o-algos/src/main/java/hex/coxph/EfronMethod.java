@@ -138,12 +138,12 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
       final boolean jIsCat = jit < ncats;
       final int j          = jIsCat ? cats[jit] : numStartIter + jit;
       final double x1      = jIsCat ? 1.0 : nums[jit - ncats];
-      for (int kit = 0; kit < ntotal; ++kit) {
+      final double x1mult  = x1 * mult;
+      for (int kit = jit; kit < ntotal; ++kit) {
         final boolean kIsCat = kit < ncats;
         final int k          = kIsCat ? cats[kit] : numStartIter + kit;
         final double x2      = kIsCat ? 1.0 : nums[kit - ncats];
-        final double xx      = x1 * x2;
-        _djkTerm[j][k] += xx * mult;
+        _djkTerm[j][k] += x1mult * x2;
       }
     }
   }
@@ -151,6 +151,14 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
   @Override
   public void reduce(EfronDJKTermTask that) {
     ArrayUtils.add(_djkTerm, that._djkTerm);
+  }
+
+  @Override
+  protected void postGlobal() {
+    for (int j = 1; j < _djkTerm.length; j++) {
+      for (int k = 0; k < j; k++)
+        _djkTerm[j][k] = _djkTerm[k][j];
+    }
   }
 
 }
