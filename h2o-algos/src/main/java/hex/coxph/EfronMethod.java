@@ -55,9 +55,6 @@ class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
   }
 
   private EfronDJKSetupFun postProcess() {
-    if (_coxMR._has_start_column)
-      return this;
-
     final int timeLen = _coxMR._time.length;
     for (int t = 1; t < _cumsumRiskTerm.length; t++) {
       _cumsumRiskTerm[t] += (t % timeLen) == 0 ? 0 : _cumsumRiskTerm[t - 1];
@@ -130,11 +127,8 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
     final int numStartIter = numStart - ncats;
 
     final double cumsumRiskTerm;
-    if (_coxMR._has_start_column) {
-      double s = 0;
-      for (int t = t1; t <= t2; ++t)
-        s += _setup._cumsumRiskTerm[t];
-      cumsumRiskTerm = s;
+    if (_coxMR._has_start_column && (t1 % _coxMR._time.length > 0)) {
+      cumsumRiskTerm = _setup._cumsumRiskTerm[t2] - _setup._cumsumRiskTerm[t1 - 1];
     } else {
       cumsumRiskTerm = _setup._cumsumRiskTerm[t2];
     }
