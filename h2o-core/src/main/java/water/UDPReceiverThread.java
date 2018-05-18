@@ -79,9 +79,6 @@ public class UDPReceiverThread extends Thread {
     int drop = H2O.ARGS.random_udp_drop &&
       RANDOM_UDP_DROP.nextInt(5) == 0 ? 2 : 0;
 
-    HeartBeat hb = new HeartBeat().read(ab);
-
-
     // Record the last time we heard from any given Node
     TimeLine.record_recv(ab, false, drop);
     final long now = ab._h2o._last_heard_from = System.currentTimeMillis();
