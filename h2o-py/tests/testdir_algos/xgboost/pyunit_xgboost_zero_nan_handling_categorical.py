@@ -19,7 +19,7 @@ def xgboost_categorical_zero_nan_handling_test():
     training_Frame['col1'] = training_Frame['col1'].asfactor()
     training_Frame['response'] = training_Frame['response'].asnumeric()
     prediction_frame = h2o.H2OFrame(pandas_prediction_frame)
-    prediction_frame['col1'] = prediction_frame['col1'].asnumeric()
+    prediction_frame['col1'] = prediction_frame['col1'].asfactor()
 
     #Learning rate 1 ensures failure if NaN is treated the same as zero
     sparse_trained_model = H2OXGBoostEstimator(training_frame=training_Frame, learn_rate = 1,
