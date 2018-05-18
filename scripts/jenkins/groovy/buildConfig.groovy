@@ -6,6 +6,9 @@ def call(final context, final String mode, final String commitMessage, final Lis
 
 class BuildConfig {
 
+  public static final String OS_WINDOWS = 'windows'
+  public static final String OS_UNIX = 'unix'
+
   public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
@@ -175,6 +178,10 @@ class BuildConfig {
     return nodeLabels.getGPUNodeLabel()
   }
 
+  String getWindowsNodeLabel() {
+    return nodeLabels.getWindowsNodeLabel()
+  }
+
   boolean getBuildHadoop() {
     return buildHadoop
   }
@@ -325,17 +332,20 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'mr-dl16'),
-    LABELS_B4('docker', 'docker', 'mr-dl16')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'mr-dl16', 'mr-0xw1'),
+    LABELS_B4('docker', 'docker', 'mr-dl16', 'mr-0xw1')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
     private final String gpuNodeLabel
+    private final String windowsNodeLabel
 
-    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel) {
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel,
+                       final String windowsNodeLabel) {
       this.defaultNodeLabel = defaultNodeLabel
       this.benchmarkNodeLabel = benchmarkNodeLabel
       this.gpuNodeLabel = gpuNodeLabel
+      this.windowsNodeLabel = windowsNodeLabel
     }
 
     String getDefaultNodeLabel() {
@@ -348,6 +358,10 @@ class BuildConfig {
 
     String getGPUNodeLabel() {
       return gpuNodeLabel
+    }
+
+    String getWindowsNodeLabel() {
+      return windowsNodeLabel
     }
 
     private static findByJenkinsMaster(final JenkinsMaster master) {

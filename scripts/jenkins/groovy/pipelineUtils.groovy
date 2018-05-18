@@ -159,12 +159,31 @@ class PipelineUtils {
     }
 
     void unpackTestPackage(final context, final buildConfig, final String component, final String stageDir) {
+        unpackTestPackage(context, buildConfig, component, stageDir, buildConfig.OS_UNIX)
+    }
+
+    void unpackTestPackage(final context, final buildConfig, final String component, final String stageDir, final String os) {
+
         context.echo "###### Pulling test package. ######"
         context.dir(stageDir) {
             unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
             unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
         }
-        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
+        final cmd = """
+            cd ${stageDir}/h2o-3
+            unzip -q -o test-package-${component}.zip
+            rm test-package-${component}.zip
+        """
+        switch (os) {
+            case buildConfig.OS_WINDOWS:
+                context.powershell(cmd)
+                break
+            case buildConfig.OS_UNIX:
+                context.sh(cmd)
+                break
+            default:
+                context.error("OS ${os} not supported.")
+        }
     }
 
     void archiveStageFiles(final context, final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {

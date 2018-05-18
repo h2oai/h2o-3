@@ -24,130 +24,150 @@ def call(final pipelineContext) {
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',timeoutValue: 8,
+      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',timeoutValue: 8,
+      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
+      stageName: 'Win - Py3.6 Smoke', target: 'test-py-smoke', pythonVersion: '3.6', timeoutValue: 8,
+      os: pipelineContext.getBuildConfig().OS_WINDOWS, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getWindowsNodeLabel(), bypassHealthCheck: true
+    ],
+    [
+      stageName: 'Win - R3.5 Smoke', target: 'test-r-smoke', pythonVersion: '3.6', rVersion: '3.5.0', timeoutValue: 8,
+      os: pipelineContext.getBuildConfig().OS_WINDOWS, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getWindowsNodeLabel(), bypassHealthCheck: true
+    ],
+    [
+      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Java8 Smoke', target: 'test-junit-smoke',timeoutValue: 20,
+      stageName: 'Java8 Smoke', target: 'test-junit-smoke', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
   // Stages executed after each push to PR branch.
   def PR_STAGES = [
+//    [
+//      stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
+//      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+//      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
+//      timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
     [
-      stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Win - Py3.6 Small', target: 'test-pyunit-small-no-xgboost', pythonVersion: '3.6',
+      timeoutValue: 90, os: pipelineContext.getBuildConfig().OS_WINDOWS, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getWindowsNodeLabel(), bypassHealthCheck: true
     ],
+//    [
+//      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
+//      timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
+//      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
     [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Win - R3.4 Small', target: 'test-r-small-no-xgboost', pythonVersion: '3.6', rVersion: '3.5.0', timeoutValue: 125,
+      os: pipelineContext.getBuildConfig().OS_WINDOWS, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getWindowsNodeLabel(), bypassHealthCheck: true
     ],
-    [
-      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Small AutoML', target: 'test-r-small-automl', rVersion: '3.4.1',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.4.1',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
-      timeoutValue: 50, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'PhantomJS', target: 'test-phantom-js',
-      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
-    ],
-    [
-      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
-      timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'INFO Check', target: 'test-info',
-      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
-    ],
-    [
-      stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
-      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
-    ],
-    [
-      stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
-      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
-      archiveAdditionalFiles: ['h2o-r/h2o-package/**/*.html', 'r-generated-docs.zip']
-    ]
+//    [
+//      stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
+//      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Small AutoML', target: 'test-r-small-automl', rVersion: '3.4.1',
+//      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.4.1',
+//      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+//      timeoutValue: 15, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+//      timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
+//      timeoutValue: 50, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
+//      timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'PhantomJS', target: 'test-phantom-js',
+//      timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
+//    ],
+//    [
+//      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+//      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
+//      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
+//      timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
+//    ],
+//    [
+//      stageName: 'INFO Check', target: 'test-info',
+//      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
+//    ],
+//    [
+//      stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
+//      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
+//    ],
+//    [
+//      stageName: 'Java 8 JUnit', target: 'test-junit-jenkins', pythonVersion: '2.7',
+//      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+//    ],
+//    [
+//      stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
+//      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
+//      archiveAdditionalFiles: ['h2o-r/h2o-package/**/*.html', 'r-generated-docs.zip']
+//    ]
   ]
 
   def BENCHMARK_STAGES = [
@@ -367,6 +387,8 @@ private void executeInParallel(final jobs, final pipelineContext) {
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
           activateR = c['activateR']
+          os = c['os']
+          bypassHealthCheck = c['bypassHealthCheck']
         }
       }
     ]
@@ -377,8 +399,10 @@ private void invokeStage(final pipelineContext, final body) {
 
   final String DEFAULT_PYTHON = '3.5'
   final String DEFAULT_R = '3.4.1'
+  final String DEFAULT_UNIX_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
+  final String DEFAULT_WINDOWS_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/windowsStage.groovy'
+  final String DEFAULT_OS = 'unix'
   final int DEFAULT_TIMEOUT = 60
-  final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
   final int HEALTH_CHECK_RETRIES = 5
 
   def config = [:]
@@ -397,7 +421,19 @@ private void invokeStage(final pipelineContext, final body) {
   }
   config.additionalTestPackages = config.additionalTestPackages ?: []
   config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
-  config.executionScript = config.executionScript ?: DEFAULT_EXECUTION_SCRIPT
+  config.os = config.os ?: DEFAULT_OS
+  if (config.executionScript == null) {
+    switch (config.os) {
+      case pipelineContext.getBuildConfig().OS_UNIX:
+        config.executionScript = DEFAULT_UNIX_EXECUTION_SCRIPT
+        break
+      case pipelineContext.getBuildConfig().OS_WINDOWS:
+        config.executionScript = DEFAULT_WINDOWS_EXECUTION_SCRIPT
+        break
+      default:
+        error "OS ${config.os} not supported"
+    }
+  }
   config.image = config.image ?: pipelineContext.getBuildConfig().DEFAULT_IMAGE
   config.makefilePath = config.makefilePath ?: pipelineContext.getBuildConfig().MAKEFILE_PATH
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
@@ -429,11 +465,20 @@ private void invokeStage(final pipelineContext, final body) {
               echo "###### Unstash scripts. ######"
               pipelineContext.getUtils().unstashScripts(this)
 
-              healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+              if (config.bypassHealthCheck) {
+                echo "###### Healthcheck bypassed. ######"
+                healthCheckPassed = true
+              } else {
+                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+              }
               if (healthCheckPassed) {
                 pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
-                sh "rm -rf ${config.stageDir}"
+                if (config.os == pipelineContext.getBuildConfig().OS_UNIX) {
+                  sh "rm -rf ${config.stageDir}"
+                } else {
+                  powershell "rm -r -fo ${config.stageDir}"
+                }
 
                 def script = load(config.executionScript)
                 script(pipelineContext, config)

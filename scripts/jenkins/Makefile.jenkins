@@ -1,5 +1,13 @@
 .NOTPARALLEL: all
-SHELL:=/bin/bash
+
+ifeq ($(OS),Windows_NT)
+    $(info "Using Windows configuration")
+    PY_INTERPRETER := python
+else
+    $(info "Using UNIX configuration")
+    SHELL := /bin/bash
+endif
+
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 JENKINS_MAKEFILE_PATH := scripts/jenkins/Makefile.jenkins
 
@@ -29,7 +37,8 @@ test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList h2o-py/scripts/h2o-py-test-setup.py
+	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList tests/pyunitXGBoostList \
+	h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -37,47 +46,51 @@ test-package-r:
 		h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
 		h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
+		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList tests/runitXGBoostList \
 		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
 		scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_jira && python h2o.init_test_HOQE-16.py
 
 test-py-booklets:
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.deeplearning.vignette.py
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --wipeall --norun
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.deeplearning.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
 test-pyunit-small:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitAutoMLList
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitAutoMLList
+
+test-pyunit-small-no-xgboost:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitXGBoostList
 
 test-pyunit-small-automl:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist ../../tests/pyunitAutoMLList
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist ../../tests/pyunitAutoMLList
 
 test-py-demos:
-	export NO_GCE_CHECK=True && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+	export NO_GCE_CHECK=True && cd h2o-py/demos/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
 test-pyunit-medium-large:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
 	@echo "numnodes=$$SINGLE_TEST_NUM_NODES"
 	@echo "jvm.xmx=$$SINGLE_TEST_XMX"
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
 
 test-r-smoke:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
 
 test-r-init:
 	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
@@ -85,29 +98,34 @@ test-r-init:
 test-r-small:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+
+test-r-small-no-xgboost:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && rm -f -r testdir_demos
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --excludelist ../../tests/runitXGBoostList
 
 test-r-small-client-mode:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
 
 test-r-small-automl:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
 
 test-r-small-client-mode-automl:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
 
 test-r-medium-large:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
 
 test-r-datatable:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
+	export NO_GCE_CHECK=True && cd h2o-r/tests/testdir_perf && $(PY_INTERPRETER) ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
 
 test-r-cmd-check:
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --run-dontrun --run-donttest h2o_*.*.*.*.tar.gz
@@ -120,27 +138,27 @@ test-r-cmd-check-as-cran:
 	fuser -k 59999/tcp || /bin/true
 
 test-r-booklets:
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.deeplearning.vignette.R
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.gbm.vignette.R
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.glm.vignette.R
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.r.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --wipeall --norun
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.deeplearning.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.gbm.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.glm.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && $(PY_INTERPRETER) ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.r.vignette.R
 
 test-r-demos-small:
-	cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
-	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize s --numclouds 4 --jvm.xmx 2g
-	export NO_GCE_CHECK=True && cd h2o-r/h2o-package/demo && ../../../scripts/run.py --wipeall --norun
-	export NO_GCE_CHECK=True && cd h2o-r/h2o-package/demo && ../../../scripts/run.py --wipeall --testsize s --numclouds 4 --jvm.xmx 2g
+	cd h2o-r/demos && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --norun
+	cd h2o-r/demos && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --testsize s --numclouds 4 --jvm.xmx 2g
+	export NO_GCE_CHECK=True && cd h2o-r/h2o-package/demo && $(PY_INTERPRETER) ../../../scripts/run.py --wipeall --norun
+	export NO_GCE_CHECK=True && cd h2o-r/h2o-package/demo && $(PY_INTERPRETER) ../../../scripts/run.py --wipeall --testsize s --numclouds 4 --jvm.xmx 2g
 
 test-r-demos-medium-large:
-	export NO_GCE_CHECK=True && cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
-	export NO_GCE_CHECK=True && cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
+	export NO_GCE_CHECK=True && cd h2o-r/demos && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --norun
+	export NO_GCE_CHECK=True && cd h2o-r/demos && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
 
 test-r-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
 	@echo "numnodes=$$SINGLE_TEST_NUM_NODES"
 	@echo "jvm.xmx=$$SINGLE_TEST_XMX"
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --test $$SINGLE_TEST_PATH --numnodes $$SINGLE_TEST_NUM_NODES --jvm.xmx $$SINGLE_TEST_XMX
 
 r-generate-docs-jenkins:
 	@$(MAKE) -f $(THIS_FILE) r-generate-docs
@@ -161,19 +179,19 @@ test-package-js:
 		h2o-web/lib/h2o-flow/build/js/headless-test.js
 
 test-phantom-js-smoke:
-	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
+	$(PY_INTERPRETER) ./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
 
 test-phantom-js-small:
-	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
+	$(PY_INTERPRETER) ./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
 
 test-phantom-js-medium:
-	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
+	$(PY_INTERPRETER) ./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
 
 test-phantom-js:
-	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+	cd h2o-web && $(PY_INTERPRETER) ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
 
 test-info:
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --test testdir_algos/deeplearning/runit_deeplearning_iris_basic.R --jvm.xmx 4g
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && $(PY_INTERPRETER) ../../scripts/run.py --wipeall --geterrs --test testdir_algos/deeplearning/runit_deeplearning_iris_basic.R --jvm.xmx 4g
 	cd h2o-r/tests/results && grep -v INFO java_0_0.out.txt > INFO_file.txt || true
 	if [[ $$(wc -c h2o-r/tests/results/INFO_file.txt | awk '{print $$1}') -ne 0 ]]; then \
 		echo "There were non-INFO lines in the output."; \
@@ -182,7 +200,7 @@ test-info:
 	fi
 
 test-demos:
-	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
+	cd h2o-py/tests/testdir_demos && python $(PY_INTERPRETER) ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-package-java:
 	zip -q -r test-package-java \
@@ -286,7 +304,7 @@ test-package-hadoop:
 		scripts/jenkins/ldap-conf.txt h2o-hadoop/tests/python/ h2o-hadoop/h2o-*-assembly/build/libs/h2odriver.jar \
 
 test-hadoop-smoke:
-	cd h2o-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hadoop/tests/python && $(PY_INTERPRETER) ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)
