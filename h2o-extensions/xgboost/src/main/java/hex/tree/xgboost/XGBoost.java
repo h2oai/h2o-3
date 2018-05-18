@@ -12,6 +12,7 @@ import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.*;
 import water.util.Timer;
 
@@ -30,6 +31,9 @@ import static water.H2O.technote;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+
+  private static final double FILL_RATIO_THRESHOLD = 0.3D;
+
   @Override public boolean haveMojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
@@ -268,19 +272,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.dense) {
         model._output._sparse = false;
       } else {
-        float fillRatio = 0;
-        int col = 0;
-        for (int i = 0; i < _train.numCols(); ++i) {
-          if (_train.name(i).equals(_parms._response_column)) continue;
-          if (_train.name(i).equals(_parms._weights_column)) continue;
-          if (_train.name(i).equals(_parms._fold_column)) continue;
-          if (_train.name(i).equals(_parms._offset_column)) continue;
-          fillRatio += _train.vec(i).nzCnt() / _train.numRows();
-          col++;
-        }
-        fillRatio /= col;
-        Log.info("fill ratio: " + fillRatio);
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+        model._output._sparse = isTrainDatasetSparse();
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
@@ -343,6 +335,39 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Unlock & save results
         model.unlock(_job);
       }
+    }
+
+    /**
+     * @return True if train dataset is sparse, otherwise false.
+     */
+    private boolean isTrainDatasetSparse() {
+      long nonZeroCount = 0;
+      int nonCategoricalColumns = 0;
+      long oneHotEncodedColumns = 0;
+      for (int i = 0; i < _train.numCols(); ++i) {
+        if (_train.name(i).equals(_parms._response_column)) continue;
+        if (_train.name(i).equals(_parms._weights_column)) continue;
+        if (_train.name(i).equals(_parms._fold_column)) continue;
+        if (_train.name(i).equals(_parms._offset_column)) continue;
+        final Vec vector = _train.vec(i);
+        if (vector.isCategorical()) {
+          nonZeroCount += _train.numRows();
+        } else {
+          nonZeroCount += vector.nzCnt();
+        }
+        if (vector.isCategorical()) {
+          oneHotEncodedColumns += vector.cardinality();
+        } else {
+          nonCategoricalColumns++;
+        }
+      }
+      final long totalColumns = oneHotEncodedColumns + nonCategoricalColumns;
+      final double denominator = (double) totalColumns * _train.numRows();
+      final double fillRatio = (double) nonZeroCount / denominator;
+      Log.info("fill ratio: " + fillRatio);
+
+      return fillRatio < FILL_RATIO_THRESHOLD
+          || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
     }
 
     // For feature importances - write out column info

@@ -32,8 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
 
 public class XGBoostTest extends TestUtil {
@@ -607,6 +606,68 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
+  public void sparseMatrixDetectionTest() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      // Automatic detection should compute sparsity and decide
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = tfr._key;
+      parms._ignored_columns = new String[]{"ID","DPROS", "DCAPS", "PSA", "VOL", "RACE", "CAPSULE"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertTrue(model._output._sparse);
+
+    } finally {
+      Scope.exit();
+      if (tfr!=null) tfr.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
+  public void denseMatrixDetectionTest() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      // Automatic detection should compute sparsity and decide
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = tfr._key;
+      parms._ignored_columns = new String[]{"ID","DPROS", "DCAPS", "PSA", "VOL", "RACE", "CAPSULE"};
+
+      // GLEASON used as predictor variable, numeric variable, dense
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertFalse(model._output._sparse);
+
+    } finally {
+      Scope.exit();
+      if (tfr!=null) tfr.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
   public void ProstateRegressionCV() {
     for (XGBoostModel.XGBoostParameters.DMatrixType dMatrixType : XGBoostModel.XGBoostParameters.DMatrixType.values()) {
       Frame tfr = null;
@@ -932,6 +993,45 @@ public class XGBoostTest extends TestUtil {
     } finally {
       if(denseModel != null) denseModel.deleteCrossValidationModels();
       if(sparseModel != null) sparseModel.deleteCrossValidationModels();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testSparsityDetection(){
+    Scope.enter();
+    XGBoostModel sparseModel = null;
+    XGBoostModel denseModel = null;
+    try {
+      Frame sparseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 10, 0));
+      Frame denseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 2, 0));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = sparseFrame._key;
+      parms._response_column = "C1";
+      parms._seed = 42;
+      parms._ntrees = 1;
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+
+      sparseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(sparseModel);
+      assertTrue(sparseModel._output._sparse);
+
+      parms._train = denseFrame._key;
+      parms._response_column = "C1";
+      parms._seed = 42;
+      parms._ntrees = 1;
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+
+      // Dense model utilizes fold column zero values to calculate precise memory requirements
+      denseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(denseModel);
+      assertFalse(denseModel._output._sparse);
+
+      Log.info(sparseModel);
+    } finally {
+      if(sparseModel != null) sparseModel.deleteCrossValidationModels();
+      if(denseModel != null) denseModel.deleteCrossValidationModels();
       Scope.exit();
     }
   }
