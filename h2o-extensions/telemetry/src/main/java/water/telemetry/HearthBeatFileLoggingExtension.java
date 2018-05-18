@@ -43,8 +43,12 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     @Override
     public void report(HeartBeat data, long timestamp, String ipAndPort) {
         if (!initializedLogger){
-            registerRollingFileAppenderToAsyncAppender();
-            initializedLogger = true;
+            synchronized (this) {
+                if (!initializedLogger) {
+                    registerRollingFileAppenderToAsyncAppender();
+                    initializedLogger = true;
+                }
+            }
         }
         hbs.add(new EnhancedHearBeat(data, timestamp, ipAndPort));
     }
