@@ -120,7 +120,7 @@ jobs.
 9. The authenticated user can access the same data in H2O that he could
    access via HDFS
 
-What is being Secured Today
+What is Being Secured Today
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Standard file permissions security is provided by the Operating
@@ -143,6 +143,27 @@ What is being Secured Today
 
 3. Internal H2O node-to-H2O node communication can be encrypted.
 
+
+Enforcing System-Level Command-Line Arguments in h2odriver.jar
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+System administrators can create a configuration file with implicit arguments of h2odriver and use it to make sure the H2O cluster is started with the specified security settings. 
+
+1. Create the config file in **/etc/h2o/h2odriver.args**.
+2. Specify the default command-line options that you want to enforce. Note that each argument must be on a separate line. For example:
+
+ ::
+
+   h2o_ssl_jks_internal=keystore.jks
+   h2o_ssl_jks_password=password
+   h2o_ssl_jts_internal=truststore.jks
+   h2o_ssl_jts_password=password
+
+3. Use the ``-Dai.h2o.args.config`` option to specify the configuration file when starting H2O.
+
+ ::
+
+  hadoop jar h2odriver.jar -Dai.h2o.args.config=<CONFIG_FILE> -mapperXmx 3g -nodes 1
 
 File Security in H2O
 --------------------
