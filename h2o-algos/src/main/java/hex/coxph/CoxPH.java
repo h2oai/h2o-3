@@ -348,7 +348,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       cs.reset();
       switch (p._ties) {
         case efron:
-          return EfronMethod.calcLoglik(_job._key, dinfo, coxMR, cs);
+          return EfronMethod.calcLoglik(dinfo, coxMR, cs);
         case breslow:
           final int n_coef = cs._n_coef;
           final int n_time = coxMR.sizeEvents.length;
@@ -536,7 +536,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           model._output._iter = i;
 
           Timer aggregTimer = new Timer();
-          coxMR = new CoxPHTask(_job._key, dinfo, newCoef, time, (long) response().min() /* min event */,
+          coxMR = new CoxPHTask(dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
                   _parms._ties).doAll(dinfo._adaptedFrame);
           Log.info("CoxPHTask: iter=" + i + ", time=" + aggregTimer.toString());
@@ -599,7 +599,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
   }
 
-  protected static class CoxPHTask extends FrameTask<CoxPHTask> {
+  protected static class CoxPHTask extends CPHBaseTask<CoxPHTask> {
     final double[] _beta;
     final double[] _time;
     final int      _n_offsets;
@@ -629,10 +629,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     // Breslow only
     double[][][] rcumsumXXRisk;
 
-    CoxPHTask(Key<Job> jobKey, DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
+    CoxPHTask(DataInfo dinfo, final double[] beta, final double[] time, final long min_event,
               final int n_offsets, final boolean has_start_column, Vec strata_column, final boolean has_weights_column,
               final CoxPHModel.CoxPHParameters.CoxPHTies ties) {
-      super(jobKey, dinfo);
+      super(dinfo);
       _beta               = beta;
       _time = time;
       _min_event          = min_event;
@@ -645,7 +645,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     @Override
-    protected boolean chunkInit(){
+    protected void chunkInit(){
       final int n_time = _time.length * _num_strata;
       final int n_coef = _beta.length;
 
@@ -666,12 +666,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       if (_isBreslow) { // Breslow only
         rcumsumXXRisk = malloc3DArray(n_time, n_coef, n_coef);
       }
-
-      return true;
     }
 
     @Override
-    protected void processRow(long gid, Row row) {
+    protected void processRow(Row row) {
       n++;
       double [] response = row.response;
       int ncats = row.nBins;
