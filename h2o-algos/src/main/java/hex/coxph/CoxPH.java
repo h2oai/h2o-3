@@ -626,11 +626,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[]     rcumsumRisk;
     double[][]   rcumsumXRisk;
 
-    // Booster
-    private double[][]   rcumsumXRiskBoost;
-
-    private static int BOOST_LEN = 16;
-
     // Breslow only
     double[][][] rcumsumXXRisk;
 
@@ -667,7 +662,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sumXEvents       = malloc2DArray(n_time, n_coef);
       sumXRiskEvents   = malloc2DArray(n_time, n_coef);
       rcumsumXRisk     = malloc2DArray(n_time, n_coef);
-      rcumsumXRiskBoost= malloc2DArray(n_time / BOOST_LEN + 1, n_coef);
 
       if (_isBreslow) { // Breslow only
         rcumsumXXRisk = malloc3DArray(n_time, n_coef, n_coef);
@@ -728,16 +722,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         rcumsumRisk[t2]  += risk;
       }
 
-      final int t1bIdx = (t1 / BOOST_LEN) + (t1 % BOOST_LEN == 0 ? 0 : 1);
-      final int t2bIdx = t2 / BOOST_LEN;
-      final int t1bStart;
-      final int t2bEnd;
-      if (t1bIdx >= t2bIdx) { t1bStart = t1;
-                              t2bEnd = t1;
-      } else {                t1bStart = BOOST_LEN * t1bIdx;
-                              t2bEnd = BOOST_LEN * t2bIdx;
-      }
-
       final int ntotal = ncats + (nums.length - _n_offsets);
       final int numStartIter = numStart - ncats;
       for (int jit = 0; jit < ntotal; ++jit) {
@@ -749,15 +733,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           sumXEvents[t2][j] += weight * x1;
           sumXRiskEvents[t2][j] += xRisk;
         }
-        if (_has_start_column) {
-          for (int t = t1; t < t1bStart; t++)
-            rcumsumXRisk[t][j] += xRisk;
-          for (int tbIdx = t1bIdx; tbIdx < t2bIdx; tbIdx++)
-            rcumsumXRiskBoost[tbIdx][j] += xRisk;
-          for (int t = t2bEnd; t <= t2; t++)
-            rcumsumXRisk[t][j] += xRisk;
-        } else {
-          rcumsumXRisk[t2][j] += xRisk;
+        rcumsumXRisk[t2][j] += xRisk;
+        if (_has_start_column && (t1 % _time.length > 0)) {
+          rcumsumXRisk[t1 - 1][j] -= xRisk;
         }
         if (_isBreslow) { // Breslow only
           for (int kit = 0; kit < ntotal; ++kit) {
@@ -792,7 +770,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       ArrayUtils.add(sumLogRiskEvents, that.sumLogRiskEvents);
       ArrayUtils.add(rcumsumRisk,      that.rcumsumRisk);
       ArrayUtils.add(rcumsumXRisk,     that.rcumsumXRisk);
-      ArrayUtils.add(rcumsumXRiskBoost,that.rcumsumXRiskBoost);
       if (_isBreslow) { // Breslow only
         ArrayUtils.add(rcumsumXXRisk,    that.rcumsumXXRisk);
       }
@@ -800,21 +777,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     @Override
     protected void postGlobal() {
-      if (_has_start_column) {
-        int bIdx = -1;
-        for (int t = 0; t < rcumsumXRisk.length; t++) {
-          if (t % BOOST_LEN == 0)
-            bIdx++;
-          for (int j = 0; j < rcumsumXRisk[t].length; ++j)
-            rcumsumXRisk[t][j] += rcumsumXRiskBoost[bIdx][j];
-        }
-      } else {
+      for (int t = rcumsumXRisk.length - 2; t >= 0; --t)
+        for (int j = 0; j < rcumsumXRisk[t].length; ++j)
+          rcumsumXRisk[t][j] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXRisk[t + 1][j];
+
+      if (! _has_start_column) {
         for (int t = rcumsumRisk.length - 2; t >= 0; --t)
           rcumsumRisk[t] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumRisk[t + 1];
-
-        for (int t = rcumsumXRisk.length - 2; t >= 0; --t)
-          for (int j = 0; j < rcumsumXRisk[t].length; ++j)
-            rcumsumXRisk[t][j] += ((t + 1) % _time.length) == 0 ? 0 : rcumsumXRisk[t + 1][j];
 
         if (_isBreslow) { // Breslow only
           for (int t = rcumsumXXRisk.length - 2; t >= 0; --t)
