@@ -164,97 +164,6 @@
 
     </style>
     <script>
-      //
-      // Google Analytics
-      //User ID Generation
-      var prefix = ['abc', 'def', 'ghi'],
-          middle = ['123', '456', '789'],
-          suffix = ['rst', 'uvw', 'xyz'],
-          random = function() {
-              return Math.floor(Math.random() * 3);
-          };
-
-      function setCookie(cname, cvalue, exdays) {
-          var d = new Date();
-          d.setTime(d.getTime() + (exdays*24*60*60*1000));
-          var expires = "expires="+d.toUTCString();
-          document.cookie = cname + "=" + cvalue + "; " + expires;
-      }
-
-      function getCookie(cname) {
-          var name = cname + "=";
-          var ca = document.cookie.split(';');
-          for(var i=0; i < ca.length; i++) {
-              var c = ca[i];
-              while (c.charAt(0)==' ') c = c.substring(1);
-              if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
-          }
-          return "";
-      }
-
-      var user = getCookie("username");
-      if (user == "") {
-          var user = "User-" + prefix[random()] + '-' + Math.floor((Math.random() * 60000) + 1) + '-' + suffix[random()]; // e.g. abc-123-rst
-          if (user != "" && user != null) {
-              setCookie("username", user, 365);
-          }
-      }
-
-      // Simple pseudo-random user id - 27 possible values
-      var customUserId = user; // e.g. abc-123-rst
-      function getHitTime() {
-        // Get local time as ISO string with offset at the end
-        var now = new Date();
-        var tzo = -now.getTimezoneOffset();
-        var dif = tzo >= 0 ? '+' : '-';
-        var pad = function(num) {
-            var norm = Math.abs(Math.floor(num));
-            return (norm < 10 ? '0' : '') + norm;
-        };
-        return now.getFullYear()
-            + '-' + pad(now.getMonth()+1)
-            + '-' + pad(now.getDate())
-            + 'T' + pad(now.getHours())
-            + ':' + pad(now.getMinutes())
-            + ':' + pad(now.getSeconds())
-            + '.' + pad(now.getMilliseconds())
-            + dif + pad(tzo / 60)
-            + ':' + pad(tzo % 60);
-      }
-      console.log(customUserId);
-      // test
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-29263631-3');
-      ga('create', 'UA-64842905-1', 'auto', {'name': 'newTracker'}, {'allowLinker': true },{'userId': customUserId});
-      ga('newTracker.require', 'linker');
-      ga('linker:autoLink', ['h2o.ai','leadpages.co', 'amazonaws.com','0xdata.com']);
-
-      ga('send', 'pageview', { 'title': 'H2O Downloads for SUBST_PROJECT_VERSION' });
-      // New Tracker Sending Custom Dimension
-        ga(function(tracker) {
-         ga('newTracker.set', 'dimension1', tracker.get('clientId'));
-         ga('newTracker.set', 'dimension2', new Date().getTime() + '.' + Math.random().toString(36).substring(5));
-
-        ga('newTracker.set', 'dimension3', getHitTime());
-        ga('newTracker.set', 'dimension4', customUserId);
-
-         ga('newTracker.send', 'pageview');
-      });
-
-      <!-- GA sending events -->
-      function trackLink(id, category, action) {
-        var link = document.getElementById(id);
-        link.onclick = function() {
-          ga('send', 'event', category, action, 'SUBST_PROJECT_VERSION');
-          if(id.indexOf("btnCopy")==-1)
-            setTimeout(function() { location.href = link.href; }, 300);
-          return false;
-        };
-      }
       function initializeTabs() {
         var zipTab = document.getElementById('quickstart-zip-tab');
         var zipPanel = document.getElementById('quickstart-zip');
@@ -346,26 +255,6 @@
         }
       }
       <!-- DOM 0 style without jquery -->
-
-      trackLinks = function() {
-        trackLink('download-zip', 'Download', 'ZIP');
-        trackLink('doc-flow', 'Documentation', 'Flow');
-        trackLink('doc-r-pdf', 'Documentation', 'R');
-        trackLink('doc-py', 'Documentation', 'Hadoop');
-        trackLink('doc-rest', 'Documentation', 'REST API');
-        trackLink('doc-h2o-core-javadoc', 'Documentation', 'H2O Core Javadoc');
-        trackLink('doc-h2o-algos-javadoc', 'Documentation', 'H2O Algos Javadoc');
-        trackLink('doc-h2o-genmodel-javadoc', 'Documentation', 'H2O Generated POJO Model Javadoc');
-        trackLink('doc-h2o-scala-javadoc', 'Documentation', 'H2O Scala Javadoc');
-        trackLink('btnCopy1','Copy to Clipboard', 'Run H2O From Terminal');
-        trackLink('btnCopy2','Copy to Clipboard', 'Use H2O directly from Python');
-        trackLink('btnCopy3','Copy to Clipboard', 'Use H2O Directly from R');
-        trackLink('btnCopy4','Copy to Clipboard', 'Run H2O on Hadoop');
-        trackLink('btnCopy5','Copy to Clipboard', 'Run H2O on Hadoop');
-        trackLink('btnCopy6','Copy to Clipboard', 'Run H2O on Maven');
-        trackLink('btnCopy7','Copy to Clipboard', 'Run H2O on Hadoop');
-        trackLink('btnCopy8','Copy to Clipboard', 'Use H2O directly from Python');
-      }
 
       populatePageWithBuildInfoJson = function(obj) {
         var out;
