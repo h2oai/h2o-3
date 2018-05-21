@@ -261,7 +261,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/doc/FAQ.rst>`_: This FAQ provides answers to many common questions about Sparkling Water.
+-  `Sparkling Water FAQ <http://docs.h2o.ai/sparkling-water/master/bleeding-edge/doc/FAQ.html>`_: This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -375,7 +375,7 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 To check which version of H2O is installed in R, use ``versions::installed.versions("h2o")``.
 
--  `R User Documentation <../h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
+-  `R User HTML <../h2o-r/docs/index.html>`_ and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -528,7 +528,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
    ::
 
-       hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+     hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
    The above command launches a 6g node of H2O. We recommend you launch the cluster with at least four times the memory of your data file size.
 
