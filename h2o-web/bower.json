@@ -24,7 +24,7 @@
     "tests"
   ],
   "dependencies": {
-    "h2o-flow": "0.7.18"
+    "h2o-flow": "0.7.23"
   },
   "devDependencies": {}
 }
