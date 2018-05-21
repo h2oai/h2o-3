@@ -37,7 +37,7 @@ public class EfronDJKTermTaskTest extends TestUtil {
       final DataInfo dinfo = makeDataInfo(fr, 2);
       final DataInfo dinfoNoResp = makeDataInfo(fr.subframe(new String[]{"ColA", "ColB", "ColC"}), 0);
 
-      CoxPH.CoxPHTask coxMR = new CoxPH.CoxPHTask(dinfo, null, null, 0, 0, false, null, false,
+      CoxPH.CoxPHTask coxMR = new CoxPH.CoxPHTask(dinfo, new double[dinfo.fullN()], null, 0, 0, false, null, false,
               CoxPHModel.CoxPHParameters.CoxPHTies.efron);
 
       EfronDJKSetupFun efronDJKSetupFun = new EfronDJKSetupFun();
