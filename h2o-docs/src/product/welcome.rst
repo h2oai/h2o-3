@@ -375,7 +375,7 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 To check which version of H2O is installed in R, use ``versions::installed.versions("h2o")``.
 
--  `R User HTML <../h2o-r/docs/index.html> and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
+-  `R User HTML <../h2o-r/docs/index.html>`_ and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 

@@ -7,7 +7,7 @@ The links below point to more detailed API/developer documentation.
 
 - `REST API Schemas <rest-api-reference.html#schema-reference>`_: This document represents the definitive guide to the H2O REST API schemas.
 
-- `R <../h2o-r/h2o_package.pdf>`_: This document provides the list of available functions that can be used when configuring H2O through R.
+- `R User HTML <../h2o-r/docs/index.html>`_ and R User PDF <../h2o-r/h2o_package.pdf>`_ : This document provides the list of available functions that can be used when configuring H2O through R.
 	
 - `Python <../h2o-py/docs/index.html>`_: This document provides the list of available functions that can be used when configuring H2O through R.
 	
@@ -15,8 +15,8 @@ The links below point to more detailed API/developer documentation.
 
 - `h2o-algos Javadoc <../h2o-algos/javadoc/index.html>`_: The definitive Java API guide for the algorithms used by H2O.
 
-- `POJO Model Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
+- `POJO/MOJO Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs and MOJOs in a Java application.
 
 - `h2o-scala Scaladoc <../h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide for H2O.
 
-- `Sparkling Water API <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`_: This document describes the configuration properties that can be passed to Spark to onfigure Sparkling Water. 
+- `Sparkling Water API <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/rest_api/scala_interpreter_endpoints.html>`_: This document describes the configuration properties that can be passed to Spark to configure Sparkling Water. 
