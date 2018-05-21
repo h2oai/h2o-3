@@ -159,11 +159,11 @@ System administrators can create a configuration file with implicit arguments of
    h2o_ssl_jts_internal=truststore.jks
    h2o_ssl_jts_password=password
 
-3. Use the ``-Dai.h2o.args.config`` option to specify the configuration file when starting H2O.
+3. Start H2O.
 
  ::
 
-  hadoop jar h2odriver.jar -Dai.h2o.args.config=<CONFIG_FILE> -mapperXmx 3g -nodes 1
+  hadoop jar h2odriver.jar -mapperXmx 3g -nodes 1
 
 File Security in H2O
 --------------------
