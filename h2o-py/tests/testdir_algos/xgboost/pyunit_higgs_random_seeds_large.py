@@ -1,6 +1,10 @@
 import pandas as pd
 import xgboost as xgb
 import random
+from xgboost import plot_tree
+import matplotlib.pyplot as plt
+#import os
+#os.environ["PATH"]+=os.pathsep+
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -21,45 +25,44 @@ def random_seeds_test():
     y = "response"
     myX.remove(y)
 
-    #seed1 = random.randint(1, 1073741824) # seed cannot be long, must be int size
-    seed1 = 12345
-    seed2 = seed1+10
+    seed2 = random.randint(1, 1073741824) # seed cannot be long, must be int size
     h2oParams = {"ntrees":100, "max_depth":10, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": 100, "seed":seed1}
-
-    # train 2 models with the same seeds
+                 "min_rows" : 5, "score_tree_interval": 100, "seed":-12345}
+    print("Model 1 trainged with old seed {0}.".format(h2oParams['seed']))
+    # train model 1 with same seed from previous runs
     h2oModel1 = H2OXGBoostEstimator(**h2oParams)
     # gather, print and save performance numbers for h2o model
     h2oModel1.train(x=myX, y=y, training_frame=higgs_h2o_train)
     h2oPredict1 = h2oModel1.predict(higgs_h2o_test)
-    h2oModel2 = H2OXGBoostEstimator(**h2oParams)
+
+    h2oParams2 = {"ntrees":100, "max_depth":10, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
+                  "min_rows" : 5, "score_tree_interval": 100, "seed":seed2}
+    print("Model 2 trainged with new seed {0}.".format(h2oParams2['seed']))
+    h2oModel2 = H2OXGBoostEstimator(**h2oParams2)
     # gather, print and save performance numbers for h2o model
     h2oModel2.train(x=myX, y=y, training_frame=higgs_h2o_train)
     h2oPredict2 = h2oModel2.predict(higgs_h2o_test)
-    h2oParams2 = {"ntrees":100, "max_depth":10, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": 100, "seed":seed2}
-    h2oModel3 = H2OXGBoostEstimator(**h2oParams2)
-    # gather, print and save performance numbers for h2o model
-    h2oModel3.train(x=myX, y=y, training_frame=higgs_h2o_train)
-    h2oPredict3 = h2oModel3.predict(higgs_h2o_test)
 
     # Result comparison in terms of prediction output.  In theory, h2oModel1 and h2oModel2 should be the same
     # h2oModel3 will be different from the other two models
-
+    logLossSeed_12345=0.0003883838698249251   # seeds store from previous runs
+    predSeed_12345 = [5.136374738867744e-07, 1.60223244165536e-05, 1.631723171158228e-05, 0.00022351904772222042]
+    #
     # compare the logloss
     assert abs(h2oModel1._model_json["output"]["training_metrics"]._metric_json["logloss"]-
-                    h2oModel2._model_json["output"]["training_metrics"]._metric_json["logloss"])<1e-10, \
+               logLossSeed_12345)<1e-10, \
         "Model outputs should be the same with same seeds but are not!  Expected: {0}, actual: " \
         "{1}".format(h2oModel1._model_json["output"]["training_metrics"]._metric_json["logloss"],
                      h2oModel2._model_json["output"]["training_metrics"]._metric_json["logloss"])
     assert abs(h2oModel1._model_json["output"]["training_metrics"]._metric_json["logloss"]-
-                    h2oModel3._model_json["output"]["training_metrics"]._metric_json["logloss"])>1e-10, \
+                    h2oModel2._model_json["output"]["training_metrics"]._metric_json["logloss"])>1e-10, \
         "Model outputs should be different with same seeds but are not!"
 
     # compare some prediction probabilities
-    pyunit_utils.compare_frames_local(h2oPredict1[['p0', 'p1']], h2oPredict2[['p0', 'p1']], prob=0.1, tol=1e-6) # should pass
+    model1Pred = [h2oPredict1[0,"p1"], h2oPredict1[1,"p1"], h2oPredict1[2,"p1"], h2oPredict1[3,"p1"]]
+    assert predSeed_12345==model1Pred, "Model 1 should have same predictions as previous with same seed but do not."
     try:
-        pyunit_utils.compare_frames_local(h2oPredict1[['p0', 'p1']], h2oPredict3[['p0', 'p1']], prob=0.1, tol=1e-6) # should fail
+        pyunit_utils.compare_frames_local(h2oPredict1[['p0', 'p1']], h2oPredict2[['p0', 'p1']], prob=0.1, tol=1e-6) # should fail
         assert False, "Predict frames from two different seeds should be different but is not.  FAIL!"
     except:
         assert True
@@ -69,37 +72,34 @@ def random_seeds_test():
     nativeTest = genDMatrix(higgs_h2o_test, myX, y)
     h2o.remove_all()
     nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
-                   'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"]}
+                   'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"],
+                   'min_child_weight':h2oParams["min_rows"],
+                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"],'alpha':0.0, 'nrounds':h2oParams["ntrees"]}
     nativeModel1 = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain ,
-                            num_boost_round=h2oParams["ntrees"])
-
+                            dtrain=nativeTrain)
     nativePred1 = nativeModel1.predict(data=nativeTest)
-    nativeModel2 = xgb.train(params=nativeParam,
-                             dtrain=nativeTrain ,
-                             num_boost_round=h2oParams["ntrees"])
-    nativePred2 = nativeModel2.predict(data=nativeTest)
 
     nativeParam2 = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
-                   'max_depth': h2oParams["max_depth"], 'seed': h2oParams2["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"]}
+                   'max_depth': h2oParams["max_depth"], 'seed': h2oParams2["seed"],
+                    'min_child_weight':h2oParams["min_rows"],
+                    'colsample_bytree':h2oParams["col_sample_rate_per_tree"],'alpha':0.0, 'nrounds':h2oParams["ntrees"]}
 
-    nativeModel3 = xgb.train(params=nativeParam2,
+    nativeModel2 = xgb.train(params=nativeParam2,
                          dtrain=nativeTrain ,
                          num_boost_round=h2oParams["ntrees"])
-    nativePred3 = nativeModel3.predict(data=nativeTest)
+    nativePred2 = nativeModel2.predict(data=nativeTest)
 
     # nativeModel1 and nativeModel2 should generate the same results while nativeModel3 should provide different results
     # compare prediction probability and they should agree if they use the same seed
-    for ind in range(h2oPredict3.nrow):
-        assert abs(nativePred1[ind]-nativePred2[ind])<1e-6, \
-            "Native XGBoost model 1 prediction prob: {0} and native XGBoost model 2 prediction prob: {1}.  They are very " \
-            "different.".format(nativePred1[ind], nativePred2[ind])
-
-        assert abs(nativePred1[ind]-nativePred3[ind])>=1e-6, \
-            "Native XGBoost model 1 prediction prob: {0} and native XGBoost model 3 prediction prob: {1}.  They are too  " \
-            "similar.".format(nativePred1[ind], nativePred2[ind])
+    nativeOldPred= [0.00045239349, 0.013410881, 0.0046065603, 0.020480383]
+    nativePreds1 = [nativePred1[0], nativePred1[1], nativePred1[2], nativePred1[3]]
+    for ind in range(len(nativePreds1)):
+        assert abs(nativeOldPred[ind]-nativePreds1[ind])<1e-7, "Native XGBoost Model 1 should have same predictions" \
+                                                                " as previous with same seed but do not."
+    for ind in range(4):
+        assert abs(nativePred1[ind]-nativePred2[ind])>=1e-6, \
+            "Native XGBoost model 1 prediction prob: {0} and native XGBoost model 3 prediction prob: {1}.  " \
+            "They are too similar.".format(nativePred1[ind], nativePred2[ind])
 
 def genDMatrix(h2oFrame, xlist, yresp):
     pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)

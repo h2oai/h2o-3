@@ -28,7 +28,7 @@ def bigCat_test_hdfs():
                  "min_rows" : 5, "score_tree_interval": 100}
     nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
                    'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"]}
+                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"], 'alpha':0.0, 'nrounds':h2oParams["ntrees"]}
 
     for fname in trainFileList:
         trainFile = genTrainFiles(fname, hdfs_name_node)     # load in dataset and add response column
@@ -48,8 +48,7 @@ def bigCat_test_hdfs():
         # train the native XGBoost
         nativeTrain = genDMatrix(trainFile, myX, y)
         nativeModel = xgb.train(params=nativeParam,
-                                dtrain=nativeTrain ,
-                                num_boost_round=h2oParams["ntrees"])
+                                dtrain=nativeTrain)
         nativeTrainTime = time.time()-time1
         time1=time.time()
         nativePred = nativeModel.predict(data=nativeTrain)

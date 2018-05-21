@@ -2,6 +2,8 @@ import pandas as pd
 import xgboost as xgb
 import time
 import random
+from xgboost import plot_tree
+import matplotlib.pyplot as plt
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -27,6 +29,7 @@ def higgs_compare_test():
     myX.remove(y)
 
     runSeed = random.randint(1, 1073741824)
+    print("Seed used in running {0}.".format(runSeed))
     h2oParams = {"ntrees":100, "max_depth":10, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                  "min_rows" : 5, "score_tree_interval": 100}
     h2oModel = H2OXGBoostEstimator(**h2oParams)
@@ -43,10 +46,9 @@ def higgs_compare_test():
     time1 = time.time()
     nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
              'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"]}
+                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"], 'alpha':0.0, 'nrounds':h2oParams["ntrees"]}
     nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain ,
-                            num_boost_round=h2oParams["ntrees"])
+                            dtrain=nativeTrain)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTest)
