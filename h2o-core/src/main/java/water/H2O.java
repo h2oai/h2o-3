@@ -1,7 +1,5 @@
 package water;
 
-import com.brsanthu.googleanalytics.DefaultRequest;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -320,9 +318,6 @@ final public class H2O {
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = true;
-
     //-----------------------------------------------------------------------------------
     // Debugging
     //-----------------------------------------------------------------------------------
@@ -526,7 +521,6 @@ final public class H2O {
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -643,11 +637,6 @@ final public class H2O {
       e.validateArguments();
     }
   }
-
-  // Google analytics performance measurement
-  public static GoogleAnalytics GA;
-  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
-  public static int CLIENT_ID_GA_CUST_DIM = 2;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -1462,10 +1451,6 @@ final public class H2O {
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
   }
 
-  private static void startGAStartupReport() {
-    new GAStartupReportThread().start();
-  }
-
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
     // Figure self out; this is surprisingly hard
@@ -1911,44 +1896,6 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA or not
-    long time3 = System.currentTimeMillis();
-    List<String> gaidList;  // fetching this list takes ~100ms
-    if((new File(".h2o_no_collect")).exists()
-            || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out
-            || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
-            || H2O.ABV.isDevVersion()) {
-      GA = null;
-      Log.info("Opted out of sending usage metrics.");
-    } else {
-      try {
-        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
-        DefaultRequest defReq = GA.getDefaultRequest();
-        String gaid = null;
-        if (gaidList.size() > 0) {
-          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
-          for (String str : gaidList) {
-            if (str.matches("........-....-....-....-............")
-                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
-              gaid = str;
-              break;
-            }
-          }
-        }
-        if (gaid == null) { // No UUID, create one
-          gaid = defReq.clientId();
-          gaid = gaid.replaceFirst("........-","ANONYMOU-");
-        }
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
-        GA.setDefaultRequest(defReq);
-      } catch(Throwable t) {
-        Log.POST(11, t.toString());
-        StackTraceElement[] stes = t.getStackTrace();
-        for (StackTraceElement ste : stes)
-          Log.POST(11, ste.toString());
-      }
-    }
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2039,8 +1986,6 @@ final public class H2O {
     new HeartBeatThread().start();
 
     long time11 = System.currentTimeMillis();
-    if (GA != null)
-      startGAStartupReport();
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
@@ -2049,8 +1994,7 @@ final public class H2O {
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
     Log.debug("    Get ICE root: " + (time2 - time1) + "ms");
-    Log.debug("    Print log version: " + (time3 - time2) + "ms");
-    Log.debug("    Register GA: " + (time4 - time3) + "ms");
+    Log.debug("    Print log version: " + (time4 - time2) + "ms");
     Log.debug("    Detect network address: " + (time5 - time4) + "ms");
     Log.debug("    Start local node: " + (time6 - time5) + "ms");
     Log.debug("    Extensions onLocalNodeStarted(): " + (time7 - time6) + "ms");
@@ -2080,27 +2024,6 @@ final public class H2O {
   public static void die(String s) {
     Log.fatal(s);
     H2O.exit(-1);
-  }
-
-  public static class GAStartupReportThread extends Thread {
-    final private int sleepMillis = 150 * 1000; //2.5 min
-
-    // Constructor.
-    public GAStartupReportThread() {
-      super("GAStartupReport");        // Only 9 characters get printed in the log.
-      setDaemon(true);
-      setPriority(MAX_PRIORITY - 2);
-    }
-
-    // Class main thread.
-    @Override
-    public void run() {
-      try {
-        Thread.sleep (sleepMillis);
-      }
-      catch (Exception ignore) {};
-      GAUtils.logStartup();
-    }
   }
 
   /**
