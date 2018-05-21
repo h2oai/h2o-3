@@ -65,39 +65,10 @@ abstract public class AbstractBuildVersion {
     return days > TOO_OLD_THRESHOLD;
   }
 
-  /** Return version number of the latest stable
-   * H2O or null if it cannot be fetched.
-   * @return the latest H2O version or null if it cannot be fetched.
-   */
-  public String getLatestH2OVersion() {
-    InputStream is = null;
-    try {
-      URL url = new URL(LATEST_STABLE_URL);
-      // Get connection explicitly and setup small timeouts
-      URLConnection conn = url.openConnection();
-      conn.setConnectTimeout(1000 /* ms */);
-      conn.setReadTimeout(1000 /* ms */);
-      return extractVersionFromUrl(IOUtils.toString(is = conn.getInputStream()));
-    } catch (Exception e) {
-      return "unknown";
-    } finally {
-      FileUtils.close(is);
-    }
-  }
-
-  private static String extractVersionFromUrl(String downloadUrl) {
-    java.util.regex.Matcher m = VERSION_EXTRACT_PATTERN.matcher(downloadUrl);
-    if (m.find()) {
-      return m.group(1);
-    } else {
-      return "unknown";
-    }
-  }
-
   public boolean isDevVersion() {
     return projectVersion().equals(UNKNOWN_VERSION_MARKER) || projectVersion().endsWith(DEVEL_VERSION_PATCH_NUMBER);
   }
-  
+
   /** Dummy version of H2O. */
   private static final String UNKNOWN_VERSION_MARKER = "(unknown)";
   public static final AbstractBuildVersion UNKNOWN_VERSION = new AbstractBuildVersion() {

@@ -340,9 +340,6 @@ final public class H2O {
 
     public boolean useUDP = false;
 
-    /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
-    public boolean noLatestCheck = false;
-
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -591,7 +588,7 @@ final public class H2O {
         trgt.decrypt_tool = args[i];
       }
       else if (s.matches("no_latest_check")) {
-        trgt.noLatestCheck = true;
+        // ignored
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
@@ -1427,19 +1424,17 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());
-    Log.info("Build project version: " + ABV.projectVersion() + " (latest version: " + latestVersion + ")");
     Log.info("Build age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
     if (ABV.isTooOld()) {
-      Log.warn("\n*** Your H2O version is too old! Please download the latest version " + latestVersion + " from http://h2o.ai/download/ ***");
+      Log.warn("\n*** Your H2O version is too old! Please download the latest version from http://h2o.ai/download/ ***");
       Log.warn("");
     }
 

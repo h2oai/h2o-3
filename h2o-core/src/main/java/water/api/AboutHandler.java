@@ -24,11 +24,8 @@ public class AboutHandler extends Handler {
     entries.add(new AboutEntryV3("Internal Security", H2OSecurityManager.instance().securityEnabled ? "Enabled": "Disabled"));
 
     if (H2O.ABV.isTooOld()) {
-      String latestH2OVersion = H2O.ABV.getLatestH2OVersion();
       entries.add(new AboutEntryV3("Version warning",
-                                   "Your H2O version is too old! Please download the latest version "
-                                   + latestH2OVersion
-                                   + " from http://h2o.ai/download/"));
+                                   "Your H2O version is too old! Please download the latest version from http://h2o.ai/download/"));
     }
 
     for (H2O.AboutEntry ae : H2O.getAboutEntries()) {
