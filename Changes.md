@@ -2,6 +2,39 @@
 
 ## H2O
 
+### Wolpert (3.18.0.10) - 5/22/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5558'>PUBDEV-5558</a>] - Fixed an issue for adding Double.NaN to IntAryVisitor via addValue().
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5559'>PUBDEV-5559</a>] - Removed all code that referenced Google Analytics.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5565'>PUBDEV-5565</a>] - Disabled version check in H2O-3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5567'>PUBDEV-5567</a>] - Removed all Google Analytics references and code from Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5568'>PUBDEV-5568</a>] - Removed all Google Analytics references and code from Documentation.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5545'>PUBDEV-5545</a>] - The Security chapter in the User Guide now describes how to enforce system-level command-line arguments in h2odriver when starting H2O
+</li>
+</ul>
+
+
+
 ### Wolpert (3.18.0.9) - 5/11/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html</a>
