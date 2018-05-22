@@ -18,7 +18,8 @@ class EfronMethod {
     for (int i = 0; i < f._n_coef; i++)
       for (int j = 0; j < f._n_coef; j++)
         f._hessian[i][j] += djkTermTask._djkTerm[i][j];
-
+    for (int i = 0; i < f._n_coef; i++)
+      f._gradient[i] += coxMR.sumXEvents[i];
     return f.toComputationState(cs);
   }
 
@@ -189,8 +190,6 @@ class EfronUpdateFun extends MrFun<EfronUpdateFun> {
       final double rcumsumRisk_t      = _coxMR.rcumsumRisk[t];
       final double avgSize            = sizeEvents_t / countEvents_t;
       _logLik += sumLogRiskEvents_t;
-      for (int i = 0; i < _n_coef; i++)
-        _gradient[i] += _coxMR.sumXEvents[t][i];
       for (long e = 0; e < countEvents_t; ++e) {
         final double frac = ((double) e) / ((double) countEvents_t);
         final double term = rcumsumRisk_t - frac * sumRiskEvents_t;

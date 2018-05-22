@@ -353,6 +353,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           final int n_coef = cs._n_coef;
           final int n_time = coxMR.sizeEvents.length;
           double newLoglik = 0;
+          for (int i = 0; i < n_coef; i++)
+            cs._gradient[i] = coxMR.sumXEvents[i];
           for (int t = n_time - 1; t >= 0; --t) {
             final double sizeEvents_t = coxMR.sizeEvents[t];
             if (sizeEvents_t > 0) {
@@ -362,7 +364,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               newLoglik -= sizeEvents_t * Math.log(rcumsumRisk_t);
               for (int j = 0; j < n_coef; ++j) {
                 final double dlogTerm = coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t;
-                cs._gradient[j] += coxMR.sumXEvents[t][j];
                 cs._gradient[j] -= sizeEvents_t * dlogTerm;
                 for (int k = 0; k < n_coef; ++k)
                   cs._hessian[j][k] -= sizeEvents_t *
@@ -619,7 +620,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     double[]     sizeCensored;
     double[]     sizeEvents;
     long[]       countEvents;
-    double[][]   sumXEvents;
+    double[]     sumXEvents;
     double[]     sumRiskEvents;
     double[][]   sumXRiskEvents;
     double[]     sumLogRiskEvents;
@@ -659,7 +660,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sumRiskEvents    = MemoryManager.malloc8d(n_time);
       sumLogRiskEvents = MemoryManager.malloc8d(n_time);
       rcumsumRisk      = MemoryManager.malloc8d(n_time);
-      sumXEvents       = malloc2DArray(n_time, n_coef);
+      sumXEvents =       MemoryManager.malloc8d(n_coef);
       sumXRiskEvents   = malloc2DArray(n_time, n_coef);
       rcumsumXRisk     = malloc2DArray(n_time, n_coef);
 
@@ -728,7 +729,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         final double x1 = jIsCat ? 1.0 : nums[jit - ncats];
         final double xRisk = x1 * risk;
         if (event > 0) {
-          sumXEvents[t2][j] += weight * x1;
+          sumXEvents[j] += weight * x1;
           sumXRiskEvents[t2][j] += xRisk;
         }
         rcumsumXRisk[t2][j] += xRisk;
