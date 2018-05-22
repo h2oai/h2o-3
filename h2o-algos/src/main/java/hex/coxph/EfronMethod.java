@@ -1,7 +1,6 @@
 package hex.coxph;
 
 import hex.DataInfo;
-import hex.FrameTask;
 import water.*;
 import water.util.ArrayUtils;
 
@@ -11,9 +10,9 @@ import static hex.coxph.CoxPHUtils.*;
 
 class EfronMethod {
 
-  static ComputationState calcLoglik(Key<Job> jobKey, DataInfo dinfo, CoxPHTask coxMR, ComputationState cs) {
+  static ComputationState calcLoglik(DataInfo dinfo, CoxPHTask coxMR, ComputationState cs) {
     EfronDJKSetupFun djkTermSetup = EfronDJKSetupFun.setupEfron(coxMR);
-    EfronDJKTermTask djkTermTask = new EfronDJKTermTask(jobKey, dinfo, coxMR, djkTermSetup).doAll(dinfo._adaptedFrame);
+    EfronDJKTermTask djkTermTask = new EfronDJKTermTask(dinfo, coxMR, djkTermSetup).doAll(dinfo._adaptedFrame);
     EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
     H2O.submitTask(new LocalMR(f, coxMR.sizeEvents.length)).join();
     for (int i = 0; i < f._n_coef; i++)
@@ -31,6 +30,8 @@ class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
 
   double[] _riskTermT2;
   double[] _cumsumRiskTerm;
+
+  public EfronDJKSetupFun() { _coxMR = null; }
 
   private EfronDJKSetupFun(CoxPHTask coxMR) {
     _coxMR = coxMR;
@@ -71,7 +72,7 @@ class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
 
 }
 
-class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
+class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
 
   private final CoxPHTask _coxMR;
   private final EfronDJKSetupFun _setup;
@@ -79,22 +80,20 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
   // OUT
   double[][] _djkTerm;
 
-  EfronDJKTermTask(Key<Job> jobKey, DataInfo dinfo, CoxPHTask coxMR, EfronDJKSetupFun setup) {
-    super(jobKey, dinfo);
+  EfronDJKTermTask(DataInfo dinfo, CoxPHTask coxMR, EfronDJKSetupFun setup) {
+    super(dinfo);
     _coxMR = coxMR;
     _setup = setup;
   }
 
   @Override
-  protected boolean chunkInit(){
+  protected void chunkInit() {
     final int n_coef = _coxMR._beta.length;
-
     _djkTerm = malloc2DArray(n_coef, n_coef);
-    return true;
   }
 
   @Override
-  protected void processRow(long gid, DataInfo.Row row) {
+  protected void processRow(DataInfo.Row row) {
     double [] response = row.response;
     int ncats = row.nBins;
     int [] cats = row.binIds;
@@ -139,12 +138,12 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
       final boolean jIsCat = jit < ncats;
       final int j          = jIsCat ? cats[jit] : numStartIter + jit;
       final double x1      = jIsCat ? 1.0 : nums[jit - ncats];
-      for (int kit = 0; kit < ntotal; ++kit) {
+      final double x1mult  = x1 * mult;
+      for (int kit = jit; kit < ntotal; ++kit) {
         final boolean kIsCat = kit < ncats;
         final int k          = kIsCat ? cats[kit] : numStartIter + kit;
         final double x2      = kIsCat ? 1.0 : nums[kit - ncats];
-        final double xx      = x1 * x2;
-        _djkTerm[j][k] += xx * mult;
+        _djkTerm[j][k] += x1mult * x2;
       }
     }
   }
@@ -152,6 +151,14 @@ class EfronDJKTermTask extends FrameTask<EfronDJKTermTask> {
   @Override
   public void reduce(EfronDJKTermTask that) {
     ArrayUtils.add(_djkTerm, that._djkTerm);
+  }
+
+  @Override
+  protected void postGlobal() {
+    for (int j = 1; j < _djkTerm.length; j++) {
+      for (int k = 0; k < j; k++)
+        _djkTerm[j][k] = _djkTerm[k][j];
+    }
   }
 
 }
