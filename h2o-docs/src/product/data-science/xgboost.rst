@@ -297,6 +297,10 @@ FAQs
 
   By default, XGBoost converts every enum into the integer of its index (i.e., ``categorical_encoding="label_encoder"``). 
 
+-  **Why is XGBoost performance poor on Hadoop?**
+
+  When starting XGBoost on Hadoop, set ``-extramempercent`` to a high value.
+
 References
 ~~~~~~~~~~
 
