@@ -31,7 +31,7 @@ def higgs_compare_test():
     runSeed = random.randint(1, 1073741824)
     print("Seed used in running {0}.".format(runSeed))
     h2oParams = {"ntrees":100, "max_depth":10, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": 100}
+                 "min_rows" : 5, "score_tree_interval": 100, 'reg_alpha':0.5, 'reg_lambda':0.5, 'gamma':0.5}
     h2oModel = H2OXGBoostEstimator(**h2oParams)
     # gather, print and save performance numbers for h2o model
     h2oModel.train(x=myX, y=y, training_frame=higgs_h2o_train)
@@ -46,7 +46,8 @@ def higgs_compare_test():
     time1 = time.time()
     nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
              'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"], 'alpha':0.0, 'nrounds':h2oParams["ntrees"]}
+                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"], 'alpha':0.5,
+                   'gamma':0.5, 'lambda':0.5, 'nrounds':h2oParams["ntrees"]}
     nativeModel = xgb.train(params=nativeParam,
                             dtrain=nativeTrain)
     nativeTrainTime = time.time()-time1
