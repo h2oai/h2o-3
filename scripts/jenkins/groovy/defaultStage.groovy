@@ -2,7 +2,7 @@ def call(final pipelineContext, final stageConfig) {
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
     def makeTarget = load('h2o-3/scripts/jenkins/groovy/makeTarget.groovy')
 
-    def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
+    def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}", "JAVA_VERSION=${stageConfig.javaVersion}"]
 
     echo "###### Changes for ${stageConfig.component} detected, starting ${stageConfig.stageName} ######"
     insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES') {

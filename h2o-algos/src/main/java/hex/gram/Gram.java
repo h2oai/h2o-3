@@ -507,7 +507,9 @@ public final class Gram extends Iced<Gram> {
     fchol.setSPD(d.isSPD());
     arr = d.getL();
     for( int i = 0; i < arr.length; ++i )
-      System.arraycopy(arr[i], 0, fchol._xx[i], sparseN, i + 1);
+      for (int j = 0; j < i + 1; j++)
+        fchol._xx[i][sparseN + j] = arr[i][j];
+
     return chol;
   }
 
