@@ -397,7 +397,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case gamma:
           if (_nclass != 1) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
-          if (_response.min() <= 0) error("_family", "Gamma requires positive respone");
+          if (_response.min() <= 0) error("_family", "Response value for gamma distribution must be greater than 0.");
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
