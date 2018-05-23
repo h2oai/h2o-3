@@ -384,7 +384,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
 
 private void invokeStage(final pipelineContext, final body) {
 
-  final String DEFAULT_JAVA = '8'
+  final String DEFAULT_JAVA = '10'
   final String DEFAULT_PYTHON = '3.5'
   final String DEFAULT_R = '3.4.1'
   final int DEFAULT_TIMEOUT = 60
