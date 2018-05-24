@@ -2,6 +2,24 @@
 
 ## H2O
 
+### Wolpert (3.18.0.11) - 5/24/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html</a>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5584'>PUBDEV-5584</a>] - Enabled Java 10 support for CRAN release.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5585'>PUBDEV-5585</a>] - GLM tests no longer fail on Java 10.
+</li>
+</ul>
+
 ### Wolpert (3.18.0.10) - 5/22/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html</a>
@@ -29,7 +47,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/ind
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5545'>PUBDEV-5545</a>] - The Security chapter in the User Guide now describes how to enforce system-level command-line arguments in h2odriver when starting H2O
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5545'>PUBDEV-5545</a>] - The Security chapter in the User Guide now describes how to enforce system-level command-line arguments in h2odriver when starting H2O.
 </li>
 </ul>
 
