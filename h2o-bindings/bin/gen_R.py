@@ -268,6 +268,9 @@ def gen_module(schema, algo, module):
     #    yield "    parms$model_id <- model_id"
     if algo == "stackedensemble":
         yield " # Get the base models from model IDs (if any) that will be used for constructing model summary"
+        yield " if(!is.list(base_models) && is.vector(x)) {"
+        yield "    base_models <- as.list(base_models)"
+        yield " }"
         yield " baselearners <- lapply(base_models, function(base_model) {"
         yield "   if (is.character(base_model))"
         yield "     base_model <- h2o.getModel(base_model)"
