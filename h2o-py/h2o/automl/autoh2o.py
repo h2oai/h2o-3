@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 import h2o
-import os
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
@@ -166,7 +165,7 @@ class H2OAutoML(object):
         self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
 
         self._job = None
-        self._automl_key = None
+        self.automl_key = None
         self._leader_id = None
         self._leaderboard = None
 
@@ -318,7 +317,7 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self._automl_key = self._job.dest_key
+        self.automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
 
@@ -381,7 +380,7 @@ class H2OAutoML(object):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.automl_key)
         leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
 
         if leaderboard_list is not None and len(leaderboard_list) > 0:
@@ -408,6 +407,41 @@ class H2OAutoML(object):
         return self._leader_id is not None
 
     def _get_params(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.automl_key)
         return res
 
+def get_automl(automl_key):
+    """
+    Retrieve information about an AutoML instance.
+
+    :param str automl_key: A string indicating the unique automl_key of the automl instance to retrieve.
+    :returns: A dictionary containing the AutoML key, project_name, leader model, and leaderboard.
+    """
+    automl_json = h2o.api("GET /99/AutoML/%s" % automl_key)
+    project_name = automl_json["project_name"]
+    leaderboard_list = [key["name"] for key in automl_json['leaderboard']['models']]
+
+    if leaderboard_list is not None and len(leaderboard_list) > 0:
+        leader_id = leaderboard_list[0]
+    else:
+        leader_id = None
+
+    leader = h2o.get_model(leader_id)
+    # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+    # If any failure happens, revert back to user's original setting for progress and display the error message.
+    is_progress = H2OJob.__PROGRESS_BAR__
+    h2o.no_progress()
+    try:
+        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+        leaderboard = h2o.H2OFrame(
+            automl_json["leaderboard_table"].cell_values,
+            column_names=automl_json["leaderboard_table"].col_header)
+    except Exception as ex:
+        raise ex
+    finally:
+        if is_progress is True:
+            h2o.show_progress()
+
+    leaderboard = leaderboard[1:]
+    automl_dict = {'automl_key': automl_key, 'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
+    return automl_dict
