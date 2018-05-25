@@ -352,6 +352,8 @@ class BuildSummary {
         String getArtifactsHTML(final context) {
             if (result == BuildSummary.RESULT_PENDING) {
                 return 'Not yet available'
+            } else if (result == BuildSummary.RESULT_SUCCESS) {
+                return ''
             }
             return "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}artifact/${stageDirName}/\" target=\"_blank\" style=\"color: black;\">Artifacts</a>"
         }
