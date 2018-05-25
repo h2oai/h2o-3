@@ -403,6 +403,7 @@
 
           <script type="text/javascript">
             $(document).ready(function () {
+                  document.getElementById('download-zip').addEventListener('click', function(){setTimeout(function() {location.href='h2o-SUBST_PROJECT_VERSION.zip'}, 500)})
                   var firstAdd=false;
                   ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
                   var clip = new ZeroClipboard($(".copy_button"));
