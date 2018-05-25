@@ -33,7 +33,7 @@ for (comp in optionalComponents) {
 shadowJar {
   mergeServiceFiles()
   classifier = ''
-  relocate 'com.google.gson', 'ai.h2o.com.google.gson'
+  relocate 'com.google.gson', 'ai.h2o.com.google.gson' // Should be eventually removed: PUBDEV-5508
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
