@@ -24,33 +24,79 @@ public class ModelAdaptTest extends TestUtil {
     static class AOutput extends Model.Output { }
   }
 
-  @Test public void testModelAdaptMultinomial() {
-    Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
-    AModel.AParms p = new AModel.AParms();
-    AModel.AOutput o = new AModel.AOutput();
-    o.setNames(trn.names());
-    o._domains = trn.domains();
-    trn.remove();
-    AModel am = new AModel(Key.make(),p,o);
-    
-    Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
-    Frame adapt = new Frame(tst);
-    String[] warns = am.adaptTestForTrain(adapt,true, true);
-    Assert.assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [D]")!= -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
-    // Feature_1: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
-    // Const: all NAs
-    Assert.assertTrue(adapt.vec("Const").isBad());
-    // Useless: all NAs
-    Assert.assertTrue(adapt.vec("Useless").isBad());
-    // Response: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
+  @Test
+  public void testModelAdaptMultinomial() {
+    Frame trn = null;
+    Frame adapt = null;
+    Vec feature_2_vec = null;
+    try {
+      Scope.enter();
+      trn = parse_test_file("smalldata/junit/mixcat_train.csv");
+      AModel.AParms p = new AModel.AParms();
+      p._fold_column = "Feature_2"; // Should not generate warning message for a fold column
+      AModel.AOutput o = new AModel.AOutput();
+      o.setNames(trn.names());
+      o._domains = trn.domains();
+      AModel am = new AModel(Key.make(), p, o);
 
-    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst );
-    tst.remove();
+      adapt = parse_test_file("smalldata/junit/mixcat_test.csv");
+      feature_2_vec = adapt.remove("Feature_2");
+      Scope.track(adapt);
+      Scope.track(feature_2_vec);
+      String[] warns = am.adaptTestForTrain(adapt, true, true);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Feature_1' has levels not trained on: [D]") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
+      Assert.assertEquals(4, warns.length); // No other warnings should be generated
+      // Feature_1: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Feature_1").domain(), new String[]{"A", "B", "C", "D"});
+      // Const: all NAs
+      Assert.assertTrue(adapt.vec("Const").isBad());
+      // Useless: all NAs
+      Assert.assertTrue(adapt.vec("Useless").isBad());
+      // Response: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Response").domain(), new String[]{"X", "Y", "Z", "W"});
+      Scope.exit();
+    } finally {
+      trn.remove();
+      adapt.remove();
+      feature_2_vec.remove();
+    }
+  }
+
+  @Test
+  public void testModelAdapt_weightsNoWarning() {
+    Frame trn = null;
+    Frame adapt = null;
+    try {
+      Scope.enter();
+      trn = parse_test_file("smalldata/junit/mixcat_train.csv");
+      AModel.AParms p = new AModel.AParms();
+      p._weights_column = "Useless"; // Should not generate warning message for a fold column
+      AModel.AOutput o = new AModel.AOutput();
+      o.setNames(trn.names());
+      o._domains = trn.domains();
+      AModel am = new AModel(Key.make(), p, o);
+
+      adapt = parse_test_file("smalldata/junit/mixcat_test.csv");
+      Scope.track(adapt);
+      String[] warns = am.adaptTestForTrain(adapt, true, true);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Feature_1' has levels not trained on: [D]") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
+      Assert.assertEquals(3, warns.length); // No other warnings should be generated
+      // Feature_1: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Feature_1").domain(), new String[]{"A", "B", "C", "D"});
+      // Const: all NAs
+      Assert.assertTrue(adapt.vec("Const").isBad());
+      // Response: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Response").domain(), new String[]{"X", "Y", "Z", "W"});
+      Scope.exit();
+    } finally {
+      trn.remove();
+      adapt.remove();
+    }
   }
 
   // If the train set has a categorical, and the test set column is all missing
