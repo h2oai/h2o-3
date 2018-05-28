@@ -121,7 +121,6 @@ class BuildConfig {
     } else {
       detectChanges(changes)
     }
-    markAllComponentsForSkip()
     changesMap[COMPONENT_HADOOP] = buildHadoop
 
     master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
