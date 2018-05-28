@@ -56,14 +56,14 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
                 'airlines-1m': [
                     100: [
-                        'train_time_min': 22,
-                        'train_time_max': 25
+                        'train_time_min': 38,
+                        'train_time_max': 50
                     ]
                 ],
                 'airlines-10m': [
                     100: [
-                        'train_time_min': 560,
-                        'train_time_max': 605
+                        'train_time_min': 171,
+                        'train_time_max': 187
                     ]
                 ]
         ],
