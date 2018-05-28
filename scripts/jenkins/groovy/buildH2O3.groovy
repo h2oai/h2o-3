@@ -65,7 +65,7 @@ def call(final pipelineContext) {
                 } finally {
                     archiveArtifacts "**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
                     pipelineContext.getBuildConfig().TEST_PACKAGES_COMPONENTS.each { component ->
-                        if (pipelineContext.getBuildConfig().componentChanged(component)) {
+                        if (pipelineContext.getBuildConfig().stashComponent(component)) {
                             echo "********* Stash ${component} *********"
                             pipelineContext.getUtils().stashFiles(
                                     this,

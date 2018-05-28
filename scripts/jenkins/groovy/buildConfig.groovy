@@ -86,6 +86,8 @@ class BuildConfig {
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos7.4': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:b53f7a8ca0247ea92723ba1cc343e9b474702bf345f8afebf48c8a7d6d6185b3',
   ]
 
+  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R]
+
   private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
 
   private String mode
@@ -119,6 +121,7 @@ class BuildConfig {
     } else {
       detectChanges(changes)
     }
+    markAllComponentsForSkip()
     changesMap[COMPONENT_HADOOP] = buildHadoop
 
     master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
@@ -161,6 +164,10 @@ class BuildConfig {
 
   def componentChanged(final String component) {
     return changesMap[component]
+  }
+
+  def stashComponent(final String component) {
+    return componentChanged(component) || STASH_ALWAYS_COMPONENTS.contains(component)
   }
 
   String getDefaultNodeLabel() {
