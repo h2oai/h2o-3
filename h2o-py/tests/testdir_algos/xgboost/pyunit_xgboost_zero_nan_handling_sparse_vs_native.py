@@ -15,25 +15,26 @@ def xgboost_categorical_zero_nan_handling_numerical_test():
 
     data = train_frame.as_matrix(['col1'])
     label = train_frame.as_matrix(['response'])
+    raw_prediction_data = {'col1': [0, 1,float('NaN')]}
+    prediction_frame= pd.DataFrame(data=raw_prediction_data)
 
     # Native XGBosot model trained first
     dtrain = xgb.DMatrix(data=data, label=label)
+    dtest = xgb.DMatrix(data=prediction_frame.as_matrix(['col1']))
     watchlist = [(dtrain, 'train')]
     param = {'eta': 1, 'silent': 1, 'objective': 'reg:linear', 'booster': 'gbtree',
              'max_depth': 2, 'seed': 1, 'lambda': 0, 'max_delta_step': 0, 'alpha': 0, 'nround': 5}
     bst = xgb.train(params=param, dtrain=dtrain, num_boost_round=2, evals=watchlist)
-    native_prediction = bst.predict(data=dtrain)
+    native_prediction = bst.predict(data=dtest)
     print(native_prediction)
 
 
-    pandas_training_rame = pd.DataFrame(data=raw_training_data)
-    raw_prediction_data = {'col1': [0, 1, float('NaN')]}
-    pandas_prediction_frame= pd.DataFrame(data=raw_prediction_data)
+    pandas_training_frame = pd.DataFrame(data=raw_training_data)
 
-    training_frame = h2o.H2OFrame(pandas_training_rame)
+    training_frame = h2o.H2OFrame(pandas_training_frame)
     training_frame['col1'] = training_frame['col1'].asnumeric()
     training_frame['response'] = training_frame['response'].asnumeric()
-    prediction_frame = h2o.H2OFrame(pandas_prediction_frame)
+    prediction_frame = h2o.H2OFrame(prediction_frame)
     prediction_frame['col1'] = prediction_frame['col1'].asnumeric()
 
     #Learning rate 1 ensures failure if NaN is treated the same as zero
