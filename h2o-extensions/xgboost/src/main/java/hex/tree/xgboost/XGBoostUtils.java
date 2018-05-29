@@ -110,7 +110,7 @@ public class XGBoostUtils {
             Log.info("Treating matrix as dense.");
 
             int cols = di.fullN();
-            float[][] data = allocateData(nRows, di);
+            float[][] data = allocateDenseMatrix(nRows, di);
             long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
             trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
             assert trainMat.rowNum() == actualRows;
@@ -319,7 +319,7 @@ public class XGBoostUtils {
 
         // extract predictors
         int cols = di.fullN();
-        float[][] data = allocateData(chunks[0].len(), di);
+        float[][] data = allocateDenseMatrix(chunks[0].len(), di);
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
         assert actualRows == chunks[0].len();
@@ -773,7 +773,7 @@ public class XGBoostUtils {
      * @param dataInfo An instance of {@link DataInfo}
      * @return An exactly-sized Float[] backing array for XGBoost's {@link DMatrix} to be filled with data.
      */
-    private static float[][] allocateData(final long rowCount, final DataInfo dataInfo) {
+    private static float[][] allocateDenseMatrix(final long rowCount, final DataInfo dataInfo) {
         final BigInteger totalValues = BigInteger.valueOf(rowCount)
             .multiply(BigInteger.valueOf(dataInfo.fullN()));
         Log.info("An attempt to allocate DMatrix backing array with " + totalValues.toString() + " elements.");
