@@ -470,6 +470,8 @@ EOF
                                             cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                             python setup.py sdist
                                             
+                                            s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
+                                            
                                             if [ "\$TEST_RELEASE" = true ]; then
                                                 echo '****** WARNING! Upload to PyPI suppressed ******'
                                             else
