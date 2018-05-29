@@ -16,6 +16,7 @@ import java.util.*;
 import static water.H2O.technote;
 import static water.MemoryManager.malloc4;
 import static water.MemoryManager.malloc4f;
+import static water.MemoryManager.malloc8;
 
 public class XGBoostUtils {
 
@@ -762,6 +763,82 @@ public class XGBoostUtils {
                 data[currentRow] = Arrays.copyOf(data[currentRow], newLen);
                 rowIndex[currentRow] = Arrays.copyOf(rowIndex[currentRow], newLen);
             }
+        }
+    }
+
+    private static void allocateSparseMatrices(SparseMatrixDimensions sparseMatrixDimensions, float[][] sparseData, long[][] rowIndices, int[][] colIndices){
+        final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
+        final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
+
+        final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowIndicesCount / ARRAY_MAX);
+        final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowIndicesCount % ARRAY_MAX);
+
+        final int colIndicesRowsNumber = (int)(sparseMatrixDimensions._colIndicesCount / ARRAY_MAX);
+        final int colIndicesLastRowSize = (int)(sparseMatrixDimensions._colIndicesCount % ARRAY_MAX);
+
+        sparseData = new float[dataLastRowSize == 0 ? dataRowsNumber : dataRowsNumber + 1 ][];
+        for (int sparseDataRow = 0; sparseDataRow < sparseData.length; sparseDataRow++) {
+            sparseData[sparseDataRow] = malloc4f(ARRAY_MAX);
+        }
+
+        rowIndices = new long[rowIndicesLastRowSize == 0 ? rowIndicesRowsNumber : rowIndicesRowsNumber + 1 ][];
+        for (int rowIndicesRow = 0; rowIndicesRow < rowIndices.length; rowIndicesRow++) {
+            rowIndices[rowIndicesRow] = malloc8(ARRAY_MAX);
+        }
+
+        colIndices = new int[colIndicesLastRowSize == 0 ? colIndicesRowsNumber : colIndicesRowsNumber + 1 ][];
+        for (int colIndicesRow = 0; colIndicesRow < colIndices.length; colIndicesRow++) {
+            colIndices[colIndicesRow] = malloc4(ARRAY_MAX);
+        }
+
+
+    }
+
+    private static SparseMatrixDimensions calculateSparseMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
+
+        long nonZeroElementsCount = 0;
+        long rowIndicesCount = 0;
+        long colIndicesCount = 0;
+
+        for (int i = 0; i < chunks[0].len(); i++) {
+            // Rows with zero weights are going to be ignored
+            if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
+            long nzstart = nonZeroElementsCount;
+
+            for (int j = 0; j < di._cats; ++j) {
+                if (!chunks[j].isNA(i)) {
+                    colIndicesCount++;
+                    nonZeroElementsCount++;
+                }
+            }
+            for (int j = 0; j < di._nums; ++j) {
+                float val = (float) chunks[di._cats + j].atd(i);
+                if (!Float.isNaN(val) && val != 0) {
+                    colIndicesCount++;
+                    nonZeroElementsCount++;
+                }
+            }
+            if (nonZeroElementsCount == nzstart) {
+                colIndicesCount++;
+                nonZeroElementsCount++;
+            }
+            rowIndicesCount++;
+
+        }
+
+        return new SparseMatrixDimensions(nonZeroElementsCount,rowIndicesCount, colIndicesCount);
+    }
+
+
+    private static final class SparseMatrixDimensions{
+        private final long _nonZeroElementsCount;
+        private final long _rowIndicesCount;
+        private final long _colIndicesCount;
+
+        public SparseMatrixDimensions(long nonZeroElementsCount, long rowIndicesCount, long colIndicesCount) {
+            _nonZeroElementsCount = nonZeroElementsCount;
+            _rowIndicesCount = rowIndicesCount;
+            _colIndicesCount = colIndicesCount;
         }
     }
 
