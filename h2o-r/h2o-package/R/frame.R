@@ -3940,7 +3940,22 @@ h2o.rank_within_group_by <- function(x, group_by_cols, sort_cols, ascending=NULL
 #' @param x factor column in h2o frame
 #' @param y reference level (string)
 #' @return new reordered factor column
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
 #'
+#' # Convert iris dataset to an H2OFrame
+#' hf <- as.h2o(iris)
+#' # Look at current ordering of the Species column levels
+#' h2o.levels(hf["Species"])
+#' # "setosa"     "versicolor" "virginica" 
+#' # Change the reference level to "virginica"
+#' hf["Species"] <- h2o.relevel(x = hf["Species"], y = "virginica")
+#' # Observe new ordering
+#' h2o.levels(hf["Species"])
+#' # "virginica"  "setosa"     "versicolor"
+#' }
 #' @export
 h2o.relevel <- function(x,y) {
   .newExpr("relevel", x, .quote(y))
