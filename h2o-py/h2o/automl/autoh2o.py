@@ -413,7 +413,7 @@ def get_automl(project_name):
     Retrieve information about an AutoML instance.
 
     :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
-    :returns: A dictionary containing the AutoML key, project_name, leader model, and leaderboard.
+    :returns: A dictionary containing the project_name, leader model, and leaderboard.
     """
     automl_json = h2o.api("GET /99/AutoML/%s" % project_name)
     project_name = automl_json["project_name"]

@@ -218,7 +218,7 @@ h2o.automl <- function(x, y, training_frame,
 
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
   # If leaderboard is empty, create a "dummy" leader
-  if (nrow(leaderboard) > 0) {
+  if (nrow(leaderboard) > 1) {
       leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
   } else {
       # create a phony leader

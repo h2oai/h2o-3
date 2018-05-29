@@ -16,12 +16,10 @@ automl.get.automl.test <- function() {
     x <- setdiff(names(train), y)
     train[,y] <- as.factor(train[,y])
     test[,y] <- as.factor(test[,y])
-    max_runtime_secs <- 30
-    max_models <- 10
+    max_models <- 3
 
     aml1 <- h2o.automl(y = y,
                         training_frame = train,
-                        max_runtime_secs = max_runtime_secs,
                         project_name="r_aml1", 
                         stopping_rounds=3, 
                         stopping_tolerance=0.001, 
