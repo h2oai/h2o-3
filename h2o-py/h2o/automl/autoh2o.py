@@ -242,6 +242,11 @@ class H2OAutoML(object):
         ncols = training_frame.ncols
         names = training_frame.names
 
+        #Set project name if None
+        if self.project_name is None:
+            self.project_name = "automl_" + training_frame.frame_id
+            self.build_control["project_name"] = self.project_name
+
         # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
