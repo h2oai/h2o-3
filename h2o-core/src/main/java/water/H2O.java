@@ -1361,7 +1361,7 @@ final public class H2O {
     if (username == null) username = "";
     String u2 = username.replaceAll(" ", "_");
     if (u2.length() == 0) u2 = "unknown";
-    return "/tmp/h2o-" + u2;
+    return System.getProperty("java.io.tmpdir") + File.separatorChar + "h2o-" + u2;
   }
 
   // Place to store flows
@@ -1881,12 +1881,8 @@ final public class H2O {
     long time1 = System.currentTimeMillis();
     String ice = DEFAULT_ICE_ROOT();
     if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
-    try {
-      ICE_ROOT = new URI(ice);
-    } catch(URISyntaxException ex) {
-      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
-    }
-
+    //
+    ICE_ROOT = new File(ice).toURI();
     // Always print version, whether asked-for or not!
     long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
