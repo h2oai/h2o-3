@@ -25,10 +25,9 @@ def prostate_automl_get_automl():
     aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
     aml.train(y="CAPSULE", training_frame=train)
 
-    get_aml = get_automl(aml.automl_key)
+    get_aml = get_automl(aml.project_name)
 
     assert aml.project_name == get_aml["project_name"]
-    assert aml.automl_key == get_aml["automl_key"]
     get_aml_leader = get_aml["leader"]
     assert aml.leader.model_id == get_aml_leader.model_id
     assert aml.leaderboard.get_frame_data() == get_aml["leaderboard"].get_frame_data()

@@ -165,7 +165,6 @@ class H2OAutoML(object):
         self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
 
         self._job = None
-        self.automl_key = None
         self._leader_id = None
         self._leaderboard = None
 
@@ -317,7 +316,6 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self.automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
 
@@ -380,7 +378,7 @@ class H2OAutoML(object):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        res = h2o.api("GET /99/AutoML/" + self.automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
 
         if leaderboard_list is not None and len(leaderboard_list) > 0:
@@ -407,17 +405,17 @@ class H2OAutoML(object):
         return self._leader_id is not None
 
     def _get_params(self):
-        res = h2o.api("GET /99/AutoML/" + self.automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         return res
 
-def get_automl(automl_key):
+def get_automl(project_name):
     """
     Retrieve information about an AutoML instance.
 
-    :param str automl_key: A string indicating the unique automl_key of the automl instance to retrieve.
+    :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
     :returns: A dictionary containing the AutoML key, project_name, leader model, and leaderboard.
     """
-    automl_json = h2o.api("GET /99/AutoML/%s" % automl_key)
+    automl_json = h2o.api("GET /99/AutoML/%s" % project_name)
     project_name = automl_json["project_name"]
     leaderboard_list = [key["name"] for key in automl_json['leaderboard']['models']]
 
@@ -443,5 +441,5 @@ def get_automl(automl_key):
             h2o.show_progress()
 
     leaderboard = leaderboard[1:]
-    automl_dict = {'automl_key': automl_key, 'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
+    automl_dict = {'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
     return automl_dict

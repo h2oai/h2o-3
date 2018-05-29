@@ -741,7 +741,6 @@ setClass("H2OFrame")
 #' This class represents an H2OAutoML object
 #'
 #' @export
-setClass("H2OAutoML", slots = c(automl_key = "character",
-                                project_name = "character",
+setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
                                 leaderboard = "H2OFrame"))

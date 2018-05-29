@@ -218,7 +218,7 @@ h2o.automl <- function(x, y, training_frame,
 
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
   # If leaderboard is empty, create a "dummy" leader
-  if (nrow(leaderboard) > 1) {
+  if (nrow(leaderboard) > 0) {
       leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
   } else {
       # create a phony leader
@@ -229,7 +229,6 @@ h2o.automl <- function(x, y, training_frame,
 
   # Make AutoML object
   new("H2OAutoML",
-      automl_key = res$job$dest$name,
       project_name = build_control$project_name,
       leader = leader,
       leaderboard = leaderboard
@@ -271,7 +270,7 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 
 #' Get an R object that is a subclass of \linkS4class{H2OAutoML}
 #'
-#' @param automl_key A string indicating the unique automl_key of the automl instance to retrieve.
+#' @param project_name A string indicating the project_name of the automl instance to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OAutoML}.
 #' @examples
 #' \donttest{
@@ -280,11 +279,11 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
-#' automl.retrieved <- h2o.getAutoML(aml@automl_key)
+#' automl.retrieved <- h2o.getAutoML(aml@project_name)
 #' }
 #' @export
-h2o.getAutoML <- function(automl_key) {
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", automl_key))
+h2o.getAutoML <- function(project_name) {
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
   leaderboard <- as.h2o(leaderboard)
@@ -294,7 +293,6 @@ h2o.getAutoML <- function(automl_key) {
   
   # Make AutoML object
   return(new("H2OAutoML",
-             automl_key = automl_key,
              project_name = project,
              leader = leader,
              leaderboard = leaderboard
