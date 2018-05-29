@@ -5,8 +5,10 @@ dependencies {
     compile project(":h2o-algos")
     compile project(":h2o-genmodel")
     compile project(":h2o-genmodel-ext-xgboost")
+    compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
     testCompile "junit:junit:${junitVersion}"
+    testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testCompile project(path: ":h2o-core", configuration: "testArchives")
 }
 
