@@ -20,6 +20,7 @@ Supervised
 .. toctree::
    :maxdepth: 1
 
+   data-science/coxph
    data-science/deep-learning
    data-science/drf
    data-science/glm
@@ -35,7 +36,6 @@ Unsupervised
    :maxdepth: 1
 
    data-science/aggregator
-   data-science/coxph
    data-science/glrm
    data-science/k-means
    data-science/pca

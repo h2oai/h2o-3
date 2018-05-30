@@ -1,6 +1,8 @@
 Cox Proportional Hazards
 ------------------------
 
+**Note** CoxPH is not yet supported in Python. It is supported in R and Flow only.
+
 Cox proportional hazards models are the most widely used approach for modeling time to event data. As the name suggests, the *hazard function*, which computes the instantaneous rate of an event occurrence and is expressed mathematically as
 
 :math:`h(t) = \lim_{\Delta t \downarrow 0} \frac{Pr[t \le T < t + \Delta t \mid T \ge t]}{\Delta t},`
@@ -20,9 +22,9 @@ Defining a CoxPH Model
 
 -  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  **start_column**: (Optional) The name of an integer column in the **source** data set representing the start time. If supplied, the value of the **start column** must be strictly less than the **stop column** in each row.
+-  `start_column <algo-params/start_column.html>`__: (Optional) The name of an integer column in the **source** data set representing the start time. If supplied, the value of the **start_column** must be strictly less than the **stop_column** in each row.
 
--  **stop_column**: The name of an integer column in the **source** data set representing the stop time.
+-  `stop_column <algo-params/stop_column.html>`__: The name of an integer column in the **source** data set representing the stop time.
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
@@ -40,13 +42,13 @@ Defining a CoxPH Model
 
 -  **stratify_by**: A list of columns to use for stratification.
 
--  **ties**: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
+-  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
 
 -  **init**:  (Optional) Initial values for the coefficients in the model. This value defaults to 0.
 
 -  **lre_min**: A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
 
--  **inter_max**: A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 20.
+-  `max_iterations <algo-params/max_iterations.html>`__: A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 20.
 
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
