@@ -7,7 +7,7 @@ MAINTAINER h2oai "h2o.ai"
 ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
-ARG PYTHON_VERSIONS='2.7'
+ARG PYTHON_VERSIONS='2.7,3.6'
 ARG HIVE_VERSION='2.2.0'
 
 ENV DISTRIBUTION='cdh' \
@@ -23,12 +23,12 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
 COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget software-properties-common && \
     wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
     apt-key add archive.key && \
+    add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text && \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils
 
 ENV H2O_BRANCH='master'
 
