@@ -488,9 +488,9 @@ public class XGBoostUtils {
 //    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
 //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
-        long[][] rowHeaders = null;
-        float[][] data = null;
-        int[][] colIndex = null;
+        long[][] rowHeaders;
+        float[][] data;
+        int[][] colIndex;
 
         if(null != chunks) {
             final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
@@ -776,8 +776,8 @@ public class XGBoostUtils {
         final int rowIndicesRowsNumber = (int)(sparseMatrixDimensions._rowIndicesCount / ARRAY_MAX);
         final int rowIndicesLastRowSize = (int)(sparseMatrixDimensions._rowIndicesCount % ARRAY_MAX);
 
-        final int colIndicesRowsNumber = (int)(sparseMatrixDimensions._colIndicesCount / ARRAY_MAX);
-        final int colIndicesLastRowSize = (int)(sparseMatrixDimensions._colIndicesCount % ARRAY_MAX);
+        final int colIndicesRowsNumber = (int)(sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
+        final int colIndicesLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
 
         // Sparse matrix elements (non-zero elements)
         float[][] sparseData = new float[dataLastRowSize == 0 ? dataRowsNumber : dataRowsNumber + 1][];
@@ -822,32 +822,28 @@ public class XGBoostUtils {
 
             for (int j = 0; j < di._cats; ++j) {
                 if (!chunks[j].isNA(i)) {
-                    colIndicesCount++;
                     nonZeroElementsCount++;
                 }
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (!Float.isNaN(val) && val != 0) {
-                    colIndicesCount++;
                     nonZeroElementsCount++;
                 }
             }
             if (nonZeroElementsCount == nzstart) {
-                colIndicesCount++;
                 nonZeroElementsCount++;
             }
             rowIndicesCount++;
 
         }
 
-        return new SparseMatrixDimensions(nonZeroElementsCount,++rowIndicesCount, colIndicesCount);
+        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
-        long colIndicesCount = 0;
 
         for (Integer chunk : chunks) {
             for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
@@ -856,7 +852,6 @@ public class XGBoostUtils {
 
                 for (int j = 0; j < di._cats; ++j) {
                     if (!vecs[j].isNA(i)) {
-                        colIndicesCount++;
                         nonZeroElementsCount++;
                     }
                 }
@@ -864,19 +859,17 @@ public class XGBoostUtils {
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
                     if (!Float.isNaN(val) && val != 0) {
-                        colIndicesCount++;
                         nonZeroElementsCount++;
                     }
                 }
                 if (nonZeroElementsCount == nzstart) {
-                    colIndicesCount++;
                     nonZeroElementsCount++;
                 }
                 rowIndicesCount++;
             }
         }
 
-        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount, colIndicesCount);
+        return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
 
@@ -886,19 +879,17 @@ public class XGBoostUtils {
     private static final class SparseMatrixDimensions{
         private final long _nonZeroElementsCount;
         private final long _rowIndicesCount;
-        private final long _colIndicesCount;
 
         /**
          * Constructs an instance of {@link SparseMatrixDimensions}
          *
-         * @param nonZeroElementsCount Number of non-zero elements (number of elements in sparse matrix)
+         * @param nonZeroElementsCount Number of non-zero elements (number of elements in sparse matrix). Also
+         *                             number of column indices.
          * @param rowIndicesCount      Number of indices of elements rows begin with
-         * @param colIndicesCount      Number of column indices of non-zero elements
          */
-        public SparseMatrixDimensions(long nonZeroElementsCount, long rowIndicesCount, long colIndicesCount) {
+        public SparseMatrixDimensions(long nonZeroElementsCount, long rowIndicesCount) {
             _nonZeroElementsCount = nonZeroElementsCount;
             _rowIndicesCount = rowIndicesCount;
-            _colIndicesCount = colIndicesCount;
         }
     }
 
