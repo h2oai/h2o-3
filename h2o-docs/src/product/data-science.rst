@@ -35,6 +35,7 @@ Unsupervised
    :maxdepth: 1
 
    data-science/aggregator
+   data-science/coxph
    data-science/glrm
    data-science/k-means
    data-science/pca
