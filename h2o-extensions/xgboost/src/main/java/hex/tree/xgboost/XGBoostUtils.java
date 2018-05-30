@@ -493,8 +493,8 @@ public class XGBoostUtils {
         int[][] colIndex = null;
 
         if(null != chunks) {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateSparseMatrixDimensions(chunks, di, weight);
-            SparseMatrix sparseMatrix = allocateSparseMatrices(sparseMatrixDimensions);
+            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
+            SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
             colIndex = sparseMatrix._colIndices;
@@ -504,8 +504,8 @@ public class XGBoostUtils {
                     di, actualRows, rowHeaders, data, colIndex,
                     respIdx, resp, weights);
         } else {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateSparseMatrixDimensions(f, chunksIds, vecs, w, di);
-            SparseMatrix sparseMatrix = allocateSparseMatrices(sparseMatrixDimensions);
+            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
+            SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
             colIndex = sparseMatrix._colIndices;
@@ -762,7 +762,14 @@ public class XGBoostUtils {
         }
     }
 
-    private static SparseMatrix allocateSparseMatrices(SparseMatrixDimensions sparseMatrixDimensions) {
+    /**
+     * Creates a {@link SparseMatrix} object with pre-instantiated backing arrays for row-oriented compression schema (CSR).
+     * All backing arrays are allocated using MemoryManager.
+     *
+     * @param sparseMatrixDimensions Dimensions of a sparse matrix
+     * @return An instance of {@link SparseMatrix} with pre-allocated backing arrays.
+     */
+    private static SparseMatrix allocateCSRMatrix(SparseMatrixDimensions sparseMatrixDimensions) {
         final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
         final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
 
@@ -772,6 +779,7 @@ public class XGBoostUtils {
         final int colIndicesRowsNumber = (int)(sparseMatrixDimensions._colIndicesCount / ARRAY_MAX);
         final int colIndicesLastRowSize = (int)(sparseMatrixDimensions._colIndicesCount % ARRAY_MAX);
 
+        // Sparse matrix elements (non-zero elements)
         float[][] sparseData = new float[dataLastRowSize == 0 ? dataRowsNumber : dataRowsNumber + 1][];
         for (int sparseDataRow = 0; sparseDataRow < sparseData.length - 1; sparseDataRow++) {
             sparseData[sparseDataRow] = malloc4f(ARRAY_MAX);
@@ -779,7 +787,7 @@ public class XGBoostUtils {
         if (dataLastRowSize > 0) {
             sparseData[sparseData.length - 1] = malloc4f(dataLastRowSize);
         }
-
+        // Row indices
         long[][] rowIndices = new long[rowIndicesLastRowSize == 0 ? rowIndicesRowsNumber : rowIndicesRowsNumber + 1][];
         for (int rowIndicesRow = 0; rowIndicesRow < rowIndices.length - 1; rowIndicesRow++) {
             rowIndices[rowIndicesRow] = malloc8(ARRAY_MAX);
@@ -788,6 +796,7 @@ public class XGBoostUtils {
             rowIndices[rowIndices.length - 1] = malloc8(rowIndicesLastRowSize);
         }
 
+        // Column indices
         int[][] colIndices = new int[colIndicesLastRowSize == 0 ? colIndicesRowsNumber : colIndicesRowsNumber + 1][];
         for (int colIndicesRow = 0; colIndicesRow < colIndices.length - 1; colIndicesRow++) {
             colIndices[colIndicesRow] = malloc4(ARRAY_MAX);
@@ -796,10 +805,11 @@ public class XGBoostUtils {
             colIndices[colIndices.length - 1] = malloc4(colIndicesLastRowSize);
         }
 
+        // Wrap backing arrays into a SparseMatrix object and return them
         return new SparseMatrix(sparseData, rowIndices, colIndices);
     }
 
-    private static SparseMatrixDimensions calculateSparseMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
+    private static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
@@ -834,7 +844,7 @@ public class XGBoostUtils {
         return new SparseMatrixDimensions(nonZeroElementsCount,++rowIndicesCount, colIndicesCount);
     }
 
-    private static SparseMatrixDimensions calculateSparseMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
+    private static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
         long colIndicesCount = 0;
@@ -870,11 +880,21 @@ public class XGBoostUtils {
     }
 
 
+    /**
+     * Dimensions of a Sparse Matrix
+     */
     private static final class SparseMatrixDimensions{
         private final long _nonZeroElementsCount;
         private final long _rowIndicesCount;
         private final long _colIndicesCount;
 
+        /**
+         * Constructs an instance of {@link SparseMatrixDimensions}
+         *
+         * @param nonZeroElementsCount Number of non-zero elements (number of elements in sparse matrix)
+         * @param rowIndicesCount      Number of indices of elements rows begin with
+         * @param colIndicesCount      Number of column indices of non-zero elements
+         */
         public SparseMatrixDimensions(long nonZeroElementsCount, long rowIndicesCount, long colIndicesCount) {
             _nonZeroElementsCount = nonZeroElementsCount;
             _rowIndicesCount = rowIndicesCount;
@@ -882,11 +902,21 @@ public class XGBoostUtils {
         }
     }
 
+    /**
+     * Sparse Matrix representation for XGBoost
+     */
     private static final class SparseMatrix {
         private final float[][] _sparseData;
         private final long[][] _rowIndices;
         private final int[][] _colIndices;
 
+        /**
+         * Constructs a {@link SparseMatrix} instance
+         *
+         * @param sparseData Non-zero data of a sparse matrix
+         * @param rowIndices Indices to elements in sparseData rows begin with
+         * @param colIndices Column indices of elements in sparseData
+         */
         public SparseMatrix(final float[][] sparseData, final long[][] rowIndices, final int[][] colIndices) {
             _sparseData = sparseData;
             _rowIndices = rowIndices;
