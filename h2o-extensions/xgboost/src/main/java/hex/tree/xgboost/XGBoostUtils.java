@@ -535,7 +535,7 @@ public class XGBoostUtils {
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
-                    if (val != 0) {
+                    if (val != 0 && !Float.isNaN(val)) {
                         data[currentRow][currentCol] = val;
                         colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
                         nz++;
@@ -582,7 +582,7 @@ public class XGBoostUtils {
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
-                if (val != 0) {
+                if (val != 0 && !Float.isNaN(val)) {
                     data[currentRow][currentCol] = val;
                     colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
                     nz++;
