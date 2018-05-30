@@ -278,7 +278,8 @@ predict.H2OAutoML <- function(object, newdata, ...) {
 #' h2o.init()
 #' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes", training_frame = votes_hf, max_runtime_secs = 30)
+#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes", 
+#'                   training_frame = votes_hf, max_runtime_secs = 30)
 #' automl.retrieved <- h2o.getAutoML("aml_housevotes")
 #' }
 #' @export
