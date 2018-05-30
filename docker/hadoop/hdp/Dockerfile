@@ -7,7 +7,7 @@ MAINTAINER h2oai "h2o.ai"
 ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
-ARG PYTHON_VERSIONS='2.7'
+ARG PYTHON_VERSIONS='2.7,3.6'
 ARG HIVE_VERSION='2.2.0'
 
 ENV DISTRIBUTION='hdp' \
@@ -26,14 +26,14 @@ COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_j
 
 # Add HDP repository and install packages
 RUN apt-get update && \
-    apt-get install -y wget curl && \
+    apt-get install -y wget curl software-properties-common && \
     chmod 700 /usr/sbin/add_hdp_repo.sh && \
     sync && \
     /usr/sbin/add_hdp_repo.sh $VERSION && \
     rm /usr/sbin/add_hdp_repo.sh && \
+    add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils && \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils
 
 ENV H2O_BRANCH='master'
 
