@@ -13,9 +13,11 @@ test.drf.leaf.assignment.mojo <-
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       modelAndDir<-buildModelSaveMojoTrees(params_prob_data$params, 'drf') # build the model and save mojo
+      print("Finished generating drf mojos.")
       filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
       h2o.downloadCSV(params_prob_data$tDataset[,params_prob_data$params$x], filename)
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, get_leaf_node_assignment=TRUE) # perform H2O and mojo prediction and return frames
+      print("Finished mojo predict and generated leaf assignments, trying to compare leaf node assignments...")
       compareStringFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1)
     }, error = function(x) x)
     if (!is.null(e)&& (!all(sapply("wget", grepl, e[[1]]))))
