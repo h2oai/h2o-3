@@ -8,6 +8,8 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoReader;
+import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -1039,7 +1041,8 @@ public class XGBoostTest extends TestUtil {
 
 
   @Test
-  public void testMojoBoosterDump() throws XGBoostError, IOException {
+  public void testMojoBoosterDump() throws IOException {
+    Assume.assumeTrue(! XGBoostMojoReader.useJavaScoring());
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -1059,8 +1062,9 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       XGBoostMojoModel mojo = getMojo(model);
+      assertTrue(mojo instanceof XGBoostNativeMojoModel);
 
-      String[] dump = mojo.getBoosterDump(false, "text");
+      String[] dump = ((XGBoostNativeMojoModel) mojo).getBoosterDump(false, "text");
       assertEquals(parms._ntrees, dump.length);
     } finally {
       Scope.exit();
