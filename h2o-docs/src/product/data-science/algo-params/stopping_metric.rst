@@ -19,7 +19,7 @@ then the model will stop training after reaching three scoring events in a row i
 
 Available options for ``stopping_metric`` include the following:
 
-- ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+- ``auto``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression
 - ``deviance``
 - ``logloss``
 - ``mse``
