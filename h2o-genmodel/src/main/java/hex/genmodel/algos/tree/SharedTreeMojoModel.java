@@ -456,6 +456,44 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
+    // note that _ntree_group = _treekeys.length
+    // ntrees_per_group = _treeKeys[0].length
+    public String[] getDecisionPathNames() {
+      int classTrees = 0;
+      for (int i = 0; i < _ntrees_per_group; ++i) {
+        int itree = treeIndex(0, i);
+        if (_compressed_trees[itree] != null) classTrees++;
+      }
+      final int outputcols = _ntree_groups * classTrees;
+      final String[] names = new String[outputcols];
+      for (int c = 0; c < _ntrees_per_group; c++) {
+        for (int tidx = 0; tidx < _ntree_groups; tidx++) {
+          int itree = treeIndex(tidx, c);
+          if (_compressed_trees[itree] != null) {
+            names[itree] = "T" + (tidx + 1) + ".C" + (c + 1);
+          }
+        }
+      }
+      return names;
+    }
+
+    public String[] getDecisionPath(final double row[]) {
+      if ((double) _mojo_version < 1.2) {
+        throw new IllegalArgumentException("You can only obtain decision tree path with mojo verions 1.2 or higher");
+      } else {
+        String[] output = new String[_compressed_trees.length];
+        for (int j = 0; j < _ntree_groups; j++) {
+          for (int i = 0; i < _ntrees_per_group; i++) {
+
+            int itree = treeIndex(j, i);
+            double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
+            output[itree] = SharedTreeMojoModel.getDecisionPath(d);
+          }
+        }
+        return output;
+      }
+    }
+
     protected int treeIndex(int groupIndex, int classIndex) {
         return classIndex * _ntree_groups + groupIndex;
     }

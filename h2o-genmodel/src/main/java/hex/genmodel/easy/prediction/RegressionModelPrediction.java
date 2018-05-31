@@ -9,4 +9,5 @@ public class RegressionModelPrediction extends AbstractPrediction {
    * if one of the input values for a new data point is NA).
    */
   public double value;
+  public String[] leafNodeAssignments;  // only valid for GBM or DRF, null for all other mojo models
 }

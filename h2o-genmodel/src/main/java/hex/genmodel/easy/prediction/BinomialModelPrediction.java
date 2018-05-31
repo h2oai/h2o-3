@@ -36,5 +36,6 @@ public class BinomialModelPrediction extends AbstractPrediction {
    * Class probabilities calibrated by Platt Scaling. Optional, only calculated if the model supports it.
    */
   public double[] calibratedClassProbabilities;
+  public String[] leafNodeAssignments;  // only valid for GBM or DRF, null for all other mojo models
 
 }
