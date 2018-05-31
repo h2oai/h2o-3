@@ -63,16 +63,9 @@ def call(final pipelineContext) {
                         }
                     }
                 } finally {
-                    archiveArtifacts """
-                          h2o-3/${pipelineContext.getBuildConfig().MAKEFILE_PATH},
-                          h2o-3/h2o-py/dist/*.whl,
-                          h2o-3/build/h2o.jar,
-                          h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
-                          h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-                          **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
-                    """
+                    archiveArtifacts "**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
                     pipelineContext.getBuildConfig().TEST_PACKAGES_COMPONENTS.each { component ->
-                        if (pipelineContext.getBuildConfig().componentChanged(component)) {
+                        if (pipelineContext.getBuildConfig().stashComponent(component)) {
                             echo "********* Stash ${component} *********"
                             pipelineContext.getUtils().stashFiles(
                                     this,

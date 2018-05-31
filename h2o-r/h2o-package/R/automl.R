@@ -268,3 +268,35 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   h2o.getFrame(dest_key)
 }
 
+#' Get an R object that is a subclass of \linkS4class{H2OAutoML}
+#'
+#' @param project_name A string indicating the project_name of the automl instance to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OAutoML}.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes", 
+#'                   training_frame = votes_hf, max_runtime_secs = 30)
+#' automl.retrieved <- h2o.getAutoML("aml_housevotes")
+#' }
+#' @export
+h2o.getAutoML <- function(project_name) {
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
+  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  row.names(leaderboard) <- seq(nrow(leaderboard))
+  leaderboard <- as.h2o(leaderboard)
+  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
+  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  project <- automl_job$project
+  
+  # Make AutoML object
+  return(new("H2OAutoML",
+             project_name = project,
+             leader = leader,
+             leaderboard = leaderboard
+  ))
+}
+

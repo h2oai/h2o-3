@@ -305,7 +305,6 @@ FAQs
 
     hadoop jar h2odriver.jar -nodes 1 -mapperXmx 20g -extramempercent 100
 
-
 References
 ~~~~~~~~~~
 

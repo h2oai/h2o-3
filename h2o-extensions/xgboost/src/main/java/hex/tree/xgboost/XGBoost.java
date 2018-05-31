@@ -32,7 +32,7 @@ import static water.H2O.technote;
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
 
-  private static final double FILL_RATIO_THRESHOLD = 0.3D;
+  private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
   @Override public boolean haveMojo() { return true; }
 

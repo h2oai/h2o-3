@@ -82,6 +82,9 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
   parms$response_column <- args$y
 
  # Get the base models from model IDs (if any) that will be used for constructing model summary
+ if(!is.list(base_models) && is.vector(x)) {
+    base_models <- as.list(base_models)
+ }
  baselearners <- lapply(base_models, function(base_model) {
    if (is.character(base_model))
      base_model <- h2o.getModel(base_model)

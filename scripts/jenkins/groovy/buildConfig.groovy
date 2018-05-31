@@ -55,20 +55,20 @@ class BuildConfig {
           (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:936a16bb3d682da68180a5a85895adf3d8de25bbf545bd01a64feb6fb4d1e302',
           (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:1edd212621bb8a9e6469c450a86c5136cecdc5d5371179a6e9b513b032dbc182',
 
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:a699fc2b06bec2f6b5f180f318b11d70d61c05b0c1fcb8f992ee5e159001c423',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:46a012a791ef31cdc604b7e630c9ab3cdf6247fdaba27c62d45af36ba201d8c3',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:8f51e08b1260894962a08b2d6afd91f446eef4a97576e5e4512f83225050f5e4',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:8a444473ccfc3104091b04680c17d3ff7b1f1e817b2f3c4aa17702c3d8702aaf',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:d80d5ffdb3cad63839bf3b5df3f3e4e09205029e9bebf5bb4dfc0ea6004cce6d',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:0fc4e58d8e8c4231dc0e5ef7abc63262a8cac5ed04fa3c837a1767691d87aebf',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:797bfcfb146f9a864dccb2198c7c951079904ba6a54203de099d0a45745cea2b',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:65a2dd70b3436417b9e626602ab1df9afbf3d7597f0161a6debfff7e3fefc6bc',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:75f3e4c70442f6cb08e8133a5081ae452c311a4427a07e477779421d877de92f',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:1ff8cf8d36c4645f820d0d085804591e115818a2538043473e1cc7f63c56a556',
 
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:ce2c2a9ad5645f8bffe12271211b7760f14141bf657f25847c3edeebbf02e3a2',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:67c2ba335a0f9e64688075a2c3be6e2707fbee8bb5b2f80ecc7e21c95af7d88f',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:c38530492f4e06d90fbf53398908ce61910c685150c726d85798eb8fd02a3db9',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:6d354a4be21b6fccf644d14aac1b6b18a1f7648ec2acf28f09bbda20f439c1fd',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:389d252f21742012f39c5761f263b25dae0904430ce4dd5758d56482aa152287',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:40362f64a528ebccfdaec0daae3142a4610cff6d15d37c5128f3635b617e3cc3',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:6ac81bd4084a7832c5ae99dd4460afae763e7f28d74805c594a36d5562505287',
-          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:961db5976d48196577cd07cae1157fc3106832cc793a86bab78295b93944802d',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:8ad4ce275cb260a5d77bed289b7229df9683571adf4a3deec5883909a2cc7f12',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:7cc649f96e49907a50a353b0a5ca645196e0d0aae637471d0c7ebcfa11e0c7fe',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:c20627c77d32adbf9617814fe7d82d3ca5bbcf51f21cadeb49535b8f9cccf2cb',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:f8e4c3c299fce04dc5163c738be3350cc21ab5b643cb2d9f738955754285f996',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:cb6f3a1497cf5816223c30ff7652d00fee6a256e7a6f3248b0ce1061171f59e8',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:9e241b2597d80223d98aaf27991222c14dd53c31fab34aa34bcd0e3724bd3e05',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:d68f6eb17c0fd543bb492eb6bd599533a9d9595107264b2bf4d832c47c99f657',
+          'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:46': 'docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:38f88603b1ead8addc184639b8b6b772c98a5dc62fcbd44191a86ffcaea69106',
 
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:eb6ebbaf58b03e203bc4d72752180d88a5bf8518a257a0bac19faabd467672e3',
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:7e737e2209e07f047044a43efe6411a6e9a6dcd82b95654b7adaf04b03a474bc',
@@ -85,6 +85,8 @@ class BuildConfig {
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:centos7.3': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:5e10fd12834613852c66d719828e917f45fb191341816b19243197aec8cd12fc',
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu:centos7.4': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-gpu@sha256:b53f7a8ca0247ea92723ba1cc343e9b474702bf345f8afebf48c8a7d6d6185b3',
   ]
+
+  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R]
 
   private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
 
@@ -161,6 +163,10 @@ class BuildConfig {
 
   def componentChanged(final String component) {
     return changesMap[component]
+  }
+
+  def stashComponent(final String component) {
+    return componentChanged(component) || STASH_ALWAYS_COMPONENTS.contains(component)
   }
 
   String getDefaultNodeLabel() {
