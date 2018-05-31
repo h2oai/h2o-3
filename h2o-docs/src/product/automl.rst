@@ -63,11 +63,11 @@ Optional Miscellaneous Parameters
     - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
     - ``deviance``
     - ``logloss``
-    - ``mse``
-    - ``rmse``
-    - ``mae``
-    - ``rmsle``
-    - ``auc``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC``
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
