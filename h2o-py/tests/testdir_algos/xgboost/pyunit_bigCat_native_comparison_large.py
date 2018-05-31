@@ -17,19 +17,27 @@ parameter sets between the two.  Need to resolve this, Michalk/Pavel/Nidhi/Megan
 '''
 def bigCat_test():
     assert H2OXGBoostEstimator.available() is True
-    trainFileList = ['bigdata/laptop/jira/tenThousandCat10C.csv.zip', 'bigdata/laptop/jira/tenThousandCat50C.csv.zip',
-                     'bigdata/laptop/jira/tenThousandCat100C.csv.zip'] # all categorical files  # cannot use this ones
-    h2oParams = {"ntrees":100, "max_depth":10, "seed":987654321, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": 100}
-    nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
-                   'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"], 'min_child_weight':h2oParams["min_rows"],
-                   'colsample_bytree':h2oParams["col_sample_rate_per_tree"]}
+    h2oParams = {"ntrees":10, "max_depth":4, "seed":987654321, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
+                 "min_rows" : 5, "score_tree_interval": 10}
+    nativeParam = {'colsample_bytree': h2oParams["col_sample_rate_per_tree"],
+                   'tree_method': 'auto',
+                   'seed': h2oParams["seed"],
+                   'max_depth': h2oParams["max_depth"],
+                   'booster': 'gbtree',
+                   'objective': 'binary:logistic',
+                   'lambda': 0.0,
+                   'eta': h2oParams["learn_rate"],
+                   'grow_policy': 'depthwise',
+                   'alpha': 0.0,
+                   'subsample': 1.0,
+                   'colsample_bylevel': 1.0,
+                   'max_delta_setp': 0.0,
+                   'min_child_weight': h2oParams["min_rows"],
+                   'gamma': 0.0}
     nrows = 100000
     ncols = 10
     factorL = 10
 
-#    for fname in trainFileList:
-#    for ind in range(2):
     trainFile = genTrainFiles(nrows, ncols, factorL)     # load in dataset and add response column
     myX = trainFile.names
     y='response'
@@ -70,8 +78,6 @@ def summarizeResult(h2oPredict, nativePred, h2oTrainTime, h2oPredictTime, native
     h2oErr = sum(1 for i in range(h2oPredict.nrow)
                  if abs(h2oPredictLocal['predict'][i] - nativeLabels[i])>1e-6)/float(len(nativePred))
     print("H2OXGBoost error rate is {0} and native XGBoost error rate is {1}".format(h2oErr, nativeErr))
-#    assert (h2oErr <= nativeErr) or abs(h2oErr-nativeErr) < 1e-6, \
- #       "H2OXGBoost predict accuracy {0} and native XGBoost predict accuracy are too different!".format(h2oErr, nativeErr)
 
     # compare prediction probability and they should agree if they use the same seed
     for ind in range(h2oPredict.nrow):
@@ -79,12 +85,8 @@ def summarizeResult(h2oPredict, nativePred, h2oTrainTime, h2oPredictTime, native
             print("H2O prediction prob: {0} and XGBoost prediction prob: {1}.  They are very "
                   "different.".format(h2oPredictLocal['c0.l1'][ind], nativePred[ind]))
             break
-#        assert abs(nativePred[ind]-h2oPredictLocal['p1'][ind])<1e-6, \
-#            "H2O prediction prob: {0} and XGBoost prediction prob: {1}.  They are very " \
-#            "different.".format(h2oPredict[ind,'p1'], nativePred[ind])
 
 def genTrainFiles(nrow, ncol, factorL):
-    #trainFrame = h2o.import_file(pyunit_utils.locate(trainStr))
     trainFrame = pyunit_utils.random_dataset_enums_only(nrow, ncol, factorL=factorL, misFrac=0)
     yresponse = pyunit_utils.random_dataset_enums_only(trainFrame.nrow, 1, factorL=2, misFrac=0)
     yresponse.set_name(0,'response')
