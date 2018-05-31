@@ -3,6 +3,7 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -414,7 +415,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
-    return XGBoostMojoModel.score0(data, offset, preds,
+    return XGBoostNativeMojoModel.score0(data, offset, preds,
             model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
@@ -427,7 +428,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     }
     DataInfo di = model_info._dataInfoKey.get();
-    double[][] scored = XGBoostMojoModel.bulkScore0(tmp, offset, preds,
+    double[][] scored = XGBoostNativeMojoModel.bulkScore0(tmp, offset, preds,
             model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
 

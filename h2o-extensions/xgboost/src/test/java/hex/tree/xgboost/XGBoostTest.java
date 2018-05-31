@@ -8,17 +8,17 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoReader;
+import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.*;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -35,7 +35,21 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
 
+@RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
+
+  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0}")
+  public static Iterable<? extends Object> data() {
+    return Arrays.asList("true", "false");
+  }
+
+  @Parameterized.Parameter
+  public String confJavaScoring;
+
+  @Before
+  public void setupMojoJavaScoring() {
+    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confJavaScoring);
+  }
 
   public static final class FrameMetadata {
     Vec[] vecs;
@@ -1039,7 +1053,8 @@ public class XGBoostTest extends TestUtil {
 
 
   @Test
-  public void testMojoBoosterDump() throws XGBoostError, IOException {
+  public void testMojoBoosterDump() throws IOException {
+    Assume.assumeTrue(! XGBoostMojoReader.useJavaScoring());
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -1059,8 +1074,9 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       XGBoostMojoModel mojo = getMojo(model);
+      assertTrue(mojo instanceof XGBoostNativeMojoModel);
 
-      String[] dump = mojo.getBoosterDump(false, "text");
+      String[] dump = ((XGBoostNativeMojoModel) mojo).getBoosterDump(false, "text");
       assertEquals(parms._ntrees, dump.length);
     } finally {
       Scope.exit();
