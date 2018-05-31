@@ -259,19 +259,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
-
-    if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
-      this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
-      this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.leaderboard_frame && null != buildSpec.input_spec.leaderboard_path)
-      this.leaderboardFrame = importParseFrame(buildSpec.input_spec.leaderboard_path, buildSpec.input_spec.parse_setup);
-
-    // check training_frame and any columns that were specified:
-    if (null == this.origTrainingFrame)
-      throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
-              buildSpec.input_spec.training_path +
-              " and training_frame: " + buildSpec.input_spec.training_frame);
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
               "the training frame.");
@@ -1288,7 +1275,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (buildSpec.input_spec.training_frame == null) {
       origTrainingFrame.delete();
     }
-    if (buildSpec.input_spec.validation_frame == null && buildSpec.input_spec.validation_path != null) {
+    if (buildSpec.input_spec.validation_frame == null) {
       validationFrame.delete();
     }
   }
