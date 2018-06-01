@@ -9,28 +9,6 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OKeyWrongTypeArgumentException;
 
 public class AutoMLHandler extends Handler {
-  /** Class which contains the internal representation of the leaderboards list and params. */
-  public static final class AutoMLs extends Iced {
-    public AutoML[] auto_ml_runs;
-
-    public static AutoML[] fetchAll() {
-      final Key<AutoML>[] autoMLKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override
-        public boolean filter(KeySnapshot.KeyInfo k) {
-          return Value.isSubclassOf(k._type, AutoML.class);
-        }
-      }).keys();
-
-      AutoML[] autoMLs = new AutoML[autoMLKeys.length];
-      for (int i = 0; i < autoMLKeys.length; i++) {
-        AutoML autoML = getFromDKV("(none)", autoMLKeys[i]);
-        autoMLs[i] = autoML;
-      }
-
-      return autoMLs;
-    }
-
-  } // public class AutoMLs
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return an AutoML object by ID. */
