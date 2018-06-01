@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-public class XGBoostMojoModelTest {
+public class XGBoostNativeMojoModelTest {
 
   @Rule
   public TemporaryFolder tmp = new TemporaryFolder();
@@ -18,10 +18,10 @@ public class XGBoostMojoModelTest {
   @Test
   public void getBoosterDump_main() throws Exception {
     final File mojoFile = tmp.newFile("xgboost.zip");
-    try (InputStream is = XGBoostMojoModelTest.class.getResourceAsStream("xgboost.zip")){
+    try (InputStream is = XGBoostNativeMojoModelTest.class.getResourceAsStream("xgboost.zip")){
       Files.copy(is, Paths.get(mojoFile.toURI()), StandardCopyOption.REPLACE_EXISTING);
     }
-    XGBoostMojoModel.main(new String[]{"--dump", mojoFile.getAbsolutePath(), "false", "json"}); // expect no smoke
+    XGBoostNativeMojoModel.main(new String[]{"--dump", mojoFile.getAbsolutePath(), "false", "json"}); // expect no smoke
   }
 
 }
