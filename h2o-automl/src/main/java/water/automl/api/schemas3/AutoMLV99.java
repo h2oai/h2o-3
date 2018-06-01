@@ -55,6 +55,8 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     this.buildSpec = autoML.getBuildSpec();
 
+    //this.sort_metric = autoML.getBuildSpec().build_control.sort_metric;
+
     if (null != autoML._key) {
       this.automl_id = new AutoML.AutoMLKeyV3(autoML._key);
     }
@@ -74,7 +76,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     // NOTE: don't return nulls; return an empty leaderboard/userFeedback, to ease life for the client
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
-      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame());
+      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame(), "auc");
       DKV.put(leaderboard);
     }
     this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);

@@ -151,7 +151,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame);
+    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, buildSpec.build_control.sort_metric);
 
     this.jobs = new ArrayList<>();
     this.tempFrames = new ArrayList<>();

@@ -35,6 +35,11 @@
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
+#' @param sort_metric Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
+#'        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
+#'        mean_per_class_error, logloss, mean_per_class_error, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
+#'        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for 
+#'        regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -62,7 +67,8 @@ h2o.automl <- function(x, y, training_frame,
                        project_name = NULL,
                        exclude_algos = NULL,
                        keep_cross_validation_predictions = TRUE,
-                       keep_cross_validation_models = TRUE)
+                       keep_cross_validation_models = TRUE,
+                       sort_metric = NULL)
 {
 
   tryCatch({
@@ -167,6 +173,10 @@ h2o.automl <- function(x, y, training_frame,
     build_control$project_name <- paste0("automl_", training_frame_id)
   } else {
     build_control$project_name <- project_name
+  }
+  
+  if (!is.null(sort_metric)) {
+    build_control$sort_metric <- sort_metric
   }
 
   if (!is.null(exclude_algos)) {

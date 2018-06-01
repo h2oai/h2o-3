@@ -46,6 +46,7 @@ public class AutoMLBuildSpec extends Iced {
     public int nfolds = 5;
     public boolean keep_cross_validation_predictions = true;
     public boolean keep_cross_validation_models = true;
+    public String sort_metric = null;
   }
 
   /**
