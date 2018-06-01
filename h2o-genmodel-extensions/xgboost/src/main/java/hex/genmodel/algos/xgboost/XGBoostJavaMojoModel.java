@@ -4,6 +4,10 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * Implementation of XGBoostMojoModel that uses Pure Java Predict
  * see https://github.com/komiya-atsushi/xgboost-predictor-java
@@ -12,8 +16,17 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   Predictor _predictor;
 
-  public XGBoostJavaMojoModel(String[] columns, String[][] domains, String responseColumn) {
+  public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
+    _predictor = makePredictor(boosterBytes);
+  }
+
+  private static Predictor makePredictor(byte[] boosterBytes) {
+    try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
+      return new Predictor(is);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {

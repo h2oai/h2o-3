@@ -4,14 +4,14 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import ml.dmlc.xgboost4j.java.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Please note: user is advised to explicitly release the native resources of XGBoost by calling close method on the instance.
@@ -19,8 +19,17 @@ import java.util.Map;
 public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
   Booster _booster;
 
-  public XGBoostNativeMojoModel(String[] columns, String[][] domains, String responseColumn) {
+  public XGBoostNativeMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
+    _booster = makeBooster(boosterBytes);
+  }
+
+  private static Booster makeBooster(byte[] boosterBytes) {
+    try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
+      return BoosterHelper.loadModel(is);
+    } catch (Exception xgBoostError) {
+      throw new IllegalStateException("Unable to load XGBooster", xgBoostError);
+    }
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
@@ -42,16 +51,18 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     for(int i = 0; i < doubles.length; i++) {
       GenModel.setInput(doubles[i], floats[i], _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
     }
-    float[][] out = null;
+    float[][] out;
     DMatrix dmat = null;
     try {
-      Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", "0");
-      Rabit.init(rabitEnv);
-      dmat = new DMatrix(floats,doubles.length,floats[0].length, _sparse ? 0 : Float.NaN);
-//      dmat.setWeight(new float[]{(float)weight});
-      out = _booster.predict(dmat);
-      Rabit.shutdown();
+      dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
+      final DMatrix rows = dmat;
+      BoosterHelper.BoosterOp<float[][]> predictOp = new BoosterHelper.BoosterOp<float[][]>() {
+        @Override
+        public float[][] apply(Booster booster) throws XGBoostError {
+          return booster.predict(rows);
+        }
+      };
+      out = BoosterHelper.doWithLocalRabit(predictOp, _booster);
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     } finally {
@@ -62,8 +73,6 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       if (nclasses > 2) {
         for (int i = 0; i < out[0].length; ++i)
           preds[r][1 + i] = out[r][i];
-//      if (_balanceClasses)
-//        GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
         preds[r][0] = GenModel.getPrediction(preds[r], _priorClassDistrib, doubles[r], _defaultThreshold);
       } else if (nclasses == 2) {
         preds[r][1] = 1 - out[r][0];
@@ -80,29 +89,32 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
                                 Booster _booster, int _nums, int _cats,
                                 int[] _catOffsets, boolean _useAllFactorLevels,
                                 int nclasses, double[] _priorClassDistrib,
-                                double _defaultThreshold, boolean _sparse) {
+                                double _defaultThreshold, final boolean _sparse) {
     if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-    float[] floats;
+
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
     // convert dense doubles to expanded floats
-    floats = new float[_nums + cats]; //TODO: use thread-local storage
+    final float[] floats = new float[_nums + cats]; //TODO: use thread-local storage
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
-    float[][] out;
+    float[] out;
     DMatrix dmat = null;
     try {
-      Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", "0");
-      Rabit.init(rabitEnv);
-      dmat = new DMatrix(floats,1,floats.length, _sparse ? 0 : Float.NaN);
-      out = _booster.predict(dmat);
-      Rabit.shutdown();
+      dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
+      final DMatrix row = dmat;
+      BoosterHelper.BoosterOp<float[]> predictOp = new BoosterHelper.BoosterOp<float[]>() {
+        @Override
+        public float[] apply(Booster booster) throws XGBoostError {
+          return booster.predict(row)[0];
+        }
+      };
+      out = BoosterHelper.doWithLocalRabit(predictOp, _booster);
     } catch (XGBoostError xgBoostError) {
       throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     } finally {
       BoosterHelper.dispose(dmat);
     }
 
-    return toPreds(doubles, out[0], preds, nclasses, _priorClassDistrib, _defaultThreshold);
+    return toPreds(doubles, out, preds, nclasses, _priorClassDistrib, _defaultThreshold);
   }
 
   @Override
