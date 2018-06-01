@@ -55,8 +55,6 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     this.buildSpec = autoML.getBuildSpec();
 
-    //this.sort_metric = autoML.getBuildSpec().build_control.sort_metric;
-
     if (null != autoML._key) {
       this.automl_id = new AutoML.AutoMLKeyV3(autoML._key);
     }
