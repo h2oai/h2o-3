@@ -142,10 +142,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
 
     if (sort_metric == null) {
-      sort_metric = "auc";
+      this.sort_metric = "auc";
     }
+    this.sort_metric = sort_metric;
     String[] metrics = new String[] { "auc", "logloss", "mean_per_class_error", "rmse", "mse" };
-    this.other_metrics = removeItemFromArray(metrics, sort_metric);
+    this.other_metrics = removeItemFromArray(metrics, this.sort_metric);
     this.sort_decreasing = true;
   }
 

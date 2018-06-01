@@ -37,7 +37,7 @@
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
 #' @param sort_metric Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
 #'        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
-#'        mean_per_class_error, logloss, mean_per_class_error, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
+#'        mean_per_class_error, logloss, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
 #'        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for 
 #'        regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
