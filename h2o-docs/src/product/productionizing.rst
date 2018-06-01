@@ -234,7 +234,7 @@ POJO Quick Start
 
 This section describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__ for more information, including packages.
 
-**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the `FAQ <#POJO_Err>`__ below. POJOs are also not supported for XGBoost, Stacked Ensembles, or AutoML models. 
+**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the `FAQ <#POJO_Err>`__ below. POJOs are also not supported for XGBoost, Stacked Ensembles, or AutoML models.
 
 What is a POJO?
 '''''''''''''''

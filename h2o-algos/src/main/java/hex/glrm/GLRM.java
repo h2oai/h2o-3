@@ -10,6 +10,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
@@ -935,6 +936,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._representation_name = StringUtils.isNullOrEmpty(_parms._representation_name) ?
                 "GLRMLoading_" + Key.rand() : _parms._representation_name;
         model._output._representation_key = Key.make(model._output._representation_name);
+        model._output._x_factor_key = model._output._representation_key;  // point to this key for default
 
         String[] xnames = new String[_ncolX];
         for (int i=0; i<_ncolX; i++) {
@@ -1253,32 +1255,17 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     // For j = 0 to number of categorical columns - 1, and level = 0 to number of levels in categorical column - 1
     public int getCatCidx(int j, int level) {
-      int catColJLevel = _numLevels[j];
-      assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
-      assert !Double.isNaN(level) && level >= 0 && level < catColJLevel : "Got level = " + level +
-              " when expected integer in [0," + catColJLevel + ")";
-      return _catOffsets[j]+level;
+      return GlrmMojoModel.getCatCidx(j, level, _numLevels, _catOffsets);
     }
 
     protected final double getNum(int j, int k) {
-      int cidx = getNumCidx(j);
+      int cidx = GlrmMojoModel.getNumCidx(j, _catOffsets);
       return _transposed ? _archetypes[cidx][k] : _archetypes[k][cidx];
     }
 
     // Inner product x * y_j where y_j is numeric column j of Y
     protected final double lmulNumCol(double[] x, int j) {
-      assert x != null && x.length == rank() : "x must be of length " + rank();
-      int cidx = getNumCidx(j);
-
-      double prod = 0;
-      if (_transposed) {
-        for (int k = 0; k < rank(); k++)
-          prod += x[k] * _archetypes[cidx][k];
-      } else {
-        for (int k = 0; k < rank(); k++)
-          prod += x[k] * _archetypes[k][cidx];
-      }
-      return prod;
+      return GlrmMojoModel.lmulNumCol(x, j, _transposed, _archetypes, _catOffsets);
     }
 
     protected final double getCat(int j, int level, int k) {
@@ -1311,25 +1298,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
     protected final double[] lmulCatBlock(double[] x, int j) {
-      int catColJLevel = _numLevels[j];
-      assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
-      assert x != null && x.length == rank() : "x must be of length " + rank();
-      double[] prod = new double[catColJLevel];
-
-      if (_transposed) {
-        for (int level = 0; level < catColJLevel; level++) {
-          int cidx = getCatCidx(j,level);
-          for (int k = 0; k < rank(); k++)
-            prod[level] += x[k] * _archetypes[cidx][k];
-        }
-      } else {
-        for (int level = 0; level < catColJLevel; level++) {
-          int cidx = getCatCidx(j,level);
-          for (int k = 0; k < rank(); k++)
-            prod[level] += x[k] * _archetypes[k][cidx];
-        }
-      }
-      return prod;
+      return GlrmMojoModel.lmulCatBlock(x, j, _numLevels, _transposed, _archetypes, _catOffsets);
     }
   }
 

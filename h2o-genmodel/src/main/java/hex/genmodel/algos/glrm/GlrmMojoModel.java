@@ -15,7 +15,9 @@ public class GlrmMojoModel extends MojoModel {
   public int _ncolY;
   public int _nrowY;
   public double[][] _archetypes;
+  public double[][] _archetypes_raw;
   public int[] _numLevels;
+  public int [] _catOffsets;
   public int[] _permutation;
   public GlrmLoss[] _losses;
   public GlrmRegularizer _regx;
@@ -25,7 +27,11 @@ public class GlrmMojoModel extends MojoModel {
   public int _nnums;
   public double[] _normSub;
   public double[] _normMul;
-  // We don't really care about regularization of Y since it is not used during scoring
+  public long _seed;  // added to ensure reproducibility
+  public boolean _transposed;
+  public boolean _reverse_transform;
+
+  // We don't really care about regularization of Y since it is changed during scoring
 
   /**
    * This is the "learning rate" in the gradient descent method. More specifically, at each iteration step we update
@@ -39,9 +45,11 @@ public class GlrmMojoModel extends MojoModel {
    * This approach is not thread-safe! If we ever make GenModel capable of scoring multiple rows in parallel, this
    * will have to be changed to make updates to alpha synchronized.
    */
-  private static double alpha = 1.0;
+ // private double alpha = 1.0;  // Do not shared across class.
   private static final double DOWN_FACTOR = 0.5;
   private static final double UP_FACTOR = Math.pow(1.0/DOWN_FACTOR, 1.0/4);
+  public long _rcnt = 0;  // increment per row and can be changed to different values to ensure reproducibility
+
   static {
     //noinspection ConstantAssertCondition,ConstantConditions
     assert DOWN_FACTOR < 1 && DOWN_FACTOR > 0;
@@ -54,7 +62,7 @@ public class GlrmMojoModel extends MojoModel {
   }
 
 
-  protected GlrmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+  public GlrmMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
 
@@ -62,16 +70,13 @@ public class GlrmMojoModel extends MojoModel {
     return _ncolX;
   }
 
-  /**
-   * This function corresponds to the DimReduction model category
-   */
-  @Override
-  public double[] score0(double[] row, double[] preds) {
+  public double[] score0(double[] row, double[] preds, long seedValue) {
     assert row.length == _ncolA;
     assert preds.length == _ncolX;
     assert _nrowY == _ncolX;
     assert _archetypes.length == _nrowY;
     assert _archetypes[0].length == _ncolY;
+    double alpha=1.0;  // reset back to 1 for each row
 
     // Step 0: prepare the data row
     double[] a = new double[_ncolA];
@@ -80,7 +85,7 @@ public class GlrmMojoModel extends MojoModel {
 
     // Step 1: initialize X  (for now do Random initialization only)
     double[] x = new double[_ncolX];
-    Random random = new Random();
+    Random random = new Random(seedValue);  // change the random seed everytime it is used
     for (int i = 0; i < _ncolX; i++)
       x[i] = random.nextGaussian();
     x = _regx.project(x, random);
@@ -92,18 +97,17 @@ public class GlrmMojoModel extends MojoModel {
     while (!done && iters++ < 100) {
       // Compute the gradient of the loss function
       double[] grad = gradientL(x, a);
-
       // Try to make a step of size alpha, until we can achieve improvement in the objective.
       double[] u = new double[_ncolX];
-      while (true) {
+      while (true) {  // inner loop to run and make sure we find a stepsize and x factor that decrease objective
         // System.out.println("  " + alpha);
         // Compute the tentative new x (using the prox algorithm)
         for (int k = 0; k < _ncolX; k++) {
           u[k] = x[k] - alpha * grad[k];
         }
         double[] xnew = _regx.rproxgrad(u, alpha * _gammax, random);
-
         double newobj = objective(xnew, a);
+
         if (newobj == 0) break;
         double obj_improvement = 1 - newobj/obj;
         if (obj_improvement >= 0) {
@@ -117,11 +121,97 @@ public class GlrmMojoModel extends MojoModel {
         }
       }
     }
-
-    // Step 3: return the result
-    // System.out.println("obj = " + obj + ", alpha = " + alpha + ", n_iters = " + iters);
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
+
+  }
+
+  /**
+   * This function corresponds to the DimReduction model category
+   */
+  @Override
+  public double[] score0(double[] row, double[] preds) {
+    return score0(row, preds, _seed+_rcnt++);
+  }
+
+  // impute data from x and archetypes
+  public static double[] impute_data(double[] xfactor, double[] preds, int nnums, int ncats, int[] permutation,
+                                     boolean reverse_transform, double[] normMul, double[] normSub, GlrmLoss[] losses,
+                                     boolean transposed, double[][] archetypes_raw, int[] catOffsets, int[] numLevels) {
+    assert preds.length == nnums + ncats;
+
+    // Categorical columns
+    for (int d = 0; d <ncats; d++) {
+      double[] xyblock = lmulCatBlock(xfactor,d, numLevels, transposed, archetypes_raw, catOffsets);
+      preds[permutation[d]] = losses[d].mimpute(xyblock);
+    }
+
+    // Numeric columns
+    for (int d = ncats; d < preds.length; d++) {
+      int ds = d - ncats;
+      double xy = lmulNumCol(xfactor, ds, transposed, archetypes_raw, catOffsets);
+      preds[permutation[d]] = losses[d].impute(xy);
+      if (reverse_transform)
+        preds[permutation[d]] = preds[permutation[d]] / normMul[ds] + normSub[ds];
+    }
+    return preds;
+  }
+
+  // For j = 0 to number of numeric columns - 1
+  public static int getNumCidx(int j, int[] catOffsets) {
+    return catOffsets[catOffsets.length-1]+j;
+  }
+  // Inner product x * y_j where y_j is numeric column j of Y
+  public static double lmulNumCol(double[] x, int j, boolean transposed, double[][] archetypes_raw, int[] catOffsets) {
+    assert x != null && x.length == rank(transposed, archetypes_raw) : "x must be of length " + rank(transposed, archetypes_raw);
+    int cidx = getNumCidx(j, catOffsets);
+
+    double prod = 0;
+    if (transposed) {
+      for (int k = 0; k < rank(transposed, archetypes_raw); k++)
+        prod += x[k] * archetypes_raw[cidx][k];
+    } else {
+      for (int k = 0; k < rank(transposed, archetypes_raw); k++)
+        prod += x[k] * archetypes_raw[k][cidx];
+    }
+    return prod;
+  }
+
+  // For j = 0 to number of categorical columns - 1, and level = 0 to number of levels in categorical column - 1
+  public static int getCatCidx(int j, int level, int[] numLevels, int[] catOffsets) {
+    int catColJLevel = numLevels[j];
+    assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
+    assert !Double.isNaN(level) && level >= 0 && level < catColJLevel : "Got level = " + level +
+            " when expected integer in [0," + catColJLevel + ")";
+    return catOffsets[j]+level;
+  }
+
+  // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
+  public static double[] lmulCatBlock(double[] x, int j, int[] numLevels, boolean transposed, double[][] archetypes_raw, int[] catOffsets) {
+    int catColJLevel = numLevels[j];
+    assert catColJLevel != 0 : "Number of levels in categorical column cannot be zero";
+    assert x != null && x.length == rank(transposed, archetypes_raw) : "x must be of length " +
+            rank(transposed, archetypes_raw);
+    double[] prod = new double[catColJLevel];
+
+    if (transposed) {
+      for (int level = 0; level < catColJLevel; level++) {
+        int cidx = getCatCidx(j,level, numLevels, catOffsets);
+        for (int k = 0; k < rank(transposed, archetypes_raw); k++)
+          prod[level] += x[k] * archetypes_raw[cidx][k];
+      }
+    } else {
+      for (int level = 0; level < catColJLevel; level++) {
+        int cidx = getCatCidx(j,level, numLevels, catOffsets);
+        for (int k = 0; k < rank(transposed, archetypes_raw); k++)
+          prod[level] += x[k] * archetypes_raw[k][cidx];
+      }
+    }
+    return prod;
+  }
+
+  public static int rank(boolean transposed, double[][] archetypes_raw) {
+    return transposed ? archetypes_raw[0].length : archetypes_raw.length;
   }
 
   /**
