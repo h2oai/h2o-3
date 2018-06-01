@@ -16,24 +16,32 @@ This section describes how to install and start H2O Flow (H2O-3 web offering) in
 
 3. On the Cloud Launcher page, search for **H2O** and select the H2O-3 offering. 
 
- <need new screenshot>
+  .. image:: ../images/google_h2o_offering.png
+     :align: center
 
 4. Click **Launch on Compute Engine**.
 
- - Select a zone that has p100s or k80s (such as us-east1).
- - Optionally change the number of cores and amount of memory. (This defaults to 32 cpus and 120 GB ram.)
- - Specify a GPU type. (This defaults to a p100 GPU.)
- - Optionally change the number of GPUs. (default is 2.) 
- - Specify the boot disk type and size.
- - Optionally change the network name and subnetwork names. Be sure that whichever network you specify has port 54321 exposed.
- - Click **Deploy** when you are done. H2O-3 will begin deploying. Note that this can take several minutes. 
+ - Specify a name for this deployment.
+ - Select a zone for the deployment.
+ - Select or customize a machine type and memory amount.
+ - Specify the number of nodes for the virtual machine.
+ - Specify the boot disk type and size (in GB).
+ - Specify the network and subnetwork names. 
 
- <need new screenshot>
+ Click **Deploy** when you are done. H2O-3 will begin deploying. Note that this can take several minutes. 
 
-5. A summary page displays when the compute engine is successfully deployed. Click on the Instance link to retrieve the external IP address for starting H2O-3.
+ .. image:: ../images/google_deploy_compute_engine.png
+  :align: center
 
- <need new screenshot>
- 
-6. In your browser, go to https://[External_IP]:54321 to start Flow. 
+5. A summary page displays when the compute engine is successfully deployed. This page includes the instance ID and the username (always **h2oai**) and password that will be required when starting H2O-3. Click on the Instance link to retrieve the external IP address for starting H2O-3.
 
+  .. image:: ../images/google_deploy_summary.png
+     :align: center
 
+6. Start H2O-3 using one of the following methods:
+
+  **Flow**: In your browser, go to http://[External_IP]:440 or https://[External_IP]:80 to start Flow. Enter your username and password when prompted.
+
+  **Python**: Run ``h2o.connect(address, port=443, username, password)``
+
+  **R**: Run ``h2o.connect(address, port=443, username, password)``
