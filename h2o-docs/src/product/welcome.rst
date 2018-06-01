@@ -573,7 +573,7 @@ Hadoop Launch Parameters
 
 -  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
--  ``-extramempercent <0-20>``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Note**: Set this value high when running H2O XGBoost.
+-  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
 -  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.

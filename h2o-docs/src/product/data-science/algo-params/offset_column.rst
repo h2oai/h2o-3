@@ -1,7 +1,7 @@
 ``offset_column``
 -----------------
 
-- Available in: GBM, Deep Learning, GLM
+- Available in: GBM, Deep Learning, GLM, CoxPH
 - Hyperparameter: no
 
 

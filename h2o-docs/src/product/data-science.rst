@@ -20,6 +20,7 @@ Supervised
 .. toctree::
    :maxdepth: 1
 
+   data-science/coxph
    data-science/deep-learning
    data-science/drf
    data-science/glm

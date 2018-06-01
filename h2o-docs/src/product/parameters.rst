@@ -95,9 +95,12 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/seed
    data-science/algo-params/solver
    data-science/algo-params/standardize
+   data-science/algo-params/start_column
+   data-science/algo-params/stop_column
    data-science/algo-params/stopping_metric
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance
+   data-science/algo-params/ties
    data-science/algo-params/training_frame
    data-science/algo-params/transform
    data-science/algo-params/tweedie_link_power
