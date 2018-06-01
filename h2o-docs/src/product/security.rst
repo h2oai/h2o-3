@@ -977,7 +977,7 @@ A more secure way would be to:
 
  ::
 
-  keytool -export -keystore h2o-internal.jks -alias signFiles -file node<number>.cer
+  keytool -export -keystore h2o-internal.jks -alias h2o-internal -file node<number>.cer
 
 3. Distribute all of the above certificates to each node, and on each node create a truststore containing all of them (or put all certificates on one node, import to truststore and distribute that truststore to each node):
 
