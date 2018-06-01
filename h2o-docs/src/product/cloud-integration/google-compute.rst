@@ -40,8 +40,10 @@ This section describes how to install and start H2O Flow (H2O-3 web offering) in
 
 6. Start H2O-3 using one of the following methods:
 
-  **Flow**: In your browser, go to http://[External_IP]:440 or https://[External_IP]:80 to start Flow. Enter your username and password when prompted.
-
   **Python**: Run ``h2o.connect(address, port=443, username, password)``
 
   **R**: Run ``h2o.connect(address, port=443, username, password)``
+
+  **Flow**: In your browser, go to http://[External_IP]:440 or https://[External_IP]:80 to start Flow. Enter your username and password when prompted. 
+
+   **Note**: When starting H2O Flow, you may receive a message indicating that the connection is not private. Note that the connection is secure and encrypted, but H2O uses a self-signed certificate to handle Nginx encryption, which prompts the warning. You can avoid this message by using your own self-signed certificate. 
