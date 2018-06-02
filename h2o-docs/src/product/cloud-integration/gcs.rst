@@ -1,5 +1,5 @@
-Google Cloud Storage
-~~~~~~~~~~~~~~~~~~~~
+Using H2O with Google Cloud Storage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use the Google Cloud Storage solution, you will have to ensure your GCS credentials are provided to H2O. This will allow you to access your data on GCS when importing data frames with path prefixes ``gs://...``.
 
