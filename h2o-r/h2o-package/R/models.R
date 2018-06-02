@@ -504,7 +504,8 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given
-#' dataset
+#' dataset.  However, if the dataset does not contain the response/target column, no performance will be returned.
+#' Instead, a warning message will be printed.
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
@@ -553,10 +554,13 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE") 
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
-  
+
   missingNewdata <- missing(newdata) || is.null(newdata)
-  
   if( !missingNewdata ) {
+    if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
+      print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+      return(NULL)
+    }
     newdata.id <- h2o.getId(newdata)
     parms <- list()
     parms[["model"]] <- model@model_id
@@ -3059,3 +3063,6 @@ h2o.deepfeatures <- function(object, data, layer) {
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
 }
+
+#' @export
+print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")

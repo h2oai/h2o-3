@@ -2,6 +2,113 @@
 
 ## H2O
 
+### Wolpert (3.18.0.11) - 5/24/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html</a>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5584'>PUBDEV-5584</a>] - Enabled Java 10 support for CRAN release.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5585'>PUBDEV-5585</a>] - GLM tests no longer fail on Java 10.
+</li>
+</ul>
+
+### Wolpert (3.18.0.10) - 5/22/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5558'>PUBDEV-5558</a>] - Fixed an issue for adding Double.NaN to IntAryVisitor via addValue().
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5559'>PUBDEV-5559</a>] - Removed all code that referenced Google Analytics.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5565'>PUBDEV-5565</a>] - Disabled version check in H2O-3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5567'>PUBDEV-5567</a>] - Removed all Google Analytics references and code from Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5568'>PUBDEV-5568</a>] - Removed all Google Analytics references and code from Documentation.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5545'>PUBDEV-5545</a>] - The Security chapter in the User Guide now describes how to enforce system-level command-line arguments in h2odriver when starting H2O.
+</li>
+</ul>
+
+
+
+### Wolpert (3.18.0.9) - 5/11/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5290'>PUBDEV-5290</a>] - Fixed an issue that caused distributed XGBoost to not be registered in the REST API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5325'>PUBDEV-5325</a>] - Fixed an issue that caused XGBoost to crash due "too many open files."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5444'>PUBDEV-5444</a>] - Frames are now rebalanced correctly on multinode clusters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5464'>PUBDEV-5464</a>] - Fixed an issue that prevented H2O libraries to load in DBC.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5507'>PUBDEV-5507</a>] - Added more robust checks for Colorama version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5510'>PUBDEV-5510</a>] - Added more robust checks for Colorama version in H2O Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5518'>PUBDEV-5518</a>] - A response column is no longer required when performing Deep Learning grid search with autoencoder enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5527'>PUBDEV-5527</a>] - Fixed a KeyV3 error message that incorrectly referenced KeyV1.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5544'>PUBDEV-5544</a>] - The external backend now stores sparse vector values correctly.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5456'>PUBDEV-5456</a>] - Added a new rank_within_group_by function in R and Python for ranking groups and storing the ranks in a new column.
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5500'>PUBDEV-5500</a>] - Improved warning messages in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5537'>PUBDEV-5537</a>] - System administrators can now create a configuration file with implicit arguments of h2odriver and use it to make sure the h2o cluster is started with proper security settings. 
+</li>
+</ul>
+
+
+### Wolpert (3.18.0.8) - 4/19/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html</a>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5465'>PUBDEV-5465</a>] - Release for CRAN submission.
+</li>
+</ul>
+
 ### Wolpert (3.18.0.7) - 4/14/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html</a>

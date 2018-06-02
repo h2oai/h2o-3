@@ -49,6 +49,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "score_tree_interval",
         "min_split_improvement", "gamma",
 
+        //runtime
+        "nthread",
+
         //lightgbm only
         "max_bins",
         "max_leaves",
@@ -124,6 +127,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public float min_split_improvement;
     @API(help="(same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
     public float gamma;
+
+    @API(help = "Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads parameter). Defaults to maximum available", level = API.Level.expert)
+    public int nthread;
 
     @API(help = "For tree_method=hist only: maximum number of bins", level = API.Level.expert, gridable = true)
     public int max_bins;

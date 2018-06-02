@@ -4,7 +4,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'gbm': [
             'paribas': [
                 50: [
-                    'train_time_min': 9.1,
+                    'train_time_min': 9.0,
                     'train_time_max': 11.7
                 ],
                 200: [
@@ -28,7 +28,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 33.5
                 ],
                 200: [
-                    'train_time_min': 128.0,
+                    'train_time_min': 124.0,
                     'train_time_max': 136
                 ]
             ],
@@ -39,7 +39,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 463.0,
-                    'train_time_max': 497.0
+                    'train_time_max': 512.0
                 ]
             ],
             'higgs': [
@@ -56,14 +56,14 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
                 'airlines-1m': [
                     100: [
-                        'train_time_min': 40,
-                        'train_time_max': 44
+                        'train_time_min': 38,
+                        'train_time_max': 50
                     ]
                 ],
                 'airlines-10m': [
                     100: [
-                        'train_time_min': 650,
-                        'train_time_max': 675
+                        'train_time_min': 171,
+                        'train_time_max': 187
                     ]
                 ]
         ],
@@ -71,13 +71,13 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 'airlines-1m': [
                     100: [
                         'train_time_min': 4,
-                        'train_time_max': 8
+                        'train_time_max': 11
                     ]
                 ],
                 'airlines-10m': [
                     100: [
-                        'train_time_min': 60,
-                        'train_time_max': 75
+                        'train_time_min': 58,
+                        'train_time_max': 83
                     ]
                 ]
         ]

@@ -3,6 +3,7 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -11,12 +12,9 @@ import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.IcedHashMapGeneric.IcedHashMapStringObject;
 import water.util.Log;
 import hex.ModelMetrics;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +25,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private XGBoostModelInfo model_info;
 
-  XGBoostModelInfo model_info() { return model_info; }
+  public XGBoostModelInfo model_info() { return model_info; }
 
   public static class XGBoostParameters extends Model.Parameters {
     public enum TreeMethod {
@@ -90,6 +88,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _min_split_improvement = 0;
     public float _gamma;
 
+    // Runtime options
+    public int _nthread = -1;
+
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
     public int _max_leaves = 0;
@@ -129,6 +130,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
      */
     Map<String, Object> gpuIncompatibleParams() {
       Map<String, Object> incompat = new HashMap<>();
+      if (_max_depth > 15 || _max_depth < 1) {
+        incompat.put("max_depth",  _max_depth + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
+      }
       if (_grow_policy == GrowPolicy.lossguide)
         incompat.put("grow_policy", GrowPolicy.lossguide); // See PUBDEV-5302 (param.grow_policy != TrainParam::kLossGuide Loss guided growth policy not supported. Use CPU algorithm.)
       return incompat;
@@ -291,7 +295,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     Log.info("");
 
+    final int nthreadMax = getMaxNThread();
+    final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
+    if (nthread < p._nthread) {
+      Log.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
+              "Training will use nthread=" + nthreadMax + " instead of the user specified value.");
+    }
+    params.put("nthread", nthread);
+
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
+  }
+
+  private static int getMaxNThread() {
+    return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
   @Override
@@ -399,7 +415,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
-    return XGBoostMojoModel.score0(data, offset, preds,
+    return XGBoostNativeMojoModel.score0(data, offset, preds,
             model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
@@ -412,7 +428,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     }
     DataInfo di = model_info._dataInfoKey.get();
-    double[][] scored = XGBoostMojoModel.bulkScore0(tmp, offset, preds,
+    double[][] scored = XGBoostNativeMojoModel.bulkScore0(tmp, offset, preds,
             model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
 

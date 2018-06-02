@@ -23,7 +23,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later. **Note**: Java 9 is released, but is not currently supported. Java 9 support will be added in an upcoming version.
+   -  Java 7 or later
 
       - To build H2O or run H2O tests, the 64-bit JDK is required.
       - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
@@ -375,7 +375,7 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 To check which version of H2O is installed in R, use ``versions::installed.versions("h2o")``.
 
--  `R User HTML <../h2o-r/docs/index.html> and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
+-  `R User HTML <../h2o-r/docs/index.html>`_ and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -573,7 +573,7 @@ Hadoop Launch Parameters
 
 -  ``-notify <notification file name>``: Specify a file to write when the cluster is up. The file contains the IP and port of the embedded web server for one of the nodes in the cluster. All mappers must start before the H2O cloud is considered "up".
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
--  ``-extramempercent <0-20>``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
+-  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
 -  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.

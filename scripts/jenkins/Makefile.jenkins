@@ -29,7 +29,7 @@ test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
+	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -37,7 +37,7 @@ test-package-r:
 		h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
 		h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList \
+		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
 		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
 		scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
 
@@ -56,7 +56,11 @@ test-py-booklets:
 
 test-pyunit-small:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitAutoMLList
+
+test-pyunit-small-automl:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist ../../tests/pyunitAutoMLList
 
 test-py-demos:
 	export NO_GCE_CHECK=True && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
@@ -81,11 +85,20 @@ test-r-init:
 test-r-small:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
 
 test-r-small-client-mode:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
-	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist ../../tests/runitAutoMLList
+
+test-r-small-automl:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && rm -f -r testdir_demos
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
+
+test-r-small-client-mode-automl:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	export NO_GCE_CHECK=True && export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist ../../tests/runitAutoMLList
 
 test-r-medium-large:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs

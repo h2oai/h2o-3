@@ -9,6 +9,8 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ModelBuilderTest extends TestUtil {
 
@@ -59,6 +61,67 @@ public class ModelBuilderTest extends TestUtil {
         assertEquals(i * 1000, espc[i]);
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testRebalanceMulti() {
+    org.junit.Assume.assumeTrue(H2O.getCloudSize() > 1);
+    try {
+      Scope.enter();
+      double[] colA = new double[1000000];
+      String[] resp = new String[colA.length];
+      for (int i = 0; i < colA.length; i++) {
+        colA[i] = i % 7;
+        resp[i] = i % 3 == 0 ? "A" : "B";
+      }
+      final Frame train = Scope.track(new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, colA)
+              .withDataForCol(1, resp)
+              .withChunkLayout(colA.length) // single chunk
+              .build());
+      assertEquals(1, train.anyVec().nChunks());
+
+      DummyModelParameters parms = new DummyModelParameters("Rebalance Test", Key.make( "rebalance-test"));
+      parms._train = train._key;
+      ModelBuilder<?, ?, ?> mb = new DummyModelBuilder(parms) {
+        @Override
+        protected String getSysProperty(String name, String def) {
+          if (name.equals("rebalance.ratio.multi"))
+            return "0.5";
+          if (name.equals("rebalance.enableMulti"))
+            return "true";
+          if (name.startsWith(H2O.OptArgs.SYSTEM_PROP_PREFIX + "rebalance"))
+            throw new IllegalStateException("Unexpected property: " + name);
+          return super.getSysProperty(name, def);
+        }
+      };
+
+      // the rebalance logic should spread the Frame across the whole cluster (>> single node CPUs)
+      final int desiredChunks = mb.desiredChunks(train, false);
+      assertTrue(desiredChunks > 4 * H2O.NUMCPUS);
+
+      // expensive init - should include rebalance
+      mb.init(true);
+
+      // check that dataset was rebalanced
+      final int rebalancedChunks = mb.train().anyVec().nonEmptyChunks();
+      assertEquals(desiredChunks, rebalancedChunks);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMakeUnknownModel() {
+    try {
+      ModelBuilder.make("invalid", null, null);
+      fail();
+    } catch (IllegalStateException e) {
+      assertEquals("Algorithm 'invalid' is not registered. Available algos: []", e.getMessage()); // core doesn't have any algos
     }
   }
 

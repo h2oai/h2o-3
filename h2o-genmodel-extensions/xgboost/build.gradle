@@ -5,18 +5,27 @@ description = "H2O GenModel XGBoost support"
 dependencies {
     compile project(":h2o-genmodel")
 
+    compile('biz.k11i:xgboost-predictor:0.3.0') {
+        exclude group: 'net.jafama', 'module': 'jafama'
+    }
+
     // XGBoost dependencies published into Maven central by H2O
     // Versioning rules may differ for XGBoost artifacts published by H2O
-    compile('ai.h2o:xgboost4j:0.7.4') {
+    compile('ai.h2o:xgboost4j:0.7.8') {
         exclude group: 'org.scala-lang', module: 'scala-compiler'
         exclude group: 'org.scala-lang', module: 'scala-reflect'
         exclude group: 'org.scala-lang', module: 'scala-library'
         exclude group: 'com.typesafe.akka', module: 'akka-actor_2.11'
+        exclude group: 'com.esotericsoftware.kryo', module: 'kryo'
     }
-    compile 'ai.h2o:xgboost4j-linux-gpuv4:0.7.4'
-    compile 'ai.h2o:xgboost4j-linux-minimal:0.7.4'
-    compile 'ai.h2o:xgboost4j-osx-minimal:0.7.4'
-    compile 'ai.h2o:xgboost4j-linux-ompv3:0.7.4'
+    compile 'ai.h2o:xgboost4j-linux-gpuv4:0.7.8'
+    compile 'ai.h2o:xgboost4j-linux-minimal:0.7.8'
+    compile 'ai.h2o:xgboost4j-osx-minimal:0.7.8'
+    compile 'ai.h2o:xgboost4j-linux-ompv3:0.7.8'
+    compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
+
+    testCompile 'com.esotericsoftware.kryo:kryo:2.21'
+    testCompile "junit:junit:${junitVersion}"
 }
 
 // Disable default jar

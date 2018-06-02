@@ -12,6 +12,7 @@ test.CoxPH.strata2 <- function() {
     pbc.ext$log_albumin <- log(pbc$albumin)
 
     fit <- coxph(Surv(time, status == 2) ~ age + edema + log_bili + log_protime + log_albumin + strata(ascites), data = pbc.ext)
+    print(fit)
 
     pbc.hex <- as.h2o(pbc.ext)
     pbc.hex$status <- pbc.hex$status == 2

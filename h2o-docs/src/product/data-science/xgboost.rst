@@ -255,6 +255,21 @@ The list of limitations include:
 
   5. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
+Disabling XGBoost
+~~~~~~~~~~~~~~~~~
+
+Some environments may required disabling XGBoost. This can be done by setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` when launching the H2O jar. For example:
+
+::
+
+  # Disable XGBoost in the regular H2O jar
+  java -Xmx10g -Dsys.ai.h2o.ext.core.toggle.XGBoost=False -jar  h2o.jar -name ni  -ip 127.0.0.1 -port 54321
+
+  # Disable XGBoost in the Hadoop H2O driver jar
+  hadoop jar h2odriver.jar -JJ "-Dsys.ai.h2o.ext.core.toggle.XGBoost=False" -nodes 1  -mapperXmx 3g  -output tmp/a39
+
+Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
+
 FAQs
 ~~~~
 
@@ -281,6 +296,14 @@ FAQs
 -  **How are categorical columns handled?**
 
   By default, XGBoost converts every enum into the integer of its index (i.e., ``categorical_encoding="label_encoder"``). 
+
+-  **Why does my H2O cloud on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
+
+  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
+
+  ::
+
+    hadoop jar h2odriver.jar -nodes 1 -mapperXmx 20g -extramempercent 100
 
 References
 ~~~~~~~~~~

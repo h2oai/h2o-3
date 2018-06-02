@@ -30,15 +30,6 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs,
 
 **Note**: MOJOs are supported for Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
 
-Benefit over POJOs
-''''''''''''''''''
-
-While POJOs continue to be supported, some customers encountered issues with large POJOs not compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not have a size restriction and address the size issue by taking the tree out of the POJO and using generic tree-walker code to navigate the model. The resulting executable is much smaller and faster than a POJO.
-
-At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs. The efficiency gains are larger the bigger the size of the model.
-
-H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale (50 trees / 5 depth), POJOs were found to perform ≈10% faster than MOJOs for binomial and regression models, but 50% slower than MOJOs for multinomial models.
-
 Building a MOJO
 '''''''''''''''
 
@@ -170,6 +161,73 @@ The examples below describe how to start H2O and create a model using R and Pyth
 
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
+
+Viewing a MOJO Model
+''''''''''''''''''''
+
+A java tool for converting binary mojo files into human viewable graphs is packaged with H2O. This tool produces output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
+
+Here is example output for a GBM model:
+
+.. figure:: images/gbm_mojo_graph.png
+   :alt: GBM MOJO model
+
+
+The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. 
+
+::
+
+  library(h2o)
+  h2o.init()
+  df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+  model <- h2o.gbm(model_id = "model",
+                  training_frame = df,
+                  x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
+                  y = "IsDepDelayed",
+                  max_depth = 3,
+                  ntrees = 5)
+  h2o.download_mojo(model, getwd(), FALSE)
+
+  # Now download the latest stable h2o release from http://www.h2o.ai/download/
+  # and run the PrintMojo tool from the command line.
+  #
+  # (For MacOS: brew install graphviz)
+  # java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
+  # dot -Tpng model.gv -o model.png
+  # open model.png
+
+FAQ
+'''
+
+-  **What are the benefits of MOJOs vs POJOs?**
+
+  While POJOs continue to be supported, some customers encountered issues with large POJOs not compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not have a size restriction and address the size issue by taking the tree out of the POJO and using generic tree-walker code to navigate the model. The resulting executable is much smaller and faster than a POJO.
+
+  At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs. The efficiency gains are larger the bigger the size of the model.
+
+  H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale (50 trees / 5 depth), POJOs were found to perform ≈10% faster than MOJOs for binomial and regression models, but 50% slower than MOJOs for multinomial models.
+
+-  **How can I use an XGBoost MOJO with Maven?**
+
+  If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
+
+  ::
+
+    <groupId>ai.h2o</groupId>
+    <artifactId>xgboost-mojo-example</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel-ext-xgboost</artifactId>
+        <version>3.18.0.8</version>
+    </dependency>
+    <dependency>
+        <groupId>ai.h2o</groupId>
+        <artifactId>h2o-genmodel</artifactId>
+        <version>3.18.0.8</version>
+    </dependency>
+
 
 .. _pojo-quickstart:
 

@@ -2,9 +2,8 @@ package ml.dmlc.xgboost4j.java;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.XGBoostError;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility to access package private Booster methods.
@@ -50,6 +49,31 @@ public class BoosterHelper {
     if (firstException != null) {
       throw new IllegalStateException("We were unable to free-up xgboost memory. " +
               "This could indicate a memory leak and it can lead to H2O instability.", firstException);
+    }
+  }
+
+  public interface BoosterOp<X> {
+    X apply(Booster booster) throws XGBoostError;
+  }
+
+  public static <X> X doWithLocalRabit(BoosterOp<X> op, Booster booster) throws XGBoostError {
+    boolean shutdownRabit = true;
+    try {
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", "0");
+      Rabit.init(rabitEnv);
+      shutdownRabit = true;
+      X result = op.apply(booster);
+      Rabit.shutdown();
+      shutdownRabit = false;
+      return result;
+    } finally {
+      if (shutdownRabit)
+        try {
+          Rabit.shutdown();
+        } catch (XGBoostError e) {
+          e.printStackTrace(); // don't rely on logging support in genmodel
+        }
     }
   }
 

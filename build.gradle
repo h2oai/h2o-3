@@ -207,6 +207,7 @@ subprojects {
 
     repositories {
         mavenCentral()
+        jcenter()
         maven {
           url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
@@ -288,7 +289,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '4.6'
+  gradleVersion = '4.7'
   distributionType = Wrapper.DistributionType.ALL
 }
 

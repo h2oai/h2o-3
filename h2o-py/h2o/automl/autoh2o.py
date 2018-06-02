@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 import h2o
-import os
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
@@ -166,7 +165,6 @@ class H2OAutoML(object):
         self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
 
         self._job = None
-        self._automl_key = None
         self._leader_id = None
         self._leaderboard = None
 
@@ -244,6 +242,11 @@ class H2OAutoML(object):
         ncols = training_frame.ncols
         names = training_frame.names
 
+        #Set project name if None
+        if self.project_name is None:
+            self.project_name = "automl_" + training_frame.frame_id
+            self.build_control["project_name"] = self.project_name
+
         # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -297,8 +300,10 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
-            if fold_column is not None: ignored_columns = ignored_columns.remove(fold_column)
-            if weights_column is not None: ignored_columns = ignored_columns.remove(weights_column)
+            if fold_column is not None:
+                ignored_columns.remove(fold_column)
+            if weights_column is not None:
+                ignored_columns.remove(weights_column)
             if ignored_columns is not None:
                 input_spec['ignored_columns'] = list(ignored_columns)
 
@@ -316,7 +321,6 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self._automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
 
@@ -379,7 +383,7 @@ class H2OAutoML(object):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
 
         if leaderboard_list is not None and len(leaderboard_list) > 0:
@@ -406,6 +410,41 @@ class H2OAutoML(object):
         return self._leader_id is not None
 
     def _get_params(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         return res
 
+def get_automl(project_name):
+    """
+    Retrieve information about an AutoML instance.
+
+    :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
+    :returns: A dictionary containing the project_name, leader model, and leaderboard.
+    """
+    automl_json = h2o.api("GET /99/AutoML/%s" % project_name)
+    project_name = automl_json["project_name"]
+    leaderboard_list = [key["name"] for key in automl_json['leaderboard']['models']]
+
+    if leaderboard_list is not None and len(leaderboard_list) > 0:
+        leader_id = leaderboard_list[0]
+    else:
+        leader_id = None
+
+    leader = h2o.get_model(leader_id)
+    # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+    # If any failure happens, revert back to user's original setting for progress and display the error message.
+    is_progress = H2OJob.__PROGRESS_BAR__
+    h2o.no_progress()
+    try:
+        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+        leaderboard = h2o.H2OFrame(
+            automl_json["leaderboard_table"].cell_values,
+            column_names=automl_json["leaderboard_table"].col_header)
+    except Exception as ex:
+        raise ex
+    finally:
+        if is_progress is True:
+            h2o.show_progress()
+
+    leaderboard = leaderboard[1:]
+    automl_dict = {'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
+    return automl_dict

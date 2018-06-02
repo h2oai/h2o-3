@@ -435,6 +435,8 @@ public class RapidsTest extends TestUtil {
     }
 
   }
+
+
   @Test public void testQuantile() {
     Frame f = null;
     try {

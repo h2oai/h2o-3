@@ -30,7 +30,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String fullName() { return "Cox Proportional Hazards"; }
     public String javaName() { return CoxPHModel.class.getName(); }
 
-    @Override public long progressUnits() { return _iter_max; }
+    @Override public long progressUnits() { return ((_iter_max + 1) * 2) + 1; }
 
     public String _start_column;
     public String _stop_column;
@@ -50,6 +50,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String[] _interactions_only;
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
+
+    public boolean _calc_cumhaz = false; // not needed yet; exposed to tests only
 
     String[] responseCols() {
       String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];
@@ -100,11 +102,15 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       }};
       String sep = "";
       for (String col : f._names) {
+        if (_offset_column != null && _offset_column.equals(col))
+          continue;
         if (stratifyBy.contains(col) || interactionsOnly.contains(col) || specialCols.contains(col))
           continue;
         sb.append(sep).append(col);
         sep = " + ";
       }
+      if (_offset_column != null)
+        sb.append(sep).append("offset(").append(_offset_column).append(")");
       InteractionSpec interactionSpec = interactionSpec();
       if (interactionSpec != null) {
         InteractionPair[] interactionPairs = interactionSpec().makeInteractionPairs(f);
@@ -201,6 +207,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _n_risk;
     double[] _n_event;
     double[] _n_censor;
+
     double[] _cumhaz_0;
     double[] _var_cumhaz_1;
     double[][] _var_cumhaz_2;

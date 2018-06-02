@@ -83,15 +83,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
-    assert startup_once;
+    String base = getClass().getSimpleName().toLowerCase();
+    if (!startup_once)
+      throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;
     _result = null;
     _parms = parms;
     init(false); // Default cheap init
-    String base = getClass().getSimpleName().toLowerCase();
     if( ArrayUtils.find(ALGOBASES,base) != -1 )
       throw H2O.fail("Only called once at startup per ModelBuilder, and "+base+" has already been called");
     // FIXME: this is not thread safe!
+    // michalk: this note ^^ is generally true (considering 3rd parties), however, in h2o-3 code base we have a sequential ModelBuilder initialization
     ALGOBASES = Arrays.copyOf(ALGOBASES,ALGOBASES.length+1);
     BUILDERS  = Arrays.copyOf(BUILDERS ,BUILDERS .length+1);
     SCHEMAS   = Arrays.copyOf(SCHEMAS  ,SCHEMAS  .length+1);
@@ -146,7 +148,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
     int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
-    assert idx != -1 : "Unregistered algorithm "+algo;
+    if (idx < 0) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
+      Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
+      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: [" +
+              StringUtils.join(",", ALGOBASES)  + "]");
+    }
     B mb = (B)BUILDERS[idx].clone();
     mb._job = job;
     mb._result = result;
@@ -634,8 +642,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
-  protected transient String[] _origNames;
-  protected transient String[][] _origDomains;
+  protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
+  protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
@@ -780,6 +788,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           return skip;
         }
       }.doIt(_train,"Dropping bad and constant columns: ",expensive);
+  }
+
+  /**
+   * Checks response variable attributes and adds errors if response variable is unusable.
+   */
+  protected void checkResponseVariable() {
+
+    if (_response != null && (!_response.isNumeric() && !_response.isCategorical() && !_response.isTime())) {
+      error("_response_column", "Use numerical, categorical or time variable. Currently used " + _response.get_type_str());
+    }
+
   }
 
   /**
@@ -944,11 +963,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _train.remove(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
-    // Rebalance train and valid datasets
-    if (expensive && error_count() == 0 && _parms._auto_rebalance) {
-      setTrain(rebalance(_train, false, _result + ".temporary.train"));
-      _valid = rebalance(_valid, false, _result + ".temporary.valid");
-    }
 
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
@@ -956,6 +970,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
     ignoreInvalidColumns(separateFeatureVecs(), expensive);
+    checkResponseVariable();
+
+    // Rebalance train and valid datasets (after invalid/bad columns are dropped)
+    if (expensive && error_count() == 0 && _parms._auto_rebalance) {
+      setTrain(rebalance(_train, false, _result + ".temporary.train"));
+      separateFeatureVecs(); // need to reset MB's fields (like response) after rebalancing
+      _valid = rebalance(_valid, false, _result + ".temporary.valid");
+    }
+
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
@@ -1191,17 +1214,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Rebalance a frame for load balancing
    * @param original_fr Input frame
    * @param local Whether to only create enough chunks to max out all cores on one node only
+   *              WARNING: This behavior is not actually implemented in the methods defined in this class, the default logic
+   *              doesn't take this parameter into consideration.
    * @param name Name of rebalanced frame
    * @return Frame that has potentially more chunks
    */
-
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
-    if (original_fr.anyVec().nonEmptyChunks() >= chunks) {
+    double rebalanceRatio = rebalanceRatio();
+    int nonEmptyChunks = original_fr.anyVec().nonEmptyChunks();
+    if (nonEmptyChunks >= chunks * rebalanceRatio) {
       if (chunks>1)
-        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
-              " chunks. No need to rebalance.");
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + nonEmptyChunks + " (non-empty) " +
+              " chunks. No need to rebalance. [desiredChunks=" + chunks, ", rebalanceRatio=" + rebalanceRatio + "]");
       return original_fr;
     }
     Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
@@ -1213,12 +1239,51 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return rebalanced_fr;
   }
 
+  private double rebalanceRatio() {
+    String mode = H2O.getCloudSize() == 1 ? "single" : "multi";
+    String ratioStr = getSysProperty("rebalance.ratio." + mode, "1.0");
+    return Double.parseDouble(ratioStr);
+  }
+
   /**
    * Find desired number of chunks. If fewer, dataset will be rebalanced.
    * @return Lower bound on number of chunks after rebalancing.
    */
   protected int desiredChunks(final Frame original_fr, boolean local) {
-    return Math.min((int) Math.ceil(original_fr.numRows() / 1e3), H2O.NUMCPUS);
+    if (H2O.getCloudSize() > 1 && Boolean.parseBoolean(getSysProperty("rebalance.enableMulti", "false")))
+      return desiredChunkMulti(original_fr);
+    else
+      return desiredChunkSingle(original_fr);
+  }
+
+  // single-node version (original version)
+  private int desiredChunkSingle(final Frame originalFr) {
+    return Math.min((int) Math.ceil(originalFr.numRows() / 1e3), H2O.NUMCPUS);
+  }
+
+  // multi-node version (experimental version)
+  private int desiredChunkMulti(final Frame fr) {
+    for (int type : fr.types()) {
+      if (type != Vec.T_NUM && type != Vec.T_CAT) {
+        Log.warn("Training frame contains columns non-numeric/categorical columns. Using old rebalance logic.");
+        return desiredChunkSingle(fr);
+      }
+    }
+    // estimate size of the Frame on disk as if it was represented in a binary _uncompressed_ format with no overhead
+    long itemCnt = 0;
+    for (Vec v : fr.vecs())
+      itemCnt += v.length() - v.naCnt();
+    final int itemSize = 4; // magic constant size of both Numbers and Categoricals
+    final long size = Math.max(itemCnt * itemSize, fr.byteSize());
+    final int desiredChunkSize = FileVec.calcOptimalChunkSize(size, fr.numCols(),
+            fr.numCols() * itemSize, H2O.NUMCPUS, H2O.getCloudSize(), false, true);
+    final int desiredChunks = (int) ((size / desiredChunkSize) + (size % desiredChunkSize > 0 ? 1 : 0));
+    Log.info("Calculated optimal number of chunks = " + desiredChunks);
+    return desiredChunks;
+  }
+
+  protected String getSysProperty(String name, String def) {
+    return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
   }
 
   public void checkDistributions() {

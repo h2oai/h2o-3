@@ -1,7 +1,5 @@
 package water;
 
-import com.brsanthu.googleanalytics.DefaultRequest;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -320,9 +318,6 @@ final public class H2O {
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
-
     //-----------------------------------------------------------------------------------
     // Debugging
     //-----------------------------------------------------------------------------------
@@ -339,9 +334,6 @@ final public class H2O {
     public boolean quiet = false;
 
     public boolean useUDP = false;
-
-    /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
-    public boolean noLatestCheck = false;
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public int clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 2;
@@ -532,7 +524,6 @@ final public class H2O {
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -594,7 +585,7 @@ final public class H2O {
         trgt.decrypt_tool = args[i];
       }
       else if (s.matches("no_latest_check")) {
-        trgt.noLatestCheck = true;
+        // ignored
       }
       else if(s.matches(("client_disconnect_timeout"))){
         i = s.incrementAndCheck(i, args);
@@ -657,11 +648,6 @@ final public class H2O {
       e.validateArguments();
     }
   }
-
-  // Google analytics performance measurement
-  public static GoogleAnalytics GA;
-  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
-  public static int CLIENT_ID_GA_CUST_DIM = 2;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -1438,19 +1424,17 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());
-    Log.info("Build project version: " + ABV.projectVersion() + " (latest version: " + latestVersion + ")");
     Log.info("Build age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
     if (ABV.isTooOld()) {
-      Log.warn("\n*** Your H2O version is too old! Please download the latest version " + latestVersion + " from http://h2o.ai/download/ ***");
+      Log.warn("\n*** Your H2O version is too old! Please download the latest version from http://h2o.ai/download/ ***");
       Log.warn("");
     }
 
@@ -1476,10 +1460,6 @@ final public class H2O {
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
-  }
-
-  private static void startGAStartupReport() {
-    new GAStartupReportThread().start();
   }
 
   /** Initializes the local node and the local cloud with itself as the only member. */
@@ -1853,8 +1833,8 @@ final public class H2O {
    */
   public static boolean checkUnsupportedJava() {
     String version = System.getProperty("java.version");
-    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9"))) {
-      System.err.println("Only Java 1.7-1.8 and 9 is supported, system version is " + version);
+    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
+      System.err.println("Only Java 1.7-1.8, 9 and 10 is supported, system version is " + version);
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -1927,44 +1907,6 @@ final public class H2O {
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
-    // Register with GA or not
-    long time3 = System.currentTimeMillis();
-    List<String> gaidList;  // fetching this list takes ~100ms
-    if((new File(".h2o_no_collect")).exists()
-            || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
-            || ARGS.ga_opt_out
-            || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
-            || H2O.ABV.isDevVersion()) {
-      GA = null;
-      Log.info("Opted out of sending usage metrics.");
-    } else {
-      try {
-        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
-        DefaultRequest defReq = GA.getDefaultRequest();
-        String gaid = null;
-        if (gaidList.size() > 0) {
-          if (gaidList.size() > 1) Log.debug("More than once resource seen in gaid dir.");
-          for (String str : gaidList) {
-            if (str.matches("........-....-....-....-............")
-                && !str.equals("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")) {
-              gaid = str;
-              break;
-            }
-          }
-        }
-        if (gaid == null) { // No UUID, create one
-          gaid = defReq.clientId();
-          gaid = gaid.replaceFirst("........-","ANONYMOU-");
-        }
-        defReq.customDimension(CLIENT_ID_GA_CUST_DIM, gaid);
-        GA.setDefaultRequest(defReq);
-      } catch(Throwable t) {
-        Log.POST(11, t.toString());
-        StackTraceElement[] stes = t.getStackTrace();
-        for (StackTraceElement ste : stes)
-          Log.POST(11, ste.toString());
-      }
-    }
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2055,8 +1997,6 @@ final public class H2O {
     new HeartBeatThread().start();
 
     long time11 = System.currentTimeMillis();
-    if (GA != null)
-      startGAStartupReport();
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
@@ -2068,8 +2008,7 @@ final public class H2O {
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
     Log.debug("    Get ICE root: " + (time2 - time1) + "ms");
-    Log.debug("    Print log version: " + (time3 - time2) + "ms");
-    Log.debug("    Register GA: " + (time4 - time3) + "ms");
+    Log.debug("    Print log version: " + (time4 - time2) + "ms");
     Log.debug("    Detect network address: " + (time5 - time4) + "ms");
     Log.debug("    Start local node: " + (time6 - time5) + "ms");
     Log.debug("    Extensions onLocalNodeStarted(): " + (time7 - time6) + "ms");
@@ -2099,27 +2038,6 @@ final public class H2O {
   public static void die(String s) {
     Log.fatal(s);
     H2O.exit(-1);
-  }
-
-  public static class GAStartupReportThread extends Thread {
-    final private int sleepMillis = 150 * 1000; //2.5 min
-
-    // Constructor.
-    public GAStartupReportThread() {
-      super("GAStartupReport");        // Only 9 characters get printed in the log.
-      setDaemon(true);
-      setPriority(MAX_PRIORITY - 2);
-    }
-
-    // Class main thread.
-    @Override
-    public void run() {
-      try {
-        Thread.sleep (sleepMillis);
-      }
-      catch (Exception ignore) {};
-      GAUtils.logStartup();
-    }
   }
 
   /**

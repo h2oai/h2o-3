@@ -4,6 +4,8 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -16,7 +18,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -56,6 +61,8 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean convertUnknownCategoricalLevelsToNa;
   private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
+  private final boolean enableLeafAssignment;
+  private final boolean enableGLRMReconstrut;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
 
   /**
    * Observer interface with methods corresponding to errors during the prediction.
@@ -89,6 +96,8 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean convertInvalidNumbersToNa = false;
     private boolean useExtendedOutput = false;
     private ErrorConsumer errorConsumer;
+    private boolean enableLeafAssignment = false;  // default to false
+    private boolean enableGLRMReconstrut = false;
 
     /**
      * Specify model object to wrap.
@@ -116,6 +125,29 @@ public class EasyPredictModelWrapper implements Serializable {
       convertUnknownCategoricalLevelsToNa = value;
       return this;
     }
+
+    public Config setEnableLeafAssignment(boolean val) throws IOException {
+      if (val && (model==null))
+        throw new IOException("enableLeafAssignment cannot be set with null model.  Call setModel() first.");
+      if (val && !(model instanceof SharedTreeMojoModel))
+        throw new IOException("enableLeafAssignment can be set to true only with SharedTreeMojoModel," +
+                " i.e. with GBM or DRF.");
+
+      enableLeafAssignment = val;
+      return this;
+    }
+
+    public Config setEnableGLRMReconstrut(boolean value) throws IOException {
+      if (value && (model==null))
+        throw new IOException("Cannot set enableGLRMReconstruct for a null model.  Call config.setModel() first.");
+
+      if (value && !(model instanceof GlrmMojoModel))
+        throw new IOException("enableGLRMReconstruct shall only be used with GlrmMojoModels.");
+      enableGLRMReconstrut = value;
+      return this;
+    }
+
+    public boolean getEnableGLRMReconstrut() { return enableGLRMReconstrut; }
 
     /**
      * @return Setting for unknown categorical levels handling
@@ -155,6 +187,8 @@ public class EasyPredictModelWrapper implements Serializable {
     public boolean getUseExtendedOutput() {
       return useExtendedOutput;
     }
+
+    public boolean getEnableLeafAssignment() { return enableLeafAssignment;}
 
     /**
      * @return An instance of ErrorConsumer used to build the {@link EasyPredictModelWrapper}. Null if there is no instance.
@@ -197,6 +231,8 @@ public class EasyPredictModelWrapper implements Serializable {
     convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
+    enableLeafAssignment = config.getEnableLeafAssignment();
+    enableGLRMReconstrut = config.getEnableGLRMReconstrut();
 
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
@@ -352,13 +388,17 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.DimReduction, data);
+    double[] preds = preamble(ModelCategory.DimReduction, data);  // preds contains the x factor
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
-
+    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstrut)  // only for verion 1.10 or higher
+      p.reconstructed = ((GlrmMojoModel) m).impute_data(preds, new double[m.nfeatures()], ((GlrmMojoModel) m)._nnums,
+              ((GlrmMojoModel) m)._ncats, ((GlrmMojoModel) m)._permutation, ((GlrmMojoModel) m)._reverse_transform,
+              ((GlrmMojoModel) m)._normMul, ((GlrmMojoModel) m)._normSub, ((GlrmMojoModel) m)._losses,
+              ((GlrmMojoModel) m)._transposed, ((GlrmMojoModel) m)._archetypes_raw, ((GlrmMojoModel) m)._catOffsets,
+              ((GlrmMojoModel) m)._numLevels);
     return p;
-
   }
   /**
    * Lookup word embeddings for a given word (or set of words).
@@ -412,6 +452,8 @@ public class EasyPredictModelWrapper implements Serializable {
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
+    if (enableLeafAssignment)  // only get leaf node assignment if enabled
+      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
@@ -427,6 +469,15 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  public String[] leafNodeAssignment(RowData data) throws PredictException {
+    String[] leafNodeAssignments = null;
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    leafNodeAssignments = ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+
+    return leafNodeAssignments;
+  }
+
   /**
    * Make a prediction on a new data point using a Multinomial model.
    *
@@ -435,9 +486,23 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public MultinomialModelPrediction predictMultinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Multinomial, data);
+    return predictMultinomial(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Multinomial model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public MultinomialModelPrediction predictMultinomial(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Multinomial, data, offset);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
+    if (enableLeafAssignment)
+      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
     p.classProbabilities = new double[m.getNumResponseClasses()];
     p.labelIndex = (int) preds[0];
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
@@ -455,7 +520,19 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public OrdinalModelPrediction predictOrdinal(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Ordinal, data);
+    return predictOrdinal(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Ordinal model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public OrdinalModelPrediction predictOrdinal(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Ordinal, data, offset);
 
     OrdinalModelPrediction p = new OrdinalModelPrediction();
     p.classProbabilities = new double[m.getNumResponseClasses()];
@@ -530,9 +607,23 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+    return predictRegression(data, 0D);
+  }
+
+  /**
+   * Make a prediction on a new data point using a Regression model.
+   *
+   * @param data A new data point.
+   * @param offset Prediction offset
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public RegressionModelPrediction predictRegression(RowData data, double offset) throws PredictException {
+    double[] preds = preamble(ModelCategory.Regression, data, offset);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
+    if (enableLeafAssignment)
+      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
     p.value = preds[0];
 
     return p;

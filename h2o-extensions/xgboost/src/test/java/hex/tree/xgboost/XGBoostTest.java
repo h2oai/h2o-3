@@ -4,17 +4,21 @@ import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.ModelMetricsRegression;
 import hex.SplitFrame;
+import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoReader;
+import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.*;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -22,17 +26,30 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.Log;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
 
+@RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
+
+  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0}")
+  public static Iterable<? extends Object> data() {
+    return Arrays.asList("true", "false");
+  }
+
+  @Parameterized.Parameter
+  public String confJavaScoring;
+
+  @Before
+  public void setupMojoJavaScoring() {
+    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confJavaScoring);
+  }
 
   public static final class FrameMetadata {
     Vec[] vecs;
@@ -64,24 +81,24 @@ public class XGBoostTest extends TestUtil {
 
       if (vecs.length != fm.vecs.length) {
         Log.warn("Training frame vec count has changed from: " +
-                fm.vecs.length + " to: " + fm.vecs.length);
+                vecs.length + " to: " + fm.vecs.length);
         error = true;
       }
-      if (fm.names.length != fm.names.length) {
+      if (names.length != fm.names.length) {
         Log.warn("Training frame vec count has changed from: " +
-                fm.names.length + " to: " + fm.names.length);
+                names.length + " to: " + fm.names.length);
         error = true;
       }
 
       for (int i = 0; i < fm.vecs.length; i++) {
         if (!fm.vecs[i].equals(fm.vecs[i])) {
           Log.warn("Training frame vec number " + i + " has changed keys.  Was: " +
-                  fm.vecs[i] + " , now: " + fm.vecs[i]);
+                  vecs[i] + " , now: " + fm.vecs[i]);
           error = true;
         }
         if (!fm.names[i].equals(fm.names[i])) {
           Log.warn("Training frame vec number " + i + " has changed names.  Was: " +
-                  fm.names[i] + " , now: " + fm.names[i]);
+                  names[i] + " , now: " + fm.names[i]);
           error = true;
         }
         if (checksums[i] != fm.vecs[i].checksum()) {
@@ -363,7 +380,6 @@ public class XGBoostTest extends TestUtil {
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);
       // define special columns
       String response = "RainTomorrow";
 //      String weight = null;
@@ -372,6 +388,7 @@ public class XGBoostTest extends TestUtil {
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
+      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
       DKV.put(tfr);
 
       // split into train/test
@@ -392,8 +409,7 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
-      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
+      Assert.assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
@@ -425,7 +441,6 @@ public class XGBoostTest extends TestUtil {
       Scope.enter();
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
-      FrameMetadata metadataBefore = new FrameMetadata(tfr);
       // define special columns
       String response = "RainTomorrow";
 //      String weight = null;
@@ -434,6 +449,7 @@ public class XGBoostTest extends TestUtil {
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
+      FrameMetadata metadataBefore = new FrameMetadata(tfr);  // make sure it's after removing those columns!
       DKV.put(tfr);
 
       // split into train/test
@@ -456,8 +472,7 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
-      // TODO: this fails; put back: Assert.assertEquals(metadataBefore, metadataAfter);
-      // See: https://0xdata.atlassian.net/browse/PUBDEV-5222
+      Assert.assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
@@ -602,6 +617,68 @@ public class XGBoostTest extends TestUtil {
         model.delete();
       }
     }
+  }
+
+  @Test
+  public void sparseMatrixDetectionTest() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      // Automatic detection should compute sparsity and decide
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = tfr._key;
+      parms._ignored_columns = new String[]{"ID","DPROS", "DCAPS", "PSA", "VOL", "RACE", "CAPSULE"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertTrue(model._output._sparse);
+
+    } finally {
+      Scope.exit();
+      if (tfr!=null) tfr.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
+  public void denseMatrixDetectionTest() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      // Automatic detection should compute sparsity and decide
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = tfr._key;
+      parms._ignored_columns = new String[]{"ID","DPROS", "DCAPS", "PSA", "VOL", "RACE", "CAPSULE"};
+
+      // GLEASON used as predictor variable, numeric variable, dense
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertFalse(model._output._sparse);
+
+    } finally {
+      Scope.exit();
+      if (tfr!=null) tfr.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
   }
 
   @Test
@@ -873,6 +950,9 @@ public class XGBoostTest extends TestUtil {
         Assert.assertNotNull("Validation metrics are not null", model._output._validation_metrics);
         Assert.assertEquals("Initial model output metrics contains 2 model metrics",
                             2, model._output.getModelMetrics().length);
+        for(String name : model._output._names){
+          Assert.assertNotEquals(parms._ignored_columns[0], name);
+        }
 
         model.score(testFrame).remove();
         Assert.assertEquals("After scoring on test data, model output metrics contains 2 model metrics",
@@ -895,6 +975,121 @@ public class XGBoostTest extends TestUtil {
           model.delete();
         }
       }
+  }
+
+  @Test
+  public void testCrossValidation() {
+    Scope.enter();
+    XGBoostModel denseModel = null;
+    XGBoostModel sparseModel = null;
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 42;
+      parms._ntrees = 5;
+      parms._weights_column = "CAPSULE";
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.dense;
+
+      // Dense model utilizes fold column zero values to calculate precise memory requirements
+      denseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(denseModel);
+
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.sparse;
+      sparseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(sparseModel);
+
+
+      Log.info(denseModel);
+    } finally {
+      if(denseModel != null) denseModel.deleteCrossValidationModels();
+      if(sparseModel != null) sparseModel.deleteCrossValidationModels();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testSparsityDetection(){
+    Scope.enter();
+    XGBoostModel sparseModel = null;
+    XGBoostModel denseModel = null;
+    try {
+      Frame sparseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 10, 0));
+      Frame denseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 2, 0));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = sparseFrame._key;
+      parms._response_column = "C1";
+      parms._seed = 42;
+      parms._ntrees = 1;
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+
+      sparseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(sparseModel);
+      assertTrue(sparseModel._output._sparse);
+
+      parms._train = denseFrame._key;
+      parms._response_column = "C1";
+      parms._seed = 42;
+      parms._ntrees = 1;
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+
+      // Dense model utilizes fold column zero values to calculate precise memory requirements
+      denseModel = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      assertNotNull(denseModel);
+      assertFalse(denseModel._output._sparse);
+
+      Log.info(sparseModel);
+    } finally {
+      if(sparseModel != null) sparseModel.deleteCrossValidationModels();
+      if(denseModel != null) denseModel.deleteCrossValidationModels();
+      Scope.exit();
+    }
+  }
+
+
+
+  @Test
+  public void testMojoBoosterDump() throws IOException {
+    Assume.assumeTrue(! XGBoostMojoReader.useJavaScoring());
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
+      Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 42;
+      parms._ntrees = 7;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Log.info(model);
+
+      XGBoostMojoModel mojo = getMojo(model);
+      assertTrue(mojo instanceof XGBoostNativeMojoModel);
+
+      String[] dump = ((XGBoostNativeMojoModel) mojo).getBoosterDump(false, "text");
+      assertEquals(parms._ntrees, dump.length);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static XGBoostMojoModel getMojo(XGBoostModel model) throws IOException {
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    model.getMojo().writeTo(os);
+    os.close();
+    MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+            new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+    return (XGBoostMojoModel) MojoModel.load(mojoReaderBackend);
   }
 
 }

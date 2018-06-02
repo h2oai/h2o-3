@@ -109,8 +109,7 @@ final class ExternalFrameWriterBackend {
         }
 
         // fill remaining zeros
-        int lastIdx = indices.length == 0 ? 0 : indices[indices.length - 1];
-        for(int j = lastIdx; j< maxVecSize; j++) {
+        for(int j = zeroSectionStart; j < maxVecSize; j++) {
           store(nchnk[startPos + j], 0);
         }
       } else {
@@ -119,7 +118,7 @@ final class ExternalFrameWriterBackend {
           throw new RuntimeException("Values of dense Vector can't be null!");
         }
         // fill values
-        for(int j = 0; j< values.length; j++){
+        for(int j = 0; j < values.length; j++){
           store(nchnk[startPos + j], values[j]);
         }
 

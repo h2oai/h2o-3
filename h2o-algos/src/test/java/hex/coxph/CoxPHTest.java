@@ -27,6 +27,7 @@ public class CoxPHTest extends TestUtil {
       fr = parse_test_file("smalldata/coxph_test/heart.csv");
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = "start";
       parms._stop_column     = "stop";
@@ -63,6 +64,7 @@ public class CoxPHTest extends TestUtil {
       Frame fr = Scope.track(parse_test_file("smalldata/coxph_test/heart.csv"));
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = "start";
       parms._stop_column     = "stop";
@@ -76,7 +78,7 @@ public class CoxPHTest extends TestUtil {
 
       assertNotNull(model);
       Frame linearPredictors = Scope.track(model.score(fr));
-
+      assertEquals(fr.numRows(), linearPredictors.numRows());
     } finally {
       Scope.exit();
     }
@@ -90,6 +92,7 @@ public class CoxPHTest extends TestUtil {
       fr = parse_test_file("smalldata/coxph_test/heart.csv");
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = "start";
       parms._stop_column     = "stop";
@@ -127,6 +130,7 @@ public class CoxPHTest extends TestUtil {
       fr = parse_test_file("smalldata/coxph_test/heart.csv");
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = null;
       parms._stop_column     = "stop";
@@ -164,6 +168,7 @@ public class CoxPHTest extends TestUtil {
       fr = parse_test_file("smalldata/coxph_test/heart.csv");
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = null;
       parms._stop_column     = "stop";
@@ -218,6 +223,7 @@ public class CoxPHTest extends TestUtil {
       fr.add(ext);
 
       CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
       parms._train           = fr._key;
       parms._start_column    = "start";
       parms._stop_column     = "stop";

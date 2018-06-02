@@ -31,4 +31,4 @@ check.test_KDD_trees <- function(){
     
 }
 
-doTest("GBM Test: KDD tress", check.test_KDD_trees)
+doTest("GBM Test: KDD trees", check.test_KDD_trees)
