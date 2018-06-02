@@ -669,7 +669,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric, other_metric),
+              Leaderboard.colHeaders("mean_per_class_error", other_metric),
               Leaderboard.colTypesMultinomial,
               Leaderboard.colFormatsMultinomial,
               "#");
@@ -685,7 +685,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric, other_metric),
+              Leaderboard.colHeaders("mean_residual_deviance", other_metric),
               Leaderboard.colTypesRegression,
               Leaderboard.colFormatsRegression,
               "#");
