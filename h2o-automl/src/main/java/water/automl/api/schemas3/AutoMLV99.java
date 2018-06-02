@@ -24,9 +24,6 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="ID of the actual leaderboard frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 leaderboard_frame;
 
-  @API(help="AutoML build control", direction=API.Direction.OUTPUT)
-  public AutoMLBuildSpec buildSpec;
-
   /**
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
@@ -52,8 +49,6 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     if (null == autoML) return this;
 
     this.project_name = autoML.projectName();
-
-    this.buildSpec = autoML.getBuildSpec();
 
     if (null != autoML._key) {
       this.automl_id = new AutoML.AutoMLKeyV3(autoML._key);
