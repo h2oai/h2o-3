@@ -1157,7 +1157,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (expensive) {
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
-            msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
         } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
           final double defval;
@@ -1172,7 +1171,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
           if (isResponse || isWeights)
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
-          else
+          else if (!isFold)
             msgs.add(str);
         }
       }
