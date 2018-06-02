@@ -871,12 +871,12 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
 compareStringFrames <- function(frame1, frame2, prob=0.5) {
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
   dframe1 <- as.data.frame(frame1)
-  cnames1 <- names(dframe1)
   dframe2 <- as.data.frame(frame2)
+  cnames1 <- names(dframe1)
+  cnames2 <- names(dframe2)
   for (colInd in range(1, ncol(frame1))) {
-    tempName = cnames1[colInd]
-    temp1 <- dframe1[tempName]
-    temp2 <- dframe2[tempName]
+    temp1 <- dframe1[cnames1[colInd]]
+    temp2 <- dframe2[cnames2[colInd]]
     for (rowInd in range(1,nrow(frame1))) {
       if (runif(1,0,1) < prob)
         expect_true(temp1[rowInd,1]==temp2[rowInd,1], info=paste0("Errow at row ", rowInd, ". Frame is value is ", temp1[rowInd,1], " , but Frame 2 value is ", temp2[rowInd, 1]))
