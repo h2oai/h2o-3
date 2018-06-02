@@ -145,7 +145,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
       this.sort_metric = "auc";
     }
     this.sort_metric = sort_metric;
-    String[] metrics = new String[] { "auc", "logloss", "mean_per_class_error", "rmse", "mse" };
+    String[] metrics = new String[] { "auc", "logloss", "mean_per_class_error", "mean_residual_deviance", "rmse",
+                      "mse", "mae", "rmsle" };
     this.other_metrics = removeItemFromArray(metrics, this.sort_metric);
     this.sort_decreasing = true;
   }
@@ -652,6 +653,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
         "sort_metrics needs to be always not-null for non-empty array!";
+
+    if(isBinomial) {
+      other_metric =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+    } else if (isMultinomial) {
+      other_metric =  new String[] {"logloss", "rmse", "mse"};
+    } else {
+      other_metric = new String[] {"rmse", "mse", "mae","rmsle"};
+    }
 
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
