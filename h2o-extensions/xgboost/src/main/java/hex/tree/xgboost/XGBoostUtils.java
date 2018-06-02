@@ -689,7 +689,7 @@ public class XGBoostUtils {
         int rwRow = 0;
         // fill data for DMatrix
         for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            List sparseCol = col[i];
+            List<SparseItem> sparseCol = col[i];
             colHeaders[0][i] = nz;
 
             enlargeTables(data, rowIndex, sparseCol.size(), currentRow, currentCol);
@@ -700,7 +700,7 @@ public class XGBoostUtils {
                     currentRow++;
                 }
 
-                SparseItem si = (SparseItem)sparseCol.get(j);
+                SparseItem si = sparseCol.get(j);
                 rowIndex[currentRow][currentCol] = si.pos;
                 data[currentRow][currentCol] = (float)si.val;
                 assert(si.val != 0);
