@@ -176,7 +176,7 @@ h2o.automl <- function(x, y, training_frame,
   }
   
   if (!is.null(sort_metric)) {
-    build_control$sort_metric <- sort_metric
+    input_spec$sort_metric <- sort_metric
   }
 
   if (!is.null(exclude_algos)) {

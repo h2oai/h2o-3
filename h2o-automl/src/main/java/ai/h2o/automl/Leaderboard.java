@@ -85,7 +85,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Metric used to sort this leaderboard.
    */
-  private static String sort_metric;
+  private String sort_metric;
 
   /**
    * Other metrics reported in leaderboard
@@ -142,13 +142,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
 
     if (sort_metric == null) {
-      this.sort_metric = "auc";
+      sort_metric = "auc";
     }
     this.sort_metric = sort_metric;
     String[] metrics = new String[] { "auc", "logloss", "mean_per_class_error", "mean_residual_deviance", "rmse",
                       "mse", "mae", "rmsle" };
     this.other_metrics = removeItemFromArray(metrics, this.sort_metric);
-    this.sort_decreasing = true;
   }
 
   public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
@@ -156,6 +155,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null != exists) {
       exists.userFeedback = userFeedback;
       exists.leaderboardFrame = leaderboardFrame;
+      if (sort_metric != null) {
+        exists.sort_metric = sort_metric;
+        if (sort_metric.equals("auc")) {
+          exists.sort_decreasing = true;
+        } else {
+          exists.sort_decreasing = false;
+        }
+      }
       if (null != leaderboardFrame) {
         exists.leaderboardFrameChecksum = leaderboardFrame.checksum();
       } else {

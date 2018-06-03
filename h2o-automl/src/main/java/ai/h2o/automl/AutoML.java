@@ -103,6 +103,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private String[] skipAlgosList = new String[0];
 
+  private String sort_metric;
 
   // TODO: UGH: this should be dynamic, and it's easy to make it so
   // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
@@ -151,7 +152,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, buildSpec.build_control.sort_metric);
+    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, this.sort_metric);
 
     this.jobs = new ArrayList<>();
     this.tempFrames = new ArrayList<>();
@@ -258,6 +259,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+    this.sort_metric = buildSpec.input_spec.sort_metric;
 
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
