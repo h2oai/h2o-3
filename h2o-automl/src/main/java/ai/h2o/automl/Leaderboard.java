@@ -140,14 +140,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     } else {
       this.leaderboardFrameChecksum = 0;
     }
-
-    if (sort_metric == null) {
-      sort_metric = "auc";
-    }
     this.sort_metric = sort_metric;
-    String[] metrics = new String[] { "auc", "logloss", "mean_per_class_error", "mean_residual_deviance", "rmse",
-                      "mse", "mae", "rmsle" };
-    this.other_metrics = removeItemFromArray(metrics, this.sort_metric);
   }
 
   public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame, String sort_metric) {
@@ -212,10 +205,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public void setDefaultMetricAndDirection(Model m) {
     if (m._output.isBinomialClassifier()) { //Binomial
       String[] binomialMetrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
-      if(sort_metric == null) {
-        sort_metric = "auc";
+      if(this.sort_metric == null) {
+        this.sort_metric = "auc";
       }
-      if (sort_metric.equals("auc")) {
+      if (this.sort_metric.equals("auc")) {
         setMetricAndDirection(sort_metric, binomialMetrics, true);
       } else {
         setMetricAndDirection(sort_metric, binomialMetrics, false);
@@ -223,15 +216,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
     else if (m._output.isClassifier()) { //Multinomial
       String[] multinomialMetrics = new String[]{"logloss", "rmse", "mse"};
-      if(sort_metric == null) {
-        sort_metric = "mean_per_class_error";
+      if(this.sort_metric == null) {
+        this.sort_metric = "mean_per_class_error";
       }
       setMetricAndDirection(sort_metric, multinomialMetrics, false);
     }
     else  { //Regression
       String[] regressionMetrics = new String[]{"rmse", "mse", "mae", "rmsle"};
-      if(sort_metric == null) {
-        sort_metric = "mean_residual_deviance";
+      if(this.sort_metric == null) {
+        this.sort_metric = "mean_residual_deviance";
       }
       setMetricAndDirection(sort_metric, regressionMetrics, false);
     }
@@ -607,6 +600,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colHeaders(String metric, String[] other_metric) {
     //return new String[] {"model ID", "timestamp", metric.toString()};
+    if(metric == null) {
+      if (isRegression) {
+        metric = "mean_residual_deviance";
+      } else if (isBinomial) {
+        metric = "auc";
+      } else {
+        metric = "mean_per_class_error";
+      }
+    }
     String[] headers = ArrayUtils.append(new String[]{"model_id",metric.toString()},other_metric);
     return headers;
   }
