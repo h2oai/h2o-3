@@ -25,7 +25,7 @@ function finish {
 gradlewPID=$!
 i=1
 checkPassed=
-while [ ${i} -le 60 ]; do
+while [ ${i} -le 600 ]; do
     ((i = i + 1))
     testRunnerPID=$(jps | grep H2OTestRunner | awk '{print $1}')
     linesCount=$(echo "${testRunnerPID}" | wc -l)
@@ -36,7 +36,7 @@ while [ ${i} -le 60 ]; do
             echo "H2OTestRunner PID is ${testRunnerPID}"
             echo "Checking nvidia-smi output"
             j=1
-            while [ ${j} -le 10 ]; do
+            while [ ${j} -le 100 ]; do
                 ((j = j + 1))
                 nvidia-smi
                 if [ "`nvidia-smi | grep java | grep ${testRunnerPID}`" ]; then
