@@ -137,7 +137,48 @@ The examples below describe how to start H2O and create a model using R and Pyth
          }
        }
 
-  Note that not all MOJOs will return a ``classProbabilities`` field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
+  In addition, we have added the capability in GBM and DRF to return the leaf node assignment as well in the mojo.  However, this may slow down the mojo as it adds computation.  Here is the Java code to enable leaf node assignment:
+     .. code:: java
+
+         import java.io.*;
+         import hex.genmodel.easy.RowData;
+         import hex.genmodel.easy.EasyPredictModelWrapper;
+         import hex.genmodel.easy.prediction.*;
+         import hex.genmodel.MojoModel;
+
+         public class main {
+           public static void main(String[] args) throws Exception {
+             EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip")).setEnableLeafAssignment(true);
+             EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+             RowData row = new RowData();
+             row.put("AGE", "68");
+             row.put("RACE", "2");
+             row.put("DCAPS", "2");
+             row.put("VOL", "0");
+             row.put("GLEASON", "6");
+
+             BinomialModelPrediction p = model.predictBinomial(row);
+             System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+             System.out.print("Class probabilities: ");
+             for (int i = 0; i < p.classProbabilities.length; i++) {
+               if (i > 0) {
+             System.out.print(",");
+               }
+               System.out.print(p.classProbabilities[i]);
+             }
+
+             System.out.println("Leaf node assighnments: ");
+             for (int i=0; i < p.leafNodeAssignments; i++) {
+               if (i > 0) {
+               System.out.print.(p.leafNodeAssignments[i]);
+               }
+             }
+             System.out.println("");
+           }
+         }
+
+  If you have a GLRM mojo and you want to generate the ``reconstructed`` field, you will change the setEnableLeafAssignment(true) to setEnableGLRMReconstrut(true) in the code above.  In addition, you will be printing out the fields p.dimensions and p.reconstructed instead.  Note that not all MOJOs will return just a ``classProbabilities`` field. For GBM and DRF, you can also choose to generate the field ``leafNodeAssignments`` which will show the decision path through each tree.  For GLRM, you can choose generate the field ``reconstructed`` in addition to the field ``dimensions``.  Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
 
  3. Compile in terminal window 2.
 
@@ -161,6 +202,13 @@ The examples below describe how to start H2O and create a model using R and Pyth
 
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
+
+    If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
+    .. code:: bash
+
+	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
+	    Class probabilities: 0.8059929056296662,0.19400709437033375
+	    Leaf node assighnments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
 
 Viewing a MOJO Model
 ''''''''''''''''''''
