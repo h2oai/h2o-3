@@ -23,3 +23,4 @@ Refer to the following topics:
    cloud-integration/ibm-dsx
    cloud-integration/nimbix
    cloud-integration/gcs
+   cloud-integration/google-compute

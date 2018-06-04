@@ -19,7 +19,6 @@ public class AutoMLTest extends TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
-      autoMLBuildSpec.build_control.loss = "AUTO";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
 
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);

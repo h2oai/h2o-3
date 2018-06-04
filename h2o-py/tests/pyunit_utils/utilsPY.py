@@ -160,7 +160,8 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-def mojo_predict(model, tmpdir, mojoname, get_leaf_node_assignment=False):
+
+def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False):
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
     It is assumed that the input data set is saved as in.csv in tmpdir directory.
@@ -168,6 +169,7 @@ def mojo_predict(model, tmpdir, mojoname, get_leaf_node_assignment=False):
     :param model: h2o model where you want to use to perform prediction
     :param tmpdir: directory where your mojo zip files are stired
     :param mojoname: name of your mojo zip file.
+    :param glrmReconstruct: True to return reconstructed dataset, else return the x factor.
     :return: the h2o prediction frame and the mojo prediction frame
     """
     newTest = h2o.import_file(os.path.join(tmpdir, 'in.csv'), header=1)   # Make sure h2o and mojo use same in.csv
@@ -178,6 +180,7 @@ def mojo_predict(model, tmpdir, mojoname, get_leaf_node_assignment=False):
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
     genJarDir = str.split(str(tmpdir),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
+
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
                 "-Xmx12g", "-XX:MaxPermSize=2g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
                 "--input", os.path.join(tmpdir, 'in.csv'), "--output",
@@ -185,11 +188,17 @@ def mojo_predict(model, tmpdir, mojoname, get_leaf_node_assignment=False):
     if get_leaf_node_assignment:
         java_cmd.append("--leafNodeAssignment")
         predict_h2o = model.predict_leaf_node_assignment(newTest)
+
+    if glrmReconstruct:  # used for GLRM to grab the x coefficients (factors) instead of the predicted values
+        java_cmd.append("--glrmReconstruct")
+
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
     pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
-#    os.remove(mojoZip)
-    return predict_h2o, pred_mojo
+    if glrmReconstruct or ('glrm' not in model.algo):
+        return predict_h2o, pred_mojo
+    else:
+        return newTest.frame_id, pred_mojo
 
 # perform pojo predict.  Frame containing pojo predict is returned.
 def pojo_predict(model, tmpdir, pojoname):

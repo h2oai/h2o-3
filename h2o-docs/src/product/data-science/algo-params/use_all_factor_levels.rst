@@ -1,13 +1,13 @@
 ``use_all_factor_levels``
 -------------------------
 
-- Available in: Deep Learning, PCA
+- Available in: Deep Learning, PCA, CoxPH
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-This option allows you to specify whether to use all factor levels in the possible set of predictors. This option is disabled by default, so the first factor level is skipped. If you enable this option, then the PCA model ignores the first factor level of each categorical column when expanding into indicator columns. Note also that if you enable this option, then sufficient regularization is required. 
+This option allows you to specify whether to use all factor levels in the possible set of predictors. This option is disabled by default, so the first factor level is skipped. If you enable this option, then the model ignores the first factor level of each categorical column when expanding into indicator columns. Note also that if you enable this option, then sufficient regularization is required. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

@@ -506,8 +506,13 @@ public final class Gram extends Iced<Gram> {
     InPlaceCholesky d = InPlaceCholesky.decompose_2(arr, 10, p);
     fchol.setSPD(d.isSPD());
     arr = d.getL();
-    for( int i = 0; i < arr.length; ++i )
-      System.arraycopy(arr[i], 0, fchol._xx[i], sparseN, i + 1);
+    for( int i = 0; i < arr.length; ++i ) {
+      // See PUBDEV-5585: we use a manual array copy instead of System.arraycopy because of behavior on Java 10
+      // Used to be: System.arraycopy(arr[i], 0, fchol._xx[i], sparseN, i + 1);
+      for (int j = 0; j < i + 1; j++)
+        fchol._xx[i][sparseN + j] = arr[i][j];
+    }
+
     return chol;
   }
 

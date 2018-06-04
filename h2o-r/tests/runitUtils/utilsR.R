@@ -862,7 +862,7 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
         if (is.nan(temp1[rowInd,1])) {
           expect_true(is.nan(temp2[rowInd,1]), info=paste0("Errow at row ", rowInd, ". Frame is value is nan but Frame 2 value is ", temp2[rowInd, 1]))
         } else {
-          expect_true(abs(temp1[rowInd,1]-temp2[rowInd,1])< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd, 1], ". Frame 2 value ", temp2[rowInd, 1]))
+          expect_true((abs(temp1[rowInd,1]-temp2[rowInd,1])/max(1,abs(temp1[rowInd,1]), abs(temp2[rowInd, 1])))< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd, 1], ". Frame 2 value ", temp2[rowInd, 1]))
         }
     }
   }
@@ -871,12 +871,12 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
 compareStringFrames <- function(frame1, frame2, prob=0.5) {
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
   dframe1 <- as.data.frame(frame1)
-  cnames1 <- names(dframe1)
   dframe2 <- as.data.frame(frame2)
+  cnames1 <- names(dframe1)
+  cnames2 <- names(dframe2)
   for (colInd in range(1, ncol(frame1))) {
-    tempName = cnames1[colInd]
-    temp1 <- dframe1[tempName]
-    temp2 <- dframe2[tempName]
+    temp1 <- dframe1[cnames1[colInd]]
+    temp2 <- dframe2[cnames2[colInd]]
     for (rowInd in range(1,nrow(frame1))) {
       if (runif(1,0,1) < prob)
         expect_true(temp1[rowInd,1]==temp2[rowInd,1], info=paste0("Errow at row ", rowInd, ". Frame is value is ", temp1[rowInd,1], " , but Frame 2 value is ", temp2[rowInd, 1]))
@@ -933,7 +933,24 @@ buildModelSaveMojoGLM <- function(params) {
   return(list("model"=model, "dirName"=tmpdir_name))
 }
 
-mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE) {
+buildModelSaveMojoGLRM <- function(params) {
+  model <- do.call("h2o.glrm", params)
+  model_key <- model@model_id
+  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  if (.Platform$OS.type == "windows") {
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+    shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+  } else {
+    safeSystem(sprintf("rm -fr %s", tmpdir_name))
+    safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+  }
+  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+
+  return(list("model"=model, "dirName"=tmpdir_name))
+}
+
+mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=FALSE, glrmReconstruct=FALSE) {
   newTest <- h2o.importFile(filename)
   predictions1 <- h2o.predict(model, newTest)
 
@@ -968,10 +985,18 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
     cmd<-paste(cmd, "--leafNodeAssignment")
     predictions1 = h2o.predict_leaf_node_assignment(model, newTest)
   }
-
+  
+  if (glrmReconstruct) {
+    cmd <- paste(cmd, "--glrmReconstruct", sep=" ")
+  }
+  
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
   '/'), header=T)
 
-  return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))
+  if (glrmReconstruct || !(model@algorithm=="glrm")) {
+    return(list("h2oPredict"=predictions1, "mojoPredict"=predictions2))
+  } else {
+    return(list("frameId"=h2o.getId(newTest), "mojoPredict"=predictions2))
+  }
 }

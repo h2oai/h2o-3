@@ -331,7 +331,16 @@ public class h2odriver extends Configured implements Tool {
     assert client;
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
-      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Client Mode).");
+    }
+  }
+
+  private void reportProxyReady(String proxyUrl) throws Exception {
+    assert proxy;
+    if (clusterReadyFileName != null) {
+      URL url = new URL(proxyUrl);
+      createClusterReadyFile(url.getHost(), url.getPort());
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Proxy Mode).");
     }
   }
 
@@ -1299,7 +1308,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
-    args = ArrayUtils.append(getSystemArgs(), args); // prepend "system-level" args to user specified args
+    args = ArrayUtils.append(args, getSystemArgs()); // append "system-level" args to user specified args
     String[] otherArgs = parseArgs(args);
     validateArgs();
 
@@ -1662,6 +1671,7 @@ public class h2odriver extends Configured implements Tool {
 
     if (proxy) {
       proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl());
+      reportProxyReady(proxyUrl);
     }
 
     if (! (client || proxy))

@@ -1,6 +1,5 @@
 package water;
 
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -25,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Embedded Jetty instance inside H2O.
