@@ -1,21 +1,25 @@
 package water;
 
-
-import org.eclipse.jetty.jaas.JAASLoginService;
+import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import water.util.Log;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -138,8 +142,22 @@ public abstract class AbstractHTTPD {
       constraint.setName("auth");
       constraint.setAuthenticate(true);
 
+      // Configure role stuff (to be disregarded).  We are ignoring roles, and only going off the user name.
+      //
+      //   Jetty 8 and prior.
+      //
+      //     Jetty 8 requires the security.setStrict(false) and ANY_ROLE.
+      security.setStrict(false);
+      constraint.setRoles(new String[]{Constraint.ANY_ROLE});
 
-      constraint.setRoles(new String[]{Constraint.ANY_AUTH});
+      //   Jetty 9 and later.
+      //
+      //     Jetty 9 and later uses a different servlet spec, and ANY_AUTH gives the same behavior
+      //     for that API version as ANY_ROLE did previously.  This required some low-level debugging
+      //     to figure out, so I'm documenting it here.
+      //     Jetty 9 did not require security.setStrict(false).
+      //
+      // constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
       ConstraintMapping mapping = new ConstraintMapping();
       mapping.setPathSpec("/*"); // Lock down all API calls
@@ -180,18 +198,14 @@ public abstract class AbstractHTTPD {
 
   protected abstract RuntimeException failEx(String message);
 
-  protected ConnectionFactory makeHttpConnectionFactory() {
-    HttpConfiguration http_config = new HttpConfiguration();
-    http_config.setSendServerVersion(false);
-    return new HttpConnectionFactory(http_config);
-  }
-
   protected void startHttp() throws Exception {
     _server = new Server();
-    ServerConnector httpConnector = new ServerConnector(_server, makeHttpConnectionFactory());
-    httpConnector.setHost(_ip);
-    httpConnector.setPort(_port);
-    createServer(httpConnector);
+
+    Connector connector=new SocketConnector();
+    connector.setHost(_ip);
+    connector.setPort(_port);
+
+    createServer(connector);
   }
 
   /**
@@ -204,13 +218,15 @@ public abstract class AbstractHTTPD {
 
     SslContextFactory sslContextFactory = new SslContextFactory(_args.jks);
     sslContextFactory.setKeyStorePassword(_args.jks_pass);
-    ServerConnector httpsConnector = new ServerConnector(_server, sslContextFactory, makeHttpConnectionFactory());
+
+    SslSocketConnector httpsConnector = new SslSocketConnector(sslContextFactory);
+
     if (getIp() != null) {
       httpsConnector.setHost(getIp());
     }
     httpsConnector.setPort(getPort());
-    createServer(httpsConnector);
 
+    createServer(httpsConnector);
   }
 
   /**
@@ -253,7 +269,7 @@ public abstract class AbstractHTTPD {
   public class AuthenticationHandler extends AbstractHandler {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+            throws IOException, ServletException {
 
       if (!_args.ldap_login && !_args.kerberos_login && !_args.pam_login) return;
 
