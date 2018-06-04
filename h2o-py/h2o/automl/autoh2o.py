@@ -210,7 +210,7 @@ class H2OAutoML(object):
     # Training AutoML
     #---------------------------------------------------------------------------
     def train(self, x = None, y = None, training_frame = None, fold_column = None, 
-              weights_column = None, validation_frame = None, leaderboard_frame = None):
+              weights_column = None, validation_frame = None, leaderboard_frame = None, sort_metric = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
         with various algorithms and tracks their performance in a leaderboard. At any point 
@@ -230,6 +230,11 @@ class H2OAutoML(object):
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
             rankings instead.
+        :param sort_metric: Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
+        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
+        mean_per_class_error, logloss, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
+        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for
+        regression.
 
         :returns: An H2OAutoML object.
 
@@ -284,6 +289,10 @@ class H2OAutoML(object):
         if leaderboard_frame is not None:
             assert_is_type(training_frame, H2OFrame)
             input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
+
+        if sort_metric is not None:
+            assert_is_type(sort_metric, str)
+            input_spec['sort_metric'] = sort_metric.lower()
 
         if x is not None:
             assert_is_type(x,list)

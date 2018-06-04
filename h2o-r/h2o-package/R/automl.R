@@ -38,7 +38,7 @@
 #' @param sort_metric Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
 #'        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
 #'        mean_per_class_error, logloss, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
-#'        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for 
+#'        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for
 #'        regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
@@ -176,7 +176,7 @@ h2o.automl <- function(x, y, training_frame,
   }
   
   if (!is.null(sort_metric)) {
-    input_spec$sort_metric <- sort_metric
+    input_spec$sort_metric <- tolower(sort_metric)
   }
 
   if (!is.null(exclude_algos)) {
