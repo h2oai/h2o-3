@@ -1037,17 +1037,15 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
 h2o.coef <- function(object) {
-  if (is(object, "H2OModel")) {
-    if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@allparameters$family != "multinomial" && object@allparameters$family != "ordinal") {
-      coefs <- object@model$coefficients_table$coefficients
-      names(coefs) <- object@model$coefficients_table$names
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
+    if (object@algorithm == "glm" && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+      object@model$coefficients_table
     } else {
-      coefs <- object@model$coefficients_table
+      structure(object@model$coefficients_table$coefficients,
+                names = object@model$coefficients_table$names)
     }
-    return(coefs)
   } else {
-    stop("Can only extract coefficients from GLMs")
+    stop("Can only extract coefficients from GLM and CoxPH models")
   }  
 }
 
@@ -1057,15 +1055,13 @@ h2o.coef <- function(object) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
 h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel")) {
-    if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@parameters$family != "multinomial"  && object@parameters$family != "ordinal") {
-      coefs <- object@model$coefficients_table$standardized_coefficients
-      names(coefs) <- object@model$coefficients_table$names
+  if (is(object, "H2OModel") && object@algorithm == "glm") {
+    if (object@allparameters$family %in% c("multinomial", "ordinal")) {
+      object@model$coefficients_table
     } else {
-      coefs <- object@model$coefficients_table
+      structure(object@model$coefficients_table$standardized_coefficients,
+                names = object@model$coefficients_table$names)
     }
-    return(coefs)
   } else {
     stop("Can only extract coefficients from GLMs")
   }
