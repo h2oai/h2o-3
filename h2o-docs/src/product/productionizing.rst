@@ -178,7 +178,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
            }
          }
 
-  If you have a GLRM mojo and you want to generate the ``reconstructed`` field, you will change the setEnableLeafAssignment(true) to setEnableGLRMReconstrut(true) in the code above.  In addition, you will be printing out the fields p.dimensions and p.reconstructed instead.  Note that not all MOJOs will return just a ``classProbabilities`` field. For GBM and DRF, you can also choose to generate the field ``leafNodeAssignments`` which will show the decision path through each tree.  For GLRM, you can choose generate the field ``reconstructed`` in addition to the field ``dimensions``.  Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
+  Note that not all MOJOs will return just a ``classProbabilities`` field. For GBM and DRF, you can also choose to generate the field ``leafNodeAssignments`` which will show the decision path through each tree.  Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
 
  3. Compile in terminal window 2.
 
