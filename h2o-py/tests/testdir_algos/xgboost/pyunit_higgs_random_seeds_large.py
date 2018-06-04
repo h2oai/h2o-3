@@ -11,7 +11,9 @@ from tests import pyunit_utils
 
 '''
 The goal of this test is to compare h2oxgboost runs with different random seeds and the results should be repeatable
-with the same random seeds.
+when run with the same random seeds.
+
+The same comparison is done to native XGBoost to make sure its results are repeatable with the same random seeds.
 '''
 def random_seeds_test():
     assert H2OXGBoostEstimator.available() is True
@@ -24,8 +26,7 @@ def random_seeds_test():
     myX = list(higgs_h2o_train.names)
     y = "response"
     myX.remove(y)
-
-    seed2 = random.randint(1, 1073741824) # seed cannot be long, must be int size
+    # run with old same random seed
     h2oParams = {"ntrees":100, "max_depth":10, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                  "min_rows" : 5, "score_tree_interval": 100, "seed":-12345}
     print("Model 1 trainged with old seed {0}.".format(h2oParams['seed']))
@@ -34,7 +35,8 @@ def random_seeds_test():
     # gather, print and save performance numbers for h2o model
     h2oModel1.train(x=myX, y=y, training_frame=higgs_h2o_train)
     h2oPredict1 = h2oModel1.predict(higgs_h2o_test)
-
+    # run with new random seed
+    seed2 = random.randint(1, 1073741824) # seed cannot be long, must be int size
     h2oParams2 = {"ntrees":100, "max_depth":10, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                   "min_rows" : 5, "score_tree_interval": 100, "seed":seed2}
     print("Model 2 trainged with new seed {0}.".format(h2oParams2['seed']))
@@ -43,8 +45,8 @@ def random_seeds_test():
     h2oModel2.train(x=myX, y=y, training_frame=higgs_h2o_train)
     h2oPredict2 = h2oModel2.predict(higgs_h2o_test)
 
-    # Result comparison in terms of prediction output.  In theory, h2oModel1 and h2oModel2 should be the same
-    # h2oModel3 will be different from the other two models
+    # Result comparison in terms of prediction output.  In theory, h2oModel1 should be the same as saved run
+    # h2oModel2 will be different from old runs
     logLossSeed_12345=0.0003883838698249251   # seeds store from previous runs
     predSeed_12345 = [5.136374738867744e-07, 1.60223244165536e-05, 1.631723171158228e-05, 0.00022351904772222042]
     #
