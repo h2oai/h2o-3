@@ -756,7 +756,7 @@ setMethod("summary", "H2OGrid",
 #' This class represents an H2OFrame object
 #'
 #' @export
-setClass("H2OFrame")
+setClass("H2OFrame", contains = "environment")
 
 #'
 #' The H2OAutoML class
