@@ -1308,7 +1308,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
-    args = ArrayUtils.append(getSystemArgs(), args); // prepend "system-level" args to user specified args
+    args = ArrayUtils.append(args, getSystemArgs()); // append "system-level" args to user specified args
     String[] otherArgs = parseArgs(args);
     validateArgs();
 
