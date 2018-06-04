@@ -28,7 +28,7 @@ What is a MOJO?
 
 A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
+**Note**: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
 
 Building a MOJO
 '''''''''''''''
@@ -137,7 +137,10 @@ The examples below describe how to start H2O and create a model using R and Pyth
          }
        }
 
-  In addition, we have added the capability in GBM and DRF to return the leaf node assignment as well in the mojo.  However, this may slow down the mojo as it adds computation.  Here is the Java code to enable leaf node assignment:
+  GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction. You can also view the hex.genmodel.easy.prediction classes in the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
+
+  In addition to classProbabilities, in GBM and DRF you can choose to generate the ``leafNodeAssignments`` field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+
      .. code:: java
 
          import java.io.*;
@@ -168,7 +171,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
                System.out.print(p.classProbabilities[i]);
              }
 
-             System.out.println("Leaf node assighnments: ");
+             System.out.println("Leaf node assignments: ");
              for (int i=0; i < p.leafNodeAssignments; i++) {
                if (i > 0) {
                System.out.print.(p.leafNodeAssignments[i]);
@@ -178,7 +181,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
            }
          }
 
-  If you have a GLRM mojo and you want to generate the ``reconstructed`` field, you will change the setEnableLeafAssignment(true) to setEnableGLRMReconstrut(true) in the code above.  In addition, you will be printing out the fields p.dimensions and p.reconstructed instead.  Note that not all MOJOs will return just a ``classProbabilities`` field. For GBM and DRF, you can also choose to generate the field ``leafNodeAssignments`` which will show the decision path through each tree.  For GLRM, you can choose generate the field ``reconstructed`` in addition to the field ``dimensions``.  Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction.
+  Similarly, in GLRM, you can choose to generate the ``reconstructed`` and ``dimensions`` fields. To do this, replace ``setEnableLeafAssignment(true)`` with ``setEnableGLRMReconstruct(true)`` in the example above. This will print out the ``p.dimensions`` and ``p.reconstructed`` fields. 
 
  3. Compile in terminal window 2.
 
@@ -196,19 +199,20 @@ The examples below describe how to start H2O and create a model using R and Pyth
        # Windows users
        $ java -cp .;h2o-genmodel.jar main  
 
-   The following output displays:
+  The following output displays:
 
    .. code:: bash
 
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
 
-    If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
+  If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
+
     .. code:: bash
 
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
-	    Leaf node assighnments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
+	    Leaf node assignments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
 
 Viewing a MOJO Model
 ''''''''''''''''''''
@@ -284,7 +288,7 @@ POJO Quick Start
 
 This section describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__ for more information, including packages.
 
-**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the :ref:`pojo_faq` section below. POJOs are also not supported for XGBoost, GLRM, Stacked Ensembles, or AutoML models. 
+**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the :ref:`pojo_faq` section below. POJOs are also not supported for XGBoost, GLRM, or Stacked Ensembles models. 
 
 What is a POJO?
 '''''''''''''''
