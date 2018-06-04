@@ -144,6 +144,18 @@ public class ConfusionMatrix extends Iced {
     double fn = _cm[1][0];
     return tp / (tp + fn);
   }
+
+  public double recall(final int index) {
+    if(tooLarge())throw new UnsupportedOperationException("recall cannot be computed: too many classes");
+    double tp = _cm[index][index];
+    double fn = 0;
+    for (int i = 0; i < _cm.length; i++) {
+      if (i != index) {
+        fn += _cm[i][index];
+      }
+    }
+    return tp / (tp + fn);
+  }
   /**
    * The percentage of positive predictions that are correct.
    * @return Precision
@@ -153,6 +165,18 @@ public class ConfusionMatrix extends Iced {
     if(tooLarge())throw new UnsupportedOperationException("precision cannot be computed: too many classes");
     double tp = _cm[1][1];
     double fp = _cm[0][1];
+    return tp / (tp + fp);
+  }
+
+  public double precision(final int index) {
+    if(tooLarge())throw new UnsupportedOperationException("precision cannot be computed: too many classes");
+    double tp = _cm[index][index];
+    double fp = 0;
+    for (int i = 0; i < _cm.length; i++) {
+      if (i != index) {
+        fp += _cm[index][i];
+      }
+    }
     return tp / (tp + fp);
   }
   /**
@@ -262,12 +286,14 @@ public class ConfusionMatrix extends Iced {
     String pdomain[] = createConfusionMatrixHeader(preds, _domain);
     assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
 
-    String[] rowHeader = Arrays.copyOf(adomain,adomain.length+1);
-    rowHeader[adomain.length] = "Totals";
+    String[] rowHeader = Arrays.copyOf(adomain,adomain.length+2);
+    rowHeader[adomain.length - 1] = "Totals";
+    rowHeader[adomain.length] = "Precision";
 
-    String[] colHeader = Arrays.copyOf(pdomain,pdomain.length+2);
-    colHeader[colHeader.length-2] = "Error";
-    colHeader[colHeader.length-1] = "Rate";
+    String[] colHeader = Arrays.copyOf(pdomain,pdomain.length+3);
+    colHeader[colHeader.length - 3] = "Error";
+    colHeader[colHeader.length - 2] = "Rate";
+    colHeader[colHeader.length - 1] = "Recall";
 
     String[] colType = new String[colHeader.length];
     String[] colFormat = new String[colHeader.length];
@@ -275,9 +301,11 @@ public class ConfusionMatrix extends Iced {
       colType[i] = isInt ? "long":"double";
       colFormat[i] = isInt ? "%d":"%.2f";
     }
-    colType[colFormat.length-2]   = "double";
-    colFormat[colFormat.length-2] = "%.4f";
-    colType[colFormat.length-1]   = "string";
+    colType[colFormat.length-3]   = "double";
+    colFormat[colFormat.length-3] = "%.4f";
+    colType[colFormat.length-2]   = "string";
+    colType[colFormat.length-1]   = "double";
+    colFormat[colFormat.length-1] = "%.4f";
 
     // pass 1: compute width of last column
     double terr = 0;
@@ -323,23 +351,26 @@ public class ConfusionMatrix extends Iced {
       double err = acts[a] - correct;
       table.set(a, pdomain.length, err / acts[a]);
       table.set(a, pdomain.length + 1,
-              isInt ? String.format("%,d / %,d", (long)err, (long)acts[a]):
-                      String.format("%.4f / %.4f",     err,       acts[a])
+              isInt ? String.format("%,d/%,d", (long)err, (long)acts[a]):
+                      String.format("%.4f/%.4f",     err,       acts[a])
       );
+      table.set(a, pdomain.length + 2, String.format("%.2f", recall(a)));
     }
 
-    // Last row of CM
+    // Totals and Precision rows of CM
     for (int p = 0; p < pdomain.length; p++) {
       if (pdomain[p] == null) continue;
-      if (isInt)
-        table.set(adomain.length, p, (long)preds[p]);
-      else
+      if (isInt) {
+        table.set(adomain.length, p, (long) preds[p]);
+      } else {
         table.set(adomain.length, p, preds[p]);
+      }
+      table.set(adomain.length + 1, p, String.format("%.2f", precision(p)));
     }
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
     table.set(adomain.length, pdomain.length + 1,
-            isInt ? String.format("%,d / %,d", (long)terr, (long)nrows):
-                    String.format("%.2f / %.2f",     terr,       nrows));
+            isInt ? String.format("%,d/%,d", (long)terr, (long)nrows):
+                    String.format("%.2f/%.2f",     terr,       nrows));
 
     return table;
   }
