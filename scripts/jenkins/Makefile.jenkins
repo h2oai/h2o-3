@@ -244,7 +244,7 @@ test-junit-10-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-10
 
 test-junit-10:
-	./gradlew test -x h2o-scala_2.11:test h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
