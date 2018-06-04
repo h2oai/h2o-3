@@ -334,7 +334,8 @@ class ModelMetricsHandler extends Handler {
   }
 
   /**
-   * Score a frame with the given model and return the metrics AND the prediction frame.
+   * Score a frame with the given model and return a Job that output a frame with predictions.
+   * Do *not* calculate ModelMetrics.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobV3 predictAsync(int version, final ModelMetricsListSchemaV3 s) {
@@ -371,7 +372,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
-          parms._model.score(parms._frame, parms._predictions_name, j, true, CFuncRef.from(s.custom_metric_func));
+          parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         }
         else if (s.deep_features_hidden_layer_name != null){
           Frame predictions = null;
