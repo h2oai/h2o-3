@@ -316,6 +316,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
         if (aModel._output.isBinomialClassifier()) { // Binomial case
           isBinomial = true;
+          isRegression = false;
+          isMultinomial = false;
           updating.auc = getOtherMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -323,12 +325,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else if (aModel._output.isMultinomialClassifier()) { //Multinomial Case
           isMultinomial = true;
+          isBinomial = false;
+          isRegression = false;
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else { //Regression Case
           isRegression = true;
+          isBinomial = false;
+          isMultinomial = false;
           updating.mean_residual_deviance= getOtherMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -674,39 +680,63 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
-    if (sort_metric == null && length == 0) {
-      // empty TwoDimTable
-      return new TwoDimTable(tableHeader,
-              "no models in this leaderboard",
-              rowHeaders,
-              Leaderboard.colHeaders(sort_metric, other_metric),
-              Leaderboard.colTypesBinomial,
-              Leaderboard.colFormatsBinomial,
-              "-");
-    } else if (isMultinomial){ //Multinomial
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("mean_per_class_error", other_metric),
-              Leaderboard.colTypesMultinomial,
-              Leaderboard.colFormatsMultinomial,
-              "#");
+    if (isMultinomial){ //Multinomial
+      if (length == 0) {
+        // empty TwoDimTable
+        return new TwoDimTable(tableHeader,
+                "no models in this leaderboard",
+                rowHeaders,
+                Leaderboard.colHeaders(sort_metric, other_metric),
+                Leaderboard.colTypesMultinomial,
+                Leaderboard.colFormatsMultinomial,
+                "-");
+      } else {
+        return new TwoDimTable(tableHeader,
+                "models sorted in order of " + sort_metric + ", best first",
+                rowHeaders,
+                Leaderboard.colHeaders("mean_per_class_error", other_metric),
+                Leaderboard.colTypesMultinomial,
+                Leaderboard.colFormatsMultinomial,
+                "#");
+      }
     } else if(isBinomial){ //Binomial
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("auc", other_metric),
-              Leaderboard.colTypesBinomial,
-              Leaderboard.colFormatsBinomial,
-              "#");
+      if (length == 0) {
+        // empty TwoDimTable
+        return new TwoDimTable(tableHeader,
+                "no models in this leaderboard",
+                rowHeaders,
+                Leaderboard.colHeaders(sort_metric, other_metric),
+                Leaderboard.colTypesBinomial,
+                Leaderboard.colFormatsBinomial,
+                "-");
+      } else {
+        return new TwoDimTable(tableHeader,
+                "models sorted in order of " + sort_metric + ", best first",
+                rowHeaders,
+                Leaderboard.colHeaders("auc", other_metric),
+                Leaderboard.colTypesBinomial,
+                Leaderboard.colFormatsBinomial,
+                "#");
+      }
     } else { //Regression
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("mean_residual_deviance", other_metric),
-              Leaderboard.colTypesRegression,
-              Leaderboard.colFormatsRegression,
-              "#");
+      if (length == 0) {
+        // empty TwoDimTable
+        return new TwoDimTable(tableHeader,
+                "no models in this leaderboard",
+                rowHeaders,
+                Leaderboard.colHeaders(sort_metric, other_metric),
+                Leaderboard.colTypesRegression,
+                Leaderboard.colFormatsRegression,
+                "-");
+      } else {
+        return new TwoDimTable(tableHeader,
+                "models sorted in order of " + sort_metric + ", best first",
+                rowHeaders,
+                Leaderboard.colHeaders("mean_residual_deviance", other_metric),
+                Leaderboard.colTypesRegression,
+                Leaderboard.colFormatsRegression,
+                "#");
+      }
     }
   }
 
