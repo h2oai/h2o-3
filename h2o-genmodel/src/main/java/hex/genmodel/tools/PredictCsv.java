@@ -31,7 +31,7 @@ public class PredictCsv {
   public char separator = ',';   // separator used to delimite input datasets
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
   public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
-  boolean returnGLRMReconstrut = false; // for GLRM, return x factor by default unless set this to true
+  boolean returnGLRMReconstruct = false; // for GLRM, return x factor by default unless set this to true
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -172,7 +172,7 @@ public class PredictCsv {
         int datawidth;
         String head;
         String[] colnames =  this.model.m.getNames();;
-        if (returnGLRMReconstrut) {
+        if (returnGLRMReconstruct) {
           datawidth = ((GlrmMojoModel) model.m)._permutation.length;
           head = "reconstr_";
         } else {
@@ -182,7 +182,7 @@ public class PredictCsv {
 
         int lastData = datawidth-1;
         for (int index = 0; index < datawidth; index++) {  // add the numerical column names
-          String temp = returnGLRMReconstrut ? head+colnames[index] : head+(index+1);
+          String temp = returnGLRMReconstruct ? head+colnames[index] : head+(index+1);
           output.write(temp);
 
           if (index < lastData )
@@ -291,7 +291,7 @@ public class PredictCsv {
             DimReductionModelPrediction p = model.predictDimReduction(row);
             double[] out;
 
-            if (returnGLRMReconstrut) {
+            if (returnGLRMReconstruct) {
               out = p.reconstructed;  // reconstructed A
             } else {
               out = p.dimensions; // x factors
@@ -352,7 +352,7 @@ public class PredictCsv {
     if (getTreePath)
       config.setEnableLeafAssignment(true);
 
-    if (returnGLRMReconstrut)
+    if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
     model = new EasyPredictModelWrapper(config);
   }
@@ -364,7 +364,7 @@ public class PredictCsv {
     if (getTreePath)
       config.setEnableLeafAssignment(true);
 
-    if (returnGLRMReconstrut)
+    if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
 
     model = new EasyPredictModelWrapper(config);
@@ -400,7 +400,7 @@ public class PredictCsv {
         if (s.equals("--decimal"))
           useDecimalOutput = true;
         else if (s.equals("--glrmReconstruct"))
-          returnGLRMReconstrut =true;
+          returnGLRMReconstruct =true;
         else if (s.equals("--setConvertInvalidNum"))
           setInvNumNA=true;
         else if (s.equals("--leafNodeAssignment"))
