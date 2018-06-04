@@ -181,9 +181,6 @@ The examples below describe how to start H2O and create a model using R and Pyth
            }
          }
 
-
-  Similarly, in GLRM, you can choose to generate the ``reconstructed`` and ``dimensions`` fields. To do this, replace ``setEnableLeafAssignment(true)`` with ``setEnableGLRMReconstruct(true)`` in the example above. This will print out the ``p.dimensions`` and ``p.reconstructed`` fields. 
-
  3. Compile in terminal window 2.
 
    .. code:: bash
