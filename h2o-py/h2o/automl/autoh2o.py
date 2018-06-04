@@ -230,11 +230,11 @@ class H2OAutoML(object):
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
             rankings instead.
-        :param sort_metric: Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
-        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
-        mean_per_class_error, logloss, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
-        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for
-        regression.
+        :param sort_metric Metric to sort leaderboard. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", & "MSE".
+            For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
+            "mean_per_class_error", "logloss", "RMSE", & "MSE". Default is NULL. If set to NULL, the AutoML backend will
+            choose "AUC" for binomial classification, "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for
+            regression.
 
         :returns: An H2OAutoML object.
 

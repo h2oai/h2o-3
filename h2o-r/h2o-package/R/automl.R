@@ -35,10 +35,10 @@
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
-#' @param sort_metric Metric to sort leaderboard. For binomial classification choose between auc, logloss, mean_per_class_error, rmse, & mse.
-#'        For regression choose between mean_residual_deviance, rmse, mse, mae, and rmsle. For multinomial classification choose between
-#'        mean_per_class_error, logloss, rmse, & mse. Default is NULL. If set to NULL, the AutoML backend will
-#'        choose auc for binomial classification, mean_per_class_error for multinomial classification, and mean_residual_deviance for
+#' @param sort_metric Metric to sort leaderboard. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", & "MSE".
+#'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
+#'        "mean_per_class_error", "logloss", "RMSE", & "MSE". Default is NULL. If set to NULL, the AutoML backend will
+#'        choose "AUC" for binomial classification, "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for
 #'        regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
