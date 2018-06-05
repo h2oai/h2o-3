@@ -20,7 +20,7 @@ H2O currently supports the following file types:
 **Notes**: 
  
  - ORC is available only if H2O is running as a Hadoop job. 
- - Users can also import Hive files that are saved in ORC format. 
+ - Users can also import Hive files that are saved in ORC format (experimental).
  - When doing a parallel data import into a cluster: 
 
    - If the data is an unzipped csv file, H2O can do offset reads, so each node in your cluster can be directly reading its part of the csv file in parallel. 
@@ -281,12 +281,14 @@ The ``import_sql_select`` function accepts the following parameters:
 Using the Hive 2 JDBC Driver
 ''''''''''''''''''''''''''''
 
-H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O with the JDBC driver for your Hive version.
+H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O with the JDBC driver for your Hive version. 
 
 **Notes**: 
 
 - H2O can only load data from Hive v2 due to a limited implementation of the JDBC interface by Hive in earlier versions.
-- Hive2 support in H2O is not yet suitable for large datasets. 
+- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets. 
+
+A demo showing how to ingest data from Hive through the Hive v2 JDBC driver is available `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
 
 **Retrieve the Hive JDBC Client Jar**
 

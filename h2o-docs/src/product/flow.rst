@@ -776,6 +776,7 @@ Available options vary depending on model type.
 In the **Build a Model** cell, select an algorithm from the drop-down menu. (Refer to the `Data Science Algorithms <data-science.html>`_ section for information about the available algorithms.) Available algorithms include:
 
  - **Aggregator**: Create an Aggregator model.
+ - **CoxPH**: Create a Cox Proportional Hazards model.
  - **Deep Learning**: Create a Deep Learning model.
  - **Distributed Random Forest**: Create a distributed Random Forest model.
  - **Gradient Boosting Machine**: Create a Gradient Boosted model
@@ -808,7 +809,7 @@ types.
 
 -  **nfolds**: (GLM, GBM, DL, DRF) Specify the number of folds for cross-validation.
 
--  **response_column**: (Required for GBM, DRF, Deep Learning, GLM, Naïve-Bayes, Stacked Ensembles, AutoML, XGBoost) Select the column to use as the dependent variable.
+-  **response_column**: (Required for GBM, DRF, Deep Learning, GLM, Naïve-Bayes, Stacked Ensembles, AutoML, XGBoost, CoxPH) Select the column to use as the dependent variable.
 
 -  **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
@@ -873,7 +874,7 @@ types.
 
 -  **user_points**: (K-Means) For K-Means, specify the number of initial cluster centers.
 
--  **max_iterations**: (K-Means, PCA, GLM) Specify the number of training iterations.
+-  **max_iterations**: (K-Means, PCA, GLM, CoxPH) Specify the number of training iterations.
 
 -  **init**: (K-Means) Select the initialization mode. The options are Furthest, PlusPlus, Random, or User.
 
@@ -915,6 +916,10 @@ types.
 
 -  **metalearner_params**: (Stacked Ensembles) A dictionary/list of parameters to be passed in along with the metalearner_algorithm. If this is not specified, then default values for the specified algorithm will be used.
 
+-  **start_column**: (CoxPH) (Optional) The name of an integer column in the **source** data set representing the start time. If supplied, the value of the **start_column** must be strictly less than the **stop_column** in each row.
+
+-  **stop_column**: (CoxPH) The name of an integer column in the **source** data set representing the stop time.
+
 
 **Advanced Options**
 
@@ -922,9 +927,9 @@ types.
 
 -  **fold_column**: (GLM, GBM, DL, DRF, K-Means, XGBoost) Select the column that contains the cross-validation fold index assignment per observation.
 
--  **offset_column**: (GLM, DRF, GBM, DL, XGBoost) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset_column**: (GLM, DRF, GBM, DL, XGBoost, CoxPH) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights_column**: (GLM, DL, DRF, GBM, XGBoost) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  **weights_column**: (GLM, DL, DRF, GBM, XGBoost, CoxPH) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -963,7 +968,6 @@ types.
     - lift_top_group
     - misclassification
     - mean_per_class_error
-    - r2
 
 -  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
@@ -1069,6 +1073,13 @@ types.
 
 -  **keep_levelone_frame**: (Stacked Ensembles) Keep the level one data frame that's constructed for the metalearning step. This option is disabled by default.
 
+-  **stratify_by**: (CoxPH) A list of columns to use for stratification.
+
+-  **ties**: (CoxPH) The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
+
+-  **init**: (CoxPH) (Optional) Initial values for the coefficients in the model. This value defaults to 0.
+
+-  **lre_min**: (CoxPH) A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
 
 
 **Expert Options**
@@ -1191,9 +1202,9 @@ types.
 
 -  **max_active_predictors**: (GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors.
 
--  **interactions**: (GLM) Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
+-  **interactions**: (GLM, CoxPH) Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
--  **interaction_pairs** (GLM) When defining interactions, use this to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
+-  **interaction_pairs** (GLM, CoxPH) When defining interactions, use this to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
 --------------
 
