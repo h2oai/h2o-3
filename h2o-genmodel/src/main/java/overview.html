@@ -58,7 +58,7 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 
 <p></p>
 
-<b>Note:</b> POJOs are not supported for XGBoost, GLRM, Stacked Ensembles, or AutoML models.
+<b>Note:</b> POJOs are not supported for XGBoost, GLRM, or Stacked Ensembles models.
 
 <p></p>
 <!-- ============================================================ -->
@@ -311,7 +311,7 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's currently available 
 POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed
 for scoring in real time.
 <p></p>
-<b>Note</b>: MOJOs are supported for Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec,
+<b>Note</b>: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec,
 and XGBoost algorithms.
 
 <h3><u>Benefit of MOJOs over POJOs</u></h3>
@@ -455,10 +455,54 @@ tree built in the model. Note that each tree file is saved as a binary file type
         }
         </pre>
 
-        Note that not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each
+        GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each
         algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at:
         <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction" target="_blank">
             https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction</a>.
+
+        <p />
+
+        In addition to classProbabilities, in GBM and DRF you can also choose to generate the leafNodeAssignments field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+
+        <pre>
+         import java.io.*;
+         import hex.genmodel.easy.RowData;
+         import hex.genmodel.easy.EasyPredictModelWrapper;
+         import hex.genmodel.easy.prediction.*;
+         import hex.genmodel.MojoModel;
+
+         public class main {
+           public static void main(String[] args) throws Exception {
+             EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip")).setEnableLeafAssignment(true);
+             EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+             RowData row = new RowData();
+             row.put("AGE", "68");
+             row.put("RACE", "2");
+             row.put("DCAPS", "2");
+             row.put("VOL", "0");
+             row.put("GLEASON", "6");
+
+             BinomialModelPrediction p = model.predictBinomial(row);
+             System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+             System.out.print("Class probabilities: ");
+             for (int i = 0; i < p.classProbabilities.length; i++) {
+               if (i > 0) {
+             System.out.print(",");
+               }
+               System.out.print(p.classProbabilities[i]);
+             }
+
+             System.out.println("Leaf node assighnments: ");
+             for (int i=0; i < p.leafNodeAssignments; i++) {
+               if (i > 0) {
+               System.out.print.(p.leafNodeAssignments[i]);
+               }
+             }
+             System.out.println("");
+           }
+         }
+        </pre>    
         <p></p>
     </li>
     <li>
