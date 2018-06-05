@@ -22,7 +22,7 @@
 #' @param ties Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.
 #' @param init Coefficient starting value. Defaults to 0.
 #' @param lre_min Minimum log-relative error. Defaults to 9.
-#' @param iter_max Maximum number of iterations. Defaults to 20.
+#' @param max_iterations Maximum number of iterations. Defaults to 20.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
@@ -40,7 +40,7 @@ h2o.coxph <- function(x, event_column, training_frame,
                       ties = c("efron", "breslow"),
                       init = 0,
                       lre_min = 9,
-                      iter_max = 20,
+                      max_iterations = 20,
                       interactions = NULL,
                       interaction_pairs = NULL,
                       interactions_only = NULL,
@@ -102,8 +102,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$init <- init
   if (!missing(lre_min))
     parms$lre_min <- lre_min
-  if (!missing(iter_max))
-    parms$iter_max <- iter_max
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
   if (!missing(interactions))
     parms$interactions <- interactions
   if (!missing(interaction_pairs))

@@ -96,8 +96,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     if (Double.isNaN(_parms._lre_min) || _parms._lre_min <= 0)
       error("lre_min", "lre_min must be a positive number");
 
-    if (_parms._iter_max < 1)
-      error("iter_max", "iter_max must be a positive integer");
+    if (_parms._max_iterations < 1)
+      error("max_iterations", "max_iterations must be a positive integer");
   }
 
   static class DiscretizeTimeTask extends MRTask<DiscretizeTimeTask> {
@@ -514,7 +514,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model.delete_and_lock(_job);
 
         initStats(model, dinfo, time);
-        ScoringHistory sc = new ScoringHistory(_parms._iter_max + 1);
+        ScoringHistory sc = new ScoringHistory(_parms._max_iterations + 1);
 
         final int n_offsets = (_offset == null) ? 0 : 1;
         final int n_coef = dinfo.fullN() - n_offsets;
@@ -532,7 +532,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Timer iterTimer = null;
         CoxPHTask coxMR = null;
         _job.update(1, "Running iteration 0");
-        for (int i = 0; i <= model._parms._iter_max; ++i) {
+        for (int i = 0; i <= model._parms._max_iterations; ++i) {
           iterTimer = new Timer();
           model._output._iter = i;
 
@@ -580,8 +580,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
             newCoef[j] = oldCoef[j] - step[j];
 
           model.update(_job);
-          _job.update(1, "Iteration = " + i + "/" + model._parms._iter_max + ", logLik = " + logLik);
-          if (i != model._parms._iter_max)
+          _job.update(1, "Iteration = " + i + "/" + model._parms._max_iterations + ", logLik = " + logLik);
+          if (i != model._parms._max_iterations)
             Log.info("CoxPH Iteration: iter=" + i + ", " + iterTimer.toString());
         }
 
