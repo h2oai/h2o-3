@@ -62,6 +62,8 @@ automl.leaderboard.test <- function() {
       expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
     }
 
+# Below fails bc there are no models in the leaderboard, but AutoML needs to check the models to get the
+# model type (binomial, multinomial, or regression)
 #    # Exclude all the algorithms, check for empty leaderboard
 #    fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
 #    fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
@@ -70,7 +72,6 @@ automl.leaderboard.test <- function() {
 #                       project_name = "r_lb_test_aml4",
 #                       exclude_algos = exclude_algos)
 #    aml4@leaderboard
-#    #TODO Fix below. Colnames seem to have changed
 #    #expect_equal(names(aml4@leaderboard), c("model_id","auc","logloss", "mean_per_class_error", "rmse", "mse"))
 #    # TO DO: for empty leaderboards there's a dummy row for some reason.
 #    expect_equal(nrow(aml4@leaderboard), 1)
