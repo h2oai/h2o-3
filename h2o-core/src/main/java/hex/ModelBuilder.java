@@ -904,6 +904,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in
+
     if( _parms._train == null ) {
       if (expensive)
         error("_train", "Missing training frame");
@@ -1134,6 +1135,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
       if (_parms._stopping_tolerance != _parms.defaultStoppingTolerance())
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
+    } else if (_parms._stopping_rounds > 0) {
+      if (_parms._stopping_metric.equals(ScoreKeeper.StoppingMetric.r2))
+        error("_stopping_metric", "r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
     } else {
