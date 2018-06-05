@@ -78,11 +78,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public double[] auc = new double[0];
   public double[] mean_per_class_error = new double[0];
 
-  private static boolean isBinomial = false;
-  private static boolean isMultinomial = false;
-  private static boolean isRegression = false;
-  private static boolean isEmptyLeaderboard = false;
-
   /**
    * Metric used to sort this leaderboard.
    */
@@ -222,22 +217,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
       }
       setMetricAndDirection(sort_metric, multinomialMetrics, false);
     }
-    else if(m._output.isSupervised())  { //Regression
+    else { //Regression
       String[] regressionMetrics = new String[]{"rmse", "mse", "mae", "rmsle"};
       if(this.sort_metric == null) {
         this.sort_metric = "mean_residual_deviance";
       }
       setMetricAndDirection(sort_metric, regressionMetrics, false);
-    } else {
-      String[] binomialMetrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
-      if(this.sort_metric == null) {
-        this.sort_metric = "auc";
-      }
-      if (this.sort_metric.equals("auc")) {
-        setMetricAndDirection(sort_metric, binomialMetrics, true);
-      } else {
-        setMetricAndDirection(sort_metric, binomialMetrics, false);
-      }
     }
   }
 
@@ -326,45 +311,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
         updating.sort_metrics = getSortMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
 
         if (aModel._output.isBinomialClassifier()) { // Binomial case
-          isBinomial = true;
-          isRegression = false;
-          isMultinomial = false;
-          isEmptyLeaderboard = false;
           updating.auc = getOtherMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else if (aModel._output.isMultinomialClassifier()) { //Multinomial Case
-          isMultinomial = true;
-          isBinomial = false;
-          isRegression = false;
-          isEmptyLeaderboard = false;
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        } else if (aModel._output.isSupervised()) { //Regression Case
-          isRegression = true;
-          isBinomial = false;
-          isMultinomial = false;
-          isEmptyLeaderboard = false;
+        } else { //Regression Case
           updating.mean_residual_deviance= getOtherMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mae = getOtherMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmsle = getOtherMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        } else {
-          isEmptyLeaderboard = true;
-          isRegression = false;
-          isBinomial = false;
-          isMultinomial = false;
-          updating.auc = getOtherMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-
         }
 
         // If we're updated leader let this know so that it can notify the user
@@ -383,29 +345,23 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.models = updated.models;
     this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
     this.sort_metrics = updated.sort_metrics;
-    if (isBinomial) { // Binomial case
+    if (updated.getLeader()._output.isBinomialClassifier()) { // Binomial case
       this.auc = updated.auc;
       this.logloss = updated.logloss;
       this.mean_per_class_error = updated.mean_per_class_error;
       this.rmse = updated.rmse;
       this.mse = updated.mse;
-    } else if (isRegression) { // Regression case
+    } else if (updated.getLeader()._output.isMultinomialClassifier()) { // Multinomial case
+      this.mean_per_class_error = updated.mean_per_class_error;
+      this.logloss = updated.logloss;
+      this.rmse = updated.rmse;
+      this.mse = updated.mse;
+    } else { // Regression case
       this.mean_residual_deviance = updated.mean_residual_deviance;
       this.rmse = updated.rmse;
       this.mse = updated.mse;
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
-    } else if (isMultinomial) { // Multinomial case
-      this.mean_per_class_error = updated.mean_per_class_error;
-      this.logloss = updated.logloss;
-      this.rmse = updated.rmse;
-      this.mse = updated.mse;
-    } else {
-      this.auc = updated.auc;
-      this.logloss = updated.logloss;
-      this.mean_per_class_error = updated.mean_per_class_error;
-      this.rmse = updated.rmse;
-      this.mse = updated.mse;
     }
 
     // always
@@ -635,17 +591,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   protected static final String[] colHeaders(String metric, String[] other_metric) {
     //return new String[] {"model ID", "timestamp", metric.toString()};
-    if(metric == null) {
-      if (isRegression) {
-        metric = "mean_residual_deviance";
-      } else if (isBinomial) {
-        metric = "auc";
-      } else if(isMultinomial) {
-        metric = "mean_per_class_error";
-      } else if (isEmptyLeaderboard) {
-        metric = "auc";
-      }
-    }
     String[] headers = ArrayUtils.append(new String[]{"model_id",metric.toString()},other_metric);
     return headers;
   }
@@ -696,89 +641,51 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%.6f",
           "%.6f"};
 
-  public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
+  public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, int length, Model[] models) {
     assert sort_metric != null || (sort_metric == null && length == 0) :
         "sort_metrics needs to be always not-null for non-empty array!";
-
-    if(isBinomial) {
-      other_metric =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
-    } else if  (isMultinomial) {
-      other_metric =  new String[] {"logloss", "rmse", "mse"};
-    } else if (isRegression) {
-      other_metric = new String[] {"rmse", "mse", "mae","rmsle"};
-    } else {
-      other_metric =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
-    }
 
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
-    if (isMultinomial){ //Multinomial
-      if (length == 0) {
-        // empty TwoDimTable
-        return new TwoDimTable(tableHeader,
-                "no models in this leaderboard",
-                rowHeaders,
-                Leaderboard.colHeaders("mean_per_class_error", other_metric),
-                Leaderboard.colTypesMultinomial,
-                Leaderboard.colFormatsMultinomial,
-                "-");
-      } else {
-        return new TwoDimTable(tableHeader,
-                "models sorted in order of " + sort_metric + ", best first",
-                rowHeaders,
-                Leaderboard.colHeaders("mean_per_class_error", other_metric),
-                Leaderboard.colTypesMultinomial,
-                Leaderboard.colFormatsMultinomial,
-                "#");
-      }
-    } else if(isBinomial){ //Binomial
-      if (length == 0) {
-        // empty TwoDimTable
-        return new TwoDimTable(tableHeader,
-                "no models in this leaderboard",
-                rowHeaders,
-                Leaderboard.colHeaders("auc", other_metric),
-                Leaderboard.colTypesBinomial,
-                Leaderboard.colFormatsBinomial,
-                "-");
-      } else {
-        return new TwoDimTable(tableHeader,
-                "models sorted in order of " + sort_metric + ", best first",
-                rowHeaders,
-                Leaderboard.colHeaders("auc", other_metric),
-                Leaderboard.colTypesBinomial,
-                Leaderboard.colFormatsBinomial,
-                "#");
-      }
-    } else if (isRegression) { //Regression
-      if (length == 0) {
-        // empty TwoDimTable
-        return new TwoDimTable(tableHeader,
-                "no models in this leaderboard",
-                rowHeaders,
-                Leaderboard.colHeaders("mean_residual_deviance", other_metric),
-                Leaderboard.colTypesRegression,
-                Leaderboard.colFormatsRegression,
-                "-");
-      } else {
-        return new TwoDimTable(tableHeader,
-                "models sorted in order of " + sort_metric + ", best first",
-                rowHeaders,
-                Leaderboard.colHeaders("mean_residual_deviance", other_metric),
-                Leaderboard.colTypesRegression,
-                Leaderboard.colFormatsRegression,
-                "#");
-      }
-    } else {
+    if (sort_metric == null && length == 0) {
       // empty TwoDimTable
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
               rowHeaders,
-              Leaderboard.colHeaders("auc", other_metric),
+              Leaderboard.colHeaders(sort_metric, other_metrics),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "-");
+    }
+    if(models[0]._output.isBinomialClassifier()) {
+      //other_metrics =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+      return new TwoDimTable(tableHeader,
+              "models sorted in order of " + sort_metric + ", best first",
+              rowHeaders,
+              Leaderboard.colHeaders("auc", other_metrics),
+              Leaderboard.colTypesBinomial,
+              Leaderboard.colFormatsBinomial,
+              "#");
+    } else if  (models[0]._output.isMultinomialClassifier()) {
+      //other_metrics =  new String[] {"logloss", "rmse", "mse"};
+      return new TwoDimTable(tableHeader,
+              "models sorted in order of " + sort_metric + ", best first",
+              rowHeaders,
+              Leaderboard.colHeaders("mean_per_class_error", other_metrics),
+              Leaderboard.colTypesMultinomial,
+              Leaderboard.colFormatsMultinomial,
+              "#");
+
+    } else {
+      //other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
+      return new TwoDimTable(tableHeader,
+              "models sorted in order of " + sort_metric + ", best first",
+              rowHeaders,
+              Leaderboard.colHeaders("mean_residual_deviance", other_metrics),
+              Leaderboard.colTypesRegression,
+              Leaderboard.colFormatsRegression,
+              "#");
     }
   }
 
@@ -825,7 +732,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
     //long[] timestamps = getTimestamps(models);
     String[] modelIDsFormatted = new String[models.length];
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models.length);
+    if(models[0]._output.isBinomialClassifier()) {
+      this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+    } else if (models[0]._output.isMultinomialClassifier()) {
+      this.other_metrics = new String[] {"logloss", "rmse", "mse"};
+    } else {
+      this.other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
+    }
+
+    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models.length, models);
 
     // %-s doesn't work in TwoDimTable.toString(), so fake it here:
     int maxModelIdLen = -1;
@@ -843,14 +758,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     for (int i = 0; i < models.length; i++)
       //addTwoDimTableRow(table, i, modelIDsFormatted, timestamps, sort_metrics);
-      if(isMultinomial){ //Multinomial case
+      if(models[i]._output.isMultinomialClassifier()){ //Multinomial case
         addTwoDimTableRowMultinomial(table, i, modelIDsFormatted, mean_per_class_error, logloss, rmse, mse);
-      }else if(isBinomial) { //Binomial case
+      }else if(models[i]._output.isBinomialClassifier()) { //Binomial case
         addTwoDimTableRowBinomial(table, i, modelIDsFormatted, auc, logloss, mean_per_class_error, rmse, mse);
-      }else if(isRegression){ //Regression
+      }else { //Regression
         addTwoDimTableRowRegression(table, i, modelIDsFormatted, mean_residual_deviance, rmse, mse, mae, rmsle);
-      }else {
-        addTwoDimTableRowBinomial(table, i, modelIDsFormatted, auc, logloss, mean_per_class_error, rmse, mse);
       }
     return table;
   }
