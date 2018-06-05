@@ -174,6 +174,8 @@ class H2OAutoML(object):
         self._leaderboard = None
         if sort_metric == "AUTO":
             self.sort_metric = None
+        else:
+            self.sort_metric = sort_metric
 
     #---------------------------------------------------------------------------
     # Basic properties
