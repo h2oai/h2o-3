@@ -23,7 +23,7 @@ class H2OAutoML(object):
       The available options are:
       ``AUTO`` (This defaults to ``logloss`` for classification, ``deviance`` for regression),
       ``deviance``, ``logloss``, ``mse``, ``rmse``, ``mae``, ``rmsle``, ``auc``, ``lift_top_group``,
-      ``misclassification``, ``mean_per_class_error``.
+      ``misclassification``, ``mean_per_class_error``, ``r2``.
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
       to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
       if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
