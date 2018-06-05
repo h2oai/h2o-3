@@ -187,8 +187,11 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     }
     @Override public void map(Chunk c) {
       for(int i=0; i<c._len; ++i) {
-        _colMin = Math.min(_colMin, c.at8(i));
-        _colMax = Math.max(_colMax, c.at8(i));
+        if( !c.isNA(i) ) {
+          long l = c.at8(i);
+          _colMin = Math.min(_colMin, l);
+          _colMax = Math.max(_colMax, l);
+        }
       }
     }
     @Override public void reduce(GetLongStatsTask that) {

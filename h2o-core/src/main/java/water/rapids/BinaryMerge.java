@@ -97,6 +97,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
     _intCols = MemoryManager.mallocZ(columnsInResult);
     // check left frame first
     if (_leftSB._frame!=null) {
+      for (int col=0; col <_numJoinCols; col++) {
+        if (_leftSB._frame.vec(col).isInt())
+          _intCols[col] = true;
+      }
       for (int col = _numJoinCols; col < _leftSB._frame.numCols(); col++) {
         if (_leftSB._frame.vec(col).isString())
           _stringCols[col] = true;
@@ -601,7 +605,8 @@ class BinaryMerge extends DTask<BinaryMerge> {
         for (int b = 0; b < nbatch; b++) {
           NewChunk nc = new NewChunk(null,-1);
           for(long l: frameLikeChunksLong[col][b]) {
-            if( l==Long.MIN_VALUE ) nc.addNA();
+            if( l==Long.MIN_VALUE ) 
+              nc.addNA();
             else                    nc.addNum(l, 0);
           }
           Chunk ck = nc.compress();
@@ -628,6 +633,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
         frameLikeChunks4Strings[col][b] = new BufferedString[_chunkSizes[b] = (b == nbatch - 1 ? lastSize : batchSizeUUID)];
       } else if (this._intCols[col]) {
         frameLikeChunksLongs[col][b] = MemoryManager.malloc8(_chunkSizes[b] = (b == nbatch - 1 ? lastSize : batchSizeUUID));
+        Arrays.fill(frameLikeChunksLongs[col][b], Long.MIN_VALUE);
       } else {
         frameLikeChunks[col][b] = MemoryManager.malloc8d(_chunkSizes[b] = (b == nbatch - 1 ? lastSize : batchSizeUUID));
         Arrays.fill(frameLikeChunks[col][b], Double.NaN);
@@ -964,21 +970,21 @@ class BinaryMerge extends DTask<BinaryMerge> {
     if (grrr != null) {
       int nodeNum = grrr.length;
       for (int nodeIdx = 0; nodeIdx < nodeNum; nodeIdx++) {
-        int batchLimit = Math.min(batchIdx+1, grrr[nodeIdx].length);
+        int batchLimit = Math.min(batchIdx + 1, grrr[nodeIdx].length);
         if ((grrr[nodeIdx] != null) && (grrr[nodeIdx].length > 0)) {
           for (int bIdx = 0; bIdx < batchLimit; bIdx++) { // clean up memory
-              int chkLen = grrr[nodeIdx][bIdx] == null ? 0 :
-                      (grrr[nodeIdx][bIdx]._chk ==null?0:grrr[nodeIdx][bIdx]._chk.length);
-              for (int cindex = 0; cindex < chkLen; cindex++) {
-                grrr[nodeIdx][bIdx]._chk[cindex] = null;
-                grrr[nodeIdx][bIdx]._chkString[cindex] = null;
-                grrr[nodeIdx][bIdx]._chkLong[cindex] = null;
-              }
-              if (chkLen>0) {
-                grrr[nodeIdx][bIdx]._chk = null;
-                grrr[nodeIdx][bIdx]._chkString = null;
-                grrr[nodeIdx][bIdx]._chkLong = null;
-              }
+            int chkLen = grrr[nodeIdx][bIdx] == null ? 0 :
+                    (grrr[nodeIdx][bIdx]._chk == null ? 0 : grrr[nodeIdx][bIdx]._chk.length);
+            for (int cindex = 0; cindex < chkLen; cindex++) {
+              grrr[nodeIdx][bIdx]._chk[cindex] = null;
+              grrr[nodeIdx][bIdx]._chkString[cindex] = null;
+              grrr[nodeIdx][bIdx]._chkLong[cindex] = null;
+            }
+            if (chkLen > 0) {
+              grrr[nodeIdx][bIdx]._chk = null;
+              grrr[nodeIdx][bIdx]._chkString = null;
+              grrr[nodeIdx][bIdx]._chkLong = null;
+            }
           }
         }
       }
