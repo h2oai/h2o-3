@@ -56,7 +56,7 @@ private def getH2OStartupCmd(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return """
                 rm -f h2o_one_node h2odriver.out
-                hadoop jar h2o-hadoop/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar -libjars "\\\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 -notify h2o_one_node -ea -proxy -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login &> h2odriver.out &
+                hadoop jar h2o-hadoop/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 -notify h2o_one_node -ea -proxy -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login &> h2odriver.out &
                 for i in \$(seq 20); do
                   if [ -f 'h2o_one_node' ]; then
                     echo "H2O started on \$(cat h2o_one_node)"
