@@ -78,10 +78,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public double[] auc = new double[0];
   public double[] mean_per_class_error = new double[0];
 
-  public static boolean isBinomial = false;
-  public static boolean isMultinomial = false;
-  public static boolean isRegression = false;
-  public static boolean isEmtyLeaderboard = false;
+  private static boolean isBinomial = false;
+  private static boolean isMultinomial = false;
+  private static boolean isRegression = false;
+  private static boolean isEmptyLeaderboard = false;
 
   /**
    * Metric used to sort this leaderboard.
@@ -215,7 +215,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         setMetricAndDirection(sort_metric, binomialMetrics, false);
       }
     }
-    else if (m._output.isClassifier()) { //Multinomial
+    else if (m._output.isMultinomialClassifier()) { //Multinomial
       String[] multinomialMetrics = new String[]{"logloss", "rmse", "mse"};
       if(this.sort_metric == null) {
         this.sort_metric = "mean_per_class_error";
@@ -329,7 +329,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
           isBinomial = true;
           isRegression = false;
           isMultinomial = false;
-          isEmtyLeaderboard = false;
+          isEmptyLeaderboard = false;
           updating.auc = getOtherMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -339,7 +339,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
           isMultinomial = true;
           isBinomial = false;
           isRegression = false;
-          isEmtyLeaderboard = false;
+          isEmptyLeaderboard = false;
           updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
@@ -348,14 +348,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
           isRegression = true;
           isBinomial = false;
           isMultinomial = false;
-          isEmtyLeaderboard = false;
+          isEmptyLeaderboard = false;
           updating.mean_residual_deviance= getOtherMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.mae = getOtherMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
           updating.rmsle = getOtherMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else {
-          isEmtyLeaderboard = true;
+          isEmptyLeaderboard = true;
           isRegression = false;
           isBinomial = false;
           isMultinomial = false;
@@ -389,13 +389,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
       this.mean_per_class_error = updated.mean_per_class_error;
       this.rmse = updated.rmse;
       this.mse = updated.mse;
-    } else if (isRegression) { // Regression
+    } else if (isRegression) { // Regression case
       this.mean_residual_deviance = updated.mean_residual_deviance;
       this.rmse = updated.rmse;
       this.mse = updated.mse;
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
-    } else if (isMultinomial) {
+    } else if (isMultinomial) { // Multinomial case
       this.mean_per_class_error = updated.mean_per_class_error;
       this.logloss = updated.logloss;
       this.rmse = updated.rmse;
@@ -574,7 +574,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static double[] defaultMetricForModel(Model m, ModelMetrics mm) {
     if (m._output.isBinomialClassifier()) {
       return new double[] {(((ModelMetricsBinomial)mm).auc()),((ModelMetricsBinomial) mm).logloss(), ((ModelMetricsBinomial) mm).mean_per_class_error(), mm.rmse(), mm.mse()};
-    } else if (m._output.isClassifier()) {
+    } else if (m._output.isMultinomialClassifier()) {
       return new double[] {(((ModelMetricsMultinomial)mm).mean_per_class_error()), ((ModelMetricsMultinomial) mm).logloss(), mm.rmse(), mm.mse()};
     } else if (m._output.isSupervised()) {
       return new double[] {((ModelMetricsRegression)mm).mean_residual_deviance(),mm.rmse(), mm.mse(), ((ModelMetricsRegression) mm).mae(), ((ModelMetricsRegression) mm).rmsle()};
@@ -586,7 +586,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public static String[] defaultMetricNameForModel(Model m) {
     if (m._output.isBinomialClassifier()) {
       return new String[] {"auc","logloss", "mean_per_class_error", "rmse", "mse"};
-    } else if (m._output.isClassifier()) {
+    } else if (m._output.isMultinomialClassifier()) {
       return new String[] {"mean per-class error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) {
       return new String[] {"mean_residual_deviance","rmse", "mse", "mae","rmsle"};
@@ -642,7 +642,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         metric = "auc";
       } else if(isMultinomial) {
         metric = "mean_per_class_error";
-      } else if (isEmtyLeaderboard) {
+      } else if (isEmptyLeaderboard) {
         metric = "auc";
       }
     }
@@ -917,21 +917,5 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public String toString() {
     return toString(" ; ", " | ");
   }
-
-  public static String[] removeItemFromArray(String[] input, String item) {
-    if (input == null) {
-      return null;
-    } else if (input.length <= 0) {
-      return input;
-    } else {
-      String[] output = new String[input.length - 1];
-      int count = 0;
-      for (String i : input) {
-        if (!i.equals(item)) {
-          output[count++] = i;
-        }
-      }
-      return output;
-    }
-  }
+  
 }
