@@ -4,6 +4,7 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
+import pandas as pd
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -3432,3 +3433,24 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
 def getMojoName(modelID):
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
     return regex.sub("_", modelID)
+
+def genDMatrix_all_numerics(h2oFrame, xlist, yresp):
+    """
+    This method will convert a H2OFrame containing all numerical dataset to a DMatrix that is used by native XGBoost
+
+    :param h2oFrame:
+    :param xlist:
+    :param yresp:
+    :return:
+    """
+    import xgboost as xgb
+    
+    pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
+    c0= h2oFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+    pandaFtrain.drop([yresp], axis=1, inplace=True)
+    pandaF = pd.concat([c0, pandaFtrain], axis=1)
+    pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+    data = pandaF.as_matrix(xlist)
+    label = pandaF.as_matrix([yresp])
+
+    return xgb.DMatrix(data=data, label=label)

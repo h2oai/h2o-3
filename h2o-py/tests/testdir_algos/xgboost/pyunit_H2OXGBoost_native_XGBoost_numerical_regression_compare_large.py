@@ -14,13 +14,17 @@ def comparison_test():
     assert H2OXGBoostEstimator.available() is True
     runSeed = random.randint(1, 1073741824)
     ntrees = 10
+    nrows = 100000
+    ncols = 10
+    responseF = 100000
+
     h2oParamsD = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"dense"}
+                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"dense", "distribution":"gaussian"}
     nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
                    'tree_method': 'auto',
                    'seed': h2oParamsD["seed"],
                    'booster': 'gbtree',
-                   'objective': 'binary:logistic',
+                   'objective': 'reg:linear',
                    'lambda': 0.0,
                    'eta': h2oParamsD["learn_rate"],
                    'grow_policy': 'depthwise',
@@ -32,10 +36,7 @@ def comparison_test():
                    'gamma': 0.0,
                    'max_depth': h2oParamsD["max_depth"]}
 
-    nrows = 100000
-    ncols = 10
-
-    trainFile = genTrainFiles(nrows, ncols)     # load in dataset and add response column
+    trainFile = genTrainFiles(nrows, ncols, responseF)     # load in dataset and add response column
     myX = trainFile.names
     y='response'
     myX.remove(y)
@@ -68,29 +69,21 @@ def summarizeResult(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2o
     h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
     h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
 
+
     # compare prediction probability and they should agree if they use the same seed
     for ind in range(h2oPredictD.nrow):
-        assert abs(h2oPredictLocalD['c0.l1'][ind]-nativePred[ind])<1e-6, "H2O prediction prob: {0} and native " \
-                                                                         "XGBoost prediction prob: {1}.  They are " \
-                                                                         "very different.".format(h2oPredictLocalD['c0.l1'][ind], nativePred[ind])
+        assert abs((h2oPredictLocalD['predict'][ind]-nativePred[ind])/max(1, abs(h2oPredictLocalD['predict'][ind]), abs(nativePred[ind])))<1e-5, \
+                "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+                "different.".format(h2oPredictLocalD['predict'][ind], nativePred[ind])
 
-def genTrainFiles(nrow, ncol):
+def genTrainFiles(nrow, ncol, responseF):
     trainFrameNumerics = pyunit_utils.random_dataset_numeric_only(nrow, ncol, misFrac=0)
-    yresponse = pyunit_utils.random_dataset_enums_only(nrow, 1, factorL=2, misFrac=0)
+    yresponse = pyunit_utils.random_dataset_numeric_only(nrow, 1, integerR=responseF, misFrac=0)
+    yresponse = yresponse*0.9998
     yresponse.set_name(0,'response')
     trainFrame = trainFrameNumerics.cbind(yresponse)
     return trainFrame
 
-def genDMatrix(h2oFrame, xlist, yresp):
-    pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
-    c0 = pd.get_dummies(pandaFtrain[yresp], prefix=yresp, drop_first=True)
-    pandaFtrain.drop([yresp], axis=1, inplace=True)
-    pandaF = pd.concat([c0, pandaFtrain], axis=1)
-    pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
-    data = pandaF.as_matrix(xlist)
-    label = pandaF.as_matrix([yresp])
-
-    return xgb.DMatrix(data=data, label=label)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(comparison_test)
