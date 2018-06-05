@@ -98,6 +98,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
     _intCols = new boolean[columnsInResult];
     // check left frame first
     if (_leftSB._frame!=null) {
+      for (int col=0; col <_numJoinCols; col++) {
+        if (_leftSB._frame.vec(col).isInt())
+          _intCols[col] = true;
+      }
       for (int col = _numJoinCols; col < _leftSB._frame.numCols(); col++) {
         if (_leftSB._frame.vec(col).isString())
           _stringCols[col] = true;

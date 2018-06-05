@@ -1167,9 +1167,11 @@ public class NewChunk extends Chunk {
     // See if we can sanely normalize all the data to the same fixed-point.
     int  xmin = Integer.MAX_VALUE;   // min exponent found
     boolean floatOverflow = false;
+    boolean fitLong = true;
     double min = Double.POSITIVE_INFINITY;
     double max = Double.NEGATIVE_INFINITY;
     BigInteger MAX = BigInteger.valueOf(Long.MAX_VALUE);
+    BigInteger MIN = BigInteger.valueOf(Long.MIN_VALUE);
     BigInteger min_l = MAX.multiply(MAX);
     BigInteger max_l = BigInteger.valueOf(-1L).multiply(MAX.multiply(MAX));
     int p10iLength = PrettyPrint.powers10i.length;
@@ -1191,12 +1193,25 @@ public class NewChunk extends Chunk {
         hasZero = true;
         continue;
       }
-      if( x >=0 && ((long)d != ll.longValue()) ) {
-        if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; }
+      if (fitLong)  // once set to false don't want to reset back to true
+        fitLong = ll.compareTo(MAX)<=0 && ll.compareTo(MIN)>=0;
+
+      if ((x >=0) && ((long)d != ll.longValue()) && fitLong)  { // use long if integer and fit inside long format
+        if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; } //
         if( ll.compareTo(max_l)== 1 ) { max=d; max_l=ll; lhi=l; xhi=x; }
       } else {
-        if( d < min ) { min = d; min_l=ll; llo=l; xlo=x; }
-        if( d > max ) { max = d; max_l=ll; lhi=l; xhi=x; }
+        if( d < min ) {
+          min = d;
+          if( ll.compareTo(min_l)==-1 )
+            min_l=ll;
+          llo=l; xlo=x;
+        }
+        if( d > max ) {
+          max = d;
+          if( ll.compareTo(max_l)== 1 )
+            max_l=ll;
+          lhi=l; xhi=x;
+        }
       }
 
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
@@ -1212,10 +1227,10 @@ public class NewChunk extends Chunk {
     if(!hasNonZero) xlo = xhi = xmin = 0;
 
     // Constant column?
-    if( _naCnt==0 && (min_l.compareTo(max_l)==0) && xmin >=0 ) {
+    if( _naCnt==0 && (min_l.compareTo(max_l)==0) && xmin >=0 && fitLong) {
       return new C0LChunk(min_l.longValue(), _len);
     }
-    if( _naCnt==0 && (min==max) && xmin<0 ) {
+    if( _naCnt==0 && (min==max) && (xmin<0 || !fitLong) ) {
       return new C0DChunk(min, _len);
     }
     // Compute min & max, as scaled integers in the xmin scale.
