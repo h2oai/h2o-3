@@ -300,8 +300,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._se_coef = MemoryManager.malloc8d(n_coef);
       o._z_coef = MemoryManager.malloc8d(n_coef);
       o._var_coef = malloc2DArray(n_coef, n_coef);
-      o._x_mean_cat = new double[o.data_info.numCats()][];
-      o._x_mean_num = new double[o.data_info.numNums() - n_offsets][];
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
@@ -319,13 +317,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       o._n_missing = o._n - coxMR.n;
       o._n = coxMR.n;
-      o._x_mean_cat = new double[coxMR.sumWeights.length][];
-      o._x_mean_num = new double[coxMR.sumWeights.length][];
+      o._x_mean_cat = malloc2DArray(coxMR.sumWeights.length, o.data_info.numCats());
+      o._x_mean_num = malloc2DArray(coxMR.sumWeights.length, o.data_info.numNums() - o._mean_offset.length);
       for (int s = 0; s < coxMR.sumWeights.length; s++) {
-        o._x_mean_cat[s] = coxMR.sumWeightedCatX[s];
+        System.arraycopy(coxMR.sumWeightedCatX[s], 0, o._x_mean_cat[s], 0, o._x_mean_cat[s].length);
         for (int j = 0; j < o._x_mean_cat[s].length; j++)
           o._x_mean_cat[s][j] /= coxMR.sumWeights[s];
-        o._x_mean_num[s] = coxMR.sumWeightedNumX[s];
+        System.arraycopy(coxMR.sumWeightedNumX[s], 0, o._x_mean_num[s], 0, o._x_mean_num[s].length);
         for (int j = 0; j < o._x_mean_num[s].length; j++)
           o._x_mean_num[s][j] = o.data_info._normSub[j] + o._x_mean_num[s][j] / coxMR.sumWeights[s];
       }

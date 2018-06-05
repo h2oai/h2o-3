@@ -18,32 +18,54 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
 
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
-    @API(help = "var_coef")
+    @API(help = "var(coefficients)")
     double[][] var_coef;
-    @API(help = "null_loglik")
+    @API(help = "null log-likelihood")
     double null_loglik;
-    @API(help = "loglik")
+    @API(help = "log-likelihood")
     double loglik;
-    @API(help = "loglik_test")
+    @API(help = "log-likelihood test stat")
     double loglik_test;
-    @API(help = "wald_test")
+    @API(help = "Wald test stat")
     double wald_test;
-    @API(help = "score_test")
+    @API(help = "Score test stat")
     double score_test;
-    @API(help = "rsq")
+    @API(help = "R-square")
     double rsq;
-    @API(help = "maxrsq")
+    @API(help = "Maximum R-square")
     double maxrsq;
-    @API(help = "lre")
+    @API(help = "log relative error")
     double lre;
-    @API(help = "iter")
+    @API(help = "number of iterations")
     int iter;
+    @API(help = "x weighted mean vector for categorical variables")
+    double[][] x_mean_cat;
+    @API(help = "x weighted mean vector for numeric variables")
+    double[][] x_mean_num;
+    @API(help = "unweighted mean vector for numeric offsets")
+    double[] mean_offset;
+    @API(help = "names of offsets")
+    String[] offset_names;
     @API(help = "n")
     long n;
-    @API(help = "n_missing")
+    @API(help = "number of rows with missing values")
     long n_missing;
-    @API(help = "total_event")
+    @API(help = "total events")
     long total_event;
+    @API(help = "time")
+    double[] time;
+    @API(help = "number at risk")
+    double[] n_risk;
+    @API(help = "number of events")
+    double[] n_event;
+    @API(help = "number of censored obs")
+    double[] n_censor;
+    @API(help = "baseline cumulative hazard")
+    double[] cumhaz_0;
+    @API(help = "component of var(cumhaz)")
+    double[] var_cumhaz_1;
+    @API(help = "component of var(cumhaz)")
+    double[][] var_cumhaz_2;
     @API(help = "formula")
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})
