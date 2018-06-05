@@ -72,11 +72,12 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     // NOTE: don't return nulls; return an empty leaderboard/userFeedback, to ease life for the client
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
-      leaderboard = Leaderboard.getOrMakeLeaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame(), this.sort_metric);
+      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame(), this.sort_metric);
       DKV.put(leaderboard);
+    } else {
+      this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
+      this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
     }
-    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
-    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
 
     UserFeedback userFeedback = autoML.userFeedback();
     if (null == userFeedback) {

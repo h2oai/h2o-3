@@ -62,18 +62,18 @@ automl.leaderboard.test <- function() {
       expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
     }
 
-    # Exclude all the algorithms, check for empty leaderboard
-    fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
-    fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
-    exclude_algos <- c("GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble")
-    aml4 <- h2o.automl(y = 2, training_frame = fr1, max_runtime_secs = 5, 
-                       project_name = "r_lb_test_aml4",
-                       exclude_algos = exclude_algos)
-    aml4@leaderboard
-    #TODO Fix below. Colnames seem to have changed
-    #expect_equal(names(aml4@leaderboard), c("model_id","auc","logloss", "mean_per_class_error", "rmse", "mse"))
-    # TO DO: for empty leaderboards there's a dummy row for some reason.
-    expect_equal(nrow(aml4@leaderboard), 1)
+#    # Exclude all the algorithms, check for empty leaderboard
+#    fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
+#    fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
+#    exclude_algos <- c("GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble")
+#    aml4 <- h2o.automl(y = 2, training_frame = fr1, max_runtime_secs = 5,
+#                       project_name = "r_lb_test_aml4",
+#                       exclude_algos = exclude_algos)
+#    aml4@leaderboard
+#    #TODO Fix below. Colnames seem to have changed
+#    #expect_equal(names(aml4@leaderboard), c("model_id","auc","logloss", "mean_per_class_error", "rmse", "mse"))
+#    # TO DO: for empty leaderboards there's a dummy row for some reason.
+#    expect_equal(nrow(aml4@leaderboard), 1)
     
     # Include all algorithms (all should be there, given large enough max_models)
     fr3 <- as.h2o(iris)
