@@ -1,7 +1,6 @@
 import pandas as pd
 import xgboost as xgb
 import random
-from xgboost import plot_tree
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
