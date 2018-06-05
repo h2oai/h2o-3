@@ -952,17 +952,18 @@ types.
 
 -  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML) Specify the metric to use for early stopping. The available options are:
 
-    - auto: This defaults to logloss for classification, deviance for regression
+    - AUTO: This defaults to logloss for classification, deviance for regression
     - deviance
     - logloss
-    - mse
-    - rmse
-    - mae
-    - rmsle
-    - auc
+    - MSE
+    - RMSE
+    - MAE
+    - RMSLE
+    - AUC
     - lift_top_group
     - misclassification
     - mean_per_class_error
+    - r2
 
 -  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
@@ -974,10 +975,21 @@ types.
 
 -  **stopping_tolerance**: (GBM, DRF, DL, XGBoost, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
 
+-  **sort_metric**: (AutoML) Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
+
+    - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
+    - ``deviance`` (mean residual deviance)
+    - ``logloss``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC``
+    - ``mean_per_class_error``
+
 -  **keep_cross_validation_predictions** (AutoML): Specify whether to keep the predictions of the cross-validation predictions. If set to FALSE, then running the same AutoML object for repeated runs will cause an exception because CV predictions are are required to build additional Stacked Ensemble models in AutoML. This option defaults to TRUE.
 
 -  **keep_cross_validation_models** (AutoML): Specify whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. This option defaults to TRUE.
-
 
 -  **build_tree_one_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled.
 

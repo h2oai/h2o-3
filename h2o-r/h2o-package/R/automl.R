@@ -35,6 +35,10 @@
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
+#' @param sort_metric Metric to sort the leaderboard by. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", "MSE".
+#'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
+#'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification, 
+#'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -62,7 +66,8 @@ h2o.automl <- function(x, y, training_frame,
                        project_name = NULL,
                        exclude_algos = NULL,
                        keep_cross_validation_predictions = TRUE,
-                       keep_cross_validation_models = TRUE)
+                       keep_cross_validation_models = TRUE,
+                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"))
 {
 
   tryCatch({
@@ -167,6 +172,18 @@ h2o.automl <- function(x, y, training_frame,
     build_control$project_name <- paste0("automl_", training_frame_id)
   } else {
     build_control$project_name <- project_name
+  }
+  
+  sort_metric <- match.arg(sort_metric)
+  # Only send for non-default
+  if (sort_metric != "AUTO") {
+    if (sort_metric == "deviance") {
+      # Changed the API to use "deviance" to be consistent with stopping_metric values
+      # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
+      # After that we can take this out
+      sort_metric <- "mean_residual_deviance"  
+    }
+    input_spec$sort_metric <- tolower(sort_metric)
   }
 
   if (!is.null(exclude_algos)) {

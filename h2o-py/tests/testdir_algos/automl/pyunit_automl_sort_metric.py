@@ -8,13 +8,9 @@ from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 
 """
-This test is used to check arguments passed into H2OAutoML along with different ways of using `.train()`
+This test is used to check that sort_metric is working
 """
-def automl_leaderboard():
-
-    # Test each ML task to make sure the leaderboard is working as expected:
-    # Leaderboard columns are correct for each ML task 
-    # Check that correct algos are in the leaderboard
+def automl_leaderboard_sort_metric():
 
     #Random positive seed for AutoML
     if sys.version_info[0] < 3: #Python 2
@@ -30,7 +26,7 @@ def automl_leaderboard():
     fr1 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     fr1["CAPSULE"] = fr1["CAPSULE"].asfactor()
     exclude_algos = ["GLM", "DeepLearning", "DRF"]
-    aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos, seed=automl_seed)
+    aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", exclude_algos=exclude_algos, seed=automl_seed, sort_metric="logloss")
     aml.train(y="CAPSULE", training_frame=fr1)
     lb = aml.leaderboard
     print("AutoML leaderboard")
@@ -50,7 +46,7 @@ def automl_leaderboard():
     print("Check leaderboard for Regression")
     fr2 = h2o.import_file(path=pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
     exclude_algos = ["GBM", "DeepLearning"]
-    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos, seed=automl_seed)
+    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml2", exclude_algos=exclude_algos, seed=automl_seed,sort_metric="RMSE")
     aml.train(y=4, training_frame=fr2)
     lb = aml.leaderboard
     print("AutoML leaderboard")
@@ -69,7 +65,7 @@ def automl_leaderboard():
     print("Check leaderboard for Multinomial")
     fr3 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     exclude_algos = ["GBM"]
-    aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos, seed=automl_seed)
+    aml = H2OAutoML(max_models=6, project_name="py_lb_test_aml3", exclude_algos=exclude_algos, seed=automl_seed, sort_metric="logloss")
     aml.train(y=4, training_frame=fr3)
     lb = aml.leaderboard
     print("AutoML leaderboard")
@@ -83,40 +79,8 @@ def automl_leaderboard():
     # check that expected algos are included in leaderboard
     assert len([a for a in include_algos if len([b for b in model_ids if a in b])>0]) == len(include_algos)
 
-    # Below fails bc there are no models in the leaderboard, but AutoML needs to check the models to get the
-    # model type (binomial, multinomial, or regression)
-    # Exclude all the algorithms, check for empty leaderboard
-    # print("Check leaderboard for excluding all algos (empty leaderboard)")
-    # fr4 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    # fr4["CAPSULE"] = fr4["CAPSULE"].asfactor()
-    # exclude_algos = ["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"]
-    # aml = H2OAutoML(max_runtime_secs=5, project_name="py_lb_test_aml4", exclude_algos=exclude_algos, seed=automl_seed)
-    # aml.train(y="CAPSULE", training_frame=fr4)
-    # lb = aml.leaderboard
-    # print("AutoML leaderboard")
-    # print(lb)
-    # # check that correct leaderboard columns exist
-    # #assert lb.names == ["model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"]
-    # assert lb.nrows == 0
-
-
-    # Include all algorithms (all should be there, given large enough max_models)
-    print("Check leaderboard for all algorithms")
-    fr5 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    aml = H2OAutoML(max_models=10, project_name="py_lb_test_aml5", seed=automl_seed)
-    aml.train(y=4, training_frame=fr5)
-    lb = aml.leaderboard
-    print("AutoML leaderboard")
-    print(lb)
-    model_ids = list(h2o.as_list(aml.leaderboard['model_id'])['model_id'])
-    include_algos = list(set(all_algos) - set(exclude_algos)) + ["XRT"]
-    # check that expected algos are included in leaderboard
-    assert len([a for a in include_algos if len([b for b in model_ids if a in b])>0]) == len(include_algos)
-
-
-
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(automl_leaderboard)
+    pyunit_utils.standalone_test(automl_leaderboard_sort_metric)
 else:
-    automl_leaderboard()
+    automl_leaderboard_sort_metric()

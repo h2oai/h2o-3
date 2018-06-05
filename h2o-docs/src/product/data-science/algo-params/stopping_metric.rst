@@ -30,6 +30,7 @@ Available options for ``stopping_metric`` include the following:
 - ``lift_top_group``
 - ``misclassification``
 - ``mean_per_class_error``
+- ``r2``
 
 **Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
 

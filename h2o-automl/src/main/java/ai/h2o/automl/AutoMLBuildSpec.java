@@ -64,6 +64,7 @@ public class AutoMLBuildSpec extends Iced {
     public String fold_column;
     public String weights_column;
     public String[] ignored_columns;
+    public String sort_metric;
   }
 
   /**

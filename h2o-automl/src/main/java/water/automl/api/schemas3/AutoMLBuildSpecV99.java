@@ -93,6 +93,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
          required = false
       )
     public String[] ignored_columns;
+
+    @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
+    public String sort_metric;
+
   } // class AutoMLInputV99
 
   static final public class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {

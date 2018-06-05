@@ -43,8 +43,11 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="User feedback for events from this AutoML run, for easy rendering", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 user_feedback_table;
 
+  @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
+  public String sort_metric;
+
   @Override public AutoMLV99 fillFromImpl(AutoML autoML) {
-    super.fillFromImpl(autoML, new String[] { "leaderboard", "user_feedback", "leaderboard_table", "user_feedback_table" });
+    super.fillFromImpl(autoML, new String[] { "leaderboard", "user_feedback", "leaderboard_table", "user_feedback_table", "sort_metric" });
 
     if (null == autoML) return this;
 
@@ -69,11 +72,12 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     // NOTE: don't return nulls; return an empty leaderboard/userFeedback, to ease life for the client
     Leaderboard leaderboard = autoML.leaderboard();
     if (null == leaderboard) {
-      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame());
+      leaderboard = new Leaderboard(autoML.projectName(), autoML.userFeedback(), autoML.getLeaderboardFrame(), this.sort_metric);
       DKV.put(leaderboard);
+    } else {
+      this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
+      this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
     }
-    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
-    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
 
     UserFeedback userFeedback = autoML.userFeedback();
     if (null == userFeedback) {
