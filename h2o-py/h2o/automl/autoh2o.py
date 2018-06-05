@@ -44,11 +44,11 @@ class H2OAutoML(object):
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
     :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
     :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
-    :param sort_metric: Metric to sort leaderboard. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", & "MSE".
-    For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
-    "mean_per_class_error", "logloss", "RMSE", & "MSE". Default is NULL. If set to NULL, the AutoML backend will
-    choose "AUC" for binomial classification, "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for
-    regression.
+    :param sort_metric Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
+    For binomial classification choose between ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
+            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between
+            ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``. 
+    
     :examples:
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
@@ -82,9 +82,9 @@ class H2OAutoML(object):
                  seed=None,
                  project_name=None,
                  exclude_algos=None,
-                 keep_cross_validation_predictions = True,
-                 keep_cross_validation_models = True,
-                 sort_metric = "AUTO"):
+                 keep_cross_validation_predictions=True,
+                 keep_cross_validation_models=True,
+                 sort_metric="AUTO"):
 
         # Check if H2O jar contains AutoML
         try:
@@ -293,7 +293,13 @@ class H2OAutoML(object):
 
         if self.sort_metric is not None:
             assert_is_type(self.sort_metric, str)
-            input_spec['sort_metric'] = self.sort_metric.lower()
+            sort_metric = self.sort_metric.lower()
+            # Changed the API to use "deviance" to be consistent with stopping_metric values
+            # TO DO: let's change the backend to use "deviance" since we use the term "deviance"
+            # After that we can take this `if` statement out
+            if sort_metric == "deviance":
+                sort_metric = "mean_residual_deviance"
+            input_spec['sort_metric'] = sort_metric
 
         if x is not None:
             assert_is_type(x,list)
