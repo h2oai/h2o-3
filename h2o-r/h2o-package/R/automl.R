@@ -177,6 +177,12 @@ h2o.automl <- function(x, y, training_frame,
   sort_metric <- match.arg(sort_metric)
   # Only send for non-default
   if (sort_metric != "AUTO") {
+    if (sort_metric == "deviance") {
+      # Changed the API to use "deviance" to be consistent with stopping_metric values
+      # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
+      # After that we can take this out
+      sort_metric <- "mean_residual_deviance"  
+    }
     input_spec$sort_metric <- tolower(sort_metric)
   }
 
