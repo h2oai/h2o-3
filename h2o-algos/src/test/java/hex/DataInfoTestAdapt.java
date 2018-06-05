@@ -45,7 +45,8 @@ public class DataInfoTestAdapt extends TestUtil {
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize);
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "petal_wid";
-      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
+      Model.InteractionBuilder interactionBldr = interactionBuilder(dinfo);
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false, interactionBldr,null,null, false);
       scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1]);
     } finally {
@@ -90,7 +91,8 @@ public class DataInfoTestAdapt extends TestUtil {
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize,skipMissing);
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "IsDepDelayed";
-      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
+      Model.InteractionBuilder interactionBldr = interactionBuilder(dinfo);
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactionBldr,null,null, false);
 
       scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1], skipMissing);
@@ -196,4 +198,16 @@ public class DataInfoTestAdapt extends TestUtil {
       di.remove();
     }
   }
+
+  private static Model.InteractionBuilder interactionBuilder(final DataInfo dataInfo) {
+    return new Model.InteractionBuilder() {
+      @Override
+      public Frame makeInteractions(Frame f) {
+        Model.InteractionPair[] interactionPairs = dataInfo._interactionSpec.makeInteractionPairs(f);
+        f.add(Model.makeInteractions(f, false, interactionPairs, true, true, false));
+        return f;
+      }
+    };
+  }
+
 }

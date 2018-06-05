@@ -172,7 +172,18 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public ModelCategory getModelCategory() { return ModelCategory.CoxPH; }
 
     @Override
-    public InteractionSpec interactions() { return _interactionSpec; }
+    public InteractionBuilder interactionBuilder() {
+      return _interactionSpec != null ? new CoxPHInteractionBuilder() : null;
+    }
+
+    private class CoxPHInteractionBuilder implements InteractionBuilder {
+      @Override
+      public Frame makeInteractions(Frame f) {
+        Model.InteractionPair[] interactions = _interactionSpec.makeInteractionPairs(f);
+        f.add(Model.makeInteractions(f, false, interactions, data_info._useAllFactorLevels, data_info._skipMissing, data_info._predictor_transform == DataInfo.TransformType.STANDARDIZE));
+        return f;
+      }
+    }
 
     InteractionSpec _interactionSpec;
     DataInfo data_info;

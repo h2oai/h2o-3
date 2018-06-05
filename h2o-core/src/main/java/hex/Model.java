@@ -440,6 +440,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warnings[_warnings.length-1] = s;
   }
 
+  public interface InteractionBuilder {
+    Frame makeInteractions(Frame f);
+  }
+
   public static class InteractionSpec extends Iced {
     private String[] _columns;
     private StringPair[] _pairs;
@@ -723,7 +727,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
-    public InteractionSpec interactions() { return null; }
+    public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx() {
       if(!_hasWeights) return -1;
@@ -1069,7 +1073,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), _toDelete, false);
+            _parms, expensive, computeMetrics, _output.interactionBuilder(), getToEigenVec(), _toDelete, false);
   }
 
   /**
@@ -1081,11 +1085,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param parms Model parameters
    * @param expensive Whether to actually do the hard work
    * @param computeMetrics Whether metrics can be (and should be) computed
-   * @param interactions Column names to create pairwise interactions with
+   * @param interactionBldr Column names to create pairwise interactions with
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionSpec interactions, ToEigenVec tev,
+                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionBuilder interactionBldr, ToEigenVec tev,
                                            IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
@@ -1130,9 +1134,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     // create the interactions now and bolt them on to the front of the test Frame
-    if( null!=interactions ) {
-      InteractionPair[] interactionPairs = interactions.makeInteractionPairs(test);
-      test.add(makeInteractions(test, false, interactionPairs, true, true, false));
+    if (null != interactionBldr) {
+      interactionBldr.makeInteractions(test);
     }
 
     // Build the validation set to be compatible with the training set.
@@ -1237,7 +1240,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
       toDelete.put(updated._key, "categorically encoded frame");
       test.restructure(updated.names(), updated.vecs()); //updated in place
-      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactions, tev, toDelete, true /*catEncoded*/);
+      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
       msgs.addAll(Arrays.asList(msg2));
       return msgs.toArray(new String[msgs.size()]);
     }
