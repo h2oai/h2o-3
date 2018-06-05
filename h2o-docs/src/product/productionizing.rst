@@ -28,7 +28,7 @@ What is a MOJO?
 
 A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
+**Note**: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
 
 Building a MOJO
 '''''''''''''''
@@ -137,6 +137,50 @@ The examples below describe how to start H2O and create a model using R and Pyth
          }
        }
 
+  GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction. You can also view the hex.genmodel.easy.prediction classes in the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
+
+  In addition to classProbabilities, in GBM and DRF you can choose to generate the ``leafNodeAssignments`` field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+
+     .. code:: java
+
+         import java.io.*;
+         import hex.genmodel.easy.RowData;
+         import hex.genmodel.easy.EasyPredictModelWrapper;
+         import hex.genmodel.easy.prediction.*;
+         import hex.genmodel.MojoModel;
+
+         public class main {
+           public static void main(String[] args) throws Exception {
+             EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip")).setEnableLeafAssignment(true);
+             EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+             RowData row = new RowData();
+             row.put("AGE", "68");
+             row.put("RACE", "2");
+             row.put("DCAPS", "2");
+             row.put("VOL", "0");
+             row.put("GLEASON", "6");
+
+             BinomialModelPrediction p = model.predictBinomial(row);
+             System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+             System.out.print("Class probabilities: ");
+             for (int i = 0; i < p.classProbabilities.length; i++) {
+               if (i > 0) {
+             System.out.print(",");
+               }
+               System.out.print(p.classProbabilities[i]);
+             }
+
+             System.out.println("Leaf node assignments: ");
+             for (int i=0; i < p.leafNodeAssignments; i++) {
+               if (i > 0) {
+               System.out.print.(p.leafNodeAssignments[i]);
+               }
+             }
+             System.out.println("");
+           }
+         }
+
  3. Compile in terminal window 2.
 
    .. code:: bash
@@ -153,12 +197,20 @@ The examples below describe how to start H2O and create a model using R and Pyth
        # Windows users
        $ java -cp .;h2o-genmodel.jar main  
 
-   The following output displays:
+  The following output displays:
 
    .. code:: bash
 
 	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
 	    Class probabilities: 0.8059929056296662,0.19400709437033375
+
+  If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
+
+    .. code:: bash
+
+	    Has penetrated the prostatic capsule (1 yes; 0 no): 0
+	    Class probabilities: 0.8059929056296662,0.19400709437033375
+	    Leaf node assignments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
 
 Viewing a MOJO Model
 ''''''''''''''''''''
@@ -234,7 +286,7 @@ POJO Quick Start
 
 This section describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__ for more information, including packages.
 
-**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the `FAQ <#POJO_Err>`__ below. POJOs are also not supported for XGBoost, Stacked Ensembles, or AutoML models.
+**Notes**: POJOs are not supported for source files larger than 1G. For more information, refer to the :ref:`pojo_faq` section below. POJOs are also not supported for XGBoost, GLRM, or Stacked Ensembles models. 
 
 What is a POJO?
 '''''''''''''''
@@ -409,6 +461,8 @@ The following use cases are demonstrated with code examples:
 -  **Reading new data from a CSV file and predicting on it**: The PredictCsv class is used by the H2O test harness to make predictions on new data points.
 -  **Getting a new observation from a JSON request and returning a prediction**
 -  **Calling a user-defined function directly from hive**: See the `H2O-3 training github repository <https://github.com/h2oai/h2o-world-2015-training/tree/master/tutorials/hive_udf_template>`__.
+
+.. _pojo_faq:
 
 FAQ
 '''

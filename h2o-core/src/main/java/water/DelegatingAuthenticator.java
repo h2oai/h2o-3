@@ -38,11 +38,6 @@ class DelegatingAuthenticator implements Authenticator {
   }
 
   @Override
-  public void prepareRequest(ServletRequest servletRequest) {
-    
-  }
-
-  @Override
   public Authentication validateRequest(ServletRequest request, ServletResponse response,
                                         boolean mandatory) throws ServerAuthException {
     if (isBrowserAgent((HttpServletRequest) request))
