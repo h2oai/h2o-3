@@ -861,7 +861,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    @Override public InteractionSpec interactions() { return _dinfo._interactionSpec; }
+    @Override public InteractionBuilder interactionBuilder() { return _dinfo._interactionSpec != null ? new GLMInteractionBuilder() : null; }
+    private class GLMInteractionBuilder implements InteractionBuilder {
+      @Override
+      public Frame makeInteractions(Frame f) {
+        InteractionPair[] interactionPairs = _dinfo._interactionSpec.makeInteractionPairs(f);
+        f.add(Model.makeInteractions(f, false, interactionPairs, true, true, false));
+        return f;
+      }
+    }
     public static Frame expand(Frame fr, InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
