@@ -98,8 +98,8 @@ Example
 	          training_frame = train)
 
 	# View the AutoML Leaderboard
-    lb = aml.leaderboard
-    lb
+	lb = aml.leaderboard
+	lb
 
 	# model_id                                                    auc    logloss    mean_per_class_error      rmse       mse
 	# -----------------------------------------------------  --------  ---------  ----------------------  --------  --------
@@ -112,7 +112,7 @@ Example
 	# DRF_0_AutoML_20180605_001915                           0.743439   0.594876                0.35481   0.452465  0.204725
 	# XRT_0_AutoML_20180605_001915                           0.735455   0.605614                0.370628  0.455573  0.207547
 	# GLM_grid_0_AutoML_20180605_001915_model_0              0.68048    0.639935                0.393134  0.473447  0.224152
-    #
+	#
 	# [9 rows x 6 columns]
 
 

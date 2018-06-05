@@ -61,20 +61,33 @@ Optional Miscellaneous Parameters
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping of the grid searches and individual models. Defaults to ``"AUTO"``.  The available options are:
 
     - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
-    - ``deviance``
+    - ``deviance`` (mean residual deviance)
     - ``logloss``
-    - ``mse``
-    - ``rmse``
-    - ``mae``
-    - ``rmsle``
-    - ``auc``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC``
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
+    - ``r2``
 
 -  `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping criterion to stop a grid search and the training of individual models within the AutoML run. This value defaults to 0.001 if the dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
 
 - `stopping_rounds <data-science/algo-params/stopping_rounds.html>`__: This argument is used to stop model training when the stopping metric (e.g. AUC) doesn’t improve for this specified number of training rounds, based on a simple moving average.   In the context of AutoML, this controls early stopping both within the random grid searches as well as the individual models.  Defaults to 3 and must be an non-negative integer.  To disable early stopping altogether, set this to 0. 
+
+- `sort_metric <data-science/algo-params/sort_metric.html>`__: Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
+
+    - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
+    - ``deviance`` (mean residual deviance)
+    - ``logloss``
+    - ``MSE``
+    - ``RMSE``
+    - ``MAE``
+    - ``RMSLE``
+    - ``AUC``
+    - ``mean_per_class_error``
 
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` is used because ``max_runtime_secs`` is resource limited, meaning that if the available compute resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 

@@ -94,6 +94,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
    data-science/algo-params/solver
+   data-science/algo-params/sort_metric
    data-science/algo-params/standardize
    data-science/algo-params/start_column
    data-science/algo-params/stop_column
