@@ -30,7 +30,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String fullName() { return "Cox Proportional Hazards"; }
     public String javaName() { return CoxPHModel.class.getName(); }
 
-    @Override public long progressUnits() { return ((_iter_max + 1) * 2) + 1; }
+    @Override public long progressUnits() { return ((_max_iterations + 1) * 2) + 1; }
 
     public String _start_column;
     public String _stop_column;
@@ -43,7 +43,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public double _init = 0;
     public double _lre_min = 9;
-    public int _iter_max = 20;
+    public int _max_iterations = 20;
 
     public boolean _use_all_factor_levels;
 

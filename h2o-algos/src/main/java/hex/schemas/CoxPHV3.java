@@ -22,7 +22,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "ties",
               "init",
               "lre_min",
-              "iter_max",
+              "max_iterations",
               "interactions",
               "interaction_pairs",
               "interactions_only",
@@ -50,7 +50,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     public double lre_min;
 
     @API(help="Maximum number of iterations.", direction = API.Direction.INOUT)
-    public int iter_max;
+    public int max_iterations;
 
     @API(help="A list of columns that should only be used to create interactions but should not itself participate in model training.", direction=API.Direction.INPUT, level=API.Level.expert)
     public String[] interactions_only;
