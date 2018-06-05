@@ -2,9 +2,6 @@ import pandas as pd
 import xgboost as xgb
 import random
 from xgboost import plot_tree
-import matplotlib.pyplot as plt
-#import os
-#os.environ["PATH"]+=os.pathsep+
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
