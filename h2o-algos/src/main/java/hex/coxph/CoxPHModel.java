@@ -51,7 +51,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     public String[] _interactions = null;
     public StringPair[] _interaction_pairs = null;
 
-    public boolean _calc_cumhaz = false; // not needed yet; exposed to tests only
+    public boolean _calc_cumhaz = true; // support survfit
 
     String[] responseCols() {
       String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];

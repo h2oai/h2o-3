@@ -394,6 +394,55 @@ logLik.H2OCoxPHModel <- function(object, ...)
   get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 
 #' @rdname H2OCoxPHModel-class
+#' @param formula an \code{H2OCoxPHModel} object.
+#' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
+#' variable names as those that appear in the \code{H2OCoxPHModel} object.
+#' @param ... additional arguments to pass on.
+#' @export
+survfit.H2OCoxPHModel <-
+function(formula, newdata, ...)
+{
+  if (missing(newdata)) {
+    if (!is.null(formula@allparameters$stratify_by) ||
+        !is.null(formula@allparameters$interactions) ||
+        !is.null(formula@allparameters$interaction_pairs)) {
+      stop("Models with strata or interaction terms require newdata argument")
+    }
+    newdata <- as.data.frame(c(as.list(as.data.frame(formula@model$x_mean_cat)),
+                               as.list(as.data.frame(formula@model$x_mean_num)),
+                               as.list(as.data.frame(formula@model$mean_offset))),
+                             col.names = c(formula@model$coefficients_table$names,
+                                           formula@model$offset_names))
+  }
+  if (is.data.frame(newdata))
+    capture.output(newdata <- as.h2o(newdata))
+
+  # Code below has calculation performed in R
+  capture.output(suppressWarnings(pred <- as.data.frame(h2o.predict(formula, newdata))[[1L]]))
+  res <- list(n         = formula@model$n,
+              time      = formula@model$time,
+              n.risk    = formula@model$n_risk,
+              n.event   = formula@model$n_event,
+              n.censor  = formula@model$n_censor,
+              surv      = NULL,
+              type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
+              cumhaz    = formula@model$cumhaz_0,
+              std.err   = NULL,
+              upper     = NULL,
+              lower     = NULL,
+              conf.type = NULL,
+              conf.int  = NULL,
+              call      = match.call())
+  if (length(pred) == 1L)
+    res$cumhaz <- res$cumhaz * exp(pred)
+  else
+    res$cumhaz <- outer(res$cumhaz, exp(pred), FUN = "*")
+  res$surv <- exp(- res$cumhaz)
+  oldClass(res) <- c("survfit.H2OCoxPHModel", "survfit.cox", "survfit")
+  res
+}
+
+#' @rdname H2OCoxPHModel-class
 #' @param object an \code{H2OCoxPHModel} object.
 #' @param ... additional arguments to pass on.
 #' @export
