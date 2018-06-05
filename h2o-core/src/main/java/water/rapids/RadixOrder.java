@@ -4,6 +4,7 @@ import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.RPC;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -170,6 +171,28 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
       _bytesUsed[i] = Math.min(8, (_shift[i]+15) / 8);  // should not go over 8 bytes
       //assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
+    }
+  }
+
+  // TODO: push these into Rollups?
+  private static class GetLongStatsTask extends MRTask<GetLongStatsTask> {
+    long _colMin=Long.MAX_VALUE;
+    long _colMax=Long.MIN_VALUE;
+    static GetLongStatsTask getLongStats(Vec col) {
+      return new GetLongStatsTask().doAll(col);
+    }
+    @Override public void map(Chunk c) {
+      for(int i=0; i<c._len; ++i) {
+        if( !c.isNA(i) ) {
+          long l = c.at8(i);
+          _colMin = Math.min(_colMin, l);
+          _colMax = Math.max(_colMax, l);
+        }
+      }
+    }
+    @Override public void reduce(GetLongStatsTask that) {
+      _colMin = Math.min(_colMin, that._colMin);
+      _colMax = Math.max(_colMax, that._colMax);
     }
   }
 
