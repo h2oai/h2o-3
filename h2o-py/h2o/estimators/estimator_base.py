@@ -219,6 +219,8 @@ class H2OEstimator(ModelBase):
                                  [tuple(map(quoted, ip)) for ip in parms["interaction_pairs"]])
 
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
+        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
+            raise H2OValueError("r2 cannot be used as an early stopping_metric yet.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
         model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)

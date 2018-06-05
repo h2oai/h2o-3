@@ -99,6 +99,10 @@
     .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
+  if (length(grep("stopping_metric", attributes(params)))>0) {
+    if (params$stopping_metric=="r2")
+      stop("r2 cannot be used as an early stopping_metric yet.")
+  }
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
   h2o.getFutureModel(job, verbose = verbose)
 }
