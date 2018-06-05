@@ -232,7 +232,7 @@ public class SortTest extends TestUtil {
   @Test public void testSortOverflows2() throws IOException {
     Scope.enter();
     Frame fr, sorted1, sorted2;
-    long ts=1485333188427000000L;
+    final long ts=1485333188427000000L;
     try {
 
       Vec dz = Vec.makeZero(1000);

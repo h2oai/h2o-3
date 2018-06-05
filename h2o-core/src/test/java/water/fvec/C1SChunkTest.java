@@ -237,7 +237,7 @@ public class C1SChunkTest extends TestUtil {
 
   @Test public void testOverflow() throws IOException {
     Scope.enter();
-    long min = 1485333188427000000L;
+    final long min = 1485333188427000000L;
     int len = 100;
     try {
       Vec dz = Vec.makeZero(len);
@@ -263,7 +263,7 @@ public class C1SChunkTest extends TestUtil {
 
   @Test public void testOverflowConst() throws IOException {
     Scope.enter();
-    long min = 1485333188427000000L;
+    final long min = 1485333188427000000L;
     int len = 100;
     try {
       Vec dz = Vec.makeZero(len);

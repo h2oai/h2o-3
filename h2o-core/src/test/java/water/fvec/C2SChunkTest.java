@@ -11,7 +11,6 @@ import water.util.PrettyPrint;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import static org.junit.Assert.assertTrue;
 
 public class C2SChunkTest extends TestUtil {
@@ -213,7 +212,7 @@ public class C2SChunkTest extends TestUtil {
 
   @Test public void testOverflow() throws IOException {
     Scope.enter();
-    long min = 1485333188427000000L;
+    final long min = 1485333188427000000L;
     int len = 10000;
     try {
       Vec dz = Vec.makeZero(len);
