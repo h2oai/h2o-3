@@ -16,6 +16,7 @@ from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 # to within certain tolerance.
 
 def pca_wideDataset_rotterdam():
+    tol = 2e-5
     h2o.remove_all()
     print("Importing Rotterdam.csv data...")
     rotterdamH2O = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/jira/rotterdam.csv.zip"))
@@ -51,7 +52,7 @@ def pca_wideDataset_rotterdam():
         # compare singular vectors
         pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                                  glrmPCA._model_json["output"]["eigenvectors"],
-                                                 glrmPCA._model_json["output"]["names"], tolerance=1e-6,
+                                                 glrmPCA._model_json["output"]["names"], tolerance=tol,
                                                  check_sign=True, check_all=False)
         h2o.remove(gramSVD)
         h2o.remove(glrmPCA)
@@ -74,7 +75,7 @@ def pca_wideDataset_rotterdam():
 
         pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                              powerPCA._model_json["output"]["eigenvectors"],
-                                             powerPCA._model_json["output"]["names"], tolerance=1e-6, check_sign=True,
+                                             powerPCA._model_json["output"]["names"], tolerance=tol, check_sign=True,
                                              check_all=False)
 
     expNum=expNum+1
@@ -97,7 +98,7 @@ def pca_wideDataset_rotterdam():
         # compare singular vectors
         pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                                  randomizedPCA._model_json["output"]["eigenvectors"],
-                                                 randomizedPCA._model_json["output"]["names"], tolerance=1e-6,
+                                                 randomizedPCA._model_json["output"]["names"], tolerance=tol,
                                                  check_sign=True, check_all=False)
     h2o.remove_all()
 
