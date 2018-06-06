@@ -186,25 +186,25 @@ automl.args.test <- function() {
                       max_after_balance_size = 3.0,  
                       class_sampling_factors = c(0.2, 1.4),
                       project_name = "aml15")
-  # Check that a model (DRF) has balance_classes = TRUE
+  # Check that a model (DRF) has balance_classes args set properly
   model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
   expect_equal(amodel@parameters$balance_classes, TRUE)
-  #expect_equal(amodel@parameters$class_sampling_factors, ??). # TO DO
   expect_equal(amodel@parameters$max_after_balance_size, 3.0)
-
+  expect_equal(amodel@parameters$class_sampling_factors, c(0.2, 1.4))
+  
 
   print("Check that cv preds/models are deleted")
   nfolds <- 3
   aml15 <- h2o.automl(x = x, y = y,
                       training_frame = train,
-                        nfolds = nfolds,
-                        max_models = max_models,
-                        project_name = "aml15",
-                        keep_cross_validation_models = FALSE,
-                        keep_cross_validation_predictions = FALSE)
-                        model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
-                        model_ids <- setdiff(model_ids, grep("StackedEnsemble", model_ids, value = TRUE))
+                      nfolds = nfolds,
+                      max_models = max_models,
+                      project_name = "aml15",
+                      keep_cross_validation_models = FALSE,
+                      keep_cross_validation_predictions = FALSE)
+                      model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
+                      model_ids <- setdiff(model_ids, grep("StackedEnsemble", model_ids, value = TRUE))
   cv_model_ids <- list(NULL)
   for(i in 1:nfolds) {
       cv_model_ids[[i]] <- paste0(model_ids, "_cv_", i)
