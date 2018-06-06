@@ -62,7 +62,7 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
-  private final boolean enableGLRMReconstrut;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
+  private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
 
   /**
    * Observer interface with methods corresponding to errors during the prediction.
@@ -232,7 +232,7 @@ public class EasyPredictModelWrapper implements Serializable {
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
     enableLeafAssignment = config.getEnableLeafAssignment();
-    enableGLRMReconstrut = config.getEnableGLRMReconstrut();
+    enableGLRMReconstruct = config.getEnableGLRMReconstrut();
 
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
@@ -392,7 +392,7 @@ public class EasyPredictModelWrapper implements Serializable {
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
-    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstrut)  // only for verion 1.10 or higher
+    if (m instanceof GlrmMojoModel && ((GlrmMojoModel) m)._archetypes_raw != null && this.enableGLRMReconstruct)  // only for verion 1.10 or higher
       p.reconstructed = ((GlrmMojoModel) m).impute_data(preds, new double[m.nfeatures()], ((GlrmMojoModel) m)._nnums,
               ((GlrmMojoModel) m)._ncats, ((GlrmMojoModel) m)._permutation, ((GlrmMojoModel) m)._reverse_transform,
               ((GlrmMojoModel) m)._normMul, ((GlrmMojoModel) m)._normSub, ((GlrmMojoModel) m)._losses,
