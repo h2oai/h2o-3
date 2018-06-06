@@ -360,24 +360,9 @@ setMethod("summary", "H2OCoxPHModel",
             res
           })
 
-#' @rdname H2OCoxPHModel-class
-#' @param object an \code{H2OCoxPHModel} object.
-#' @param ... additional arguments to pass on.
-#' @export
 coef.H2OCoxPHModel        <- function(object, ...) .as.survival.coxph.model(object@model)$coefficients
-
-#' @rdname H2OCoxPHModelSummary-class
-#' @param object an \code{H2OCoxPHModelSummary} object.
-#' @param ... additional arguments to pass on.
-#' @export
 coef.H2OCoxPHModelSummary <- function(object, ...) object@summary$coefficients
 
-#' @rdname H2OCoxPHModel-class
-#' @param fit an \code{H2OCoxPHModel} object.
-#' @param scale optional numeric specifying the scale parameter of the model.
-#' @param k numeric specifying the weight of the equivalent degrees of freedom.
-#' @param ... additional arguments to pass on.
-#' @export
 extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
   fun <- get("extractAIC.coxph", getNamespace("stats"))
   if (missing(scale))
@@ -386,19 +371,9 @@ extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
     fun(.as.survival.coxph.model(fit@model), scale = scale, k = k)
 }
 
-#' @rdname H2OCoxPHModel-class
-#' @param object an \code{H2OCoxPHModel} object.
-#' @param ... additional arguments to pass on.
-#' @export
 logLik.H2OCoxPHModel <- function(object, ...)
   get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 
-#' @rdname H2OCoxPHModel-class
-#' @param formula an \code{H2OCoxPHModel} object.
-#' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
-#' variable names as those that appear in the \code{H2OCoxPHModel} object.
-#' @param ... additional arguments to pass on.
-#' @export
 survfit.H2OCoxPHModel <-
 function(formula, newdata, ...)
 {
@@ -425,7 +400,7 @@ function(formula, newdata, ...)
               n.event   = formula@model$n_event,
               n.censor  = formula@model$n_censor,
               surv      = NULL,
-              type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
+              type      = ifelse(length(stats::as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
               cumhaz    = formula@model$cumhaz_0,
               std.err   = NULL,
               upper     = NULL,
@@ -442,10 +417,6 @@ function(formula, newdata, ...)
   res
 }
 
-#' @rdname H2OCoxPHModel-class
-#' @param object an \code{H2OCoxPHModel} object.
-#' @param ... additional arguments to pass on.
-#' @export
 vcov.H2OCoxPHModel <- function(object, ...)
   get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 
