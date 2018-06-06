@@ -55,7 +55,9 @@ public class AutoMLBuildSpec extends Iced {
     public float[] class_sampling_factors;
     public float max_after_balance_size = 5.0f;
 
-    public int nfolds = 5; 
+    public int nfolds = 5;
+    public boolean keep_cross_validation_predictions = true;
+    public boolean keep_cross_validation_models = true; 
 
   }
 
