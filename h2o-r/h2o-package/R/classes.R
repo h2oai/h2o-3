@@ -425,7 +425,7 @@ function(formula, newdata, ...)
               n.event   = formula@model$n_event,
               n.censor  = formula@model$n_censor,
               surv      = NULL,
-              type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
+              type      = ifelse(length(stats::as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
               cumhaz    = formula@model$cumhaz_0,
               std.err   = NULL,
               upper     = NULL,
