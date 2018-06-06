@@ -67,9 +67,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
-  public FrameMetadata getFrameMetadata() {
-    return frameMetadata;
-  }
+//  Disabling metadata collection for now as there is no use for it...
+//  public FrameMetadata getFrameMetadata() {
+////    return frameMetadata;
+////  }
 
   private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
@@ -79,10 +80,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec foldColumn;
   private Vec weightsColumn;
 
-  private FrameMetadata frameMetadata;           // metadata for trainingFrame
+//  Disabling metadata collection for now as there is no use for it...
+//  private FrameMetadata frameMetadata;           // metadata for trainingFrame
 
   private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
-  private boolean isClassification;
+//  private boolean isClassification;
 
   private Date startTime;
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
@@ -1000,20 +1002,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // gather initial frame metadata and guess the problem type
     ///////////////////////////////////////////////////////////
+//    Disabling metadata collection for now as there is no use for it...
+//    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
+//    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
+//    frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
+//            trainingFrame.find(buildSpec.input_spec.response_column),
+//            trainingFrame._key.toString()).computeFrameMetaPass1();
+//
+//    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
+//    frameMetadata.fillSimpleMeta(frameMeta);
+//    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
+//
+//    job.update(20, "Computed dataset metadata");
 
-    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
-    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
-    frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
-            trainingFrame.find(buildSpec.input_spec.response_column),
-            trainingFrame._key.toString()).computeFrameMetaPass1();
-
-    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
-    frameMetadata.fillSimpleMeta(frameMeta);
-    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
-
-    job.update(20, "Computed dataset metadata");
-
-    isClassification = frameMetadata.isClassification();
+//    isClassification = frameMetadata.isClassification();
 
     ///////////////////////////////////////////////////////////
     // build a fast RF with default settings...
