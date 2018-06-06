@@ -451,7 +451,9 @@ class H2OFrame(object):
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
-            if H2ODisplay._in_ipy():
+            if self.nrows == 0:
+                print("This H2OFrame is empty.")
+            elif H2ODisplay._in_ipy():
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
             else:
