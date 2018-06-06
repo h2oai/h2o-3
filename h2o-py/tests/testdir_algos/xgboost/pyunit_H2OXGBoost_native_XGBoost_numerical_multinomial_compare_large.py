@@ -7,7 +7,7 @@ from h2o.estimators.xgboost import *
 from tests import pyunit_utils
 
 '''
-The goal of this test is to compare the results of H2OXGBoost and natibve XGBoost for binomial classification. 
+The goal of this test is to compare the results of H2OXGBoost and natibve XGBoost for multinomial classification. 
 The dataset contains only numerical columns.
 '''
 def comparison_test():
@@ -37,7 +37,7 @@ def comparison_test():
                    'max_depth': h2oParamsD["max_depth"],
                    'num_class':responseF}
 
-    trainFile = genTrainFiles(nrows, ncols, responseF)     # load in dataset and add response column
+    trainFile = pyunit_utils.genTrainFiles(nrows, ncols, responseLevel=responseF)     # load in dataset and add response column
     myX = trainFile.names
     y='response'
     myX.remove(y)
@@ -59,33 +59,8 @@ def comparison_test():
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
     nativeScoreTime = time.time()-time1
 
-    summarizeResult(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime)
-
-def summarizeResult(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime):
-    # Result comparison in terms of time
-    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s\n.  H2OGBoost scoring time is {2}s."
-          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
-                                                                             h2oPredictTimeD, nativeScoreTime))
-    # Result comparison in terms of actual prediction value between the two
-    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
-    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
-    nclass = len(nativePred[0])
-    colnames = h2oPredictD.names
-
-    # compare prediction probability and they should agree if they use the same seed
-    for ind in range(h2oPredictD.nrow):
-        for col in range(nclass):
-            assert abs(h2oPredictLocalD[colnames[col+1]][ind]-nativePred[ind][col])<1e-6, \
-                "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
-                "different.".format(h2oPredictLocalD[colnames[col+1]][ind], nativePred[ind][col])
-
-def genTrainFiles(nrow, ncol, responseF):
-    trainFrameNumerics = pyunit_utils.random_dataset_numeric_only(nrow, ncol, misFrac=0)
-    yresponse = pyunit_utils.random_dataset_enums_only(nrow, 1, factorL=responseF, misFrac=0)
-    yresponse.set_name(0,'response')
-    trainFrame = trainFrameNumerics.cbind(yresponse)
-    return trainFrame
-
+    pyunit_utils.summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime,
+                                             h2oPredictTimeD, nativeScoreTime, tolerance=1e-6)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(comparison_test)

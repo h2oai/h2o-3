@@ -36,9 +36,13 @@ def comparison_test():
                    'gamma': 0.0,
                    'max_depth': h2oParamsD["max_depth"]}
 
-    trainFile = genTrainFiles(nrows, ncols, responseF)     # load in dataset and add response column
-    myX = trainFile.names
+    trainFile = pyunit_utils.genTrainFiles(nrows, ncols)     # load in dataset
     y='response'
+    trainFile = trainFile.drop(y)   # drop the enum response and generate real values here
+    yresp = 0.99*pyunit_utils.random_dataset_numeric_only(nrows, 1, integerR = 1000000, misFrac=0)
+    yresp.set_name(0, y)
+    trainFile = trainFile.cbind(yresp)
+    myX = trainFile.names
     myX.remove(y)
 
     h2oModelD = H2OXGBoostEstimator(**h2oParamsD)
@@ -58,31 +62,8 @@ def comparison_test():
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
     nativeScoreTime = time.time()-time1
 
-    summarizeResult(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime)
-
-def summarizeResult(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime):
-    # Result comparison in terms of time
-    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s\n.  H2OGBoost scoring time is {2}s."
-          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
-                                                                             h2oPredictTimeD, nativeScoreTime))
-    # Result comparison in terms of actual prediction value between the two
-    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
-    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
-
-
-    # compare prediction probability and they should agree if they use the same seed
-    for ind in range(h2oPredictD.nrow):
-        assert abs((h2oPredictLocalD['predict'][ind]-nativePred[ind])/max(1, abs(h2oPredictLocalD['predict'][ind]), abs(nativePred[ind])))<1e-5, \
-                "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
-                "different.".format(h2oPredictLocalD['predict'][ind], nativePred[ind])
-
-def genTrainFiles(nrow, ncol, responseF):
-    trainFrameNumerics = pyunit_utils.random_dataset_numeric_only(nrow, ncol, misFrac=0)
-    yresponse = pyunit_utils.random_dataset_numeric_only(nrow, 1, integerR=responseF, misFrac=0)
-    yresponse = yresponse*0.9998
-    yresponse.set_name(0,'response')
-    trainFrame = trainFrameNumerics.cbind(yresponse)
-    return trainFrame
+    pyunit_utils.summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime,
+                                            h2oPredictTimeD, nativeScoreTime, tolerance=1e-5)
 
 
 if __name__ == "__main__":
