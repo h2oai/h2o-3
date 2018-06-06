@@ -71,7 +71,6 @@ Optional Miscellaneous Parameters
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-    - ``r2``
 
 -  `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping criterion to stop a grid search and the training of individual models within the AutoML run. This value defaults to 0.001 if the dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
 

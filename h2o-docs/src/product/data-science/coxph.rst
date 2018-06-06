@@ -44,7 +44,7 @@ Defining a CoxPH Model
 
 -  `ties <algo-params/ties.html>`__: The approximation method for handling ties in the partial likelihood. This can be either **efron** (default) or **breslow**). See the :ref:`coxph_model_details` section below for more information about these options.
 
--  **init**:  (Optional) Initial values for the coefficients in the model. This value defaults to 0.
+-  **init**: (Optional) Initial values for the coefficients in the model. This value defaults to 0.
 
 -  **lre_min**: A positive number to use as the minimum log-relative error (LRE) of subsequent log partial likelihood calculations to determine algorithmic convergence. The role this parameter plays in the stopping criteria of the model fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to 9.
 
