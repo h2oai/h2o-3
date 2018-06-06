@@ -157,7 +157,8 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   /**
    * Metric to use for convergence checking, only for _stopping_rounds > 0
    */
-  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "r2"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+//  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "r2"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public ScoreKeeper.StoppingMetric stopping_metric;
 
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)

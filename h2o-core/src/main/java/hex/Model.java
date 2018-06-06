@@ -880,8 +880,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
-      case r2:
-        return (float)(1-r2());
+/*      case r2:
+        return (float)(1-r2());*/
       case mean_per_class_error:
         return (float)mean_per_class_error();
       case lift_top_group:
