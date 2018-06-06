@@ -50,14 +50,12 @@ public class AutoMLBuildSpec extends Iced {
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
 
-    // Cross-validation fold construction
-    public int nfolds = 5; 
-    //public Model.Parameters.FoldAssignmentScheme fold_assignment;
-
     // Pass through to all algorithms
     public boolean balance_classes = false;
     public float[] class_sampling_factors;
     public float max_after_balance_size = 5.0f;
+
+    public int nfolds = 5; 
 
   }
 
