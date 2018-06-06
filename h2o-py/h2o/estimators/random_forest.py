@@ -468,13 +468,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``  (default: ``"auto"``).
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error", "r2"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 
