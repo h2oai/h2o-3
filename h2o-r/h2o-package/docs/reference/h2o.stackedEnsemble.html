@@ -93,7 +93,7 @@ learning algorithms specified by the user.</p>
   <span class='kw'>metalearner_algorithm</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"glm"</span>, <span class='st'>"gbm"</span>, <span class='st'>"drf"</span>, <span class='st'>"deeplearning"</span>),
   <span class='kw'>metalearner_nfolds</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>metalearner_fold_assignment</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"Random"</span>,
   <span class='st'>"Modulo"</span>, <span class='st'>"Stratified"</span>), <span class='kw'>metalearner_fold_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>keep_levelone_frame</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>keep_levelone_frame</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>metalearner_params</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -151,6 +151,15 @@ classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified
       <th>keep_levelone_frame</th>
       <td><p><code>Logical</code>. Keep level one frame used for metalearner training. Defaults to FALSE.</p></td>
     </tr>
+    <tr>
+      <th>seed</th>
+      <td><p>Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
+Defaults to -1 (time-based random number).</p></td>
+    </tr>
+    <tr>
+      <th>metalearner_params</th>
+      <td><p>Parameters for metalearner algorithm Defaults to NULL.</p></td>
+    </tr>
     </table>
     
 
@@ -175,7 +184,7 @@ classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import java.io.Serializable;
 
 public class DeeplearningMojoModel extends MojoModel {
   public int _mini_batch_size;
@@ -134,7 +135,7 @@ public class DeeplearningMojoModel extends MojoModel {
   }
 
   // class to store weight or bias for one neuron layer
-  public static class StoreWeightsBias {
+  public static class StoreWeightsBias implements Serializable {
     float[] _wValues; // store weight or bias arrays
     double[] _bValues;
 

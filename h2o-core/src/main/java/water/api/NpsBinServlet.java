@@ -3,6 +3,8 @@ package water.api;
 import water.H2O;
 import water.JettyHTTPD;
 import water.init.NodePersistentStorage;
+import water.util.FileUtils;
+import water.util.Log;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -42,8 +44,20 @@ public class NpsBinServlet extends HttpServlet {
       response.setContentLength((int) length.get());
       response.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
       JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_OK);
-      OutputStream os = response.getOutputStream();
-      water.util.FileUtils.copyStream(is, os, 2048);
+      OutputStream os = null;
+      try {
+        os = response.getOutputStream();
+        FileUtils.copyStream(is, os, 2048);
+      } finally {
+        if (os != null) {
+          try {
+            os.close();
+          }
+          catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
     } catch (Exception e) {
       JettyHTTPD.sendErrorResponse(response, e, uri);
     } finally {

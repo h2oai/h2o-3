@@ -12,20 +12,18 @@ test.CoxPH.heart <- function() {
 
 
     output <- coxph.h2o@model
+    coefs <- output$coefficients
+    coefficients.h2o <- coefs$coefficients
+    names(coefficients.h2o) <- coefs$names
 
-    names(output$coef) <- output$coef_names
-    # Note: only for this particular test (nums only)
-    names(output$x_mean_num) <- output$coef_names
-
-    expect_equal(output$coef, coxph.r$coefficients, tolerance = 1e-8)
+    expect_equal(coefficients.h2o, coxph.r$coefficients, tolerance = 1e-8)
     expect_equal(output$var_coef, coxph.r$var, tolerance = 1e-8)
     expect_equal(output$loglik, tail(coxph.r$loglik, 1), tolerance = 1e-8)
     expect_equal(output$score, coxph.r$score, tolerance = 1e-8)
     expect_true(output$iter >= 1)
-    expect_equal(output$x_mean_num, coxph.r$means, tolerance = 1e-8)
 
     expect_equal(output$n, coxph.r$n)
-    expect_equal(sum(output$n_event), coxph.r$nevent)
+    expect_equal(output$total_event, coxph.r$nevent)
 
     expect_equal(output$wald.test, coxph.r$wald_test, tolerance = 1e-8)
 
@@ -35,22 +33,27 @@ test.CoxPH.heart <- function() {
 
     # test print summary
     summary.out <- capture.output(print(summary.info))
-    summary.out.sanitized <- gsub("[0-9]", "?", x = summary.out)[4:18]
+    print(summary.out)
+    summary.out.sanitized <- gsub("[0-9]+", "?", x = summary.out)
+    summary.out.sanitized <- gsub("[^a-zA-Z~=?|() *>.,-:\"]", "_", x = summary.out.sanitized) #keep only "safe" characters (see #9)
     summary.out.expected <- c(
-      "  n= ???",
+      "Call:",
+      "\"Surv(start, stop, event) ~ age\"",
+      "",
+      "  n= ?, number of events= ? ",
       "",
       "       coef exp(coef) se(coef)     z Pr(>|z|)  ",
-      "age ?.?????   ?.?????  ?.????? ?.???   ?.???? *",
+      "age ?.?   ?.?  ?.? ?.?   ?.? *",
       "---",
-      "Signif. codes:  ? ‘***’ ?.??? ‘**’ ?.?? ‘*’ ?.?? ‘.’ ?.? ‘ ’ ?",
+      "Signif. codes:  ? _***_ ?.? _**_ ?.? _*_ ?.? _._ ?.? _ _ ?", #9, locale specific (single quotes)
       "",
-      "    exp(coef) exp(-coef) lower .?? upper .??",
-      "age     ?.???     ?.????     ?.???      ?.??",
+      "    exp(coef) exp(-coef) lower .? upper .?",
+      "age     ?.?     ?.?     ?.?      ?.?",
       "",
-      "Rsquare= ?.??   (max possible= ?.??? )",
-      "Likelihood ratio test= ?.??  on ? df,   p=?.?????",
-      "Wald test            = ?.??  on ? df,   p=?.?????",
-      "Score (logrank) test = ?.??  on ? df,   p=?.?????",
+      "Rsquare= ?.?   (max possible= ?.? )",
+      "Likelihood ratio test= ?.?  on ? df,   p=?.?",
+      "Wald test            = ?.?  on ? df,   p=?.?",
+      "Score (logrank) test = ?.?  on ? df,   p=?.?",
       ""
     )
     expect_equal(summary.out.expected, summary.out.sanitized)

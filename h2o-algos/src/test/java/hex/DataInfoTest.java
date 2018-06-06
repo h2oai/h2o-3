@@ -354,6 +354,125 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+  @Test public void testInteractionsForcedAllFactors() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[] {"Distance"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      String[] expected = new String[dinfo.coefNames().length];
+      for (int i = 0; i < expected.length; i++)
+        expected[i] = "Origin_Distance." + sfr.vec("Origin").domain()[i];
+      Assert.assertArrayEquals(expected, dinfo.coefNames());
+      dinfo.dropInteractions();
+      dinfo.remove();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testInteractionsSkip1stFactor() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+      // Check that we get correct expanded coefficients and "Distance" is not dropped
+      Assert.assertEquals(fr.vec("Origin").domain().length, dinfo.coefNames().length);
+      String[] expected = new String[dinfo.coefNames().length];
+      expected[expected.length - 1] = "Distance";
+      for (int i = 0; i < expected.length - 1; i++)
+        expected[i] = "Origin_Distance." + fr.vec("Origin").domain()[i + 1];
+      Assert.assertArrayEquals(expected, dinfo.coefNames());
+      // Check that we can look-up "Categorical Id" for valid levels
+      for (int j = /*don't use all factor levels*/ 1; j < dinfo._adaptedFrame.vec(0).domain().length; j++) {
+        if (dinfo.getCategoricalIdFromInteraction(0, j) < 0)
+          Assert.fail("Categorical value should be recognized: " + j);
+      }
+      // Check that we get "mode" for unknown level
+      dinfo._valid = true;
+      Assert.assertEquals(fr.vec("Origin").mode(),
+              dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
+      dinfo.dropInteractions();
+      dinfo.remove();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGetCategoricalIdFromInteraction() {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip"));
+      Frame sfr = fr.subframe(new String[]{"Origin", "Distance", "IsDepDelayed"});
+      Model.InteractionSpec interactionSpec = Model.InteractionSpec.create(
+              new String[]{"Origin", "Distance"}, null, new String[]{"Origin"});
+      DataInfo dinfo = new DataInfo(
+              sfr,  // train
+              null,        // valid
+              1,           // num responses
+              false,        // DON'T use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              interactionSpec  // interaction spec
+      );
+    // Check that we can look-up "Categorical Id" for valid levels
+    for (int j = /*don't use all factor levels*/ 1; j < dinfo._adaptedFrame.vec(0).domain().length; j++) {
+      if (dinfo.getCategoricalIdFromInteraction(0, j) < 0)
+        Assert.fail("Categorical value should be recognized: " + j);
+    }
+    // Check that we get "mode" for unknown level
+    dinfo._valid = true;
+    Assert.assertEquals(fr.vec("Origin").mode(),
+            dinfo.getCategoricalIdFromInteraction(0, dinfo._adaptedFrame.vec(0).domain().length));
+    dinfo.dropInteractions();
+    dinfo.remove();
+  } finally {
+    Scope.exit();
+  }
+
+}
+
 //  @Test public void personalChecker() {
 //    final Frame gold = parse_test_file(Key.make("gold"), "/Users/spencer/Desktop/ffff.csv");
 //    Frame fr = parse_test_file(Key.make("a.hex"), "/Users/spencer/Desktop/iris.csv");

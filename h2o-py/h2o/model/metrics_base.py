@@ -64,6 +64,9 @@ class MetricsBase(backwards_compatible()):
 
     def show(self):
         """Display a short summary of the metrics."""
+        if self._metric_json==None:
+            print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+            return
         metric_type = self._metric_json['__meta']['schema_type']
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
         types_w_clustering = ['ModelMetricsClustering']

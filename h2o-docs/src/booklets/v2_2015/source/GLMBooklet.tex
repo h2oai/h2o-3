@@ -376,11 +376,11 @@ function. Change the regression by changing the family to binomial.
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
 
-Let $X_i\in\rm \Bbb I \!\Bbb R^{(p)}$, $y$ can belong to any of the $K$ classes. In logistic ordinal regression, we model the cumulative probability that $y$ belongs to class $j$, given $X_i$ as the logistic function:
+Let $X_i\in\rm \Bbb I \!\Bbb R^{p}$, $y$ can belong to any of the $K$ classes. In logistic ordinal regression, we model the cumulative distribution function (CDF) of $y$ belonging to class $j$, given $X_i$ as the logistic function:
 
 $$P(y \leq j|X_i) = \phi(\beta^{T}X_i + \theta_j) = \dfrac {1} {1+ \text{exp} (-\beta^{T}X_i - \theta_j)}$$
 
-Compared to multiclass logistic regression, all classes share the same $\beta$ vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will $X_i$ be predicted, we use the thresholds vector $\theta$. If there are $K$ different classes, then $\theta$ is a non-decreasing vector (that is, $\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})$ of size $K-1$. We then assign $X_i$ to the class $j$ if $\beta^{T}X_i + \theta_j \geq 0$ for the lowest class label $j$.
+Compared to multiclass logistic regression, all classes share the same $\beta$ vector. This adds the constraint that the hyperplanes that separate the different classes are parallel for all classes. To decide which class will $X_i$ be predicted, we use the thresholds vector $\theta$. If there are $K$ different classes, then $\theta$ is a non-decreasing vector (that is, $\theta_0 \leq \theta_1 \leq \ldots \theta_{K-2})$ of size $K-1$. We then assign $X_i$ to the class $j$ if $\beta^{T}X_i + \theta_j > 0$ for the lowest class label $j$.
 
 We choose a logistic function to model the probability $P(y \leq j|X_i)$ but other choices are possible. 
 
@@ -388,7 +388,32 @@ To determine the values of $\beta$ and $\theta$, we maximize the log-likelihood 
 
 $$L(\beta,\theta) = \sum_{i=1}^{n} \text{log} \big( \phi (\beta^{T}X_i + \theta_{y_i}) - \phi(\beta^{T}X_i + \theta_{{y_i}-1}) \big)$$
 
-\textbf{Note}: Be careful when using ordinal regression. H2O's GLM uses a likelihood function to adjust the system parameters. However, during prediction, we look at the log CDF odds. As a result, there is a small disconnect between the two. Please also consider using recommendation methods as well. 
+Conventional ordinal regression uses a likelihood function to adjust the model parameters. However, during prediction, GLM looks at the log CDF odds. 
+
+$$log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{y_j}$$
+
+As a result, there is a small disconnect between the two. To remedy this, we have implemented a new algorithm to set and adjust the model parameters. 
+
+Recall that during prediction, a dataset row represented by $X_i$ will be set to class $j$ if 
+
+$$log \frac {P(y_i \leq j|X_i)} {1 - P(y_i \leq j|X_i)} = \beta^{T}X_i + \theta_{j} > 0 $$
+
+and
+
+$$\beta^{T}X_i + \theta_{j'} \leq 0 \; \text{for} \; j' < j$$
+
+Hence, for each training data sample $(X_{i}, y_i)$, we adjust the model parameters $\beta, \theta_0, \theta_1, \ldots, \theta_{K-2}$ by considering the thresholds $`\beta^{T}X_i + \theta_j$ directly. The following loss function is used to adjust the model parameters:
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{images/ordinal_equation.png}
+\end{figure}
+
+Again, you can add the Regularization Penalty to the loss function. The model parameters are adjusted by minimizing the loss function using gradient descent. When the Ordinal family is specified, the \texttt{solver} parameter will automatically be set to \texttt{GRADIENT\_DESCENT\_LH} and use the log-likelihood function. To adjust the model parameters using the loss function, you can set the solver parameter to \texttt{GRADIENT\_DESCENT\_SQERR}. 
+
+Because only first-order methods are used in adjusting the model parameters, use Grid Search to choose the best combination of the \texttt{obj\_reg}, \texttt{alpha}, and \texttt{lambda} parameters.
+
+In general, the loss function methods tend to generate better accuracies than the likelihood method. In addition, the loss function method is faster as it does not deal with logistic functions - just linear functions when adjusting the model parameters.
 
 \waterExampleInR
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_ordinal_example.R}
@@ -635,15 +660,18 @@ This section provides general guidelines for best performance from the H2O GLM i
 The data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than $\sim 10$. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.  
 
 \subsubsection{Solver Details}
-H2O's GLM offers two different solvers: 
+H2O's GLM offers the following solvers: 
 
 \begin{itemize}
 \item the Iteratively Reweighted Least Squares Method (IRLSM)
 \item the Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm (L-BFGS)
+\item Coordinate Decent
+\item Coordinate Decent Naive
+\item Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
+\item Gradient Descent Squared Error (available for Ordinal family only)
 \end{itemize}
 
-IRLSM uses a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense
-datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than $\sim 500$ predictors in the data, use the default, which is IRLSM. 
+IRLSM uses a Gram Matrix approach, which is very efficient for tall and narrow datasets and when running lambda search with a sparse solution.  For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than $\sim 500$ predictors in the data, use the default, which is IRLSM. 
 
 For larger numbers of predictors, it is recommended to run IRLSM with lambda search and compare it to L-BFGS with just the $\ell_2$ penalty. For advanced users, we recommend the following general guidelines:
 %H2O's GLM offers two different approaches for datasets with more than a thousand predictors.%depending on the expected number of coefficients to be included in the model: % to handling wide datasets: the IRLSM and the L-BFGS solvers.
@@ -669,15 +697,9 @@ The method is able to handle large datasets well and deals efficiently with spar
 
 Coordinate descent can be implemented with naive or covariance updates as explained in the glmnet paper. The covariance updates version is faster when $N>p$ and $p \sim 500$. 
 
-In summary, the solver options for fitting a GLM in H2O are:
-\begin{itemize}
- \item \textbf{L-BFGS}: when the number of predictors is large
- \item \textbf{IRLSM}: IRLSM with the ADMM solver in the innermost loop when you have a limited number of predictors
- %\item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}: IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop 
- %\item \textbf{COORDINATE}\texttt{\char`_}\textbf{DESCENT}\texttt{\char`_}\textbf{NAIVE}: IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
-\end{itemize}
+\textbf{Note}: The coordinate descent implementations are experimental and their performance characteristics are still being evaluated. 
 
-%\textbf{Note}: The coordinate descent implementations are experimental and their performance characteristics are still being evaluated. 
+For Ordinal regression problems, H2O provides options for Gradient Descent. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the solver parameter will automatically be set to GRADIENT\_DESCENT\_LH. To adjust the model parameters using the loss function, you can set the \texttt{solver} parameter to GRADIENT\_DESCENT\_SQERR.
 
 \subsubsection{Stopping Criteria}
 
@@ -688,7 +710,6 @@ Models built at the beginning of the lambda search have higher lambda values, co
 Models built at the end of the lambda search have
 lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_stopping_criteria.R}
 
@@ -697,7 +718,7 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 %For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
 %model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
-\newpage
+
 \subsection{Advanced Features}
 
 H2O's GLM has several advanced features to help build better models.
@@ -839,7 +860,7 @@ The following sections represent the output produced by logistic regression (i.e
 \newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output_10.py}
-\newpage
+
 \begin{lstlisting}[style=output]
 Model Details:
 ==============
@@ -1000,7 +1021,7 @@ Fetch the confusion matrix directly using the following accessor function:
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_confusion_matrix.R}
 
-\newpage
+
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_confusion_matrix.py}
 
@@ -1040,16 +1061,16 @@ In addition to predictions, you can view metrics such as area under curve (AUC) 
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.R}
 
-\newpage
+
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_with_response.py}
 
+\newpage
 Here is an example of making predictions on new data:
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.py}
 \begin{lstlisting}[style=output]
@@ -1095,6 +1116,7 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_download_pojo.R}
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=Python]{GLM_Vignette_code_examples/glm_download_pojo.py}
 
@@ -1116,6 +1138,7 @@ Here are a few rules of thumb to follow:
 \item When using the IRLSM solver, larger nodes can help the ADMM (Cholesky decomposition) run faster
 \end{itemize}
 
+\newpage
 \subsection{Verifying Model Results}
 
 To determine the accuracy of your model, use the following guidelines: 
@@ -1123,7 +1146,6 @@ To determine the accuracy of your model, use the following guidelines:
 \begin{itemize}
 \item Look for conspicuously different cross-validation results between folds:
 
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_compare_cross_validation_folds.R}
 
@@ -1181,7 +1203,7 @@ $$N = \sum_{c \in C} (\|c.domain\|) - \arg\max_{c \in C} \|c.domain\| + \|Nums\|
 
 \subsection{Performance Characteristics}
 
-This section discusses the CPU and memory cost of each available non-experimental solver for running GLM.
+This section discusses the CPU and memory cost of the IRLSM and L-BFGS solvers for running GLM.
 
 \subsubsection{IRLSM Solver}
 
@@ -1280,7 +1302,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{objective\_epsilon}: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged.
 \item \texttt{beta\_epsilon}: A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations. Defines the convergence criterion. 
 \item \texttt{gradient\_epsilon}: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
-\item \texttt{solver}: A character string specifying the solver used: either \texttt{IRLSM}, which supports more features, or \texttt{L\_BFGS}, which scales better for datasets with many columns. 
+\item \texttt{solver}: A character string specifying the solver used. \texttt{IRLSM} supports more features. \texttt{L\_BFGS} scales better for datasets with many columns. \texttt{COORDINATE\_DESCENT} is \texttt{IRLSM} with the covariance updates version of cyclical coordinate descent in the innermost loop. \\ \texttt{COORDINATE\_DESCENT\_NAIVE} is \texttt{IRLSM} with the naive updates version of cyclical coordinate descent in the innermost loop. \\\texttt{COORDINATE\_DESCENT\_NAIVE} and \texttt{COORDINATE\_DESCENT} are currently experimental. \texttt{GRADIENT\_DESCENT\_LH} and \\\texttt{GRADIENT\_DESCENT\_SQERR} can only be used with the Ordinal family.
 \item \texttt{standardize}: A logical value that indicates whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to model training. 
 \item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian}, \texttt{binomial}, \texttt{gamma}, \texttt{ordinal}, \texttt{multinomial}, \texttt{poisson}, \texttt{tweedie,} or \texttt{quasibinomial}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
 \item \texttt{link}: The link function relates the linear predictor to the distribution function. The default is the canonical link for the specified family. The full list of supported links for each family: 

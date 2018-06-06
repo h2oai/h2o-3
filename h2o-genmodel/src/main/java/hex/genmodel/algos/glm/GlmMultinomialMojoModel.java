@@ -42,7 +42,7 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
         }
       }
       for (int i = 0; i < _nums; ++i)
-        preds[c+1] += _beta[noff+i + c*P]*data[i];
+        preds[c+1] += _beta[noff+i + c*P]*data[i+_cats];
       preds[c+1] += _beta[(P-1) + c*P]; // reduce intercept
     }
     double max_row = 0;

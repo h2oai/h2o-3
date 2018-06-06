@@ -17,6 +17,8 @@ dependencies {
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
+  // Include GCS persist layer
+  compile(project(":h2o-persist-gcs"))
   // Include S3 persist layer
   compile(project(":h2o-persist-s3"))
   // Include HDFS persist layer

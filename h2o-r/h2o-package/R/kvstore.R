@@ -242,7 +242,11 @@ h2o.getModel <- function(model_id) {
 #' }
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
-
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
   if (!(model@have_pojo)){
     stop(paste0(model@algrithm, ' does not support export to POJO'))
   }
@@ -300,8 +304,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #'
 #' @param model An H2OModel
 #' @param path The path where MOJO file should be saved. Saved to current directory by default.
-#' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in folder ``path``.
+#' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in either in the same folder
+#         as the MOJO or in ``genmodel_path`` if specified.
 #' @param genmodel_name Custom name of genmodel jar.
+#' @param genmodel_path Path to store h2o-genmodel.jar. If left blank and ``get_genmodel_jar`` is TRUE, then the h2o-genmodel.jar
+#         is saved to ``path``.
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
@@ -313,8 +320,12 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="") {
-
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="") {
+  
+  if (class(model) == "H2OAutoML") {
+    model <- model@leader
+  }
+  
   if (!(model@have_mojo)){
     stop(paste0(model@algorithm, ' does not support export to MOJO'))
   }
@@ -327,6 +338,14 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 
   if(!(file.exists(path))){
     stop(paste0("'path',",path,", to save MOJO file cannot be found."))
+  }
+
+  if(genmodel_path=="") {
+    genmodel_path <- path
+  }
+
+  if(!(file.exists(genmodel_path))){
+    stop(paste0("'genmodel_path',",genmodel_path,", to save the genmodel.jar file cannot be found."))
   }
 
   #Get model id
@@ -344,9 +363,9 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     urlSuffix = "h2o-genmodel.jar"
     #Build genmodel.jar file path
     if(genmodel_name==""){
-      jar.path <- file.path(path, "h2o-genmodel.jar")
+      jar.path <- file.path(genmodel_path, "h2o-genmodel.jar")
     }else{
-      jar.path <- file.path(path, genmodel_name)
+      jar.path <- file.path(genmodel_path, genmodel_name)
     }
     #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
     #and write to jar.path.

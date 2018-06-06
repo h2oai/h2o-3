@@ -94,21 +94,23 @@ description of the error distribution.</p>
   <span class='st'>"Random"</span>, <span class='st'>"Modulo"</span>, <span class='st'>"Stratified"</span>), <span class='kw'>fold_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>ignore_const_cols</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>score_each_iteration</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>offset_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>weights_column</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>family</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"gaussian"</span>,
-  <span class='st'>"binomial"</span>, <span class='st'>"quasibinomial"</span>, <span class='st'>"multinomial"</span>, <span class='st'>"poisson"</span>, <span class='st'>"gamma"</span>, <span class='st'>"tweedie"</span>),
-  <span class='kw'>tweedie_variance_power</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>tweedie_link_power</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>solver</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>,
-  <span class='st'>"IRLSM"</span>, <span class='st'>"L_BFGS"</span>, <span class='st'>"COORDINATE_DESCENT_NAIVE"</span>, <span class='st'>"COORDINATE_DESCENT"</span>),
+  <span class='st'>"binomial"</span>, <span class='st'>"quasibinomial"</span>, <span class='st'>"ordinal"</span>, <span class='st'>"multinomial"</span>, <span class='st'>"poisson"</span>, <span class='st'>"gamma"</span>,
+  <span class='st'>"tweedie"</span>), <span class='kw'>tweedie_variance_power</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>tweedie_link_power</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>solver</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"AUTO"</span>, <span class='st'>"IRLSM"</span>, <span class='st'>"L_BFGS"</span>, <span class='st'>"COORDINATE_DESCENT_NAIVE"</span>,
+  <span class='st'>"COORDINATE_DESCENT"</span>, <span class='st'>"GRADIENT_DESCENT_LH"</span>, <span class='st'>"GRADIENT_DESCENT_SQERR"</span>),
   <span class='kw'>alpha</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>lambda</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>lambda_search</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>early_stopping</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>nlambdas</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>standardize</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>missing_values_handling</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"MeanImputation"</span>, <span class='st'>"Skip"</span>),
   <span class='kw'>compute_p_values</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>remove_collinear_columns</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>intercept</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>non_negative</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max_iterations</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
   <span class='kw'>objective_epsilon</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>beta_epsilon</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>gradient_epsilon</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
-  <span class='kw'>link</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"family_default"</span>, <span class='st'>"identity"</span>, <span class='st'>"logit"</span>, <span class='st'>"log"</span>, <span class='st'>"inverse"</span>,
-  <span class='st'>"tweedie"</span>), <span class='kw'>prior</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>lambda_min_ratio</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>beta_constraints</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>max_active_predictors</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>balance_classes</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>class_sampling_factors</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>max_after_balance_size</span> <span class='kw'>=</span> <span class='fl'>5</span>,
-  <span class='kw'>max_hit_ratio_k</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>custom_metric_func</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+  <span class='kw'>link</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"family_default"</span>, <span class='st'>"identity"</span>, <span class='st'>"logit"</span>, <span class='st'>"log"</span>, <span class='st'>"inverse"</span>, <span class='st'>"tweedie"</span>,
+  <span class='st'>"ologit"</span>, <span class='st'>"oprobit"</span>, <span class='st'>"ologlog"</span>), <span class='kw'>prior</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>lambda_min_ratio</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
+  <span class='kw'>beta_constraints</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>max_active_predictors</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
+  <span class='kw'>interactions</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>interaction_pairs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>obj_reg</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
+  <span class='kw'>balance_classes</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>class_sampling_factors</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>max_after_balance_size</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>max_hit_ratio_k</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>max_runtime_secs</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>custom_metric_func</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
@@ -185,8 +187,8 @@ well. During training, rows with higher weights matter more, due to the larger l
     <tr>
       <th>family</th>
       <td><p>Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-one of: "gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie". Defaults to
-gaussian.</p></td>
+one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie".
+Defaults to gaussian.</p></td>
     </tr>
     <tr>
       <th>tweedie_variance_power</th>
@@ -201,7 +203,8 @@ gaussian.</p></td>
       <td><p>AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
-"COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT". Defaults to AUTO.</p></td>
+"COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to
+AUTO.</p></td>
     </tr>
     <tr>
       <th>alpha</th>
@@ -280,8 +283,8 @@ values above are 1E-8 and 1E-6 respectively. Defaults to -1.</p></td>
     </tr>
     <tr>
       <th>link</th>
-      <td><p>Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie". Defaults to
-family_default.</p></td>
+      <td><p>Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit", "oprobit",
+"ologlog". Defaults to family_default.</p></td>
     </tr>
     <tr>
       <th>prior</th>
@@ -312,6 +315,10 @@ max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults 
     <tr>
       <th>interaction_pairs</th>
       <td><p>A list of pairwise (first order) column interactions.</p></td>
+    </tr>
+    <tr>
+      <th>obj_reg</th>
+      <td><p>Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.</p></td>
     </tr>
     <tr>
       <th>balance_classes</th>
@@ -407,7 +414,7 @@ Defaults to 0.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by The H2O.ai team.</p>
+  <p>Developed by Tom Kraljevic.</p>
 </div>
 
 <div class="pkgdown">

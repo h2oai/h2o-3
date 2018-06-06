@@ -19,17 +19,18 @@ then the model will stop training after reaching three scoring events in a row i
 
 Available options for ``stopping_metric`` include the following:
 
-- ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+- ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression
 - ``deviance``
 - ``logloss``
-- ``mse``
-- ``rmse``
-- ``mae``
-- ``rmsle``
-- ``auc``
+- ``MSE``
+- ``RMSE``
+- ``MAE``
+- ``RMSLE``
+- ``AUC``
 - ``lift_top_group``
 - ``misclassification``
 - ``mean_per_class_error``
+- ``r2``
 
 **Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
 

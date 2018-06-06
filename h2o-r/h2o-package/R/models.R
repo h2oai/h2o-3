@@ -504,7 +504,8 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given
-#' dataset
+#' dataset.  However, if the dataset does not contain the response/target column, no performance will be returned.
+#' Instead, a warning message will be printed.
 #'
 #'
 #' @param model An \linkS4class{H2OModel} object
@@ -553,10 +554,13 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE") 
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
-  
+
   missingNewdata <- missing(newdata) || is.null(newdata)
-  
   if( !missingNewdata ) {
+    if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
+      print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+      return(NULL)
+    }
     newdata.id <- h2o.getId(newdata)
     parms <- list()
     parms[["model"]] <- model@model_id
@@ -1033,17 +1037,15 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
 h2o.coef <- function(object) {
-  if (is(object, "H2OModel")) {
-    if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@allparameters$family != "multinomial" && object@allparameters$family != "ordinal") {
-      coefs <- object@model$coefficients_table$coefficients
-      names(coefs) <- object@model$coefficients_table$names
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
+    if (object@algorithm == "glm" && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+      object@model$coefficients_table
     } else {
-      coefs <- object@model$coefficients_table
+      structure(object@model$coefficients_table$coefficients,
+                names = object@model$coefficients_table$names)
     }
-    return(coefs)
   } else {
-    stop("Can only extract coefficients from GLMs")
+    stop("Can only extract coefficients from GLM and CoxPH models")
   }  
 }
 
@@ -1053,15 +1055,13 @@ h2o.coef <- function(object) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
 h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel")) {
-    if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@parameters$family != "multinomial"  && object@parameters$family != "ordinal") {
-      coefs <- object@model$coefficients_table$standardized_coefficients
-      names(coefs) <- object@model$coefficients_table$names
+  if (is(object, "H2OModel") && object@algorithm == "glm") {
+    if (object@allparameters$family %in% c("multinomial", "ordinal")) {
+      object@model$coefficients_table
     } else {
-      coefs <- object@model$coefficients_table
+      structure(object@model$coefficients_table$standardized_coefficients,
+                names = object@model$coefficients_table$names)
     }
-    return(coefs)
   } else {
     stop("Can only extract coefficients from GLMs")
   }
@@ -2807,7 +2807,7 @@ h2o.tabulate <- function(data, x, y,
 #' @param base_size  Base font size for plot.
 #' @param ... additional arguments to pass on.
 #' @return Returns a ggplot2-based heatmap of co-occurance.
-#' @seealso \code{link{h2o.tabulate}}
+#' @seealso \code{\link{h2o.tabulate}}
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -3018,8 +3018,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' @param layer Index (for DeepLearning, integer) or Name (for DeepWater, String) of the hidden layer to extract
 #' @return Returns an H2OFrame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
-#' @seealso \code{link{h2o.deeplearning}} for making H2O Deep Learning models.
-#' @seealso \code{link{h2o.deepwater}} for making H2O DeepWater models.
+#' @seealso \code{\link{h2o.deeplearning}} for making H2O Deep Learning models.
+#' @seealso \code{\link{h2o.deepwater}} for making H2O DeepWater models.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -3059,3 +3059,6 @@ h2o.deepfeatures <- function(object, data, layer) {
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
 }
+
+#' @export
+print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")

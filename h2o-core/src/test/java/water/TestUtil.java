@@ -1,5 +1,6 @@
 package water;
 
+import hex.CreateFrame;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -19,10 +20,7 @@ import water.util.TwoDimTable;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -149,6 +147,67 @@ public class TestUtil extends Iced {
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
+  }
+
+  /**
+   * generate random frames containing enum columns only
+   * @param numCols
+   * @param numRows
+   * @param num_factor
+   * @return
+   */
+  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.factors=num_factor;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 0;
+    cf.categorical_fraction = 1;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
+  }
+
+  protected static int[] rangeFun(int numEle, int offset) {
+    int[] ranges = new int[numEle];
+
+    for (int index = 0; index < numEle; index++) {
+      ranges[index] = index+offset;
+    }
+    return ranges;
+  }
+
+  protected static int[] sortDir(int numEle, Random rand) {
+    int[] sortDir = new int[numEle];
+    int[] dirs = new int[]{-1,1};
+
+    for (int index = 0; index < numEle; index++) {
+      sortDir[index] = dirs[rand.nextInt(2)];
+    }
+    return sortDir;
+  }
+  /**
+   * generate random frames containing enum columns only
+   * @param numCols
+   * @param numRows
+   * @return
+   */
+  protected static Frame generate_int_only(int numCols, int numRows, int iRange, double missingfrac) {
+    CreateFrame cf = new CreateFrame();
+    cf.rows= numRows;
+    cf.cols = numCols;
+    cf.binary_fraction = 0;
+    cf.integer_fraction = 1;
+    cf.categorical_fraction = 0;
+    cf.has_response=false;
+    cf.missing_fraction = missingfrac;
+    cf.integer_range=iRange;
+    cf.seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    return cf.execImpl().get();
   }
 
   private static class DKVCleaner extends MRTask<DKVCleaner> {

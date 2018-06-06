@@ -5,21 +5,24 @@ def call(final pipelineContext, final stageConfig) {
   def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
 
-  final String DATASETS_FILE = 'accuracy_datasets_docker.csv'
-  final GString TEST_CASES_FILE = "test_cases_${stageConfig.customData.model}.csv"
+  final String DATASETS_FILE = 'accuracy_datasets_h2o.csv'
+  final GString TEST_CASES_FILE = "test_cases_${stageConfig.customData.algorithm}.csv"
   final GString ML_BENCHMARK_ROOT = "${env.WORKSPACE}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/h2o-3/ml-benchmark"
 
-  stageConfig.datasetsPath = stageConfig.datasetsPath ?: "${ML_BENCHMARK_ROOT}/h2oR/${DATASETS_FILE}"
-  stageConfig.testCasesPath = stageConfig.testCasesPath ?: "${ML_BENCHMARK_ROOT}/h2oR/${TEST_CASES_FILE}"
+  stageConfig.datasetsPath = "${ML_BENCHMARK_ROOT}/jenkins/${DATASETS_FILE}"
+  stageConfig.testCasesPath = "${ML_BENCHMARK_ROOT}/jenkins/${TEST_CASES_FILE}"
   stageConfig.makefilePath = stageConfig.makefilePath ?: "${ML_BENCHMARK_ROOT}/jenkins/Makefile.jenkins"
 
   dir (ML_BENCHMARK_ROOT) {
-    checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
-    sh "sed 's/s3:\\/\\/h2o-benchmark/\\/datasets/g' h2oR/accuracy_datasets_h2o.csv > h2oR/accuracy_datasets_docker.csv"
+    retry(3) {
+      timeout(time: 1, unit: 'MINUTES') {
+        checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
+      }
+    }
   }
 
-  def prepareBenchmarkDirStruct = load("${ML_BENCHMARK_ROOT}/jenkins/groovy/prepareBenchmarkDirStruct.groovy")
-  def benchmarkFolderConfig = prepareBenchmarkDirStruct(stageConfig.customData.model, env.GIT_SHA, env.BRANCH_NAME)
+  def prepareBenchmarkFolderConfig = pipelineContext.getPrepareBenchmarkDirStruct(this, ML_BENCHMARK_ROOT)
+  def benchmarkFolderConfig = prepareBenchmarkFolderConfig(stageConfig.customData.algorithm, env.GIT_SHA, env.BRANCH_NAME)
   GString outputPath = "${env.workspace}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/${benchmarkFolderConfig.getOutputDir()}"
   sh "rm -rf ${outputPath} && mkdir -p ${outputPath}"
 
@@ -29,7 +32,7 @@ def call(final pipelineContext, final stageConfig) {
           "OUTPUT_PATH=${outputPath}",
           "GIT_SHA=${env.GIT_SHA}",
           "GIT_DATE=${env.GIT_DATE.replaceAll(' ', '-')}",
-          "BENCHMARK_MODEL=${stageConfig.customData.model}",
+          "BENCHMARK_ALGORITHM=${stageConfig.customData.algorithm}",
           "BUILD_ID=${env.BUILD_ID}",
   ]
 

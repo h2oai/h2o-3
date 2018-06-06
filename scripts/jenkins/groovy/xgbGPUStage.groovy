@@ -12,7 +12,7 @@ def call(final pipelineContext, final stageConfig) {
     ]
 
     for (String component : stageConfig.additionalTestPackages) {
-        pipelineContext.getUtils().unpackTestPackage(this, component, stageConfig.stageDir)
+        pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), component, stageConfig.stageDir)
     }
 
     final String h2o3dir = "${stageConfig.stageDir}/h2o-3"

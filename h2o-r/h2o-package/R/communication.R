@@ -779,7 +779,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #' Check if Progress Bar is Enabled
 #'
 .h2o.is_progress <- function() {
-  progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound=TRUE)
+  progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound = TRUE)
   if (is.list(progress)) progress <- unlist(progress)
   progress
 }

@@ -750,6 +750,8 @@ class H2OGridSearch(backwards_compatible()):
             model_class = H2ORegressionGridSearch
         elif model_type == "Multinomial":
             model_class = H2OMultinomialGridSearch
+        elif model_type == "Ordinal":
+            model_class = H2OOrdinalGridSearch
         elif model_type == "AutoEncoder":
             model_class = H2OAutoEncoderGridSearch
         elif model_type == "DimReduction":

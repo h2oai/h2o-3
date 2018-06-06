@@ -57,6 +57,7 @@ public abstract class Parser extends Iced {
   protected static final byte COND_QUOTED_NUMBER_END = 18;
   protected static final byte POSSIBLE_EMPTY_LINE = 19;
   protected static final byte POSSIBLE_CURRENCY = 20;
+  protected static final byte HASHTAG = 35;
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;

@@ -28,7 +28,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
     return (K instanceof Freezable[] || K instanceof Freezable || K instanceof String);
   }
   public boolean isSupportedValType(Object V) {
-    return (V instanceof Freezable[] || V instanceof Freezable || V instanceof String || V instanceof Integer);
+    return (V instanceof Freezable[] || V instanceof Freezable || V instanceof String || V instanceof Integer || V instanceof Boolean || V instanceof Float || V instanceof Double);
   }
   public IcedHashMapGeneric(){init();}
   private transient volatile boolean _write_lock;
@@ -67,6 +67,9 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
   private boolean isFreezeVal(int mode){return mode == 3 || mode == 4;}
   private boolean isFArrayVal(int mode){return mode == 5 || mode == 6;}
   private boolean isIntegrVal(int mode){return mode == 7 || mode == 8;}
+  private boolean isBoolVal(int mode){return mode == 9 || mode == 10;}
+  private boolean isFloatVal(int mode){return mode == 11 || mode == 12;}
+  private boolean isDoubleVal(int mode){return mode == 13 || mode == 14;}
 
   // This comment is stolen from water.parser.Categorical:
   //
@@ -94,6 +97,12 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
             mode = 5;
           } else if( val instanceof Integer ){
             mode = 7;
+          } else if( val instanceof Boolean ){
+            mode = 9;
+          } else if( val instanceof Float ){
+            mode = 11;
+          } else if( val instanceof Double ){
+            mode = 13;
           } else {
             throw new IllegalArgumentException("unsupported value class " + val.getClass().getName());
           }
@@ -108,6 +117,12 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
             mode = 6;
           } else if (val instanceof Integer){
             mode = 8;
+          } else if (val instanceof Boolean){
+            mode = 10;
+          } else if( val instanceof Float ){
+            mode = 12;
+          } else if( val instanceof Double ){
+            mode = 14;
           } else {
             throw new IllegalArgumentException("unsupported value class " + val.getClass().getName());
           }
@@ -126,6 +141,12 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
           for (Freezable v : (Freezable[]) val) ab.put(v);
         } else if(isIntegrVal(mode))
           ab.put4((Integer)val);
+        else if (isBoolVal(mode))
+          ab.put1((Boolean)val ? 1 : 0);
+        else if (isFloatVal(mode))
+          ab.put4f((Float)val);
+        else if (isDoubleVal(mode))
+          ab.put8d((Double)val);
         else
           throw H2O.fail();
       }
@@ -148,6 +169,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
    * Helper for serialization - fills the mymap() from K-V pairs in the AutoBuffer object
    * @param ab Contains the serialized K-V pairs
    */
+  @SuppressWarnings("unchecked")
   public final IcedHashMapGeneric read_impl(AutoBuffer ab) {
     try {
       assert map() == null || map().isEmpty(); // Fresh from serializer, no constructor has run
@@ -168,6 +190,12 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
           val = (V)vals;
         } else if(isIntegrVal(mode))
           val = (V) (new Integer(ab.get4()));
+        else if(isBoolVal(mode))
+          val = (V) (ab.get1() == 1 ? Boolean.TRUE : Boolean.FALSE);
+        else if (isFloatVal(mode))
+          val = (V) ((Float) ab.get4f());
+        else if (isDoubleVal(mode))
+          val = (V) ((Double) ab.get8d());
         else
           throw H2O.fail();
         map.put(key,val);
@@ -195,7 +223,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
       V value = entry.getValue();
 
       assert entry.getKey() instanceof String;
-      assert value instanceof String || value instanceof String[] || value instanceof Integer || value instanceof Freezable || value instanceof Freezable[];
+      assert value instanceof String || value instanceof String[] || value instanceof Integer || value instanceof Boolean || value instanceof Float || value instanceof Double || value instanceof Freezable || value instanceof Freezable[];
 
       if (first) { first = false; } else {ab.put1(',').put1(' '); }
       ab.putJSONName((String) key);
@@ -207,6 +235,12 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
         ab.putJSONAStr((String[]) value);
       else if (value instanceof Integer)
         ab.putJSON4((Integer) value);
+      else if (value instanceof Boolean)
+        ab.putJSONZ((Boolean) value);
+      else if (value instanceof Float)
+        ab.putJSON4f((Float) value);
+      else if (value instanceof Double)
+        ab.putJSON8d((Double) value);
       else if (value instanceof Freezable)
         ab.putJSON((Freezable) value);
       else if (value instanceof Freezable[])

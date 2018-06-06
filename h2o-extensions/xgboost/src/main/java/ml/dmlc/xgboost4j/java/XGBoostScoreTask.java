@@ -3,10 +3,8 @@ package ml.dmlc.xgboost4j.java;
 import com.google.common.collect.ObjectArrays;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
-import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostOutput;
-import hex.tree.xgboost.XGBoostUtils;
 import water.*;
 import water.fvec.*;
 
@@ -24,6 +22,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
     private final XGBoostModel.XGBoostParameters _parms;
+    private final BoosterParms _boosterParms;
+
 
     private byte[] rawBooster;
 
@@ -39,10 +39,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                                                Key<Frame> destinationKey,
                                                Frame data,
                                                boolean computeMetrics){
+        BoosterParms boosterParms = XGBoostModel.createParams(parms, output.nclasses());
         XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
                 output,
                 parms,
-                booster).doAll(outputTypes(output), data);
+                booster,
+                boosterParms).doAll(outputTypes(output), data);
         String[] names = ObjectArrays.concat(Model.makeScoringNames(output), new String[] {"label"}, String.class);
         Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
 
@@ -117,24 +119,25 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private XGBoostScoreTask(XGBoostModelInfo sharedmodel,
                              XGBoostOutput output,
                              XGBoostModel.XGBoostParameters parms,
-                             Booster booster) {
+                             Booster booster, BoosterParms boosterParms) {
         _sharedmodel = sharedmodel;
         _output = output;
         _parms = parms;
+        _boosterParms = boosterParms;
         this.rawBooster = XGBoost.getRawArray(booster);
     }
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+        DMatrix data = null;
+        Booster booster = null;
         try {
-            HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
-
             Map<String, String> rabitEnv = new HashMap<>();
             // Rabit has to be initialized as parts of booster.predict() are using Rabit
             // This might be fixed in future versions of XGBoost
             Rabit.init(rabitEnv);
 
-            DMatrix data = XGBoostUtils.convertChunksToDMatrix(
+            data = XGBoostUtils.convertChunksToDMatrix(
                     _sharedmodel._dataInfoKey,
                     cs,
                     _fr.find(_parms._response_column),
@@ -147,10 +150,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 return;
             }
 
-            Booster booster = null;
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
-                booster.setParams(params);
+                booster.setParams(_boosterParms.get());
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to load the booster.", e);
             }
@@ -203,6 +205,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } catch (XGBoostError xgBoostError) {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
+            BoosterHelper.dispose(booster, data);
             try {
                 Rabit.shutdown();
             } catch (XGBoostError xgBoostError) {

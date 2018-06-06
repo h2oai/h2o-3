@@ -12,13 +12,13 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.5'
         classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
@@ -62,6 +62,7 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala_2.10'),
       project(':h2o-scala_2.11'),
+      project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
       project(':h2o-genmodel'),
@@ -83,6 +84,7 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
+      project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
       project(':h2o-test-integ'),
@@ -179,6 +181,7 @@ allprojects {
 
     // Support different IDEs
     apply plugin: 'idea'
+    idea.module.inheritOutputDirs = true
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
 
@@ -204,6 +207,7 @@ subprojects {
 
     repositories {
         mavenCentral()
+        jcenter()
         maven {
           url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
@@ -285,7 +289,8 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '3.3'
+  gradleVersion = '4.7'
+  distributionType = Wrapper.DistributionType.ALL
 }
 
 //

@@ -17,12 +17,6 @@ class UDPHeartbeat extends UDP {
         return ab;
       }
       Paxos.doHeartbeat(ab._h2o);
-
-      // record clients this node has ever heard off only in multicast mode.
-      // in flatfile mode we re-use ClientEvent to discover client nodes
-      if(!H2O.isFlatfileEnabled() && ab._h2o._heartbeat._client){
-        H2O.reportClient(ab._h2o);
-      }
     }
     return ab;
   }

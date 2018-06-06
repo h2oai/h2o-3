@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 import h2o
+from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, is_type
+from h2o.model.model_base import ModelBase
 
 class H2OAutoML(object):
     """
@@ -26,7 +28,7 @@ class H2OAutoML(object):
       The available options are:
       ``AUTO`` (This defaults to ``logloss`` for classification, ``deviance`` for regression),
       ``deviance``, ``logloss``, ``mse``, ``rmse``, ``mae``, ``rmsle``, ``auc``, ``lift_top_group``,
-      ``misclassification``, ``mean_per_class_error``.
+      ``misclassification``, ``mean_per_class_error``, ``r2``.
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
       to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
       if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
@@ -45,7 +47,13 @@ class H2OAutoML(object):
       An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "GLM", "GBM", "DRF" 
       (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-
+    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
+    :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
+    :param sort_metric Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
+    For binomial classification choose between ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
+            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between
+            ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``. 
+    
     :examples:
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
@@ -81,7 +89,10 @@ class H2OAutoML(object):
                  stopping_rounds=3,
                  seed=None,
                  project_name=None,
-                 exclude_algos=None):
+                 exclude_algos=None,
+                 keep_cross_validation_predictions=True,
+                 keep_cross_validation_models=True,
+                 sort_metric="AUTO"):
 
         # Check if H2O jar contains AutoML
         try:
@@ -172,10 +183,19 @@ class H2OAutoML(object):
                 assert_is_type(elem,str)
             self.build_models['exclude_algos'] = exclude_algos
 
+        assert_is_type(keep_cross_validation_predictions, bool)
+        self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
+
+        assert_is_type(keep_cross_validation_models, bool)
+        self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
+
         self._job = None
-        self._automl_key = None
         self._leader_id = None
         self._leaderboard = None
+        if sort_metric == "AUTO":
+            self.sort_metric = None
+        else:
+            self.sort_metric = sort_metric
 
     #---------------------------------------------------------------------------
     # Basic properties
@@ -238,7 +258,7 @@ class H2OAutoML(object):
             (unless max_models or max_runtime_secs overrides metric-based early stopping).
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
-            rankings instead.  
+            rankings instead.
 
         :returns: An H2OAutoML object.
 
@@ -250,6 +270,11 @@ class H2OAutoML(object):
         """
         ncols = training_frame.ncols
         names = training_frame.names
+
+        #Set project name if None
+        if self.project_name is None:
+            self.project_name = "automl_" + training_frame.frame_id
+            self.build_control["project_name"] = self.project_name
 
         # Minimal required arguments are training_frame and y (response)
         if y is None:
@@ -289,6 +314,16 @@ class H2OAutoML(object):
             assert_is_type(training_frame, H2OFrame)
             input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
+        if self.sort_metric is not None:
+            assert_is_type(self.sort_metric, str)
+            sort_metric = self.sort_metric.lower()
+            # Changed the API to use "deviance" to be consistent with stopping_metric values
+            # TO DO: let's change the backend to use "deviance" since we use the term "deviance"
+            # After that we can take this `if` statement out
+            if sort_metric == "deviance":
+                sort_metric = "mean_residual_deviance"
+            input_spec['sort_metric'] = sort_metric
+
         if x is not None:
             assert_is_type(x,list)
             xset = set()
@@ -304,8 +339,10 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
-            if fold_column is not None: ignored_columns = ignored_columns.remove(fold_column)
-            if weights_column is not None: ignored_columns = ignored_columns.remove(weights_column)
+            if fold_column is not None:
+                ignored_columns.remove(fold_column)
+            if weights_column is not None:
+                ignored_columns.remove(weights_column)
             if ignored_columns is not None:
                 input_spec['ignored_columns'] = list(ignored_columns)
 
@@ -323,7 +360,6 @@ class H2OAutoML(object):
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
-        self._automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
 
@@ -352,11 +388,41 @@ class H2OAutoML(object):
             return self._model.predict(test_data)
         print("No model built yet...")
 
+    #---------------------------------------------------------------------------
+    # Download POJO/MOJO with AutoML
+    #---------------------------------------------------------------------------
+
+    def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
+        """
+        Download the POJO for the leader model in AutoML to the directory specified by path.
+
+        If path is an empty string, then dump the output to screen.
+
+        :param path:  An absolute path to the directory where POJO should be saved.
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
+        :returns: name of the POJO file written.
+        """
+
+        return h2o.download_pojo(self.leader, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
+
+    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
+        """
+        Download the leader model in AutoML in MOJO format.
+
+        :param path: the path where MOJO file should be saved.
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
+        :returns: name of the MOJO file written.
+        """
+
+        return ModelBase.download_mojo(self.leader, path, get_genmodel_jar, genmodel_name)
+
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
 
         if leaderboard_list is not None and len(leaderboard_list) > 0:
@@ -364,12 +430,60 @@ class H2OAutoML(object):
         else:
             self._leader_id = None
 
-        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-        leaderboard = h2o.H2OFrame(res["leaderboard_table"].cell_values, column_names=res["leaderboard_table"].col_header)
+        # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+        # If any failure happens, revert back to user's original setting for progress and display the error message.
+        is_progress = H2OJob.__PROGRESS_BAR__
+        h2o.no_progress()
+        try:
+            # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+            leaderboard = h2o.H2OFrame(
+                res["leaderboard_table"].cell_values,
+                column_names=res["leaderboard_table"].col_header)
+        except Exception as ex:
+            raise ex
+        finally:
+            if is_progress is True:
+                h2o.show_progress()
+
         self._leaderboard = leaderboard[1:]
         return self._leader_id is not None
 
     def _get_params(self):
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
+        res = h2o.api("GET /99/AutoML/" + self.project_name)
         return res
 
+def get_automl(project_name):
+    """
+    Retrieve information about an AutoML instance.
+
+    :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
+    :returns: A dictionary containing the project_name, leader model, and leaderboard.
+    """
+    automl_json = h2o.api("GET /99/AutoML/%s" % project_name)
+    project_name = automl_json["project_name"]
+    leaderboard_list = [key["name"] for key in automl_json['leaderboard']['models']]
+
+    if leaderboard_list is not None and len(leaderboard_list) > 0:
+        leader_id = leaderboard_list[0]
+    else:
+        leader_id = None
+
+    leader = h2o.get_model(leader_id)
+    # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+    # If any failure happens, revert back to user's original setting for progress and display the error message.
+    is_progress = H2OJob.__PROGRESS_BAR__
+    h2o.no_progress()
+    try:
+        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+        leaderboard = h2o.H2OFrame(
+            automl_json["leaderboard_table"].cell_values,
+            column_names=automl_json["leaderboard_table"].col_header)
+    except Exception as ex:
+        raise ex
+    finally:
+        if is_progress is True:
+            h2o.show_progress()
+
+    leaderboard = leaderboard[1:]
+    automl_dict = {'project_name': project_name, "leader": leader, "leaderboard": leaderboard}
+    return automl_dict

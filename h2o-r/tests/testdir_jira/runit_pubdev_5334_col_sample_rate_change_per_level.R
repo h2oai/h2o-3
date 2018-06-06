@@ -11,7 +11,7 @@ function() {
   print("col_sample_rate_change_per_level is set to ")
   tval <- -1
   print(tval)
-  browser()
+
   e <- tryCatch({
     training1_data <- h2o.importFile(locate("smalldata/gridsearch/multinomial_training1_set.csv"))
     y_index <- h2o.ncol(training1_data)

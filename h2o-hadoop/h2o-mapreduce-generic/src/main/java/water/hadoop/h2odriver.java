@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -40,6 +39,11 @@ import java.lang.reflect.Method;
  */
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
+
+  final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
+  final static String DEFAULT_ARGS_CONFIG = "h2odriver";
+  final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
+
   static {
     String javaVersionString = System.getProperty("java.version");
     Pattern p = Pattern.compile("1\\.([0-9]*)(.*)");
@@ -327,7 +331,16 @@ public class h2odriver extends Configured implements Tool {
     assert client;
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
-      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Client Mode).");
+    }
+  }
+
+  private void reportProxyReady(String proxyUrl) throws Exception {
+    assert proxy;
+    if (clusterReadyFileName != null) {
+      URL url = new URL(proxyUrl);
+      createClusterReadyFile(url.getHost(), url.getPort());
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Proxy Mode).");
     }
   }
 
@@ -587,7 +600,7 @@ public class h2odriver extends Configured implements Tool {
                     "          o  Only one mapper may be run per host.\n" +
                     "          o  There are no combiners or reducers.\n" +
                     "          o  Each H2O cluster should have a unique jobname.\n" +
-                    "          o  -mapperXmx, -nodes and -output are required.\n" +
+                    "          o  -mapperXmx and -nodes are required.\n" +
                     "\n" +
                     "          o  -mapperXmx is set to both Xms and Xmx of the mapper to reserve\n" +
                     "             memory up front.\n" +
@@ -1295,6 +1308,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
+    args = ArrayUtils.append(args, getSystemArgs()); // append "system-level" args to user specified args
     String[] otherArgs = parseArgs(args);
     validateArgs();
 
@@ -1657,6 +1671,7 @@ public class h2odriver extends Configured implements Tool {
 
     if (proxy) {
       proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl());
+      reportProxyReady(proxyUrl);
     }
 
     if (! (client || proxy))
@@ -1680,6 +1695,37 @@ public class h2odriver extends Configured implements Tool {
       System.out.println("Exiting with nonzero exit status");
     }
     return exitStatus;
+  }
+
+  private String[] getSystemArgs() {
+    String[] args = new String[0];
+    String config = getConf().get(ARGS_CONFIG_PROP, DEFAULT_ARGS_CONFIG);
+    File argsConfig = new File(String.format(ARGS_CONFIG_FILE_PATTERN, config));
+    if (! argsConfig.exists()) {
+      File defaultArgsConfig = new File(String.format(ARGS_CONFIG_FILE_PATTERN, DEFAULT_ARGS_CONFIG));
+      if (defaultArgsConfig.exists()) {
+        System.out.println("ERROR: There is no arguments file for configuration '" + config + "', however, " +
+                "the arguments file exists for the default configuration.\n       " +
+                "Please create an arguments file also for configuration '" + config + "' and store it in '" +
+                argsConfig.getAbsolutePath() + "' (the file can be empty).");
+        System.exit(1);
+      }
+      return args;
+    }
+
+    try (BufferedReader r = new BufferedReader(new FileReader(argsConfig))) {
+      String arg;
+      while ((arg = r.readLine()) != null) {
+        args = ArrayUtils.append(args, arg.trim());
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      System.out.println("ERROR: System level H2O arguments cannot be read from file " + argsConfig.getAbsolutePath() + "; "
+              + (e.getMessage() != null ? e.getMessage() : "(null)"));
+      System.exit(1);
+    }
+
+    return args;
   }
 
   /**

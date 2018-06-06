@@ -14,7 +14,6 @@ dependencies {
   compile 'org.javassist:javassist:3.18.2-GA'
   compile "org.apache.commons:commons-math3:3.3"
   compile "commons-io:commons-io:2.4"
-  compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
@@ -34,13 +33,19 @@ dependencies {
   compile 'commons-lang:commons-lang:2.6'
   
   // Duke library: collection of String comparators
-  compile ('no.priv.garshol.duke:duke:1.2') { transitive = false }
+  compile ('no.priv.garshol.duke:duke:1.2'){
+    exclude group: 'org.apache.lucene', module: 'lucene-core'
+    exclude group: 'org.apache.lucene', module: 'lucene-analyzers-common'
+    exclude group: 'org.apache.lucene', module: 'lucene-spatial'
+    exclude group: 'org.mapdb', module: 'mapdb'
+  }
 
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
-  testCompile "org.mockito:mockito-core:2.6.2"
+  testCompile "org.mockito:mockito-core:2.18.0"
+  testCompile "org.apache.httpcomponents:httpclient:4.1"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

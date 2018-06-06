@@ -14,6 +14,16 @@ public class ParseUtils {
         return res;
     }
 
+    public static long[] parseArrayOfLongs(String input) {
+        if (!(input.startsWith("[") && input.endsWith("]")))
+            throw new NumberFormatException("Array should be enclosed in square brackets");
+        String[] parts = input.substring(1, input.length()-1).split(",");
+        long[] res = new long[parts.length];
+        for (int i = 0; i < parts.length; i++)
+            res[i] = Long.parseLong(parts[i].trim());
+        return res;
+    }
+
     public static int[] parseArrayOfInts(String input) {
         if (!(input.startsWith("[") && input.endsWith("]")))
             throw new NumberFormatException("Array should be enclosed in square brackets");
@@ -39,8 +49,14 @@ public class ParseUtils {
 
         try { return Integer.parseInt(input); }
         catch (NumberFormatException e) {
-            if ((defVal instanceof Number) && ! (defVal instanceof Double || defVal instanceof Float))
+            if ((defVal instanceof Number) && !(defVal instanceof Double || defVal instanceof Float || defVal instanceof Long))
                 throw e; // integer number expected but couldn't be parsed
+        }
+
+        try { return Long.parseLong(input); }
+        catch (NumberFormatException e) {
+            if (defVal instanceof Number && !(defVal instanceof Double))
+                throw e; // number expected but couldn't be parsed
         }
 
         try { return Double.parseDouble(input); }
@@ -52,6 +68,11 @@ public class ParseUtils {
         try { return parseArrayOfInts(input); }
         catch (NumberFormatException e) {
             if (defVal instanceof int[]) throw e; // int array expected
+        }
+
+        try { return parseArrayOfLongs(input); }
+        catch (NumberFormatException e) {
+            if (defVal instanceof long[]) throw e; // long array expected
         }
 
         try { return parseArrayOfDoubles(input); }

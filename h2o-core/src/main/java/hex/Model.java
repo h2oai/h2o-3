@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -439,29 +440,43 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warnings[_warnings.length-1] = s;
   }
 
+  public interface InteractionBuilder {
+    Frame makeInteractions(Frame f);
+  }
+
   public static class InteractionSpec extends Iced {
     private String[] _columns;
     private StringPair[] _pairs;
     private String[] _interactionsOnly;
+    private String[] _ignored; // list of columns that can be dropped if they are not used in any interaction
 
-    private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
+    private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
       _columns = columns;
       _pairs = pairs;
       _interactionsOnly = interactionsOnly;
+      if (ignored != null) {
+        _ignored = ignored.clone();
+        Arrays.sort(_ignored);
+      }
     }
 
     public static InteractionSpec allPairwise(String[] columns) {
-      return columns != null ? new InteractionSpec(columns, null, null) : null;
+      return columns != null ? new InteractionSpec(columns, null, null, null) : null;
+    }
+
+    public static InteractionSpec create(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
+      return columns == null && pairs == null ?
+              null : new InteractionSpec(columns, pairs, interactionsOnly, ignored);
     }
 
     public static InteractionSpec create(String[] columns, StringPair[] pairs, String[] interactionsOnly) {
       return columns == null && pairs == null ?
-              null : new InteractionSpec(columns, pairs, interactionsOnly);
+              null : new InteractionSpec(columns, pairs, interactionsOnly, null);
     }
 
     public static InteractionSpec create(String[] columns, StringPair[] pairs) {
       return columns == null && pairs == null ?
-              null : new InteractionSpec(columns, pairs, null);
+              null : new InteractionSpec(columns, pairs, null, null);
     }
 
     public boolean isEmpty() {
@@ -498,12 +513,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for (int i = 0; i < _interactionsOnly.length; i++) {
         if (isUsed(_interactionsOnly[i])) {
           f.add(_interactionsOnly[i], interOnlyVecs[i]);
-        } else {
+        } else if (! isIgnored(_interactionsOnly[i])) {
           Log.warn("Column '" + _interactionsOnly[i] + "' was marked to be used for interactions only " +
                   "but it is not actually required in any interaction.");
         }
       }
       return f;
+    }
+
+    private boolean isIgnored(String column) {
+      return _ignored != null && Arrays.binarySearch(_ignored, column) >= 0;
     }
 
     public Frame removeInteractionOnlyColumns(Frame f) {
@@ -548,11 +567,31 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           allExplicit = resized;
         }
       }
-      if (allExplicit == null)
-        return allPairwise;
-      else
-        return ArrayUtils.append(allPairwise, allExplicit);
+      InteractionPair[] pairs = allExplicit == null ? allPairwise : ArrayUtils.append(allPairwise, allExplicit);
+      if (pairs != null) {
+        pairs = flagAllFactorInteractionPairs(f, pairs);
+      }
+      return pairs;
     }
+
+    private InteractionPair[] flagAllFactorInteractionPairs(Frame f, InteractionPair[] pairs) {
+      if (_interactionsOnly == null || _interactionsOnly.length == 0)
+        return pairs;
+      final String[] interOnly = _interactionsOnly.clone();
+      Arrays.sort(interOnly);
+      for (InteractionPair p : pairs) {
+        boolean v1num = f.vec(p._v1).isNumeric();
+        boolean v2num = f.vec(p._v2).isNumeric();
+        if (v1num == v2num)
+          continue;
+        // numerical-categorical interaction
+        String numVecName = v1num ? f.name(p._v1) : f.name(p._v2);
+        boolean needsAllFactorColumns = Arrays.binarySearch(interOnly, numVecName) >= 0;
+        p.setNeedsAllFactorLevels(needsAllFactorColumns);
+      }
+      return pairs;
+    }
+
   }
 
   /** Model-specific output class.  Each model sub-class contains an instance
@@ -569,13 +608,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _names = names;
     }
     
-    public String _origNames[];
+    public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
      *  response col categoricals for SupervisedModels.  */
     public String _domains[][];
-    public String _origDomains[][];
+    public String _origDomains[][]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     public Key _cross_validation_models[];
@@ -688,7 +727,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
-    public InteractionSpec interactions() { return null; }
+    public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx() {
       if(!_hasWeights) return -1;
@@ -841,6 +880,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case r2:
+        return (float)(1-r2());
       case mean_per_class_error:
         return (float)mean_per_class_error();
       case lift_top_group:
@@ -880,6 +921,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double mse() {
     if (scoringInfo != null)
       return last_scored().cross_validation ? last_scored().scored_xval._mse : last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return mm.mse();
+  }
+
+  public double r2() {
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._r2 : last_scored().validation ? last_scored().scored_valid._r2 : last_scored().scored_train._r2;
 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
@@ -1022,7 +1073,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), _toDelete, false);
+            _parms, expensive, computeMetrics, _output.interactionBuilder(), getToEigenVec(), _toDelete, false);
   }
 
   /**
@@ -1034,11 +1085,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param parms Model parameters
    * @param expensive Whether to actually do the hard work
    * @param computeMetrics Whether metrics can be (and should be) computed
-   * @param interactions Column names to create pairwise interactions with
+   * @param interactionBldr Column names to create pairwise interactions with
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionSpec interactions, ToEigenVec tev,
+                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionBuilder interactionBldr, ToEigenVec tev,
                                            IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
@@ -1083,9 +1134,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     // create the interactions now and bolt them on to the front of the test Frame
-    if( null!=interactions ) {
-      InteractionPair[] interactionPairs = interactions.makeInteractionPairs(test);
-      test.add(makeInteractions(test, false, interactionPairs, true, true, false));
+    if (null != interactionBldr) {
+      interactionBldr.makeInteractions(test);
     }
 
     // Build the validation set to be compatible with the training set.
@@ -1120,10 +1170,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             defval = parms.missingColumnsType();
             convNaN++;
           }
-          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
-          msgs.add(str);
+          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
+          if (isResponse || isWeights)
+            Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
+          else
+            msgs.add(str);
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -1187,7 +1240,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
       toDelete.put(updated._key, "categorically encoded frame");
       test.restructure(updated.names(), updated.vecs()); //updated in place
-      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactions, tev, toDelete, true /*catEncoded*/);
+      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
       msgs.addAll(Arrays.asList(msg2));
       return msgs.toArray(new String[msgs.size()]);
     }
@@ -2053,6 +2106,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         }
 
+        if (genmodel instanceof GlrmMojoModel) {
+          try {
+            config.setModel(genmodel).setEnableGLRMReconstrut(true);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(
                 config.setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
         );
@@ -2061,6 +2122,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
 
+          if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibility
+            ((GlrmMojoModel) genmodel)._rcnt = row;
           // Generate input row
           for (int col = 0; col < features.length; col++) {
             if (dvecs[col].isString()) {
@@ -2078,6 +2141,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Make a prediction
           AbstractPrediction p;
           try {
+            if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibilitypredictC
+              ((GlrmMojoModel) genmodel)._rcnt = row;
+
             p = epmw.predict(rowData);
           } catch (PredictException e) {
             num_errors++;
@@ -2118,7 +2184,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
                 break;
               case DimReduction:
-                d2 = ((DimReductionModelPrediction) p).dimensions[col];
+                d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
+                        ((DimReductionModelPrediction) p).dimensions[col];    // look at the reconstructed matrix
                 break;
             }
             expected_preds[col] = d;
@@ -2150,12 +2217,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  public void deleteCrossValidationModels( ) {
+  public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
       for (Key k : _output._cross_validation_models) {
         Model m = DKV.getGet(k);
         if (m!=null) m.delete(); //delete all subparts
       }
+    }
+  }
+
+  public void deleteCrossValidationPreds() {
+    if (_output._cross_validation_predictions != null) {
+      for (Key k : _output._cross_validation_predictions) {
+        Frame f = DKV.getGet(k);
+        if (f!=null) f.delete();
+      }
+    }
+    if (_output._cross_validation_holdout_predictions_frame_id != null) {
+      _output._cross_validation_holdout_predictions_frame_id.remove();
     }
   }
 
@@ -2180,14 +2259,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   @Override public Class<KeyV3.ModelKeyV3> makeSchema() { return KeyV3.ModelKeyV3.class; }
 
-  public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+  public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions,
+                                       final boolean useAllFactorLevels, final boolean skipMissing, final boolean standardize) {
     Vec anyTrainVec = fr.anyVec();
     Vec[] interactionVecs = new Vec[interactions.length];
     String[] interactionNames  = new String[interactions.length];
     int idx = 0;
     for (InteractionPair ip : interactions) {
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
-      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+      boolean allFactLevels = useAllFactorLevels || ip.needsAllFactorLevels();
+      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, allFactLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
       interactionVecs[idx++] = iwv;
     }
     return new Frame(interactionNames, interactionVecs);
@@ -2225,6 +2306,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private String[] _v1Enums;
     private String[] _v2Enums;
     private int _hash;
+    private boolean _needsAllFactorLevels;
+
     private InteractionPair() {}
     private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
       _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
@@ -2239,6 +2322,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else
         for( String s:_v2Enums ) _hash = 31*_hash + s.hashCode();
     }
+
+    /**
+     * Indicates that Interaction should be created from all factor levels
+     * (regardless of the global setting useAllFactorLevels).
+     * @return do we need to make all factor levels?
+     */
+    public boolean needsAllFactorLevels() { return _needsAllFactorLevels; }
+    public void setNeedsAllFactorLevels(boolean needsAllFactorLevels) { _needsAllFactorLevels = needsAllFactorLevels; }
 
     /**
      * Generate all pairwise combinations of the arguments.
@@ -2269,6 +2360,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return false;
     }
+    public int getV1() { return _v1; }
+    public int getV2() { return _v2; }
   }
 
   /**

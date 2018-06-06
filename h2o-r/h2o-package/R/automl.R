@@ -39,6 +39,12 @@
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"), 
 #'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
+#' @param sort_metric Metric to sort the leaderboard by. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", "MSE".
+#'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
+#'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification, 
+#'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -67,7 +73,10 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL,
-                       exclude_algos = NULL)
+                       exclude_algos = NULL,
+                       keep_cross_validation_predictions = TRUE,
+                       keep_cross_validation_models = TRUE,
+                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"))
 {
 
   tryCatch({
@@ -173,6 +182,18 @@ h2o.automl <- function(x, y, training_frame,
   } else {
     build_control$project_name <- project_name
   }
+  
+  sort_metric <- match.arg(sort_metric)
+  # Only send for non-default
+  if (sort_metric != "AUTO") {
+    if (sort_metric == "deviance") {
+      # Changed the API to use "deviance" to be consistent with stopping_metric values
+      # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
+      # After that we can take this out
+      sort_metric <- "mean_residual_deviance"  
+    }
+    input_spec$sort_metric <- tolower(sort_metric)
+  }
 
   if (!is.null(exclude_algos)) {
     if (length(exclude_algos) == 1) {
@@ -203,6 +224,9 @@ h2o.automl <- function(x, y, training_frame,
     build_control$max_after_balance_size <- max_after_balance_size
   }
   
+  build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  build_control$keep_cross_validation_models <- keep_cross_validation_models
+
   # Create the parameter list to POST to the AutoMLBuilder 
   if (length(build_models) == 0) {
       params <- list(input_spec = input_spec, build_control = build_control)
@@ -219,7 +243,17 @@ h2o.automl <- function(x, y, training_frame,
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  leaderboard <- as.h2o(leaderboard)  # Convert to H2OFrame
+  
+  # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+  # If any failure happens, revert back to user's original setting for progress and display the error message.
+  is_progress <- isTRUE(as.logical(.h2o.is_progress()))
+  h2o.no_progress()
+  leaderboard <- tryCatch(
+    as.h2o(leaderboard),
+    error = identity,
+    finally = if (is_progress) h2o.show_progress()
+  )
+
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
   # If leaderboard is empty, create a "dummy" leader
   if (nrow(leaderboard) > 1) {
@@ -270,5 +304,37 @@ predict.H2OAutoML <- function(object, newdata, ...) {
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
+}
+
+#' Get an R object that is a subclass of \linkS4class{H2OAutoML}
+#'
+#' @param project_name A string indicating the project_name of the automl instance to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OAutoML}.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes", 
+#'                   training_frame = votes_hf, max_runtime_secs = 30)
+#' automl.retrieved <- h2o.getAutoML("aml_housevotes")
+#' }
+#' @export
+h2o.getAutoML <- function(project_name) {
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
+  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  row.names(leaderboard) <- seq(nrow(leaderboard))
+  leaderboard <- as.h2o(leaderboard)
+  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
+  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  project <- automl_job$project
+  
+  # Make AutoML object
+  return(new("H2OAutoML",
+             project_name = project,
+             leader = leader,
+             leaderboard = leaderboard
+  ))
 }
 

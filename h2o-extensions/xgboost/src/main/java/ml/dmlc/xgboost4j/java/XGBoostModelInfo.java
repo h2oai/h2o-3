@@ -7,6 +7,7 @@ import ml.dmlc.xgboost4j.java.BoosterHelper;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 import water.Key;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.io.ByteArrayInputStream;
@@ -20,16 +21,26 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
+  public String _featureMap;
   public byte[] _boosterBytes; // internal state of native backend
 
   private TwoDimTable summaryTable;
 
   private transient Booster _booster;  //pointer to C++ process
 
+  public String getFeatureMap() {
+    return _featureMap;
+  }
+
+  public void setFeatureMap(String featureMap) {
+    _featureMap = featureMap;
+  }
+
   public Booster getBooster() {
     if(null == _booster && null != _boosterBytes) {
       try {
         _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+        Log.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
       } catch (XGBoostError | IOException exception) {
         throw new IllegalStateException("Failed to load the booster.", exception);
       }
@@ -54,9 +65,7 @@ final public class XGBoostModelInfo extends Iced {
   }
 
   public void nukeBackend() {
-    if (_booster != null) {
-      _booster.dispose();
-    }
+    BoosterHelper.dispose(_booster);
     _booster = null;
   }
 

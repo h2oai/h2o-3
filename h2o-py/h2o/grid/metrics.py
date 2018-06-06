@@ -647,6 +647,50 @@ class H2OMultinomialGridSearch(object):
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+# Ordinal Grid Search
+#-----------------------------------------------------------------------------------------------------------------------
+
+class H2OOrdinalGridSearch(object):
+    def confusion_matrix(self, data):
+        """
+        Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+
+        :param data: metric for which the confusion matrix will be calculated.
+        """
+        return {model.model_id: model.confusion_matrix(data) for model in self.models}
+
+
+    def hit_ratio_table(self, train=False, valid=False, xval=False):
+        """
+        Retrieve the Hit Ratios.
+
+        If all are False (default), then return the training metric value.
+        If more than one option is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the hit ratio value for the training data.
+        :param bool valid: If valid is True, then return the hit ratio value for the validation data.
+        :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
+        :returns: The hit ratio for this ordinal model.
+        """
+        return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
+
+
+    def mean_per_class_error(self, train=False, valid=False, xval=False):
+        """
+        Get the mean per class error.
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the mean per class error value for the training data.
+        :param bool valid: If valid is True, then return the mean per class error value for the validation data.
+        :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
+        :returns: The mean per class error for this ordinal model.
+        """
+        return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Regression Grid Search

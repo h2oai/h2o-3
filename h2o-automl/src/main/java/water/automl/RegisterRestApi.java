@@ -14,10 +14,6 @@ public class RegisterRestApi extends AbstractRegister {
             "POST /99/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
 
-    context.registerEndpoint("automls",
-            "GET /99/AutoML", AutoMLHandler.class, "list",
-            "Return all the AutoML objects.");
-
     context.registerEndpoint("automl",
             "GET /99/AutoML/{automl_id}", AutoMLHandler.class, "fetch",
             "Fetch the specified AutoML object.");

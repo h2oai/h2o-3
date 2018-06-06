@@ -1,7 +1,9 @@
 package hex.glrm;
 
+import hex.CreateFrame;
 import hex.DataInfo;
 import hex.ModelMetrics;
+import hex.SplitFrame;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
@@ -28,8 +30,11 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
 public class GLRMTest extends TestUtil {
@@ -389,35 +394,64 @@ public class GLRMTest extends TestUtil {
     }
   }
 
-  @Test public void testMojo() throws InterruptedException, ExecutionException {
-    GLRM glrm;
-    GLRMModel model = null;
-    Frame train = null;
-
+  // Need to test when we are calling predict with the training dataset and calling predict with a new
+  // dataset, the operations here will be differ                                                                                                                                                ent.
+  @Test
+  public void testGLRMPredMojo() {
     try {
       Scope.enter();
-      train = parse_test_file(Key.<Frame>make("birds"), "./smalldata/pca_test/AustraliaCoast.csv");
+      CreateFrame cf = new CreateFrame();
+      Random generator = new Random();
+      int numRows = generator.nextInt(10000) + 50000;
+      int numCols = generator.nextInt(17) + 3;
+      cf.rows = numRows;
+      cf.cols = numCols;
+      cf.binary_fraction = 0;
+      cf.string_fraction = 0;
+      cf.time_fraction = 0;
+      cf.has_response = false;
+      cf.positive_response = true;
+      cf.missing_fraction = 0.1;
+      cf.seed = System.currentTimeMillis();
+      System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
+
+      Frame trainMultinomial = Scope.track(cf.execImpl().get());
+      double tfrac = 0.2;
+      SplitFrame sf = new SplitFrame(trainMultinomial, new double[]{1 - tfrac, tfrac}, new Key[]{Key.make("train.hex"), Key.make("test.hex")});
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      Frame tr = DKV.get(ksplits[0]).get();
+      Frame te = DKV.get(ksplits[1]).get();
+      Scope.track(tr);
+      Scope.track(te);
+
       GLRMParameters parms = new GLRMParameters();
-      parms._train = train._key;
-      parms._k = 4;
+      parms._train = tr._key;
+      parms._k = 3;
       parms._loss = GlrmLoss.Quadratic;
-      parms._init = GlrmInitialization.Random;
-      parms._max_iterations = 2000;
+      parms._init = GlrmInitialization.SVD;
+      parms._max_iterations = 10;
       parms._regularization_x = GlrmRegularizer.Quadratic;
       parms._gamma_x = 0;
       parms._gamma_y = 0;
+      parms._seed = cf.seed;
 
-      glrm = new GLRM(parms);
-      model = glrm.trainModel().get();
-      assert model != null;
-
-      checkLossbyCol(parms, model);
-      boolean res = model.testJavaScoring(train, model._output._representation_key.get(), 1e-6, 1);
-      // Disable for now
-      // Assert.assertTrue(res);
+      GLRM glrm = new GLRM(parms);
+      GLRMModel model = glrm.trainModel().get();
+      Scope.track_generic(model);
+      Frame xfactorTr = DKV.get(model.gen_representation_key(tr)).get();
+      Scope.track(xfactorTr);
+      Frame predTr = model.score(tr);
+      Scope.track(predTr);
+      assertEquals(predTr.numRows(), xfactorTr.numRows()); // make sure x factor is derived from tr
+      Frame predT = model.score(te); // predict on new data and compare with mojo
+      Scope.track(predT);
+      Frame xfactorTe = DKV.get(model.gen_representation_key(te)).get();
+      Scope.track(xfactorTe);
+      assertEquals(predT.numRows(), xfactorTe.numRows()); // make sure x factor is derived from te
+      Assert.assertTrue(model.testJavaScoring(te, predT, 1e-6, 1e-6, 1));
     } finally {
-      if (train != null) train.delete();
-      if (model != null) model.delete();
+      Scope.exit();
     }
   }
 

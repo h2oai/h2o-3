@@ -323,14 +323,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.
         Coordinate descent is experimental (beta).
 
-        One of: ``"auto"``, ``"irlsm"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``, ``"coordinate_descent"``
-        (default: ``"auto"``).
+        One of: ``"auto"``, ``"irlsm"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``, ``"coordinate_descent"``,
+        ``"gradient_descent_lh"``, ``"gradient_descent_sqerr"``  (default: ``"auto"``).
         """
         return self._parms.get("solver")
 
     @solver.setter
     def solver(self, solver):
-        assert_is_type(solver, None, Enum("auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent"))
+        assert_is_type(solver, None, Enum("auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"))
         self._parms["solver"] = solver
 
 

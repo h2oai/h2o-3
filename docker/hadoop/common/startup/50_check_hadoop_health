@@ -1,0 +1,5 @@
+#! /bin/bash
+
+set -ex
+
+curl http://localhost:8088/cluster | html2text

@@ -2,6 +2,257 @@
 
 ## H2O
 
+### Wolpert (3.18.0.11) - 5/24/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/11/index.html</a>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5584'>PUBDEV-5584</a>] - Enabled Java 10 support for CRAN release.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5585'>PUBDEV-5585</a>] - GLM tests no longer fail on Java 10.
+</li>
+</ul>
+
+### Wolpert (3.18.0.10) - 5/22/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/10/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5558'>PUBDEV-5558</a>] - Fixed an issue for adding Double.NaN to IntAryVisitor via addValue().
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5559'>PUBDEV-5559</a>] - Removed all code that referenced Google Analytics.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5565'>PUBDEV-5565</a>] - Disabled version check in H2O-3.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5567'>PUBDEV-5567</a>] - Removed all Google Analytics references and code from Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5568'>PUBDEV-5568</a>] - Removed all Google Analytics references and code from Documentation.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5545'>PUBDEV-5545</a>] - The Security chapter in the User Guide now describes how to enforce system-level command-line arguments in h2odriver when starting H2O.
+</li>
+</ul>
+
+
+
+### Wolpert (3.18.0.9) - 5/11/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/9/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5290'>PUBDEV-5290</a>] - Fixed an issue that caused distributed XGBoost to not be registered in the REST API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5325'>PUBDEV-5325</a>] - Fixed an issue that caused XGBoost to crash due "too many open files."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5444'>PUBDEV-5444</a>] - Frames are now rebalanced correctly on multinode clusters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5464'>PUBDEV-5464</a>] - Fixed an issue that prevented H2O libraries to load in DBC.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5507'>PUBDEV-5507</a>] - Added more robust checks for Colorama version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5510'>PUBDEV-5510</a>] - Added more robust checks for Colorama version in H2O Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5518'>PUBDEV-5518</a>] - A response column is no longer required when performing Deep Learning grid search with autoencoder enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5527'>PUBDEV-5527</a>] - Fixed a KeyV3 error message that incorrectly referenced KeyV1.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5544'>PUBDEV-5544</a>] - The external backend now stores sparse vector values correctly.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5456'>PUBDEV-5456</a>] - Added a new rank_within_group_by function in R and Python for ranking groups and storing the ranks in a new column.
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5500'>PUBDEV-5500</a>] - Improved warning messages in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5537'>PUBDEV-5537</a>] - System administrators can now create a configuration file with implicit arguments of h2odriver and use it to make sure the h2o cluster is started with proper security settings. 
+</li>
+</ul>
+
+
+### Wolpert (3.18.0.8) - 4/19/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/8/index.html</a>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5465'>PUBDEV-5465</a>] - Release for CRAN submission.
+</li>
+</ul>
+
+### Wolpert (3.18.0.7) - 4/14/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/7/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5485'>PUBDEV-5485</a>] - Fixed a MOJO/POJO scoring issue caused by a serialization bug in EasyPredictModelWrapper.
+</li>
+</ul>
+
+### Wolpert (3.18.0.6) - 4/13/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/6/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5484'>PUBDEV-5484</a>] - In XGBoost, fixed a memory issue that caused training to fail even when running on small datasets.            
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5441'>PUBDEV-5441</a>] - When files have a Ctr-M character as part of data in the row and Ctr-M also signifies the end of line in that file, it is now parsed correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5458'>PUBDEV-5458</a>] - H2O-3 no longer displays the server version in HTTP response headers.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5460'>PUBDEV-5460</a>] - Updated the Mockito library.
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5449'>PUBDEV-5449</a>] - Conda packages are now availabe on S3, enabling installation for users who cannot access anaconda.org.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5473'>PUBDEV-5473</a>] - Added an offset to predictBinomial Easy wrapper.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5227'>PUBDEV-5227</a>] - Updated the AutoML chapter of the User Guide to include a link to H2O World AutoML Tutorials and updated code examples that do not use leaderboard_frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5457'>PUBDEV-5457</a>] - Fixed links to POJO/MOJO tutorials in the GBM FAQ > Scoring section.
+</li>
+</ul>
+
+### Wolpert (3.18.0.5) - 3/28/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4933'>PUBDEV-4933</a>] - AutoML no longer trains a Stacked Ensemble with only one model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5028'>PUBDEV-5028</a>] - GBM and GLM grids no longer fail in AutoML for multinomial problems. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5266'>PUBDEV-5266</a>] -  Users can now merge/sort frames that contain string columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5303'>PUBDEV-5303</a>] - Fixed an issue that occured with multinomial GLM POJO/MOJO models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5334'>PUBDEV-5334</a>] - Users can no longer specify a value of 0 for the col_sample_rate_change_per_level parameter. The value for this parameter must be greater than 0 and <= 2.0.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5336'>PUBDEV-5336</a>] - The H2O-3 Python client no longer returns an incorrect answer when running a conditional statement.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5365'>PUBDEV-5365</a>] - Added support for CDH 5.14.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5366'>PUBDEV-5366</a>] - Fixed an issue that caused XGBoost to fail when running the airlines dataset on a single-node H2O cluster.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5370'>PUBDEV-5370</a>] - The H2O-3 parser can now handle utf-8 characters that appear in the header.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5394'>PUBDEV-5394</a>] - The H2O-3 parser no longer treats the "Ctr-M" character as an end of line on Linux. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5414'>PUBDEV-5414</a>] - H2O no longer generates a warning when predicting without a weights column.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5402'>PUBDEV-5402</a>] - The AutoML leaderboard no longer prints NaNs for non-US locales.
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5235'>PUBDEV-5235</a>] - Added a demo of XGBoost in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5386'>PUBDEV-5386</a>] - Improved the ordinal regression parameter optimization by changing the implementation.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3978'>PUBDEV-3978</a>] - In Flow, improved the vertical scrolling for training and validation metrics for thresholds.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5364'>PUBDEV-5364</a>] - Added more logging regarding the WatchDog client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5383'>PUBDEV-5383</a>] - Replaced  unknownCategoricalLevelsSeenPerColumn with ErrorConsumer events in POJO log messages.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5400'>PUBDEV-5400</a>] - Improved the logic that triggers rebalance.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5404'>PUBDEV-5404</a>] - AutoML now uses correct datatypes in the AutoML leaderboard TwoDimTable.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5292'>PUBDEV-5292</a>] - Added ``beta constraints`` and ``prior`` entries to the Parameters Appendix, along with examples in R and Python. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5369'>PUBDEV-5369</a>] - Added CDH 5.14 to the list of supported Hadoop platforms in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5413'>PUBDEV-5413</a>] - Updated the documenation for the Ordinal ``family`` option in GLM based on the new implementation. Also added new solvers to the documenation: GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5416'>PUBDEV-5416</a>] - Added information about Extremely Randomized Trees (XRT) to the DRF chapter in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5421'>PUBDEV-5421</a>] - On the H2O-3 and Sparkling Water download pages, the link to documentation site now points to the most updated version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5432'>PUBDEV-5432</a>] - The ``target_encode_create`` and ``target_encode_apply`` are now included in the R HTML documentation.
+</li>
+</ul>
+                
+<h4>Fault</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5367'>PUBDEV-5367</a>] - Fixed an issue that caused SQLManager import to break on cluster with over 100 nodes.
+</li>
+</ul>
+
+
+### Wolpert (3.18.0.4) - 3/8/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/4/index.html</a>
+
+- Fixed minor release process issue preventing Sparkling Water release.
+
 ### Wolpert (3.18.0.3) - 3/2/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wolpert/3/index.html</a>
