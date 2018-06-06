@@ -403,7 +403,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
-    if (null == subJob) {
+    if (null == parentJob) {
+      Log.info("AutoML job is null...");
+      return;
+    }
+    else if (null == subJob) {
       parentJob.update(workContribution, "SKIPPED: " + name);
       return;
     }
@@ -1240,14 +1244,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (aml.job == null || !aml.job.isRunning()) {
       Job job = new /* Timed */ H2OJob(aml, aml._key, aml.timeRemainingMs()).start();
       aml.job = job;
-      // job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
-
-      // job work:
-      // import/parse (30), Frame metadata (20), GBM grid (900), StackedEnsemble (50)
       job._work = 1000;
       DKV.put(aml);
-
-      job.update(30, "Data import and parse complete");
     }
   }
 
