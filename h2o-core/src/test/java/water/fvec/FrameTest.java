@@ -24,6 +24,33 @@ public class FrameTest extends TestUtil {
   }
 
   @Test
+  public void testNonEmptyChunks() {
+    try {
+      Scope.enter();
+      final Frame train1 = Scope.track(new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(1, 2, 3, 4, 0))
+              .withDataForCol(1, ar("A", "B", "C", "A", "B"))
+              .withChunkLayout(1, 0, 0, 2, 1, 0, 1)
+              .build());
+      assertEquals(4, train1.anyVec().nonEmptyChunks());
+      final Frame train2 = Scope.track(new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(1, 2, 3, 4, 0))
+              .withDataForCol(1, ar("A", "B", "C", "A", "B"))
+              .withChunkLayout(1, 2, 1, 1)
+              .build());
+      assertEquals(4, train2.anyVec().nonEmptyChunks());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testRemoveColumn() {
     Scope.enter();
     Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");

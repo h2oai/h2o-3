@@ -262,7 +262,7 @@ class H2OCloudNode(object):
     """
 
     def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl):
+                 xmx, cp, output_dir, test_ssl, ldap_config_path):
         """
         Create a node in a cloud.
 
@@ -276,6 +276,7 @@ class H2OCloudNode(object):
         :param xmx: Java memory parameter.
         :param cp: Java classpath parameter.
         :param output_dir: The directory where we can create an output file for this process.
+        :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
         :return The node object.
         """
         self.is_client = is_client
@@ -289,6 +290,7 @@ class H2OCloudNode(object):
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
+        self.ldap_config_path = ldap_config_path
 
         self.port = -1
         self.pid = -1
@@ -340,6 +342,11 @@ class H2OCloudNode(object):
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
                "-ga_opt_out"]
+
+        if self.ldap_config_path is not None:
+            cmd.append('-login_conf')
+            cmd.append(self.ldap_config_path)
+            cmd.append('-ldap_login')
 
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
@@ -514,7 +521,7 @@ class H2OCloud(object):
     A class representing one of the H2O clouds.
     """
 
-    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl):
+    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl, ldap_config_path):
         """
         Create a cloud.
         See node definition above for argument descriptions.
@@ -530,6 +537,7 @@ class H2OCloud(object):
         self.cp = cp
         self.output_dir = output_dir
         self.test_ssl = test_ssl
+        self.ldap_config_path = ldap_config_path
 
         # Randomly choose a seven digit cloud number.
         n = random.randint(1000000, 9999999)
@@ -557,7 +565,7 @@ class H2OCloud(object):
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.cp, self.output_dir,
-                                self.test_ssl)
+                                self.test_ssl, self.ldap_config_path)
             if is_client:
                 self.client_nodes.append(node)
             else:
@@ -892,6 +900,8 @@ class Test(object):
             r_test_driver = g_r_test_setup
         cmd = ["R", "-f", r_test_driver, "--args", "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        if g_rest_log:
+            cmd += ['--restLog']
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]
@@ -934,6 +944,10 @@ class Test(object):
         if g_jacoco_include:
             # When using JaCoCo we don't want the test to return an error if a cloud reports as unhealthy
             cmd += ["--forceConnect"]
+        if g_ldap_username:
+            cmd += ['--ldapUsername', g_ldap_username]
+        if g_ldap_password:
+            cmd += ['--ldapPassword', g_ldap_password]
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
@@ -980,7 +994,7 @@ class TestRunner(object):
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, ldap_config_path):
         """
         Create a runner.
 
@@ -1006,6 +1020,7 @@ class TestRunner(object):
         :param hadoop_namenode
         :param on_hadoop
         :param perf
+        :param ldap_config_path: path to LDAP config which should be used, or null if no LDAP is required
         :return The runner object.
         """
         self.test_root_dir = test_root_dir
@@ -1056,6 +1071,8 @@ class TestRunner(object):
         self.perf_file = None
         self.exclude_list = []
 
+        self.ldap_config_path = ldap_config_path
+
         if use_cloud:
             node_num = 0
             cloud = H2OUseCloud(node_num, use_ip, use_port)
@@ -1070,7 +1087,7 @@ class TestRunner(object):
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
-                                 self.output_dir, self.test_ssl)
+                                 self.output_dir, self.test_ssl, self.ldap_config_path)
                 self.clouds.append(cloud)
 
     @staticmethod
@@ -1895,7 +1912,10 @@ class TestRunner(object):
             return False
         h2o_okay = False
         try:
-            http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port))
+            auth = None
+            if g_ldap_password is not None and g_ldap_username is not None:
+                auth = (g_ldap_username, g_ldap_password)
+            http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port), auth=auth)
             json = http.json()
             if "cloud_healthy" in json:
                 h2o_okay = json["cloud_healthy"]
@@ -1985,6 +2005,10 @@ g_job_name = None
 g_py3 = False
 g_pycoverage = False
 g_test_ssl = False
+g_ldap_config = None
+g_ldap_username = None
+g_ldap_password = None
+g_rest_log = False
 
 # globals added to support better reporting in xml files
 g_use_xml2 = False  # by default, use the original xml file output
@@ -2119,6 +2143,15 @@ def usage():
     print("")
     print("    --test.ssl       Runs all the nodes with SSL enabled.")
     print("")
+    print("    --ldap.username  Username for LDAP.")
+    print("")
+    print("    --ldap.password  Password for LDAP.")
+    print("")
+    print("    --ldap.config    Path to LDAP config. If set, all nodes will be started with LDAP support.")
+    print("")
+    print("    --restLog        If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
+    print("                     Please note, that enablig REST API logging will increase the execution time and that")
+    print("                     the log file might be large (> 2GB).")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -2237,6 +2270,10 @@ def parse_args(argv):
     global g_pycoverage
     global g_use_xml2
     global g_test_ssl
+    global g_ldap_username
+    global g_ldap_password
+    global g_ldap_config
+    global g_rest_log
 
     i = 1
     while i < len(argv):
@@ -2405,6 +2442,23 @@ def parse_args(argv):
             g_use_xml2 = True
         elif s == "--test_ssl":
             g_test_ssl = True
+        elif s == '--ldap.config':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_ldap_config = argv[i]
+        elif s == '--ldap.username':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_ldap_username = argv[i]
+        elif s == '--ldap.password':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_ldap_password = argv[i]
+        elif s == '--restLog':
+            g_rest_log = True
         else:
             unknown_arg(s)
 
@@ -2578,7 +2632,8 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl)
+                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl,
+                          g_ldap_config)
 
     # Build test list.
     if g_exclude_list_file is not None:

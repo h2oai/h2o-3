@@ -33,9 +33,9 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "min_rows", "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample",
                       "col_sample_rate", "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree",
                       "max_abs_leafnode_pred", "max_delta_step", "score_tree_interval", "min_split_improvement",
-                      "gamma", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
-                      "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
-                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
+                      "gamma", "nthread", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf",
+                      "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method",
+                      "grow_policy", "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -269,13 +269,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error", "r2"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -639,6 +639,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gamma(self, gamma):
         assert_is_type(gamma, None, float)
         self._parms["gamma"] = gamma
+
+
+    @property
+    def nthread(self):
+        """
+        Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
+        parameter). Defaults to maximum available
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("nthread")
+
+    @nthread.setter
+    def nthread(self, nthread):
+        assert_is_type(nthread, None, int)
+        self._parms["nthread"] = nthread
 
 
     @property

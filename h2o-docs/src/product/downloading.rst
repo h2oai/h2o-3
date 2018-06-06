@@ -15,8 +15,8 @@ Download and Run
   ::
 
 	cd ~/Downloads
-	unzip h2o-3.14.0.3.zip
-	cd h2o-3.14.0.3.3
+	unzip h2o-3.20.0.1.zip
+	cd h2o-3.20.0.1
 	java -jar h2o.jar
 
 3. Point your browser to http://localhost:54321.
@@ -115,7 +115,7 @@ Open a terminal window and run the following command to install H2O on the Anaco
       
    ::
 
-     user$ conda install -c h2oai h2o=3.16.0.2
+     user$ conda install -c h2oai h2o=3.20.0.1
 
 **Note**: For Python 3.6 users, H2O has ``tabulate>=0.75`` as a dependency; however, there is no ``tabulate`` available in the default channels for Python 3.6. This is available in the conda-forge channel. As a result, Python 3.6 users must add the ``conda-forge`` channel in order to load the latest version of H2O. This can be done by performing the following steps:
 
@@ -133,12 +133,12 @@ Install on Hadoop
 
 1. Go to `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Click on the **Install on Hadoop** tab, and download H2O for your version of Hadoop. This is a zip file that contains everything you need to get started.
 
-2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.14.0.3. Replace this version with the version that you downloaded.
+2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.20.0.1. Replace this version with the version that you downloaded.
 
  ::
 
-	unzip h2o-3.14.0.3-*.zip
-	cd h2o-3.14.0.3-*
+	unzip h2o-3.20.0.1-*.zip
+	cd h2o-3.20.0.1-*
 	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
 3. Point your browser to H2O. (See "Open H2O Flow in your web browser" in the output below.)

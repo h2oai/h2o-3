@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +46,7 @@ public class FrameUtils {
   /** Parse given set of URIs and produce a frame's key representing output.
    *
    * @param okey key for ouput frame. Can be null
-   * @param uris array of URI (file://, hdfs://, s3n://, s3a://, s3://, ...) to parse
+   * @param uris array of URI (file://, hdfs://, s3n://, s3a://, s3://, http://, https:// ...) to parse
    * @return a frame which is saved into DKV under okey
    * @throws IOException in case of parse error.
    */
@@ -53,16 +54,32 @@ public class FrameUtils {
     return parseFrame(okey, null, uris);
   }
 
+  public static Key eagerLoadFromHTTP(String path) throws IOException {
+    java.net.URL url = new URL(path);
+    Key destination_key = Key.make(path);
+    java.io.InputStream is = url.openStream();
+    UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+    UploadFileVec.readPut(destination_key, is, stats);
+    return destination_key;
+  }
+
+
   public static Frame parseFrame(Key okey, ParseSetup parseSetup, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
       throw new IllegalArgumentException("List of uris is empty!");
     }
     if(okey == null) okey = Key.make(uris[0].toString());
     Key[] inKeys = new Key[uris.length];
-    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+    for (int i = 0; i < uris.length; i++){
+      if ("http".equals(uris[i].getScheme()) || "https".equals(uris[i].getScheme())) {
+        inKeys[i] = eagerLoadFromHTTP(uris[i].toString());
+      } else{
+        inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+      }
+    }
     // Return result
     return parseSetup != null ? ParseDataset.parse(okey, inKeys, true, ParseSetup.guessSetup(inKeys, parseSetup))
-                              : ParseDataset.parse(okey, inKeys);
+            : ParseDataset.parse(okey, inKeys);
   }
 
   public static ParseSetup guessParserSetup(ParseSetup userParserSetup, URI ...uris) throws IOException {

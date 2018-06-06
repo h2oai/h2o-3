@@ -7,23 +7,33 @@ MAINTAINER h2oai "h2o.ai"
 ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
-ARG PYTHON_VERSIONS='2.7'
+ARG PYTHON_VERSIONS='2.7,3.6'
+ARG HIVE_VERSION='2.2.0'
 
-ENV DISTRIBUTION='hdp' VERSION=$VERSION HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' HADOOP_DAEMON=/usr/hdp/2*/hadoop/sbin/hadoop-daemon.sh YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
+ENV DISTRIBUTION='hdp' \
+    MASTER='yarn-client' \
+    HADOOP_HOME=/usr/hdp/current/hadoop-client/ \
+    HADOOP_CONF_DIR=/usr/hdp/2*/hadoop/conf/ \
+    HADOOP_DAEMON=/usr/hdp/2*/hadoop/sbin/hadoop-daemon.sh \
+    YARN_DAEMON=/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh \
+    MAPRED_USER=mapred \
+    YARN_USER=yarn \
+    HDFS_USER=hdfs \
+    HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Copy bin and sbin scripts
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java scripts/install_python_versions /usr/sbin/
 
 # Add HDP repository and install packages
 RUN apt-get update && \
-    apt-get install -y wget curl && \
+    apt-get install -y wget curl software-properties-common && \
     chmod 700 /usr/sbin/add_hdp_repo.sh && \
     sync && \
     /usr/sbin/add_hdp_repo.sh $VERSION && \
     rm /usr/sbin/add_hdp_repo.sh && \
+    add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
-    apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip && \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils
 
 ENV H2O_BRANCH='master'
 
@@ -68,18 +78,30 @@ RUN chmod 700 /usr/sbin/generate-yarn-site && \
 # Format namenode
 RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namenode -format"
 
-# Create jenkins user
-RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins
+# Create jenkins and hive users
+RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins && \
+    adduser --disabled-password --gecos "" hive
 
 # Copy startup scripts
 COPY ${PATH_PREFIX}/scripts/startup ${PATH_PREFIX}/../common/startup /etc/startup/
 
 # Copy sudoers so we can start hadoop stuff without root access to container
 COPY ${PATH_PREFIX}/../common/sudoers/jenkins /etc/sudoers.d/jenkins
+COPY ${PATH_PREFIX}/../common/hive-scripts /opt/hive-scripts/
+COPY ${PATH_PREFIX}/../common/ldap /opt/ldap-scripts/
+
+RUN chmod 700 /usr/sbin/startup.sh && \
+    chown -R hive:hive /opt/hive-scripts && \
+    chmod +x /usr/sbin/install_hive.sh && \
+    chmod 700 /usr/sbin/install_ldap.sh && \
+    sync && \
+    /usr/sbin/install_hive.sh
+
+RUN /usr/sbin/install_ldap.sh
 
 # Expose ports
-# H2O, Hadoop UI
-EXPOSE 54321 8088
+# H2O, Hadoop UI, Hive, LDAP
+EXPOSE 54321 8088 10000 389
 
-RUN chmod 700 /usr/sbin/startup.sh
-CMD "/usr/sbin/startup.sh"
+# Remove hadoop pids
+RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid

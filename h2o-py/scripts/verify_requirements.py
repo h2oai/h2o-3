@@ -9,6 +9,11 @@ import sys
 
 try:
     import pip
+    version_tuple = tuple(map(int, pip.__version__.split('.')))
+    if version_tuple >= (10, 0, 0):
+        from pip._internal.utils.misc import get_installed_distributions
+    else:
+        from pip import get_installed_distributions
 except ImportError:
     pip = None
     print("Module pip is not installed", file=sys.stderr)
@@ -125,7 +130,7 @@ def test_module(mod, min_version, installed_modules):
 
 
 def main(metayaml_file):
-    installed = pip.get_installed_distributions(skip=())
+    installed = get_installed_distributions(skip=())
     msgs = test_requirements("build", metayaml_file, installed)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)

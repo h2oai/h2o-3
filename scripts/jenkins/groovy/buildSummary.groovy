@@ -73,8 +73,18 @@ class BuildSummary {
         if (mode != null) {
             modeItem = "<li><strong>Mode:</strong> ${mode}</li>\n"
         }
+        String singleTestInfo = ""
+        if (mode == 'MODE_SINGLE_TEST') {
+            singleTestInfo += "<li><strong>Python:</strong> ${context.params.singleTestPyVersion}"
+            singleTestInfo += "<li><strong>R:</strong> ${context.params.singleTestRVersion}"
+            singleTestInfo += "<li><strong>Test:</strong> ${context.params.testComponent} - ${context.params.testPath}"
+            singleTestInfo += "<li><strong>java.xmx:</strong> ${context.params.singleTestXmx}"
+            singleTestInfo += "<li><strong># H2O Nodes:</strong> ${context.params.singleTestNumNodes}"
+            singleTestInfo += "<li style=\"border-bottom: 1px dashed lightgray;margin-bottom: 5px;padding-bottom: 5px;\"><strong># Runs:</strong> ${context.params.singleTestNumRuns}"
+        }
         return addSection(context, DETAILS_SECTION_ID, "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
             <ul>
+              ${singleTestInfo}
               ${modeItem}
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>
@@ -300,7 +310,7 @@ class BuildSummary {
             if (result.isEmpty()) {
                 return 'There are no failed tests.'
             }
-            return result.join("\n")
+            return result.join("<br/>")
         }
     }
 
@@ -352,6 +362,8 @@ class BuildSummary {
         String getArtifactsHTML(final context) {
             if (result == BuildSummary.RESULT_PENDING) {
                 return 'Not yet available'
+            } else if (result == BuildSummary.RESULT_SUCCESS) {
+                return ''
             }
             return "<a href=\"${context.currentBuild.rawBuild.getAbsoluteUrl()}artifact/${stageDirName}/\" target=\"_blank\" style=\"color: black;\">Artifacts</a>"
         }

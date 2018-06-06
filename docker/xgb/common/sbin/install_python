@@ -3,7 +3,7 @@
 set -e
 set -x
 
-pip install --upgrade pip
+pip install --upgrade pip==9.0.3
 pip install virtualenv
 virtualenv -p python3.5 /envs/h2o_env_python3.5
 chmod a+w -R /envs/h2o_env_python3.5

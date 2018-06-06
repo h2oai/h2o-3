@@ -2,12 +2,26 @@ package hex.schemas;
 
 import hex.ensemble.StackedEnsemble;
 import hex.StackedEnsembleModel;
+import hex.tree.gbm.GBMModel;
+import hex.tree.drf.DRFModel;
+import hex.deeplearning.DeepLearningModel;
+import hex.glm.GLMModel;
+import hex.Model;
+
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
-import hex.Model;
 import water.api.schemas3.FrameV3;
-import water.util.IcedHashMap;
+
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
@@ -70,6 +84,71 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
-  
+
+    public StackedEnsembleModel.StackedEnsembleParameters fillImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {
+      super.fillImpl(impl);
+      if (metalearner_params != null && !metalearner_params.isEmpty()) {
+        Properties p = new Properties();
+        HashMap<String, String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>() {
+        }.getType());
+        for (Map.Entry<String, String[]> param : map.entrySet()) {
+          String[] paramVal = param.getValue();
+          if (paramVal.length == 1) {
+            p.setProperty(param.getKey(), paramVal[0]);
+          } else {
+            p.setProperty(param.getKey(), Arrays.toString(paramVal));
+          }
+        }
+        switch (metalearner_algorithm) {
+          case AUTO:
+            GLMV3.GLMParametersV3 paramsAuto = new GLMV3.GLMParametersV3();
+            paramsAuto.init_meta();
+            paramsAuto.fillFromImpl(new GLMModel.GLMParameters());
+            GLMModel.GLMParameters autoParams = paramsAuto.createAndFillImpl();
+            impl._metalearner_parameters = autoParams;
+            super.fillImpl(impl);
+            break;
+          case gbm:
+            GBMV3.GBMParametersV3 paramsGBM = new GBMV3.GBMParametersV3();
+            paramsGBM.init_meta();
+            paramsGBM.fillFromImpl(new GBMModel.GBMParameters());
+            paramsGBM.fillFromParms(p, true);
+            GBMModel.GBMParameters gbmParams = paramsGBM.createAndFillImpl();
+            impl._metalearner_parameters = gbmParams;
+            super.fillImpl(impl);
+            break;
+          case drf:
+            DRFV3.DRFParametersV3 paramsDRF = new DRFV3.DRFParametersV3();
+            paramsDRF.init_meta();
+            paramsDRF.fillFromImpl(new DRFModel.DRFParameters());
+            paramsDRF.fillFromParms(p, true);
+            DRFModel.DRFParameters drfParams = paramsDRF.createAndFillImpl();
+            impl._metalearner_parameters = drfParams;
+            super.fillImpl(impl);
+            break;
+          case glm:
+            GLMV3.GLMParametersV3 paramsGLM = new GLMV3.GLMParametersV3();
+            paramsGLM.init_meta();
+            paramsGLM.fillFromImpl(new GLMModel.GLMParameters());
+            paramsGLM.fillFromParms(p, true);
+            GLMModel.GLMParameters glmParams = paramsGLM.createAndFillImpl();
+            impl._metalearner_parameters = glmParams;
+            super.fillImpl(impl);
+            break;
+          case deeplearning:
+            DeepLearningV3.DeepLearningParametersV3 paramsDL = new DeepLearningV3.DeepLearningParametersV3();
+            paramsDL.init_meta();
+            paramsDL.fillFromImpl(new DeepLearningModel.DeepLearningParameters());
+            paramsDL.fillFromParms(p, true);
+            DeepLearningModel.DeepLearningParameters dlParams = paramsDL.createAndFillImpl();
+            impl._metalearner_parameters = dlParams;
+            super.fillImpl(impl);
+            break;
+          default:
+            throw new UnsupportedOperationException("Unknown meta-learner algo: " + metalearner_algorithm);
+        }
+      }
+      return impl;
+    }
   }
 }

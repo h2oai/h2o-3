@@ -56,7 +56,8 @@ try {
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
                             <li><strong>PyPI Upload:</strong> ${params.UPLOAD_PYPI}</li>
                             <li><strong>Conda Upload:</strong> ${params.UPLOAD_CONDA}</li>
-                            <li><strong>Update Latest Links</strong> ${params.UPDATE_LATEST}</li>
+                            <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
+                            <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -243,12 +244,37 @@ try {
                         throw e
                     }
                 }
-                def UPDATE_LATEST_STAGE_NAME = 'Update Latest Links'
-                if ((params.UPDATE_LATEST)) {
-                    stage(UPDATE_LATEST_STAGE_NAME) {
+
+                def UPDATE_BRANCH_LATEST_STAGE_NAME = 'Update Branch Latest Links'
+                if (params.UPDATE_LATEST_BRANCH) {
+                    stage (UPDATE_BRANCH_LATEST_STAGE_NAME) {
                         try {
-                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_BRANCH_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_BRANCH_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}
+                                    tmpdir=./buildh2odev.tmp
+
+                                    s3cmd --acl-public put \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html
+                                    s3cmd --acl-public put \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html
+                                """
+                            }
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_BRANCH_LATEST_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_BRANCH_LATEST_STAGE_NAME)
+                            throw e
+                        }
+                    }
+                }
+
+                def UPDATE_TOP_LEVEL_LATEST_STAGE_NAME = 'Update Top-level Latest Links'
+                if (params.UPDATE_LATEST) {
+                    stage(UPDATE_TOP_LEVEL_LATEST_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                             insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
@@ -299,9 +325,9 @@ EOF
                                     done
                                 """
                             }
-                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_LATEST_STAGE_NAME)
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME)
                         } catch (Exception e) {
-                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_LATEST_STAGE_NAME)
+                            pipelineContext.getBuildSummary().markStageFailed(this, UPDATE_TOP_LEVEL_LATEST_STAGE_NAME)
                             throw e
                         }
                     }
@@ -311,9 +337,12 @@ EOF
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
                     if (params.UPLOAD_CONDA) {
+
+                        final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+
                         // build for all Python versions
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
-                            def uploadToCondaStageName = "Upload Py${pyVersion} to Conda"
+                            def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
                             stage(uploadToCondaStageName) {
                                 withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
                                     pipelineContext.getBuildSummary().addStageSummary(this, uploadToCondaStageName, env.BUILD_NUMBER_DIR)
@@ -330,6 +359,12 @@ EOF
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
                                                 # Convert conda package for all other platforms
                                                 conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+                                                
+                                                s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
+                                                s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
+                                                s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
+                                                s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
                                                 
                                                 if [ "\$TEST_RELEASE" = true ]; then
                                                     echo '****** WARNING! Upload to Conda suppressed ******'
@@ -354,6 +389,37 @@ EOF
                                 }
                             }
                         }
+
+                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                            def checkCondaOfflineStageName = "Check Py${pyVersion} Conda Package Offline"
+                            def condaPkgPyVersion = pyVersion.replaceAll('\\.','')
+                            def pkgName = "h2o-${env.PROJECT_VERSION}-py${condaPkgPyVersion}*.tar.bz2"
+                            stage(checkCondaOfflineStageName) {
+                                pipelineContext.getBuildSummary().addStageSummary(this, checkCondaOfflineStageName, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, checkCondaOfflineStageName, env.NODE_NAME, env.WORKSPACE)
+                                try {
+                                    insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                        echo "Check Conda package for Python ${pyVersion}"
+                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests colorama"
+                                        sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
+                                        sh """
+                                                bash -c \"\"\"
+                                                    source activate py${pyVersion}
+        
+                                                    conda install ${pkgName} --offline
+                                                    python --version
+                                                    python h2o_test.py
+                                                \"\"\"
+                                            """
+                                    }
+                                    pipelineContext.getBuildSummary().markStageSuccessful(this, checkCondaOfflineStageName)
+                                } catch (Exception e) {
+                                    pipelineContext.getBuildSummary().markStageFailed(this, checkCondaOfflineStageName)
+                                    throw e
+                                }
+                            }
+                        }
+
                         // check that Conda package for each Python version reports correct H2O version
                         if (!params.TEST_RELEASE) {
                             for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
@@ -364,7 +430,7 @@ EOF
                                     try {
                                         insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             echo "Check Conda package for Python ${pyVersion}"
-                                            sh "conda create -y -n py${pyVersion} python=${pyVersion} anaconda"
+                                            sh "conda create -y -n py${pyVersion} python=${pyVersion}"
                                             sh """
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
@@ -384,7 +450,7 @@ EOF
                                 }
                             }
                         } else {
-                            echo 'Marked as TEST_RELEASE, don\'t check uploaded Conda packages'
+                            echo 'Marked as TEST_RELEASE, don\'t check Conda packages from anaconda.org'
                         }
                     }
 
@@ -404,14 +470,13 @@ EOF
                                             cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                             python setup.py sdist
                                             
+                                            s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
+                                            
                                             if [ "\$TEST_RELEASE" = true ]; then
                                                 echo '****** WARNING! Upload to PyPI suppressed ******'
                                             else
                                                 echo '****** Upload to PyPI ******'
-                                                echo 'Because PyPI returns HTTP 503 although upload has been successfull, ignore this error. The package will be checked afterwards'
-                                                set +e
                                                 twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
-                                                set -e
                                             fi
                                         """
                                     }
@@ -422,36 +487,24 @@ EOF
                                 throw e
                             }
                         }
-                        // check that pip package for each Python version reports correct H2O version
-                        if (!params.TEST_RELEASE) {
-                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
-                                def checkPyPIStageName = "Check Py${pyVersion} PyPI Package"
-                                stage(checkPyPIStageName) {
-                                    try {
-                                        pipelineContext.getBuildSummary().addStageSummary(this, checkPyPIStageName, env.BUILD_NUMBER_DIR)
-                                        pipelineContext.getBuildSummary().setStageDetails(this, checkPyPIStageName, env.NODE_NAME, env.WORKSPACE)
-                                        insideDocker(["PYTHON_VERSION=${pyVersion}"], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
-                                            echo "Check PyPI package for Python ${pyVersion}"
-                                            sh """
-                                            export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-                                            echo "Activating Python ${env.PYTHON_VERSION}"
-                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-    
-                                            pip install h2o
-                                            python --version
-                                            python h2o_test.py
-                                        """
-                                        }
-                                        pipelineContext.getBuildSummary().markStageSuccessful(this, checkPyPIStageName)
-                                    } catch (Exception e) {
-                                        pipelineContext.getBuildSummary().markStageFailed(this, checkPyPIStageName)
-                                        throw e
-                                    }
-                                }
-                            }
-                        } else {
-                            echo 'Marked as TEST_RELEASE, don\'t check uploaded PyPI packages'
-                        }
+                    }
+                }
+
+                final String CLEANUP_STAGE_NAME = 'Cleanup'
+                stage(CLEANUP_STAGE_NAME) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, CLEANUP_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                        pipelineContext.getBuildSummary().setStageDetails(this, CLEANUP_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        sh """
+                            cd ${env.BUILD_NUMBER_DIR}
+                            rm -rf target/*.zip
+                            rm -rf h2o-dist
+                            find . -name 'h2odriver-3.*.0.jar' -delete -print
+                        """
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, CLEANUP_STAGE_NAME)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, CLEANUP_STAGE_NAME)
+                        throw e
                     }
                 }
             }
@@ -475,7 +528,8 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update latest links', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build Conda package. Also if building rel- branch, publish to Conda', name: 'UPLOAD_CONDA')

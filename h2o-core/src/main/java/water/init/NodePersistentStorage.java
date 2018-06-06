@@ -123,7 +123,7 @@ public class NodePersistentStorage {
         throw new RuntimeException("Could not make NodePersistentStorage category directory (" + tmpd + ")");
       }
     }
-    if (! pm.exists(tmpd)) {
+    if (! H2O.getPM().isGcsPath(tmpd) && ! pm.exists(tmpd)) {
       throw new RuntimeException("NodePersistentStorage category directory does not exist (" + tmpd + ")");
     }
 
@@ -135,7 +135,7 @@ public class NodePersistentStorage {
         throw new RuntimeException("Could not make NodePersistentStorage category directory (" + d2 + ")");
       }
     }
-    if (! pm.exists(d2)) {
+    if (! H2O.getPM().isGcsPath(tmpd) && ! pm.exists(d2)) {
       throw new RuntimeException("NodePersistentStorage category directory does not exist (" + d2 + ")");
     }
 

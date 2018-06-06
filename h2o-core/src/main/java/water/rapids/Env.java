@@ -248,6 +248,7 @@ public class Env extends Iced {
     init(new AstSetDomain());
     init(new AstSetLevel());
     init(new AstPivot());
+    init(new AstRankWithinGroupBy()); // provide ranking withing groupby groups sorted after certain columns
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new AstAppend());      // Add a column
@@ -281,6 +282,7 @@ public class Env extends Iced {
     // Miscellaneous
     init(new AstComma());
     init(new AstLs());
+    init(new AstSetProperty());
 
     // Search
     init(new AstMatch());

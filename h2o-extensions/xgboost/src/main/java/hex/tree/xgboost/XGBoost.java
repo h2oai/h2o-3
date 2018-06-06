@@ -1,9 +1,6 @@
 package hex.tree.xgboost;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
@@ -20,7 +17,9 @@ import water.util.*;
 import water.util.Timer;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -32,6 +31,9 @@ import static water.H2O.technote;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+
+  private static final double FILL_RATIO_THRESHOLD = 0.25D;
+
   @Override public boolean haveMojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
@@ -270,64 +272,51 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } else if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.dense) {
         model._output._sparse = false;
       } else {
-        float fillRatio = 0;
-        int col = 0;
-        for (int i = 0; i < _train.numCols(); ++i) {
-          if (_train.name(i).equals(_parms._response_column)) continue;
-          if (_train.name(i).equals(_parms._weights_column)) continue;
-          if (_train.name(i).equals(_parms._fold_column)) continue;
-          if (_train.name(i).equals(_parms._offset_column)) continue;
-          fillRatio += _train.vec(i).nzCnt() / _train.numRows();
-          col++;
-        }
-        fillRatio /= col;
-        Log.info("fill ratio: " + fillRatio);
-        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+        model._output._sparse = isTrainDatasetSparse();
       }
 
       // Single Rabit tracker per job. Manages the node graph for Rabit.
-      IRabitTracker rt = null;
+      final IRabitTracker rt;
+      XGBoostSetupTask setupTask = null;
       try {
-        // Create a temporary storage for user files
-        featureMapFile = createFeatureMapFile();
-
-        // Count on how many nodes the data resides
-        Set<H2ONode> nodesHoldingFrame = new HashSet<>();
-        Vec vec = train().anyVec();
-        for(int chunkNr = 0; chunkNr < vec.nChunks(); chunkNr++) {
-          nodesHoldingFrame.add(vec.chunkKey(chunkNr).home_node());
-        }
+        XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
 
         // Prepare Rabit tracker for this job
         // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
         // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
         // for H2O.getCloudSize() number of requests/responses.
-        rt = new RabitTrackerH2O(nodesHoldingFrame.size());
+        rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
 
         if (!startRabitTracker(rt)) {
           throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
                                              + "make sure you have python installed!");
         }
 
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info()._dataInfoKey.get();
+        String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
+        featureMapFile = createFeatureMapFile(featureMap);
+
+        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+
+        setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
+
         try {
-          model.model_info().setBooster(new XGBoostUpdateTask(
-                  model.model_info().getBooster(),
-                  model.model_info(),
-                  model._output,
-                  _parms,
-                  0,
-                  getWorkerEnvs(rt),
-                  new String[]{""}).doAll(_train).getBooster(featureMapFile));
-          // Wait for results
+          // initial iteration
+          model.model_info().setBooster(new XGBoostUpdateTask(setupTask, 0).run().getBooster());
+
+          // train the model
+          scoreAndBuildTrees(setupTask, model);
+
+          // shutdown rabit & XGB native resources
+          XGBoostCleanupTask.cleanUp(setupTask);
+          setupTask = null;
+
           waitOnRabitWorkers(rt);
-        } catch (RuntimeException e) {
-          throw e;
         } finally {
           rt.stop();
         }
-
-        // train the model
-        scoreAndBuildTrees(model, rt);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -336,69 +325,100 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
+        if (setupTask != null) {
+          try {
+            XGBoostCleanupTask.cleanUp(setupTask);
+          } catch (Exception e) {
+            Log.err("XGBoost clean-up failed - this could leak memory!", e);
+          }
+        }
         // Unlock & save results
         model.unlock(_job);
       }
     }
 
-    private File createFeatureMapFile() {
-      File tmpModelDir = null;
+    /**
+     * @return True if train dataset is sparse, otherwise false.
+     */
+    private boolean isTrainDatasetSparse() {
+      long nonZeroCount = 0;
+      int nonCategoricalColumns = 0;
+      long oneHotEncodedColumns = 0;
+      for (int i = 0; i < _train.numCols(); ++i) {
+        if (_train.name(i).equals(_parms._response_column)) continue;
+        if (_train.name(i).equals(_parms._weights_column)) continue;
+        if (_train.name(i).equals(_parms._fold_column)) continue;
+        if (_train.name(i).equals(_parms._offset_column)) continue;
+        final Vec vector = _train.vec(i);
+        if (vector.isCategorical()) {
+          nonZeroCount += _train.numRows();
+        } else {
+          nonZeroCount += vector.nzCnt();
+        }
+        if (vector.isCategorical()) {
+          oneHotEncodedColumns += vector.cardinality();
+        } else {
+          nonCategoricalColumns++;
+        }
+      }
+      final long totalColumns = oneHotEncodedColumns + nonCategoricalColumns;
+      final double denominator = (double) totalColumns * _train.numRows();
+      final double fillRatio = (double) nonZeroCount / denominator;
+      Log.info("fill ratio: " + fillRatio);
+
+      return fillRatio < FILL_RATIO_THRESHOLD
+          || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
+    }
+
+    // For feature importances - write out column info
+    private File createFeatureMapFile(String featureMap) {
+      OutputStream os = null;
       try {
-        tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
-        return new File(tmpModelDir, featureMapFileName);
-      } catch(IOException e) {
-        throw new RuntimeException("Cannot generate temporary directory for feature map file", e);
+        File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
+        File fmFile = new File(tmpModelDir, featureMapFileName);
+        os = new FileOutputStream(fmFile);
+        os.write(featureMap.getBytes());
+        os.close();
+        return fmFile;
+      } catch (IOException e) {
+        throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
+      } finally {
+        FileUtils.close(os);
       }
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, IRabitTracker rt) throws XGBoostError {
+    private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final XGBoostModel model) throws XGBoostError {
+      BoosterProvider boosterProvider = new BoosterProvider(model.model_info()); // initial model always has a Booster
+
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, model.model_info().getBooster(), false);
+        boolean scored = doScoring(model, boosterProvider, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoring(model, model.model_info().getBooster(), true);
-          _job.update(_parms._ntrees-model._output._ntrees); //finish
-          return;
+          Log.info("Early stopping triggered - stopping XGBoost training");
+          break;
         }
 
         Timer kb_timer = new Timer();
-        startRabitTracker(rt);
-        try {
-          model.model_info().setBooster(new XGBoostUpdateTask(
-              model.model_info().getBooster(),
-              model.model_info(),
-              model._output,
-              _parms,
-              tid,
-              getWorkerEnvs(rt),
-              null).doAll(_train).getBooster());
-          // Wait for succesful completion
-          waitOnRabitWorkers(rt);
-        } catch (RuntimeException e) {
-          throw e;
-        } finally {
-          rt.stop();
-        }
-
+        XGBoostUpdateTask t = new XGBoostUpdateTask(setupTask, tid).run();
+        boosterProvider = new OnDemandBoosterProvider(model.model_info(), t);
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
-        // Optional: for convenience
-//          model.update(_job);
-//          model.model_info().nativeToJava();
+
         model._output._ntrees++;
         model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
         model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
-        if (timeout()) { //stop after scoring
-          if (!scored) {
-            doScoring(model, model.model_info().getBooster(), true);
-          }
-          _job.update(_parms._ntrees-model._output._ntrees); //finish
+        if (timeout()) {
+          Log.info("Stopping XGBoost training because of timeout");
           break;
         }
       }
-      doScoring(model, model.model_info().getBooster(), true);
+      _job.update(0, "Scoring the final model");
+      // Final scoring
+      doScoring(model, boosterProvider, true);
+      // Finish remaining work (if stopped early)
+      _job.update(_parms._ntrees-model._output._ntrees);
     }
 
     // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
@@ -431,7 +451,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     long _timeLastScoreEnd = 0;
 
     private boolean doScoring(XGBoostModel model,
-                              Booster booster,
+                              BoosterProvider boosterProvider,
                               boolean finalScoring) throws XGBoostError {
       boolean scored = false;
       long now = System.currentTimeMillis();
@@ -451,6 +471,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
+        Booster booster = boosterProvider.getBooster();
         model.doScoring(booster, _train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore(featureMapFile.getAbsolutePath()));
@@ -467,11 +488,72 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
+  private static class BoosterProvider {
+    final XGBoostModelInfo _modelInfo;
+
+    BoosterProvider(XGBoostModelInfo modelInfo) {
+      _modelInfo = modelInfo;
+    }
+
+    Booster getBooster() {
+      return _modelInfo.getBooster();
+    }
+  }
+
+  private static class OnDemandBoosterProvider extends BoosterProvider {
+    XGBoostUpdateTask _updateTask;
+    boolean _boosterRetrieved;
+
+    OnDemandBoosterProvider(XGBoostModelInfo modelInfo, XGBoostUpdateTask updateTask) {
+      super(modelInfo);
+      _updateTask = updateTask;
+      _boosterRetrieved = false;
+    }
+
+    Booster getBooster() {
+      if (! _boosterRetrieved) {
+        Booster booster = _updateTask.getBooster();
+        _modelInfo.setBooster(booster);
+        _boosterRetrieved = true;
+        _updateTask = null;
+      }
+      return super.getBooster();
+    }
+
+  }
+
   private double effective_learning_rate(XGBoostModel model) {
     return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
 
   private static Set<Integer> GPUS = new HashSet<>();
+
+  static boolean hasGPU(H2ONode node, int gpu_id) {
+    final boolean hasGPU;
+    if (H2O.SELF.equals(node)) {
+      hasGPU = hasGPU(gpu_id);
+    } else {
+      HasGPUTask t = new HasGPUTask(gpu_id);
+      new RPC<>(node, t).call().get();
+      hasGPU = t._hasGPU;
+    }
+    Log.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
+    return hasGPU;
+  }
+
+  private static class HasGPUTask extends DTask<HasGPUTask> {
+    private final int _gpu_id;
+    // OUT
+    private boolean _hasGPU;
+
+    private HasGPUTask(int gpu_id) { _gpu_id = gpu_id; }
+
+    @Override
+    public void compute2() {
+      _hasGPU = hasGPU(_gpu_id);
+      tryComplete();
+    }
+  }
 
   // helper
   static synchronized boolean hasGPU(int gpu_id) {
@@ -483,7 +565,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       return true;
     }
 
-    DMatrix trainMat = null;
+    DMatrix trainMat;
     try {
       trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
       trainMat.setLabel(new float[]{1,0});

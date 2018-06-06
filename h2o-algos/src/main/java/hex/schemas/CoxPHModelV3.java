@@ -4,6 +4,8 @@ import hex.coxph.CoxPHModel;
 import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
+import water.api.schemas3.TwoDimTableV3;
+import water.util.TwoDimTable;
 
 public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
                                               CoxPHModelV3,
@@ -14,71 +16,80 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
 
   public static final class CoxPHModelOutputV3 extends ModelOutputSchemaV3<CoxPHModel.CoxPHOutput, CoxPHModelOutputV3> {
 
-    @API(help = "coef_names")
-    String[] coef_names;
-    @API(help = "coef")
-    double[] coef;
-    @API(help = "exp_coef")
-    double[] exp_coef;
-    @API(help = "exp_neg_coef")
-    double[] exp_neg_coef;
-    @API(help = "se_coef")
-    double[] se_coef;
-    @API(help = "z_coef")
-    double[] z_coef;
-    @API(help = "var_coef")
+    @API(help="Table of Coefficients")
+    TwoDimTableV3 coefficients_table;
+    @API(help = "var(coefficients)")
     double[][] var_coef;
-    @API(help = "null_loglik")
+    @API(help = "null log-likelihood")
     double null_loglik;
-    @API(help = "loglik")
+    @API(help = "log-likelihood")
     double loglik;
-    @API(help = "loglik_test")
+    @API(help = "log-likelihood test stat")
     double loglik_test;
-    @API(help = "wald_test")
+    @API(help = "Wald test stat")
     double wald_test;
-    @API(help = "score_test")
+    @API(help = "Score test stat")
     double score_test;
-    @API(help = "rsq")
+    @API(help = "R-square")
     double rsq;
-    @API(help = "maxrsq")
+    @API(help = "Maximum R-square")
     double maxrsq;
-    @API(help = "lre")
+    @API(help = "log relative error")
     double lre;
-    @API(help = "iter")
+    @API(help = "number of iterations")
     int iter;
-    @API(help = "x_mean_cat")
-    double[] x_mean_cat;
-    @API(help = "x_mean_num")
-    double[] x_mean_num;
-    @API(help = "mean_offset")
+    @API(help = "x weighted mean vector for categorical variables")
+    double[][] x_mean_cat;
+    @API(help = "x weighted mean vector for numeric variables")
+    double[][] x_mean_num;
+    @API(help = "unweighted mean vector for numeric offsets")
     double[] mean_offset;
-    @API(help = "offset_names")
+    @API(help = "names of offsets")
     String[] offset_names;
     @API(help = "n")
     long n;
-    @API(help = "n_missing")
+    @API(help = "number of rows with missing values")
     long n_missing;
-    @API(help = "total_event")
+    @API(help = "total events")
     long total_event;
     @API(help = "time")
     double[] time;
-    @API(help = "n_risk")
+    @API(help = "number at risk")
     double[] n_risk;
-    @API(help = "n_event")
+    @API(help = "number of events")
     double[] n_event;
-    @API(help = "n_censor")
+    @API(help = "number of censored obs")
     double[] n_censor;
-    @API(help = "cumhaz_0")
+    @API(help = "baseline cumulative hazard")
     double[] cumhaz_0;
-    @API(help = "var_cumhaz_1")
+    @API(help = "component of var(cumhaz)")
     double[] var_cumhaz_1;
-    @API(help = "var_cumhaz_2")
+    @API(help = "component of var(cumhaz)")
     double[][] var_cumhaz_2;
-    @API(help = "rcall")
-    String rcall;
+    @API(help = "formula")
+    String formula;
     @API(help = "ties", values = {"efron", "breslow"})
     CoxPHModel.CoxPHParameters.CoxPHTies ties;
 
+    @Override
+    public CoxPHModelOutputV3 fillFromImpl(CoxPHModel.CoxPHOutput impl) {
+      super.fillFromImpl(impl);
+      String[] names = impl._coef_names;
+      String[] colTypes = new String[]{"double", "double", "double", "double", "double"};
+      String[] colFormats = new String[]{"%5f", "%5f", "%5f", "%5f", "%5f"};
+      String[] colNames = new String[]{"Coefficients", "exp_coef", "exp_neg_coef", "se_coef", "z_coef"};
+      TwoDimTable tdt = new TwoDimTable("Coefficients","CoxPH Coefficients", names, colNames, colTypes, colFormats, "names");
+      // fill in coefficients
+      for (int i = 0; i < names.length; i++) {
+        tdt.set(i, 0, impl._coef[i]);
+        tdt.set(i, 1, impl._exp_coef[i]);
+        tdt.set(i, 2, impl._exp_neg_coef[i]);
+        tdt.set(i, 3, impl._se_coef[i]);
+        tdt.set(i, 4, impl._z_coef[i]);
+      }
+      coefficients_table = new TwoDimTableV3().fillFromImpl(tdt);
+      return this;
+    }
   } // CoxPHModelOutputV3
 
   public CoxPHV3.CoxPHParametersV3 createParametersSchema() { return new CoxPHV3.CoxPHParametersV3(); }

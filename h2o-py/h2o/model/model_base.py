@@ -281,6 +281,9 @@ class ModelBase(backwards_compatible()):
         else:  # cases dealing with test_data not None
             if not isinstance(test_data, h2o.H2OFrame):
                 raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
+            if (self._model_json["response_column_name"] != None) and not(self._model_json["response_column_name"] in test_data.names):
+                print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+                return
             res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
 
             # FIXME need to do the client-side filtering...  (PUBDEV-874)

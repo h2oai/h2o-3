@@ -152,7 +152,18 @@ public class InteractionWrappedVec extends WrappedVec {
     return 1;
   }
   @Override public int mode() {
-    if( !isCategorical() ) throw H2O.unimpl();
+    if( !isCategorical() ) {
+      if (v1Domain() != null) {
+        assert v2Domain() == null; // Only one of them can have a domain (it would be categorical otherwise)
+        return _masterVec1.mode();
+      }
+      if (v2Domain() != null) {
+        assert v1Domain() == null; // Only one of them can have a domain (it would be categorical otherwise)
+        return _masterVec2.mode();
+      }
+      // Numerical interactions don't have a mode
+      throw H2O.unimpl();
+    }
     return ArrayUtils.maxIndex(_bins);
   }
   public long[] getBins() { return _bins; }

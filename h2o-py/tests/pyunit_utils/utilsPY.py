@@ -4,8 +4,6 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
-import numpy as np
-import operator
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -32,6 +30,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators.random_forest import H2ORandomForestEstimator
 from decimal import *
 import urllib.request, urllib.error, urllib.parse
 import numpy as np
@@ -161,7 +160,8 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-def mojo_predict(model,tmpdir, mojoname):
+
+def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False):
     """
     perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are returned.
     It is assumed that the input data set is saved as in.csv in tmpdir directory.
@@ -169,6 +169,7 @@ def mojo_predict(model,tmpdir, mojoname):
     :param model: h2o model where you want to use to perform prediction
     :param tmpdir: directory where your mojo zip files are stired
     :param mojoname: name of your mojo zip file.
+    :param glrmReconstruct: True to return reconstructed dataset, else return the x factor.
     :return: the h2o prediction frame and the mojo prediction frame
     """
     newTest = h2o.import_file(os.path.join(tmpdir, 'in.csv'), header=1)   # Make sure h2o and mojo use same in.csv
@@ -179,15 +180,25 @@ def mojo_predict(model,tmpdir, mojoname):
     mojoZip = os.path.join(tmpdir, mojoname) + ".zip"
     genJarDir = str.split(str(tmpdir),'/')
     genJarDir = '/'.join(genJarDir[0:genJarDir.index('h2o-py')])    # locate directory of genmodel.jar
+
     java_cmd = ["java", "-ea", "-cp", os.path.join(genJarDir, "h2o-assemblies/genmodel/build/libs/genmodel.jar"),
                 "-Xmx12g", "-XX:MaxPermSize=2g", "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
                 "--input", os.path.join(tmpdir, 'in.csv'), "--output",
                 outFileName, "--mojo", mojoZip, "--decimal"]
+    if get_leaf_node_assignment:
+        java_cmd.append("--leafNodeAssignment")
+        predict_h2o = model.predict_leaf_node_assignment(newTest)
+
+    if glrmReconstruct:  # used for GLRM to grab the x coefficients (factors) instead of the predicted values
+        java_cmd.append("--glrmReconstruct")
+
     p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
     o, e = p.communicate()
     pred_mojo = h2o.import_file(os.path.join(tmpdir, 'out_mojo.csv'), header=1)  # load mojo prediction into a frame and compare
-#    os.remove(mojoZip)
-    return predict_h2o, pred_mojo
+    if glrmReconstruct or ('glrm' not in model.algo):
+        return predict_h2o, pred_mojo
+    else:
+        return newTest.frame_id, pred_mojo
 
 # perform pojo predict.  Frame containing pojo predict is returned.
 def pojo_predict(model, tmpdir, pojoname):
@@ -971,7 +982,7 @@ def generate_training_set_mixed_glm(csv_filename, csv_filename_true_one_hot, row
 
     if len(csv_filename) > 0:
         generate_and_save_mixed_glm(csv_filename, x_mat, enum_level_vec, enum_col, False, weight, noise_std,
-                                    family_type, class_method=class_method, class_margin=class_margin, weightChange=weightChange)
+                                    family_type, class_method=class_method, class_margin=class_margin, weightChange=False)
 
 
 def generate_and_save_mixed_glm(csv_filename, x_mat, enum_level_vec, enum_col, true_one_hot, weight, noise_std,
@@ -1121,7 +1132,7 @@ def one_hot_encoding(enum_level):
 
 
 def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='probability',
-                          class_margin=0.0, weightChange=False):
+                          class_margin=0.0, weightChange=False, even_distribution=True):
     """
     Generate response vector given weight matrix, predictors matrix for the GLM algo.
 
@@ -1157,10 +1168,28 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
             for indP in range(num_sample):
                 tresp.append(-response_y[indP,0])
             tresp.sort()
-            num_per_class = len(tresp)/lastClass
+            num_per_class = int(len(tresp)/num_class)
 
-            for indC in range(lastClass):   # put in threshold
-                weight[0,indC] = tresp[indC*num_per_class]
+            if (even_distribution):
+                for indC in range(lastClass):
+                    weight[0,indC] = tresp[(indC+1)*num_per_class]
+
+            else: # do not generate evenly distributed class, generate randomly distributed classes
+                splitInd = []
+                lowV = 0.1
+                highV = 1
+                v1 = 0
+                acc = 0
+                for indC in range(lastClass):
+                    tempf = random.uniform(lowV, highV)
+                    splitInd.append(v1+int(tempf*num_per_class))
+                    v1 = splitInd[indC] # from last class
+                    acc += 1-tempf
+                    highV = 1+acc
+
+                for indC in range(lastClass):   # put in threshold
+                    weight[0,indC] = tresp[splitInd[indC]]
+
             response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
 
         discrete_y = np.zeros((num_sample, 1), dtype=np.int)
@@ -1169,6 +1198,7 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
             for indC in range(lastClass):
                 if (response_y[indR, indC] >= 0):
                     discrete_y[indR, 0] = indC
+                    break
         return discrete_y
 
     # added more to form Multinomial response
@@ -1505,7 +1535,9 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
                         if isinstance(val1, float) and isinstance(val2, float):
                             compare_val_ratio = abs(val1-val2)/max(1, abs(val1), abs(val2))
                             if compare_val_ratio > tolerance:
-                                print("Table entry difference is {0}".format(compare_val_ratio))
+                                print("Table entry difference is {0} at dimension {1} and eigenvector number "
+                                      "{2}".format(compare_val_ratio, name_ind1, indC))
+                                print("The first vector is {0} and the second vector is {1}".format(table1.cell_values[name_ind1], table2.cell_values[name_ind2]))
                                 assert False, "Table entries are not equal within tolerance."
 
                             worst_error = max(worst_error, compare_val_ratio)
@@ -3217,6 +3249,21 @@ def cumop(items, op, colInd=0):   # take in one column only
         res[index] = op(res[index-1], items[index, colInd]) if index > 0 else items[index, colInd]
     return res
 
+def compare_string_frames_local(f1, f2, prob=0.5):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    cname1 = temp1[0]
+    cname2 = temp2[0]
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        name1 = cname1[colInd]
+        for rowInd in range(1, f2.nrow):
+            if random.uniform(0,1) < prob:
+                assert temp1[rowInd][colInd]==temp2[rowInd][cname2.index(name1)], "Failed frame values check at row {2} and column {3}! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
+
+
 def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
@@ -3234,3 +3281,154 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
                     diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
                     assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(v1, v2, rowInd, colInd)
+
+# frame compare with NAs in column
+def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,f2.nrow):
+            if (random.uniform(0,1) < prob):
+                if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
+                    assert len(temp1[rowInd]) == len(temp2[rowInd]), "Failed frame values check at row {2} ! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd], temp2[rowInd], rowInd)
+                else:
+                    v1 = float(temp1[rowInd][colInd])
+                    v2 = float(temp2[rowInd][colInd])
+                    diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
+                    assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                      "{1}".format(v1, v2, rowInd, colInd)
+
+
+def build_save_model_GLM(params, x, train, respName):
+    # build a model
+    model = H2OGeneralizedLinearEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+def build_save_model_GBM(params, x, train, respName):
+    # build a model
+    model = H2OGradientBoostingEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+def build_save_model_DRF(params, x, train, respName):
+    # build a model
+    model = H2ORandomForestEstimator(**params)
+    model.train(x=x, y=respName, training_frame=train)
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(TMPDIR)
+    model.download_mojo(path=TMPDIR)    # save mojo
+    return model
+
+
+# generate random dataset, copied from Pasha
+def random_dataset(response_type, verbose=True, NTESTROWS=200):
+    """Create and return a random dataset."""
+    if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
+    fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] /= 3
+    fractions["time_fraction"] /= 2
+
+    sum_fractions = sum(fractions.values())
+    for k in fractions:
+        fractions[k] /= sum_fractions
+    if response_type == 'binomial':
+        response_factors = 2
+    else:
+        response_factors = random.randint(3, 10)
+    df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
+                          missing_fraction=0,
+                          has_response=True, response_factors=response_factors, positive_response=True, factors=10,
+                          **fractions)
+    if verbose:
+        print()
+        df.show()
+    return df
+
+# generate random dataset of ncolumns of Strings, copied from Pasha
+def random_dataset_strings_only(nrow, ncol):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 1  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0, has_response=False, **fractions)
+    return df
+
+# generate random dataset of ncolumns of enums only, copied from Pasha
+def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 1
+    fractions["integer_fraction"] = 0
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, factors=factorL,
+                          **fractions)
+    return df
+
+# generate random dataset of ncolumns of enums only, copied from Pasha
+def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 1
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=rangeR,
+                          **fractions)
+    return df
+
+# generate random dataset of ncolumns of integer and reals, copied from Pasha
+def random_dataset_numeric_only(nrow, ncol, integerR=100):
+    """Create and return a random dataset."""
+    fractions = dict()
+    fractions["real_fraction"] = 0.25  # Right now we are dropping string columns, so no point in having them.
+    fractions["categorical_fraction"] = 0
+    fractions["integer_fraction"] = 0.75
+    fractions["time_fraction"] = 0
+    fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
+    fractions["binary_fraction"] = 0
+
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0.01, has_response=False, integer_range=integerR, **fractions)
+    return df
+
+def getMojoName(modelID):
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    return regex.sub("_", modelID)

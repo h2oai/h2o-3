@@ -32,6 +32,7 @@ reference:
       - colnames
       - dim.H2OFrame
       - dimnames.H2OFrame
+      - h2o
       - h2o.abs
       - h2o.acos
       - h2o.aggregated_frame
@@ -63,6 +64,7 @@ reference:
       - h2o.clusterIsUp
       - h2o.clusterStatus
       - h2o.coef
+      - h2o.coef_norm
       - h2o.colnames
       - h2o.columns_by_type
       - h2o.computeGram
@@ -113,6 +115,7 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
+      - h2o.getAutoML
       - h2o.getConnection
       - h2o.getFrame
       - h2o.getFutureModel
@@ -136,8 +139,10 @@ reference:
       - h2o.hour
       - h2o.ifelse
       - h2o.import_sql_select
+      - h2o.import_sql_table
       - h2o.importFile
       - h2o.impute
+      - h2o.init
       - h2o.insertMissingValues
       - h2o.interaction
       - h2o.is_client
@@ -207,6 +212,7 @@ reference:
       - h2o.r2
       - h2o.randomForest
       - h2o.range
+      - h2o.rank_within_group_by
       - h2o.rbind
       - h2o.reconstruct
       - h2o.relevel
@@ -253,6 +259,8 @@ reference:
       - h2o.tabulate
       - h2o.tan 
       - h2o.tanh
+      - h2o.target_encode_apply
+      - h2o.target_encode_create
       - h2o.toFrame
       - h2o.tokenize
       - h2o.tolower
@@ -281,6 +289,8 @@ reference:
       - H2OClusteringModel-class
       - H2OConnection-class
       - H2OConnectionMutableState
+      - H2OCoxPHModel-class
+      - H2OCoxPHModelSummary-class
       - H2OFrame-class
       - H2OFrame-Extract
       - H2OGrid-class
@@ -296,6 +306,7 @@ reference:
       - Logical-or
       - ModelAccessors
       - names.H2OFrame
+      - Ops.H2OFrame
       - plot.H2OModel 
       - plot.H2OTabulate
       - predict.H2OAutoML 
@@ -305,7 +316,9 @@ reference:
       - print.H2OTable 
       - prostate
       - range.H2OFrame
+      - show,H2OCoxPHModelSummary-method
       - str.H2OFrame
+      - summary,H2OCoxPHModel-method
       - summary,H2OGrid-method
       - summary,H2OModel-method
       - use.package

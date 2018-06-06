@@ -38,8 +38,6 @@ def gen_module(schema, algo, module):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size"]:
             continue
-        if algo == "coxph" and param["name"] == "rcall":
-            continue
         if algo == "drf":
             if param["name"] == "offset_column":
                 yield "#' @param offset_column Offset column. This argument is deprecated and has no use for Random Forest."
@@ -108,8 +106,6 @@ def gen_module(schema, algo, module):
     # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
-        if algo == "coxph" and param["name"] == "rcall":
-            continue
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size", "training_frame"]:
             continue
         if algo == "naivebayes":
@@ -184,6 +180,10 @@ def gen_module(schema, algo, module):
         yield "     used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))"
         yield "     interactions_only <- setdiff(used, x)"
         yield "     x <- c(x, interactions_only)"
+        yield "  }"
+        yield "  if (! is.null(stratify_by)) {"
+        yield "     stratify_by_only <- setdiff(stratify_by, x)"
+        yield "     x <- c(x, stratify_by_only)"
         yield "  }"
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
@@ -267,6 +267,16 @@ def gen_module(schema, algo, module):
     #    yield "  if (!missing(model_id))"
     #    yield "    parms$model_id <- model_id"
     if algo == "stackedensemble":
+        yield " # Get the base models from model IDs (if any) that will be used for constructing model summary"
+        yield " if(!is.list(base_models) && is.vector(x)) {"
+        yield "    base_models <- as.list(base_models)"
+        yield " }"
+        yield " baselearners <- lapply(base_models, function(base_model) {"
+        yield "   if (is.character(base_model))"
+        yield "     base_model <- h2o.getModel(base_model)"
+        yield "   base_model"
+        yield " })"
+        yield " # Get base model IDs that will be passed to REST API later"
         yield " if (length(base_models) == 0) stop('base_models is empty')"
         yield "  # If base_models contains models instead of ids, replace with model id"
         yield "  for (i in 1:length(base_models)) {"
@@ -309,9 +319,6 @@ def gen_module(schema, algo, module):
             continue
         if param["name"] == "metalearner_params":
             continue
-        if algo == "coxph" and param["name"] == "rcall":
-            yield "  parms$rcall <- deparse(match.call())"
-            continue
         if algo == "drf" and (param["name"] == "offset_column" or param["name"] == "distribution"):
             yield "  if (!missing(%s))" % param["name"]
             yield "    warning(\"Argument %s is deprecated and has no use for Random Forest.\")" % param["name"]
@@ -332,10 +339,42 @@ def gen_module(schema, algo, module):
     if algo in ["stackedensemble"]:
         yield "  # Error check and build model"
         yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion = %d)" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
-        yield "  #Convert metalearner_params back to list if not NULL"
+        yield "  # Convert metalearner_params back to list if not NULL"
         yield "  if (!missing(metalearner_params)) {"
-        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))"
+        yield "      model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list"
         yield "  }"
+        yield """
+  model@model$model_summary <- capture.output({
+
+    print_ln <- function(...) cat(..., sep = "\n")
+
+    print_ln(paste0("Number of Base Models: ", length(baselearners)))
+    print_ln("\nBase Models (count by algorithm type):")
+    print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
+    
+    
+    print_ln("\nMetalearner:\n")
+    print_ln(paste0(
+      "Metalearner algorithm: ",
+      ifelse(length(metalearner_algorithm) > 1, "glm", metalearner_algorithm)))
+
+    if (metalearner_nfolds != 0) {
+      print_ln("Metalearner cross-validation fold assignment:")
+      print_ln(paste0(
+        "  Fold assignment scheme: ",
+        ifelse(length(metalearner_fold_assignment) > 1, "Random", metalearner_fold_assignment)))
+      print_ln(paste0("  Number of folds: ", metalearner_nfolds))
+      print_ln(paste0(
+        "  Fold column: ",
+        ifelse(is.null(metalearner_fold_column), "NULL", metalearner_fold_column )))
+    }
+    
+    if (!missing(metalearner_params))
+      print_ln(paste0("Metalearner hyperparameters: ", parms$metalearner_params))
+    
+  })
+  class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
+        """
         yield "  return(model)"
         yield "}"
     if algo in ["deeplearning", "drf", "gbm", "xgboost"]:

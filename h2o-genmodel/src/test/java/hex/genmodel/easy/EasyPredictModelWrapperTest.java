@@ -4,20 +4,55 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.easy.error.CountingErrorConsumer;
+import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 public class EasyPredictModelWrapperTest {
-  private static class MyModel extends GenModel {
-    MyModel(String[] names, String[][] domains) {
-      super(names, domains, null);
+
+  private GenModel mockGenModel;
+
+  @Before
+  public void setUp(){
+    mockGenModel = mock(GenModel.class);
+    String[][] domains = {
+        {"c1level1", "c1level2"},
+        {"c2level1", "c2level2", "c2level3"},
+        {"NO", "YES"}};
+    when(mockGenModel.getNames()).thenReturn(new String[]{"C1", "C2", "RESPONSE"});
+    when(mockGenModel.score0(any(double[].class), any(double[].class)))
+        .thenReturn(new double[]{1});
+    when(mockGenModel.score0(any(double[].class),eq(1D), any(double[].class)))
+        .thenReturn(new double[]{1});
+    when(mockGenModel.getDomainValues(0)).thenReturn(domains[0]);
+    when(mockGenModel.getDomainValues(1)).thenReturn(domains[1]);
+    when(mockGenModel.getDomainValues(2)).thenReturn(domains[2]);
+  }
+
+  private static class SupervisedModel extends GenModel {
+    /**
+     * Supervised model for testing purpose
+     * @param names
+     * @param domains
+     */
+    SupervisedModel(String[] names, String[][] domains) {
+      super(names, domains, names[names.length - 1]);
     }
 
     @Override
@@ -50,7 +85,47 @@ public class EasyPredictModelWrapperTest {
     }
   }
 
-  private static MyModel makeModel() {
+  private static class UnsupervisedModel extends GenModel {
+    /**
+     * Supervised model for testing purpose
+     *
+     * @param names
+     * @param domains
+     */
+    UnsupervisedModel(String[] names, String[][] domains) {
+      super(names, domains, null);
+    }
+
+    @Override
+    public int nclasses() {
+      return 2;
+    }
+
+    @Override
+    public boolean isSupervised() {
+      return false;
+    }
+
+    @Override
+    public double[] score0(double[] data, double[] preds) {
+      Assert.assertEquals(preds.length, 2);
+      preds[0] = 0;
+      preds[1] = 1.0;
+      return preds;
+    }
+
+    @Override
+    public ModelCategory getModelCategory() {
+      return ModelCategory.Clustering;
+    }
+
+    @Override
+    public String getUUID() {
+      return null;
+    }
+  }
+
+  private static SupervisedModel makeSupervisedModel() {
     String[] names = {
             "C1",
             "C2",
@@ -60,13 +135,169 @@ public class EasyPredictModelWrapperTest {
             {"c2level1", "c2level2", "c2level3"},
             {"NO", "YES"}
     };
-    return new MyModel(names, domains);
+    return new SupervisedModel(names, domains);
+  }
+
+    private static UnsupervisedModel makeUnsupervisedModel() {
+      String[] names = {
+          "C1",
+          "C2"};
+      String[][] domains = {
+          {"c1level1", "c1level2"},
+          {"c2level1", "c2level2", "c2level3"}
+      };
+      return new UnsupervisedModel(names, domains);
+    }
+
+  @Test
+  public void testGetDataTransformationErrorsCount() throws Exception {
+    SupervisedModel rawSupervisedModel = makeSupervisedModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawSupervisedModel);
+    EasyPredictModelWrapper supervisedModel = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(rawSupervisedModel)
+        .setErrorConsumer(countingErrorConsumer));
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    supervisedModel.predictBinomial(row);
+
+    Map<String, AtomicLong> errorsPerColumn = countingErrorConsumer.getDataTransformationErrorsCountPerColumn();
+    Assert.assertNotNull(errorsPerColumn);
+    Assert.assertEquals(2,errorsPerColumn.size());
+    Assert.assertEquals(1,errorsPerColumn.get("C1").get());
+
+    Assert.assertEquals(1, countingErrorConsumer.getDataTransformationErrorsCount());
+
+    UnsupervisedModel rawModel = makeUnsupervisedModel();
+    CountingErrorConsumer unsupervisedCounterErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper unsupervisedModel = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(rawModel)
+        .setErrorConsumer(unsupervisedCounterErrorConsumer));
+
+    unsupervisedModel.predict(row);
+
+    Map<String, AtomicLong> errorsCountPerColumn = unsupervisedCounterErrorConsumer.getDataTransformationErrorsCountPerColumn();
+    Assert.assertNotNull(errorsPerColumn);
+    Assert.assertEquals(2, errorsCountPerColumn.size());
+    Assert.assertEquals(1, errorsCountPerColumn.get("C1").get());
+
+  }
+
+  @Test
+  public void testSerializeWrapper() throws Exception {
+    SupervisedModel rawModel = makeSupervisedModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    Assert.assertTrue(m instanceof Serializable);
+    ensureAllFieldsSerializable(EasyPredictModelWrapper.class.getDeclaredFields());
+
+    checkSerialization(m);
+  }
+
+  @Test
+  public void testScoreOffsetBinomial() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Binomial));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    BinomialModelPrediction binomialModelPrediction = model.predictBinomial(row);
+    Assert.assertNotNull(row);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    BinomialModelPrediction predictionWithOffset = model.predictBinomial(row, 1D);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
+  public void testScoreOffsetOrdinal() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Ordinal));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    OrdinalModelPrediction modelPrediction = model.predictOrdinal(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    OrdinalModelPrediction predictionWithOffset = model.predictOrdinal(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+
+  @Test
+  public void testScoreOffsetMultinomial() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Multinomial));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    MultinomialModelPrediction modelPrediction = model.predictMultinomial(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    MultinomialModelPrediction predictionWithOffset = model.predictMultinomial(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
+  public void testScoreOffsetRegression() throws Exception {
+    when(mockGenModel.getModelCategories()).thenReturn(EnumSet.of(ModelCategory.Regression));
+    EasyPredictModelWrapper model = new EasyPredictModelWrapper(mockGenModel);
+
+    RowData row = new RowData();
+    row.put("C1", Double.NaN);
+    RegressionModelPrediction modelPrediction = model.predictRegression(row);
+    Assert.assertNotNull(modelPrediction);
+    verify(mockGenModel).score0(any(double[].class),any(double[].class));
+
+    RegressionModelPrediction predictionWithOffset = model.predictRegression(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
+    verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
+  }
+
+  @Test
+  public void testSerializeWrapperWithCountingConsumer() throws Exception {
+    SupervisedModel rawModel = makeSupervisedModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+            .setModel(rawModel)
+            .setErrorConsumer(countingErrorConsumer));
+    checkSerialization(m);
+  }
+
+  private static byte[] serialize(Object o) throws Exception {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
+      out.writeObject(o);
+      out.flush();
+      return bos.toByteArray();
+    }
+  }
+
+  private static void checkSerialization(final EasyPredictModelWrapper m1) throws Exception {
+    RowData row = new RowData() {{
+      put("C1", "c1level1");
+      put("C2", "c2level3");
+    }};
+
+    // serialize & deserialize wrapper
+    EasyPredictModelWrapper m1deser = (EasyPredictModelWrapper) deserialize(serialize(m1));
+
+    // check that the new wrapper can be used to predict
+    BinomialModelPrediction p1 = (BinomialModelPrediction) m1.predict(row);
+    BinomialModelPrediction p1deser = (BinomialModelPrediction) m1deser.predict(row);
+    Assert.assertEquals(p1.label, p1deser.label);
   }
 
   @Test
   public void testUnknownCategoricalLevels() throws Exception {
-    MyModel rawModel = makeModel();
-    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+    SupervisedModel rawModel = makeSupervisedModel();
+    CountingErrorConsumer countingErrorConsumer = new CountingErrorConsumer(rawModel);
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+    .setModel(rawModel)
+    .setErrorConsumer(countingErrorConsumer));
 
     {
       RowData row = new RowData();
@@ -76,7 +307,7 @@ public class EasyPredictModelWrapperTest {
       } catch (PredictUnknownCategoricalLevelException e) {
         Assert.fail("Caught exception but should not have");
       }
-      ConcurrentHashMap<String, AtomicLong> unknown = m.getUnknownCategoricalLevelsSeenPerColumn();
+      Map<String, AtomicLong> unknown = countingErrorConsumer.getUnknownCategoricalsPerColumn();
       long total = 0;
       for (AtomicLong l : unknown.values()) {
         total += l.get();
@@ -95,7 +326,7 @@ public class EasyPredictModelWrapperTest {
         caught = true;
       }
       Assert.assertEquals(caught, true);
-      ConcurrentHashMap<String, AtomicLong> unknown = m.getUnknownCategoricalLevelsSeenPerColumn();
+      Map<String, AtomicLong> unknown = countingErrorConsumer.getUnknownCategoricalsPerColumn();
       long total = 0;
       for (AtomicLong l : unknown.values()) {
         total += l.get();
@@ -103,50 +334,53 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(total, 0);
     }
 
+    CountingErrorConsumer errorConsumer = new CountingErrorConsumer(rawModel);
     m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(rawModel)
+            .setErrorConsumer(errorConsumer)
             .setConvertUnknownCategoricalLevelsToNa(true)
             .setConvertInvalidNumbersToNa(true));
 
     {
       RowData row0 = new RowData();
       m.predict(row0);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 0);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 0);
 
       RowData row1 = new RowData();
       row1.put("C1", "c1level1");
       row1.put("C2", "unknownLevel");
       m.predictBinomial(row1);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       RowData row2 = new RowData();
       row2.put("C1", "c1level1");
       row2.put("C2", "c2level3");
       m.predictBinomial(row2);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       RowData row3 = new RowData();
       row3.put("C1", "c1level1");
       row3.put("unknownColumn", "unknownLevel");
       m.predictBinomial(row3);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 1);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 1);
 
       m.predictBinomial(row1);
       m.predictBinomial(row1);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 3);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 3);
 
       RowData row4 = new RowData();
       row4.put("C1", "unknownLevel");
       m.predictBinomial(row4);
-      Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 4);
-      Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C1").get(), 1);
-      Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C2").get(), 3);
+      Assert.assertEquals(errorConsumer.getTotalUnknownCategoricalLevelsSeen(), 4);
+      Assert.assertEquals(errorConsumer.getUnknownCategoricalsPerColumn().get("C1").get(), 1);
+      Assert.assertEquals(errorConsumer.getUnknownCategoricalsPerColumn().get("C2").get(), 3);
+      Assert.assertEquals(4, errorConsumer.getTotalUnknownCategoricalLevelsSeen());
     }
   }
 
   @Test
   public void testSortedClassProbability() throws Exception {
-    MyModel rawModel = makeModel();
+    SupervisedModel rawModel = makeSupervisedModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
 
     {
@@ -245,6 +479,33 @@ public class EasyPredictModelWrapperTest {
     Assert.assertEquals(expected, aep.reconstructedRowData);
   }
 
+  @Test
+  public void testVoidErrorConsumerInitialized() throws NoSuchFieldException, IllegalAccessException {
+    MyAutoEncoderModel model = new MyAutoEncoderModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(model);
+
+    Field errorConsumerField = m.getClass().getDeclaredField("errorConsumer");
+    errorConsumerField.setAccessible(true);
+    Object errorConsumer = errorConsumerField.get(m);
+    Assert.assertNotNull(errorConsumer);
+    Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
+  }
+
+
+  @Test
+  public void testVoidErrorConsumerInitializedWithConfig() throws NoSuchFieldException, IllegalAccessException {
+    MyAutoEncoderModel model = new MyAutoEncoderModel();
+    EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+        .setModel(model));
+
+    Field errorConsumerField = modelWrapper.getClass().getDeclaredField("errorConsumer");
+    errorConsumerField.setAccessible(true);
+    Object errorConsumer = errorConsumerField.get(modelWrapper);
+    Assert.assertNotNull(errorConsumer);
+    Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
+  }
+
+
   private static class MyAutoEncoderModel extends GenModel {
 
     private static final String[][] DOMAINS = new String[][] {
@@ -280,6 +541,24 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(result.length, preds.length);
       System.arraycopy(result, 0, preds, 0, result.length);
       return result;
+    }
+  }
+
+  private static void ensureAllFieldsSerializable(Field[] declaredFields) {
+
+    for (Field field : declaredFields) {
+      Assert.assertFalse(Modifier.isTransient(field.getModifiers()));
+      Assert.assertTrue(Serializable.class.isAssignableFrom(field.getDeclaringClass()));
+    }
+  }
+
+  private static Object deserialize(byte[] bs) throws Exception {
+    ByteArrayInputStream bis = new ByteArrayInputStream(bs);
+    try {
+      ObjectInput in = new ObjectInputStream(bis);
+      return in.readObject();
+    } finally {
+      bis.close();
     }
   }
 

@@ -1,4 +1,6 @@
 #! /bin/bash
 
-su -m - hdfs -c 'hadoop fs -mkdir -p /user/jenkins'
-su -m - hdfs -c 'hadoop fs -chown jenkins:jenkins /user/jenkins'
+set -e -x
+
+sudo -E -u hdfs hadoop fs -mkdir -p /user/jenkins
+sudo -E -u hdfs hadoop fs -chown jenkins:jenkins /user/jenkins

@@ -4,6 +4,8 @@ import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -28,6 +30,8 @@ public class PredictCsv {
   private boolean useDecimalOutput = false;
   public char separator = ',';   // separator used to delimite input datasets
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
+  public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
+  boolean returnGLRMReconstrut = false; // for GLRM, return x factor by default unless set this to true
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -77,6 +81,17 @@ public class PredictCsv {
     return useDecimalOutput? Double.toString(d) : Double.toHexString(d);
   }
 
+  private void writeTreePathNames(BufferedWriter output) throws Exception {
+    String[] columnNames = ((SharedTreeMojoModel) model.m).getDecisionPathNames();
+    int lastIndex = columnNames.length-1;
+    for (int index = 0; index < lastIndex; index++)  {
+      output.write(columnNames[index]);
+      output.write(",");
+    }
+    output.write(columnNames[lastIndex]);
+  }
+
+
   private void run() throws Exception {
     ModelCategory category = model.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
@@ -91,8 +106,6 @@ public class PredictCsv {
         int numNums = this.model.m.nfeatures()-numCats;
         String[][] domainValues = this.model.m.getDomainValues();
         int lastCatIdx = numCats-1;
-        //int additionalCatCols = this.model.getUnknownCategoricalLevelsSeenPerColumn().size();
-       // ConcurrentHashMap<String, AtomicLong> temp = this.model.getUnknownCategoricalLevelsSeenPerColumn();
 
         for (int index = 0; index <= lastCatIdx  ; index++) { // add names for categorical columns
           String[] tdomains = domainValues[index]; //this.model.m.getDomainValues(index)
@@ -123,6 +136,17 @@ public class PredictCsv {
         break;
       case Binomial:
       case Multinomial:
+        if (getTreePath) {
+          writeTreePathNames(output);
+        } else {
+          output.write("predict");
+          String[] responseDomainValues = model.getResponseDomainValues();
+          for (String s : responseDomainValues) {
+            output.write(",");
+            output.write(s);
+          }
+        }
+        break;
       case Ordinal:
         output.write("predict");
         String[] responseDomainValues = model.getResponseDomainValues();
@@ -137,7 +161,33 @@ public class PredictCsv {
         break;
 
       case Regression:
-        output.write("predict");
+        if (getTreePath) {
+          writeTreePathNames(output);
+        } else
+          output.write("predict");
+
+        break;
+
+      case DimReduction:  // will write factor or the precdicted value depending on what the user wants
+        int datawidth;
+        String head;
+        String[] colnames =  this.model.m.getNames();;
+        if (returnGLRMReconstrut) {
+          datawidth = ((GlrmMojoModel) model.m)._permutation.length;
+          head = "reconstr_";
+        } else {
+          datawidth = ((GlrmMojoModel) model.m)._ncolX;
+          head = "Arch";
+        }
+
+        int lastData = datawidth-1;
+        for (int index = 0; index < datawidth; index++) {  // add the numerical column names
+          String temp = returnGLRMReconstrut ? head+colnames[index] : head+(index+1);
+          output.write(temp);
+
+          if (index < lastData )
+            output.write(',');
+        }
         break;
 
       default:
@@ -179,26 +229,33 @@ public class PredictCsv {
           }
           case Binomial: {
             BinomialModelPrediction p = model.predictBinomial(row);
-            output.write(p.label);
-            output.write(",");
-            for (int i = 0; i < p.classProbabilities.length; i++) {
-              if (i > 0) {
-                output.write(",");
+            if (getTreePath) {
+              writeTreePaths(p.leafNodeAssignments, output);
+            } else {
+              output.write(p.label);
+              output.write(",");
+              for (int i = 0; i < p.classProbabilities.length; i++) {
+                if (i > 0) {
+                  output.write(",");
+                }
+                output.write(myDoubleToString(p.classProbabilities[i]));
               }
-              output.write(myDoubleToString(p.classProbabilities[i]));
             }
             break;
           }
-
           case Multinomial: {
             MultinomialModelPrediction p = model.predictMultinomial(row);
-            output.write(p.label);
-            output.write(",");
-            for (int i = 0; i < p.classProbabilities.length; i++) {
-              if (i > 0) {
-                output.write(",");
+            if (getTreePath) {
+              writeTreePaths(p.leafNodeAssignments, output);
+            } else {
+              output.write(p.label);
+              output.write(",");
+              for (int i = 0; i < p.classProbabilities.length; i++) {
+                if (i > 0) {
+                  output.write(",");
+                }
+                output.write(myDoubleToString(p.classProbabilities[i]));
               }
-              output.write(myDoubleToString(p.classProbabilities[i]));
             }
             break;
           }
@@ -221,8 +278,32 @@ public class PredictCsv {
           }
 
           case Regression: {
-            RegressionModelPrediction p = model.predictRegression(row);
-            output.write(myDoubleToString(p.value));
+              RegressionModelPrediction p = model.predictRegression(row);
+              if (getTreePath) {
+                writeTreePaths(p.leafNodeAssignments, output);
+              } else
+               output.write(myDoubleToString(p.value));
+
+            break;
+          }
+
+          case DimReduction: {
+            DimReductionModelPrediction p = model.predictDimReduction(row);
+            double[] out;
+
+            if (returnGLRMReconstrut) {
+              out = p.reconstructed;  // reconstructed A
+            } else {
+              out = p.dimensions; // x factors
+            }
+
+            int lastOne = out.length-1;
+            for (int i=0; i < out.length; i++) {
+              output.write(myDoubleToString(out[i]));
+
+              if (i < lastOne)
+                output.write(',');
+            }
             break;
           }
 
@@ -246,6 +327,15 @@ public class PredictCsv {
     }
   }
 
+  private void writeTreePaths(String[] treePaths, BufferedWriter output) throws Exception {
+    int len = treePaths.length-1;
+
+    for (int index=0; index<len; index++) {
+      output.write(treePaths[index]);
+      output.write(",");
+    }
+    output.write(treePaths[len]);
+  }
 
   private void loadModel(String modelName) throws Exception {
     try {
@@ -257,12 +347,27 @@ public class PredictCsv {
 
   private void loadPojo(String className) throws Exception {
     GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA));
+    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
+
+    if (getTreePath)
+      config.setEnableLeafAssignment(true);
+
+    if (returnGLRMReconstrut)
+      config.setEnableGLRMReconstrut(true);
+    model = new EasyPredictModelWrapper(config);
   }
 
   private void loadMojo(String modelName) throws IOException {
     GenModel genModel = MojoModel.load(modelName);
-    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA));
+    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
+
+    if (getTreePath)
+      config.setEnableLeafAssignment(true);
+
+    if (returnGLRMReconstrut)
+      config.setEnableGLRMReconstrut(true);
+
+    model = new EasyPredictModelWrapper(config);
   }
 
   private static void usage() {
@@ -278,6 +383,9 @@ public class PredictCsv {
     System.out.println("     --separator Separator to be used in input file containing test data set.");
     System.out.println("     --decimal Use decimal numbers in the output (default is to use hexademical).");
     System.out.println("     --setConvertInvalidNum Will call .setConvertInvalidNumbersToNa(true) when loading models.");
+    System.out.println("     --leafNodeAssignment will show the leaf node assignment for GBM and DRF instead of the" +
+            " prediction results");
+    System.out.println("     --glrmReconstruct will return the reconstructed dataset for GLRM mojo instead of X factor derived from the dataset.");
     System.out.println("");
     System.exit(1);
   }
@@ -291,8 +399,12 @@ public class PredictCsv {
         if (s.equals("--header")) continue;
         if (s.equals("--decimal"))
           useDecimalOutput = true;
+        else if (s.equals("--glrmReconstruct"))
+          returnGLRMReconstrut =true;
         else if (s.equals("--setConvertInvalidNum"))
           setInvNumNA=true;
+        else if (s.equals("--leafNodeAssignment"))
+          getTreePath = true;
         else {
           i++;
           if (i >= args.length) usage();

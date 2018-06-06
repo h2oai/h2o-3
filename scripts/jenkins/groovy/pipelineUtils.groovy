@@ -15,16 +15,48 @@ class PipelineUtils {
         return null
     }
 
+    void stashFiles(final context, final String stashName, final String includedFiles, final boolean allowEmpty) {
+        context.stash name: stashName, includes: includedFiles, allowEmpty: allowEmpty
+    }
+
     void stashFiles(final context, final String stashName, final String includedFiles) {
-        context.stash name: stashName, includes: includedFiles, allowEmpty: false
+        stashFiles(context, stashName, includedFiles, false)
+    }
+
+    void stashXGBoostWheels(final context, final String xgbVersion) {
+        context.echo "Preparing to stash whls for XGBoost ${xgbVersion}"
+        try {
+            context.echo "Trying to pull from Jenkins archives"
+            context.copyArtifacts(
+                    projectName: 'h2o-3-xgboost4j-release-pipeline/h2o3',
+                    selector: context.specific(xgbVersion.split('\\.').last()),
+                    filter: 'linux-ompv4/ci-build/*.whl',
+                    flatten: true,
+                    fingerprintArtifacts: true,
+                    target: 'h2o-3/xgb-whls'
+            )
+        } catch (ignore) {
+            context.echo "Pull from Jenkins archives failed, loading from S3"
+            context.sh """
+                mkdir -p h2o-3/xgb-whls
+                s3cmd get s3://h2o-release/xgboost/h2o3/${xgbVersion}/*.whl h2o-3/xgb-whls/
+            """
+        }
+        final String whlsPath = 'h2o-3/xgb-whls/*.whl'
+        context.echo "********* Stash XGBoost wheels *********"
+        stashFiles(context, 'xgb-whls', whlsPath, false)
     }
 
     void unstashFiles(final context, final String stashName) {
         context.unstash stashName
     }
 
+    void pullXGBWheels(final context) {
+        unstashFiles(context, 'xgb-whls')
+    }
+
     void stashScripts(final context) {
-        context.stash name: PIPELINE_SCRIPTS_STASH_NAME, includes: 'h2o-3/scripts/jenkins/groovy/*', allowEmpty: false
+        stashFiles(context, PIPELINE_SCRIPTS_STASH_NAME, 'h2o-3/scripts/jenkins/groovy/*', false)
     }
 
     void unstashScripts(final context) {
@@ -56,6 +88,15 @@ class PipelineUtils {
         }
 
         return distributionsToBuild
+    }
+
+    def readCurrentXGBVersion(final context, final h2o3Root) {
+        final def xgbVersion = context.sh(script: "cd ${h2o3Root} && cat h2o-genmodel-extensions/xgboost/build.gradle | grep ai.h2o:xgboost4j: | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+        context.echo "XGBoost Version: ${xgbVersion}"
+        if (xgbVersion == null || xgbVersion == '') {
+            context.error("XGBoost version cannot be read")
+        }
+        return xgbVersion
     }
 
     boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
@@ -117,15 +158,12 @@ class PipelineUtils {
         return stageEndNodesInPrevBuild.find{it.getError() != null} == null
     }
 
-    void unpackTestPackage(final context, final String component, final String stageDir) {
+    void unpackTestPackage(final context, final buildConfig, final String component, final String stageDir) {
         context.echo "###### Pulling test package. ######"
-        context.step([$class              : 'CopyArtifact',
-                      projectName         : context.env.JOB_NAME,
-                      fingerprintArtifacts: true,
-                      filter              : "h2o-3/test-package-${component}.zip, h2o-3/build/h2o.jar",
-                      selector            : [$class: 'SpecificBuildSelector', buildNumber: context.env.BUILD_ID],
-                      target              : stageDir + '/'
-        ])
+        context.dir(stageDir) {
+            unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
+            unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
+        }
         context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm test-package-${component}.zip"
     }
 

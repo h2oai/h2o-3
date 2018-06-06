@@ -11,9 +11,20 @@ In real-world scenarios, data can change. For example, you may have a model curr
 
 The ``checkpoint`` option allows you to specify a model key associated with a previously trained model. This will build a new model as a continuation of a previously generated model. If this is not specified, then the algorithm will start training a new model instead of continuing building a previous model. 
 
-When setting parameters that continue to build on a previous model, such as ``ntrees`` or ``epoch``, the new parameter value must be greater than the original value. For example, if the first model builds 1 tree, the continuation model (using checkpointing) must build ``ntrees`` equal to 2 (meaning build one additional tree) or greater.
+When setting parameters that continue to build on a previous model, specifically ``ntrees`` (in GBM/DRF) or ``epochs`` (in Deep Learning), specify the total amount of training that you want if you had started from scratch, not the number of additional epochs or trees you want. Note that this means the ``ntrees`` or ``epochs`` parameter for the checkpointed model must always be greater than the original value. For example:
 
-**Note**: The following options cannot be modified when rebuilding a model using ``checkpoint``:
+- If the first model builds 1 tree, and you want your new model to build 50 trees, then the continuation model (using checkpointing) would specify ``ntrees=50``. This gives you a total of 50 trees including 49 new ones. 
+- If your original model included 20 trees, and you specify ``ntrees=50`` for the continuation model, then the new model will  add 30 trees to the model, again giving you a total of 50 trees.
+- If your oringinal model included 20 trees, and you specify ``ntrees=10`` (a lower value), then you will receive an error indicating that the requested ntrees must be higher than 21.
+
+**Notes**:
+
+- The response type and model type of the training data must be the same as for the checkpointed model.
+- The columns of the training data must be the same as for the checkpointed model.
+- Categorical factor levels of the training data must be the same as for the checkpointed model.
+- The total number of predictors of the training data must be the same as for the checkpointed model.
+
+The following options cannot be modified when rebuilding a model using ``checkpoint``:
 
  **GBM/DRF Options**
 
@@ -28,25 +39,31 @@ When setting parameters that continue to build on a previous model, such as ``nt
  **Deep Learning Options**
 
     - activation
+    - adaptive_rate
     - autoencoder
-    - backend
-    - channels
+    - col_major
     - distribution
     - drop_na20_cols
+    - epsilon
+    - huber_alpha
     - ignore_const_cols
     - max_categorical_features
-    - mean_image_file
-    - missing_values_handling
     - momentum_ramp
     - momentum_stable
     - momentum_start
-    - network
-    - network_definition_file
+    - nesterov_accelerated_gradient
     - nfolds
-    - problem_type
+    - quantile_alpha
+    - rate
+    - rate_annealing
+    - rate_decay
+    - rho
+    - sparse
+    - sparsity_beta
     - standardize
+    - tweedie_power
     - use_all_factor_levels
-    - y (response column)
+    - y (response_column)
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -86,23 +103,36 @@ Example
 
     # print the auc for the validation data
     print(h2o.auc(cars_gbm, valid = TRUE))
+    [1] 0.9690799
 
     # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
-    # the checkpoint argument requires the model id of the model on which you wish to continue building
+    # the checkpoint argument requires the model id of the model on which you want to 
+    # continue building
     # get the model's id from "cars_gbm" model using `cars_gbm@model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, so set ntrees = 50
+    # the first model has 1 tree, let's continue building the GBM with an additional 49 
+    # more trees, so set ntrees = 50
 
     # to see how many trees the original model built you can look at the `ntrees` attribute
     print(paste("Number of trees built for cars_gbm model:", cars_gbm@allparameters$ntrees))
+    [1] "Number of trees built for cars_gbm model: 1"
 
     # build and train model with 49 additional trees for a total of 50 trees:
     cars_gbm_continued <- h2o.gbm(x = predictors, y = response, training_frame = train,
-                        validation_frame = valid, checkpoint = cars_gbm@model_id, ntrees = 50, seed = 1234)
+                                  validation_frame = valid, 
+                                  checkpoint = cars_gbm@model_id, 
+                                  ntrees = 50, 
+                                  seed = 1234)
 
     # print the auc for the validation data
     print(h2o.auc(cars_gbm_continued, valid = TRUE))
+    [1] 0.9803922
 
-    # you can also use checkpointing to pass in a new dataset (see options above for parameters you cannot change)
+    # to see how many trees the continuation model built you can look at the `ntrees` attribute
+    print(paste("Number of trees built for cars_gbm model:", cars_gbm_continued@allparameters$ntrees))
+    [1] "Number of trees built for cars_gbm model: 50"
+
+    # you can also use checkpointing to pass in a new dataset 
+    # (see options above for parameters you cannot change)
     # simply change out the training and validation frames with your new dataset
 
 
@@ -135,14 +165,17 @@ Example
 
     # print the auc for the validation data
     print(cars_gbm.auc(valid=True))
+    0.981146304676
 
     # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
     # the checkpoint argument requires the model id of the model on which you wish to continue building
     # get the model's id from "cars_gbm" model using `cars_gbm.model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, so set ntrees = 50
+    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, 
+    # so set ntrees = 50
 
     # to see how many trees the original model built you can look at the `ntrees` attribute
     print("Number of trees built for cars_gbm model:", cars_gbm.ntrees)
+    ('Number of trees built for cars_gbm model:', 20)
 
     # build and train model with 49 additional trees for a total of 50 trees:
     cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 50, seed = 1234)
@@ -150,8 +183,14 @@ Example
 
     # print the auc for the validation data
     cars_gbm_continued.auc(valid=True)
+    0.9803921568627451
 
-    # you can also use checkpointing to pass in a new dataset in addition to increasing/ (see options above for parameters you cannot change)
-    # simply change out the training and validation frames with your new dataset
+    # to see how many trees the continuation model built you can look at the `ntrees` attribute
+    print("Number of trees built for cars_gbm model:", cars_gbm_continued.ntrees)
+    ('Number of trees built for cars_gbm model:', 50)
+
+    # you can also use checkpointing to pass in a new dataset in addition to increasing 
+    # the number of trees/epochs. (See options above for parameters you cannot change.)
+    # simply change out the training and validation frames with your new dataset.
 
 

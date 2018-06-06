@@ -598,23 +598,8 @@ public class NewChunkTest extends TestUtil {
     nc.addNA();
     assertTrue(nc.isNA(1));
     assertTrue(nc.isNA2(1));
-    try {
-      nc.addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
-      assertTrue(nc.isNA(2));
-      fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
-      // as expected
-    }
-/* TODO(Vlad): fix after UUID checks get through
-    nc.addNum(Double.NEGATIVE_INFINITY);
-    nc.addNum(Double.POSITIVE_INFINITY);
-    try {
-      nc.addNum(Double.NaN);
-      fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
-      // as expected
-    }
-    */
+    nc.addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
+    assertTrue(nc.isNA(2));
   }
 
   @Ignore("Vlad: will fix it after UUID")

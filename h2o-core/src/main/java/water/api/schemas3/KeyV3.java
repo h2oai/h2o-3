@@ -22,7 +22,7 @@ import java.lang.reflect.Constructor;
  * The type parameters are a bit subtle, because we have several schemas that map to Key,
  * by type.  We want to be parameterized by the type of Keyed that we point to, but the
  * Iced type we pass up to Schema must be Iced, so that a lookup for a Schema for Key<T>
- * doesn't get an arbitrary subclass of KeyV1.
+ * doesn't get an arbitrary subclass of KeyV3.
  */
 public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> extends SchemaV3<I, KeyV3<I,S,K>> {
   @API(help="Name (string representation) for this Key.", direction = API.Direction.INOUT)
@@ -72,11 +72,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
       Constructor c = clz.getConstructor(Key.class);
       return (KeyV3)c.newInstance(key);
     } catch (Exception e) {
-      throw new H2OIllegalArgumentException("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": cause: " + e.getCause());
+      throw new H2OIllegalArgumentException("Caught exception trying to instantiate KeyV3 for class: " + clz.toString() + ": cause: " + e.getCause());
     }
   }
 
-  /** TODO: figure out the right KeyV1 class from the Key, so the type is set properly. */
+  /** TODO: figure out the right KeyV3 class from the Key, so the type is set properly. */
   public static KeyV3 make(Key key) {
     return make(KeyV3.class, key);
   }
@@ -128,7 +128,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
 
     this.name = key.toString();
 
-    // Our type is generally determined by our type parameter, but some APIs use raw untyped KeyV1s to return multiple types.
+    // Our type is generally determined by our type parameter, but some APIs use raw untyped KeyV3s to return multiple types.
     this.type = "Key<" + this.getKeyedClassType() + ">";
 
     if ("Keyed".equals(this.type)) {
@@ -158,7 +158,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   }
 
   public static Class<? extends Keyed> getKeyedClass(Class<? extends KeyV3> clz) {
-    // (Only) if we're a subclass of KeyV1 the Keyed class is type parameter 2.
+    // (Only) if we're a subclass of KeyV3 the Keyed class is type parameter 2.
     if (clz == KeyV3.class)
       return Keyed.class;
     return ReflectionUtils.findActualClassParameter(clz, 2);

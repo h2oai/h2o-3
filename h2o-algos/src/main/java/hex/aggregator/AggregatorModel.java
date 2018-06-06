@@ -37,6 +37,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public double _rel_tol_num_exemplars = 0.5;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
     public boolean _save_mapping_frame = false;
+    public int _num_iteration_without_new_exemplar = 500;
   }
 
   public static class AggregatorOutput extends Model.Output {

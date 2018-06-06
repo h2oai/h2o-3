@@ -13,22 +13,35 @@ Refer to the `Supported File Formats <http://docs.h2o.ai/h2o/latest-stable/h2o-d
 .. example-code::
    .. code-block:: r
 	
-	# To import small iris data file from H2O’s package:
+	# To import airlines file from H2O’s package:
 	> library(h2o)
 	> h2o.init()
 	> irisPath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
 	> iris.hex <- h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 	  
-	# To import from HDFS:
+	# To import from S3:
 	> library(h2o)
 	> h2o.init()
 	> airlinesURL <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
 	> airlines.hex <- h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
+
+	# To import from HDFS, you must include the node name:
+	> library(h2o)
+	> h2o.init()
+	> airlinesURL <- "hdfs://node-1:/user/smalldata/airlines/allyears2k_headers.zip" 
+	> airlines.hex <- h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
 	  
    .. code-block:: python
 
-	# Import a file from HDFS:
+	# Import a file from S3:
 	>>> import h2o
 	>>> h2o.init()
-	>>> prostate = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv"
-	>>> prostate_df = h2o.import_file(path=prostate)
+	>>> airlines = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip"
+	>>> airlines_df = h2o.import_file(path=airlines)
+
+	# Import a file from HDFS, you must include the node name:
+	>>> import h2o
+	>>> h2o.init()
+	>>> airlines = "hdfs://node-1:/user/smalldata/airlines/allyears2k_headers.zip"
+	>>> airlines_df = h2o.import_file(path=airlines)
+

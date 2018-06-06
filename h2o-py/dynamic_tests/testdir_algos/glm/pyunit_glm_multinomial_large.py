@@ -254,12 +254,13 @@ class TestGLMMultinomial:
 
         # DEBUGGING setup_data, remember to comment them out once done.
         self.train_col_count = 20
-        self.train_row_count = 100000
+        self.train_row_count = 200000
+        self.noise_std = 0.0
         # self.class_number = 3
         # # end DEBUGGING
 
         # randomly set number of enum and real columns in the data set
-        self.enum_col = random.randint(1, self.train_col_count-1)
+        self.enum_col = random.randint(1, int(self.train_col_count/2))
 
         # randomly set number of levels for each categorical column
         self.enum_level_vec = np.random.random_integers(2, self.enum_levels-1, [self.enum_col, 1])

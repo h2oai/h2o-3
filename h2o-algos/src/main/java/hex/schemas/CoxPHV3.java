@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.coxph.CoxPH;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import water.api.API;
+import water.api.schemas3.FrameV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.StringPairV3;
 
@@ -11,7 +12,6 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     public static String[] fields = new String[] {
               "model_id",
               "training_frame",
-              "rcall",
               "start_column",
               "stop_column",
               "response_column",
@@ -22,21 +22,20 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "ties",
               "init",
               "lre_min",
-              "iter_max",
-              "interactions_only",
+              "max_iterations",
               "interactions",
               "interaction_pairs",
+              "interactions_only",
               "use_all_factor_levels"
     };
 
-    @API(help="How was the model invoked.", direction = API.Direction.INOUT)
-    public String rcall;
+    @API(help="Start Time Column.", direction = API.Direction.INOUT,
+         is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
+    public FrameV3.ColSpecifierV3 start_column;
 
-    @API(help="Start Time Column.", direction = API.Direction.INOUT)
-    public String start_column;
-
-    @API(help="Stop Time Column.", direction = API.Direction.INOUT)
-    public String stop_column;
+    @API(help="Stop Time Column.", direction = API.Direction.INOUT,
+            is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
+    public FrameV3.ColSpecifierV3 stop_column;
 
     @API(help="List of columns to use for stratification.", direction = API.Direction.INOUT)
     public String[] stratify_by;
@@ -51,7 +50,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     public double lre_min;
 
     @API(help="Maximum number of iterations.", direction = API.Direction.INOUT)
-    public int iter_max;
+    public int max_iterations;
 
     @API(help="A list of columns that should only be used to create interactions but should not itself participate in model training.", direction=API.Direction.INPUT, level=API.Level.expert)
     public String[] interactions_only;
@@ -62,7 +61,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     @API(help="A list of pairwise (first order) column interactions.", direction= API.Direction.INPUT, level= API.Level.expert)
     public StringPairV3[] interaction_pairs;
 
-    @API(help="(Internal. For development only!) Indicates whether to use all factor levels.", direction = API.Direction.INPUT)
+    @API(help="(Internal. For development only!) Indicates whether to use all factor levels.", direction = API.Direction.INPUT, level = API.Level.expert)
     public boolean use_all_factor_levels;
 
   }

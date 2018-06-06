@@ -273,9 +273,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if (_family == Family.ordinal) {
         if (_intercept == false)
           glm.error("Ordinal regression", "must have intercepts.  set _intercept to true.");
-        if (_solver != Solver.AUTO)
+        if (!(_solver.equals(Solver.AUTO) || _solver.equals(Solver.GRADIENT_DESCENT_SQERR) || _solver.equals(Solver.GRADIENT_DESCENT_LH)))
           glm.error("Ordinal regression","Ordinal regression only supports gradient descend.  " +
-                  "Do not set Solver or set Solver to auto.");
+                  "Do not set Solver or set Solver to auto, GRADIENT_DESCENT_LH or GRADIENT_DESCENT_SQERR.");
         if (_lambda_search)
           glm.error("ordinal regression", "Ordinal regression do not support lambda search.");
       }
@@ -501,7 +501,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
 
-    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT}
+    public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -861,7 +861,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    @Override public InteractionSpec interactions() { return _dinfo._interactionSpec; }
+    @Override public InteractionBuilder interactionBuilder() { return _dinfo._interactionSpec != null ? new GLMInteractionBuilder() : null; }
+    private class GLMInteractionBuilder implements InteractionBuilder {
+      @Override
+      public Frame makeInteractions(Frame f) {
+        InteractionPair[] interactionPairs = _dinfo._interactionSpec.makeInteractionPairs(f);
+        f.add(Model.makeInteractions(f, false, interactionPairs, true, true, false));
+        return f;
+      }
+    }
     public static Frame expand(Frame fr, InteractionSpec interactions, boolean useAll, boolean standardize, boolean skipMissing) {
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
@@ -1156,25 +1164,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         double previousCDF = 0.0;
         for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
           double currEta = eta[cInd];
-          double tempExpEta = Math.exp(currEta);
-          double currCDF = tempExpEta/(1+tempExpEta);
-          preds[cInd+1] = currCDF-previousCDF;
+          double currCDF = 1.0 / (1 + Math.exp(-currEta));
+          preds[cInd + 1] = currCDF - previousCDF;
           previousCDF = currCDF;
-          if (currEta >= 0) { // found the correct class
+
+          if (currEta > 0) { // found the correct class
             preds[0] = cInd;
             break;
           }
         }
-        for (int cInd = (int)preds[0]+1;cInd < lastClass; cInd++) {  // continue PDF calculation
-          double tempExpEta = Math.exp(eta[cInd]);
-          double currCDF = tempExpEta/(1+tempExpEta);
-          if (currCDF > previousCDF) {
-            preds[cInd + 1] = currCDF - previousCDF;
-            previousCDF = currCDF;
-          } else {
-            previousCDF = 1-1e-10;
-            break;
-          }
+        for (int cInd = (int) preds[0] + 1; cInd < lastClass; cInd++) {  // continue PDF calculation
+          double currCDF = 1.0 / (1 + Math.exp(-eta[cInd]));
+          preds[cInd + 1] = currCDF - previousCDF;
+          previousCDF = currCDF;
         }
         preds[nclasses] = 1-previousCDF;
       }
@@ -1283,7 +1285,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
       final int noff = dinfo().numStart();
       body.ip("  for(int i = 0; i < " + dinfo()._nums + "; ++i)").nl();
-      body.ip("    preds[c+1] += b[" + noff + "+i + c*" + P + "]*data[i];").nl();
+      body.ip("    preds[c+1] += b[" + noff + "+i + c*" + P + "]*data[i+"+dinfo()._cats+"];").nl();
       body.ip("  preds[c+1] += b[" + (P-1) +" + c*" + P + "]; // reduce intercept").nl();
       body.ip("}").nl();
       if (_parms._family == Family.multinomial) {
@@ -1300,26 +1302,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         body.ip("preds[0]=lastClass;").nl();
         body.ip("double previousCDF = 0.0;").nl();
         body.ip("for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class").nl();
-        body.ip(" double eta = preds[cInd+1];").nl();
-        body.ip(" double tempExpEta = Math.exp(eta);").nl();
-        body.ip(" double currCDF = tempExpEta/(1+tempExpEta);").nl();
-        body.ip(" preds[cInd+1] = currCDF-previousCDF;").nl();
-        body.ip(" previousCDF = currCDF;").nl();
-        body.ip("  if (eta >= 0) { // found the correct class").nl();
-        body.ip("   preds[0] = cInd;").nl();
-        body.ip("   break;").nl();
-        body.ip(" }").nl();
+        body.ip("  double eta = preds[cInd+1];").nl();
+        body.ip("  double currCDF = 1.0/(1+Math.exp(-eta));").nl();
+        body.ip("  preds[cInd+1] = currCDF-previousCDF;").nl();
+        body.ip("  previousCDF = currCDF;").nl();
+        body.ip("  if (eta > 0) { // found the correct class").nl();
+        body.ip("    preds[0] = cInd;").nl();
+        body.ip("    break;").nl();
+        body.ip("  }").nl();
         body.ip("}").nl();
         body.ip("for (int cInd = (int)preds[0]+1;cInd < lastClass; cInd++) {  // continue PDF calculation").nl();
-        body.ip(" double tempExpEta = Math.exp(preds[cInd+1]);").nl();
-        body.ip(" double currCDF = tempExpEta/(1+tempExpEta);").nl();
-        body.ip(" if (currCDF > previousCDF) {").nl();
-        body.ip("   preds[cInd + 1] = currCDF - previousCDF;").nl();
-        body.ip("   previousCDF = currCDF;").nl();
-        body.ip(" } else {").nl();
-        body.ip("   previousCDF = 1-1e-10;").nl();
-        body.ip("   break;").nl();
-        body.ip(" }").nl();
+        body.ip(" double currCDF = 1.0/(1+Math.exp(-preds[cInd+1]));").nl();
+        body.ip(" preds[cInd + 1] = currCDF - previousCDF;").nl();
+        body.ip(" previousCDF = currCDF;").nl();
         body.ip("}").nl();
         body.ip("preds[nclasses()] = 1-previousCDF;").nl();
       }

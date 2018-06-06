@@ -17,10 +17,15 @@ import sys
 import zipfile
 import io
 import string
+import subprocess
+import csv
+import shutil
+import tempfile
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.backend.server import H2OLocalServer
 
 _id_ctr = 0
 
@@ -28,6 +33,8 @@ _id_ctr = 0
 # only contain characters allowed within the "segment" part of the URL (see RFC 3986). Additionally, we
 # forbid all characters that are declared as "illegal" in Key.java.
 _id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+
+__all__ = ('mojo_predict_csv', 'mojo_predict_pandas')
 
 
 def _py_tmp_key(append):
@@ -360,6 +367,122 @@ is_num_list = _is_num_list
 is_str_list = _is_str_list
 handle_python_lists = _handle_python_lists
 check_lists_of_lists = _check_lists_of_lists
+
+gen_model_file_name = "h2o-genmodel.jar"
+h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
+
+
+def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+    """
+    MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
+    :param dataframe: Pandas frame to score.
+    :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
+    :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
+    folder as the MOJO zip will be used.
+    :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
+    (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g' is used.
+    :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :return: Pandas frame with predictions
+    """
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        if not can_use_pandas():
+            raise RuntimeException('Cannot import pandas')
+        import pandas
+        assert_is_type(dataframe, pandas.DataFrame)
+        input_csv_path = os.path.join(tmp_dir, 'input.csv')
+        prediction_csv_path = os.path.join(tmp_dir, 'prediction.csv')
+        dataframe.to_csv(input_csv_path)
+        mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
+                         output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
+                         classpath=classpath, java_options=java_options, verbose=verbose)
+        return pandas.read_csv(prediction_csv_path)
+    finally:
+        shutil.rmtree(tmp_dir)
+
+
+def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
+    """
+    MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
+    :param input_csv_path: Path to input CSV file.
+    :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
+    :param output_csv_path: Optional, name of the output CSV file with computed predictions. If None (default), then
+    predictions will be saved as prediction.csv in the same folder as the MOJO zip.
+    :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
+    folder as the MOJO zip will be used.
+    :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
+    (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g -XX:ReservedCodeCacheSize=256m' is used.
+    :param verbose: Optional, if True, then additional debug information will be printed. False by default.
+    :return: List of computed predictions
+    """
+    default_java_options = '-Xmx4g -XX:ReservedCodeCacheSize=256m'
+    prediction_output_file = 'prediction.csv'
+
+    # Checking java
+    java = H2OLocalServer._find_java()
+    H2OLocalServer._check_java(java=java, verbose=verbose)
+
+    # Ensure input_csv exists
+    if verbose:
+        print("input_csv:\t%s" % input_csv_path)
+    if not os.path.isfile(input_csv_path):
+        raise RuntimeError("Input csv cannot be found at %s" % input_csv_path)
+
+    # Ensure mojo_zip exists
+    mojo_zip_path = os.path.abspath(mojo_zip_path)
+    if verbose:
+        print("mojo_zip:\t%s" % mojo_zip_path)
+    if not os.path.isfile(mojo_zip_path):
+        raise RuntimeError("MOJO zip cannot be found at %s" % mojo_zip_path)
+
+    parent_dir = os.path.dirname(mojo_zip_path)
+
+    # Set output_csv if necessary
+    if output_csv_path is None:
+        output_csv_path = os.path.join(parent_dir, prediction_output_file)
+
+    # Set path to h2o-genmodel.jar if necessary and check it's valid
+    if genmodel_jar_path is None:
+        genmodel_jar_path = os.path.join(parent_dir, gen_model_file_name)
+    if verbose:
+        print("genmodel_jar:\t%s" % genmodel_jar_path)
+    if not os.path.isfile(genmodel_jar_path):
+        raise RuntimeError("Genmodel jar cannot be found at %s" % genmodel_jar_path)
+
+    if verbose and output_csv_path is not None:
+        print("output_csv:\t%s" % output_csv_path)
+
+    # Set classpath if necessary
+    if classpath is None:
+        classpath = genmodel_jar_path
+    if verbose:
+        print("classpath:\t%s" % classpath)
+
+    # Set java_options if necessary
+    if java_options is None:
+        java_options = default_java_options
+    if verbose:
+        print("java_options:\t%s" % java_options)
+
+    # Construct command to invoke java
+    cmd = [java]
+    for option in java_options.split(' '):
+        cmd += [option]
+    cmd += ["-cp", classpath, h2o_predictor_class, "--mojo", mojo_zip_path, "--input", input_csv_path,
+            '--output', output_csv_path, '--decimal']
+    if verbose:
+        cmd_str = " ".join(cmd)
+        print("java cmd:\t%s" % cmd_str)
+
+    # invoke the command
+    subprocess.check_call(cmd, shell=False)
+
+    # load predictions in form of a dict
+    with open(output_csv_path) as csv_file:
+        result = list(csv.DictReader(csv_file))
+    return result
 
 
 def deprecated(message):

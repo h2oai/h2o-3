@@ -1,14 +1,12 @@
 def call(final pipelineContext, final Closure body) {
   final List<String> FILES_TO_EXCLUDE = [
-    '**/rest.log'
+    '**/rest.log', '**/*prediction*.csv', '**/java*_*.out.txt'
   ]
 
   final List<String> FILES_TO_ARCHIVE = [
-    "**/*.log", "**/out.*", "**/*py.out.txt", "**/java*out.txt", "**/*ipynb.out.txt",
-    "**/results/*", "**/*tmp_model*",
-    "**/h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv",
-    "**/tests.txt", "**/*lib_h2o-flow_build_js_headless-test.js.out.txt",
-    "**/*.code", "**/package_version_check_out.txt"
+    '**/*.log', '**/out.*',
+    '**/results/*.txt', '**/results/failed/*.txt',
+    '**/results/*.code', '**/results/failed/*.code',
   ]
 
   def config = [:]
@@ -30,6 +28,12 @@ def call(final pipelineContext, final Closure body) {
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
   if (config.customBuildAction == null) {
+    def makeVars = []
+    def additionalGradleOpts = pipelineContext.getBuildConfig().getAdditionalGradleOpts()
+    if (additionalGradleOpts != null && !additionalGradleOpts.isEmpty()) {
+      makeVars += "ADDITIONAL_GRADLE_OPTS='${pipelineContext.getBuildConfig().getAdditionalGradleOpts().join(' ')}'"
+    }
+
     config.customBuildAction = """
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
@@ -42,22 +46,23 @@ def call(final pipelineContext, final Closure body) {
       fi
 
       echo "Running Make"
+      export ${makeVars.join(' ')}
       make -f ${config.makefilePath} ${config.target}
     """
   }
 
+  boolean success = false
   try {
     execMake(config.customBuildAction, config.h2o3dir)
+    success = true
   } finally {
     if (config.hasJUnit) {
       final GString findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
       final GString replaceCmd = "${findCmd} -exec sed -i 's/&#[0-9]\\+;//g' {} +"
-      echo "Post-processing following test result files:"
-      sh findCmd
       sh replaceCmd
       pipelineContext.getUtils().archiveJUnitResults(this, config.h2o3dir)
     }
-    if (config.archiveFiles) {
+    if (config.archiveFiles && !success) {
       pipelineContext.getUtils().archiveStageFiles(this, config.h2o3dir, FILES_TO_ARCHIVE, FILES_TO_EXCLUDE)
     }
     if (config.archiveAdditionalFiles) {

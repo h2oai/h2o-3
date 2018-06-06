@@ -500,7 +500,6 @@ public class RequestServer extends HttpServlet {
       if( f.filter(uri,header,parms) ) return; // do not log anything if filtered
     String url = uri.getUrl();
     Log.info(uri + ", parms: " + parms);
-    GAUtils.logRequest(url, header);
   }
 
   /**

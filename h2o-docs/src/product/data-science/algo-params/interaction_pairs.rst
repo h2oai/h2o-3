@@ -1,7 +1,7 @@
 ``interaction_pairs``
 ---------------------
 
-- Available in: GLM
+- Available in: GLM, CoxPH
 - Hyperparameter: no
 
 Description
@@ -9,7 +9,7 @@ Description
 
 By default, interactions between predictor columns are expanded and computed on the fly as GLM iterates over dataset. The ``interaction_pairs`` parameter allows you to define a list of specific interactions to include instead of all interactions. 
 
-Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures. 
+Note that adding a list of interactions to a model changes the interpretation of all of the coefficients. For example, a typical predictor has the form ‘response ~ terms’ where ‘response’ is the (numeric) response vector, and ‘terms’ is a series of terms that specify a linear predictor for ‘response’. For ‘binomial’ and ‘quasibinomial’ families in GLM, the response can also be specified as a ‘factor’ (when the first level denotes failure and all other levels denote success) or as a two-column matrix with the columns giving the numbers of successes and failures. 
 
 When using this parameter, specify a list of pairwise columns that should interact. When specified, GLM will compute interactions between 
 
