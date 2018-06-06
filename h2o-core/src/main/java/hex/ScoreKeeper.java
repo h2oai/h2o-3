@@ -110,7 +110,7 @@ public class ScoreKeeper extends Iced {
 
   public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom} //, r2}
   public static boolean moreIsBetter(StoppingMetric criterion) {
-    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group || criterion == StoppingMetric.r2);
+    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group); // || criterion == StoppingMetric.r2);
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
@@ -185,9 +185,9 @@ public class ScoreKeeper extends Iced {
           case lift_top_group:
             val = skj._lift;
             break;
-          case r2:
+ /*         case r2:
             val = skj._r2;
-            break;
+            break; */
           default:
             throw H2O.unimpl("Undefined stopping criterion.");
         }
@@ -312,13 +312,13 @@ public class ScoreKeeper extends Iced {
             return (int)Math.signum(o2._lift - o1._lift); // moreIsBetter
           }
         };
-      case r2:
+/*      case r2:
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
             return (int)Math.signum(o2._r2 - o1._r2); // moreIsBetter
           }
-        };
+        };*/
       default:
         throw H2O.unimpl("Undefined stopping criterion.");
     } // switch
@@ -337,7 +337,7 @@ public class ScoreKeeper extends Iced {
         ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
-        ", _r2=" + _r2 +
+      //  ", _r2=" + _r2 +
         '}';
   }
 }
