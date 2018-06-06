@@ -403,11 +403,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
-    if (null == parentJob) {
-      Log.info("AutoML job is null...");
-      return;
-    }
-    else if (null == subJob) {
+    if (null == subJob) {
       parentJob.update(workContribution, "SKIPPED: " + name);
       return;
     }
