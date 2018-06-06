@@ -145,10 +145,23 @@ def prostate_automl_args():
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
 
-    # TO DO
-    #print("Check that exactly two ensembles are trained")
-    #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
-    #aml.train(y="CAPSULE", training_frame=train)
+
+    print("Check balance_classes & related args work properly")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
+    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3, 
+        balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
+    aml.train(y="CAPSULE", training_frame=train)
+    # grab the last model in the leaderboard, hoping that it's not an SE model
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    # if you get a stacked ensemble, take the second to last 
+    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
+    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
+      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])   
+    assert amodel.params['balance_classes']['actual'] == True
+    assert amodel.params['max_after_balance_size']['actual'] == 3.0
+    assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
+
 
     # TO DO
     # Add a test that checks fold_column like in runit

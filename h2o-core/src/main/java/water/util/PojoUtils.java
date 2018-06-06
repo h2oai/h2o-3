@@ -466,41 +466,53 @@ public class PojoUtils {
           f.set(o, ((Integer) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Long.class || value.getClass() == Integer.class))
           f.set(o, ((Long) value).longValue());
+        else if (f.getType() == float.class && (value instanceof Number))
+          f.set(o, ((Number) value).floatValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
       } else if (f.getType().isArray() && (value.getClass().isArray()) || value instanceof List) {
+        final Class<?> valueComponentType;
         if (value instanceof List) {
-          value = ((List)value).toArray(); // handle both [] arrays and List subclasses like ArrayList
+          List<?> valueList = (List<?>) value;
+          if (valueList.isEmpty()) {
+            valueComponentType = f.getType().getComponentType();
+            value = java.lang.reflect.Array.newInstance(valueComponentType, 0);
+          } else {
+            value = valueList.toArray();
+            valueComponentType = valueList.get(0).getClass();
+          }
+        } else {
+          valueComponentType = value.getClass().getComponentType();
         }
 
-        if (f.getType().getComponentType() == value.getClass().getComponentType()) {
+        if (f.getType().getComponentType() == valueComponentType) {
           // array of the same type on both sides
           f.set(o, value);
-        } else if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
-          Integer[] valuesTyped = ((Integer[])value);
+        } else if (f.getType().getComponentType() == int.class && valueComponentType == Integer.class) {
+          Object[] valuesTyped = ((Object[])value);
           int[] valuesCast = new int[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).intValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == long.class && value.getClass().getComponentType() == Long.class) {
-          Long[] valuesTyped = ((Long[])value);
+        } else if (f.getType().getComponentType() == long.class && valueComponentType == Long.class) {
+          Object[] valuesTyped = ((Object[])value);
           long[] valuesCast = new long[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).longValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == double.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
-          Double[] valuesTyped = ((Double[])value);
+        } else if (f.getType().getComponentType() == double.class && (valueComponentType == Float.class || valueComponentType == Double.class || valueComponentType == Integer.class || valueComponentType == Long.class)) {
+          Object[] valuesTyped = ((Object[])value);
           double[] valuesCast = new double[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).doubleValue();
           f.set(o, valuesCast);
-        } else if (f.getType().getComponentType() == float.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
-          Float[] valuesTyped = ((Float[]) value);
+        } else if (f.getType().getComponentType() == float.class && (valueComponentType == Float.class || valueComponentType == Double.class || valueComponentType == Integer.class || valueComponentType == Long.class)) {
+          Object[] valuesTyped = ((Object[]) value);
           float[] valuesCast = new float[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
-            valuesCast[i] = valuesTyped[i];
+            valuesCast[i] = ((Number) valuesTyped[i]).floatValue();
           f.set(o, valuesCast);
         } else if(f.getType().getComponentType().isEnum()) {
           Object[] valuesTyped = ((Object[]) value);

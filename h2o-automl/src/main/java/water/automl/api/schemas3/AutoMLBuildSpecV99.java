@@ -33,6 +33,15 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Number of folds for k-fold cross-validation (defaults to 5, must be >=2 or use 0 to disable). Disabling prevents Stacked Ensembles from being built.", direction=API.Direction.INPUT)
     public int nfolds;
 
+    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public boolean balance_classes;
+
+    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public float[] class_sampling_factors;
+
+    @API(help = "Maximum relative size of the training data after balancing class counts (defaults to 5.0 and can be less than 1.0). Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
+    public float max_after_balance_size;
+
     @API(help="Whether to keep the predictions of the cross-validation predictions. If set to false then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML.", direction=API.Direction.INPUT)
     public boolean keep_cross_validation_predictions;
 

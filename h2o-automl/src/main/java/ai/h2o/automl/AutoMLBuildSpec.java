@@ -43,9 +43,15 @@ public class AutoMLBuildSpec extends Iced {
     public String project_name = null;
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
 
+    // Pass through to all algorithms
+    public boolean balance_classes = false;
+    public float[] class_sampling_factors;
+    public float max_after_balance_size = 5.0f;
+
     public int nfolds = 5;
     public boolean keep_cross_validation_predictions = true;
-    public boolean keep_cross_validation_models = true;
+    public boolean keep_cross_validation_models = true; 
+
   }
 
   /**

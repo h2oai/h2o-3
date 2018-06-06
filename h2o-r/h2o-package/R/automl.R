@@ -18,6 +18,12 @@
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
+#'        FALSE.
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+#'        be automatically computed to obtain class balance during training. Requires balance_classes.
+#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+#'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
@@ -57,6 +63,9 @@ h2o.automl <- function(x, y, training_frame,
                        nfolds = 5,
                        fold_column = NULL,
                        weights_column = NULL,
+                       balance_classes = FALSE,
+                       class_sampling_factors = NULL,
+                       max_after_balance_size = 5.0,
                        max_runtime_secs = 3600,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
@@ -203,6 +212,18 @@ h2o.automl <- function(x, y, training_frame,
     stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
   }
   build_control$nfolds <- nfolds
+  
+  # Update build_control with balance_classes & related args
+  if (balance_classes == TRUE) {
+    build_control$balance_classes <- balance_classes
+  }
+  if (!is.null(class_sampling_factors)) {
+    build_control$class_sampling_factors <- class_sampling_factors
+  }
+  if (max_after_balance_size != 5) {
+    build_control$max_after_balance_size <- max_after_balance_size
+  }
+  
   build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
   build_control$keep_cross_validation_models <- keep_cross_validation_models
 
