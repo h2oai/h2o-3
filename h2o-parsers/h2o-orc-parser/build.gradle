@@ -32,7 +32,7 @@ dependencies {
   // Note: for newest version it should be replaces by hive-orc
   compile("org.apache.hive:hive-exec:$defaultHiveExecVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
-      configurations.hiveExecExclude.getResolvedConfiguration().getResolvedArtifacts().forEach {
+      configurations.hiveExecExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hive" && it.moduleVersion.id.module.name != "hive-exec") {
               exclude group: it.moduleVersion.id.group, module: it.moduleVersion.id.module.name
           }
@@ -42,7 +42,7 @@ dependencies {
   // For compilation we need common
   compile("org.apache.hadoop:hadoop-common:$defaultHadoopClientVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
-      configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().forEach {
+      configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
               exclude group: it.moduleVersion.id.group, module: it.moduleVersion.id.module.name
           }

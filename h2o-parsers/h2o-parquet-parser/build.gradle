@@ -28,7 +28,7 @@ dependencies {
 
   compile("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
     // we can't use transitive=false so we need to exclude the dependencies manually
-    configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().forEach {
+    configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().each {
       if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
         exclude group: it.moduleVersion.id.group, module: it.moduleVersion.id.module.name
       }
