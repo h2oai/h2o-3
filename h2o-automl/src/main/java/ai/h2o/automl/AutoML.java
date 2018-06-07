@@ -355,11 +355,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     stopTimeMs = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    try {
-      learn();
-    } catch (AutoMLDoneException e) {
-      // pass :)
-    }
+    learn();
   }
 
   @Override
@@ -471,8 +467,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // add remaining work
     parentJob.update(workContribution - lastWorkedSoFar);
 
-    //FIXME Bad call here. Should revisit later
-    try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
+    jobs.remove(subJob);
 
   }
 
