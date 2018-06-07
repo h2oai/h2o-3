@@ -11,6 +11,9 @@ configurations {
     compile.exclude module: 'javax.mail.glassfish'
     compile.exclude module: 'servlet-api'
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
+    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-app'
+    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-client-core'
+    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-jobclient'
 }
 
 // Dependencies
@@ -52,7 +55,6 @@ for (comp in optionalComponents) {
 }
 
 shadowJar { 
-  zip64 true
   mergeServiceFiles()
   classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
