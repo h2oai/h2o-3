@@ -1,7 +1,6 @@
 package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.Leaderboard;
 import ai.h2o.automl.UserFeedback;
 import water.DKV;
