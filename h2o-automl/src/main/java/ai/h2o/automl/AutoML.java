@@ -959,17 +959,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return ensembleJob;
   }
 
-  // manager thread:
-  //  1. Do extremely cursory pass over data and gather only the most basic information.
-  //
-  //     During this pass, AutoML will learn how timely it will be to do more info
-  //     gathering on _fr. There's already a number of interesting stats available
-  //     thru the rollups, so no need to do too much too soon.
-  //
-  //  2. Build a very dumb RF (with stopping_rounds=1, stopping_tolerance=0.01)
-  //
-  //  3. TODO: refinement passes and strategy selection
-  //
   public void learn() {
     userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
 
