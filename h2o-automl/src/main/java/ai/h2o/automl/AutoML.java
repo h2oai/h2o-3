@@ -400,7 +400,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
     if (null == subJob) {
-      parentJob.update(workContribution, "SKIPPED: " + name);
+      if (null != parentJob) {
+        parentJob.update(workContribution, "SKIPPED: " + name);
+        Log.info("AutoML skipping " + name);
+      }
       return;
     }
     userFeedback.info(stage, name + " started");
