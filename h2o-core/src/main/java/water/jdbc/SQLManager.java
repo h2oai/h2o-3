@@ -15,6 +15,7 @@ import static water.fvec.Vec.makeCon;
 public class SQLManager {
 
   private final static String TEMP_TABLE_NAME = "table_for_h2o_import";
+  private static final String MAX_USR_CONNECTIONS_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max";
   //A target upper bound on number of connections to database
   private final static int MAX_CONNECTIONS = 100;
   //A lower bound on number of connections to database per node
@@ -258,10 +259,7 @@ public class SQLManager {
 
     @Override
     protected void setupLocal() {
-      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
-      conPerNode = Math.min(conPerNode, SQLManager.MAX_CONNECTIONS / H2O.getCloudSize());
-      //Make sure at least some connections are available to a node
-      conPerNode = Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
+      final int conPerNode = getMaxConnectionsPerNode();
       Log.info("Database connections per node: " + conPerNode);
       sqlConn = new ArrayBlockingQueue<>(conPerNode);
       try {
@@ -272,6 +270,45 @@ public class SQLManager {
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
+    }
+
+    /**
+     * @return Number of connections to an SQL database to be opened on a single node.
+     */
+    private int getMaxConnectionsPerNode() {
+      int conPerNode;
+      final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
+      if (userDefinedMaxConnections != null) {
+        try {
+          Integer connectionAmount = Integer.valueOf(userDefinedMaxConnections);
+          if (connectionAmount > 0 && connectionAmount < MAX_CONNECTIONS) {
+            conPerNode = calculateLocalConnectionCount(connectionAmount);
+          } else {
+            conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
+          }
+        } catch (NumberFormatException e) {
+          Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
+          + ". Falling back to default settings.");
+          conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
+        }
+      } else {
+        conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
+      }
+
+      return conPerNode;
+    }
+
+    /**
+     * Counts number of connections per node from give maximal number of connections for the whole cluster
+     *
+     * @param maxTotalConnections Maximal number of total connections to be opened by the whole cluster
+     * @return Number of connections to open per node, within given minmal and maximal range
+     */
+    private final int calculateLocalConnectionCount(final int maxTotalConnections) {
+      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
+      conPerNode = Math.min(conPerNode, maxTotalConnections / H2O.getCloudSize());
+      //Make sure at least some connections are available to a node
+      return Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
     }
 
     @Override
