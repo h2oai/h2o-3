@@ -414,14 +414,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     int gridLastCount = 0;
 
     while (subJob.isRunning()) {
-      if(parentJob.stop_requested()){
-        Log.info("Skipping " + name + " due to Job cancel");
-        subJob.stop();
+      if (null != parentJob) {
+        if (parentJob.stop_requested()) {
+          Log.info("Skipping " + name + " due to Job cancel");
+          subJob.stop();
+        }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
       cumulative += workedSoFar;
 
-      parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      if (null != parentJob) {
+        parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      }
 
       if (JobType.HyperparamSearch == subJobType) {
         Grid grid = (Grid)subJob._result.get();
@@ -468,7 +472,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     // add remaining work
-    parentJob.update(workContribution - lastWorkedSoFar);
+    if (null != parentJob) {
+      parentJob.update(workContribution - lastWorkedSoFar);
+    }
 
     jobs.remove(subJob);
 
