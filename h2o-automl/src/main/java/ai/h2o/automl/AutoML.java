@@ -355,11 +355,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     stopTimeMs = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    try {
-      learn();
-    } catch (AutoMLDoneException e) {
-      // pass :)
-    }
+    learn();
   }
 
   @Override
@@ -404,7 +400,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
     if (null == subJob) {
-      parentJob.update(workContribution, "SKIPPED: " + name);
+      if (null != parentJob) {
+        parentJob.update(workContribution, "SKIPPED: " + name);
+        Log.info("AutoML skipping " + name);
+      }
       return;
     }
     userFeedback.info(stage, name + " started");
@@ -415,14 +414,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     int gridLastCount = 0;
 
     while (subJob.isRunning()) {
-      if(parentJob.stop_requested()){
-        Log.info("Skipping " + name + " due to Job cancel");
-        subJob.stop();
+      if (null != parentJob) {
+        if (parentJob.stop_requested()) {
+          Log.info("Skipping " + name + " due to Job cancel");
+          subJob.stop();
+        }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
       cumulative += workedSoFar;
 
-      parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      if (null != parentJob) {
+        parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      }
 
       if (JobType.HyperparamSearch == subJobType) {
         Grid grid = (Grid)subJob._result.get();
@@ -469,10 +472,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     // add remaining work
-    parentJob.update(workContribution - lastWorkedSoFar);
+    if (null != parentJob) {
+      parentJob.update(workContribution - lastWorkedSoFar);
+    }
 
-    //FIXME Bad call here. Should revisit later
-    try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
+    jobs.remove(subJob);
 
   }
 
