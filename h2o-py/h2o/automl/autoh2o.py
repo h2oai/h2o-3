@@ -49,7 +49,7 @@ class H2OAutoML(object):
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
     :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
     :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
-    :param sort_metric Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
+    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
     For binomial classification choose between ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
             For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between
             ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``. 
