@@ -46,6 +46,9 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.18.0"
   testCompile "org.apache.httpcomponents:httpclient:4.1"
+  testCompile 'com.github.stefanbirkner:system-rules:1.18.0'
+  testCompile 'org.powermock:powermock-module-junit4:2.0.0-beta.5'
+  testCompile 'org.powermock:powermock-api-mockito2:2.0.0-beta.5'
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

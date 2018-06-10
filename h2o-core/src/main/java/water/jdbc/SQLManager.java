@@ -235,7 +235,7 @@ public class SQLManager {
     }
   }
 
-  private static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
+  static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
     final String _url, _table, _user, _password, _columns;
     final int _numCol, _nChunks;
     final boolean _needFetchClause;
@@ -275,7 +275,7 @@ public class SQLManager {
     /**
      * @return Number of connections to an SQL database to be opened on a single node.
      */
-    private int getMaxConnectionsPerNode() {
+    int getMaxConnectionsPerNode() {
       int conPerNode;
       final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
       if (userDefinedMaxConnections != null) {
