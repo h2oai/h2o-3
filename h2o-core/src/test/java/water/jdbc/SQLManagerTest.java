@@ -7,14 +7,8 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.ProvideSystemProperty;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import water.H2O;
-import water.H2ONode;
 import water.Paxos;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 
 public class SQLManagerTest {
 
@@ -30,23 +24,18 @@ public class SQLManagerTest {
   @Before
   public void setUp() throws Exception {
     Paxos._commonKnowledge = true;
-
-    runtime = PowerMockito.spy(Runtime.getRuntime());
-    PowerMockito.field(Runtime.class, "currentRuntime").set(runtime, runtime);
+    runtime = Mockito.spy(Runtime.getRuntime());
   }
 
   @Test
-  @PrepareForTest(Runtime.class)
   public void testConnectionPoolSize() throws Exception {
-    // Cloud size 1
-    PowerMockito.field(H2O.class, "_memary").set(H2O.CLOUD, new H2ONode[1]);
     Mockito.when(runtime.availableProcessors()).thenReturn(100);
     // This ensures unified behavior of such test across various environments
     // Verify there are truly 100 processors returned available
-    Assert.assertEquals(100, Runtime.getRuntime().availableProcessors());
+    Assert.assertEquals(100, runtime.availableProcessors());
 
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
-        "", "", "", 1, 10, null);
+        "", "", "", 1, 10, null, Runtime.getRuntime(), 1);
 
     Integer maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     //Even if there are 100 available processors on a single node, there should be only limited number of connections
@@ -57,18 +46,16 @@ public class SQLManagerTest {
 
   @Test
   public void testConnectionPoolSizeOneProcessor() throws Exception {
-    // Cloud size 1
-    PowerMockito.field(H2O.class, "_memary").set(H2O.CLOUD, new H2ONode[1]);
     // This ensures unified behavior of such test across various environments
     Mockito.when(runtime.availableProcessors()).thenReturn(1);
-    Assert.assertEquals(1, Runtime.getRuntime().availableProcessors());
+    Assert.assertEquals(1, runtime.availableProcessors());
 
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
-        "", "", "", 1, 10, null);
+        "", "", "", 1, 10, null, runtime, 1);
 
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     //The user-defined limit for number of connections in the pool is 7, however there is only one processor.
-    Assert.assertEquals(Runtime.getRuntime().availableProcessors(),
+    Assert.assertEquals(runtime.availableProcessors(),
         maxConnectionsPerNode);
   }
 
@@ -78,14 +65,12 @@ public class SQLManagerTest {
    */
   @Test
   public void testConnectionPoolSizeZeroProcessors() throws Exception {
-    // Cloud size 1
-    PowerMockito.field(H2O.class, "_memary").set(H2O.CLOUD, new H2ONode[1]);
     // This ensures unified behavior of such test across various environments
     Mockito.when(runtime.availableProcessors()).thenReturn(-1);
-    Assert.assertEquals(-1, Runtime.getRuntime().availableProcessors());
+    Assert.assertEquals(-1, runtime.availableProcessors());
 
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
-        "", "", "", 1, 10, null);
+        "", "", "", 1, 10, null, runtime, 1);
 
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     Assert.assertEquals(1,
@@ -94,12 +79,11 @@ public class SQLManagerTest {
 
   @Test
   public void testConnectionPoolSizeTwoNodes() throws Exception {
-    PowerMockito.field(H2O.class, "_memary").set(H2O.CLOUD, new H2ONode[2]);
     Mockito.when(runtime.availableProcessors()).thenReturn(10);
-    Assert.assertEquals(10, Runtime.getRuntime().availableProcessors());
+    Assert.assertEquals(10, runtime.availableProcessors());
 
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
-        "", "", "", 1, 10, null);
+        "", "", "", 1, 10, null, runtime, 2);
 
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     int expectedConnectionsPerNode = Integer.valueOf(
