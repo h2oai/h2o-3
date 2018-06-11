@@ -35,10 +35,11 @@ public class KerberosExtension extends AbstractH2OExtension {
       return; // this is theoretically possible although unlikely
 
     if (isKerberosEnabled(conf)) {
-      Log.info("Kerberos enabled in Hadoop configuration. Trying to login the (default) user.");
+      Log.debug("Kerberos enabled in Hadoop configuration. Trying to login the (default) user.");
       UserGroupInformation.setConfiguration(conf);
       try {
         UserGroupInformation.loginUserFromSubject(null);
+        Log.info("Kerberos subsystem initialized. Using the default user.");
       } catch (IOException e) {
         Log.err("Kerberos initialization FAILED. Kerberos ticket needs to be acquired before starting H2O (run kinit).", e);
       }
