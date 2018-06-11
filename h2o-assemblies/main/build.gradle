@@ -11,9 +11,6 @@ configurations {
     compile.exclude module: 'javax.mail.glassfish'
     compile.exclude module: 'servlet-api'
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
-    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-app'
-    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-client-core'
-    compile.exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-jobclient'
 }
 
 // Dependencies
