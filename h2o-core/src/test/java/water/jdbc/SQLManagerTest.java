@@ -25,10 +25,9 @@ public class SQLManagerTest {
 
   @Test
   public void testConnectionPoolSize() throws Exception {
-    H2O.ARGS.nthreads = 100;
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null, 1);
-
+    frame._nthreads = 100;
     Integer maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     //Even if there are 100 available processors on a single node, there should be only limited number of connections
     // in the pool.
@@ -38,10 +37,9 @@ public class SQLManagerTest {
 
   @Test
   public void testConnectionPoolSizeOneProcessor() throws Exception {
-    H2O.ARGS.nthreads = 1;
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null, 1);
-
+    frame._nthreads = 1;
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     //The user-defined limit for number of connections in the pool is 7, however there is only one processor.
     Assert.assertEquals(1,
@@ -54,10 +52,9 @@ public class SQLManagerTest {
    */
   @Test
   public void testConnectionPoolSizeZeroProcessors() throws Exception {
-    H2O.ARGS.nthreads = -1;
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null, 1);
-
+    frame._nthreads = -1;
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     Assert.assertEquals(1,
         maxConnectionsPerNode);
@@ -68,7 +65,7 @@ public class SQLManagerTest {
     H2O.ARGS.nthreads = 10;
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null, 2);
-
+    frame._nthreads = 10;
     int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
     int expectedConnectionsPerNode = Integer.valueOf(
         System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")

@@ -272,6 +272,7 @@ public class SQLManager {
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
+      _nthreads = H2O.ARGS.nthreads;
     }
 
     /**
