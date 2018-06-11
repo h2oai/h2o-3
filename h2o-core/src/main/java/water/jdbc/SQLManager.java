@@ -192,7 +192,7 @@ public class SQLManager {
       @Override
       public void compute2() {
         Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns, 
-                numCol, _v.nChunks(), j, H2O.getCloudSize()).doAll(columnH2OTypes, _v)
+                numCol, _v.nChunks(), j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -238,14 +238,13 @@ public class SQLManager {
     final int _numCol, _nChunks;
     final boolean _needFetchClause;
     final Job _job;
-    final int _cloudSize;
-    int _nthreads;
+    transient int _cloudSize;
+    transient int _nthreads;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
     public SqlTableToH2OFrame(final String url, final String table, final boolean needFetchClause, final String user, final String password,
-                              final String columns, final int numCol, final int nChunks, final Job job,
-                              final int cloudSize) {
+                              final String columns, final int numCol, final int nChunks, final Job job) {
       _url = url;
       _table = table;
       _needFetchClause = needFetchClause;
@@ -255,8 +254,6 @@ public class SQLManager {
       _numCol = numCol;
       _nChunks = nChunks;
       _job = job;
-      _cloudSize = cloudSize;
-      _nthreads = H2O.ARGS.nthreads;
     }
 
     @Override
@@ -272,6 +269,7 @@ public class SQLManager {
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
+      _cloudSize = H2O.getCloudSize();
       _nthreads = H2O.ARGS.nthreads;
     }
 
