@@ -178,8 +178,8 @@ def _handle_pandas_data_frame(python_obj, header):
     return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
-    header = list(python_obj.keys())
-    is_valid = bool(header) and all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
+    header = list(python_obj.keys()) if python_obj else _gen_header(1)
+    is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
     if not is_valid:
         raise ValueError(
             "Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
