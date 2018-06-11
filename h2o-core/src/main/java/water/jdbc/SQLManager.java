@@ -40,8 +40,6 @@ public class SQLManager {
   public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
                                           final String username, final String password, final String columns,
                                           boolean optimize) {
-    
-    
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
@@ -194,7 +192,7 @@ public class SQLManager {
       @Override
       public void compute2() {
         Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns, 
-                numCol, _v.nChunks(), j, Runtime.getRuntime(), H2O.getCloudSize()).doAll(columnH2OTypes, _v)
+                numCol, _v.nChunks(), j, H2O.getCloudSize()).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -240,13 +238,13 @@ public class SQLManager {
     final int _numCol, _nChunks;
     final boolean _needFetchClause;
     final Job _job;
-    final Runtime _runtime;
     final int _cloudSize;
+    int _nthreads;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
     public SqlTableToH2OFrame(final String url, final String table, final boolean needFetchClause, final String user, final String password,
-                              final String columns, final int numCol, final int nChunks, final Job job, final Runtime runtime,
+                              final String columns, final int numCol, final int nChunks, final Job job,
                               final int cloudSize) {
       _url = url;
       _table = table;
@@ -257,8 +255,8 @@ public class SQLManager {
       _numCol = numCol;
       _nChunks = nChunks;
       _job = job;
-      _runtime = runtime;
       _cloudSize = cloudSize;
+      _nthreads = H2O.ARGS.nthreads;
     }
 
     @Override
@@ -305,7 +303,7 @@ public class SQLManager {
      * @return Number of connections to open per node, within given minmal and maximal range
      */
     private final int calculateLocalConnectionCount(final int maxTotalConnections) {
-      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / _cloudSize), _runtime.availableProcessors());
+      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / _cloudSize), _nthreads);
       conPerNode = Math.min(conPerNode, maxTotalConnections / _cloudSize);
       //Make sure at least some connections are available to a node
       return Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
