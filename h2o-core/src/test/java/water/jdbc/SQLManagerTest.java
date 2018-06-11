@@ -31,8 +31,6 @@ public class SQLManagerTest {
   public void setUp() throws Exception {
     Paxos._commonKnowledge = true;
 
-    Field modifiersField = Field.class.getDeclaredField("modifiers");
-    modifiersField.setAccessible(true);
     runtime = PowerMockito.spy(Runtime.getRuntime());
     PowerMockito.field(Runtime.class, "currentRuntime").set(runtime, runtime);
   }
