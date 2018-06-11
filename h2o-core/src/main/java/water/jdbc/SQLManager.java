@@ -278,7 +278,6 @@ public class SQLManager {
     int getMaxConnectionsPerNode() {
       int conPerNode;
       final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
-      if (userDefinedMaxConnections != null) {
         try {
           Integer connectionAmount = Integer.valueOf(userDefinedMaxConnections);
           if (connectionAmount > 0 && connectionAmount < MAX_CONNECTIONS) {
@@ -291,9 +290,6 @@ public class SQLManager {
           + ". Falling back to default settings.");
           conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
         }
-      } else {
-        conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
-      }
 
       return conPerNode;
     }
