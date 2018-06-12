@@ -67,9 +67,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
-  public FrameMetadata getFrameMetadata() {
-    return frameMetadata;
-  }
+//  Disabling metadata collection for now as there is no use for it...
+//  public FrameMetadata getFrameMetadata() {
+////    return frameMetadata;
+////  }
 
   private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
@@ -79,10 +80,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec foldColumn;
   private Vec weightsColumn;
 
-  private FrameMetadata frameMetadata;           // metadata for trainingFrame
+//  Disabling metadata collection for now as there is no use for it...
+//  private FrameMetadata frameMetadata;           // metadata for trainingFrame
 
   private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
-  private boolean isClassification;
+//  private boolean isClassification;
 
   private Date startTime;
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
@@ -353,11 +355,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   public void run() {
     stopTimeMs = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    try {
-      learn();
-    } catch (AutoMLDoneException e) {
-      // pass :)
-    }
+    learn();
   }
 
   @Override
@@ -402,7 +400,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
     if (null == subJob) {
-      parentJob.update(workContribution, "SKIPPED: " + name);
+      if (null != parentJob) {
+        parentJob.update(workContribution, "SKIPPED: " + name);
+        Log.info("AutoML skipping " + name);
+      }
       return;
     }
     userFeedback.info(stage, name + " started");
@@ -413,14 +414,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     int gridLastCount = 0;
 
     while (subJob.isRunning()) {
-      if(parentJob.stop_requested()){
-        Log.info("Skipping " + name + " due to Job cancel");
-        subJob.stop();
+      if (null != parentJob) {
+        if (parentJob.stop_requested()) {
+          Log.info("Skipping " + name + " due to Job cancel");
+          subJob.stop();
+        }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
       cumulative += workedSoFar;
 
-      parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      if (null != parentJob) {
+        parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      }
 
       if (JobType.HyperparamSearch == subJobType) {
         Grid grid = (Grid)subJob._result.get();
@@ -467,10 +472,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     // add remaining work
-    parentJob.update(workContribution - lastWorkedSoFar);
+    if (null != parentJob) {
+      parentJob.update(workContribution - lastWorkedSoFar);
+    }
 
-    //FIXME Bad call here. Should revisit later
-    try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
+    jobs.remove(subJob);
 
   }
 
@@ -957,17 +963,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return ensembleJob;
   }
 
-  // manager thread:
-  //  1. Do extremely cursory pass over data and gather only the most basic information.
-  //
-  //     During this pass, AutoML will learn how timely it will be to do more info
-  //     gathering on _fr. There's already a number of interesting stats available
-  //     thru the rollups, so no need to do too much too soon.
-  //
-  //  2. Build a very dumb RF (with stopping_rounds=1, stopping_tolerance=0.01)
-  //
-  //  3. TODO: refinement passes and strategy selection
-  //
   public void learn() {
     userFeedback.info(Stage.Workflow, "AutoML build started: " + fullTimestampFormat.format(new Date()));
 
@@ -1000,20 +995,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // gather initial frame metadata and guess the problem type
     ///////////////////////////////////////////////////////////
+//    Disabling metadata collection for now as there is no use for it...
+//    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
+//    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
+//    frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
+//            trainingFrame.find(buildSpec.input_spec.response_column),
+//            trainingFrame._key.toString()).computeFrameMetaPass1();
+//
+//    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
+//    frameMetadata.fillSimpleMeta(frameMeta);
+//    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
+//
+//    job.update(20, "Computed dataset metadata");
 
-    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
-    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
-    frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
-            trainingFrame.find(buildSpec.input_spec.response_column),
-            trainingFrame._key.toString()).computeFrameMetaPass1();
-
-    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
-    frameMetadata.fillSimpleMeta(frameMeta);
-    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
-
-    job.update(20, "Computed dataset metadata");
-
-    isClassification = frameMetadata.isClassification();
+//    isClassification = frameMetadata.isClassification();
 
     ///////////////////////////////////////////////////////////
     // build a fast RF with default settings...
@@ -1238,14 +1233,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (aml.job == null || !aml.job.isRunning()) {
       Job job = new /* Timed */ H2OJob(aml, aml._key, aml.timeRemainingMs()).start();
       aml.job = job;
-      // job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
-
-      // job work:
-      // import/parse (30), Frame metadata (20), GBM grid (900), StackedEnsemble (50)
       job._work = 1000;
       DKV.put(aml);
-
-      job.update(30, "Data import and parse complete");
     }
   }
 
