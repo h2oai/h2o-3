@@ -7,7 +7,7 @@ Authors@R: c(
     person(given = "Tom", family = "Kraljevic", role = c("aut", "cre"), email = "tomk@0xdata.com"),
     person(given = "H2O.ai", role = c("cph"))
     )
-Description: R interface for 'H2O', the scalable open source machine learning platform that offers parallelized implementations of many supervised and unsupervised machine learning algorithms such as generalized linear models, gradient boosting machines (including xgboost), random forests, deep neural networks, (deep learning), stacked ensembles, naive bayes, cox proportional hazards, k-means, PCA, word2vec, as well as a fully automatic learning algorithm called H2O AutoML.
+Description: R interface for 'H2O', the scalable open source machine learning platform that offers parallelized implementations of many supervised and unsupervised machine learning algorithms such as generalized linear models, gradient boosting machines (including xgboost), random forests, deep neural networks (deep learning), stacked ensembles, naive bayes, cox proportional hazards, k-means, PCA, word2vec, as well as a fully automatic learning algorithm called H2O AutoML.
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
 BugReports: http://jira.h2o.ai
