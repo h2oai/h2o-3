@@ -1,5 +1,5 @@
-``calibrate_frame``
--------------------
+``calibration_frame``
+---------------------
 
 - Available in: GBM, DRF
 - Hyperparameter: no
@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-The ``calibrate_frame`` specifies the calibration frame that will be used for Platt scaling. This option is required if `calibrate_model <calibrate_model.html>`__ is enabled. 
+The ``calibration_frame`` option specifies the calibration frame that will be used for Platt scaling. This option is required if `calibrate_model <calibrate_model.html>`__ is enabled. 
 
 `Platt scaling <https://en.wikipedia.org/wiki/Platt_scaling>`__ transforms the output of a classification model into a probability distribution over classes. It works by fitting a logistic regression model to a classifier's scores. Platt scaling will generally not affect the ranking of observations. Logloss, however, will generally improve with Platt scaling.
 
