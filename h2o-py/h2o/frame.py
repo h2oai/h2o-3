@@ -97,8 +97,8 @@ class H2OFrame(object):
         self._ex = ExprNode()
         self._ex._children = None
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
-        python_obj = [] if python_obj is None else python_obj
-        self._upload_python_object(python_obj, destination_frame, header, separator,
+        if python_obj is not None:
+            self._upload_python_object(python_obj, destination_frame, header, separator,
                                        column_names, column_types, na_strings)
 
     @staticmethod
@@ -451,9 +451,7 @@ class H2OFrame(object):
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
-            if self.nrows == 0:
-                print("This H2OFrame is empty.")
-            elif H2ODisplay._in_ipy():
+            if H2ODisplay._in_ipy():
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
             else:
