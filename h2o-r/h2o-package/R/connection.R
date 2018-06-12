@@ -528,21 +528,21 @@ h2o.clusterStatus <- function() {
       error = function(err) {
         print(err)
         stop("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
-        "Please download the latest Java SE JDK 7 from the following URL:\n",
-        "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+        "Please download the latest Java SE JDK 8 from the following URL:\n",
+        "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
       }
     )
 
   if(any(grepl("GNU libgcj", jver))) {
     stop("Sorry, GNU Java is not supported for H2O.\n",
-         "Please download the latest Java SE JDK 7 from the following URL:\n",
-         "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+         "Please download the latest Java SE JDK 8 from the following URL:\n",
+         "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
   }
 
   if(any(grepl("Client VM", jver))) {
     warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
-            "Please download the latest Java SE JDK 7 from the following URL:\n",
-            "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+            "Please download the latest Java SE JDK 8 from the following URL:\n",
+            "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
