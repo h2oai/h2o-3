@@ -339,9 +339,9 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
-            if fold_column is not None:
+            if fold_column is not None and fold_column in ignored_columns:
                 ignored_columns.remove(fold_column)
-            if weights_column is not None:
+            if weights_column is not None and weights_column in ignored_columns:
                 ignored_columns.remove(weights_column)
             if ignored_columns is not None:
                 input_spec['ignored_columns'] = list(ignored_columns)
