@@ -8,6 +8,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
+ARG JAVA_VERSIONS='8'
 ARG HIVE_VERSION='2.2.0'
 
 ENV DISTRIBUTION='hdp' \
@@ -22,7 +23,7 @@ ENV DISTRIBUTION='hdp' \
     HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Copy bin and sbin scripts
-COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java scripts/install_python_versions /usr/sbin/
+COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
 
 # Add HDP repository and install packages
 RUN apt-get update && \
@@ -38,16 +39,17 @@ RUN apt-get update && \
 ENV H2O_BRANCH='master'
 
 # Set required env vars and install Java 8 and Pythons
-COPY ${PATH_PREFIX}/../common/sbin/ scripts/install_java scripts/install_python_versions /usr/sbin/
 RUN \
-  chmod 700 /usr/sbin/install_java && \
+  chmod 700 /usr/sbin/install_java_version && \
+  chmod 700 /usr/sbin/install_java_versions && \
   chmod 700 /usr/sbin/install_python_versions && \
   sync && \
-  /usr/sbin/install_java && \
-  /usr/sbin/install_python_versions
+  /usr/sbin/install_python_versions && \
+  /usr/sbin/install_java_versions && \
+  /usr/bin/activate_java_8
 ENV \
-  JAVA_HOME=/usr/lib/jvm/java-8-oracle \
-  PATH=/usr/lib/jvm/java-8-oracle/bin:${PATH}
+  JAVA_HOME=/usr/lib/jvm/java-current-oracle \
+  PATH=/usr/lib/jvm/java-current-oracle/bin:${PATH}
 
 # Chown folders
 RUN chown hdfs:hdfs /usr/hdp/2*/hadoop && \
