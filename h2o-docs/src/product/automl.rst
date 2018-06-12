@@ -160,8 +160,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     aml <- h2o.automl(x = x, y = y, 
                       training_frame = train,
-                      max_runtime_secs = 30,
-                      keep_cross_validation_models=FALSE)
+                      max_runtime_secs = 30)
 
     # View the AutoML Leaderboard
     lb <- aml@leaderboard
@@ -219,7 +218,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     test[y] = test[y].asfactor()
     
     # Run AutoML for 30 seconds
-    aml = H2OAutoML(max_runtime_secs = 30, keep_cross_validation_models=False)
+    aml = H2OAutoML(max_runtime_secs = 30)
     aml.train(x = x, y = y, 
               training_frame = train)
 
