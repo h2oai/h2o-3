@@ -256,7 +256,7 @@ Defining a GBM Model
 
 -  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
 
--  `calibrate_frame <algo-params/calibrate_frame.html>`__: Specifies the frame to be used for Platt scaling.
+-  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
 -  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
 
