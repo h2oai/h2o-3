@@ -106,6 +106,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         Futures fs = new Futures();
         final double meanResponse[] = new double[colVals.length];
         final double stddevResponse[] = new double[colVals.length];
+        final double stddevOfTheMean[] = new double[colVals.length];
 
         final boolean cat = fr.vec(col).isCategorical();
 
@@ -128,9 +129,11 @@ public class PartialDependence extends Lockable<PartialDependence> {
                 if (_model_id.get()._output.nclasses() == 2) {
                   meanResponse[which] = preds.vec(2).mean();
                   stddevResponse[which] = preds.vec(2).sigma();
+                  stddevOfTheMean[which] = preds.vec(2).sigma()/ preds.numRows();
                 } else if (_model_id.get()._output.nclasses() == 1) {
                   meanResponse[which] = preds.vec(0).mean();
                   stddevResponse[which] = preds.vec(0).sigma();
+                  stddevOfTheMean[which] = preds.vec(0).sigma()/ preds.numRows();
                 } else throw H2O.unimpl();
               } finally {
                 if (preds != null) preds.remove();
@@ -143,30 +146,12 @@ public class PartialDependence extends Lockable<PartialDependence> {
         }
         fs.blockForPending();
 
-        /*
-        // baseline
-        double baselineMeanResponse;
-        Frame preds = null;
-        try {
-          preds = _model_id.get().score(_frame_id.get());
-          if (_model_id.get()._output.nclasses() == 2) {
-            baselineMeanResponse = preds.vec(2).mean();
-          } else if (_model_id.get()._output.nclasses() == 1) {
-            baselineMeanResponse = preds.vec(0).mean();
-          } else throw H2O.unimpl();
-        } finally {
-          if (preds!=null) preds.remove();
-        }
-        */
-
-//        Log.info("Baseline: " + baselineMeanResponse);
-//        Log.info(Arrays.toString(meanResponse));
         _partial_dependence_data[i] = new TwoDimTable("PartialDependence",
                 ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "'"),
                 new String[actualbins],
-                new String[]{_cols[i], "mean_response", "stddev_response"},
-                new String[]{cat ? "string" : "double", "double", "double"},
-                new String[]{cat ? "%s" : "%5f", "%5f", "%5f"}, null);
+                new String[]{_cols[i], "mean_response", "stddev_response", "std_error_mean_response"},
+                new String[]{cat ? "string" : "double", "double", "double", "double"},
+                new String[]{cat ? "%s" : "%5f", "%5f", "%5f", "%5f"}, null);
         for (int j = 0; j < meanResponse.length; ++j) {
           if (fr.vec(col).isCategorical()) {
             _partial_dependence_data[i].set(j, 0, fr.vec(col).domain()[(int) colVals[j]]);
@@ -175,6 +160,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
           }
           _partial_dependence_data[i].set(j, 1, meanResponse[j]);
           _partial_dependence_data[i].set(j, 2, stddevResponse[j]);
+          _partial_dependence_data[i].set(j, 3, stddevOfTheMean[j]);
         }
         _job.update(1);
         update(_job);
