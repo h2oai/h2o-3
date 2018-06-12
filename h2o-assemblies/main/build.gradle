@@ -52,7 +52,6 @@ for (comp in optionalComponents) {
 }
 
 shadowJar { 
-  zip64 true
   mergeServiceFiles()
   classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
