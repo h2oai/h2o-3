@@ -40,9 +40,17 @@ This section describes how to install and start H2O Flow (H2O-3 web offering) in
 
 6. Start H2O-3 using one of the following methods:
 
-  **Python**: Run ``h2o.connect(address, port=443, username, password)``
+  **Python**: Run the following
 
-  **R**: Run ``h2o.connect(address, port=443, username, password)``
+  ::
+
+    h2o.connect(url="https://[external ip]:443", auth=(username, password))
+
+  **R**: Run the following
+
+  ::
+
+    h2o.connect(ip="[external ip]", port=443, https=TRUE, username=username, password=password)
 
   **Flow**: In your browser, go to http://[External_IP]:443 or https://[External_IP]:80 to start Flow. Enter your username and password when prompted. 
 
