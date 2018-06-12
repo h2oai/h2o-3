@@ -14,10 +14,10 @@ import static water.fvec.Vec.makeCon;
 
 public class SQLManager {
 
-  private final static String TEMP_TABLE_NAME = "table_for_h2o_import";
+  private static final String TEMP_TABLE_NAME = "table_for_h2o_import";
   private static final String MAX_USR_CONNECTIONS_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max";
   //A target upper bound on number of connections to database
-  private final static int MAX_CONNECTIONS = 100;
+  private static final int MAX_CONNECTIONS = 100;
   //A lower bound on number of connections to database per node
   private static final int MIN_CONNECTIONS_PER_NODE = 1;
   private static final String NETEZZA_DB_TYPE = "netezza";
