@@ -27,9 +27,7 @@ public class SQLManagerTest {
   public void testConnectionPoolSize() throws Exception {
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null);
-    frame._cloudSize = 1;
-    frame._nthreads = 100;
-    Integer maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
+    Integer maxConnectionsPerNode = frame.getMaxConnectionsPerNode(1, (short) 100);
     //Even if there are 100 available processors on a single node, there should be only limited number of connections
     // in the pool.
     Assert.assertEquals(Integer.valueOf(System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")),
@@ -40,9 +38,7 @@ public class SQLManagerTest {
   public void testConnectionPoolSizeOneProcessor() throws Exception {
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null);
-    frame._cloudSize = 1;
-    frame._nthreads = 1;
-    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
+    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode(1, (short) 1);
     //The user-defined limit for number of connections in the pool is 7, however there is only one processor.
     Assert.assertEquals(1,
         maxConnectionsPerNode);
@@ -56,9 +52,8 @@ public class SQLManagerTest {
   public void testConnectionPoolSizeZeroProcessors() throws Exception {
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null);
-    frame._cloudSize = 1;
-    frame._nthreads = -1;
-    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
+
+    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode(1, (short) -1);
     Assert.assertEquals(1,
         maxConnectionsPerNode);
   }
@@ -68,9 +63,7 @@ public class SQLManagerTest {
     H2O.ARGS.nthreads = 10;
     SQLManager.SqlTableToH2OFrame frame = new SQLManager.SqlTableToH2OFrame("", "", false,
         "", "", "", 1, 10, null);
-    frame._nthreads = 10;
-    frame._cloudSize = 2;
-    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode();
+    int maxConnectionsPerNode = frame.getMaxConnectionsPerNode(2, (short) 10);
     int expectedConnectionsPerNode = Integer.valueOf(
         System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")
     ).intValue() / 2;

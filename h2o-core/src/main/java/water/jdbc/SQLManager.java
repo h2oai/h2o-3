@@ -238,8 +238,6 @@ public class SQLManager {
     final int _numCol, _nChunks;
     final boolean _needFetchClause;
     final Job _job;
-    transient int _cloudSize;
-    transient int _nthreads;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
@@ -258,7 +256,7 @@ public class SQLManager {
 
     @Override
     protected void setupLocal() {
-      final int conPerNode = getMaxConnectionsPerNode();
+      final int conPerNode = getMaxConnectionsPerNode(H2O.getCloudSize(), H2O.ARGS.nthreads);
       Log.info("Database connections per node: " + conPerNode);
       sqlConn = new ArrayBlockingQueue<>(conPerNode);
       try {
@@ -269,27 +267,25 @@ public class SQLManager {
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
-      _cloudSize = H2O.getCloudSize();
-      _nthreads = H2O.ARGS.nthreads;
     }
 
     /**
      * @return Number of connections to an SQL database to be opened on a single node.
      */
-    int getMaxConnectionsPerNode() {
+    int getMaxConnectionsPerNode(final int cloudSize, final short nThreads) {
       int conPerNode;
       final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
         try {
           Integer connectionAmount = Integer.valueOf(userDefinedMaxConnections);
           if (connectionAmount > 0 && connectionAmount < MAX_CONNECTIONS) {
-            conPerNode = calculateLocalConnectionCount(connectionAmount);
+            conPerNode = calculateLocalConnectionCount(connectionAmount, cloudSize, nThreads);
           } else {
-            conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
+            conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads);
           }
         } catch (NumberFormatException e) {
           Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
           + ". Falling back to default settings.");
-          conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS);
+          conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads);
         }
 
       return conPerNode;
@@ -301,9 +297,10 @@ public class SQLManager {
      * @param maxTotalConnections Maximal number of total connections to be opened by the whole cluster
      * @return Number of connections to open per node, within given minmal and maximal range
      */
-    private final int calculateLocalConnectionCount(final int maxTotalConnections) {
-      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / _cloudSize), _nthreads);
-      conPerNode = Math.min(conPerNode, maxTotalConnections / _cloudSize);
+    private final int calculateLocalConnectionCount(final int maxTotalConnections, final int cloudSize,
+                                                    final short nThreads) {
+      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / cloudSize), nThreads);
+      conPerNode = Math.min(conPerNode, maxTotalConnections / cloudSize);
       //Make sure at least some connections are available to a node
       return Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
     }
