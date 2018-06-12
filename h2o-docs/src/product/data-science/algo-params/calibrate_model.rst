@@ -11,7 +11,7 @@ The ``calibrate_model`` option allows you to specify Platt scaling in GBM and DR
 
 The ``calibrate_model`` option is disabled by default. When enabled, the calibrated probabilities will be appended to the frame with the original prediction. 
 
-Note that when this option is enabled, then you must also specify the calibration dataframe (specified with `calibrate_frame <calibrate_frame.html>`__) that will be used for Platt scaling. A best practice is to split the original dataset into training and calibration sets. 
+Note that when this option is enabled, then you must also specify the calibration dataframe (specified with `calibration_frame <calibration_frame.html>`__) that will be used for Platt scaling. A best practice is to split the original dataset into training and calibration sets. 
 
 Refer to the following for more information about Platt scaling:
 
@@ -21,7 +21,7 @@ Refer to the following for more information about Platt scaling:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `calibrate_frame <calibrate_frame.html>`__
+- `calibration_frame <calibration_frame.html>`__
 
 
 Examples
