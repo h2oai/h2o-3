@@ -106,7 +106,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         Futures fs = new Futures();
         final double meanResponse[] = new double[colVals.length];
         final double stddevResponse[] = new double[colVals.length];
-        final double stdErrorofTheMeanResponse[] = new double[colVals.length];
+        final double stdErrorOfTheMeanResponse[] = new double[colVals.length];
 
         final boolean cat = fr.vec(col).isCategorical();
 
@@ -129,11 +129,11 @@ public class PartialDependence extends Lockable<PartialDependence> {
                 if (_model_id.get()._output.nclasses() == 2) {
                   meanResponse[which] = preds.vec(2).mean();
                   stddevResponse[which] = preds.vec(2).sigma();
-                  stdErrorofTheMeanResponse[which] = preds.vec(2).sigma()/ preds.numRows();
+                  stdErrorOfTheMeanResponse[which] = preds.vec(2).sigma()/ Math.sqrt(preds.numRows());
                 } else if (_model_id.get()._output.nclasses() == 1) {
                   meanResponse[which] = preds.vec(0).mean();
                   stddevResponse[which] = preds.vec(0).sigma();
-                  stdErrorofTheMeanResponse[which] = preds.vec(0).sigma()/ preds.numRows();
+                  stdErrorOfTheMeanResponse[which] = preds.vec(0).sigma()/ Math.sqrt(preds.numRows());
                 } else throw H2O.unimpl();
               } finally {
                 if (preds != null) preds.remove();
@@ -160,7 +160,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
           }
           _partial_dependence_data[i].set(j, 1, meanResponse[j]);
           _partial_dependence_data[i].set(j, 2, stddevResponse[j]);
-          _partial_dependence_data[i].set(j, 3, stdErrorofTheMeanResponse[j]);
+          _partial_dependence_data[i].set(j, 3, stdErrorOfTheMeanResponse[j]);
         }
         _job.update(1);
         update(_job);
