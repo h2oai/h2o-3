@@ -1,5 +1,5 @@
-Cox Proportional Hazards
-------------------------
+Cox Proportional Hazards (CoxPH)
+--------------------------------
 
 **Note** CoxPH is not yet supported in Python. It is supported in R and Flow only.
 
