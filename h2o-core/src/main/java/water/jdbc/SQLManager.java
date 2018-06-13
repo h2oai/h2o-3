@@ -14,9 +14,10 @@ import static water.fvec.Vec.makeCon;
 
 public class SQLManager {
 
-  private final static String TEMP_TABLE_NAME = "table_for_h2o_import";
+  private static final String TEMP_TABLE_NAME = "table_for_h2o_import";
+  private static final String MAX_USR_CONNECTIONS_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max";
   //A target upper bound on number of connections to database
-  private final static int MAX_CONNECTIONS = 100;
+  private static final int MAX_CONNECTIONS = 100;
   //A lower bound on number of connections to database per node
   private static final int MIN_CONNECTIONS_PER_NODE = 1;
   private static final String NETEZZA_DB_TYPE = "netezza";
@@ -39,8 +40,6 @@ public class SQLManager {
   public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
                                           final String username, final String password, final String columns,
                                           boolean optimize) {
-    
-    
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
@@ -192,8 +191,8 @@ public class SQLManager {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns, 
-                numCol, _v.nChunks(), j).doAll(columnH2OTypes, _v)
+        ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, _v.nChunks());
+        Frame fr = new SqlTableToH2OFrame(finalTable, needFetchClause, columns, numCol, j, provider).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -206,6 +205,104 @@ public class SQLManager {
     j.start(work, _v.nChunks());
     
     return j;
+  }
+
+  static class ConnectionPoolProvider extends Iced<ConnectionPoolProvider> {
+
+    private String _url;
+    private String _user;
+    private String _password;
+    private int _nChunks;
+
+    /**
+     * Instantiates ConnectionPoolProvider
+     * @param url       Database URL (JDBC format)
+     * @param user      Database username
+     * @param password  Username's password
+     * @param nChunks   Number of chunks
+     */
+    ConnectionPoolProvider(String url, String user, String password, int nChunks) {
+      _url = url;
+      _user = user;
+      _password = password;
+      _nChunks = nChunks;
+    }
+
+    public ConnectionPoolProvider() {} // Externalizable classes need no-args constructor
+
+    /**
+     * Creates a connection pool for given target database, based on current H2O environment
+     *
+     * @return A connection pool, guaranteed to contain at least 1 connection per node if the database is reachable
+     * @throws RuntimeException Thrown when database is unreachable
+     */
+    ArrayBlockingQueue<Connection> createConnectionPool() {
+      return createConnectionPool(H2O.getCloudSize(), H2O.ARGS.nthreads);
+    }
+
+    /**
+     * Creates a connection pool for given target database, based on current H2O environment
+     *
+     * @param cloudSize Size of H2O cloud
+     * @param nThreads  Number of maximum threads available
+     * @return A connection pool, guaranteed to contain at least 1 connection per node if the database is reachable
+     * @throws RuntimeException Thrown when database is unreachable
+     */
+    ArrayBlockingQueue<Connection> createConnectionPool(final int cloudSize, final short nThreads)
+        throws RuntimeException {
+
+      final int maxConnectionsPerNode = getMaxConnectionsPerNode(cloudSize, nThreads, _nChunks);
+      Log.info("Database connections per node: " + maxConnectionsPerNode);
+      final ArrayBlockingQueue<Connection> connectionPool = new ArrayBlockingQueue<Connection>(maxConnectionsPerNode);
+
+      try {
+        for (int i = 0; i < maxConnectionsPerNode; i++) {
+          Connection conn = DriverManager.getConnection(_url, _user, _password);
+          connectionPool.add(conn);
+        }
+      } catch (SQLException ex) {
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
+      }
+
+      return connectionPool;
+
+    }
+
+    /**
+     * @return Number of connections to an SQL database to be opened on a single node.
+     */
+    static int getMaxConnectionsPerNode(final int cloudSize, final short nThreads, final int nChunks) {
+      int conPerNode;
+      final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
+      try {
+        Integer connectionAmount = Integer.valueOf(userDefinedMaxConnections);
+        if (connectionAmount > 0 && connectionAmount < MAX_CONNECTIONS) {
+          conPerNode = calculateLocalConnectionCount(connectionAmount, cloudSize, nThreads, nChunks);
+        } else {
+          conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads, nChunks);
+        }
+      } catch (NumberFormatException e) {
+        Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
+            + ". Falling back to default settings.");
+        conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads, nChunks);
+      }
+
+      return conPerNode;
+    }
+
+    /**
+     * Counts number of connections per node from give maximal number of connections for the whole cluster
+     *
+     * @param maxTotalConnections Maximal number of total connections to be opened by the whole cluster
+     * @return Number of connections to open per node, within given minmal and maximal range
+     */
+    private static final int calculateLocalConnectionCount(final int maxTotalConnections, final int cloudSize,
+                                                           final short nThreads, final int nChunks) {
+      int conPerNode = (int) Math.min(Math.ceil((double) nChunks / cloudSize), nThreads);
+      conPerNode = Math.min(conPerNode, maxTotalConnections / cloudSize);
+      //Make sure at least some connections are available to a node
+      return Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
+    }
   }
 
   /**
@@ -234,44 +331,28 @@ public class SQLManager {
     }
   }
 
-  private static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
-    final String _url, _table, _user, _password, _columns;
-    final int _numCol, _nChunks;
+  static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
+    final String _table, _columns;
+    final int _numCol;
     final boolean _needFetchClause;
     final Job _job;
+    final ConnectionPoolProvider _poolProvider;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(String url, String table, boolean needFetchClause, String user, String password, 
-                              String columns, int numCol, int nChunks, Job job) {
-      _url = url;
+    public SqlTableToH2OFrame(final String table, final boolean needFetchClause, final String columns, final int numCol,
+                              final Job job, final ConnectionPoolProvider poolProvider) {
       _table = table;
       _needFetchClause = needFetchClause;
-      _user = user;
-      _password = password;
       _columns = columns;
       _numCol = numCol;
-      _nChunks = nChunks;
       _job = job;
-
+      _poolProvider = poolProvider;
     }
 
     @Override
     protected void setupLocal() {
-      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
-      conPerNode = Math.min(conPerNode, SQLManager.MAX_CONNECTIONS / H2O.getCloudSize());
-      //Make sure at least some connections are available to a node
-      conPerNode = Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
-      Log.info("Database connections per node: " + conPerNode);
-      sqlConn = new ArrayBlockingQueue<>(conPerNode);
-      try {
-        for (int i = 0; i < conPerNode; i++) {
-          Connection conn = DriverManager.getConnection(_url, _user, _password);
-          sqlConn.add(conn);
-        }
-      } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
-      }
+      sqlConn = _poolProvider.createConnectionPool();
     }
 
     @Override
