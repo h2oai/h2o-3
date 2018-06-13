@@ -191,10 +191,8 @@ public class SQLManager {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        ArrayBlockingQueue<Connection> connectionPool = ConnectionPoolProvider.createConnectionPool(connection_url,
-            username, password, H2O.getCloudSize(), H2O.ARGS.nthreads, _v.nChunks());
-        Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns,
-            numCol, j, connectionPool).doAll(columnH2OTypes, _v)
+        ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, _v.nChunks());
+        Frame fr = new SqlTableToH2OFrame(finalTable, needFetchClause, columns, numCol, j, provider).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -209,36 +207,61 @@ public class SQLManager {
     return j;
   }
 
-  static class ConnectionPoolProvider {
+  static class ConnectionPoolProvider extends Iced<ConnectionPoolProvider> {
+
+    private String _url;
+    private String _user;
+    private String _password;
+    private int _nChunks;
+
+    /**
+     * Instantiates ConnectionPoolProvider
+     * @param url       Database URL (JDBC format)
+     * @param user      Database username
+     * @param password  Username's password
+     * @param nChunks   Number of chunks
+     */
+    ConnectionPoolProvider(String url, String user, String password, int nChunks) {
+      _url = url;
+      _user = user;
+      _password = password;
+      _nChunks = nChunks;
+    }
+
+    public ConnectionPoolProvider() {} // Externalizable classes need no-args constructor
 
     /**
      * Creates a connection pool for given target database, based on current H2O environment
      *
-     * @param url       Database URL (JDBC format)
-     * @param user      Database username
-     * @param password  Username's password
-     * @param cloudSize Size of H2O cloud
-     * @param nThreads  Number of maximum threads available
-     * @param nChunks   Number of chunks
      * @return A connection pool, guaranteed to contain at least 1 connection per node if the database is reachable
      * @throws RuntimeException Thrown when database is unreachable
      */
-    static ArrayBlockingQueue<Connection> createConnectionPool(final String url, final String user,
-                                                               final String password, final int cloudSize,
-                                                               final short nThreads, final int nChunks)
+    ArrayBlockingQueue<Connection> createConnectionPool() {
+      return createConnectionPool(H2O.getCloudSize(), H2O.ARGS.nthreads);
+    }
+
+    /**
+     * Creates a connection pool for given target database, based on current H2O environment
+     *
+     * @param cloudSize Size of H2O cloud
+     * @param nThreads  Number of maximum threads available
+     * @return A connection pool, guaranteed to contain at least 1 connection per node if the database is reachable
+     * @throws RuntimeException Thrown when database is unreachable
+     */
+    ArrayBlockingQueue<Connection> createConnectionPool(final int cloudSize, final short nThreads)
         throws RuntimeException {
 
-      final int maxConnectionsPerNode = getMaxConnectionsPerNode(cloudSize, nThreads, nChunks);
+      final int maxConnectionsPerNode = getMaxConnectionsPerNode(cloudSize, nThreads, _nChunks);
       Log.info("Database connections per node: " + maxConnectionsPerNode);
       final ArrayBlockingQueue<Connection> connectionPool = new ArrayBlockingQueue<Connection>(maxConnectionsPerNode);
 
       try {
         for (int i = 0; i < maxConnectionsPerNode; i++) {
-          Connection conn = DriverManager.getConnection(url, user, password);
+          Connection conn = DriverManager.getConnection(_url, _user, _password);
           connectionPool.add(conn);
         }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + url);
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
 
       return connectionPool;
@@ -309,24 +332,27 @@ public class SQLManager {
   }
 
   static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
-    final String _url, _table, _user, _password, _columns;
+    final String _table, _columns;
     final int _numCol;
     final boolean _needFetchClause;
     final Job _job;
+    final ConnectionPoolProvider _poolProvider;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(final String url, final String table, final boolean needFetchClause, final String user, final String password,
-                              final String columns, final int numCol, final Job job, ArrayBlockingQueue<Connection> connectionPool) {
-      _url = url;
+    public SqlTableToH2OFrame(final String table, final boolean needFetchClause, final String columns, final int numCol,
+                              final Job job, final ConnectionPoolProvider poolProvider) {
       _table = table;
       _needFetchClause = needFetchClause;
-      _user = user;
-      _password = password;
       _columns = columns;
       _numCol = numCol;
       _job = job;
-      sqlConn = connectionPool;
+      _poolProvider = poolProvider;
+    }
+
+    @Override
+    protected void setupLocal() {
+      sqlConn = _poolProvider.createConnectionPool();
     }
 
     @Override
