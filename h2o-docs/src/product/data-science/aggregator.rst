@@ -1,5 +1,5 @@
-Aggregagtor
------------
+Aggregator
+----------
 
 Introduction
 ~~~~~~~~~~~~
