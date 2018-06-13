@@ -29,7 +29,7 @@ test-package-py:
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList h2o-py/scripts/h2o-py-test-setup.py
+	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList tests/pyunitSingleNodeList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -57,6 +57,10 @@ test-py-booklets:
 test-pyunit-small:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist ../../tests/pyunitAutoMLList
+
+test-pyunit-single-node:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 3g --testlist ../../tests/pyunitSingleNodeList
 
 test-pyunit-small-automl:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
