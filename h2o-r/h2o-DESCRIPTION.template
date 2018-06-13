@@ -19,7 +19,8 @@ NeedsCompilation: no
 SystemRequirements: Java (>= 7)
 Depends: R (>= 2.13.0),
          methods,
-         stats
+         stats,
+         survival
 Imports: graphics,
          tools,
          utils,
@@ -30,8 +31,7 @@ Suggests: ggplot2,
           Matrix,
           slam,
           bit64 (>= 0.9.7),
-          data.table (>= 1.9.8),
-          survival
+          data.table (>= 1.9.8)
 Collate:
          'aggregator.R'
          'astfun.R'

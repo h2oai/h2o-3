@@ -297,6 +297,22 @@ setClass("H2OWordEmbeddingModel", contains="H2OModel")
 #' @export
 setClass("H2OCoxPHModel", contains="H2OModel")
 
+#' @rdname H2OCoxPHModel-class
+#' @param object an \code{H2OCoxPHModel} object.
+#' @export
+setMethod("show", "H2OCoxPHModel", function(object) {
+  o <- object
+  model.parts <- .model.parts(o)
+  m <- model.parts$m
+  cat("Model Details:\n")
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model ID: ", o@model_id, "\n")
+
+  # summary
+  get("print.coxph", getNamespace("survival"))(.as.survival.coxph.model(o@model))
+})
+
 #'
 #' The H2OCoxPHModelSummary object.
 #'
@@ -307,37 +323,19 @@ setClass("H2OCoxPHModel", contains="H2OModel")
 #' @export
 setClass("H2OCoxPHModelSummary", representation(summary="list"))
 
-#' @rdname H2OCoxPHModel-class
-#' @param object an \code{H2OCoxPHModel} object.
-#' @export
-setMethod("show", "H2OCoxPHModel", function(object) {
-    o <- object
-    model.parts <- .model.parts(o)
-    m <- model.parts$m
-    cat("Model Details:\n")
-    cat("==============\n\n")
-    cat(class(o), ": ", o@algorithm, "\n", sep = "")
-    cat("Model ID: ", o@model_id, "\n")
-
-    # summary
-    get("print.coxph", getNamespace("survival"))(.as.survival.coxph.model(o@model))
-})
-
-#'
-#' Print the CoxPH Model Summary
-#'
-#' @param object An \linkS4class{H2OCoxPHModelSummary} object.
-#' @param ... further arguments to be passed on (currently unimplemented)
+#' @rdname H2OCoxPHModelSummary-class
+#' @param object An \code{H2OCoxPHModelSummary} object.
 #' @export
 setMethod("show", "H2OCoxPHModelSummary", function(object)
   get("print.summary.coxph", getNamespace("survival"))(object@summary))
 
 #'
-#' Print the CoxPH Model Summary
+#' Summary method for H2OCoxPHModel objects
 #'
 #' @param object an \code{H2OCoxPHModel} object.
 #' @param conf.int a specification of the confidence interval.
 #' @param scale a scale.
+#' @importFrom stats qnorm
 #' @export
 setMethod("summary", "H2OCoxPHModel",
           function(object, conf.int = 0.95, scale = 1) {
@@ -345,7 +343,7 @@ setMethod("summary", "H2OCoxPHModel",
             if (conf.int == 0)
               res@summary$conf.int <- NULL
             else {
-              z <- stats::qnorm((1 + conf.int)/2, 0, 1)
+              z <- qnorm((1 + conf.int)/2, 0, 1)
               coef <- scale * res@summary$coefficients[,    "coef",  drop = TRUE]
               se   <- scale * res@summary$coefficients[, "se(coef)", drop = TRUE]
               shift <- z * se
@@ -360,9 +358,20 @@ setMethod("summary", "H2OCoxPHModel",
             res
           })
 
+#' @rdname H2OCoxPHModel-class
+#' @param ... additional arguments to pass on.
+#' @export
 coef.H2OCoxPHModel        <- function(object, ...) .as.survival.coxph.model(object@model)$coefficients
+
+#' @rdname H2OCoxPHModelSummary-class
+#' @param ... additional arguments to pass on.
+#' @export
 coef.H2OCoxPHModelSummary <- function(object, ...) object@summary$coefficients
 
+#' @rdname H2OCoxPHModel-class
+#' @param fit an \code{H2OCoxPHModel} object.
+#' @param scale optional numeric specifying the scale parameter of the model.
+#' @param k numeric specifying the weight of the equivalent degrees of freedom.
 extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
   fun <- get("extractAIC.coxph", getNamespace("stats"))
   if (missing(scale))
@@ -371,9 +380,18 @@ extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
     fun(.as.survival.coxph.model(fit@model), scale = scale, k = k)
 }
 
+#' @rdname H2OCoxPHModel-class
+#' @export
 logLik.H2OCoxPHModel <- function(object, ...)
   get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 
+#' @rdname H2OCoxPHModel-class
+#' @param formula an \code{H2OCoxPHModel} object.
+#' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
+#' variable names as those that appear in the \code{H2OCoxPHModel} object.
+#' @importFrom stats as.formula
+#' @importFrom survival survfit
+#' @export
 survfit.H2OCoxPHModel <-
 function(formula, newdata, ...)
 {
@@ -400,7 +418,7 @@ function(formula, newdata, ...)
               n.event   = formula@model$n_event,
               n.censor  = formula@model$n_censor,
               surv      = NULL,
-              type      = ifelse(length(stats::as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
+              type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
               cumhaz    = formula@model$cumhaz_0,
               std.err   = NULL,
               upper     = NULL,
@@ -417,6 +435,8 @@ function(formula, newdata, ...)
   res
 }
 
+#' @rdname H2OCoxPHModel-class
+#' @export
 vcov.H2OCoxPHModel <- function(object, ...)
   get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 
