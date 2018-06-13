@@ -1,18 +1,21 @@
 package hex;
 
+import water.H2O;
 import water.Iced;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
 public class ConfusionMatrix extends Iced {
 
-  private static final int MAX_CM_CLASSES = 1000;
+  private static final String MAX_CM_CLASSES_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "cm.maxClasses";
+  private static final int MAX_CM_CLASSES_DEFAULT = 1000;
 
   private TwoDimTable _table;
   public final double[][] _cm; // [actual][predicted], typed as double because of observation weights (which can be doubles)
@@ -32,7 +35,23 @@ public class ConfusionMatrix extends Iced {
   boolean tooLarge() { return size() > maxClasses(); }
 
   static int maxClasses() {
-    return MAX_CM_CLASSES;
+    String maxClassesSpec = System.getProperty(MAX_CM_CLASSES_KEY);
+    if (maxClassesSpec == null)
+      return MAX_CM_CLASSES_DEFAULT;
+    return parseMaxClasses(maxClassesSpec);
+  }
+  static int parseMaxClasses(String maxClassesSpec) {
+    try {
+      int maxClasses = Integer.parseInt(maxClassesSpec);
+      if (maxClasses <= 0) {
+        Log.warn("Using default limit of max classes in a confusion matrix (" + MAX_CM_CLASSES_DEFAULT + ", user specification is invalid: " + maxClasses + ")");
+        return MAX_CM_CLASSES_DEFAULT;
+      } else
+        return maxClasses;
+    } catch (NumberFormatException e) {
+      Log.err("Invalid specification of maximum classes of a confusion matrix: " + maxClassesSpec);
+      return MAX_CM_CLASSES_DEFAULT;
+    }
   }
 
   public final double mean_per_class_error() {
