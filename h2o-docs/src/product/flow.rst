@@ -3,48 +3,24 @@
 Using Flow - H2O's Web UI
 =========================
 
-.. todo:: add section on how to add outside algos to Flows buildModel dropdown menu
-
----------------------------------
-
 About
 ------
 
-H2O Flow is an open-source user interface for H2O. It is a web-based
-interactive environment that allows you to combine code execution, text,
-mathematics, plots, and rich media in a single document.
+H2O Flow is an open-source user interface for H2O. It is a web-based interactive environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document.
 
-With H2O Flow, you can capture, rerun, annotate, present, and share your
-workflow. H2O Flow allows you to use H2O interactively to import files,
-build models, and iteratively improve them. Based on your models, you
-can make predictions and add rich text to create vignettes of your work
-- all within Flow's browser-based environment.
+With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment.
 
-Flow's hybrid user interface seamlessly blends command-line computing
-with a modern graphical user interface. However, rather than displaying
-output as plain text, Flow provides a point-and-click user interface for
-every H2O operation. It allows you to access any H2O object in the form
-of well-organized tabular data.
+Flow's hybrid user interface seamlessly blends command-line computing with a modern graphical user interface. However, rather than displaying output as plain text, Flow provides a point-and-click user interface for every H2O operation. It allows you to access any H2O object in the form of well-organized tabular data.
 
-H2O Flow sends commands to H2O as a sequence of executable cells. The
-cells can be modified, rearranged, or saved to a library. Each cell
-contains an input field that allows you to enter commands, define
-functions, call other functions, and access other cells or objects on
-the page. When you execute the cell, the output is a graphical object,
-which can be inspected to view additional details.
+H2O Flow sends commands to H2O as a sequence of executable cells. The cells can be modified, rearranged, or saved to a library. Each cell contains an input field that allows you to enter commands, define functions, call other functions, and access other cells or objects on the page. When you execute the cell, the output is a graphical object, which can be inspected to view additional details.
 
-While H2O Flow supports REST API, R scripts, and CoffeeScript, no
-programming experience is required to run H2O Flow. You can click your
-way through any H2O operation without ever writing a single line of
-code. You can even disable the input cells to run H2O Flow using only
-the GUI. H2O Flow is designed to guide you every step of the way, by
-providing input prompts, interactive help, and example flows.
+While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows.
 
 
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.16.0.2):
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.20.0.2):
 
   ::
 
@@ -53,11 +29,11 @@ Download Flow
 
 2. Next in your terminal, enter the following command lines one at a time:
 
-  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.16.0.2 folder, and the fourth line runs your jar file.)*::
+  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.20.0.2 folder, and the fourth line runs your jar file.)*::
 
     cd ~/Downloads
-    unzip h2o-3.16.0.2.zip
-    cd h2o-3.16.0.2
+    unzip h2o-3.20.0.2.zip
+    cd h2o-3.20.0.2
     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
@@ -77,9 +53,6 @@ The next time you want to launch Flow, change into the directory that contains y
 How to Use the Interface
 ------------------------
 
-.. todo:: add link to the downloads page or add in infor here (is linking out bad?)
-.. todo:: order this area to cover basics of opening flow, using the interface, saving, getting help
-
 This guide walks through using Flow, H2O's web UI, for machine learning projects.
 
 Accessing Help
@@ -90,26 +63,19 @@ Within the Flow web page, pressing the ``h`` key will open a list of helpful sho
 .. figure:: images/Flow_shortcuts.png
    :alt: help menu
 
-To close this window, click the **X** in the upper-right corner or
-click the **Close** button in the lower-right corner. You can also click
-behind the window to close it. You can also access this list of
-shortcuts by clicking the **Help** menu and selecting **Keyboard
-Shortcuts**.
+To close this window, click the **X** in the upper-right corner or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**.
 
-For additional help, click **Help** > **Assist Me** or click the
-**Assist Me!** button in the row of buttons below the menus.
+For additional help, click **Help** > **Assist Me** or click the **Assist Me!** button in the row of buttons below the menus.
 
 .. figure:: images/Flow_AssistMeButton.png
    :alt: Assist Me
 
-You can also type ``assist`` in a blank cell and press **Ctrl+Enter**. A
-list of common tasks displays to help you find the correct command.
+You can also type ``assist`` in a blank cell and press **Ctrl+Enter**. A list of common tasks displays to help you find the correct command.
 
 .. figure:: images/Flow_assist.png
    :alt: Assist Me links
 
-There are multiple resources to help you get started with Flow in the
-**Help** sidebar.
+There are multiple resources to help you get started with Flow in the **Help** sidebar.
 
 **Note**: To hide the sidebar, click the >> button above it
 
@@ -120,38 +86,30 @@ To display the sidebar if it is hidden, click the >> button
 
   .. figure:: images/Flow_SidebarHide.png
 
-To access this documentation, select the **Flow Web UI...** link below
-the **General** heading in the Help sidebar.
+To access this documentation, select the **Flow Web UI...** link below the **General** heading in the Help sidebar.
 
 Viewing Example Flows
 ^^^^^^^^^^^^^^^^^^^^^
 
 You can explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows:
 
--  Click the **view example Flows** link below the **Quickstart Videos**
-   button in the **Help** sidebar 
+-  Click the **view example Flows** link below the **Quickstart Videos** button in the **Help** sidebar 
    
    |Flow - View Example Flows link|
 
  --OR--
  
--  Click the **Browse installed packs...** link in the **Packs**
-   subsection of the **Help** sidebar. Click the **examples** folder and
-   select the example flow from the list.
+-  Click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list.
 
 .. figure:: images/Flow_ExampleFlows.png
    :alt: Flow Packs
 
-If you have a flow currently open, a confirmation window appears asking
-if the current notebook should be replaced. To load the example flow,
-click the **Load Notebook** button.
+If you have a flow currently open, a confirmation window appears asking if the current notebook should be replaced. To load the example flow, click the **Load Notebook** button.
 
 Viewing REST API Documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To view the REST API documentation, click the **Help** tab in the
-sidebar and then select the type of REST API documentation (**Routes**
-or **Schemas**).
+To view the REST API documentation, click the **Help** tab in the sidebar and then select the type of REST API documentation (**Routes** or **Schemas**).
 
 .. figure:: images/Flow_REST_docs.png
    :alt: REST API documentation
@@ -174,37 +132,26 @@ You can use and modify flows in a variety of ways:
 Using Clips
 ^^^^^^^^^^^
 
-Clips enable you to save cells containing your workflow for later reuse.
-To save a cell as a clip, click the paperclip icon to the right of the
-cell (highlighted in the red box in the following screenshot).
+Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot).
 |Paperclip icon|
 
-To use a clip in a workflow, click the "Clips" tab in the sidebar on the
-right.
+To use a clip in a workflow, click the "Clips" tab in the sidebar on the right.
 
 .. figure:: images/Flow_clips.png
    :alt: Clips tab
 
-All saved clips, including the default system clips (such as ``assist``,
-``importFiles``, and ``predict``), are listed. Clips you have created
-are listed under the "My Clips" heading. To select a clip to insert,
-click the circular button to the left of the clip name. To delete a
-clip, click the trashcan icon to right of the clip name.
+All saved clips, including the default system clips (such as ``assist``, ``importFiles``, and ``predict``), are listed. Clips you have created are listed under the "My Clips" heading. To select a clip to insert, click the circular button to the left of the clip name. To delete a clip, click the trashcan icon to right of the clip name.
 
 **NOTE**: The default clips listed under "System" cannot be deleted.
 
-Deleted clips are stored in the trash. To permanently delete all clips
-in the trash, click the **Empty Trash** button.
+Deleted clips are stored in the trash. To permanently delete all clips in the trash, click the **Empty Trash** button.
 
-**NOTE**: Saved data, including flows and clips, are persistent as long
-as the same IP address is used for the cluster. If a new IP is used,
-previously saved flows and clips are not available.
+**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available.
 
 Viewing Outlines
 ^^^^^^^^^^^^^^^^
 
-The **Outline** tab in the sidebar displays a brief summary of the cells
-currently used in your flow; essentially, a command history.
+The **Outline** tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history.
 
 -  To jump to a specific cell, click the cell description.
 -  To delete a cell, select it and press the X key on your keyboard.
@@ -231,9 +178,7 @@ To confirm the name, click the checkmark to the right of the name field.
 .. figure:: images/Flow_rename2.png
    :alt: Confirm Name
 
-To reuse a saved flow, click the "Flows" tab in the sidebar, then click
-the flow name. To delete a saved flow, click the trashcan icon to the
-right of the flow name.
+To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name.
 
 .. figure:: images/Flow_flows.png
    :alt: Flows
@@ -241,90 +186,64 @@ right of the flow name.
 Finding Saved Flows on Your Disk
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, flows are saved to the ``h2oflows`` directory underneath
-your home directory. The directory where flows are saved is printed to
-stdout:
+By default, flows are saved to the ``h2oflows`` directory underneath your home directory. The directory where flows are saved is printed to stdout:
 
 ::
 
     03-20 14:54:20.945 172.16.2.39:54323     95667  main      INFO: Flow dir: '/Users/[YOUR_USER_NAME]/h2oflows'
 
-To back up saved flows, copy this directory to your preferred backup
-location.
+To back up saved flows, copy this directory to your preferred backup location.
 
-To specify a different location for saved flows, use the command-line
-argument ``-flow_dir`` when launching H2O:
+To specify a different location for saved flows, use the command-line argument ``-flow_dir`` when launching H2O:
 
 ::
 
   java -jar h2o.jar -flow_dir /[ENTER_PATH_TO_FLOW_DIRECTORY_HERE]
 
-If the directory that you enter in place of ``[ENTER_PATH_TO_FLOW_DIRECTORY_HERE]`` does not exist, it will be created
-the first time you save a flow.
+If the directory that you enter in place of ``[ENTER_PATH_TO_FLOW_DIRECTORY_HERE]`` does not exist, it will be created the first time you save a flow.
 
 Saving Flows on a Hadoop Cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are running H2O Flow on a Hadoop cluster, H2O will try to find
-the HDFS home directory to use as the default directory for flows. If
-the HDFS home directory is not found, flows cannot be saved unless a
-directory is specified while launching using ``-flow_dir``:
+If you are running H2O Flow on a Hadoop cluster, H2O will try to find the HDFS home directory to use as the default directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified while launching using ``-flow_dir``:
 
 ::
 
   hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName -flow_dir hdfs://[HOST]:[PORT_NUMBER]/[PATH_TO_DIRECTORY_HERE]
 
-The location specified in ``-flow_dir`` may be either an hdfs or regular
-filesystem directory. If the directory does not exist, it will be
-created the first time you save a flow.
+The location specified in ``-flow_dir`` may be either an hdfs or regular filesystem directory. If the directory does not exist, it will be created the first time you save a flow.
 
 Copying Flows
 ^^^^^^^^^^^^^
 
-To create a copy of the current flow, select the **Flow** menu, then
-click **Make a Copy**. The name of the current flow changes to
-``Copy of <FlowName>`` (where ``<FlowName>`` is the name of the flow).
-You can save the duplicated flow using this name by clicking **Flow** >
-**Save Flow**, or rename it before saving. (Refer to `Saving Flows`_.)
+To create a copy of the current flow, select the **Flow** menu, then click **Make a Copy**. The name of the current flow changes to ``Copy of <FlowName>`` (where ``<FlowName>`` is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save Flow**, or rename it before saving. (Refer to `Saving Flows`_.)
 
 Downloading Flows
 ^^^^^^^^^^^^^^^^^
 
-After saving a flow as a notebook, click the **Flow** menu, then select
-**Download this Flow**. A new window opens and the saved flow is
-downloaded to the default downloads folder on your computer. The file is
-exported as ``<filename>.flow``, where ``<filename>`` is the name
-specified when the flow was saved.
+After saving a flow as a notebook, click the **Flow** menu, then select **Download this Flow**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as ``<filename>.flow``, where ``<filename>`` is the name specified when the flow was saved.
 
-**Caution**: You must have an active internet connection to download
-flows.
+**Caution**: You must have an active internet connection to download flows.
 
 Loading Flows
 ^^^^^^^^^^^^^
 
-To load a saved flow, click the **Flows** tab in the sidebar at the
-right. In the pop-up confirmation window that appears, select **Load
-Notebook**, or click **Cancel** to return to the current flow.
+To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow.
 
 .. figure:: images/Flow_confirmreplace.png
    :alt: Confirm Replace Flow
 
 After clicking **Load Notebook**, the saved flow is loaded.
 
-To load an exported flow, click the **Flow** menu and select **Open
-Flow...**. In the pop-up window that appears, click the **Choose File**
-button and select the exported flow, then click the **Open** button.
+To load an exported flow, click the **Flow** menu and select **Open Flow...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button.
 
 .. figure:: images/Flow_Open.png
    :alt: Open Flow
 
 **Notes**:
 
-    -  Only exported flows using the default .flow filetype are
-       supported. Other filetypes will not open.
-    -  If the current notebook has the same name as the selected file, a
-       pop-up confirmation appears to confirm that the current notebook
-       should be overwritten.
+    -  Only exported flows using the default .flow filetype are supported. Other filetypes will not open.
+    -  If the current notebook has the same name as the selected file, a pop-up confirmation appears to confirm that the current notebook should be overwritten.
 
 --------------
 
@@ -341,9 +260,7 @@ There are two modes for cells: Edit and Command.
 Using Edit Mode
 ^^^^^^^^^^^^^^^
 
-In edit mode, the cell is yellow with a blinking bar
-to indicate where text can be entered and there is an orange flag to the
-left of the cell.
+In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
 .. figure:: images/Flow_EditMode.png
    :alt: Edit Mode
@@ -385,8 +302,7 @@ In command mode, the flag is yellow. The flag also indicates the cell's format:
   .. figure:: images/Flow_redflag.png
      :alt: Cell error
 
-If the cell is executing commands, the flag is teal. The flag returns to
-yellow when the task is complete.
+If the cell is executing commands, the flag is teal. The flag returns to yellow when the task is complete.
 
 .. figure:: images/Flow_cellmode_runningflag.png
    :alt: Cell executing
@@ -396,11 +312,7 @@ yellow when the task is complete.
 Changing Cell Formats
 ^^^^^^^^^^^^^^^^^^^^^
 
-To change the cell's format (for example, from code to Markdown), make
-sure you are in command (not edit) mode and that the cell you want to
-change is selected. The easiest way to do this is to click on the flag
-to the left of the cell. Enter the keyboard shortcut for the format you
-want to use. The flag's text changes to display the current format.
+To change the cell's format (for example, from code to Markdown), make sure you are in command (not edit) mode and that the cell you want to change is selected. The easiest way to do this is to click on the flag to the left of the cell. Enter the keyboard shortcut for the format you want to use. The flag's text changes to display the current format.
 
 +-------------+---------------------+
 | Cell Mode   | Keyboard Shortcut   |
@@ -427,18 +339,14 @@ want to use. The flag's text changes to display the current format.
 Running Cells
 ^^^^^^^^^^^^^
 
-The series of buttons at the top of the page below the menus run cells
-in a flow.
+The series of buttons at the top of the page below the menus run cells in a flow.
 
 .. figure:: images/Flow_RunButtons.png
    :alt: Flow - Run Buttons
 
--  To run all cells in the flow, click the **Flow** menu, then click
-   **Run All Cells**.
--  To run the current cell and all subsequent cells, click the **Flow**
-   menu, then click **Run All Cells Below**.
--  To run an individual cell in a flow, confirm the cell is in Edit
-   Mode (refer to `Using Edit Mode`_), then:
+-  To run all cells in the flow, click the **Flow** menu, then click **Run All Cells**.
+-  To run the current cell and all subsequent cells, click the **Flow** menu, then click **Run All Cells Below**.
+-  To run an individual cell in a flow, confirm the cell is in Edit Mode (refer to `Using Edit Mode`_), then:
 
    -  press **Ctrl+Enter**
 
@@ -449,9 +357,7 @@ in a flow.
 Running Flows
 ^^^^^^^^^^^^^
 
-When you run the flow, a progress bar indicates the current status of
-the flow. You can cancel the currently running flow by clicking the
-**Stop** button in the progress bar.
+When you run the flow, a progress bar indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar.
 
 .. figure:: images/Flow_progressbar.png
    :alt: Flow Progress Bar
@@ -461,19 +367,16 @@ When the flow is complete, a message displays in the upper right.
 
 |Flow - Completed Successfully| |Flow - Did Not Complete|
 
-    **Note**: If there is an error in the flow, H2O Flow stops at the
-    cell that contains the error.
+    **Note**: If there is an error in the flow, H2O Flow stops at the cell that contains the error.
 
 Using Keyboard Shortcuts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Here are some important keyboard shortcuts to remember:
 
--  Click a cell and press **Enter** to enter edit mode, which allows you
-   to change the contents of a cell.
+-  Click a cell and press **Enter** to enter edit mode, which allows you to change the contents of a cell.
 -  To exit edit mode, press **Esc**.
--  To execute the contents of a cell, press the **Ctrl** and **Enter**
-   buttons at the same time.
+-  To execute the contents of a cell, press the **Ctrl** and **Enter** buttons at the same time.
 
 The following commands must be entered in Command Mode. (Refer to `Using Command Mode`_.)
 
@@ -481,14 +384,12 @@ The following commands must be entered in Command Mode. (Refer to `Using Command
 -  To add a new cell *below* the current cell, press **b**.
 -  To delete the current cell, press the **d** key *twice*. (**dd**).
 
-You can view these shortcuts by clicking **Help** > **Keyboard
-Shortcuts** or by clicking the **Help** tab in the sidebar.
+You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar.
 
 Using Variables in Cells
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Variables can be used to store information such as download locations.
-To use a variable in Flow:
+Variables can be used to store information such as download locations. To use a variable in Flow:
 
 1. Define the variable in a code cell (for example, ``locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"``).
 
@@ -508,23 +409,15 @@ To further simplify your workflow, you can save the cells containing the variabl
 Using Flow Buttons
 ^^^^^^^^^^^^^^^^^^
 
-There are also a series of buttons at the top of the page below the flow
-name that allow you to save the current flow, add a new cell, move cells
-up or down, run the current cell, and cut, copy, or paste the current
-cell. If you hover over the button, a description of the button's
-function displays.
+There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays.
 
 .. figure:: images/Flow_buttons.png
    :alt: Flow buttons
 
-| You can also use the menus at the top of the screen to edit the order
-  of the cells, toggle specific format types (such as input or output),
-  create models, or score models. You can also access troubleshooting
-  information or obtain help with Flow.
+| You can also use the menus at the top of the screen to edit the order of the cells, toggle specific format types (such as input or output), create models, or score models. You can also access troubleshooting information or obtain help with Flow.
 | |Flow menus|
 
-    **Note**: To disable the code input and use H2O Flow strictly as a
-    GUI, click the **Cell** menu, then **Toggle Cell Input**.
+    **Note**: To disable the code input and use H2O Flow strictly as a GUI, click the **Cell** menu, then **Toggle Cell Input**.
 
 Now that you are familiar with the cell modes, let's import some data.
 
@@ -533,48 +426,30 @@ Now that you are familiar with the cell modes, let's import some data.
 Data
 ----
 
-If you don't have any data of your own to work with, you can find some
-example datasets at http://data.h2o.ai.
+If you don't have any data of your own to work with, you can find some example datasets at http://data.h2o.ai.
 
 Importing Files
 ^^^^^^^^^^^^^^^
 
 There are multiple ways to import data in H2O flow:
 
--  Click the **Assist Me!** button in the row of buttons below the
-   menus, then click the **importFiles** link. Enter the file path in
-   the auto-completing **Search** entry field and press **Enter**.
-   Select the file from the search results and confirm it by clicking
-   the **Add All** link. |Flow - Import Files Auto-Suggest|
+-  Click the **Assist Me!** button in the row of buttons below the menus, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and confirm it by clicking the **Add All** link. |Flow - Import Files Auto-Suggest|
 
--  In a blank cell, select the CS format, then enter
-   ``importFiles ["path/filename.format"]`` (where
-   ``path/filename.format`` represents the complete file path to the
-   file, including the full file name. The file path can be a local file
-   path or a website address. **Note**: For S3 file locations, use the
-   format ``importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]``
+-  In a blank cell, select the CS format, then enter ``importFiles ["path/filename.format"]`` (where ``path/filename.format`` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. **Note**: For S3 file locations, use the format ``importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]``
 
   **Note**: For an example of how to import a single file or a directory in R, refer to the following `example <https://github.com/h2oai/h2o-2/blob/master/R/tests/testdir_hdfs/runit_s3n_basic.R>`__.
 
-After selecting the file to import, the file path displays in the
-"Search Results" section. To import a single file, click the plus sign
-next to the file. To import all files in the search results, click the
-**Add all** link. The files selected for import display in the "Selected
-Files" section. |Import Files|
+After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. |Import Files|
 
  **Note**: If the file is compressed, it will only be read using a single thread. For best performance, we recommend uncompressing the file before importing, as this will allow use of the faster multithreaded distributed parallel reader during import. Please note that .zip files containing multiple files are not currently supported.
 
 -  To import the selected file(s), click the **Import** button.
 
--  To remove all files from the "Selected Files" list, click the **Clear
-   All** link.
+-  To remove all files from the "Selected Files" list, click the **Clear All** link.
 
 -  To remove a specific file, click the **X** next to the file path.
 
-After you click the **Import** button, the raw code for the current job
-displays. A summary displays the results of the file import, including
-the number of imported files and their Network File System (nfs)
-locations.
+After you click the **Import** button, the raw code for the current job displays. A summary displays the results of the file import, including the number of imported files and their Network File System (nfs) locations.
 
 .. figure:: images/Flow_import_results.png
    :alt: Import Files - Results
@@ -583,22 +458,18 @@ locations.
 Uploading Files
 ^^^^^^^^^^^^^^^
 
-To upload a local file, click the **Data** menu and select **Upload
-File...**. Click the **Choose File** button, select the file, click the
-**Choose** button, then click the **Upload** button.
+To upload a local file, click the **Data** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button.
 
 .. figure:: images/Flow_UploadDataset.png
    :alt: File Upload Pop-Up
 
 
-When the file has uploaded successfully, a message displays in the upper
-right and the **Setup Parse** cell displays.
+When the file has uploaded successfully, a message displays in the upper right and the **Setup Parse** cell displays.
 
 .. figure:: images/Flow_FileUploadPass.png
    :alt: File Upload Successful
 
-Ok, now that your data is available in H2O Flow, let's move on to the
-next step: parsing. Click the **Parse these files** button to continue.
+Ok, now that your data is available in H2O Flow, let's move on to the next step: parsing. Click the **Parse these files** button to continue.
 
 --------------
 
@@ -666,15 +537,13 @@ To navigate the data preview, click the **<- Previous page** or **-> Next page**
 .. figure:: images/Flow_PageButtons.png
    :alt: Flow - Pagination buttons
 
-After making your selections, click the **Parse** button. The code for the current job
-displays.
+After making your selections, click the **Parse** button. The code for the current job displays.
 
 .. figure:: images/Flow_parse_code_ex.png
    :alt: Flow - Parse code
 
 
-Since we've submitted a couple of jobs (data import & parse) to H2O now,
-let's take a moment to learn more about jobs in H2O.
+Since we've submitted a couple of jobs (data import & parse) to H2O now, let's take a moment to learn more about jobs in H2O.
 
 --------------
 
@@ -704,8 +573,7 @@ Any command you enter in H2O (such as ``importFiles``) is submitted as a job, wh
 Viewing All Jobs
 ^^^^^^^^^^^^^^^^
 
-To view all jobs, click the **Admin** menu, then click **Jobs**, or
-enter ``getJobs`` in a cell in CS mode.
+To view all jobs, click the **Admin** menu, then click **Jobs**, or enter ``getJobs`` in a cell in CS mode.
 
 .. figure:: images/Flow_getJobs.png
    :alt: View Jobs
@@ -719,8 +587,7 @@ The following information displays:
 -  End time
 -  Run time
 
-To refresh this information, click the **Refresh** button. To view the
-details of the job, click the **View** button.
+To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button.
 
 Viewing Specific Jobs
 ^^^^^^^^^^^^^^^^^^^^^
@@ -739,11 +606,9 @@ The following information displays:
 -  Run time
 -  Progress
 
-**Note**: For a better understanding of how jobs work, make sure to
-review the `Viewing Frames`_ section as well.
+**Note**: For a better understanding of how jobs work, make sure to review the `Viewing Frames`_ section as well.
 
-Ok, now that you understand how to find jobs in H2O, let's submit a new
-one by building a model.
+Ok, now that you understand how to find jobs in H2O, let's submit a new one by building a model.
 
 --------------
 
@@ -764,10 +629,7 @@ There are several ways to build a model, you can:
 
 - Click the drop-down **Model** menu and select the model type from the list
 
-The **Build Model...** button can be accessed from any page containing
-the .hex key for the parsed data (for example, ``getJobs`` >
-``getFrame``). The following image depicts the K-Means model type.
-Available options vary depending on model type.
+The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, ``getJobs`` > ``getFrame``). The following image depicts the K-Means model type. Available options vary depending on model type.
 
 .. figure:: images/Flow_ModelBuilder.png
    :alt: Model Builder
@@ -796,10 +658,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
     :height: 308
     :width: 150
 
-The available options vary depending on the selected model. If an option
-is only available for a specific model type, the model type is listed.
-If no model type is specified, the option is applicable to all model
-types.
+The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types.
 
 -  **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates an ID containing the model type (for example, ``gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596``).
 
@@ -947,7 +806,7 @@ types.
 
 -  **l2**: (DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values.
 
--  **balance_classes**: (GBM, DL) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
+-  **balance_classes**: (GBM, DL, Naive-Bayes, AutoML) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
 
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
@@ -1088,10 +947,9 @@ types.
 
 -  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost) Enable this option to preserve the cross-validation fold assignment.
 
--  **class_sampling_factors**: (DRF, GBM, DL) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
+-  **class_sampling_factors**: (DRF, GBM, DL, Naive-Bayes, AutoML) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
--  **overwrite_with_best_model**: (DL) Check this checkbox to overwrite the final model with the best model found during
-   training. This option is selected by default.
+-  **overwrite_with_best_model**: (DL) Check this checkbox to overwrite the final model with the best model found during training. This option is selected by default.
 
 -  **target_ratio_comm_to_comp**: (DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train_samples_per_iteration** equals -2 (auto-tuning).
 
@@ -1125,8 +983,7 @@ types.
 
 -  **missing_values_handling**: (DL, GLM) Select how to handle missing values (Skip or MeanImputation).
 
--  **quiet_mode**: (DL) Check this checkbox to display less output in the standard output. This option is not selected by
-   default.
+-  **quiet_mode**: (DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
 -  **sparse**: (DL) Check this checkbox to enable sparse data handling, which is more efficient for data with many zero values.
 
@@ -1144,7 +1001,7 @@ types.
 
 -  **export_weights_and_biases**: (DL) To export the neural network weights and biases as H2O frames, check this checkbox.
 
--  **max_after_balance_size**: (DRF, GBM, DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance_classes**.
+-  **max_after_balance_size**: (DRF, GBM, DL, Naive-Bayes, AutoML) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Defaults to 5.0. Requires **balance_classes**.
 
 -  **nbins_top_level**: (DRF, GBM) (For numerical [real/int] columns only) Specify the maximum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.
 
@@ -1211,15 +1068,12 @@ types.
 Viewing Models
 ^^^^^^^^^^^^^^
 
-Click the **Assist Me!** button, then click the **getModels** link, or
-enter ``getModels`` in the cell in CS mode and press **Ctrl+Enter**. A
-list of available models displays.
+Click the **Assist Me!** button, then click the **getModels** link, or enter ``getModels`` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays.
 
 .. figure:: images/Flow_getModels.png
    :alt: Flow Models
 
-To view all current models, you can also click the **Model** menu and
-click **List All Models**.
+To view all current models, you can also click the **Model** menu and click **List All Models**.
 
 Click on a model name to view details about the model. The information that displays varies based on the algorithm that was used to build the model, but it can include the parameters used when building the model, scoring history, training metrics, coefficient tables, and a POJO preview.  
 
@@ -1248,16 +1102,11 @@ Exporting and Importing Models
 
 1. Click the **Model** menu at the top of the screen.
 2. Select *Export Model...*
-3. In the ``exportModel`` cell that appears, select the model from the
-   drop-down *Model:* list.
-4. Enter a location for the exported model in the *Path:* entry field.
-   **Note**: If you specify a location that doesn't exist, it will be
-   created. For example, if you only enter ``test`` in the *Path:* entry
-   field, the model will be exported to ``h2o-3/test``.
-5. To overwrite any files with the same name, check the *Overwrite:*
-   checkbox.
-6. Click the **Export** button. A confirmation message displays when the
-   model has been successfully exported.
+3. In the ``exportModel`` cell that appears, select the model from the drop-down *Model:* list.
+4. Enter a location for the exported model in the *Path:* entry field. **Note**: If you specify a location that doesn't exist, it will be created. For example, if you only enter ``test`` in the *Path:* entry  field, the model will be exported to ``h2o-3/test``.
+
+5. To overwrite any files with the same name, check the *Overwrite:* checkbox.
+6. Click the **Export** button. A confirmation message displays when the model has been successfully exported.
 
 .. figure:: images/ExportModel.png
    :alt: Export Model
@@ -1267,15 +1116,9 @@ Exporting and Importing Models
 
 1. Click the **Model** menu at the top of the screen.
 2. Select *Import Model...*
-3. Enter the location of the model in the *Path:* entry field. **Note**:
-   The file path must be complete (e.g.,
-   ``Users/h2o-user/h2o-3/exported_models``). Do not rename models while
-   importing.
-4. To overwrite any files with the same name, check the *Overwrite:*
-   checkbox.
-5. Click the **Import** button. A confirmation message displays when the
-   model has been successfully imported. To view the imported model,
-   click the **View Model** button.
+3. Enter the location of the model in the *Path:* entry field. **Note**: The file path must be complete (e.g., ``Users/h2o-user/h2o-3/exported_models``). Do not rename models while importing.
+4. To overwrite any files with the same name, check the *Overwrite:* checkbox.
+5. Click the **Import** button. A confirmation message displays when the model has been successfully imported. To view the imported model, click the **View Model** button.
 
 .. figure:: images/ImportModel.png
    :alt: Import Model
@@ -1326,34 +1169,23 @@ After clicking **View**, the Leaderboard displays the list of models that were b
 Using Grid Search
 ^^^^^^^^^^^^^^^^^
 
-To include a parameter in a grid search in Flow, check the checkbox in
-the *GRID?* column to the right of the parameter name (highlighted in
-red in the image below).
+To include a parameter in a grid search in Flow, check the checkbox in the *GRID?* column to the right of the parameter name (highlighted in red in the image below).
 
 .. figure:: images/Flow_GridSearch.png
    :alt: Grid Search Column
 
 
--  If the parameter selected for grid search is Boolean (T/F or Y/N),
-   both values are included when the *Grid?* checkbox is selected.
--  If the parameter selected for grid search is a list of values, the
-   values display as checkboxes when the *Grid?* checkbox is selected.
-   More than one option can be selected.
--  If the parameter selected for grid search is a numerical value, use a
-   semicolon (;) to separate each additional value.
--  To view a list of all grid searches, select the **Model** menu, then
-   click **List All Grid Search Results**, or click the **Assist Me**
-   button and select **getGrids**.
+-  If the parameter selected for grid search is Boolean (T/F or Y/N), both values are included when the *Grid?* checkbox is selected.
+-  If the parameter selected for grid search is a list of values, the values display as checkboxes when the *Grid?* checkbox is selected. More than one option can be selected.
+-  If the parameter selected for grid search is a numerical value, use a semicolon (;) to separate each additional value.
+-  To view a list of all grid searches, select the **Model** menu, then click **List All Grid Search Results**, or click the **Assist Me** button and select **getGrids**.
 
 --------------
 
 Checkpointing Models
 ^^^^^^^^^^^^^^^^^^^^
 
-Some model types, such as DRF, GBM, and Deep Learning, support
-checkpointing. A checkpoint resumes model training so that you can
-iterate your model. The dataset must be the same. The following model
-parameters must be the same when restarting a model from a checkpoint:
+Some model types, such as DRF, GBM, and Deep Learning, support checkpointing. A checkpoint resumes model training so that you can iterate your model. The dataset must be the same. The following model parameters must be the same when restarting a model from a checkpoint:
 
 +-------------------------------------------+--------------------------------+-------------------------------------+
 | Must be the same as in checkpoint model   |                                |                                     |
@@ -1375,8 +1207,7 @@ parameters must be the same when restarting a model from a checkpoint:
 | ``distribution``                          | ``tweedie_power``              |                                     |
 +-------------------------------------------+--------------------------------+-------------------------------------+
 
-The following parameters can be modified when restarting a model from a
-checkpoint:
+The following parameters can be modified when restarting a model from a checkpoint:
 
 +------------------------------------+--------------------------------------+---------------------------------+
 | Can be modified                    |                                      |                                 |
@@ -1408,11 +1239,8 @@ checkpoint:
 | ``elastic_averaging_moving_rate``  | ``elastic_averaging_regularization`` | ``mini_batch_size``             |
 +------------------------------------+--------------------------------------+---------------------------------+
 
-1. After building your model, copy the ``model_id``. To view the
-   ``model_id``, click the **Model** menu then click **List All
-   Models**.
-2. Select the model type from the drop-down **Model** menu. **Note**:
-   The model type must be the same as the checkpointed model.
+1. After building your model, copy the ``model_id``. To view the ``model_id``, click the **Model** menu then click **List All Models**.
+2. Select the model type from the drop-down **Model** menu. **Note**: The model type must be the same as the checkpointed model.
 3. Paste the copied ``model_id`` in the *checkpoint* entry field.
 4. Click the **Build Model** button. The model will resume training.
 
@@ -1421,35 +1249,18 @@ checkpoint:
 Interpreting Model Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Scoring history**: (GBM, DL) Represents the error
-rate of the model as it is built. Typically, the error rate will be
-higher at the beginning (the left side of the graph) then decrease as
-the model building completes and accuracy improves. Can include mean
-squared error (MSE) and deviance.
+**Scoring history**: (GBM, DL) Represents the error rate of the model as it is built. Typically, the error rate will be higher at the beginning (the left side of the graph) then decrease as the model building completes and accuracy improves. Can include mean squared error (MSE) and deviance.
 
 .. figure:: images/Flow_ScoringHistory.png
    :alt: Scoring History example
 
-**Variable importances**: (GBM, DL) Represents the
-statistical significance of each variable in the data in terms of its
-affect on the model. Variables are listed in order of most to least
-importance. The percentage values represent the percentage of importance
-across all variables, scaled to 100%. The method of computing each
-variable's importance depends on the algorithm. To view the scaled
-importance value of a variable, use your mouse to hover over the bar
-representing the variable.
+**Variable importances**: (GBM, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable.
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
 
 
-**Confusion Matrix**: (DL) Table depicting performance of
-algorithm in terms of false positives, false negatives, true positives,
-and true negatives. The actual results display in the columns and the
-predictions display in the rows; correct predictions are highlighted in
-yellow. In the example below, ``0`` was predicted correctly 902 times,
-while ``8`` was predicted correctly 822 times and ``0`` was predicted as
-``4`` once.
+**Confusion Matrix**: (DL) Table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. The actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, ``0`` was predicted correctly 902 times, while ``8`` was predicted correctly 822 times and ``0`` was predicted as ``4`` once.
 
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
@@ -1462,14 +1273,10 @@ while ``8`` was predicted correctly 822 times and ``0`` was predicted as
 -  Max f0point5
 -  Max accuracy
 -  Max precision
--  Max absolute MCC (the threshold that maximizes the absolute Matthew's
-   Correlation Coefficient)
+-  Max absolute MCC (the threshold that maximizes the absolute Matthew's Correlation Coefficient)
 -  Max min per class accuracy
 
-The lower-left side of the graph represents less tolerance for false
-positives while the upper-right represents more tolerance for false
-positives. Ideally, a highly accurate ROC resembles the following
-example.
+The lower-left side of the graph represents less tolerance for false positives while the upper-right represents more tolerance for false positives. Ideally, a highly accurate ROC resembles the following example.
 
 .. figure:: images/Flow_ROC.png
    :alt: ROC Curve example
@@ -1480,15 +1287,7 @@ example.
    :alt: Hit Ratio Table
 
 
-**Standardized Coefficient Magnitudes** (GLM) Bar chart
-representing the relationship of a specific feature to the response
-variable. Coefficients can be positive (orange) or negative (blue). A
-positive coefficient indicates a positive relationship between the
-feature and the response, where an increase in the feature corresponds
-with an increase in the response, while a negative coefficient
-represents a negative relationship between the feature and the response
-where an increase in the feature corresponds with a decrease in the
-response (or vice versa).
+**Standardized Coefficient Magnitudes** (GLM) Bar chart representing the relationship of a specific feature to the response variable. Coefficients can be positive (orange) or negative (blue). A positive coefficient indicates a positive relationship between the feature and the response, where an increase in the feature corresponds with an increase in the response, while a negative coefficient represents a negative relationship between the feature and the response where an increase in the feature corresponds with a decrease in the response (or vice versa).
 
 .. figure:: images/SCM.png
    :alt: Standardized Coefficient Magnitudes
@@ -1526,32 +1325,20 @@ Viewing Partial Dependence Plots
 Predictions
 -----------
 
-.. todo:: address how to use a Pojo with Flow
-
-After creating your model, click the key link for the model, then click
-the **Predict** button. Select the model to use in the prediction from
-the drop-down **Model:** menu and the data frame to use in the
-prediction from the drop-down **Frame:** menu, then click the
-**Predict** button.
+After creating your model, click the key link for the model, then click the **Predict** button. Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame:** menu, then click the **Predict** button.
 
 .. figure:: images/Flow_makePredict.png
    :alt: Making Predictions
 
-
-
 Viewing Predictions
 ^^^^^^^^^^^^^^^^^^^
 
-Click the **Assist Me!** button, then click the **getPredictions** link,
-or enter ``getPredictions`` in the cell in CS mode and press
-**Ctrl+Enter**. A list of the stored predictions displays. To view a
-prediction, click the **View** button to the right of the model name.
+Click the **Assist Me!** button, then click the **getPredictions** link, or enter ``getPredictions`` in the cell in CS mode and press **Ctrl+Enter**. A list of the stored predictions displays. To view a prediction, click the **View** button to the right of the model name.
 
 .. figure:: images/Flow_getPredict.png
    :alt: Viewing Predictions
 
-You can also view predictions by clicking the drop-down **Score** menu
-and selecting **List All Predictions**.
+You can also view predictions by clicking the drop-down **Score** menu and selecting **List All Predictions**.
 
 
 Interpreting the Gains/Lift Chart
@@ -1614,9 +1401,7 @@ To create a frame with a large amount of random data (for example, to use for te
 Viewing Frames
 ^^^^^^^^^^^^^^
 
-To view a specific frame, click the "Key" link for the specified frame,
-or enter ``getFrameSummary "FrameName"`` in a cell in CS mode (where
-``FrameName`` is the name of a frame, such as ``allyears2k.hex``).
+To view a specific frame, click the "Key" link for the specified frame, or enter ``getFrameSummary "FrameName"`` in a cell in CS mode (where ``FrameName`` is the name of a frame, such as ``allyears2k.hex``).
 
 .. figure:: images/Flow_getFrame.png
    :alt: Viewing specified frame
@@ -1624,22 +1409,15 @@ or enter ``getFrameSummary "FrameName"`` in a cell in CS mode (where
 
 From the ``getFrameSummary`` cell, you can:
 
--  View a truncated list of the rows in the data frame by clicking the
-   **View Data** button
+-  View a truncated list of the rows in the data frame by clicking the **View Data** button
 -  Split the dataset by clicking the **Split...** button
--  View the columns, data, and factors in more detail or plot a graph by
-   clicking the **Inspect** button
+-  View the columns, data, and factors in more detail or plot a graph by clicking the **Inspect** button
 -  Create a model by clicking the **Build Model** button
--  Make a prediction based on the data by clicking the **Predict**
-   button
+-  Make a prediction based on the data by clicking the **Predict** button
 -  Download the data as a .csv file by clicking the **Download** button
--  View the characteristics or domain of a specific column by clicking
-   the **Summary** link
+-  View the characteristics or domain of a specific column by clicking the **Summary** link
 
-When you view a frame, you can "drill-down" to the necessary level of
-detail (such as a specific column or row) using the **Inspect** button
-or by clicking the links. The following screenshot displays the results
-of clicking the **Inspect** button for a frame.
+When you view a frame, you can "drill-down" to the necessary level of detail (such as a specific column or row) using the **Inspect** button or by clicking the links. The following screenshot displays the results of clicking the **Inspect** button for a frame.
 
 .. figure:: images/Flow_inspectFrame.png
    :alt: Inspecting Frames
@@ -1651,13 +1429,9 @@ This screenshot displays the results of clicking the **columns** link.
    :alt: Inspecting Columns
 
 
-To view all frames, click the **Assist Me!** button, then click the
-**getFrames** link, or enter ``getFrames`` in the cell in CS mode and
-press **Ctrl+Enter**. You can also view all current frames by clicking
-the drop-down **Data** menu and selecting **List All Frames**.
+To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter ``getFrames`` in the cell in CS mode and press **Ctrl+Enter**. You can also view all current frames by clicking the drop-down **Data** menu and selecting **List All Frames**.
 
-A list of the current frames in H2O displays that includes the following
-information for each frame:
+A list of the current frames in H2O displays that includes the following information for each frame:
 
 -  Link to the frame (the "key")
 -  Number of rows and columns
@@ -1672,9 +1446,7 @@ For parsed data, the following information displays:
    :alt: Parsed Frames
 
 
-To make a prediction, check the checkboxes for the frames you want to
-use to make the prediction, then click the **Predict on Selected
-Frames** button.
+To make a prediction, check the checkboxes for the frames you want to use to make the prediction, then click the **Predict on Selected Frames** button.
 
 --------------
 
@@ -1686,8 +1458,7 @@ Datasets can be split within Flow for use in model training and testing.
 .. figure:: images/Flow_splitFrame.png
    :alt: splitFrame cell
 
-1. To split a frame, click the **Assist Me** button, then click
-   **splitFrame**.
+1. To split a frame, click the **Assist Me** button, then click **splitFrame**.
 
   **Note**: You can also click the drop-down **Data** menu and select **Split Frame...**. 
   
@@ -1707,8 +1478,7 @@ Datasets can be split within Flow for use in model training and testing.
 Plotting Frames
 ^^^^^^^^^^^^^^^
 
-To create a plot from a frame, click the **Inspect** button, then click
-the **Plot** button for columns or factors. Note that from this section, you can also inspect the **Chunk compression summary** and the **Frame distribution summary**.  
+To create a plot from a frame, click the **Inspect** button, then click the **Plot** button for columns or factors. Note that from this section, you can also inspect the **Chunk compression summary** and the **Frame distribution summary**.  
 
 .. figure:: images/Flow_plottingFrames.png
 	:alt: Frames > Data
@@ -1741,20 +1511,14 @@ the **Plot** button for columns or factors. Note that from this section, you can
 .. figure:: images/Flow_plot.png
    :alt: Flow - Plotting Frames
 
-**Note**: Because H2O stores enums internally as numeric then maps the
-integers to an array of strings, any ``min``, ``max``, or ``mean``
-values for categorical columns are not meaningful and should be ignored.
-Displays for categorical data will be modified in a future version of
-H2O.
+**Note**: Because H2O stores enums internally as numeric then maps the integers to an array of strings, any ``min``, ``max``, or ``mean`` values for categorical columns are not meaningful and should be ignored. Displays for categorical data will be modified in a future version of H2O.
 
 --------------
 
 Shutting Down H2O
 ^^^^^^^^^^^^^^^^^
 
-To shut down H2O, click the **Admin** menu, then click **Shut Down**. A
-*Shut down complete* message displays in the upper right when the
-cluster has been shut down.
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down.
 
 --------------
 
@@ -1762,27 +1526,21 @@ cluster has been shut down.
 Troubleshooting Flow
 --------------------
 
-To troubleshoot issues in Flow, use the **Admin** menu. The **Admin**
-menu allows you to check the status of the cluster, view a timeline of
-events, and view or download logs for issue analysis.
+To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis.
 
-**Note**: To view the current H2O Flow version, click the **Help** menu,
-then click **About**.
+**Note**: To view the current H2O Flow version, click the **Help** menu, then click **About**.
 
 Viewing Cluster Status
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Click the **Admin** menu, then select **Cluster Status**. A summary of
-the status of the cluster (also known as a cloud) displays, which
-includes the same information:
+Click the **Admin** menu, then select **Cluster Status**. A summary of the status of the cluster (also known as a cloud) displays, which includes the same information:
 
 -  Cluster health
 -  Whether all nodes can communicate (consensus)
--  Whether new nodes can join (locked/unlocked)
-
-**Note**: After you submit a job to H2O, the cluster does not accept new
-nodes. - H2O version - Number of used and available nodes - When the
-cluster was created
+-  Whether new nodes can join (locked/unlocked) **Note**: After you submit a job to H2O, the cluster does not accept new nodes. 
+- H2O version 
+- Number of used and available nodes 
+- When the cluster was created
 
 .. figure:: images/Flow_CloudStatus.png
    :alt: Cluster Status
@@ -1807,59 +1565,47 @@ To view more information, click the **Show Advanced** button.
 Viewing CPU Status (Water Meter)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To view the current CPU usage, click the **Admin** menu, then click
-**Water Meter (CPU Meter)**. A new window opens, displaying the current
-CPU use statistics.
+To view the current CPU usage, click the **Admin** menu, then click **Water Meter (CPU Meter)**. A new window opens, displaying the current CPU use statistics.
 
 --------------
 
 Viewing Logs
 ^^^^^^^^^^^^
 
-To view the logs for troubleshooting, click the **Admin** menu, then
-click **Inspect Log**.
+To view the logs for troubleshooting, click the **Admin** menu, then click **Inspect Log**.
 
 .. figure:: images/Flow_viewLog.png
    :alt: Inspect Log
 
 
-To view the logs for a specific node, select it from the drop-down
-**Select Node** menu.
+To view the logs for a specific node, select it from the drop-down **Select Node** menu.
 
 --------------
 
 Downloading Logs
 ^^^^^^^^^^^^^^^^
 
-To download the logs for further analysis, click the **Admin** menu,
-then click **Download Log**. A new window opens and the logs download to
-your default download folder. You can close the new window after
-downloading the logs. Send the logs to
-`h2ostream <mailto:h2ostream@googlegroups.com>`__ or file a JIRA
-ticket for issue resolution. (Refer to `Reporting Issues`_.)
+To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to `h2ostream <mailto:h2ostream@googlegroups.com>`__ or file a JIRA ticket for issue resolution. (Refer to `Reporting Issues`_.)
 
 --------------
 
 Viewing Stack Trace Information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To view the stack trace information, click the **Admin** menu, then
-click **Stack Trace**.
+To view the stack trace information, click the **Admin** menu, then click **Stack Trace**.
 
 .. figure:: images/Flow_stacktrace.png
    :alt: Stack Trace
 
 
-To view the stack trace information for a specific node, select it from
-the drop-down **Select Node** menu.
+To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu.
 
 --------------
 
 Viewing Network Test Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To view network test results, click the **Admin** menu, then click
-**Network Test**.
+To view network test results, click the **Admin** menu, then click **Network Test**.
 
 .. figure:: images/Flow_NetworkTest.png
    :alt: Network Test Results
@@ -1870,23 +1616,19 @@ To view network test results, click the **Admin** menu, then click
 Accessing the Profiler
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The Profiler looks across the cluster to see where the same stack trace
-occurs, and can be helpful for identifying activity on the current CPU.
-To view the profiler, click the **Admin** menu, then click **Profiler**.
+The Profiler looks across the cluster to see where the same stack trace occurs, and can be helpful for identifying activity on the current CPU. To view the profiler, click the **Admin** menu, then click **Profiler**.
 
 .. figure:: images/Flow_profiler.png
    :alt: Profiler
 
-To view the profiler information for a specific node, select it from the
-drop-down **Select Node** menu.
+To view the profiler information for a specific node, select it from the drop-down **Select Node** menu.
 
 --------------
 
 Viewing the Timeline
 ^^^^^^^^^^^^^^^^^^^^
 
-To view a timeline of events in Flow, click the **Admin** menu, then
-click **Timeline**. The following information displays for each event:
+To view a timeline of events in Flow, click the **Admin** menu, then click **Timeline**. The following information displays for each event:
 
 -  Time of occurrence (HH:MM:SS:MS)
 -  Number of nanoseconds for duration
@@ -1906,19 +1648,12 @@ To obtain the most recent information, click the **Refresh** button.
 Reporting Issues
 ^^^^^^^^^^^^^^^^
 
-If you experience an error with Flow, you can submit a JIRA ticket to
-notify our team.
+If you experience an error with Flow, you can submit a JIRA ticket to notify our team.
 
-1. First, click the **Admin** menu, then click **Download Logs**. This
-   will download a file contains information that will help our
-   developers identify the cause of the issue.
-2. Click the **Help** menu, then click **Report an issue**. This will
-   open our JIRA page where you can file your ticket.
+1. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.
+2. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.
 3. Click the **Create** button at the top of the JIRA page.
-4. Attach the log file from the first step, write a description of the
-   error you experienced, then click the **Create** button at the bottom
-   of the page. Our team will work to resolve the issue and you can
-   track the progress of your ticket in JIRA.
+4. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA.
 
 --------------
 
@@ -1934,9 +1669,7 @@ To access H2Ostream from Flow:
 1. Click the **Help** menu.
 2. Click **Forum/Ask a question**.
 3. Click the red **New topic** button.
-4. Enter your question and click the red **Post** button. If you are
-   requesting assistance for an error you experienced, be sure to
-   include your logs. (Refer to `Downloading Logs`_.)
+4. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your logs. (Refer to `Downloading Logs`_.)
 
 You can also email your question to h2ostream@googlegroups.com.
 
