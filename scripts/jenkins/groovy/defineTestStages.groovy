@@ -171,13 +171,14 @@ def call(final pipelineContext) {
   ]
 
   def BENCHMARK_STAGES = [
-    [
-      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
-    ],
+//    FIXME
+//    [
+//      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+//      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+//      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+//      customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+//      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+//    ],
     [
       stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
