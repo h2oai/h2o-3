@@ -52,6 +52,18 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
       timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
