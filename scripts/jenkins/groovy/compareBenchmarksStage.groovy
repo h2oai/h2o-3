@@ -65,6 +65,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                         'train_time_min': 171,
                         'train_time_max': 187
                     ]
+                ],
+                'HIGGS.csv': [
+                    100: [
+                        'train_time_min': 1710,
+                        'train_time_max': 1870
+                    ]
                 ]
         ],
         'xgb-vanilla': [
@@ -78,6 +84,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     100: [
                         'train_time_min': 58,
                         'train_time_max': 83
+                    ]
+                ],
+                'HIGGS.csv': [
+                    100: [
+                        'train_time_min': 580,
+                        'train_time_max': 830
                     ]
                 ]
         ]
