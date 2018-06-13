@@ -16,7 +16,7 @@ def call(final pipelineContext, final stageConfig) {
   dir (ML_BENCHMARK_ROOT) {
     retry(3) {
       timeout(time: 1, unit: 'MINUTES') {
-        checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
+        checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'addHIGGS']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
       }
     }
   }
