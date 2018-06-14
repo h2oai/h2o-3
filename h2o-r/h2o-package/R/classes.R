@@ -395,7 +395,7 @@ logLik.H2OCoxPHModel <- function(object, ...) {
 #' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
 #' variable names as those that appear in the \code{H2OCoxPHModel} object.
 #' @importFrom stats as.formula
-#' @export
+#' @export survfit.H2OCoxPHModel
 survfit.H2OCoxPHModel <-
 function(formula, newdata, ...)
 {
