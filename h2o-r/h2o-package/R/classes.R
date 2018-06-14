@@ -329,8 +329,8 @@ setClass("H2OCoxPHModelSummary", representation(summary="list"))
 #' @export
 setMethod("show", "H2OCoxPHModelSummary", function(object) {
   require(survival)
-  get("print.summary.coxph", getNamespace("survival"))(object@summary))
-}
+  get("print.summary.coxph", getNamespace("survival"))(object@summary)
+})
 
 #'
 #' Summary method for H2OCoxPHModel objects
