@@ -38,7 +38,7 @@ Description: R interface for 'H2O', the scalable open source machine learning
     machine learning algorithm (AutoML).
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
-BugReports: http://jira.h2o.ai
+BugReports: https://0xdata.atlassian.net/projects/PUBDEV
 NeedsCompilation: no
 SystemRequirements: Java (>= 7)
 Depends: R (>= 2.13.0),
