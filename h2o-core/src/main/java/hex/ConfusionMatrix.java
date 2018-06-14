@@ -49,7 +49,7 @@ public class ConfusionMatrix extends Iced {
       } else
         return maxClasses;
     } catch (NumberFormatException e) {
-      Log.err("Invalid specification of maximum classes of a confusion matrix: " + maxClassesSpec);
+      Log.warn("Using default limit of max classes in a confusion matrix (" + MAX_CM_CLASSES_DEFAULT + ", user specification is invalid: " + maxClassesSpec + ")", e);
       return MAX_CM_CLASSES_DEFAULT;
     }
   }
