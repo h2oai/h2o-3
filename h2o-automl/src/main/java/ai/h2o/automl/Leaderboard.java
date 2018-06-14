@@ -652,7 +652,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric, other_metrics),
+              Leaderboard.colHeaders("auc", other_metrics),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "-");
@@ -732,7 +732,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String[] modelIDsFormatted = new String[models.length];
 
     if (models.length == 0) { //No models due to exclude algos or ran out of time
-      this.other_metrics = new String[] {null, null, null, null};
+      this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
     }
     else if(models[0]._output.isBinomialClassifier()) {
       this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
