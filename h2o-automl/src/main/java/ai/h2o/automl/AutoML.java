@@ -430,11 +430,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           Log.info("Skipping " + name + " due to Job cancel");
           subJob.stop();
         }
-        if (buildSpec.build_control.stopping_criteria.max_models() == 0) { //Ensure we do not have max models set
-          if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
-            Log.info("Skipping " + name + " due to no time left");
-            subJob.stop();
-          }
+        if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
+          Log.info("Skipping " + name + " due to no time left");
+          subJob.stop();
         }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
