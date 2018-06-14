@@ -301,7 +301,7 @@ setClass("H2OCoxPHModel", contains="H2OModel")
 #' @param object an \code{H2OCoxPHModel} object.
 #' @export
 setMethod("show", "H2OCoxPHModel", function(object) {
-  require(survival)
+  requireNamespace("survival")
   o <- object
   model.parts <- .model.parts(o)
   m <- model.parts$m
@@ -328,7 +328,7 @@ setClass("H2OCoxPHModelSummary", representation(summary="list"))
 #' @param object An \code{H2OCoxPHModelSummary} object.
 #' @export
 setMethod("show", "H2OCoxPHModelSummary", function(object) {
-  require(survival)
+  requireNamespace("survival")
   get("print.summary.coxph", getNamespace("survival"))(object@summary)
 })
 
@@ -386,7 +386,7 @@ extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
 #' @rdname H2OCoxPHModel-class
 #' @export
 logLik.H2OCoxPHModel <- function(object, ...) {
-  require(survival)
+  requireNamespace("survival")
   get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 }
 
@@ -399,7 +399,7 @@ logLik.H2OCoxPHModel <- function(object, ...) {
 survfit.H2OCoxPHModel <-
 function(formula, newdata, ...)
 {
-  require(survival)
+  requireNamespace("survival")
   if (missing(newdata)) {
     if (!is.null(formula@allparameters$stratify_by) ||
         !is.null(formula@allparameters$interactions) ||
@@ -443,7 +443,7 @@ function(formula, newdata, ...)
 #' @rdname H2OCoxPHModel-class
 #' @export
 vcov.H2OCoxPHModel <- function(object, ...) {
-  require(survival)
+  requireNamespace("survival")
   get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
 }
 
