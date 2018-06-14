@@ -1018,6 +1018,7 @@ public class NewChunk extends Chunk {
   // Return the data so compressed.
   public Chunk compress() {
     Chunk res = compress2();
+    System.out.println("wow");
     byte type = type();
     assert _vec == null ||  // Various testing scenarios do not set a Vec
       type == _vec._type || // Equal types
