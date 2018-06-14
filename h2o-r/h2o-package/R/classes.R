@@ -301,6 +301,7 @@ setClass("H2OCoxPHModel", contains="H2OModel")
 #' @param object an \code{H2OCoxPHModel} object.
 #' @export
 setMethod("show", "H2OCoxPHModel", function(object) {
+  require(survival)
   o <- object
   model.parts <- .model.parts(o)
   m <- model.parts$m
@@ -326,8 +327,10 @@ setClass("H2OCoxPHModelSummary", representation(summary="list"))
 #' @rdname H2OCoxPHModelSummary-class
 #' @param object An \code{H2OCoxPHModelSummary} object.
 #' @export
-setMethod("show", "H2OCoxPHModelSummary", function(object)
+setMethod("show", "H2OCoxPHModelSummary", function(object) {
+  require(survival)
   get("print.summary.coxph", getNamespace("survival"))(object@summary))
+}
 
 #'
 #' Summary method for H2OCoxPHModel objects
@@ -382,19 +385,21 @@ extractAIC.H2OCoxPHModel <- function(fit, scale, k = 2, ...) {
 
 #' @rdname H2OCoxPHModel-class
 #' @export
-logLik.H2OCoxPHModel <- function(object, ...)
+logLik.H2OCoxPHModel <- function(object, ...) {
+  require(survival)
   get("logLik.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+}
 
 #' @rdname H2OCoxPHModel-class
 #' @param formula an \code{H2OCoxPHModel} object.
 #' @param newdata an optional \code{H2OFrame} or \code{data.frame} with the same
 #' variable names as those that appear in the \code{H2OCoxPHModel} object.
 #' @importFrom stats as.formula
-#' @importFrom survival survfit
 #' @export
 survfit.H2OCoxPHModel <-
 function(formula, newdata, ...)
 {
+  require(survival)
   if (missing(newdata)) {
     if (!is.null(formula@allparameters$stratify_by) ||
         !is.null(formula@allparameters$interactions) ||
@@ -437,8 +442,10 @@ function(formula, newdata, ...)
 
 #' @rdname H2OCoxPHModel-class
 #' @export
-vcov.H2OCoxPHModel <- function(object, ...)
+vcov.H2OCoxPHModel <- function(object, ...) {
+  require(survival)
   get("vcov.coxph", getNamespace("survival"))(.as.survival.coxph.model(object@model), ...)
+}
 
 #'
 #' Accessor Methods for H2OModel Object
