@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
+import hex.ConfusionMatrixTest;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;
@@ -24,8 +25,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Random;
-
-import static hex.ConfusionMatrix.buildCM;
 
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -400,11 +399,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                                   // check that the labels made with the default threshold are consistent with the CM that's reported by the AUC object
                                                   labels = valid.vec(respname);
                                                   predlabels = pred.vecs()[0];
-                                                  ConfusionMatrix cm = buildCM(labels, predlabels);
+                                                  ConfusionMatrix cm = ConfusionMatrixTest.buildCM(labels, predlabels);
                                                   Log.info("CM from pre-made labels:");
                                                   Log.info(cm.toASCII());
                                                   if (Math.abs(cm.err() - error) > 2e-2) {
-                                                    ConfusionMatrix cm2 = buildCM(labels, predlabels);
+                                                    ConfusionMatrix cm2 = ConfusionMatrixTest.buildCM(labels, predlabels);
                                                     Log.info(cm2.toASCII());
                                                   }
                                                   Assert.assertEquals(cm.err(), error, 2e-2);
@@ -414,7 +413,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                                   String ast = "(as.factor (> (cols pred [2]) " + threshold + "))";
                                                   Frame tmp = Rapids.exec(ast).getFrame();
                                                   pred2labels = tmp.vecs()[0];
-                                                  cm = buildCM(labels, pred2labels);
+                                                  cm = ConfusionMatrixTest.buildCM(labels, pred2labels);
                                                   Log.info("CM from self-made labels:");
                                                   Log.info(cm.toASCII());
                                                   Assert.assertEquals(cm.err(), error, 2e-2); //AUC-given F1-optimal threshold might not reproduce AUC-given CM-error identically, but should match up to 2%

@@ -175,7 +175,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
-      _cm = domain.length > ConfusionMatrix.MAX_CM_CLASSES ? null : new double[domain.length][domain.length];
+      _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
     }
