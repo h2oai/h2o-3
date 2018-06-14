@@ -732,6 +732,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String[] modelIDsFormatted = new String[models.length];
 
     if (models.length == 0) { //No models due to exclude algos or ran out of time
+      //Just use binomial metrics as a placeholder (no way to tell as user can pass in any metric to sort by)
       this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
     }
     else if(models[0]._output.isBinomialClassifier()) {
