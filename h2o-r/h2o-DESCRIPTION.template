@@ -4,8 +4,30 @@ Type: Package
 Title: R Interface for 'H2O'
 Date: SUBST_PROJECT_DATE
 Authors@R: c(
-    person(given = "Tom", family = "Kraljevic", role = c("aut", "cre"), email = "tomk@0xdata.com"),
-    person(given = "H2O.ai", role = c("cph"))
+    person("Erin", "LeDell", role = c("aut", "cre"), email = "erin@h2o.ai"),
+    person("Navdeep", "Gill", role = c("aut")),
+    person("Spencer", "Aiello", role = c("aut")),
+    person("Anqi", "Fu", role = c("aut")),    
+    person("Arno", "Candel", role = c("aut")),
+    person("Cliff", "Click", role = c("aut")),
+    person("Tom", "Kraljevic", role = c("aut")),
+    person("Tomas", "Nykodym", role = c("aut")),
+    person("Patrick", "Aboyoun", role = c("aut")),  
+    person("Michal", "Kurka", role = c("aut")),  
+    person("Michal", "Malohlava", role = c("aut")),  
+    person("Ludi", "Rehak", role = c("ctb")),      
+    person("Eric", "Eckstrand", role = c("ctb")),
+    person("Brandon", "Hill", role = c("ctb")),
+    person("Sebastian", "Vidrio", role = c("ctb")),
+    person("Surekha", "Jadhawani", role = c("ctb")),
+    person("Amy", "Wang", role = c("ctb")),        
+    person("Raymond", "Peck", role = c("ctb")),        
+    person("Wendy", "Wong", role = c("ctb")),    
+    person("Jan", "Gorecki", role = c("ctb")),
+    person("Matt", "Dowle", role = c("ctb")),
+    person("Yuan", "Tang", role = c("ctb")),    
+    person("Lauren", "DiPerna", role = c("ctb")),    
+    person("H2O.ai", role = c("cph", "fnd"))
     )
 Description: R interface for 'H2O', the scalable open source machine learning 
     platform that offers parallelized implementations of many supervised and 
