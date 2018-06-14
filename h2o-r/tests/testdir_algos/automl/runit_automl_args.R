@@ -84,7 +84,6 @@ automl.args.test <- function() {
   print("Check max_models = 1")
   aml8 <- h2o.automl(x = x, y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
                      max_models = 1,
                      project_name = "aml8")
   nrow_aml8_lb <- nrow(aml8@leaderboard)
@@ -93,7 +92,6 @@ automl.args.test <- function() {
   print("Check max_models > 1; leaderboard continuity/growth")
   aml8 <- h2o.automl(x = x, y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
                      max_models = max_models,
                      project_name = "aml8")
   expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb, TRUE)
@@ -125,7 +123,7 @@ automl.args.test <- function() {
   aml10 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       weights_column = weights_column,
-                      max_runtime_secs = max_runtime_secs,
+                      max_models = max_models,
                       project_name = "aml10")
   model_ids <- as.character(as.data.frame(aml10@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -137,7 +135,7 @@ automl.args.test <- function() {
                       training_frame = train,
                       fold_column = fold_column,
                       weights_column = weights_column,
-                      max_runtime_secs = max_runtime_secs,
+                      max_models = max_models,
                       project_name = "aml11")
   model_ids <- as.character(as.data.frame(aml11@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -181,7 +179,7 @@ automl.args.test <- function() {
   aml15 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
-                      max_models = 3,
+                      max_models = max_models,
                       balance_classes = TRUE,
                       max_after_balance_size = 3.0,  
                       class_sampling_factors = c(0.2, 1.4),

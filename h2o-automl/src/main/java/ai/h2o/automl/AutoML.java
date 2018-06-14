@@ -427,11 +427,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     while (subJob.isRunning()) {
       if (null != parentJob) {
         if (parentJob.stop_requested()) {
-          Log.info("Skipping " + name + " due to Job cancel");
+          userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
         if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
-          Log.info("Skipping " + name + " due to no time left");
+          userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
           subJob.stop();
         }
       }
@@ -609,11 +609,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
               timeRemainingMs() / 1000.0));
 
-    if (searchCriteria.max_runtime_secs() <= 0.001) {
-      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
-      return null;
-    }
-
     if (searchCriteria.max_models() == 0)
       searchCriteria.set_max_models(remainingModels());
     else
@@ -694,11 +689,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private boolean exceededSearchLimits(String whatWeAreSkipping) {
     if (ArrayUtils.contains(skipAlgosList, whatWeAreSkipping)) {
       userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + whatWeAreSkipping + " build");
-      return true;
-    }
-
-    if (timeRemainingMs() <= 0.001) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + whatWeAreSkipping);
       return true;
     }
 
