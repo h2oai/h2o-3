@@ -609,6 +609,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
               timeRemainingMs() / 1000.0));
 
+    if (searchCriteria.max_runtime_secs() <= 0.001) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
+      return null;
+    }
+
     if (searchCriteria.max_models() == 0)
       searchCriteria.set_max_models(remainingModels());
     else
@@ -689,6 +694,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private boolean exceededSearchLimits(String whatWeAreSkipping) {
     if (ArrayUtils.contains(skipAlgosList, whatWeAreSkipping)) {
       userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo " + whatWeAreSkipping + " build");
+      return true;
+    }
+
+    if (timeRemainingMs() <= 0.001) {
+      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + whatWeAreSkipping);
       return true;
     }
 
