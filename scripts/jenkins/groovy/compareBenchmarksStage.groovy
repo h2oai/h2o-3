@@ -68,8 +68,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 'higgs': [
                     100: [
-                        'train_time_min': 1710,
-                        'train_time_max': 1870
+                        'train_time_min': 193,
+                        'train_time_max': 235
                     ]
                 ]
         ],
@@ -88,8 +88,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 'higgs': [
                     100: [
-                        'train_time_min': 580,
-                        'train_time_max': 830
+                        'train_time_min': 38,
+                        'train_time_max': 63
                     ]
                 ]
         ]
