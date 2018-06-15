@@ -21,7 +21,7 @@ def prostate_automl():
     test = fr[2]
 
     #Use same project_name so we add to leaderboard for each run
-    aml = H2OAutoML(max_runtime_secs = 30, stopping_rounds=3, stopping_tolerance=0.001, project_name="aml1")
+    aml = H2OAutoML(max_models=2, stopping_rounds=3, stopping_tolerance=0.001, project_name="aml1")
 
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()

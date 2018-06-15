@@ -590,8 +590,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   protected static final String[] colHeaders(String metric, String[] other_metric) {
-    //return new String[] {"model ID", "timestamp", metric.toString()};
-    String[] headers = ArrayUtils.append(new String[]{"model_id",metric.toString()},other_metric);
+    String[] headers = ArrayUtils.append(new String[]{"model_id",metric},other_metric);
     return headers;
   }
 
@@ -653,7 +652,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
               rowHeaders,
-              Leaderboard.colHeaders(sort_metric, other_metrics),
+              Leaderboard.colHeaders("auc", other_metrics),
               Leaderboard.colTypesBinomial,
               Leaderboard.colFormatsBinomial,
               "-");
@@ -732,7 +731,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     //long[] timestamps = getTimestamps(models);
     String[] modelIDsFormatted = new String[models.length];
 
-    if(models[0]._output.isBinomialClassifier()) {
+    if (models.length == 0) { //No models due to exclude algos or ran out of time
+      //Just use binomial metrics as a placeholder (no way to tell as user can pass in any metric to sort by)
+      this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
+    }
+    else if(models[0]._output.isBinomialClassifier()) {
       this.other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
     } else if (models[0]._output.isMultinomialClassifier()) {
       this.other_metrics = new String[] {"logloss", "rmse", "mse"};
