@@ -34,7 +34,7 @@ test.CoxPH.strata_inter <- function() {
                                    training_frame = lung.hex)
 
     hex.model <- .as.survival.coxph.model(fit.hex.implicit.2@model)
-    expect_equal("Surv(time, status) ~ wt.loss + age:strata(sex) + strata(ph.ecog)", hex.model$call)
+    expect_equal(Surv(time, status) ~ wt.loss + age:strata(sex) + strata(ph.ecog), hex.model$call)
     expect_equal(fit.coef, hex.model$coef[names(fit.coef)])
 
     lp.r <- predict(fit, newdata = lung, type = "lp", na.action = na.exclude)

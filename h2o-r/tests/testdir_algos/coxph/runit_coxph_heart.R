@@ -38,7 +38,7 @@ test.CoxPH.heart <- function() {
     summary.out.sanitized <- gsub("[^a-zA-Z~=?|() *>.,-:\"]", "_", x = summary.out.sanitized) #keep only "safe" characters (see #9)
     summary.out.expected <- c(
       "Call:",
-      "\"Surv(start, stop, event) ~ age\"",
+      "Surv(start, stop, event) ~ age",
       "",
       "  n= ?, number of events= ? ",
       "",

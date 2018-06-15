@@ -11,7 +11,7 @@ test.CoxPH.cancer <- function() {
                          training_frame = as.h2o(cancer))
     print(hex.fit)
 
-    expect_equal("Surv(time, status) ~ age + sex + meal.cal", .as.survival.coxph.model(hex.fit@model)$call)
+    expect_equal(Surv(time, status) ~ age + sex + meal.cal, .as.survival.coxph.model(hex.fit@model)$call)
     expect_equal(fit$coef, .as.survival.coxph.model(hex.fit@model)$coef, tolerance = 1e-8)
     expect_equal(fit$var, .as.survival.coxph.model(hex.fit@model)$var, tolerance = 1e-8)
 }
