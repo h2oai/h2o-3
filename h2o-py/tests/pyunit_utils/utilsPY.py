@@ -4,6 +4,7 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
+import pandas as pd
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -3432,3 +3433,104 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
 def getMojoName(modelID):
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
     return regex.sub("_", modelID)
+
+def genDMatrix_all_numerics(h2oFrame, xlist, yresp):
+    """
+    This method will convert a H2OFrame containing all numerical dataset to a DMatrix that is used by native XGBoost
+
+    :param h2oFrame:
+    :param xlist:
+    :param yresp:
+    :return:
+    """
+    import xgboost as xgb
+    
+    pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
+    c0= h2oFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+    pandaFtrain.drop([yresp], axis=1, inplace=True)
+    pandaF = pd.concat([c0, pandaFtrain], axis=1)
+    pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+    data = pandaF.as_matrix(xlist)
+    label = pandaF.as_matrix([yresp])
+
+    return xgb.DMatrix(data=data, label=label)
+
+def summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
+                             nativeScoreTime, tolerance=1e-6):
+    '''
+    This method will summarize and compare H2OXGBoost and native XGBoost results for binomial classifiers.
+    This method will summarize and compare H2OXGBoost and native XGBoost results for binomial classifiers.
+
+    :param h2oPredictD:
+    :param nativePred:
+    :param h2oTrainTimeD:
+    :param nativeTrainTime:
+    :param h2oPredictTimeD:
+    :param nativeScoreTime:
+    :return:
+    '''
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s\n.  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    colnames = h2oPredictD.names
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        assert abs(h2oPredictLocalD[colnames[2]][ind]-nativePred[ind])<tolerance, "H2O prediction prob: {0} and native " \
+                                                                         "XGBoost prediction prob: {1}.  They are " \
+                                                                         "very different.".format(h2oPredictLocalD[colnames[2]][ind], nativePred[ind])
+
+def summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
+                                nativeScoreTime, tolerance=1e-6):
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s\n.  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+    nclass = len(nativePred[0])
+    colnames = h2oPredictD.names
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        for col in range(nclass):
+            assert abs(h2oPredictLocalD[colnames[col+1]][ind]-nativePred[ind][col])<tolerance, \
+                "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+                "different.".format(h2oPredictLocalD[colnames[col+1]][ind], nativePred[ind][col])
+
+def genTrainFiles(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2):
+    trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=0)
+    if enumCols > 0:
+        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=0)
+
+    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0)
+    yresponse.set_name(0,'response')
+    if enumCols > 0:
+        if ncol > 0:    # mixed datasets
+            trainFrame = trainFrameEnums.cbind(trainFrameNumerics.cbind(yresponse))
+        else:   # contains enum datasets
+            trainFrame = trainFrameEnums.cbind(yresponse)
+    else: # contains numerical datasets
+        trainFrame = trainFrameNumerics.cbind(yresponse)
+    return trainFrame
+
+def summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime, tolerance=1e-6):
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s\n.  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        assert abs((h2oPredictLocalD['predict'][ind]-nativePred[ind])/max(1, abs(h2oPredictLocalD['predict'][ind]), abs(nativePred[ind])))<tolerance, \
+            "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+            "different.".format(h2oPredictLocalD['predict'][ind], nativePred[ind])
