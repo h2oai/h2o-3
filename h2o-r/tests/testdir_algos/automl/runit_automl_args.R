@@ -21,45 +21,44 @@ automl.args.test <- function() {
   x <- setdiff(names(train), y)
   train[,y] <- as.factor(train[,y])
   test[,y] <- as.factor(test[,y])
-  max_runtime_secs <- 10
   max_models <- 2
   print("Check arguments to H2OAutoML class")
 
   #print("Try without a y")
   #expect_failure(h2o.automl(training_frame = train,
-  #                          max_runtime_secs = max_runtime_secs,
+  #                          max_models = max_models,
   #                          project_name = "aml0"))
 
   print("Try without an x")
   aml1 <- h2o.automl(y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml1")
 
   print("Try with y as a column index, x as colnames")
   aml2 <- h2o.automl(x = x, y = 1,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml2")
 
   print("Single training frame; x and y both specified")
   aml3 <- h2o.automl(x = x, y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml3")
 
   print("Training & validation frame")
   aml4 <- h2o.automl(x = x, y = y,
                      training_frame = train,
                      validation_frame = valid,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml4")
 
   print("Training & leaderboard frame")
   aml5 <- h2o.automl(x = x, y = y,
                      training_frame = train,
                      leaderboard_frame = test,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml5")
 
   print("Training, validation & leaderboard frame")
@@ -67,7 +66,7 @@ automl.args.test <- function() {
                      training_frame = train,
                      validation_frame = valid,
                      leaderboard_frame = test,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      project_name = "aml6")
 
   print("Early stopping args")
@@ -75,7 +74,7 @@ automl.args.test <- function() {
                      training_frame = train,
                      validation_frame = valid,
                      leaderboard_frame = test,
-                     max_runtime_secs = max_runtime_secs,
+                     max_models = max_models,
                      stopping_metric = "AUC",
                      stopping_tolerance = 0.001,
                      stopping_rounds = 3,
@@ -84,7 +83,6 @@ automl.args.test <- function() {
   print("Check max_models = 1")
   aml8 <- h2o.automl(x = x, y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
                      max_models = 1,
                      project_name = "aml8")
   nrow_aml8_lb <- nrow(aml8@leaderboard)
@@ -93,7 +91,6 @@ automl.args.test <- function() {
   print("Check max_models > 1; leaderboard continuity/growth")
   aml8 <- h2o.automl(x = x, y = y,
                      training_frame = train,
-                     max_runtime_secs = max_runtime_secs,
                      max_models = max_models,
                      project_name = "aml8")
   expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb, TRUE)
@@ -125,7 +122,7 @@ automl.args.test <- function() {
   aml10 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       weights_column = weights_column,
-                      max_runtime_secs = max_runtime_secs,
+                      max_models = max_models,
                       project_name = "aml10")
   model_ids <- as.character(as.data.frame(aml10@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -137,7 +134,7 @@ automl.args.test <- function() {
                       training_frame = train,
                       fold_column = fold_column,
                       weights_column = weights_column,
-                      max_runtime_secs = max_runtime_secs,
+                      max_models = max_models,
                       project_name = "aml11")
   model_ids <- as.character(as.data.frame(aml11@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
@@ -181,7 +178,7 @@ automl.args.test <- function() {
   aml15 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
-                      max_models = 3,
+                      max_models = max_models,
                       balance_classes = TRUE,
                       max_after_balance_size = 3.0,  
                       class_sampling_factors = c(0.2, 1.4),
