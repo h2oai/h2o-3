@@ -2,6 +2,62 @@
 
 ## H2O
 
+### Wright (3.20.0.2) - 6/15/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/2/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3950'>PUBDEV-3950</a>] - Fixed an issue that resulted in a null pointer exception for H2O ensembles. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5250'>PUBDEV-5250</a>] - In AutoML, ignored_columns are now passed in the API call when specifying both x and a fold_column in during training.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5622'>PUBDEV-5622</a>] - Fixed a bug in documentation that incorrectly referenced 'calibrate_frame' instead of 'calibration_frame'. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5629'>PUBDEV-5629</a>] - java -jar h2o.jar no longer fails on Java 7.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5634'>PUBDEV-5634</a>] - Fixed a typo in the AutoML pydocs for sort_metric.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5651'>PUBDEV-5651</a>] - Exported CoxPH functions in R.
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5621'>PUBDEV-5621</a>] - Added balance_classes, class_sampling_factors, and max_after_balance_size options to AutoML in Flow.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3754'>PUBDEV-3754</a>] - Updated the project URL, bug reports link, and list of authors in the h2o R package DESCRIPTION file. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5542'>PUBDEV-5542</a>] - Update description of the h2o R package in the DESCRIPTION file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5570'>PUBDEV-5570</a>] - AutoML now produces an error message when a response column is missing.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5623'>PUBDEV-5623</a>] - Fixed intermittent test failures for AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5625'>PUBDEV-5625</a>] - Removed frame metadata calculation from AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5635'>PUBDEV-5635</a>] - Removed the keep_cross_validation_models = False argument from the AutoML User Guide examples.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5636'>PUBDEV-5636</a>] - Users can now set a MAX_CM_CLASSES parameter to set a maximum number of confusion matrix classes.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5619'>PUBDEV-5619</a>] - Updated the AutoML screenshot in Flow to show the newly added parameters. 
+</li>
+</ul>
+
+
 ### Wright (3.20.0.1) - 6/6/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index.html</a>
@@ -80,7 +136,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5599'>PUBDEV-5599</a>] - Added the `sort_metric` option to AutoML in Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5600'>PUBDEV-5600</a>] - keep_cross_validation_predictions and keep_cross_validation_models are now available when running AutoML in Flow. </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5600'>PUBDEV-5600</a>] - keep_cross_validation_predictions and keep_cross_validation_models are now available when running AutoML in Flow. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5615'>PUBDEV-5615</a>] - Deep Learning MOJO now extends Serializable.
 </li>
 </ul>
@@ -171,7 +228,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5436'>PUBDEV-5436</a>] - Fixed markdown headings in the example Flows. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5474'>PUBDEV-5474</a>] - All installation examples use H2O version 3.20.0.1
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5474'>PUBDEV-5474</a>] - All installation examples use H2O version 3.20.0.1.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5494'>PUBDEV-5494</a>] - Added a "Data Manipulation" topic for target encoding in R.
 </li>
