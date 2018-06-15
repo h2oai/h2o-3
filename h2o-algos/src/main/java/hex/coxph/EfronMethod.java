@@ -75,21 +75,35 @@ class EfronDJKSetupFun extends MrFun<EfronDJKSetupFun> {
 
 class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
 
-  private final CoxPHTask _coxMR;
-  private final EfronDJKSetupFun _setup;
+  private double[]       _cumsumRiskTerm;
+  private double[]       _riskTermT2;
+  private double[]       _beta;
+  private final int      _n_offsets;
+  private final int      _n_time;
+  private final long     _min_event;
+  private final boolean  _has_weights_column;
+  private final boolean  _has_start_column;
+  private final boolean  _has_strata_column;
 
   // OUT
   double[][] _djkTerm;
 
   EfronDJKTermTask(DataInfo dinfo, CoxPHTask coxMR, EfronDJKSetupFun setup) {
     super(dinfo);
-    _coxMR = coxMR;
-    _setup = setup;
+    _cumsumRiskTerm = setup._cumsumRiskTerm;
+    _riskTermT2 = setup._riskTermT2;
+    _beta = coxMR._beta;
+    _n_offsets = coxMR._n_offsets;
+    _n_time = coxMR._time.length;
+    _min_event = coxMR._min_event;
+    _has_weights_column = coxMR._has_weights_column;
+    _has_start_column = coxMR._has_start_column;
+    _has_strata_column = coxMR._has_strata_column;
   }
 
   @Override
   protected void chunkInit() {
-    final int n_coef = _coxMR._beta.length;
+    final int n_coef = _beta.length;
     _djkTerm = malloc2DArray(n_coef, n_coef);
   }
 
@@ -99,14 +113,14 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
     int ncats = row.nBins;
     int [] cats = row.binIds;
     double [] nums = row.numVals;
-    final double weight = _coxMR._has_weights_column ? response[0] : 1.0;
+    final double weight = _has_weights_column ? response[0] : 1.0;
     if (weight <= 0)
       throw new IllegalArgumentException("weights must be positive values");
     int respIdx = response.length - 1;
-    final long event = (long) (response[respIdx--] - _coxMR._min_event);
+    final long event = (long) (response[respIdx--] - _min_event);
     final int t2 = (int) response[respIdx--];
-    int t1 = _coxMR._has_start_column ? (int) response[respIdx--] : -1;
-    final double strata = _coxMR._has_strata_column ? response[respIdx--] : 0;
+    int t1 = _has_start_column ? (int) response[respIdx--] : -1;
+    final double strata = _has_strata_column ? response[respIdx--] : 0;
     assert respIdx == -1 : "expected to use all response data";
     if (Double.isNaN(strata))
       return; // skip this row
@@ -116,23 +130,23 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
     // risk is cheaper to recalculate than trying to re-use risk calculated in CoxPHTask
     double logRisk = 0;
     for (int j = 0; j < ncats; ++j)
-      logRisk += _coxMR._beta[cats[j]];
-    for (int j = 0; j < nums.length - _coxMR._n_offsets; ++j)
-      logRisk += nums[j] * _coxMR._beta[numStart + j];
-    for (int j = nums.length - _coxMR._n_offsets; j < nums.length; ++j)
+      logRisk += _beta[cats[j]];
+    for (int j = 0; j < nums.length - _n_offsets; ++j)
+      logRisk += nums[j] * _beta[numStart + j];
+    for (int j = nums.length - _n_offsets; j < nums.length; ++j)
       logRisk += nums[j];
     final double risk = weight * Math.exp(logRisk);
 
-    final int ntotal = ncats + (nums.length - _coxMR._n_offsets);
+    final int ntotal = ncats + (nums.length - _n_offsets);
     final int numStartIter = numStart - ncats;
 
     final double cumsumRiskTerm;
-    if (_coxMR._has_start_column && (t1 % _coxMR._time.length > 0)) {
-      cumsumRiskTerm = _setup._cumsumRiskTerm[t2] - _setup._cumsumRiskTerm[t1 - 1];
+    if (_has_start_column && (t1 % _n_time > 0)) {
+      cumsumRiskTerm = _cumsumRiskTerm[t2] - _cumsumRiskTerm[t1 - 1];
     } else {
-      cumsumRiskTerm = _setup._cumsumRiskTerm[t2];
+      cumsumRiskTerm = _cumsumRiskTerm[t2];
     }
-    final double riskTermT2 = event > 0 ? _setup._riskTermT2[t2] : 0;
+    final double riskTermT2 = event > 0 ? _riskTermT2[t2] : 0;
     final double mult = (riskTermT2 - cumsumRiskTerm) * risk;
 
     for (int jit = 0; jit < ntotal; ++jit) {
@@ -147,6 +161,14 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
         _djkTerm[j][k] += x1mult * x2;
       }
     }
+  }
+
+  @Override
+  protected void closeLocal() {
+    // to avoid sending them back over the wire
+    _cumsumRiskTerm = null;
+    _riskTermT2 = null;
+    _beta = null;
   }
 
   @Override
