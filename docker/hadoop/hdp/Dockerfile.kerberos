@@ -1,0 +1,40 @@
+ARG FROM_IMAGE
+FROM ${FROM_IMAGE}
+
+RUN \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y krb5-admin-server krb5-kdc krb5-config krb5-user && \
+    update-rc.d krb5-kdc enable
+
+ARG PATH_PREFIX
+COPY ${PATH_PREFIX}/../common/kerberos/krb5.conf /etc/krb5.conf
+COPY ${PATH_PREFIX}/conf-kerberos/ /etc/hadoop/conf
+COPY ${PATH_PREFIX}/../common/startup/00_a_kerberos_init /etc/startup/
+
+
+RUN \
+    mkdir -p /var/log/kerberos && \
+    kdb5_util create -P h2o && \
+    kadmin.local -q 'addprinc -pw h2o hdfs/localhost@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o mapred/localhost@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o yarn/localhost@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o HTTP/localhost@H2O.AI' && \
+    kadmin.local -q 'getprincs' && \
+    cd /etc/hadoop/conf && \
+    kadmin.local -q 'xst -norandkey -k hdfs.keytab hdfs/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
+    chown hdfs:hdfs hdfs.keytab && \
+    kadmin.local -q 'xst -norandkey -k mapred.keytab mapred/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
+    chown yarn:hadoop mapred.keytab && \
+    kadmin.local -q 'xst -norandkey -k yarn.keytab yarn/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
+    chown yarn:hadoop yarn.keytab && \
+    chmod 400 *.keytab
+
+RUN \
+    cd /etc/hadoop/conf/ && \
+    echo 'DevOps\nH2O.ai\nMountain View\nCA\nUS\n\nyes\n' | keytool -keystore keystore.jks -alias localhost -genkey -storepass h2oh2oh2o && \
+    echo 'US\nCaliforna\nMountain View\nH2O.ai\nDevOps\nH2O-3\n\n'| openssl req -new -x509 -keyout ca-key -out ca-cert -nodes && \
+    keytool -keystore truststore.jks -alias CARoot -import -file ca-cert -storepass h2oh2oh2o -noprompt && \
+    keytool -keystore keystore.jks -alias localhost -certreq -file cert-file -storepass h2oh2oh2o && \
+    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed  -CAcreateserial -passin pass:h2oh2oh2o && \
+    keytool -keystore keystore.jks -alias CARoot -import -file ca-cert -storepass h2oh2oh2o -noprompt && \
+    keytool -keystore keystore.jks -alias localhost -import -file cert-signed -storepass h2oh2oh2o -noprompt
