@@ -17,7 +17,7 @@ def australia_automl():
     valid = fr[1]
     test = fr[2]
 
-    aml = H2OAutoML(max_runtime_secs = 30,stopping_rounds=3,stopping_tolerance=0.001)
+    aml = H2OAutoML(max_models = 2,stopping_rounds=3,stopping_tolerance=0.001)
 
     print("AutoML (Regression) run with x not provided with train, valid, and test")
     aml.train(y="runoffnew", training_frame=train,validation_frame=valid, leaderboard_frame=test)
