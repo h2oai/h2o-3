@@ -83,7 +83,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `standardize <algo-params/standardize.html>`__: If enabled, automatically standardize the data (mean 0, variance 1). If disabled, the user must provide properly scaled input data.
 
--  **activation**: Specify the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).
+-  **activation**: Specify the activation function (Tanh, Tanh with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).
    
     **Note**: **Maxout** is not supported when **autoencoder** is enabled.
 

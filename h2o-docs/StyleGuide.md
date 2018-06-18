@@ -91,7 +91,7 @@ For any acronym, spell out in 1st use, then provide acronym in parentheses after
 - gamma
 - lambda
 - rho
-- tahn
+- tanh
 
 
 ## Algos

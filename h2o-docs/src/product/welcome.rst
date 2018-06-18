@@ -49,7 +49,7 @@ Additional Requirements
 
 -  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
--  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Spark**: Version 2.1, 2.2, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 New Users
@@ -247,9 +247,9 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/doc/DEVEL.rst>`_: Read this document first to get started with Sparkling Water.
+-  Sparkling Water Documentation for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/index.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__: Read this document first to get started with Sparkling Water.
 
--  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/blob/master/doc/devel/integ_tests.rst>`_: Go here to learn how to start Sparkling Water on Hadoop.
+-  Launch on Hadoop and Import from HDFS (`2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/integ_tests.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__: Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
@@ -261,7 +261,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <http://docs.h2o.ai/sparkling-water/master/bleeding-edge/doc/FAQ.html>`_: This FAQ provides answers to many common questions about Sparkling Water.
+-  Sparkling Water FAQ for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/FAQ.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/FAQ.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__: This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -289,65 +289,11 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 2.0 or later. We recommended Sparkling Water 2.2. 
+PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/pysparkling.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html>`__, and `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__.
 
-PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. Note that the steps below describe how to install with Sparkling Water 2.2. Follow similar instructions on the `Download page <http://h2o.ai/download>`__ for a different version of Sparkling Water.
+**Note**: PySparkling requires Sparkling Water 2.1 or later. We recommended Sparkling Water 2.3. 
 
-Running the PySparkling Shell
-'''''''''''''''''''''''''''''
-
-Perform the following steps to install H2O's PySparkling package. 
-
-1. Download `Spark 2.2.0 <https://spark.apache.org/downloads.html>`__.
-2. Point SPARK_HOME to the existing installation of Spark, and export the variable MASTER. For example:
-
-  ::
-
-    export SPARK_HOME="/path/to/spark/installation"
-    # To launch a local Spark cluster with 3 worker nodes with 2 cores and 1g per node.
-    export MASTER="local" 
-
-3. Download and unpack the Sparkling Water distribution.
-
-4. Run PySparkling shell.
-
-  ::
-
-    ./bin/pysparkling 
-
-5. In your PySparkling application, create H2OContext.
-
-  ::
-
-    from pysparkling import *
-    hc = H2OContext.getOrCreate(spark)
-
-Once you have H2OContext available, any API calls available in the H2O Python client can be used.
-
-PySparkling Installed from PyPi Repository
-''''''''''''''''''''''''''''''''''''''''''
-
-1. Install PySparkling using ``pip``.
-
-  ::
-
-    pip install h2o_pysparkling_2.2
-
-2. In your Python client, create a SparkSession. Note that for this step, you must have the PySpark package installed.
-
-  :: 
-
-    from pyspark.sql import SparkSession 
-    spark = SparkSession.builder.appName("SparklingWaterApp").getOrCreate()
-
-3. Start H2OContext.
-
-  ::
-
-    from pysparkling import *
-    hc = H2OContext.getOrCreate(spark)
-
-Once you have H2OContext available, any API calls available in the H2O Python client can be used.
+PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
 Python Users
 --------------
@@ -375,7 +321,7 @@ Currently, the only version of R that is known to be incompatible with H2O is R 
 
 To check which version of H2O is installed in R, use ``versions::installed.versions("h2o")``.
 
--  `R User HTML <../h2o-r/docs/index.html>`_ and R User PDF <../h2o-r/h2o_package.pdf>`_ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
+-  `R User HTML <../h2o-r/docs/index.html>`__ and `R User PDF <../h2o-r/h2o_package.pdf>`__ Documentation: This document contains all commands in the H2O package for R, including examples and arguments. It represents the definitive guide to using H2O in R.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -502,7 +448,7 @@ Optionally specify this port using the ``-driverport`` option in the ``hadoop ja
 
 **Path 2: mapper to mapper**
 
-Optionally specify this port using the ``-baseport`` option in the ``hadoop jar`` command (refer to `Hadoop Launch Parameters`_ below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used.
+Optionally specify this port using the ``-baseport`` option in the ``hadoop jar`` command (refer to `Hadoop Launch Parameters`_ below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 and 54322 are used.
 
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient).
 
