@@ -948,7 +948,6 @@ To enable this feature, set the ``-internal_security_conf`` parameter when start
 
 This must be set for every node in the cluster. Every node needs to have access to both Java keystore and Java truststore containing appropriate keys and certificates.
 
-This feature should not be used together with the ``-useUDP`` flag, as we currently do not support UDP encryption through DTLS or any other protocol that might result in unencrypted data transfers.
 
 Keystore/Truststore Generation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1004,7 +1003,6 @@ Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8ml
 Caveats and Missing Pieces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- - This feature CANNOT be used together with the ``-useUDP`` flag. We currently do not support DTLS or any other encryption for UDP.
  - Should you start a mixed cloud of SSL and nonSSL nodes, the SSL ones will fail to bootstrap, while the nonSSL ones will become unresponsive.
  - H2O does not provide in-memory data encryption. This might spill data to disk in unencrypted form should swaps to disk occur. As a workaround, an encrypted drive is advised.
  - H2O does not support encryption of data saved to disk, should appropriate flags be enabled. Similar to the previous caveat, the user can use an encrypted drive to work around this issue.
