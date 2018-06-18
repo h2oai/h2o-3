@@ -12,6 +12,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -365,5 +366,31 @@ public class DeepLearningIrisTest extends TestUtil {
   public static class Short extends DeepLearningIrisTest {
     @Test @Ignore public void run() throws Exception { runFraction(0.05f); }
   }
+    @Test
+  public void test_so_dl_params() {
+      try {
+        Scope.enter();
+        Frame fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+        Scope.track(fr);
+
+        //Use DeepLearningParameters to invoke to the deep learning parameters (don't use the interim parameter DeepLearningParametersV3, because it can change under the hood)
+        DeepLearningParameters p = new DeepLearningParameters();
+
+        //Please use the following to set your deeplearning parameter arguments
+        p._train = fr._key;
+        p._response_column = fr.lastVecName();
+
+        p._hidden = new int[]{200, 200};
+
+        DeepLearningModel dlmodel = new DeepLearning(p).trainModel().get();
+
+        Frame predict = dlmodel.score(fr);
+        Scope.track(predict);
+        Scope.track_generic(dlmodel);
+        System.out.println("predictions" + predict);
+      } finally {
+        Scope.exit();
+      }
+    }
 }
 
