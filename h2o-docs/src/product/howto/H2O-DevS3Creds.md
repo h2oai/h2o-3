@@ -135,7 +135,7 @@ The following is an example core-site.xml file:
 
 ## Launching H2O
 
-**Note**: Before launching H2O on an EC2 cluster, verify that ports `54321` and `54322` are both accessible by TCP and UDP. 
+**Note**: Before launching H2O on an EC2 cluster, verify that ports `54321` and `54322` are both accessible by TCP. 
 
 ### Selecting the Operating System and Virtualization Type
 

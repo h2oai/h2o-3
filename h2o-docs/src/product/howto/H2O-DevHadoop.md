@@ -4,19 +4,24 @@
 
 Currently supported versions:
 
-- CDH 5.2
-- CDH 5.3
-- CDH 5.4.2
-- CDH 5.5.3
-- CDH 5.6.0
-- CDH 5.7.0
-- HDP 2.1
+- CDH 5.4
+- CDH 5.5
+- CDH 5.6
+- CDH 5.7
+- CDH 5.8
+- CDH 5.10
+- CDH 5.13
+- CDH 5.14
 - HDP 2.2
 - HDP 2.3
 - HDP 2.4
-- MapR 4.0.1
+- HDP 2.5
+- HDP 2.6
+- MapR 4.0
 - MapR 5.0
 - MapR 5.1
+- MapR 5.2
+- IOP 4.2
 
 **Important Points to Remember**:
 
@@ -41,7 +46,7 @@ Optionally specify this port using the `-driverport` option in the `hadoop jar` 
 
 **Path 2: mapper to mapper**
 
-Optionally specify this port using the `-baseport` option in the `hadoop jar` command (refer to [Hadoop Launch Parameters](#LaunchParam) below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 (TCP) and 54322 (TCP & UDP) are used.
+Optionally specify this port using the `-baseport` option in the `hadoop jar` command (refer to [Hadoop Launch Parameters](#LaunchParam) below. This port and the next subsequent port are opened on the mapper hosts (the Hadoop worker nodes) where the H2O mapper nodes are placed by the Resource Manager. By default, ports 54321 and 54322 are used.
 
 The mapper port is adaptive: if 54321 and 54322 are not available, H2O will try 54323 and 54324 and so on. The mapper port is designed to be adaptive because sometimes if the YARN cluster is low on resources, YARN will place two H2O mappers for the same H2O cluster request on the same physical host. For this reason, we recommend opening a range of more than two ports (20 ports should be sufficient).
 
