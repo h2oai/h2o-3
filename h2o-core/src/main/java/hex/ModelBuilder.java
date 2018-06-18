@@ -388,10 +388,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
-    if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
-    if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) {
-      foldAssignment.remove(); //TODO can users set _fold_column to non null and avoid removing?
+
+    if( _parms._fold_column == null ) {
+      if (_parms._nfolds > 1 && _parms._keep_cross_validation_fold_assignment)
+        DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      else {
+        foldAssignment.remove();
+      }
+    }
+    else {
+      // TODO Again maybe we can remove it straight away without checking params
+      if (!_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     }
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 

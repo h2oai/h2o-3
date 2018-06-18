@@ -45,7 +45,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
-    print(aml.leaderboard)    
+    print(aml.leaderboard)
 
     print("AutoML run with x not provided and train set only")
     aml = H2OAutoML(project_name="py_aml1", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
@@ -57,7 +57,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
-    print(aml.leaderboard)    
+    print(aml.leaderboard)
 
     print("AutoML run with x not provided with train and valid")
     aml = H2OAutoML(project_name="py_aml2", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
@@ -69,7 +69,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
-    print(aml.leaderboard)    
+    print(aml.leaderboard)
 
     print("AutoML run with x not provided with train and test")
     aml = H2OAutoML(project_name="py_aml3", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
@@ -81,7 +81,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
-    print(aml.leaderboard)    
+    print(aml.leaderboard)
 
     print("AutoML run with x not provided with train, valid, and test")
     aml = H2OAutoML(project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
@@ -93,7 +93,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
-    print(aml.leaderboard)    
+    print(aml.leaderboard)
 
     print("AutoML run with x not provided and y as col idx with train, valid, and test")
     aml = H2OAutoML(project_name="py_aml5", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
@@ -124,15 +124,13 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard, hoping that it's not an SE model
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last 
+    # if you get a stacked ensemble, take the second to last
     # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
     if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
       amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
     assert amodel.params['nfolds']['actual'] == 3
 
     print("Check nfolds = 0 works properly")
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    train["CAPSULE"] = train["CAPSULE"].asfactor()
     aml = H2OAutoML(project_name="py_aml_nfolds0", nfolds=0, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
@@ -141,12 +139,11 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert amodel.params['nfolds']['actual'] == 0
 
-
     print("Check balance_classes & related args work properly")
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3,
-        balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
+                    balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard, hoping that it's not an SE model
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
@@ -158,9 +155,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert amodel.params['max_after_balance_size']['actual'] == 3.0
     assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
 
-    print("Check that fold assignments were skipped if an argument `keep_cross_validation_fold_assignment` had been set to False")
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    train["CAPSULE"] = train["CAPSULE"].asfactor()
+    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= False and nfolds > 1")
     aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment0",
                     nfolds=3, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=False)
@@ -170,7 +165,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
-    print("Check that fold assignments were kept if an argument `keep_cross_validation_fold_assignment` had been set to True")
+    print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment` = True and nfolds > 1")
     aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment1",
                     nfolds=3, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=True)
@@ -180,13 +175,22 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == True
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] != None
 
-    # TO DO
+    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment` = True and nfolds = 0")
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment2",
+                    nfolds=0, max_models=3, seed=1,
+                    keep_cross_validation_fold_assignment=True)
+    aml.train(y="CAPSULE", training_frame=train)
+
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
+    assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
+
+    # TO DO //TODO ?
     #print("Check that exactly two ensembles are trained")
     #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
     #aml.train(y="CAPSULE", training_frame=train)
 
-
-    # TO DO
+    # TO DO   //TODO should we create separate jira and write number here in such cases? (that refers to PUBDEV-5095?)
     # Add a test that checks fold_column like in runit
 
 

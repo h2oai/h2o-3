@@ -210,7 +210,7 @@ automl.args.test <- function() {
   cv_model_ids <- unlist(cv_model_ids)
   expect_equal(sum(sapply(cv_model_ids, function(i) grepl(i, h2o.ls()))), 0)
 
-  print("Check that fold assignments were skipped if an argument `keep_cross_validation_fold_assignment` had been set to FALSE")
+  print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= FALSE and nfolds > 1")
     aml16 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
@@ -223,7 +223,7 @@ automl.args.test <- function() {
     expect_null(some_base_model@parameters$keep_cross_validation_fold_assignment)
     expect_null(some_base_model@model$cross_validation_fold_assignment_frame_id)
 
-  print("Check that fold assignments were kept if an argument `keep_cross_validation_fold_assignment` had been set to TRUE")
+  print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment`= TRUE and nfolds > 1")
     aml17 <- h2o.automl(x = x, y = y,
                       training_frame = train,
                       nfolds = 3,
@@ -238,6 +238,19 @@ automl.args.test <- function() {
     base_model <- h2o.getModel(non_ensemble_model_ids[1])
     expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, TRUE)
     expect_defined(base_model@model$cross_validation_fold_assignment_frame_id)
+
+    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= TRUE and nfolds = 0")
+    aml18 <- h2o.automl(x = x, y = y,
+                      training_frame = train,
+                      nfolds = 0,
+                      max_models = max_models,
+                      project_name = "aml18",
+                      keep_cross_validation_fold_assignment = TRUE)
+    model_ids <- as.character(as.data.frame(aml18@leaderboard[,"model_id"])[,1])
+    non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
+    base_model <- h2o.getModel(non_ensemble_model_ids[1])
+    expect_null(base_model@parameters$keep_cross_validation_fold_assignment)
+    expect_null(base_model@model$cross_validation_fold_assignment_frame_id)
 }
 
 doTest("AutoML Args Test", automl.args.test)

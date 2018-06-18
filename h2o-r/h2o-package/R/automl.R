@@ -77,7 +77,7 @@ h2o.automl <- function(x, y, training_frame,
                        keep_cross_validation_predictions = TRUE,
                        keep_cross_validation_models = TRUE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
-                       keep_cross_validation_fold_assignment = TRUE) #TODO what should we use as default?
+                       keep_cross_validation_fold_assignment = FALSE) #TODO what should we use as default?
 {
 
   tryCatch({
@@ -227,7 +227,7 @@ h2o.automl <- function(x, y, training_frame,
 
   build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
   build_control$keep_cross_validation_models <- keep_cross_validation_models
-  build_control$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  build_control$keep_cross_validation_fold_assignment <- nfolds !=0  && keep_cross_validation_fold_assignment
 
   # Create the parameter list to POST to the AutoMLBuilder 
   if (length(build_models) == 0) {

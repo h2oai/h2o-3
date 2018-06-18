@@ -92,7 +92,7 @@ class H2OAutoML(object):
                  exclude_algos=None,
                  keep_cross_validation_predictions=True,
                  keep_cross_validation_models=True,
-                 keep_cross_validation_fold_assignment = True,
+                 keep_cross_validation_fold_assignment = False,
                  sort_metric="AUTO"):
 
         # Check if H2O jar contains AutoML
@@ -191,7 +191,7 @@ class H2OAutoML(object):
         self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
 
         assert_is_type(keep_cross_validation_fold_assignment, bool)
-        self.build_control["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
+        self.build_control["keep_cross_validation_fold_assignment"] = self.nfolds != 0 and keep_cross_validation_fold_assignment
 
         self._job = None
         self._leader_id = None
