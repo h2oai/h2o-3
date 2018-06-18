@@ -12,7 +12,7 @@
 - Try allocating more memory to H2O by modifying the `-Xmx` value when launching H2O from the command line (for example, `java -Xmx10g -jar h2o.jar` allocates 10g of memory for H2O). If you create a cluster with four 20g nodes (by specifying `-Xmx20g` four times), H2O will have a total of 80 gigs of memory available. For best performance, we recommend sizing your cluster to be about four times the size of your data. To avoid swapping, the `-Xmx` allocation must not exceed the physical memory on any node. Allocating the same amount of memory for all nodes is strongly recommended, as H2O works best with symmetric nodes.
 
 - Confirm that no other sessions of H2O are running. To stop all running H2O sessions, enter `ps -efww | grep h2o` in your shell (OSX or Linux).
-- Confirm ports 54321 and 54322 are available for both TCP and UDP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
+- Confirm ports 54321 and 54322 are available for TCP. Launch Telnet (for Windows users) or Terminal (for OS X users), then type `telnet localhost 54321`, `telnet localhost 54322`
 - Confirm your firewall is not preventing the nodes from locating each other. If you can't launch H2O, we recommend temporarily disabling any firewalls until you can confirm they are not preventing H2O from launching.
 - Confirm the nodes are not using different versions of H2O. If the H2O initialization is not successful, look at the output in the shell - if you see `Attempting to join /localhost:54321 with an H2O version mismatch (md5 differs)`, update H2O on all the nodes to the same version.
 - Confirm that there is space in the `/tmp` directory.
@@ -280,7 +280,7 @@ If this does not resolve the issue, try the following additional troubleshooting
 
 - Test connectivity using curl: First, log in to the first node and enter curl http://<Node2IP>:54321 (where <Node2IP> is the IP address of the second node. Then, log in to the second node and enter curl http://<Node1IP>:54321 (where <Node1IP> is the IP address of the first node). Look for output from H2O.
 
-- Confirm ports 54321 and 54322 are available for both TCP and UDP.
+- Confirm ports 54321 and 54322 are available for TCP.
 - Confirm your firewall is not preventing the nodes from locating each other.
 - Confirm the nodes are not using different versions of H2O.
 - Confirm that the username is the same on all nodes; if not, define the cloud in the terminal when launching using `-name`:`java -jar h2o.jar -name myCloud`.
@@ -321,7 +321,7 @@ In the Flow web UI, click the **Admin** menu and select **Cluster Status**.
 H2O uses two ports:
 
 - The `REST_API` port (54321): Specify when launching H2O using `-port`; uses TCP only.
-- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP and UDP.
+- The `INTERNAL_COMMUNICATION` port (54322): Implied based on the port specified as the `REST_API` port, +1; requires TCP.
 
 You can start the cluster behind the firewall, but to reach it, you must make a tunnel to reach the `REST_API` port. To use the cluster, the `REST_API` port of at least one node must be reachable.
 
@@ -364,8 +364,7 @@ The following information displays for each message:
 
 - `HH:MM:SS:MS` and `nanosec`: The local time of the event
 - `Who`: The endpoint of the message; can be either a source/receiver node or source node and multicast for broadcasted messages
-- `I/O Type`: The type of communication (either UDP for small messages or TCP for large messages)
-   >**Note**: UDP messages are only sent if the UDP option was enabled when launching H2O or for multicast when a flatfile is not used for configuration.
+- `I/O Type`: The type of communication (TCP)
 - `Event`: The type of H2O message. The most common type is a distributed task, which displays as `exec` (the requested task) -> `ack` (results of the processed task) -> `ackck` (sender acknowledges receiving the response, task is completed and removed)
 - `rebooted`: Sent during node startup
 - `heartbeat`: Provides small message tracking information about node health, exchanged periodically between nodes
@@ -794,12 +793,6 @@ After creating and applying the desired node labels and associating them with sp
 - `-nodes <num-nodes>` represents the number of nodes
 - `-mapperXmx 6g` launches H2O with 6g of memory
 - `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
-
----
-
-**How does H2O handle UDP packet failures? Does H2O quit or retry?**
-
- In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
 
 ---
 

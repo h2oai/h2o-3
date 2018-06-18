@@ -23,7 +23,7 @@ General Troubleshooting Tips
 -  Confirm that no other sessions of H2O are running. To stop all
    running H2O sessions, enter ``ps -efww | grep h2o`` in your shell
    (OSX or Linux).
--  Confirm ports 54321 and 54322 are available for both TCP and UDP.
+-  Confirm ports 54321 and 54322 are available for TCP.
    Launch Telnet (for Windows users) or Terminal (for OS X users), then
    type ``telnet localhost 54321``, ``telnet localhost 54322``
 -  Confirm your firewall is not preventing the nodes from locating each
