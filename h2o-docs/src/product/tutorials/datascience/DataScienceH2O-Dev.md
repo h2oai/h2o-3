@@ -1438,7 +1438,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **activation**: Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).
+- **activation**: Select the activation function (Tanh, Tanh with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout).
 	> - **Maxout** is not supported when **autoencoder** is enabled.    
 
 - **hidden**: Specify the hidden layer sizes (e.g., 100,100). The value must be positive.   
