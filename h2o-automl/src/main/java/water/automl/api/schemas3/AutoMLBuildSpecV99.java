@@ -48,6 +48,9 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster.", direction=API.Direction.INPUT)
     public boolean keep_cross_validation_models;
 
+    @API(help="Whether to keep cross-validation assignments.", direction=API.Direction.INPUT)
+    public boolean keep_cross_validation_fold_assignment;
+
   } // class AutoMLBuildControlV99
 
   /**

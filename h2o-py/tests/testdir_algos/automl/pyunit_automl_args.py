@@ -8,7 +8,7 @@ from h2o.automl import H2OAutoML
 """
 This test is used to check arguments passed into H2OAutoML along with different ways of using `.train()`
 """
-def prostate_automl_args():
+def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main goal here is to check args no matter what dataset is being used.
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
@@ -23,9 +23,9 @@ def prostate_automl_args():
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
-    
+
     max_models = 2
-    
+
     # Below fails bc there are no models in the leaderboard, but AutoML needs to check the models to get the
     # model type (binomial, multinomial, or regression)
     # print("Check that exclude_algos implementation is complete, and empty leaderboard works")
@@ -145,18 +145,45 @@ def prostate_automl_args():
     print("Check balance_classes & related args work properly")
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     train["CAPSULE"] = train["CAPSULE"].asfactor()
-    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3, 
+    aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3,
         balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
     # grab the last model in the leaderboard, hoping that it's not an SE model
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last 
+    # if you get a stacked ensemble, take the second to last
     # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
     if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
-      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])   
+      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
     assert amodel.params['balance_classes']['actual'] == True
     assert amodel.params['max_after_balance_size']['actual'] == 3.0
     assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
+
+    print("Check that fold assignments were skipped if an argument `keep_cross_validation_fold_assignment` had been set to False")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    train["CAPSULE"] = train["CAPSULE"].asfactor()
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment0",
+                    nfolds=3, max_models=3, seed=1,
+                    keep_cross_validation_fold_assignment=False)
+    aml.train(y="CAPSULE", training_frame=train)
+
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
+    assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
+
+    print("Check that fold assignments were kept if an argument `keep_cross_validation_fold_assignment` had been set to True")
+    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment1",
+                    nfolds=3, max_models=3, seed=1,
+                    keep_cross_validation_fold_assignment=True)
+    aml.train(y="CAPSULE", training_frame=train)
+
+    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
+    assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == True
+    assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] != None
+
+    # TO DO
+    #print("Check that exactly two ensembles are trained")
+    #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
+    #aml.train(y="CAPSULE", training_frame=train)
 
 
     # TO DO

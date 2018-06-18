@@ -1,5 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
+source("../../runitUtils/matchers.R")
 
 automl.args.test <- function() {
 
@@ -208,6 +209,35 @@ automl.args.test <- function() {
   }
   cv_model_ids <- unlist(cv_model_ids)
   expect_equal(sum(sapply(cv_model_ids, function(i) grepl(i, h2o.ls()))), 0)
+
+  print("Check that fold assignments were skipped if an argument `keep_cross_validation_fold_assignment` had been set to FALSE")
+    aml16 <- h2o.automl(x = x, y = y,
+                      training_frame = train,
+                      nfolds = 3,
+                      max_models = max_models,
+                      project_name = "aml16",
+                      keep_cross_validation_fold_assignment = FALSE)
+    model_ids <- as.character(as.data.frame(aml16@leaderboard[,"model_id"])[,1])
+    non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
+    some_base_model <- h2o.getModel(non_ensemble_model_ids[1])
+    expect_null(some_base_model@parameters$keep_cross_validation_fold_assignment)
+    expect_null(some_base_model@model$cross_validation_fold_assignment_frame_id)
+
+  print("Check that fold assignments were kept if an argument `keep_cross_validation_fold_assignment` had been set to TRUE")
+    aml17 <- h2o.automl(x = x, y = y,
+                      training_frame = train,
+                      nfolds = 3,
+                      max_models = max_models,
+                      project_name = "aml17",
+                      keep_cross_validation_fold_assignment = TRUE)
+    model_ids <- as.character(as.data.frame(aml17@leaderboard[,"model_id"])[,1])
+    ensemble <- h2o.getModel(grep("StackedEnsemble", model_ids, value = TRUE)[1])
+    #TODO is it expected behaviour? We probably do not have fold assignments for metalearner at all.
+    expect_null(ensemble@parameters$keep_cross_validation_fold_assignment)
+    non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
+    base_model <- h2o.getModel(non_ensemble_model_ids[1])
+    expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, TRUE)
+    expect_defined(base_model@model$cross_validation_fold_assignment_frame_id)
 }
 
 doTest("AutoML Args Test", automl.args.test)

@@ -530,7 +530,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model.Parameters defaults = builder._parms;
     builder._parms = parms;
 
-    setCommonModelBuilderParams(builder._parms);
+    setCommonModelBuilderParams(builder._parms); //TODO why we set it again after setting it in AutoMl.defaultRandomForest() method?
 
     if (builder._parms._max_runtime_secs == 0)
       builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
@@ -690,6 +690,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
     }
+
+    params._keep_cross_validation_fold_assignment = buildSpec.build_control.keep_cross_validation_fold_assignment;
   }
 
   private boolean exceededSearchLimits(String whatWeAreSkipping) {
@@ -973,7 +975,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else {
       stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
     }
-    // TODO: Add fold_assignment
+
+    stackedEnsembleParameters._keep_cross_validation_fold_assignment = buildSpec.build_control.keep_cross_validation_fold_assignment;
+
     Key modelKey = modelKey(modelName);
     Job ensembleJob = trainModel(modelKey, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
