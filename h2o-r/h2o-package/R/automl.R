@@ -77,8 +77,8 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        keep_cross_validation_predictions = TRUE,
                        keep_cross_validation_models = TRUE,
-                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
-                       keep_cross_validation_fold_assignment = FALSE) #TODO what should we use as default?
+                       keep_cross_validation_fold_assignment = FALSE,
+                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"))
 {
 
   tryCatch({
