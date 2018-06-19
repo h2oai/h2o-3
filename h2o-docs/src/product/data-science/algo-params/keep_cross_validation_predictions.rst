@@ -1,7 +1,7 @@
 ``keep_cross_validation_predictions``
 -------------------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 Description
