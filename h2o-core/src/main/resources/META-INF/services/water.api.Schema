@@ -40,6 +40,7 @@ water.api.schemas3.JStackV3$DStackTraceV3
 water.api.schemas3.JobV3
 water.api.schemas3.JobsV3
 water.api.schemas3.KeyV3
+water.api.schemas3.KeyV3$ScalaCodeResultV3
 water.api.schemas3.KeyV3$AssemblyKeyV3
 water.api.schemas3.KeyV3$FrameKeyV3
 water.api.schemas3.KeyV3$GridKeyV3

@@ -5,6 +5,7 @@ import hex.PartialDependence;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
+import water.api.ScalaCodeResult;
 import water.parser.DecryptionTool;
 import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
@@ -86,6 +87,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public JobKeyV3(Key<Job> key) {
       super(key);
     }
+  }
+
+  public static class ScalaCodeResultV3 extends KeyV3<Iced, ScalaCodeResultV3, ScalaCodeResult> {
+    public ScalaCodeResultV3() {}
+    public ScalaCodeResultV3(Key<ScalaCodeResult> key) {super(key); }
   }
 
   public static class FrameKeyV3 extends KeyV3<Iced, FrameKeyV3, Frame> {
