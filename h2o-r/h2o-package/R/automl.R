@@ -226,6 +226,7 @@ h2o.automl <- function(x, y, training_frame,
     build_control$max_after_balance_size <- max_after_balance_size
   }
 
+  # Update build_control with what to save
   build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
   build_control$keep_cross_validation_models <- keep_cross_validation_models
   build_control$keep_cross_validation_fold_assignment <- nfolds !=0  && keep_cross_validation_fold_assignment
