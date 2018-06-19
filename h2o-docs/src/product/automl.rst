@@ -106,9 +106,11 @@ Optional Miscellaneous Parameters
     - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
     - ``StackedEnsemble``
 
-- **keep_cross_validation_predictions**: Specify whether to keep the predictions of the cross-validation predictions. If set to FALSE, then running the same AutoML object for repeated runs will cause an exception because CV predictions are are required to build additional Stacked Ensemble models in AutoML. This option defaults to TRUE.
+- **keep_cross_validation_predictions**: Specify whether to keep the predictions of the cross-validation predictions. If set to FALSE, then running the same AutoML object for repeated runs will cause an exception because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to TRUE.
 
 - **keep_cross_validation_models**: Specify whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. This option defaults to TRUE.
+
+- **keep_cross_validation_fold_assignment**: Specify whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. This option defaults to FALSE.
 
 
 Auto-Generated Frames
