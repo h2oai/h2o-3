@@ -110,7 +110,7 @@ Optional Miscellaneous Parameters
 
 - **keep_cross_validation_models**: Specify whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. This option defaults to TRUE.
 
-- **keep_cross_validation_fold_assignment**: Specify whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. This option defaults to FALSE.
+- `<data-science/algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.  Defaults to FALSE.
 
 
 Auto-Generated Frames
