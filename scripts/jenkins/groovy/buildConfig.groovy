@@ -318,8 +318,12 @@ class BuildConfig {
     return "${COMMIT_STATE_PREFIX} » ${stageName}"
   }
 
-  String getSmokeHadoopImage(final String distribution, final String version) {
-      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}:${HADOOP_IMAGE_VERSION_TAG}"
+  String getSmokeHadoopImage(final String distribution, final String version, final boolean useKRB) {
+      String krbSuffix = ''
+      if (useKRB) {
+          krbSuffix = '-krb'
+      }
+      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${krbSuffix}:${HADOOP_IMAGE_VERSION_TAG}"
   }
 
   static enum JenkinsMaster {
