@@ -429,10 +429,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (parentJob.stop_requested()) {
           userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
           subJob.stop();
+          return;
         }
         if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
           userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
           subJob.stop();
+          return;
         }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
