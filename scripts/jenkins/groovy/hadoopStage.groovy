@@ -53,7 +53,7 @@ def call(final pipelineContext, final stageConfig) {
  * @param stageConfig stage configuration to read mode and additional information from
  * @return the cmd used to start H2O in given mode
  */
-private def getH2OStartupCmd(final stageConfig) {
+private GString getH2OStartupCmd(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return """
@@ -83,9 +83,6 @@ private def getH2OStartupCmd(final stageConfig) {
                 export CLOUD_IP=\$(hostname --ip-address)
                 export CLOUD_PORT=${defaultPort}
             """
-        default:
-            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
-
         case H2O_HADOOP_STARTUP_MODE_WITH_KRB:
             def defaultPort = 54321
             return """

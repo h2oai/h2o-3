@@ -260,8 +260,8 @@ def call(final pipelineContext) {
     onHadoopStage.customData.mode = 'ON_HADOOP'
 
     def withKRBStage = evaluate(stageTemplate.inspect())
-    onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - KRB"
-    onHadoopStage.customData.mode = 'WITH_KRB'
+    withKRBStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - KRB"
+    withKRBStage.customData.mode = 'WITH_KRB'
 
     HADOOP_STAGES += standaloneStage
     HADOOP_STAGES += onHadoopStage
