@@ -430,10 +430,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
-        if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
-          userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
-          subJob.stop();
-        }
+//        TODO Investigate why the below code causes issues with models in DKV (Key mapped to null model)
+//        if (timeRemainingMs() <= 0) { //Check runtime left. If it is at zero cancel job.
+//          userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
+//          subJob.stop();
+//        }
       }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
       cumulative += workedSoFar;
