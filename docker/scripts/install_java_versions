@@ -15,6 +15,7 @@ if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
   exit 1
 fi
 
+mkdir -p /usr/lib/jvm/
 chmod a+w /usr/lib/jvm/
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
