@@ -3,14 +3,18 @@
 set -ex
 
 case $1 in
+7)
+    JAVA_INSTALL_VERSION_MAJOR='7'
+    JAVA_INSTALL_VERSION='80'
+    JAVA_INSTALL_PATH=/usr/opt/java-${JAVA_INSTALL_VERSION_MAJOR}-${JAVA_INSTALL_VERSION}/
+    ;;
 8)
     JAVA_INSTALL_VERSION_MAJOR='8'
     JAVA_INSTALL_VERSION=172
     MAGIC_B_NUM=11
     JAVA_INSTALL_LINK_HASH=a58eab1ec242421181065cdc37240b08
     JAVA_INSTALL_PATH=/usr/opt/java-8-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u${JAVA_INSTALL_VERSION}-b${MAGIC_B_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
-    echo "Installing Java 8u${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
+    HTTP_URL=http://download.oracle.com/otn-pub/java/jdk/8u${JAVA_INSTALL_VERSION}-b${MAGIC_B_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
     ;;
 10)
     JAVA_INSTALL_VERSION_MAJOR='10'
@@ -18,8 +22,7 @@ case $1 in
     MAGIC_NUM=10
     JAVA_INSTALL_LINK_HASH=fb4372174a714e6b8c52526dc134031e
     JAVA_INSTALL_PATH=/usr/opt/java-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/${JAVA_INSTALL_VERSION}+${MAGIC_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
-    echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
+    HTTP_URL=http://download.oracle.com/otn-pub/java/jdk/${JAVA_INSTALL_VERSION}+${MAGIC_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
     ;;
 *)
     echo "Java version '$1' not supported"
@@ -27,13 +30,25 @@ case $1 in
     ;;
 esac
 
+echo "Installing Java ${JAVA_INSTALL_VERSION_MAJOR}u${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
+
 mkdir -p ${JAVA_INSTALL_PATH}
 cd ${JAVA_INSTALL_PATH}
 
-curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" ${DOWNLOAD_URL} > jdk-linux-x64.tar.gz
+if [ -n "${HTTP_URL}" ]; then
+    curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" ${HTTP_URL} > jdk-linux-x64.tar.gz
+fi
 
-tar zxvf jdk-linux-x64.tar.gz
-rm jdk-linux-x64.tar.gz
+if [ -f jdk-linux-x64.tar.gz ]; then
+    tar zxvf jdk-linux-x64.tar.gz
+    rm jdk-linux-x64.tar.gz
+elif [ -f jdk*.zip ]; then
+    unzip jdk*.zip
+    rm jdk*.zip
+else
+    echo 'No JDK file found'
+    exit 1
+fi
 
 cd jdk*
 mkdir -p /usr/lib/jvm/

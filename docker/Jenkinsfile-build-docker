@@ -101,6 +101,15 @@ pipeline {
                         if (params.noCache) {
                             dockerBuildCMD += ' --no-cache'
                         }
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                            docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                                sh """
+                                    cd docker
+                                    s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip
+                                """
+                            }
+                        }
+
                         dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} ."
                         sh """
                             printenv
