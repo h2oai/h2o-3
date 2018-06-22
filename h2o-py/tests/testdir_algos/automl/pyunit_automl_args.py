@@ -8,7 +8,7 @@ from h2o.automl import H2OAutoML
 """
 This test is used to check arguments passed into H2OAutoML along with different ways of using `.train()`
 """
-def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main goal here is to check args no matter what dataset is being used.
+def prostate_automl_args():
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
@@ -185,12 +185,7 @@ def prostate_automl_args(): #TODO Why we call it `prostate`? It seems that main 
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
-    # TO DO //TODO ?
-    #print("Check that exactly two ensembles are trained")
-    #aml = H2OAutoML(project_name="py_aml_twoensembles", nfolds=3, max_models=5, seed=1)
-    #aml.train(y="CAPSULE", training_frame=train)
-
-    # TO DO   //TODO should we create separate jira and write number here in such cases? (that refers to PUBDEV-5095?)
+    # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
 

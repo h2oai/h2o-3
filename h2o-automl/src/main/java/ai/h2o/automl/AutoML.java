@@ -530,7 +530,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model.Parameters defaults = builder._parms;
     builder._parms = parms;
 
-    setCommonModelBuilderParams(builder._parms); //TODO why we set it again after setting it in AutoMl.defaultRandomForest() method?
+    setCommonModelBuilderParams(builder._parms);
 
     if (builder._parms._max_runtime_secs == 0)
       builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
@@ -691,8 +691,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
     }
 
-    //TODO will/should custom fold_column assignment be removed if we set keep_cross_validation_fold_assignment to false?
-    // Maybe we should because user do know assignments as it is he who is providing `fold_column` in the first place.
     params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
   }
 
