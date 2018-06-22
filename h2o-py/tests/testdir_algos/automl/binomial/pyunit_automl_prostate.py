@@ -19,8 +19,8 @@ def prostate_automl():
     valid = fr[1]
     test = fr[2]
 
-#    aml = H2OAutoML(max_runtime_secs = 30, stopping_rounds=3, stopping_tolerance=0.001, project_name='prostate')
-    aml = H2OAutoML(max_runtime_secs = 30, stopping_rounds=2, stopping_tolerance=0.05, project_name='prostate', exclude_algos=["GLM", "DeepLearning"])
+#    aml = H2OAutoML(max_models = 2, stopping_rounds=3, stopping_tolerance=0.001, project_name='prostate')
+    aml = H2OAutoML(max_models = 2, stopping_rounds=2, stopping_tolerance=0.05, project_name='prostate', exclude_algos=["GLM", "DeepLearning"])
     # aml = H2OAutoML(max_models=8, stopping_rounds=2, seed=42, project_name='prostate')
 
     train["CAPSULE"] = train["CAPSULE"].asfactor()
