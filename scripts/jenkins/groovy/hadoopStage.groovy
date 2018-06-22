@@ -1,9 +1,11 @@
 H2O_HADOOP_STARTUP_MODE_HADOOP='ON_HADOOP'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
+H2O_HADOOP_STARTUP_MODE_WITH_KRB='WITH_KRB'
 
 def call(final pipelineContext, final stageConfig) {
 
-    stageConfig.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(stageConfig.customData.distribution, stageConfig.customData.version)
+    def useKRB = stageConfig.customData.mode == H2O_HADOOP_STARTUP_MODE_WITH_KRB
+    stageConfig.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(stageConfig.customData.distribution, stageConfig.customData.version, useKRB)
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
 
         stageConfig.customBuildAction = """
@@ -20,10 +22,10 @@ def call(final pipelineContext, final stageConfig) {
 
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
-        
+
             echo 'Initializing Hadoop environment...'
             sudo -E /usr/sbin/startup.sh
-            
+
             echo 'Starting H2O on Hadoop'
             ${getH2OStartupCmd(stageConfig)}
             if [ -z \${CLOUD_IP} ]; then
@@ -35,7 +37,7 @@ def call(final pipelineContext, final stageConfig) {
                 exit 1
             fi
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
-            
+
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke
         """
@@ -51,7 +53,7 @@ def call(final pipelineContext, final stageConfig) {
  * @param stageConfig stage configuration to read mode and additional information from
  * @return the cmd used to start H2O in given mode
  */
-private def getH2OStartupCmd(final stageConfig) {
+private GString getH2OStartupCmd(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return """
@@ -75,6 +77,13 @@ private def getH2OStartupCmd(final stageConfig) {
                 export CLOUD_PORT=\$CLOUD_PORT
             """
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
+            def defaultPort = 54321
+            return """
+                java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) >standalone_h2o.log 2>&1 & sleep 15
+                export CLOUD_IP=\$(hostname --ip-address)
+                export CLOUD_PORT=${defaultPort}
+            """
+        case H2O_HADOOP_STARTUP_MODE_WITH_KRB:
             def defaultPort = 54321
             return """
                 java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) >standalone_h2o.log 2>&1 & sleep 15
