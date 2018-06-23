@@ -15,26 +15,21 @@ import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import water.*;
-import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ParseDataset;
-import water.parser.ParseSetup;
 import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
-import static water.Key.make;
 
 /**
  * H2O AutoML
@@ -332,34 +327,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
     return autoML;
-  }
-
-  private static Frame importParseFrame(ImportFilesV3.ImportFiles importFiles, ParseSetup userSetup) {
-    ArrayList<String> files = new ArrayList();
-    ArrayList<String> keys = new ArrayList();
-    ArrayList<String> fails = new ArrayList();
-    ArrayList<String> dels = new ArrayList();
-
-    H2O.getPM().importFiles(importFiles.path, null, files, keys, fails, dels);
-
-    importFiles.files = files.toArray(new String[0]);
-    importFiles.destination_frames = keys.toArray(new String[0]);
-    importFiles.fails = fails.toArray(new String[0]);
-    importFiles.dels = dels.toArray(new String[0]);
-
-    String datasetName = importFiles.path.split("\\.(?=[^\\.]+$)")[0];
-    String separatorRegex = (File.separator.equals("/") ? "/" : "\\");
-    String[] pathPieces = datasetName.split(separatorRegex);
-    datasetName = pathPieces[pathPieces.length - 1];
-
-    Key[] realKeys = new Key[keys.size()];
-    for (int i = 0; i < keys.size(); i++)
-      realKeys[i] = make(keys.get(i));
-
-    // TODO: we always have to tell guessSetup about single quotes?!
-    ParseSetup guessedParseSetup = ParseSetup.guessSetup(realKeys, false, ParseSetup.GUESS_HEADER);
-
-    return ParseDataset.parse(make(datasetName), realKeys, true, guessedParseSetup);
   }
 
   // used to launch the AutoML asynchronously
