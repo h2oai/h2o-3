@@ -12,8 +12,10 @@ ext {
     jmhRunDate = date
     jmhRunSha = bv.getLastCommitHash()
     jmhResultFileName = "${bv.getLastCommitHash()}-${date}.csv"
-    jmhReportDir = "${project.buildDir}/reports/ubench/"
-    jmhResultFile = project.file("$jmhReportDir/$jmhResultFileName")
+    jmhResultFile = project.file("${project.buildDir}/reports/jmh/$jmhResultFileName")
+
+    // ubench - post-processed output
+    ubenchResultFile = project.file("${project.buildDir}/reports/ubench/$jmhResultFileName")
 }
 
 // Setup JMH
@@ -23,10 +25,10 @@ jmh {
     if (project.hasProperty('ubenchIncludeOnly')) {
         include = project.ubenchIncludeOnly
     }
-    jmhVersion = '1.18'
-    resultsFile = project.file("${project.buildDir}/reports/jmh/$jmhResultFileName")
+    jmhVersion = '1.21'
+    resultsFile = project.jmhResultFile
     duplicateClassesStrategy = 'warn'
-    resultFormat = 'SCSV'
+    resultFormat = 'CSV'
     //
     // Attach different profilers (gc, stack summary, ...)
     // See: http://java-performance.info/introduction-jmh-profilers/
@@ -37,34 +39,30 @@ dependencies {
     jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
 }
 
-task ubenchExec(type: JavaExec) {
-    dependsOn project.jmhJar
-    main = 'water.jmh.H2oJmhRunner'
-    classpath = project.files { project.jmhJar.archivePath }
-
-    environment["H2O_UBENCH_GIT_SHA"] = "${project.jmhRunSha}"
-    environment["H2O_UBENCH_DATE"] = "${project.jmhRunDate}"
-    environment["H2O_UBENCH_REPORT_FILE"] = "${project.jmhResultFile}"
-
+task jmhPostProcess(dependsOn: "jmh") {
     doFirst {
-        args = [*args, *jmh.buildArgs()]
-        jmh.humanOutputFile?.parentFile?.mkdirs()
-        jmh.resultsFile?.parentFile?.mkdirs()
-        project.jmhResultFile?.parentFile?.mkdirs()
+        project.ubenchResultFile.getParentFile().mkdirs()
     }
     doLast {
-        logger.info("Ubench reported in ", jmhResultFile)
+        def results = project.jmhResultFile.readLines()
+        def header = "\"SHA\",\"Date\"," + results.head()
+        def data = results.tail().collect { "\"${project.jmhRunSha}\",\"${project.jmhRunDate}\",$it" }
+        project.ubenchResultFile.withWriter{ out ->
+            out.println header
+            data.each { out.println it }
+        }
+        logger.error("Ubench reported in ${project.ubenchResultFile}")
     }
 }
 
 task uploadResultsToS3(type: water.build.tasks.S3UploadTask) {
     bucket = "ai.h2o.ubench"
     objectName = "${project.name}/$jmhResultFileName"
-    file = jmhResultFile
+    file = ubenchResultFile
     enabled = project.hasProperty("doUploadUBenchResults") && project.doUploadUBenchResults == "true"
 }
 
 task ubench
-ubench.dependsOn ubenchExec
+ubench.dependsOn jmhPostProcess
 ubench.dependsOn uploadResultsToS3
-uploadResultsToS3.shouldRunAfter("jmh")
+uploadResultsToS3.shouldRunAfter("jmhPostProcess")
