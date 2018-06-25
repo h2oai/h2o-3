@@ -22,7 +22,7 @@ def prostate_automl_get_automl():
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
-    aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=2, seed=1234)
     aml.train(y="CAPSULE", training_frame=train)
 
     get_aml = get_automl(aml.project_name)

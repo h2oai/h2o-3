@@ -23,97 +23,93 @@ def prostate_automl_args():
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
-
+    
+    max_models = 2
+    
     # Below fails bc there are no models in the leaderboard, but AutoML needs to check the models to get the
     # model type (binomial, multinomial, or regression)
     # print("Check that exclude_algos implementation is complete, and empty leaderboard works")
-    # aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"])
+    # aml = H2OAutoML(max_runtime_secs=30, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234, exclude_algos=["GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"])
     # aml.train(y="CAPSULE", training_frame=train)
     # print("Check leaderboard to ensure that it only has a header")
     # print(aml.leaderboard)
     # assert aml.leaderboard.nrows == 0, "with all algos excluded, leaderboard is not empty"
 
     print("Check arguments to H2OAutoML class")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234, exclude_algos=["DeepLearning"])
+    aml = H2OAutoML(project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234, exclude_algos=["DeepLearning"])
     aml.train(y="CAPSULE", training_frame=train)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml0", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)    
 
     print("AutoML run with x not provided and train set only")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml1", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml1", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y="CAPSULE", training_frame=train)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml1", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)    
 
     print("AutoML run with x not provided with train and valid")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml2", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml2", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y="CAPSULE", training_frame=train, validation_frame=valid)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml2", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)    
 
     print("AutoML run with x not provided with train and test")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml3", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml3", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y="CAPSULE", training_frame=train, leaderboard_frame=test)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml3", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)    
 
     print("AutoML run with x not provided with train, valid, and test")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y="CAPSULE", training_frame=train, validation_frame=valid, leaderboard_frame=test)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml4", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)    
 
     print("AutoML run with x not provided and y as col idx with train, valid, and test")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml5", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml5", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y=1, training_frame=train, validation_frame=valid, leaderboard_frame=test)
-    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
     assert aml.project_name == "py_aml5", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
-    assert aml.max_models == 10, "max_models is not set to 10"
+    assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)
 
     print("Check predict, leader, and leaderboard")
     print("AutoML run with x not provided and train set only")
-    aml = H2OAutoML(max_runtime_secs=10, project_name="py_aml6", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=10, seed=1234)
+    aml = H2OAutoML(project_name="py_aml6", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
     aml.train(y="CAPSULE", training_frame=train)
     print("Check leaderboard")
     print(aml.leaderboard)
