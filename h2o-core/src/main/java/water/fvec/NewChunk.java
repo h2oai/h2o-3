@@ -1173,6 +1173,8 @@ public class NewChunk extends Chunk {
     BigInteger MIN = BigInteger.valueOf(Long.MIN_VALUE);
     BigInteger min_l = MAX.multiply(MAX);
     BigInteger max_l = BigInteger.valueOf(-1L).multiply(MAX.multiply(MAX));
+    double longMax = (double) Long.MAX_VALUE;
+    double longMin = (double) Long.MIN_VALUE;
     int p10iLength = PrettyPrint.powers10i.length;
     long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
     int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
@@ -1193,7 +1195,8 @@ public class NewChunk extends Chunk {
         continue;
       }
       if (isInteger)  // once set to false don't want to reset back to true
-         isInteger = ll.compareTo(MAX)<=0 && ll.compareTo(MIN)>=0;
+        isInteger = (x>=0) && (d<=longMax) && (d>=longMin);
+         //isInteger = ll.compareTo(MAX)<=0 && ll.compareTo(MIN)>=0;
 
       if ((x >=0) && ((long)d != ll.longValue()) && isInteger)  { // use long if integer and fit inside long format
         if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; } //
