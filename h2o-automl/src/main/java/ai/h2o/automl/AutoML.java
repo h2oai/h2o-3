@@ -633,6 +633,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
     params._seed = buildSpec.build_control.stopping_criteria.seed();
+    params._max_runtime_secs = timeRemainingMs();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
@@ -665,7 +666,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return true;
     }
 
-    if (timeRemainingMs() <= 0.001) {
+    if (timeRemainingMs() <= 0) {
       userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + whatWeAreSkipping);
       return true;
     }
@@ -783,6 +784,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   public Job<Grid> defaultSearchGLM() {
+    if (exceededSearchLimits("GLM")) return null;
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GLM
     ///////////////////////////////////////////////////////////
@@ -810,6 +812,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Job<Grid> defaultSearchGBM(Key<Grid> gridKey) {
+    if (exceededSearchLimits("GBM")) return null;
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GBM
     ///////////////////////////////////////////////////////////
@@ -838,6 +841,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Job<Grid> defaultSearchDL1(Key<Grid> gridKey) {
+    if (exceededSearchLimits("DeepLearning Grid 1")) return null;
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -867,6 +871,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Job<Grid> defaultSearchDL2(Key<Grid> gridKey) {
+    if (exceededSearchLimits("DeepLearning Grid 2")) return null;
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -896,6 +901,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Job<Grid> defaultSearchDL3(Key<Grid> gridKey) {
+    if (exceededSearchLimits("DeepLearning Grid 3")) return null;
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -925,6 +931,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   Job<StackedEnsembleModel>stack(String modelName, Key<Model>[]... modelKeyArrays) {
+    if (exceededSearchLimits("StackedEnsemble")) return null;
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
