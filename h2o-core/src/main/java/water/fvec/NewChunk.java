@@ -1196,9 +1196,24 @@ public class NewChunk extends Chunk {
       }
       if (isInteger)  // once set to false don't want to reset back to true
         isInteger = (x>=0) && (d<=longMax) && (d>=longMin);
-         //isInteger = ll.compareTo(MAX)<=0 && ll.compareTo(MIN)>=0;
 
-      if ((x >=0) && ((long)d != ll.longValue()) && isInteger)  { // use long if integer and fit inside long format
+      if (isInteger) {
+        if( ll.compareTo(min_l)==-1 ) { min = d; min_l=ll; llo=l; xlo=x; } //
+        if( ll.compareTo(max_l)== 1 ) { max = d; max_l=ll; lhi=l; xhi=x; }
+      } else {
+        if (d < min) {
+          min = d;
+          llo = l;
+          xlo = x;
+        }
+        if (d > max) {
+          max=d;
+          lhi=l;
+          xhi=x;
+        }
+      }
+
+/*      if ((x >=0) && ((long)d != ll.longValue()) && isInteger)  { // use long if integer and fit inside long format
         if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; } //
         if( ll.compareTo(max_l)== 1 ) { max=d; max_l=ll; lhi=l; xhi=x; }
       } else {
@@ -1214,7 +1229,7 @@ public class NewChunk extends Chunk {
             max_l=ll;
           lhi=l; xhi=x;
         }
-      }
+      }*/
 
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
