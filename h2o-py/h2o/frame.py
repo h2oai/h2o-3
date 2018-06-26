@@ -2017,7 +2017,7 @@ class H2OFrame(object):
             is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
             and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
             in the original frame.
-        :returns: either a list of sum of values per-column (old semantic); or an H2OFrame containing sum of values
+        :returns: either an aggregated value with sum of values per-column (old semantic); or an H2OFrame containing sum of values
             per-column/per-row in the original frame (new semantic). The new semantic is triggered by either
             providing the ``return_frame=True`` parameter, or having the ``general.allow_breaking_changed`` config
             option turned on.
