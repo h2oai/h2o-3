@@ -8,10 +8,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import water.fvec.C0DChunk;
-import water.fvec.C0LChunk;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
+import water.fvec.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +31,18 @@ public class NewChunkBench {
   private double[] rawFloat;
   private double[] rawLong;
   private double[] rawInt;
+  // for constant chunks
+  private double[] rawDoubleConstants;
+  private double[] rawIntegerConstants;
+  private double[] rawLongConstants;
+  private double[] rawFloatConstants;
+  private double[] rawNAConstants;
+  // for sparse chunks
+  private double[] rawDoubleSparse;
+  private double[] rawIntegerSparse;
+  private double[] rawLongSparse;
+  private double[] rawFloatSparse;
+  private double[] rawNASparse;
 
   @Benchmark
   public void writeIntegers() {
@@ -59,19 +68,93 @@ public class NewChunkBench {
     Assert.assertTrue(chunks instanceof C0LChunk);
   }
 
+  @Benchmark
+  public void writeIntegersConstants() {
+    Chunk chunks = new NewChunk(rawIntegerConstants).compress();
+    Assert.assertTrue(chunks instanceof C0LChunk);
+  }
+
+  @Benchmark
+  public void writeFloatsConstants() {
+    Chunk chunks = new NewChunk(rawFloatConstants).compress();
+    Assert.assertTrue(chunks instanceof C0DChunk);
+  }
+
+  @Benchmark
+  public void writeDoublesConstants() {
+    Chunk chunks = new NewChunk(rawDoubleConstants).compress();
+    Assert.assertTrue(chunks instanceof C0DChunk);
+  }
+
+  @Benchmark
+  public void writeLongsConstants() {
+    Chunk chunks = new NewChunk(rawLongConstants).compress();
+    Assert.assertTrue(chunks instanceof C0LChunk);
+  }
+
+  @Benchmark
+  public void writeNaNConstants() {
+    Chunk chunks = new NewChunk(rawNAConstants).compress();
+    Assert.assertTrue(chunks instanceof C0DChunk);
+  }
+
+  @Benchmark
+  public void writeIntegersSparse() {
+    Chunk chunks = new NewChunk(rawIntegerSparse).compress();
+    Assert.assertTrue(chunks instanceof CXFChunk);
+  }
+
+  @Benchmark
+  public void writeFloatsSparse() {
+    Chunk chunks = new NewChunk(rawFloatConstants).compress();
+    Assert.assertTrue(chunks instanceof CXFChunk);
+  }
+
+  @Benchmark
+  public void writeDoublesSparse() {
+    Chunk chunks = new NewChunk(rawDoubleSparse).compress();
+    Assert.assertTrue(chunks instanceof CXFChunk);
+  }
+
+  @Benchmark
+  public void writeLongsSparse() {
+    Chunk chunks = new NewChunk(rawLongSparse).compress();
+    Assert.assertTrue(chunks instanceof CXFChunk);
+  }
+
   @Setup
   public void setup() {
     rawFloat = new double[rows]; // generate data
     rawInt = new double[rows];
     rawLong = new double[rows];
     rawDouble = new double[rows];
-
+    rawDoubleConstants = new double[rows];
+    rawIntegerConstants = new double[rows];
+    rawLongConstants = new double[rows];
+    rawFloatConstants = new double[rows];
+    rawNAConstants = new double[rows];
+    // for sparse chunks
+    rawDoubleSparse = new double[rows];
+    rawIntegerSparse = new double[rows];
+    rawLongSparse = new double[rows];
+    rawFloatSparse = new double[rows];
+    Long lConstants = (long) Integer.MAX_VALUE+100;
     for (int row = 0; row < rows; ++row) {
       rawFloat[row] = 1.1+row%100;
       rawInt[row] = row % 1000;
       rawLong[row] = Integer.MAX_VALUE+row;
       rawDouble[row] = Math.PI+row;
+      rawDoubleConstants[row] = Math.PI;
+      rawFloatConstants[row] = 1.1;
+      rawIntegerConstants[row] = 1000;
+      rawLongConstants[row] = lConstants;
+      rawNAConstants[row] = Double.NaN;
     }
+
+    rawDoubleSparse[17] = Math.PI;
+    rawIntegerSparse[17] = 1;
+    rawLongSparse[17] = lConstants;
+    rawFloatSparse[17] = 1.1;
   }
 
 
