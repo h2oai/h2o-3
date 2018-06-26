@@ -3,28 +3,71 @@ package hex.genmodel.algos.gbm;
 import com.google.common.io.ByteStreams;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.algos.word2vec.Word2VecMojoModelTest;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
 public class GbmMojoModelTest {
 
+  private GbmMojoModel mojo;
+
+  @Before
+  public void setup() throws Exception {
+    mojo = (GbmMojoModel) ModelMojoReader.readFrom(new ClasspathReaderBackend());
+    assertNotNull(mojo);
+  }
+
+  @Test
+  public void testScore0() throws Exception {
+    double[] row = {18.7, 1.51, 1.003, 132.53, 1.15, 0.2, 1.153, 8.3, 0.34, 0.0, 0.0};
+    double[] preds = mojo.score0(row, new double[3]);
+    assertArrayEquals(new double[]{1, 0.5416688, 0.4583312}, preds, 1e-5);
+  }
+
+  @Test
+  public void scoreSingleTree() throws Exception {
+    double[] row = {18.7, 1.51, 1.003, 132.53, 1.15, 0.2, 1.153, 8.3, 0.34, 0.0, 0.0};
+    for (int tree = 0; tree < 10; tree++) {
+      // Score single tree layer explicitly
+      double[] singleTreePreds = new double[3];
+      mojo.scoreSingleTree(row, tree, singleTreePreds);
+      // Score single tree layer using the range API
+      double[] rangeTreePreds = new double[3];
+      mojo.scoreTreeRange(row, tree, tree + 1, rangeTreePreds);
+      assertArrayEquals(rangeTreePreds, singleTreePreds, 0);
+    }
+  }
+
+  @Test
+  public void testScoreTreeRange() throws Exception {
+    double[] row = {18.7, 1.51, 1.003, 132.53, 1.15, 0.2, 1.153, 8.3, 0.34, 0.0, 0.0};
+    double[] preds = new double[3];
+    for (int tree = 0; tree < 10; tree++) {
+      double[] singleTreePreds = new double[preds.length];
+      // Score individually each layer of trees (one tree per class, for all classes)
+      mojo.scoreTreeRange(row, tree, tree + 1, singleTreePreds);
+      // Manually accumulate the predictions
+      for (int i = 0; i < preds.length; i++)
+        preds[i] += singleTreePreds[i];
+    }
+    // Generate final predictions from the partial predictions
+    mojo.unifyPreds(row, 0, preds);
+    double[] expectedPreds = mojo.score0(row, new double[preds.length]);
+    // Manually calculated predictions should be the same as the output from score0
+    assertArrayEquals(expectedPreds, preds, 1e-8);
+  }
+
   @Test
   public void testPredict() throws Exception {
-
-    GbmMojoModel mojo = (GbmMojoModel) ModelMojoReader.readFrom(new ClasspathReaderBackend());
-    assertNotNull(mojo);
-
     EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(mojo);
 
     BinomialModelPrediction pred = (BinomialModelPrediction) wrapper.predict(new RowData() {{
