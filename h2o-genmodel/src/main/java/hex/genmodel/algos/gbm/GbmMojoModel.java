@@ -24,6 +24,11 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
         super.scoreAllTrees(row, preds);
+        return unifyPreds(row, offset, preds);
+    }
+
+    @Override
+    public final double[] unifyPreds(double[] row, double offset, double[] preds) {
         if (_family == bernoulli || _family == quasibinomial || _family == modified_huber) {
             double f = preds[1] + _init_f + offset;
             preds[2] = _family.linkInv(f);
