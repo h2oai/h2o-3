@@ -58,7 +58,7 @@ node (NODE_LABEL) {
 
 parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().collectEntries{distribution ->
     [
-        "Build ${distribution.name.toUpperCase()} ${distribution.version}", {
+        "Build images for ${distribution.name.toUpperCase()} ${distribution.version}", {
             node (pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
                 final String buildStageName = "Build ${distribution.name.toUpperCase()} ${distribution.version}"
                 stage(buildStageName) {
@@ -74,21 +74,26 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         }
 
                         withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'), usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                            pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
-                            sh """
-                                cd docker
-                                pwd
-                                ls -alh
-                                ls -alh hadoop/common/ldap/
-                                
-                                rm -f hadoop/common/ldap/jenkins.ldif
-                                cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
-                                docker build \
-                                    -t ${REGISTRY_PREFIX}/${imageName}:${version} \
-                                    -f hadoop/${distribution.name}/Dockerfile \
-                                    --build-arg PATH_PREFIX=hadoop/${distribution.name} \
-                                    --build-arg VERSION=${distribution.version} .
-                            """
+                            dir("${imageName}.${version}") {
+                                pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                                sh """
+                                    cd docker
+                                    rm -f hadoop/common/ldap/jenkins.ldif
+                                    cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
+
+                                    docker build \
+                                        -t ${REGISTRY_PREFIX}/${imageName}:${version} \
+                                        -f hadoop/${distribution.name}/Dockerfile \
+                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                                        --build-arg VERSION=${distribution.version} .
+
+                                    docker build \
+                                        -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
+                                        -f hadoop/${distribution.name}/Dockerfile.kerberos \
+                                        --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
+                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} .
+                                """
+                            }
                         }
                         pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
                     } catch (Exception e) {
@@ -97,7 +102,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                     }
                 }
 
-                final String publishStageName = "Publish ${distribution.name.toUpperCase()} ${distribution.version}"
+                final String publishStageName = "Publish images for ${distribution.name.toUpperCase()} ${distribution.version}"
                 stage (publishStageName) {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
@@ -107,6 +112,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                             sh """
                                 docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
                                 docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version}
+                                docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}-krb:${version}
                             """
                             echo "###### Docker image ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version} built and pushed. ######"
                         }
