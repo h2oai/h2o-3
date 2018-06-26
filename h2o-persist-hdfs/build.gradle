@@ -15,6 +15,7 @@ dependencies {
     }
     compile("org.apache.hadoop:hadoop-aws:$defaultHadoopClientVersion")
     testCompile "junit:junit:${junitVersion}"
+    testCompile "org.hamcrest:hamcrest-junit:2.0.0.0"
     testCompile project(path: ":h2o-core", configuration: "testArchives")
 }
 
