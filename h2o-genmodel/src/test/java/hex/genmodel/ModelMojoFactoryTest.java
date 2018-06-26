@@ -12,7 +12,7 @@ public class ModelMojoFactoryTest {
   @Test
   public void getUnknownMojoReader() throws Exception {
     thrown.expectMessage("Algorithm `Unknown` is not supported by this version of h2o-genmodel. " +
-            "If you are using algorithm implemented in an extension be sure to include a jar dependency of the extension (eg.: ai.h2o:h2o-genmodel-ext-unknown)");
+            "If you are using an algorithm implemented in an extension, be sure to include a jar dependency of the extension (eg.: ai.h2o:h2o-genmodel-ext-unknown)");
     ModelMojoFactory.INSTANCE.getMojoReader("Unknown");
   }
 

@@ -91,7 +91,7 @@ public class ModelMojoFactory {
           return mmr;
         } else {
           throw new IllegalStateException("Algorithm `" + algo + "` is not supported by this version of h2o-genmodel. " +
-                  "If you are using algorithm implemented in an extension be sure to include a jar dependency of the extension (eg.: ai.h2o:h2o-genmodel-ext-" + algo.toLowerCase() + ")");
+                  "If you are using an algorithm implemented in an extension, be sure to include a jar dependency of the extension (eg.: ai.h2o:h2o-genmodel-ext-" + algo.toLowerCase() + ")");
         }
     }
   }
