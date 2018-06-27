@@ -9,7 +9,6 @@ import water.util.PrettyPrint;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -1056,13 +1055,6 @@ public class NewChunk extends Chunk {
     return res < 0 ? 0 /*happens for rare FP roundoff computation of min & max */: res;
   }
 
-  private static BigInteger pow10bi(int x) {
-    BigInteger v = BigInteger.ONE;
-    while(x-->0)
-      v = v.multiply(BigInteger.TEN);
-    return v;
-  }
-
   private Chunk compress2() {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
@@ -1177,16 +1169,15 @@ public class NewChunk extends Chunk {
     long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
     int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
     boolean hasZero = sparse;
+    Long ll;
     for(int i = 0; i< _sparseLen; i++ ) {
       if( isNA2(i) ) continue;
       long l = _ms.get(i);
       int  x = _xs.get(i);
-      Long ll = l;
       if( x==Integer.MIN_VALUE) x=0; // Replace categorical flag with no scaling
       assert l!=0 || x==0:"l == 0 while x = " + x + " ms = " + _ms.toString();      // Exponent of zero is always zero
       long t;                   // Remove extra scaling
       while( l!=0 && (t=l/10)*10==l ) { l=t; x++; }
-//      BigInteger ll = BigInteger.valueOf(l).multiply(pow10bi(x));
       // Compute per-chunk min/max
       double d = PrettyPrint.pow10(l,x);  // WARNING: this is lossy!!
       if(d == 0) {
@@ -1197,7 +1188,7 @@ public class NewChunk extends Chunk {
         isInteger = (x>=0) && (d<=longMax) && (d>=longMin);
 
       if (isInteger) {
-        ll = l*PrettyPrint.pow10i(x); // only perform operation if still fit in Long and still integer
+        ll = l* (long) Math.pow(10, x); // only perform operation if still fit in Long and still integer
         if( ll<min_l ) { min = d; min_l=ll; llo=l; xlo=x; } //
         if( ll>max_l ) { max = d; max_l=ll; lhi=l; xhi=x; }
       } else {
@@ -1212,24 +1203,6 @@ public class NewChunk extends Chunk {
           xhi=x;
         }
       }
-
-/*      if ((x >=0) && ((long)d != ll.longValue()) && isInteger)  { // use long if integer and fit inside long format
-        if( ll.compareTo(min_l)==-1 ) { min=d; min_l=ll; llo=l; xlo=x; } //
-        if( ll.compareTo(max_l)== 1 ) { max=d; max_l=ll; lhi=l; xhi=x; }
-      } else {
-        if( d < min ) {
-          min = d;
-          if( ll.compareTo(min_l)==-1 )
-            min_l=ll;
-          llo=l; xlo=x;
-        }
-        if( d > max ) {
-          max = d;
-          if( ll.compareTo(max_l)== 1 )
-            max_l=ll;
-          lhi=l; xhi=x;
-        }
-      }*/
 
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
@@ -1339,7 +1312,7 @@ public class NewChunk extends Chunk {
     if( leRange < 255 ) {    // Span fits in a byte?
       if(0 <= min && max < 255 ) // Span fits in an unbiased byte?
         return new C1Chunk( bufX(0,0,C1Chunk._OFF,0));
-      return new C1SChunk( bufX(min_l,xmin,C1SChunk._OFF,0),min_l,xmin);
+      return new C1SChunk( bufX(lemin,xmin,C1SChunk._OFF,0),lemin,xmin);
     }
 
     // Compress column into a short
