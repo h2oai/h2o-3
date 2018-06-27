@@ -9,7 +9,7 @@ Checking corner cases when initializing H2OFrame
 
 def test_new_empty_frame():
     fr = h2o.H2OFrame()
-    assert_empty(fr)
+    assert fr._ex._cache.is_detached()
     fr.describe()  # just checking no exception is raised
 
 def test_new_frame_with_empty_list():
@@ -33,6 +33,7 @@ def test_new_frame_with_empty_dict():
     fr.describe()  # just checking no exception is raised
 
 def assert_empty(frame):
+    assert not frame._ex._cache.is_detached()
     assert frame.nrows == 0
     assert frame.ncols == 1
 

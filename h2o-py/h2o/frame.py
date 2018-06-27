@@ -417,6 +417,9 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
+        if self._ex._cache.is_detached():
+            print("This H2OFrame is detached.")
+            return
         if self.nrows == 0:
             print("This H2OFrame is empty.")
             return
@@ -449,6 +452,9 @@ class H2OFrame(object):
 
         :param bool return_data: Return a dictionary of the summary output
         """
+        if self._ex._cache.is_detached():
+            print("This H2OFrame is detached.")
+            return self._ex._cache._data;
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
             if self.nrows == 0:
@@ -471,17 +477,18 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-        res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
-        self._ex._cache._fill_data(res)
+        if not self._ex._cache.is_detached():
+            res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
+            self._ex._cache._fill_data(res)
 
-        print("Rows:{}".format(self.nrow))
-        print("Cols:{}".format(self.ncol))
+            print("Rows:{}".format(self.nrow))
+            print("Cols:{}".format(self.ncol))
 
-        #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
-        if chunk_summary:
-            res["chunk_summary"].show()
-            res["distribution_summary"].show()
-        print("\n")
+            #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+            if chunk_summary:
+                res["chunk_summary"].show()
+                res["distribution_summary"].show()
+            print("\n")
         self.summary()
 
 

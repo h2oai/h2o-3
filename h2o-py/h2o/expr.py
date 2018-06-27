@@ -140,7 +140,7 @@ class ExprNode(object):
             return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
         if self._cache._id is not None:
             return self._cache._id  # Data already computed under ID, but not cached
-        # assert isinstance(self._children,tuple)
+        assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         gc_ref_cnt = len(gc.get_referrers(self))
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
@@ -312,6 +312,9 @@ class H2OCache(object):
 
     def __len__(self):
         return self._l
+
+    def is_detached(self):
+        return self._id is None
 
     def is_empty(self):
         return self._data is None
