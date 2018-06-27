@@ -313,9 +313,6 @@ class H2OCache(object):
     def __len__(self):
         return self._l
 
-    def is_detached(self):
-        return self._id is None
-
     def is_empty(self):
         return self._data is None
 

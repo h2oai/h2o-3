@@ -408,6 +408,9 @@ class H2OFrame(object):
                 self.show()
         return ""
 
+    def _has_content(self):
+        return self._ex and (self._ex._children or self._ex._cache._id)
+
     def show(self, use_pandas=False, rows=10, cols=200):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
@@ -417,8 +420,8 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
-        if self._ex._cache.is_detached():
-            print("This H2OFrame is detached.")
+        if not self._has_content():
+            print("This H2OFrame is not initialized.")
             return
         if self.nrows == 0:
             print("This H2OFrame is empty.")
@@ -452,8 +455,8 @@ class H2OFrame(object):
 
         :param bool return_data: Return a dictionary of the summary output
         """
-        if self._ex._cache.is_detached():
-            print("This H2OFrame is detached.")
+        if not self._has_content():
+            print("This H2OFrame is not initialized.")
             return self._ex._cache._data;
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
@@ -477,7 +480,7 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-        if not self._ex._cache.is_detached():
+        if self._has_content():
             res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
             self._ex._cache._fill_data(res)
 
@@ -1540,7 +1543,6 @@ class H2OFrame(object):
         if self._ex is expr: return True
         if expr._children is None: return False
         return any(self._is_expr_in_self(ch) for ch in expr._children)
-
 
     def drop(self, index, axis=1):
         """
