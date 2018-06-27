@@ -21,6 +21,13 @@ public final class C1SChunk extends CSChunk {
     }
   }
 
+  @Override protected final long at8_impl( int i ) {
+    int x = 0xFF&_mem[_OFF+i];
+    if( x==C1Chunk._NA )
+      throw new IllegalArgumentException("at8_abs but value is missing");
+    return get8(x);
+  }
+
   @Override protected final double atd_impl( int i ) {
     return getD(0xFF&_mem[_OFF+i],C1Chunk._NA);
   }

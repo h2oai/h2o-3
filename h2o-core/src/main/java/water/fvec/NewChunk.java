@@ -9,7 +9,10 @@ import water.util.PrettyPrint;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.UUID;
 
 import static water.H2OConstants.MAX_STR_LEN;
 
@@ -1158,10 +1161,15 @@ public class NewChunk extends Chunk {
     boolean floatOverflow = false;
     double min = Double.POSITIVE_INFINITY;
     double max = Double.NEGATIVE_INFINITY;
+    Long min_l = Long.MAX_VALUE;
+    Long max_l = Long.MIN_VALUE;
+    double longMax = (double) Long.MAX_VALUE;
+    double longMin = (double) Long.MIN_VALUE;
     int p10iLength = PrettyPrint.powers10i.length;
     long llo=Long   .MAX_VALUE, lhi=Long   .MIN_VALUE;
     int  xlo=Integer.MAX_VALUE, xhi=Integer.MIN_VALUE;
     boolean hasZero = sparse;
+    Long ll;
     for(int i = 0; i< _sparseLen; i++ ) {
       if( isNA2(i) ) continue;
       long l = _ms.get(i);
@@ -1171,31 +1179,49 @@ public class NewChunk extends Chunk {
       long t;                   // Remove extra scaling
       while( l!=0 && (t=l/10)*10==l ) { l=t; x++; }
       // Compute per-chunk min/max
-      double d = PrettyPrint.pow10(l,x);
+      double d = PrettyPrint.pow10(l,x);  // WARNING: this is lossy!!
       if(d == 0) {
         hasZero = true;
         continue;
       }
-      if( d < min ) { min = d; llo=l; xlo=x; }
-      if( d > max ) { max = d; lhi=l; xhi=x; }
+      if (isInteger)  // once set to false don't want to reset back to true
+        isInteger = (x>=0) && (d<=longMax) && (d>=longMin);
+
+      if (isInteger) {
+        ll = l* (long) Math.pow(10, x); // only perform operation if still fit in Long and still integer
+        if( ll<min_l ) { min = d; min_l=ll; llo=l; xlo=x; } //
+        if( ll>max_l ) { max = d; max_l=ll; lhi=l; xhi=x; }
+      } else {
+        if (d < min) {
+          min = d;
+          llo = l;
+          xlo = x;
+        }
+        if (d > max) {
+          max=d;
+          lhi=l;
+          xhi=x;
+        }
+      }
+
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
-    boolean hasNonZero = min != Double.POSITIVE_INFINITY && max != Double.NEGATIVE_INFINITY;
+    boolean hasNonZero = min != Double.POSITIVE_INFINITY &&
+                         max != Double.NEGATIVE_INFINITY;
 
     if(hasZero){ // sparse?  then compare vs implied 0s
-      if( min > 0 ) { min = 0; llo=0; }
-      if( max < 0 ) { max = 0; lhi=0; }
+      if( min > 0 ) { min = 0; llo=0; min_l=0l; }
+      if( max < 0 ) { max = 0; lhi=0; max_l=0l; }
     }
     if(!hasNonZero) xlo = xhi = xmin = 0;
+
     // Constant column?
-    if( _naCnt==0 && (min==max)) {
-      if (llo == lhi && xlo == 0 && xhi == 0)
-        return new C0LChunk(llo, _len);
-      else if ((long)min == min)
-        return new C0LChunk((long)min, _len);
-      else
-        return new C0DChunk(min, _len);
+    if( _naCnt==0 && (min_l.compareTo(max_l)==0) && xmin >=0 && isInteger) {
+      return new C0LChunk(min_l, _len);
+    }
+    if( _naCnt==0 && (min==max) && (xmin<0 || !isInteger) ) {
+      return new C0DChunk(min, _len);
     }
     // Compute min & max, as scaled integers in the xmin scale.
     // Check for overflow along the way
@@ -1213,6 +1239,10 @@ public class NewChunk extends Chunk {
       if( (lemin/pow10lo) != llo ) overflow = true;
     }
     final long leRange = leRange(lemin,lemax);
+
+    // put min_l in xmin scale
+    if( xmin > 0 )
+      min_l = min_l/PrettyPrint.pow10i(xmin);
 
     // Boolean column?
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
