@@ -65,7 +65,7 @@ public class NewChunkBench {
   @Benchmark
   public void writeLongs() {
     Chunk chunks = new NewChunk(rawLong).compress();
-    Assert.assertTrue(chunks instanceof C0LChunk);
+    Assert.assertTrue(chunks instanceof C2SChunk);
   }
 
   @Benchmark
@@ -101,7 +101,7 @@ public class NewChunkBench {
   @Benchmark
   public void writeIntegersSparse() {
     Chunk chunks = new NewChunk(rawIntegerSparse).compress();
-    Assert.assertTrue(chunks instanceof CXFChunk);
+    Assert.assertTrue(chunks instanceof CXIChunk);
   }
 
   @Benchmark
@@ -119,7 +119,7 @@ public class NewChunkBench {
   @Benchmark
   public void writeLongsSparse() {
     Chunk chunks = new NewChunk(rawLongSparse).compress();
-    Assert.assertTrue(chunks instanceof CXFChunk);
+    Assert.assertTrue(chunks instanceof CXIChunk);
   }
 
   @Setup
