@@ -552,16 +552,16 @@ public class XGBoostUtils {
                 // enlarge final data arrays by 2x if needed
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if (!vecs[j].isNA(i)) {
+                    if (vecs[j].at(i) != 0) {
                         data[currentRow][currentCol] = 1; //one-hot encoding
-                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at8(i));
+                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at(i));
                         nz++;
                     }
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
-                    if (!Float.isNaN(val) && val != 0) {
+                    if (val != 0) {
                         data[currentRow][currentCol] = val;
                         colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
                         nz++;
@@ -599,15 +599,15 @@ public class XGBoostUtils {
 
 
             for (int j = 0; j < di._cats; ++j) {
-                if (!chunks[j].isNA(i)) {
+                if (chunks[j].atd(i) != 0) {
                     data[currentRow][currentCol] = 1; //one-hot encoding
-                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
+                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].atd(i));
                     nz++;
                 }
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
-                if (!Float.isNaN(val) && val != 0) {
+                if (val != 0) {
                     data[currentRow][currentCol] = val;
                     colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
                     nz++;
@@ -822,13 +822,13 @@ public class XGBoostUtils {
             long nzstart = nonZeroElementsCount;
 
             for (int j = 0; j < di._cats; ++j) {
-                if (!chunks[j].isNA(i)) {
+                if (chunks[j].atd(i) != 0) {
                     nonZeroElementsCount++;
                 }
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
-                if (!Float.isNaN(val) && val != 0) {
+                if (val != 0) {
                     nonZeroElementsCount++;
                 }
             }
@@ -852,14 +852,14 @@ public class XGBoostUtils {
                 long nzstart = nonZeroElementsCount;
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if (!vecs[j].isNA(i)) {
+                    if (vecs[j].at(i) != 0) {
                         nonZeroElementsCount++;
                     }
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
-                    if (!Float.isNaN(val) && val != 0) {
+                    if (val != 0) {
                         nonZeroElementsCount++;
                     }
                 }
