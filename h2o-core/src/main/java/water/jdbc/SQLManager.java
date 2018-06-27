@@ -16,6 +16,7 @@ public class SQLManager {
 
   private static final String TEMP_TABLE_NAME = "table_for_h2o_import";
   private static final String MAX_USR_CONNECTIONS_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max";
+  private static final String JDBC_DRIVER_CLASS_KEY_PREFIX = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.jdbc.driver.";
   //A target upper bound on number of connections to database
   private static final int MAX_CONNECTIONS = 100;
   //A lower bound on number of connections to database per node
@@ -310,7 +311,19 @@ public class SQLManager {
    *
    * @param databaseType Name of target database from JDBC connection string
    */
-  private static void initializeDatabaseDriver(String databaseType) {
+  static void initializeDatabaseDriver(String databaseType) {
+    String driverClass = System.getProperty(JDBC_DRIVER_CLASS_KEY_PREFIX + databaseType);
+    if (driverClass != null) {
+      Log.debug("Loading " + driverClass + " to initialize database of type " + databaseType);
+      try {
+        Class.forName(driverClass);
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException("Connection to '" + databaseType + "' database is not possible due to missing JDBC driver. " +
+                "User specified driver class: " + driverClass);
+      }
+      return;
+    }
+    // use built-in defaults
     switch (databaseType) {
       case HIVE_DB_TYPE:
         try {
