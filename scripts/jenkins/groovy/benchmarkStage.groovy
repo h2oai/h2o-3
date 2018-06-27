@@ -27,6 +27,7 @@ def call(final pipelineContext, final stageConfig) {
   sh "rm -rf ${outputPath} && mkdir -p ${outputPath}"
 
   def benchmarkEnv = [
+          "PATH_PREFIX=${ML_BENCHMARK_ROOT}",
           "DATASETS_PATH=${stageConfig.datasetsPath}",
           "TEST_CASES_PATH=${stageConfig.testCasesPath}",
           "OUTPUT_PATH=${outputPath}",

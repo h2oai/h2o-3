@@ -54,32 +54,64 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ]
         ],
         'xgb': [
-                'airlines-1m': [
-                    100: [
-                        'train_time_min': 38,
-                        'train_time_max': 50
-                    ]
-                ],
-                'airlines-10m': [
-                    100: [
-                        'train_time_min': 171,
-                        'train_time_max': 187
-                    ]
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 38,
+                    'train_time_max': 75
                 ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 140,
+                    'train_time_max': 187
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 203,
+                    'train_time_max': 218
+                ]
+            ]
         ],
         'xgb-vanilla': [
-                'airlines-1m': [
-                    100: [
-                        'train_time_min': 4,
-                        'train_time_max': 11
-                    ]
-                ],
-                'airlines-10m': [
-                    100: [
-                        'train_time_min': 58,
-                        'train_time_max': 83
-                    ]
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 4,
+                    'train_time_max': 15
                 ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 105,
+                    'train_time_max': 140
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 145,
+                    'train_time_max': 175
+                ]
+            ]
+        ],
+        'xgb-dmlc': [
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 12,
+                    'train_time_max': 20
+                ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 125,
+                    'train_time_max': 160
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 235,
+                    'train_time_max': 255
+                ]
+            ]
         ]
     ]
 
