@@ -47,19 +47,19 @@ public class NewChunkBench {
   @Benchmark
   public void writeIntegers() {
     Chunk chunks = new NewChunk(rawInt).compress();
-    Assert.assertTrue(chunks instanceof C0LChunk);
+    Assert.assertTrue(chunks instanceof C2SChunk);
   }
 
   @Benchmark
   public void writeFloats() {
     Chunk chunks = new NewChunk(rawFloat).compress();
-    Assert.assertTrue(chunks instanceof C0DChunk);
+    Assert.assertTrue(chunks instanceof C8DChunk);
   }
 
   @Benchmark
   public void writeDoubles() {
     Chunk chunks = new NewChunk(rawDouble).compress();
-    Assert.assertTrue(chunks instanceof C0DChunk);
+    Assert.assertTrue(chunks instanceof C8DChunk);
   }
 
   @Benchmark

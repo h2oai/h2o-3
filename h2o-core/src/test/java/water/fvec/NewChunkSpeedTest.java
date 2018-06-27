@@ -7,6 +7,7 @@ import water.MRTask;
 import water.Scope;
 import water.TestUtil;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,63 +28,71 @@ public class NewChunkSpeedTest extends TestUtil {
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(true, false, false);
     double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for constant doubles:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    Log.info("New Chunk test for constant doubles:", " time(s) taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseBigDoublesConst(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(true, true, false);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for big constant doubles:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for big constant doubles:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseFloatsConst(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(true, false, true);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for constant floats:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for constant floats:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseFloats(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(false, false, true);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for floats:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for floats:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseDoubles(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(false, false, false);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for doubles:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for doubles:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseBigDoubles(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForDoubles(false, true, false);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for big doubles:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for big doubles:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseInteger(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForIntegers(false);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for integers:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for integers:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test public void testParseIntegerConst(){
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForIntegers(true);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for constant integer:", " time(s) taken for "+numberLoops+" loops is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for constant integer:", " time taken for "+numberLoops+" loops is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
 
@@ -93,9 +102,10 @@ public class NewChunkSpeedTest extends TestUtil {
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForLongs(false);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
     Log.info("************************************************");
-    Log.info("New Chunk test for longs:", " time(s) taken for "+numberLoops+" is "+endTime);
+    Log.info("New Chunk test for longs:", " time taken for "+numberLoops+" is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Ignore
@@ -103,8 +113,9 @@ public class NewChunkSpeedTest extends TestUtil {
     double startTime = System.currentTimeMillis();
     for (int index=0; index<numberLoops; index++)
       testsForLongs(true);
-    double endTime = (System.currentTimeMillis()-startTime)*0.001;  // change time to seconds
-    Log.info("New Chunk test for constant longs:", " time(s) taken for "+numberLoops+" is "+endTime);
+    double endTime = System.currentTimeMillis()-startTime;  // change time to seconds
+    Log.info("New Chunk test for constant longs:", " time taken for "+numberLoops+" is "
+            +PrettyPrint.msecs((long) endTime, false));
   }
 
   @Test
@@ -125,9 +136,10 @@ public class NewChunkSpeedTest extends TestUtil {
           Scope.exit();
         }
       }
-      double endTime = (System.currentTimeMillis() - startTime) * 0.001;  // change time to seconds
+      double endTime = System.currentTimeMillis() - startTime;  // change time to seconds
       Log.info("*******************************************************");
-      Log.info("Parsing: " + filenames[index] + " time(s) taken for " + numLoops + " loops is " + endTime);
+      Log.info("Parsing: " + filenames[index] + " time taken for " + numLoops + " loops is "
+              +PrettyPrint.msecs((long) endTime, false));
     }
   }
 
@@ -257,7 +269,8 @@ public class NewChunkSpeedTest extends TestUtil {
         else
           assertTrue("rowIndex: " + rowInd + " rowInd+baseD: " + (baseD) + " v.at(rowIndex): "
                           + v.at(rowInd) + " chk= " + v.elem2ChunkIdx(rowInd),
-                  (Math.abs(v.at(rowInd) - (baseD + rowInd)))/Math.max(v.at(rowInd), (baseD+rowInd)) < tolerance);
+                  (Math.abs(v.at(rowInd) - (baseD + rowInd)))/Math.max(v.at(rowInd), (baseD+rowInd))
+                          < tolerance);
       }
     } finally {
       Scope.exit();
