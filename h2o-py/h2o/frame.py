@@ -408,6 +408,9 @@ class H2OFrame(object):
                 self.show()
         return ""
 
+    def _has_content(self):
+        return self._ex and (self._ex._children or self._ex._cache._id)
+
     def show(self, use_pandas=False, rows=10, cols=200):
         """
         Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
@@ -416,6 +419,9 @@ class H2OFrame(object):
         """
         if self._ex is None:
             print("This H2OFrame has been removed.")
+            return
+        if not self._has_content():
+            print("This H2OFrame is empty and not initialized.")
             return
         if self.nrows == 0:
             print("This H2OFrame is empty.")
@@ -449,9 +455,14 @@ class H2OFrame(object):
 
         :param bool return_data: Return a dictionary of the summary output
         """
+        if not self._has_content():
+            print("This H2OFrame is empty and not initialized.")
+            return self._ex._cache._data;
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
-            if H2ODisplay._in_ipy():
+            if self.nrows == 0:
+                print("This H2OFrame is empty.")
+            elif H2ODisplay._in_ipy():
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
             else:
@@ -469,17 +480,18 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-        res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
-        self._ex._cache._fill_data(res)
+        if self._has_content():
+            res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
+            self._ex._cache._fill_data(res)
 
-        print("Rows:{}".format(self.nrow))
-        print("Cols:{}".format(self.ncol))
+            print("Rows:{}".format(self.nrow))
+            print("Cols:{}".format(self.ncol))
 
-        #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
-        if chunk_summary:
-            res["chunk_summary"].show()
-            res["distribution_summary"].show()
-        print("\n")
+            #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+            if chunk_summary:
+                res["chunk_summary"].show()
+                res["distribution_summary"].show()
+            print("\n")
         self.summary()
 
 
@@ -1531,7 +1543,6 @@ class H2OFrame(object):
         if self._ex is expr: return True
         if expr._children is None: return False
         return any(self._is_expr_in_self(ch) for ch in expr._children)
-
 
     def drop(self, index, axis=1):
         """
