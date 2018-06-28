@@ -256,7 +256,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 #' @param password (Optional) Password to login with.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
-#' @param config (Optional) A \code{list} describing connection parameters.
+#' @param config (Optional) A \code{list} describing connection parameters. Using \code{config} makes \code{h2o.connect} ignore
+#'        other parameters and collect named list members instead (see examples).
 #' @return an instance of \code{H2OConnection} object representing a connection to the running H2O instance.
 #' @examples
 #' \dontrun{
