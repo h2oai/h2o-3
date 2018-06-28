@@ -113,6 +113,7 @@ public class h2odriver extends Configured implements Tool {
   static String runAsUser = null;
   static String principal = null;
   static String keytabPath = null;
+  static boolean reportHostname = false;
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
@@ -960,6 +961,8 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-keytab")) {
         i++; if (i >= args.length) { usage (); }
         keytabPath = args[i];
+      } else if (s.equals("-report_hostname")) {
+        reportHostname = true;
       } else {
         error("Unrecognized option " + s);
       }
@@ -1670,7 +1673,7 @@ public class h2odriver extends Configured implements Tool {
     }
 
     if (proxy) {
-      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl());
+      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
       reportProxyReady(proxyUrl);
     }
 
