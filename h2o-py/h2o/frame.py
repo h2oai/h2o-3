@@ -421,7 +421,7 @@ class H2OFrame(object):
             print("This H2OFrame has been removed.")
             return
         if not self._has_content():
-            print("This H2OFrame is not initialized.")
+            print("This H2OFrame is empty and not initialized.")
             return
         if self.nrows == 0:
             print("This H2OFrame is empty.")
@@ -456,7 +456,7 @@ class H2OFrame(object):
         :param bool return_data: Return a dictionary of the summary output
         """
         if not self._has_content():
-            print("This H2OFrame is not initialized.")
+            print("This H2OFrame is empty and not initialized.")
             return self._ex._cache._data;
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if not return_data:
