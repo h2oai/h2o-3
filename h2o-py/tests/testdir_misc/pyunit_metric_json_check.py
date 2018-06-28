@@ -108,7 +108,8 @@ def metric_json_check():
                                     u'nobs',
                                     u'domain',
                                     u'custom_metric_name',
-                                    u'custom_metric_value']
+                                    u'custom_metric_value',
+                                    u'pr_auc']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,
@@ -148,7 +149,8 @@ def metric_json_check():
                                     u'thresholds_and_metric_scores',
                                     u'domain',
                                     u'custom_metric_name',
-                                    u'custom_metric_value']
+                                    u'custom_metric_value',
+                                    u'pr_auc']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) glm-binomial " \
                                 "metric json. The difference is {2}".format(bin_metric_json_keys_have,
