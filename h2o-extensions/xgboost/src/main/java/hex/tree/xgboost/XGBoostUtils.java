@@ -261,11 +261,11 @@ public class XGBoostUtils {
      * @throws XGBoostError
      */
     public static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
-                                          Chunk[] chunks,
-                                          int response,
-                                          int weight,
-                                          int fold,
-                                          boolean sparse) throws XGBoostError {
+                                                 Chunk[] chunks,
+                                                 int response,
+                                                 int weight,
+                                                 int fold,
+                                                 boolean sparse) throws XGBoostError {
         int nRows = chunks[0]._len;
 
         DMatrix trainMat;
@@ -339,10 +339,10 @@ public class XGBoostUtils {
     private static final BigInteger MAX_DMATRIX_SIZE = BigInteger.valueOf((long) ARRAY_MAX * ARRAY_MAX);
 
     private static long denseChunk(float[][] data,
-                                  int[] chunks, Frame f, // for MR task
-                                  Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
-                                  DataInfo di, int cols,
-                                  float[] resp, float[] weights, Vec.Reader respVec) {
+                                   int[] chunks, Frame f, // for MR task
+                                   Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
+                                   DataInfo di, int cols,
+                                   float[] resp, float[] weights, Vec.Reader respVec) {
         int currentRow = 0;
         int currentCol = 0;
         long actualRows = 0;
@@ -468,7 +468,7 @@ public class XGBoostUtils {
 
     private static DMatrix csr(Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
                                int nRows, DataInfo di, float[] resp, float[] weights)
-            throws XGBoostError {
+        throws XGBoostError {
         return csr(null, -1, -1, f, chunksIds, vecs, w, respReader, nRows, di, resp, weights);
     }
 
@@ -480,7 +480,7 @@ public class XGBoostUtils {
     private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
                                Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
                                int nRows, DataInfo di, float[] resp, float[] weights)
-            throws XGBoostError {
+        throws XGBoostError {
         DMatrix trainMat;
         int actualRows = 0;
         // CSR:

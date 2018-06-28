@@ -3,6 +3,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
+from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
 
@@ -3450,6 +3451,43 @@ def convertH2OFrameToDMatrix(h2oFrame, yresp, enumCols=[]):
     """
     import xgboost as xgb
 
+    pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
+
+    return xgb.DMatrix(data=pandas[0], label=pandas[1])
+
+def convertH2OFrameToDMatrixSparse(h2oFrame, yresp, enumCols=[]):
+    """
+    This method will convert a H2OFrame containing to a DMatrix that is can be used by native XGBoost.  The
+    H2OFrame can contain numerical and enum columns.  Note that H2O one-hot-encoding introduces a missing(NA)
+    column. There can be NAs in any columns.
+
+    :param h2oFrame: H2OFrame to be converted to DMatrix
+    :param yresp: string denoting the response column name
+    :param enumCols: list of enum column names in the H2OFrame
+
+    :return: DMatrix
+    """
+    import xgboost as xgb
+
+    pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
+
+    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1])
+
+
+def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
+    """
+    This method will convert a H2OFrame containing to a DMatrix that is can be used by native XGBoost.  The
+    H2OFrame can contain numerical and enum columns.  Note that H2O one-hot-encoding introduces a missing(NA)
+    column. There can be NAs in any columns.
+
+    :param h2oFrame: H2OFrame to be converted to DMatrix
+    :param yresp: string denoting the response column name
+    :param enumCols: list of enum column names in the H2OFrame
+
+    :return: DMatrix
+    """
+    import xgboost as xgb
+
     pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
     nrows = h2oFrame.nrow
 
@@ -3473,7 +3511,7 @@ def convertH2OFrameToDMatrix(h2oFrame, yresp, enumCols=[]):
     data = pandaF.as_matrix(newX)
     label = pandaF.as_matrix([yresp])
 
-    return xgb.DMatrix(data=data, label=label)
+    return (data,label)
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows):
     """
