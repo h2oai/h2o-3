@@ -9,8 +9,7 @@ fi
 
 # Download and initialize HIVE
 cd /home/hive
-wget http://www-eu.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
-#wget http://mirrors.ocf.berkeley.edu/apache/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
+wget http://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
 tar -xzvf apache-hive-${HIVE_VERSION}-bin.tar.gz
 rm apache-hive-${HIVE_VERSION}-bin.tar.gz
 chown -R hive:hive apache-hive-*/

@@ -10,6 +10,8 @@ ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
 ARG JAVA_VERSIONS='8'
 ARG HIVE_VERSION='2.2.0'
+ARG AWS_ACCESS_KEY
+ARG AWS_SECRET_ACCESS_KEY
 
 ENV DISTRIBUTION='cdh' \
     HADOOP_HOME=/usr/lib/hadoop \
@@ -49,6 +51,10 @@ ENV \
 
 # Copy configs
 COPY ${PATH_PREFIX}/conf/ /etc/hadoop/conf.pseudo/
+RUN \
+    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY}@g" /etc/hadoop/conf.pseudo/core-site.xml && \
+    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" /etc/hadoop/conf.pseudo/core-site.xml && \
+    cat /etc/hadoop/conf.pseudo/core-site.xml
 
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init
