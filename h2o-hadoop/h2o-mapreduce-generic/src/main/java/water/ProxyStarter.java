@@ -12,7 +12,8 @@ import java.security.UnrecoverableKeyException;
 
 public class ProxyStarter {
 
-  public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo) {
+  public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo,
+                             boolean useHostname) {
     if (! proxyTo.endsWith("/"))
       proxyTo = proxyTo + "/";
 
@@ -21,7 +22,23 @@ public class ProxyStarter {
     JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
     InetAddress address = HostnameGuesser.findInetAddressForSelf(baseArgs.ip, baseArgs.network);
-    return H2O.getURL(proxy.getScheme(), address, proxy.getPort(), baseArgs.context_path);
+    if (useHostname) {
+      String hostname = localIpToHostname(address);
+      return H2O.getURL(proxy.getScheme(), hostname, proxy.getPort(), baseArgs.context_path);
+    } else
+      return H2O.getURL(proxy.getScheme(), address, proxy.getPort(), baseArgs.context_path);
+  }
+
+  private static String localIpToHostname(InetAddress address) {
+    String hostname = address.getHostName();
+    if (! address.getHostAddress().equals(hostname))
+      return hostname;
+    // we don't want to return IP address (because of a security policy of a particular customer, see PUBDEV-5680)
+    hostname = System.getenv("HOSTNAME");
+    if ((hostname == null) || hostname.isEmpty())
+      hostname = "localhost";
+    System.out.println("WARN: Proxy IP address couldn't be translated to a hostname. Using environment variable HOSTNAME='" + hostname + "' as a fallback.");
+    return hostname;
   }
 
   private static JettyProxy initializeProxy(H2O.BaseArgs args, JettyProxy.Credentials credentials, String proxyTo) {
@@ -77,7 +94,7 @@ public class ProxyStarter {
   // just for local testing
   public static void main(String[] args) {
     JettyProxy.Credentials cred = JettyProxy.Credentials.make(System.getProperty("user.name"), "Heslo123");
-    String url = start(args, cred, "https://localhost:54321/");
+    String url = start(args, cred, "https://localhost:54321/", false);
     System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }
 

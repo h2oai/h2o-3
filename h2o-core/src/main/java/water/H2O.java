@@ -1333,6 +1333,10 @@ final public class H2O {
             schema, address.getHostAddress(), port, contextPath);
   }
 
+  public static String getURL(String schema, String hostname, int port, String contextPath) {
+    return String.format("%s://%s:%d%s", schema, hostname, port, contextPath);
+  }
+
   // The multicast discovery port
   public static MulticastSocket  CLOUD_MULTICAST_SOCKET;
   public static NetworkInterface CLOUD_MULTICAST_IF;
