@@ -155,12 +155,10 @@ def prostate_automl_args():
     assert amodel.params['max_after_balance_size']['actual'] == 3.0
     assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
 
-    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= False and nfolds > 1")
+    print("Check that fold assignments were skipped by default and nfolds > 1")
     aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment0",
-                    nfolds=3, max_models=3, seed=1,
-                    keep_cross_validation_fold_assignment=False)
+                    nfolds=3, max_models=3, seed=1)
     aml.train(y="CAPSULE", training_frame=train)
-
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
@@ -170,7 +168,6 @@ def prostate_automl_args():
                     nfolds=3, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=True)
     aml.train(y="CAPSULE", training_frame=train)
-
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == True
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] != None
@@ -180,7 +177,6 @@ def prostate_automl_args():
                     nfolds=0, max_models=3, seed=1,
                     keep_cross_validation_fold_assignment=True)
     aml.train(y="CAPSULE", training_frame=train)
-
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
