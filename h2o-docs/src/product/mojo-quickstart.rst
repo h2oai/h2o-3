@@ -461,9 +461,10 @@ Step 2: Compile and Run the MOJO
        }
      }
 
- For GLRM, the returned field is the X coefficients for the archetypes by default.  In addition to that, you can choose to generate the reconstructed data row as well.  Again, this may slow down the MOJO due to added computation.  Below is the Java code showing how to obtain both the X factors and the reconstructed data after you have generated the GLRM mojo:
+ For GLRM, the returned field is the X coefficients for the archetypes by default. In addition to that, you can choose to generate the reconstructed data row as well. Again, this may slow down the MOJO due to added computation. Below is the Java code showing how to obtain both the X factors and the reconstructed data after you have generated the GLRM MOJO:
 
-  .. code:: java
+ .. code:: java
+
      import java.io.*;
      import hex.genmodel.easy.RowData;
      import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -529,17 +530,18 @@ Step 2: Compile and Run the MOJO
   Has penetrated the prostatic capsule (1 yes; 0 no): 0
   Class probabilities: 0.8059929056296662,0.19400709437033375
 
-If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
+ If you have chosen to enable leaf node assignments, you will also see 100 leaf node assignments for your data row:
 
-.. code:: bash
+ .. code:: bash
 
   Has penetrated the prostatic capsule (1 yes; 0 no): 0
   Class probabilities: 0.8059929056296662,0.19400709437033375
   Leaf node assignments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
 
-For the GLRM mojo, after running the java code, you will see the following:
+ For the GLRM MOJO, after running the Java code, you will see the following:
 
-.. code:: bash
+ .. code:: bash
+
   X coefficients for input row:
   Arch 0 coefficient: -0.5930494611027051,
   Arch 1 coefficient: 1.0459847877909487,
