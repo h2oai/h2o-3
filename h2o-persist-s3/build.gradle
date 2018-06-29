@@ -10,7 +10,7 @@ description = "H2O Persist S3"
 
 dependencies {
   compile project(":h2o-core")
-  compile 'com.amazonaws:aws-java-sdk-s3:1.10.47'
+  compile 'com.amazonaws:aws-java-sdk-s3:1.10.77'
   compile 'org.apache.httpcomponents:httpclient:4.3.6'
   compile 'javax.xml.bind:jaxb-api:2.3.0'
   testCompile "junit:junit:${junitVersion}"

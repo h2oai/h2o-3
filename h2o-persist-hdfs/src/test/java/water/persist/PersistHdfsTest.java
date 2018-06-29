@@ -1,7 +1,12 @@
 package water.persist;
 
+import org.jets3t.service.S3Service;
+import org.jets3t.service.impl.rest.httpclient.RestS3Service;
+import org.jets3t.service.security.AWSCredentials;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.FileVec;
 import water.fvec.Frame;
@@ -11,26 +16,29 @@ import water.util.FileUtils;
 import java.net.URI;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
+@RunWith(Parameterized.class)
 public class PersistHdfsTest extends TestUtil {
+
+  @Parameterized.Parameters(name = "{index}: scheme={0}")
+  public static Object[] schemes() {
+    return new Object[] { "s3n", "s3a" };
+  }
+
+  @Parameterized.Parameter
+  public String scheme;
 
   @BeforeClass
   public static void setup() { stall_till_cloudsize(5); }
 
   @Test
-  public void testS3NImport() throws Exception {
-    testImport("s3n");
-  }
-
-  @Test
-  public void testS3AImport() throws Exception {
-    testImport("s3a");
-  }
-
-  private void testImport(String scheme) throws Exception {
+  public void testImport() throws Exception {
     Scope.enter();
     try {
-      Key keyS3 = H2O.getPM().anyURIToKey(URI.create(scheme + "://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
+      Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
+      Key keyS3 = hdfsPersist.uriToKey(URI.create(scheme + "://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = Scope.track((Frame) DKV.getGet(keyS3));
       FileVec vS3 = (FileVec) fr.anyVec();
 
@@ -42,6 +50,17 @@ public class PersistHdfsTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testExist() {
+    Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
+
+    String existing = scheme + "://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip";
+    assertTrue(hdfsPersist.exists(existing));
+
+    String invalid = scheme + "://h2o-public-test-data/smalldata/does.not.exist";
+    assertFalse(hdfsPersist.exists(invalid));
   }
 
 }
