@@ -351,7 +351,7 @@ The corresponding deviance is equal to:
 
 .. math::
 
- D = -2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}_i) \big)
+ D = 2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}_i) \big)
 
 Gamma Models
 ^^^^^^^^^^^^
