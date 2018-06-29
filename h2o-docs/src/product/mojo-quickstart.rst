@@ -446,7 +446,7 @@ Step 2: Compile and Run the MOJO
          System.out.print("Class probabilities: ");
          for (int i = 0; i < p.classProbabilities.length; i++) {
            if (i > 0) {
-         System.out.print(",");
+             System.out.print(",");
            }
            System.out.print(p.classProbabilities[i]);
          }
@@ -454,12 +454,57 @@ Step 2: Compile and Run the MOJO
          System.out.println("Leaf node assignments: ");
          for (int i=0; i < p.leafNodeAssignments; i++) {
            if (i > 0) {
-           System.out.print.(p.leafNodeAssignments[i]);
+             System.out.print.(p.leafNodeAssignments[i]);
            }
          }
          System.out.println("");
        }
      }
+
+ For GLRM, the returned field is the X coefficients for the archetypes by default.  In addition to that, you can choose to generate the reconstructed data row as well.  Again, this may slow down the MOJO due to added computation.  Below is the Java code showing how to obtain both the X factors and the reconstructed data after you have generated the GLRM mojo:
+
+  .. code:: java
+     import java.io.*;
+     import hex.genmodel.easy.RowData;
+     import hex.genmodel.easy.EasyPredictModelWrapper;
+     import hex.genmodel.easy.prediction.*;
+     import hex.genmodel.MojoModel;
+
+     public class main {
+       public static void main(String[] args) throws Exception {
+       EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GLRM_model_python_1530295749484_1.zip")).setEnableGLRMReconstrut(true);
+       EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+       RowData row = new RowData();
+       row.put("CAPSULE", "0");
+       row.put("AGE", "68");
+       row.put("RACE", "2");
+       row.put("DPROS", "4");
+       row.put("DCAPS", "2");
+       row.put("PSA", "31.9");
+       row.put("VOL", "0");
+       row.put("GLEASON", "6");
+
+       DimReductionModelPrediction p = model.predictDimReduction(row);
+       String[] colnames = model.m.getNames();
+       System.out.println("X coefficients for input row: ");
+       for (int i = 0; i < p.dimensions.length; i++) {
+         if (i > 0) {
+           System.out.println(",");
+         }
+         System.out.print("Arch "+i+" coefficient: "+p.dimensions[i]);
+       }
+       System.out.println("");
+       System.out.println("Reconstructed input row: ");
+       for (int i = 0; i < p.reconstructed.length; i++) {
+         if (i > 0) {
+           System.out.println(",");
+         }
+         System.out.print(colnames[i]+": "+p.reconstructed[i]);
+       }
+       System.out.println("");
+     }
+
 
 3. Compile in terminal window 2.
 
@@ -491,6 +536,23 @@ If you have chosen to enable leaf node assignments, you will also see 100 leaf n
   Has penetrated the prostatic capsule (1 yes; 0 no): 0
   Class probabilities: 0.8059929056296662,0.19400709437033375
   Leaf node assignments:   RRRR,RRR,RRRR,RRR,RRL,RRRR,RLRR,RRR,RRR,RRR,RLRR,...
+
+For the GLRM mojo, after running the java code, you will see the following:
+
+.. code:: bash
+  X coefficients for input row:
+  Arch 0 coefficient: -0.5930494611027051,
+  Arch 1 coefficient: 1.0459847877909487,
+  Arch 2 coefficient: 0.5849220609025815
+  Reconstructed input row:
+  CAPSULE: 0.5204822003860688,
+  AGE: 10.520294102886806,
+  RACE: 4.1422863477607645,
+  DPROS: 2.970424071063664,
+  DCAPS: 6.361196172145799,
+  PSA: 1.905415090602722,
+  VOL: 0.7123169431687857,
+  GLEASON: 6.625024806196047
 
 Viewing a MOJO Model
 ~~~~~~~~~~~~~~~~~~~~

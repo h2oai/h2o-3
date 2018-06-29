@@ -171,7 +171,7 @@ public class PredictCsv {
       case DimReduction:  // will write factor or the precdicted value depending on what the user wants
         int datawidth;
         String head;
-        String[] colnames =  this.model.m.getNames();;
+        String[] colnames =  this.model.m.getNames();
         if (returnGLRMReconstruct) {
           datawidth = ((GlrmMojoModel) model.m)._permutation.length;
           head = "reconstr_";
