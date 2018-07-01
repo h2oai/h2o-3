@@ -540,7 +540,7 @@ public class XGBoostUtils {
         //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
         // extract predictors
-        int nz = 0;
+        int nonZeroCount = 0;
         int currentRow = 0;
         int currentCol = 0;
         int rwRow = 0;
@@ -548,15 +548,14 @@ public class XGBoostUtils {
         for (Integer chunk : chunks) {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
-                int nzstart = nz;
+
+                final int startNonZeroCount = nonZeroCount;
                 // enlarge final data arrays by 2x if needed
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if (vecs[j].at(i) != 0) {
-                        data[currentRow][currentCol] = 1; //one-hot encoding
-                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at(i));
-                        nz++;
-                    }
+                    data[currentRow][currentCol] = 1; //one-hot encoding
+                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at(i));
+                    nonZeroCount++;
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
@@ -564,26 +563,22 @@ public class XGBoostUtils {
                     if (val != 0) {
                         data[currentRow][currentCol] = val;
                         colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
-                        nz++;
+                        nonZeroCount++;
                     }
                 }
-                if (nz == nzstart) {
+                if (nonZeroCount == startNonZeroCount) {
                     // for the corner case where there are no categorical values, and all numerical values are 0, we need to
                     // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
                     data[currentRow][currentCol] = 0;
                     colIndex[currentRow][currentCol++] = 0;
-                    nz++;
+                    nonZeroCount++;
                 }
-                rowHeaders[0][++actualRows] = nz;
+                rowHeaders[0][++actualRows] = nonZeroCount;
 
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
             }
         }
 
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % ARRAY_MAX);
-        colIndex[colIndex.length - 1] = Arrays.copyOf(colIndex[colIndex.length - 1], nz % ARRAY_MAX);
-
-        rowHeaders[0] = Arrays.copyOf(rowHeaders[rowHeaders.length - 1], actualRows + 1);
         return actualRows;
     }
 
@@ -597,13 +592,10 @@ public class XGBoostUtils {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
             int nzstart = nz;
 
-
             for (int j = 0; j < di._cats; ++j) {
-                if (chunks[j].atd(i) != 0) {
-                    data[currentRow][currentCol] = 1; //one-hot encoding
-                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].atd(i));
-                    nz++;
-                }
+                data[currentRow][currentCol] = 1; //one-hot encoding
+                colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].atd(i));
+                nz++;
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
@@ -624,11 +616,6 @@ public class XGBoostUtils {
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % ARRAY_MAX);
-        colIndex[colIndex.length - 1] = Arrays.copyOf(colIndex[colIndex.length - 1], nz % ARRAY_MAX);
-
-        rowHeaders[0] = Arrays.copyOf(rowHeaders[rowHeaders.length - 1], actualRows + 1);
         return actualRows;
     }
 
@@ -814,18 +801,15 @@ public class XGBoostUtils {
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
-        long colIndicesCount = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
             long nzstart = nonZeroElementsCount;
 
-            for (int j = 0; j < di._cats; ++j) {
-                if (chunks[j].atd(i) != 0) {
-                    nonZeroElementsCount++;
-                }
-            }
+
+            nonZeroElementsCount += di._cats;
+
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (val != 0) {
@@ -851,11 +835,7 @@ public class XGBoostUtils {
                 if (w != null && w.at(i) == 0) continue;
                 long nzstart = nonZeroElementsCount;
 
-                for (int j = 0; j < di._cats; ++j) {
-                    if (vecs[j].at(i) != 0) {
-                        nonZeroElementsCount++;
-                    }
-                }
+                nonZeroElementsCount+= di._cats;
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);

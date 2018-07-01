@@ -14,9 +14,9 @@ def comparison_test():
     runSeed = random.randint(1, 1073741824)
     ntrees = 10
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "auto", "backend": "cpu"}
+                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend": "cpu"}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
-                   'tree_method': 'auto',
+                   'tree_method': 'exact',
                    'seed': h2oParamsS["seed"],
                    'booster': 'gbtree',
                    'objective': 'binary:logistic',
@@ -33,12 +33,12 @@ def comparison_test():
 
     nrows=10000
 
-    trainFile = pyunit_utils.genTrainFrame(nrows, 0, enumCols=1, enumFactors=50, miscfrac=0.1)       # load in dataset and add response column
+    trainFile = pyunit_utils.genTrainFrame(nrows, 0, enumCols=10, enumFactors=2, miscfrac=0.5)       # load in dataset and add response column
     print(trainFile)
     myX = trainFile.names
     y='response'
     myX.remove(y)
-    print(myX)
+    nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=myX)
 
     h2oModelS = H2OXGBoostEstimator(**h2oParamsS)
     # gather, print and save performance numbers for h2o model
@@ -49,9 +49,9 @@ def comparison_test():
     h2oPredictTimeS = time.time()-time1
 
     # train the native XGBoost
-    nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=myX)
+
     nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain)
+                            dtrain=nativeTrain, num_boost_round=10)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
