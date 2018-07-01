@@ -554,7 +554,11 @@ public class XGBoostUtils {
 
                 for (int j = 0; j < di._cats; ++j) {
                     data[currentRow][currentCol] = 1; //one-hot encoding
-                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at(i));
+                    if (vecs[j].isNA(i)) {
+                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                    } else {
+                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at8(i));
+                    }
                     nonZeroCount++;
                 }
 
@@ -583,36 +587,40 @@ public class XGBoostUtils {
     }
 
     private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
-        int nz = 0;
+        int nonZeroCount = 0;
         int currentRow = 0;
         int currentCol = 0;
         int rwRow = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-            int nzstart = nz;
+            int startNonZeroCount = nonZeroCount;
 
             for (int j = 0; j < di._cats; ++j) {
                 data[currentRow][currentCol] = 1; //one-hot encoding
-                colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].atd(i));
-                nz++;
+                if (chunks[j].isNA(i)) {
+                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                } else {
+                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
+                }
+                nonZeroCount++;
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
                 if (val != 0) {
                     data[currentRow][currentCol] = val;
                     colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
-                    nz++;
+                    nonZeroCount++;
                 }
             }
-            if (nz == nzstart) {
+            if (nonZeroCount == startNonZeroCount) {
                 // for the corner case where there are no categorical values, and all numerical values are 0, we need to
                 // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
                 data[currentRow][currentCol] = 0;
                 colIndex[currentRow][currentCol++] = 0;
-                nz++;
+                nonZeroCount++;
             }
-            rowHeaders[0][++actualRows] = nz;
+            rowHeaders[0][++actualRows] = nonZeroCount;
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
