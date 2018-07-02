@@ -21,7 +21,7 @@ port = int(ip_port[1])
 # Connect to a pre-existing cluster
 h2o.init(ip=ip, port=port, strict_version_check=False)
 
-df = h2o.import_file(path="../../smalldata/logreg/prostate.csv")
+df = h2o.import_file(path=os.path.realpath("../../smalldata/logreg/prostate.csv"))
 df.describe()
 
 # Remove ID from training frame
