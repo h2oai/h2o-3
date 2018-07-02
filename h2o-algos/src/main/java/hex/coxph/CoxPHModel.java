@@ -4,9 +4,7 @@ import hex.*;
 import hex.coxph.CoxPHModel.CoxPHOutput;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import hex.schemas.CoxPHModelV3;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -221,10 +219,36 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     double[] _cumhaz_0;
     double[] _var_cumhaz_1;
-    double[][] _var_cumhaz_2;
+    FrameMatrix _var_cumhaz_2_matrix;
+    Key<Frame> _var_cumhaz_2;
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;
+  }
+
+  public static class FrameMatrix extends Storage.DenseRowMatrix {
+    Key<Frame> _frame_key;
+
+    FrameMatrix(Key<Frame> frame_key, int rows, int cols) {
+      super(rows, cols);
+      _frame_key = frame_key;
+    }
+
+    @SuppressWarnings("unused")
+    public final AutoBuffer write_impl(AutoBuffer ab) {
+      Key.write_impl(_frame_key, ab);
+      return ab;
+    }
+
+    @SuppressWarnings({"unused", "unchecked"})
+    public final FrameMatrix read_impl(AutoBuffer ab) {
+      _frame_key = (Key<Frame>) Key.read_impl(null, ab);
+      // install in DKV if not already there
+      if (DKV.getGet(_frame_key) == null)
+        toFrame(_frame_key);
+      return this;
+    }
+
   }
 
   @Override
@@ -314,6 +338,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override public double[] score0(double[] data, double[] preds) {
     throw new UnsupportedOperationException("CoxPHModel.score0 should never be called");
+  }
+
+  protected Futures remove_impl( Futures fs ) {
+    Frame varCumhaz2 = _output._var_cumhaz_2 != null ? _output._var_cumhaz_2.get() : null;
+    if (varCumhaz2 != null)
+      varCumhaz2.remove(fs);
+    super.remove_impl(fs);
+    return fs;
   }
 
 }
