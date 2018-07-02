@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ProvideSystemProperty;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
+import org.junit.rules.ExpectedException;
 import water.H2O;
 
 import java.sql.Connection;
@@ -15,10 +16,14 @@ public class SQLManagerTest {
 
   @Rule
   public final ProvideSystemProperty provideSystemProperty =
-      new ProvideSystemProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max", "7");
+      new ProvideSystemProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max", "7")
+              .and(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.jdbc.driver.testdb", "InvalidDriverClass");
 
   @Rule
   public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
+
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testCreateConnectionPool() throws ReflectiveOperationException, SQLException {
@@ -34,6 +39,13 @@ public class SQLManagerTest {
     for (Connection c : pool) {
       c.close();
     }
+  }
+
+  @Test
+  public void testInitializeDatabaseDriver() {
+    exception.expect(RuntimeException.class);
+    exception.expectMessage("Connection to 'testdb' database is not possible due to missing JDBC driver. User specified driver class: InvalidDriverClass");
+    SQLManager.initializeDatabaseDriver("testdb");
   }
 
   @Test
