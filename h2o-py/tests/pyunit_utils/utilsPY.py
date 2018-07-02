@@ -4,6 +4,7 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
+import pandas as pd
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -3426,9 +3427,189 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
 
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR, **fractions)
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR
+                          , **fractions)
     return df
 
 def getMojoName(modelID):
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
     return regex.sub("_", modelID)
+
+
+def convertH2OFrameToDMatrix(h2oFrame, yresp, enumCols=[]):
+    """
+    This method will convert a H2OFrame containing to a DMatrix that is can be used by native XGBoost.  The
+    H2OFrame can contain numerical and enum columns.  Note that H2O one-hot-encoding introduces a missing(NA)
+    column. There can be NAs in any columns.
+
+    :param h2oFrame: H2OFrame to be converted to DMatrix
+    :param yresp: string denoting the response column name
+    :param enumCols: list of enum column names in the H2OFrame
+
+    :return: DMatrix
+    """
+    import xgboost as xgb
+
+    pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
+    nrows = h2oFrame.nrow
+
+    if len(enumCols) > 0:   # start with first enum column
+        pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows)
+        pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
+
+        for colInd in range(1, len(enumCols)):
+            cname=enumCols[colInd]
+            ctemp = generatePandaEnumCols(pandaFtrain, cname,  nrows)
+            pandaTrainPart=pd.concat([pandaTrainPart, ctemp], axis=1)
+            pandaFtrain.drop([cname], axis=1, inplace=True)
+
+        pandaFtrain = pd.concat([pandaTrainPart, pandaFtrain], axis=1)
+
+    c0= h2oFrame[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+    pandaFtrain.drop([yresp], axis=1, inplace=True)
+    pandaF = pd.concat([c0, pandaFtrain], axis=1)
+    pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+    newX = list(pandaFtrain.columns.values)
+    data = pandaF.as_matrix(newX)
+    label = pandaF.as_matrix([yresp])
+
+    return xgb.DMatrix(data=data, label=label)
+
+def generatePandaEnumCols(pandaFtrain, cname, nrows):
+    """
+    For a H2O Enum column, we perform one-hot-encoding here and added one more column "missing(NA)" to it.
+
+    :param pandaFtrain:
+    :param cname:
+    :param nrows:
+    :return:
+    """
+    cmissingNames=[cname+".missing(NA)"]
+    tempnp = np.zeros((nrows,1), dtype=np.int)
+    # check for nan and assign it correct value
+    colVals = pandaFtrain[cname]
+    for ind in range(nrows):
+        try:
+            float(colVals[ind])
+            if math.isnan(colVals[ind]):
+                tempnp[ind]=1
+        except ValueError:
+            pass
+    zeroFrame = pd.DataFrame(tempnp)
+    zeroFrame.columns=cmissingNames
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    tempNames = list(temp)  # get column names
+    colLength = len(tempNames)
+    newNames = ['a']*colLength
+    newIndics = [0]*colLength
+    header = tempNames[0].split('.')[0]
+
+    for ind in range(colLength):
+        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+    newIndics.sort()
+
+    for ind in range(colLength):
+        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+    ftemp = temp[newNames]
+    ctemp = pd.concat([ftemp, zeroFrame], axis=1)
+    return ctemp
+
+def summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
+                             nativeScoreTime, tolerance=1e-6):
+    '''
+    This method will summarize and compare H2OXGBoost and native XGBoost results for binomial classifiers.
+    This method will summarize and compare H2OXGBoost and native XGBoost results for binomial classifiers.
+
+    :param h2oPredictD:
+    :param nativePred:
+    :param h2oTrainTimeD:
+    :param nativeTrainTime:
+    :param h2oPredictTimeD:
+    :param nativeScoreTime:
+    :return:
+    '''
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}s.  Native XGBoost train time is {1}s.\n  H2OXGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD/1000.0, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    colnames = h2oPredictD.names
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        assert abs(h2oPredictLocalD[colnames[2]][ind]-nativePred[ind])<tolerance, "H2O prediction prob: {0} and native " \
+                                                                         "XGBoost prediction prob: {1}.  They are " \
+                                                                         "very different.".format(h2oPredictLocalD[colnames[2]][ind], nativePred[ind])
+
+def summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
+                                nativeScoreTime, tolerance=1e-6):
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}s.  Native XGBoost train time is {1}s.\n  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD/1000.0, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+    nclass = len(nativePred[0])
+    colnames = h2oPredictD.names
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        for col in range(nclass):
+            assert abs(h2oPredictLocalD[colnames[col+1]][ind]-nativePred[ind][col])<tolerance, \
+                "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+                "different.".format(h2oPredictLocalD[colnames[col+1]][ind], nativePred[ind][col])
+
+def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfrac=0):
+    if ncol>0:
+        trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=miscfrac)
+    if enumCols > 0:
+        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=miscfrac)
+
+    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0)
+    yresponse.set_name(0,'response')
+    if enumCols > 0:
+        if ncol > 0:    # mixed datasets
+            trainFrame = trainFrameEnums.cbind(trainFrameNumerics.cbind(yresponse))
+        else:   # contains enum datasets
+            trainFrame = trainFrameEnums.cbind(yresponse)
+    else: # contains numerical datasets
+        trainFrame = trainFrameNumerics.cbind(yresponse)
+    return trainFrame
+
+def summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime, tolerance=1e-6):
+    # Result comparison in terms of time
+    print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s.\n  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time is {3}s.".format(h2oTrainTimeD, nativeTrainTime,
+                                                          h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        assert abs((h2oPredictLocalD['predict'][ind]-nativePred[ind])/max(1, abs(h2oPredictLocalD['predict'][ind]), abs(nativePred[ind])))<tolerance, \
+            "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+            "different.".format(h2oPredictLocalD['predict'][ind], nativePred[ind])
+
+def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
+                                nativeScoreTime, h2oPredictS, tolerance=1e-6):
+    # Result comparison in terms of time
+    print("H2OXGBoost train time with sparse DMatrix is {0}s.  Native XGBoost train time with dense DMtraix is {1}s.\n  H2OGBoost scoring time is {2}s."
+          "  Native XGBoost scoring time with dense DMatrix is {3}s.".format(h2oTrainTimeD/1000.0, nativeTrainTime,
+                                                                             h2oPredictTimeD, nativeScoreTime))
+    # Result comparison in terms of actual prediction value between the two
+    h2oPredictD['predict'] = h2oPredictD['predict'].asnumeric()
+    h2oPredictLocalD = h2oPredictD.as_data_frame(use_pandas=True, header=True)
+    h2oPredictS['predict'] = h2oPredictS['predict'].asnumeric()
+    h2oPredictLocalS = h2oPredictS.as_data_frame(use_pandas=True, header=True)
+
+    # compare prediction probability and they should agree if they use the same seed
+    for ind in range(h2oPredictD.nrow):
+        assert  abs(h2oPredictLocalD['c0.l1'][ind]-nativePred[ind])<tolerance  or \
+                abs(h2oPredictLocalS['c0.l1'][ind]-nativePred[ind])<tolerance, \
+            "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+            "different.".format(h2oPredictLocalD['c0.l1'][ind], nativePred[ind])
