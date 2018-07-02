@@ -37,7 +37,7 @@ public class ProxyStarter {
     hostname = System.getenv("HOSTNAME");
     if ((hostname == null) || hostname.isEmpty())
       hostname = "localhost";
-    System.out.println("WARN: Proxy IP address couldn't be translated to a hostname. Using '" + hostname + "' as a fallback.");
+    System.out.println("WARN: Proxy IP address couldn't be translated to a hostname. Using environment variable HOSTNAME='" + hostname + "' as a fallback.");
     return hostname;
   }
 
