@@ -13,13 +13,14 @@ def comparison_test():
     assert H2OXGBoostEstimator.available() is True
     runSeed = random.randint(1, 1073741824)
     ntrees = 10
+    responseL = random.randint(3,10)
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                   "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "auto"}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
                    'tree_method': 'auto',
                    'seed': h2oParamsS["seed"],
                    'booster': 'gbtree',
-                   'objective': 'binary:logistic',
+                   'objective': 'multi:softprob',
                    'lambda': 0.0,
                    'eta': h2oParamsS["learn_rate"],
                    'grow_policy': 'depthwise',
@@ -29,7 +30,8 @@ def comparison_test():
                    'max_delta_step': 0.0,
                    'min_child_weight': h2oParamsS["min_rows"],
                    'gamma': 0.0,
-                   'max_depth': h2oParamsS["max_depth"]}
+                   'max_depth': h2oParamsS["max_depth"],
+                   'num_class':responseL}
 
     nrows = random.randint(10000, 20000)
     ncols = random.randint(1, 10)
@@ -37,7 +39,7 @@ def comparison_test():
     numCols = 0
     enumCols = ncols-numCols
 
-    trainFile = pyunit_utils.genTrainFrame(nrows, 0, enumCols=enumCols, enumFactors=factorL, miscfrac=0.1)       # load in dataset and add response column
+    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.1, responseLevel=responseL)       # load in dataset and add response column
     print(trainFile)
     myX = trainFile.names
     y='response'
@@ -62,7 +64,7 @@ def comparison_test():
     nativeScoreTime = time.time()-time1
 
     print("Comparing H2OXGBoost results with native XGBoost result when DMatrix is set to sparse.....")
-    pyunit_utils.summarizeResult_binomial(h2oPredictS, nativePred, h2oTrainTimeS, nativeTrainTime, h2oPredictTimeS,
+    pyunit_utils.summarizeResult_multinomial(h2oPredictS, nativePred, h2oTrainTimeS, nativeTrainTime, h2oPredictTimeS,
                                           nativeScoreTime, tolerance=1e-6)
 
 
