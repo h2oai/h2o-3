@@ -35,7 +35,7 @@ def comparison_test():
 
     nrows = random.randint(10000, 20000)
     ncols = random.randint(1, 10)
-    factorL = random.randint(2, 10)
+    factorL = random.randint(2, 20)
     numCols = 0
     enumCols = ncols-numCols
 
