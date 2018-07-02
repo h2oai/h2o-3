@@ -65,6 +65,9 @@ h2o.coxph <- function(x, event_column, training_frame,
      stratify_by_only <- setdiff(stratify_by, x)
      x <- c(x, stratify_by_only)
   }
+  if(!is.character(stop_column) && !is.numeric(stop_column)) {
+     stop('argument "stop_column" must be a column name or an index')
+  }
   # Required args: training_frame
   if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object

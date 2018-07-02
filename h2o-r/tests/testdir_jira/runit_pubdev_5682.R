@@ -8,13 +8,13 @@ test.CoxPH.nostop <- function() {
     X <- c("age", "sex", "meal.cal")
 
     expect_error(
-        h2o.coxph(x = X, training_frame = cancer.hex),
+        h2o.coxph(x = X, stop_column = "time", training_frame = cancer.hex),
         'argument "event_column" is missing, with no default'
     )
 
     expect_error(
         h2o.coxph(x = X, training_frame = cancer.hex, event_column = "status"),
-        'argument "stop_column" is missing, with no default'
+        'argument "stop_column" must be a column name or an index'
     )
 
     model <- h2o.coxph(x = X, training_frame = cancer.hex, event_column = "status", stop_column = "time")
