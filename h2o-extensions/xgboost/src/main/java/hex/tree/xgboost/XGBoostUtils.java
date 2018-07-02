@@ -491,9 +491,9 @@ public class XGBoostUtils {
         long[][] rowHeaders;
         float[][] data;
         int[][] colIndex;
-
+        final SparseMatrixDimensions sparseMatrixDimensions;
         if(null != chunks) {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
+            sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
@@ -504,7 +504,7 @@ public class XGBoostUtils {
                     di, actualRows, rowHeaders, data, colIndex,
                     respIdx, resp, weights);
         } else {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
+            sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
@@ -516,15 +516,8 @@ public class XGBoostUtils {
         }
 
 
-        long size = 0;
-        for(int i = 0; i < data.length; i++) {
-            size += data[i].length;
-        }
-
-        int rowHeadersSize = 0;
-        for(int i = 0; i < rowHeaders.length; i++) {
-            rowHeadersSize += rowHeaders[i].length;
-        }
+        long size = sparseMatrixDimensions._nonZeroElementsCount;
+        int rowHeadersSize = (int) sparseMatrixDimensions._rowIndicesCount;
 
         trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), rowHeadersSize, size);
         assert trainMat.rowNum() == actualRows;
