@@ -16,9 +16,9 @@ def comparison_test_dense():
     testTol = 1e-6
     ntrees = 10
     maxdepth = 5
-    nrows = random.randint(100000, 500000)
-    ncols = random.randint(1, 10)
-    factorL = random.randint(2, 10)
+    nrows = random.randint(10000, 100000)
+    ncols = random.randint(5, 20)
+    factorL = random.randint(11, 20)
     numCols = random.randint(1, ncols)
     enumCols = ncols-numCols
     responseL = random.randint(3,10)

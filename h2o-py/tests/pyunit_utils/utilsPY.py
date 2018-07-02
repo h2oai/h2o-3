@@ -3498,7 +3498,20 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     zeroFrame = pd.DataFrame(tempnp)
     zeroFrame.columns=cmissingNames
     temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
-    ctemp=pd.concat([temp,zeroFrame], axis=1)   # transformed H2O enum column to panda enum columns plus NA column
+    tempNames = list(temp)  # get column names
+    colLength = len(tempNames)
+    newNames = ['a']*colLength
+    newIndics = [0]*colLength
+    header = tempNames[0].split('.')[0]
+
+    for ind in range(colLength):
+        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+    newIndics.sort()
+
+    for ind in range(colLength):
+        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+    ftemp = temp[newNames]
+    ctemp = pd.concat([ftemp, zeroFrame], axis=1)
     return ctemp
 
 def summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
