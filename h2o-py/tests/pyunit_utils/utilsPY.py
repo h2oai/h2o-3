@@ -3301,6 +3301,21 @@ def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6):
                     diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
                     assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(v1, v2, rowInd, colInd)
+# frame compare with NAs in column
+def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,f2.nrow):
+            if (random.uniform(0,1) < prob):
+                if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
+                    assert len(temp1[rowInd]) == len(temp2[rowInd]), "Failed frame values check at row {2} ! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd], temp2[rowInd], rowInd)
+                else:
+                    assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                      "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
 
 
 def build_save_model_GLM(params, x, train, respName):

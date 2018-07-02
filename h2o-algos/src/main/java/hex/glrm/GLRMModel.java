@@ -264,7 +264,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   public Key<Frame> gen_representation_key(Frame fr) {
-    if (fr._key == _parms.train()._key) // use training X factor here.
+    if (fr.checksum() == _parms.train().checksum()) // use training X factor here.
       return _output._representation_key;
     else
       return Key.make("GLRMLoading_"+fr._key);
