@@ -1,0 +1,13 @@
+imports:
+  - path: software_status_script.py
+  - path: software_status.sh.tmpl
+
+properties:
+  checkScript:
+    type: string
+  initScript:
+    type: string
+
+outputs:
+  startup-script:
+    type: string

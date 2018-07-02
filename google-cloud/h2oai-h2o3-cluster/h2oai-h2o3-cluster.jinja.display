@@ -1,0 +1,89 @@
+description:
+  author:
+    title: H2O.ai
+    descriptionHtml: 'H2O.ai is the leader in AI with its visionary open source platform, H2O. Its mission is to democratize AI for all. H2O.ai is transforming the use of AI within all software with its category-creating visionary open source machine learning movement.'
+    shortDescription: 'H2O.ai is the leader in AI with its visionary open source platform, H2O. Its mission is to democratize AI for all. H2O.ai is transforming the use of AI within all software with its category-creating visionary open source machine learning movement.'
+  descriptionHtml: Turn-key solution for launching a H2O-3 Cluster
+  logo: '@media/h2oai-h2o3-cluster_store.png'
+  tagline: H2O-3 Cluster
+  title: h2oai-h2o3-cluster
+  version: 3.18.0.8
+  documentations:
+    - title: H2O-3 Documentation
+      url: 'http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html'
+      destinations:
+        - DESTINATION_SOLUTION_DETAILS
+        - DESTINATION_POST_DEPLOY
+  support:
+    - title: Support
+      descriptionHtml: 'Support is offered as a paid option for enterprise customers. As this is an open source platform, software comes as is.'
+      url: 'https://www.h2o.ai'
+  icon: '@media/h2oai-h2o3-cluster_small.png'
+  softwareGroups:
+    - type: SOFTWARE_GROUP_OS
+      software:
+        - title: Ubuntu
+          version: '16.04'
+input:
+  properties:
+    - name: zone
+      title: Zone
+    - name: machineType
+      title: Machine type
+    - name: numReplicas
+      title: Node count
+      tooltip: Number of H2O-3 nodes in the cluster.
+    - name: bootDiskType
+      title: Boot disk type
+      section: BOOT_DISK
+    - name: bootDiskSizeGb
+      title: Boot disk size in GB
+      section: BOOT_DISK
+    - name: network
+      title: Network name
+      section: NETWORKING
+    - name: subnetwork
+      title: Subnetwork name
+      section: NETWORKING
+    - name: externalIP
+      title: External IP
+      tooltip: 'An external IP address associated with this instance. Selecting "None" will result in the instance having no external internet access. <a href="https://cloud.google.com/compute/docs/configure-instance-ip-addresses">Learn more</a>'
+      section: NETWORKING
+      level: 1
+  sections:
+    - name: BOOT_DISK
+      title: Boot Disk
+      tooltip: Each instance requires a disk to boot from.
+    - name: NETWORKING
+      title: Networking
+runtime:
+  deployingMessage: Deployment can take several minutes to complete.
+  applicationTable:
+    rows:
+      - label: Instance
+        value: '<a href="{{ consoleUrl(outputs().vmSelfLink) }}">{{ outputs().vmName }}</a>'
+      - label: Instance zone
+        value: '{{ properties().zone }}'
+      - label: Instance machine type
+        value: '{{ properties().machineType }}'
+      - label: Connect At
+        value: '{{ outputs().vmExternalIP }}'
+      - label: Username
+        value: 'h2oai'
+      - label: Password
+        value: '{{ outputs().vmId }}'
+  primaryButton:
+    label: SSH
+    type: TYPE_GCE_VM_SSH
+    action: '{{ outputs().vmSelfLink }}'
+  suggestedActions:
+    - heading: No external IP configured
+      description: 'The VM instance has been configured with no external IP or internet access. Connecting to it directly may not be possible. Consider using a <a href="https://cloud.google.com/compute/docs/instances/connecting-advanced#bastion_host">bastion host</a> to access this VM.'
+      showIf: '{{ properties().externalIP == "None" }}'
+    - heading: Assign a static external IP address to your VM instance
+      description: 'An ephemeral external IP address has been assigned to the VM instance. If you require a static external IP address, you may promote the address to static. <a href="https://cloud.google.com/compute/docs/instances-and-network#promote_ephemeral_ip">Learn more</a>'
+      showIf: '{{ properties().externalIP == "Ephemeral" }}'
+annotations:
+  autogenSpecType: MULTI_VM
+  vmImage0: 'https://www.googleapis.com/compute/v1/projects/h2o-public/global/images/h2o3-cluster-vm-05072018'
+metadata_version: v1

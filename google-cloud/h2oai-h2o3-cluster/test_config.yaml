@@ -1,0 +1,6 @@
+imports:
+- path: h2oai-h2o3-cluster.jinja
+
+resources:
+- name: h2oai-h2o3-cluster
+  type: h2oai-h2o3-cluster.jinja

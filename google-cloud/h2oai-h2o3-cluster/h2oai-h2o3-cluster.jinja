@@ -1,0 +1,85 @@
+{% import "path_utils.jinja" as path_utils with context %}
+
+{% set project = env["project"] %}
+{% set namePrefix = env["deployment"] %}
+{% set zone = properties["zone"] %}
+{% set machineType = properties["machineType"] %}
+{% set numReplicas = properties["numReplicas"] %}
+{% set network = path_utils.networkPath(properties["network"]) %}
+{% set subnetwork = properties["subnetwork"] %}
+{% set bootDiskType = properties["bootDiskType"] %}
+{% set bootDiskSizeGb = properties["bootDiskSizeGb"] %}
+{% set hasExternalIP = properties["externalIP"] != "None" %}
+{# Software status only works if the VM has an external IP. #}
+{% set enableStatusWaiter = hasExternalIP %}
+{% set fwname = "firewall" %}
+
+{% macro hostname(id) -%}
+  {{ "%s-%d"|format(namePrefix, id) }}
+{%- endmacro %}
+
+{% macro hostnames() -%}
+  {% for instance in range(1, numReplicas + 1) -%}
+    {{ hostname(instance) + '|' }}
+  {%- endfor %}
+{%- endmacro %}
+
+resources:
+  - name: h2o3-cluster
+    type: vm_multiple_instances.py
+    properties:
+      instanceName: {{ namePrefix }}
+      sourceImage: https://www.googleapis.com/compute/v1/projects/h2o-public/global/images/h2o3-cluster-vm-05072018
+      zone: {{ zone }}
+      machineType: {{ machineType }}
+      network: {{ network }}
+      {% if subnetwork %}
+      subnetwork: {{ subnetwork }}
+      {% endif %}
+      bootDiskType: {{ bootDiskType }}
+      bootDiskSizeGb: {{ bootDiskSizeGb }}
+      hasExternalIP: {{ hasExternalIP }}
+      numberOfVMReplicas: {{ numReplicas }}
+      canIpForward: true
+      serviceAccounts:
+        - email: default
+          scopes:
+            - 'https://www.googleapis.com/auth/cloud.useraccounts.readonly'
+            - 'https://www.googleapis.com/auth/devstorage.read_only'
+            - 'https://www.googleapis.com/auth/logging.write'
+            - 'https://www.googleapis.com/auth/monitoring.write'
+            - 'https://www.googleapis.com/auth/compute.readonly'
+      tags:
+        items:
+        - http-server
+        - https-server
+        - h2o3-server
+      metadata:
+        items:
+        - key: servers
+          value: "{{ hostnames() | trim }}"
+
+  - type: compute.v1.firewall
+    name: {{ namePrefix }}-{{ fwname }}
+    properties:
+      network: {{ network }}
+      allowed:
+        - IPProtocol: TCP
+          ports: [ 80, 443 ]
+      targetTags: ["h2o3-server"]
+
+outputs:
+  - name: vmName
+    value: {{ namePrefix }}
+  - name: deployment
+    value: {{ namePrefix }}
+  - name: project
+    value: {{ project }}
+  - name: vmId
+    value: $(ref.{{ hostname(1) }}.id)
+  - name: vmExternalIP
+    {% if hasExternalIP %}
+    value: $(ref.{{ hostname(1) }}.networkInterfaces[0].accessConfigs[0].natIP)
+    {% else %}
+    value: NONE
+    {% endif %}

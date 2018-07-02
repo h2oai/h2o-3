@@ -1,0 +1,7 @@
+{
+  "defaultDeploymentType": "MULTI_VM",
+  "imageName": "h2o3-cluster-vm-05072018",
+  "projectId": "h2o-public",
+  "templateName": "nonexistent_template",
+  "useSolutionPackage": true
+}
