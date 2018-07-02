@@ -11,7 +11,7 @@ import h2o
 from h2o.expr import ExprNode
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import is_type
-
+import warnings
 
 class GroupBy(object):
     """
@@ -38,7 +38,8 @@ class GroupBy(object):
     data types.
 
     If no arguments are given to the aggregation (e.g. "max" in the above example), then it is assumed that the
-    aggregation should apply to all columns but the group by columns.
+    aggregation should apply to all columns but the group by columns.  However, operations will not be performed
+    on String columns.  They will be skipped.
 
     All GroupBy aggregations take parameter na, which controls treatment of NA values during the calculation.
     It can be one of:
@@ -236,8 +237,18 @@ class GroupBy(object):
         """
         if self._res is None:
             aggs = []
-            for k in self._aggs: aggs += (self._aggs[k])
+            cols_operated = []
+            for k in self._aggs:
+                aggs += (self._aggs[k])
+                col_used = self._aggs[k][1]
+                if col_used not in cols_operated:
+                    cols_operated.append(col_used)
+
+            for cind in cols_operated:
+                if cind not in self._by:
+                    self._check_string_columns(cind)
             self._res = h2o.H2OFrame._expr(expr=ExprNode("GB", self._fr, self._by, *aggs))
+
         return self._res
 
 
@@ -261,6 +272,9 @@ class GroupBy(object):
         self._aggs[name] = [op, cidx, na]
         return self
 
+    def _check_string_columns(self, colIndex):
+        if self._fr[colIndex].isstring()[0]:
+            warnings.warn("Column {0} is a string column.  No groupby operation will be performed on it.".format(self._fr.names[colIndex]))
 
     def __repr__(self):
         print("GroupBy: ")
