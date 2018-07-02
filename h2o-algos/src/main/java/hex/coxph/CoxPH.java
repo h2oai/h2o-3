@@ -428,7 +428,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       o._cumhaz_0 = MemoryManager.malloc8d(n_time);
       o._var_cumhaz_1 = MemoryManager.malloc8d(n_time);
-      o._var_cumhaz_2 = malloc2DArray(n_time, o._coef.length);
+      o._var_cumhaz_2 = Key.make(model._key + "_var_cumhaz_2");
+      o._var_cumhaz_2_matrix = new CoxPHModel.FrameMatrix(o._var_cumhaz_2, n_time, o._coef.length);
 
       final int n_coef = o._coef.length;
       int nz = 0;
@@ -445,7 +446,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               o._cumhaz_0[nz]     = 0;
               o._var_cumhaz_1[nz] = 0;
               for (int j = 0; j < n_coef; ++j)
-                o._var_cumhaz_2[nz][j] = 0;
+                o._var_cumhaz_2_matrix.set(nz, j, 0);
               for (long e = 0; e < countEvents_t; ++e) {
                 final double frac   = ((double) e) / ((double) countEvents_t);
                 final double haz    = 1 / (rcumsumRisk_t - frac * sumRiskEvents_t);
@@ -453,8 +454,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
                 o._cumhaz_0[nz]     += avgSize * haz;
                 o._var_cumhaz_1[nz] += avgSize * haz_sq;
                 for (int j = 0; j < n_coef; ++j)
-                  o._var_cumhaz_2[nz][j] +=
-                          avgSize * ((coxMR.rcumsumXRisk[t][j] - frac * coxMR.sumXRiskEvents[t][j]) * haz_sq);
+                  o._var_cumhaz_2_matrix.add(nz, j, avgSize * ((coxMR.rcumsumXRisk[t][j] - frac * coxMR.sumXRiskEvents[t][j]) * haz_sq));
               }
               nz++;
             }
@@ -470,7 +470,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
               o._cumhaz_0[nz]     = cumhaz_0_nz;
               o._var_cumhaz_1[nz] = sizeEvents_t / (rcumsumRisk_t * rcumsumRisk_t);
               for (int j = 0; j < n_coef; ++j)
-                o._var_cumhaz_2[nz][j] = (coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t) * cumhaz_0_nz;
+                o._var_cumhaz_2_matrix.set(nz, j, (coxMR.rcumsumXRisk[t][j] / rcumsumRisk_t) * cumhaz_0_nz);
               nz++;
             }
           }
@@ -483,8 +483,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         o._cumhaz_0[t]     = o._cumhaz_0[t - 1]     + o._cumhaz_0[t];
         o._var_cumhaz_1[t] = o._var_cumhaz_1[t - 1] + o._var_cumhaz_1[t];
         for (int j = 0; j < n_coef; ++j)
-          o._var_cumhaz_2[t][j] = o._var_cumhaz_2[t - 1][j] + o._var_cumhaz_2[t][j];
+          o._var_cumhaz_2_matrix.set(t, j, o._var_cumhaz_2_matrix.get(t - 1, j) + o._var_cumhaz_2_matrix.get(t, j));
       }
+
+      // install var_cumhaz Frame into DKV
+      o._var_cumhaz_2_matrix.toFrame(o._var_cumhaz_2);
     }
 
     @Override

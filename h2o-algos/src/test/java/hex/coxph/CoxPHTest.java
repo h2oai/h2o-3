@@ -49,6 +49,7 @@ public class CoxPHTest extends TestUtil {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+      assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
       if (fr != null)
         fr.delete();
@@ -114,6 +115,7 @@ public class CoxPHTest extends TestUtil {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.62659510743282,     1e-8);
+      assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
       if (fr != null)
         fr.delete();
@@ -152,6 +154,7 @@ public class CoxPHTest extends TestUtil {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      3.97164529276219,     1e-8);
+      assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
       if (fr != null)
         fr.delete();
@@ -190,6 +193,7 @@ public class CoxPHTest extends TestUtil {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      3.97109228128153,     1e-8);
+      assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
     } finally {
       if (fr != null)
         fr.delete();
