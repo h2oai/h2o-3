@@ -33,7 +33,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
          is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
     public FrameV3.ColSpecifierV3 start_column;
 
-    @API(help="Stop Time Column.", direction = API.Direction.INOUT, required = true,
+    @API(help="Stop Time Column.", direction = API.Direction.INOUT,
             is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns"})
     public FrameV3.ColSpecifierV3 stop_column;
 
