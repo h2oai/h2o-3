@@ -439,10 +439,43 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected void scoreAllTrees(double[] row, double[] preds) {
         java.util.Arrays.fill(preds, 0);
-        for (int i = 0; i < _ntrees_per_group; i++) {
-            int k = _nclasses == 1? 0 : i + 1;
-            for (int j = 0; j < _ntree_groups; j++) {
-                int itree = treeIndex(j, i);
+        scoreTreeRange(row, 0, _ntree_groups, preds);
+    }
+
+    /**
+     * Transforms tree predictions into the final model predictions.
+     * For classification: converts tree preds into probability distribution and picks predicted class.
+     * For regression: projects tree prediction from link-space into the original space.
+     * @param row input row.
+     * @param offset offset.
+     * @param preds final output, same structure as of {@link SharedTreeMojoModel#score0}.
+     * @return preds array.
+     */
+    public abstract double[] unifyPreds(double[] row, double offset, double[] preds);
+
+  /**
+   * Generates a (per-class) prediction using only a single tree.
+   * @param row input row
+   * @param index index of the tree (0..N-1)
+   * @param preds array of partial predictions.
+   */
+    public final void scoreSingleTree(double[] row, int index, double preds[]) {
+      scoreTreeRange(row, index, index + 1, preds);
+    }
+
+    /**
+     * Generates (partial, per-class) predictions using only trees from a given range.
+     * @param row input row
+     * @param fromIndex low endpoint (inclusive) of the tree range
+     * @param toIndex high endpoint (exclusive) of the tree range
+     * @param preds array of partial predictions.
+     *              To get final predictions pass the result to {@link SharedTreeMojoModel#unifyPreds}.
+     */
+    public final void scoreTreeRange(double[] row, int fromIndex, int toIndex, double[] preds) {
+        for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+            int k = _nclasses == 1 ? 0 : classIndex + 1;
+            for (int groupIndex = fromIndex; groupIndex < toIndex; groupIndex++) {
+                int itree = treeIndex(groupIndex, classIndex);
                 // Skip all empty trees
                 if (_compressed_trees[itree] == null) continue;
                 if (_mojo_version.equals(1.0)) { //First version
@@ -494,7 +527,13 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       }
     }
 
-    protected int treeIndex(int groupIndex, int classIndex) {
+    /**
+     * Locates a tree in the array of compressed trees.
+     * @param groupIndex index of the tree in a class-group of trees
+     * @param classIndex index of the class
+     * @return index of the tree in _compressed_trees.
+     */
+    final int treeIndex(int groupIndex, int classIndex) {
         return classIndex * _ntree_groups + groupIndex;
     }
 

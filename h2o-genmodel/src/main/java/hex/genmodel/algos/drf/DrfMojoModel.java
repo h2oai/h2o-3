@@ -21,7 +21,12 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
         super.scoreAllTrees(row, preds);
+        return unifyPreds(row, offset, preds);
+    }
 
+
+    @Override
+    public final double[] unifyPreds(double[] row, double offset, double[] preds) {
         // Correct the predictions -- see `DRFModel.toJavaUnifyPreds`
         if (_nclasses == 1) {
             // Regression
