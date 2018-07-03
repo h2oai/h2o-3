@@ -563,13 +563,7 @@ public class XGBoostUtils {
                         nonZeroCount++;
                     }
                 }
-                if (nonZeroCount == startNonZeroCount) {
-                    // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-                    // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-                    data[currentRow][currentCol] = 0;
-                    colIndex[currentRow][currentCol++] = 0;
-                    nonZeroCount++;
-                }
+
                 rowHeaders[0][++actualRows] = nonZeroCount;
 
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
@@ -606,13 +600,7 @@ public class XGBoostUtils {
                     nonZeroCount++;
                 }
             }
-            if (nonZeroCount == startNonZeroCount) {
-                // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-                // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-                data[currentRow][currentCol] = 0;
-                colIndex[currentRow][currentCol++] = 0;
-                nonZeroCount++;
-            }
+
             rowHeaders[0][++actualRows] = nonZeroCount;
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
@@ -817,9 +805,6 @@ public class XGBoostUtils {
                     nonZeroElementsCount++;
                 }
             }
-            if (nonZeroElementsCount == nzstart) {
-                nonZeroElementsCount++;
-            }
             rowIndicesCount++;
 
         }
@@ -843,9 +828,6 @@ public class XGBoostUtils {
                     if (val != 0) {
                         nonZeroElementsCount++;
                     }
-                }
-                if (nonZeroElementsCount == nzstart) {
-                    nonZeroElementsCount++;
                 }
                 rowIndicesCount++;
             }
