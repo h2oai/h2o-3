@@ -8,16 +8,26 @@ RUN \
 
 ARG PATH_PREFIX
 COPY ${PATH_PREFIX}/../common/kerberos/krb5.conf /etc/krb5.conf
-COPY ${PATH_PREFIX}/conf-kerberos/ /etc/hadoop/conf
-COPY ${PATH_PREFIX}/../common/kerberos/00_a_kerberos_init /etc/startup/
+COPY ${PATH_PREFIX}/../common/conf-kerberos/ ${HADOOP_CONF_DIR}
+COPY ${PATH_PREFIX}/../common/kerberos/00_kerberos_init /etc/startup/
 
 RUN \
     mkdir -p /var/log/kerberos && \
     kdb5_util create -P h2o && \
     kadmin.local -q 'addprinc -pw h2o hdfs/localhost@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o mapred/localhost@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o yarn/localhost@H2O.AI' && \
     kadmin.local -q 'addprinc -pw h2o HTTP/localhost@H2O.AI' && \
-    kadmin.local -q 'getprincs' && \
-    cd /etc/hadoop/conf && \
+    kadmin.local -q 'addprinc -pw h2o jenkins@H2O.AI' && \
+    cd ${HADOOP_CONF_DIR} && \
     kadmin.local -q 'xst -norandkey -k hdfs.keytab hdfs/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
     chown hdfs:hdfs hdfs.keytab && \
-    chmod 400 *.keytab
+    kadmin.local -q 'xst -norandkey -k yarn.keytab yarn/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
+    chown yarn:hadoop yarn.keytab && \
+    kadmin.local -q 'xst -norandkey -k mapred.keytab mapred/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
+    chown yarn:hadoop mapred.keytab && \
+    chmod 400 *.keytab && \
+    chmod +x /usr/sbin/krb-edit-hadoop-confs.sh && \
+    sync && \
+    /usr/sbin/krb-edit-hadoop-confs.sh && \
+    chmod 644 ${HADOOP_CONF_DIR}/container-executor.cfg

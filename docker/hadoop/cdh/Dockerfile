@@ -50,11 +50,11 @@ ENV \
   PATH=/usr/lib/jvm/java-current-oracle/bin:${PATH}
 
 # Copy configs
-COPY ${PATH_PREFIX}/conf/ /etc/hadoop/conf.pseudo/
+COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
 RUN \
-    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY}@g" /etc/hadoop/conf.pseudo/core-site.xml && \
-    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" /etc/hadoop/conf.pseudo/core-site.xml && \
-    cat /etc/hadoop/conf.pseudo/core-site.xml
+    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
+    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
+    cat ${HADOOP_CONF_DIR}/core-site.xml
 
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init

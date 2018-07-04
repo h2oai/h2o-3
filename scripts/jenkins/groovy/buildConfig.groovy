@@ -19,7 +19,7 @@ class BuildConfig {
   public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '47'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '48'
 
   private static final String XGB_IMAGE_VERSION_TAG = 'latest'
   public static final String XGB_TARGET_MINIMAL = 'minimal'

@@ -1,0 +1,7 @@
+#! /bin/bash
+
+service krb5-kdc start
+echo "Execute kinit for user hdfs"
+sudo -E -u hdfs bash -c "echo 'h2o' | kinit -p hdfs/localhost"
+echo "Execute kinit for user jenkins"
+sudo -E -u jenkins bash -c "echo 'h2o' | kinit"
