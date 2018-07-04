@@ -109,7 +109,7 @@ def _gen_header(cols):
 def _check_lists_of_lists(python_obj):
     # check we have a lists of flat lists
     # returns longest length of sublist
-    most_cols = 0
+    most_cols = 1
     for l in python_obj:
         # All items in the list must be a list!
         if not isinstance(l, (tuple, list)):
@@ -178,7 +178,7 @@ def _handle_pandas_data_frame(python_obj, header):
     return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
-    header = list(python_obj.keys())
+    header = list(python_obj.keys()) if python_obj else _gen_header(1)
     is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
     if not is_valid:
         raise ValueError(
