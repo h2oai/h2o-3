@@ -1,7 +1,5 @@
 import xgboost as xgb
 import time
-import random
-
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
 
@@ -12,19 +10,14 @@ The dataset contains both numerical and enum columns.
 def comparison_test_dense():
     assert H2OXGBoostEstimator.available() is True
 
-    runSeed = random.randint(1, 1073741824)
+    runSeed = 1
     testTol = 1e-6
     ntrees = 10
     maxdepth = 5
-    nrows = random.randint(10000, 100000)
-    ncols = random.randint(5, 20)
-    factorL = random.randint(11, 20)
-    numCols = random.randint(1, ncols)
-    enumCols = ncols-numCols
-    responseL = random.randint(3,10)
-
+    responseL = 11
+    # CPU Backend is forced for the results to be comparable
     h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse"}
+                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
                    'tree_method': 'auto',
                    'seed': h2oParamsD["seed"],
@@ -41,12 +34,18 @@ def comparison_test_dense():
                    'gamma': 0.0,
                    'max_depth': h2oParamsD["max_depth"],
                    'num_class':responseL}
-    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL,
-                                           responseLevel=responseL, miscfrac=0.01)
+
+    nrows = 10000
+    ncols = 10
+    factorL = 11
+    numCols = 0
+    enumCols = ncols-numCols
+
+    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5, responseLevel=responseL)
     myX = trainFile.names
     y='response'
     myX.remove(y)
-    enumCols = myX[0:enumCols]
+    enumCols = myX[0:11]
 
     h2oModelD = H2OXGBoostEstimator(**h2oParamsD)
     # gather, print and save performance numbers for h2o model
@@ -57,7 +56,7 @@ def comparison_test_dense():
     h2oPredictTimeD = time.time()-time1
 
     # train the native XGBoost
-    nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
+    nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
     nativeModel = xgb.train(params=nativeParam,
                             dtrain=nativeTrain)
     nativeTrainTime = time.time()-time1

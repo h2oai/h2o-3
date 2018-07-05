@@ -1,6 +1,5 @@
 import xgboost as xgb
 import time
-import random
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -11,13 +10,14 @@ The dataset contains only enum columns.
 '''
 def comparison_test():
     assert H2OXGBoostEstimator.available() is True
-    runSeed = random.randint(1, 1073741824)
+    runSeed = 1
     ntrees = 10
-    responseL = random.randint(3,10)
+    responseL = 11
+    # CPU Backend is forced for the results to be comparable
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "auto"}
+                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
-                   'tree_method': 'auto',
+                   'tree_method': 'exact',
                    'seed': h2oParamsS["seed"],
                    'booster': 'gbtree',
                    'objective': 'multi:softprob',
@@ -33,13 +33,13 @@ def comparison_test():
                    'max_depth': h2oParamsS["max_depth"],
                    'num_class':responseL}
 
-    nrows = random.randint(10000, 20000)
-    ncols = random.randint(1, 10)
-    factorL = random.randint(2, 20)
+    nrows = 10000
+    ncols = 10
+    factorL = 11
     numCols = 0
     enumCols = ncols-numCols
 
-    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.1, responseLevel=responseL)       # load in dataset and add response column
+    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5, responseLevel=responseL)       # load in dataset and add response column
     print(trainFile)
     myX = trainFile.names
     y='response'
