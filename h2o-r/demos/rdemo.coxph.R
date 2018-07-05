@@ -10,7 +10,7 @@ h2o.init()
 locate_source <- function(file) {
   file_path <- try(h2o:::.h2o.locate(file), silent = TRUE)
   if (inherits(file_path, "try-error")) {
-    file_path <- paste0("s3n://h2o-public-test-data/", file)
+    file_path <- paste0("https://s3.amazonaws.com/h2o-public-test-data/", file)
   }
   file_path
 }
