@@ -12,14 +12,15 @@ The dataset contains both numerical and enum columns.
 def comparison_test_dense():
     assert H2OXGBoostEstimator.available() is True
 
-    runSeed = random.randint(1, 1073741824)
+    runSeed = 1
     testTol = 1e-6
     ntrees = 10
     maxdepth = 5
+    # CPU Backend is forced for the results to be comparable
     h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"dense"}
+                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"dense","tree_method": "exact","backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
-                   'tree_method': 'auto',
+                   'tree_method': 'exact',
                    'seed': h2oParamsD["seed"],
                    'booster': 'gbtree',
                    'objective': 'binary:logistic',
@@ -34,10 +35,10 @@ def comparison_test_dense():
                    'gamma': 0.0,
                    'max_depth': h2oParamsD["max_depth"]}
 
-    nrows = random.randint(10000, 100000)
-    ncols = random.randint(5, 20)
-    factorL = random.randint(11, 20)
-    numCols = random.randint(1, ncols)
+    nrows = 10000
+    ncols = 20
+    factorL = 20
+    numCols = 10
     enumCols = ncols-numCols
 
     trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.01)     # load in dataset and add response column
