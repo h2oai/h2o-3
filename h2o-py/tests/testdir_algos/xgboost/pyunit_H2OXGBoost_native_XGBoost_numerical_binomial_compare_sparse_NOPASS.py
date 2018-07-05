@@ -1,6 +1,5 @@
 import xgboost as xgb
 import time
-import random
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -11,12 +10,12 @@ The dataset contains only enum columns.
 '''
 def comparison_test():
     assert H2OXGBoostEstimator.available() is True
-    runSeed = random.randint(1, 1073741824)
+    runSeed = 1
     ntrees = 10
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "auto", "backend":"cpu"}
+                  "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
-                   'tree_method': 'auto',
+                   'tree_method': 'exact',
                    'seed': h2oParamsS["seed"],
                    'booster': 'gbtree',
                    'objective': 'binary:logistic',
@@ -31,9 +30,13 @@ def comparison_test():
                    'gamma': 0.0,
                    'max_depth': h2oParamsS["max_depth"]}
 
-    nrows=40000
+    nrows = 10000
+    ncols = 11
+    factorL = 0
+    numCols = 11
+    enumCols = ncols-numCols
 
-    trainFile = pyunit_utils.genTrainFrame(nrows, 10, enumCols=0, enumFactors=0, miscfrac=0.1)       # load in dataset and add response column
+    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5)
     print(trainFile)
     myX = trainFile.names
     y='response'
@@ -47,7 +50,7 @@ def comparison_test():
     h2oPredictTimeS = time.time()-time1
 
     # train the native XGBoost
-    nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=[])
+    nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=[])
     nativeModel = xgb.train(params=nativeParam,
                             dtrain=nativeTrain)
     nativeTrainTime = time.time()-time1
