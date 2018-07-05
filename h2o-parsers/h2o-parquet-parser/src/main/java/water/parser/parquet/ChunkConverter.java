@@ -92,7 +92,10 @@ class ChunkConverter extends GroupConverter {
           return new StringConverter(_writer, colIdx, dictSupport, _maxStringSize);
         }
       case Vec.T_NUM:
-        return new NumberConverter(colIdx, _writer);
+        if (OriginalType.DECIMAL.equals(parquetType.getOriginalType()))
+          return new DecimalConverter(colIdx, parquetType.getDecimalMetadata().getScale(), _writer);
+        else
+          return new NumberConverter(colIdx, _writer);
       default:
         throw new UnsupportedOperationException("Unsupported type " + vecType);
     }
@@ -198,6 +201,51 @@ class ChunkConverter extends GroupConverter {
     public void addBinary(Binary value) {
       _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
       _writer.addStrCol(_colIdx, _bs);
+    }
+  }
+
+  private static class DecimalConverter extends PrimitiveConverter {
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+    private final BufferedString _bs = new BufferedString();
+    private final int _exp;
+
+    DecimalConverter(int colIdx, int scale, WriterDelegate writer) {
+      _colIdx = colIdx;
+      _writer = writer;
+      _exp = -scale;
+    }
+
+    @Override
+    public void addBoolean(boolean value) {
+      throw new UnsupportedOperationException("Boolean type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addDouble(double value) {
+      throw new UnsupportedOperationException("Double type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addFloat(float value) {
+      throw new UnsupportedOperationException("Float type is not supported by DecimalConverter");
+    }
+
+    @Override
+    public void addInt(int value) {
+      _writer.addNumCol(_colIdx, value, _exp);
+    }
+
+    @Override
+    public void addLong(long value) {
+      _writer.addNumCol(_colIdx, value, _exp);
+    }
+
+    @Override
+    public void addBinary(Binary value) {
+      throw new UnsupportedOperationException("Arbitrary precision Decimal type is currently not supported by H2O." +
+              "Please use 64-bit decimal type instead (precision <= 18).");
     }
   }
 
