@@ -581,7 +581,6 @@ public class XGBoostUtils {
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-            int startNonZeroCount = nonZeroCount;
 
             for (int j = 0; j < di._cats; ++j) {
                 data[currentRow][currentCol] = 1; //one-hot encoding
@@ -794,7 +793,6 @@ public class XGBoostUtils {
         for (int i = 0; i < chunks[0].len(); i++) {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
-            long nzstart = nonZeroElementsCount;
 
 
             nonZeroElementsCount += di._cats;
@@ -819,7 +817,6 @@ public class XGBoostUtils {
         for (Integer chunk : chunks) {
             for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
-                long nzstart = nonZeroElementsCount;
 
                 nonZeroElementsCount+= di._cats;
 
