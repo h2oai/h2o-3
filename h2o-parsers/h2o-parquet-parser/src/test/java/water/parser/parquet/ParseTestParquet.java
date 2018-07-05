@@ -29,6 +29,7 @@ import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.IcedInt;
+import water.util.PrettyPrint;
 
 import java.io.File;
 import java.io.IOException;
@@ -329,6 +330,36 @@ public class ParseTestParquet extends TestUtil {
     assertFrameAssertion(assertion);
   }
 
+  @Test
+  public void testParseDecimals() {
+    FrameAssertion assertion = new GenFrameAssertion("decimals.parquet", TestUtil.ari(2, 18)) {
+      @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFileDecimals(Files.createTempDir(), file, nrows()); }
+      @Override public void check(Frame f) {
+        assertArrayEquals("Column names need to match!", ar("decimal32", "decimal64"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM), f.types());
+        for (int row = 0; row < nrows(); row++) {
+          double expected32 = (1 + PrettyPrint.pow10(1, row % 9)) / 1e5;
+          assertEquals("Value in column decimal32", expected32, f.vec(0).at(row), 0);
+          double expected64 = (1 + PrettyPrint.pow10(1, row % 18)) / 1e10;
+          assertEquals("Value in column decimal64", expected64, f.vec(1).at(row), 0);
+        }
+      }
+    };
+    assertFrameAssertion(assertion);
+  }
+
+  @Test
+  public void testPubdev5673() {
+    Frame actual = null;
+    try {
+      actual = TestUtil.parse_test_file("smalldata/jira/pubdev-5673.parquet");
+      double actualVal = actual.vec(0).at(0);
+      assertEquals(98776543211.99876, actualVal, 0);
+    } finally {
+      if (actual != null) actual.delete();
+    }
+  }
+
 }
 
 class ParquetFileGenerator {
@@ -485,6 +516,31 @@ class ParquetFileGenerator {
         Group g = fact.newGroup();
         String value = i == 66 ? "CAT_0_weird\0" : "CAT_" + (i % 10);
         writer.write(g.append("cat_field", value));
+      }
+    } finally {
+      writer.close();
+    }
+    return f;
+  }
+
+  static File generateParquetFileDecimals(File parentDir, String filename, int nrows) throws IOException {
+    File f = new File(parentDir, filename);
+
+    Configuration conf = new Configuration();
+    MessageType schema = parseMessageType(
+            "message test { required int32 decimal32 (DECIMAL(9, 5)); required int64 decimal64 (DECIMAL(18, 10)); } ");
+    GroupWriteSupport.setSchema(schema, conf);
+    SimpleGroupFactory fact = new SimpleGroupFactory(schema);
+    ParquetWriter<Group> writer = new ParquetWriter<Group>(new Path(f.getPath()), new GroupWriteSupport(),
+            UNCOMPRESSED, 1024, 1024, 512, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
+    try {
+      for (int i = 0; i < nrows; i++) {
+        Group g = fact.newGroup();
+        int dec32 = 1 + (int) PrettyPrint.pow10(1, i % 9);
+        g.append("decimal32", dec32);
+        long dec64 = 1 + (long) PrettyPrint.pow10(1, i % 18);
+        g.append("decimal64", dec64);
+        writer.write(g);
       }
     } finally {
       writer.close();
