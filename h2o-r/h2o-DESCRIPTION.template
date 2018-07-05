@@ -31,10 +31,10 @@ Authors@R: c(
     )
 Description: R interface for 'H2O', the scalable open source machine learning 
     platform that offers parallelized implementations of many supervised and 
-    unsupervised machine learning algorithms such as generalized linear 
-    models, gradient boosting machines (including xgboost), random forests, 
-    deep neural networks (deep learning), stacked ensembles, naive bayes, cox 
-    proportional hazards, k-means, PCA, word2vec, as well as a fully automatic 
+    unsupervised machine learning algorithms such as Generalized Linear 
+    Models, Gradient Boosting Machines (including XGBoost), Random Forests, 
+    Deep Neural Networks (Deep Learning), Stacked Ensembles, Naive Bayes, Cox 
+    Proportional Hazards, K-Means, PCA, Word2Vec, as well as a fully automatic 
     machine learning algorithm (AutoML).
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
