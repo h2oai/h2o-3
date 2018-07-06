@@ -47,7 +47,7 @@ class H2OFrame(object):
     ``H2OFrame`` represents a mere handle to that data.
     """
 
-    # Flag to prevent
+    # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
     __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
 
     #-------------------------------------------------------------------------------------------------------------------
