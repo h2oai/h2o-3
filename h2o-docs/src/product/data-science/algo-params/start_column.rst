@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option is used to specify the name of an integer column in the **source** data set representing the start time. If this option is supplied, then **stop_column** is required. If supplied, the value of the **start_column** must be strictly less than the **stop_column** in each row.
+This option is used to specify the name of an integer column in the **source** data set representing the start time. If supplied, then the value of the **start_column** must be strictly less than the **stop_column** in each row.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
