@@ -83,7 +83,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
 
     # Find the number of flights in a given month based on the origin
     > cols <- c("Origin","Month")
-    > flightsByOriginMonth <- h2o.group_by(data=airlines.hex, by=cols, nrow("NumberOfFlights"), gb.control=list(na.methods="rm")
+    > flightsByOriginMonth <- h2o.group_by(data=airlines.hex, by=cols, nrow("Month"), gb.control=list(na.methods="rm"))
     > flightsByOriginMonth.R <- as.data.frame(flightsByOriginMonth)
     > flightsByOriginMonth.R
         Origin Month nrow_NumberOfFlights
