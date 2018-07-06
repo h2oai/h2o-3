@@ -29,9 +29,22 @@ import java.util.concurrent.TimeUnit;
 /**
  * Persistence backend for GCS
  */
+@SuppressWarnings("unused")
 public final class PersistGcs extends Persist {
 
-  private final Storage storage = StorageOptions.getDefaultInstance().getService();
+  // Value in DefaultCredentialsProvider.NO_GCE_CHECK_ENV_VAR is not publicly accessible
+  private static final String NO_GCE_CHECK_ENV_VAR = "NO_GCE_CHECK";
+
+  private final Storage storage;
+
+  @SuppressWarnings("unused")
+  public PersistGcs() {
+    if (System.getenv(NO_GCE_CHECK_ENV_VAR) == null){
+      storage = StorageOptions.getUnauthenticatedInstance().getService();
+    } else{
+      storage = StorageOptions.getDefaultInstance().getService();
+    }
+  }
 
   @Override
   public byte[] load(final Value v) throws IOException {
