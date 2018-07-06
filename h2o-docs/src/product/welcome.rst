@@ -529,6 +529,8 @@ Hadoop Launch Parameters
 -  ``-license <license file name>``: Specify the directory of local filesytem location and the license file name.
 -  ``-o | -output <HDFS output directory>``: Specify the HDFS directory for the output.
 -  ``-flow_dir <Saved Flows directory>``: Specify the directory for saved flows. By default, H2O will try to find the HDFS home directory to use as the directory for flows. If the HDFS home directory is not found, flows cannot be saved unless a directory is specified using ``-flow_dir``.
+-  ``-proxy``: Enables Proxy mode.
+-  ``-report_hostname``: This flag allows the user to specify the machine hostname instead of the IP address when launching H2O Flow. This option can only be used when H2O on Hadoop is started in Proxy mode (with ``-proxy``).
 
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
