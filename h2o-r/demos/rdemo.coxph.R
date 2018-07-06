@@ -54,7 +54,7 @@ r_model <-
                                   "Credit card (automatic)")))
 
 # Transform data for the H2O-based model
-churn_hex$HasChurned <- h2o.asnumeric(churn_hex$Churn == "Yes")
+churn_hex$HasChurned <- churn_hex$Churn == "Yes"
 churn_hex$HasPartner <- h2o.asnumeric(churn_hex$Partner == "Yes")
 churn_hex$HasSingleLine <- h2o.asnumeric(churn_hex$MultipleLines == "No")
 churn_hex$HasMultipleLines <- h2o.asnumeric(churn_hex$MultipleLines == "Yes")
