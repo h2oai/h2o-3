@@ -464,8 +464,9 @@ The corresponding deviance is equal to:
 
 $$D = -2\sum_{i=1}^{N} \left( y_i \log(y_i/\hat{y}_i) - ( y_i - \hat{y}_i  ) \right)$$
 
+Note in the equation above that H2O-3 uses the negative log of the likelihood. This is different than the way deviance is specified in \url{https://onlinecourses.science.psu.edu/stat501/node/377/}. In order to use this deviance definition, simply multiply the H2O-3 deviance by -1.
 
-This example loads the Insurance data from the MASS library, imports it into H2O, and runs a Poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
+The following example loads the Insurance data from the MASS library, imports it into H2O, and runs a Poisson model that predicts the number of claims (Claims) based on the district of the policy holder (District), their age (Age), and the type of car they
 own (Group).
 
 \waterExampleInR
