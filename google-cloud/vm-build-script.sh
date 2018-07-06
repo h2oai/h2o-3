@@ -63,7 +63,7 @@ gdebi --non-interactive rstudio-server-1.0.143-amd64.deb
 rm rstudio-server-1.0.143-amd64.deb
 
 # Install Oracle Java 8
-apt-get install -y oracle-java8-installer
+apt-get install -y --allow-unauthenticated oracle-java8-installer
 apt-get clean
 
 rm -rf /var/cache/apt/*

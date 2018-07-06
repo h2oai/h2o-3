@@ -11,7 +11,7 @@
 #
 # By default this script does nothing.
 
-sudo /opt/h2oai/scripts/configure.sh
+sudo /opt/h2oai/scripts/vm-runtime.sh
 
 sudo /opt/h2oai/scripts/startup.sh
 
