@@ -1,7 +1,5 @@
 import xgboost as xgb
 import time
-
-
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
 
@@ -16,17 +14,12 @@ def comparison_test_dense():
     testTol = 1e-6
     ntrees = 10
     maxdepth = 5
-    nrows = 10000
-    ncols = 10
-    factorL = 20
-    numCols = 5
-    enumCols = ncols-numCols
-    responseL = 4
+    responseL = 11
     # CPU Backend is forced for the results to be comparable
     h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"dense","tree_method": "exact", "backend":"cpu"}
+                 "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
-                   'tree_method': 'exact',
+                   'tree_method': 'auto',
                    'seed': h2oParamsD["seed"],
                    'booster': 'gbtree',
                    'objective': 'multi:softprob',
@@ -41,12 +34,18 @@ def comparison_test_dense():
                    'gamma': 0.0,
                    'max_depth': h2oParamsD["max_depth"],
                    'num_class':responseL}
-    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL,
-                                           responseLevel=responseL, miscfrac=0.01)
+
+    nrows = 10000
+    ncols = 10
+    factorL = 11
+    numCols = 0
+    enumCols = ncols-numCols
+
+    trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5, responseLevel=responseL)
     myX = trainFile.names
     y='response'
     myX.remove(y)
-    enumCols = myX[0:enumCols]
+    enumCols = myX[0:11]
 
     h2oModelD = H2OXGBoostEstimator(**h2oParamsD)
     # gather, print and save performance numbers for h2o model
@@ -57,7 +56,7 @@ def comparison_test_dense():
     h2oPredictTimeD = time.time()-time1
 
     # train the native XGBoost
-    nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
+    nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
     nativeModel = xgb.train(params=nativeParam,
                             dtrain=nativeTrain)
     nativeTrainTime = time.time()-time1

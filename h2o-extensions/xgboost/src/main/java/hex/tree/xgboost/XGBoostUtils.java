@@ -261,11 +261,11 @@ public class XGBoostUtils {
      * @throws XGBoostError
      */
     public static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
-                                          Chunk[] chunks,
-                                          int response,
-                                          int weight,
-                                          int fold,
-                                          boolean sparse) throws XGBoostError {
+                                                 Chunk[] chunks,
+                                                 int response,
+                                                 int weight,
+                                                 int fold,
+                                                 boolean sparse) throws XGBoostError {
         int nRows = chunks[0]._len;
 
         DMatrix trainMat;
@@ -339,10 +339,10 @@ public class XGBoostUtils {
     private static final BigInteger MAX_DMATRIX_SIZE = BigInteger.valueOf((long) ARRAY_MAX * ARRAY_MAX);
 
     private static long denseChunk(float[][] data,
-                                  int[] chunks, Frame f, // for MR task
-                                  Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
-                                  DataInfo di, int cols,
-                                  float[] resp, float[] weights, Vec.Reader respVec) {
+                                   int[] chunks, Frame f, // for MR task
+                                   Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
+                                   DataInfo di, int cols,
+                                   float[] resp, float[] weights, Vec.Reader respVec) {
         int currentRow = 0;
         int currentCol = 0;
         long actualRows = 0;
@@ -468,7 +468,7 @@ public class XGBoostUtils {
 
     private static DMatrix csr(Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
                                int nRows, DataInfo di, float[] resp, float[] weights)
-            throws XGBoostError {
+        throws XGBoostError {
         return csr(null, -1, -1, f, chunksIds, vecs, w, respReader, nRows, di, resp, weights);
     }
 
@@ -480,7 +480,7 @@ public class XGBoostUtils {
     private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
                                Frame f, int[] chunksIds, Vec.Reader[] vecs, Vec.Reader w, Vec.Reader respReader, // for setupLocal
                                int nRows, DataInfo di, float[] resp, float[] weights)
-            throws XGBoostError {
+        throws XGBoostError {
         DMatrix trainMat;
         int actualRows = 0;
         // CSR:
@@ -491,9 +491,9 @@ public class XGBoostUtils {
         long[][] rowHeaders;
         float[][] data;
         int[][] colIndex;
-
+        final SparseMatrixDimensions sparseMatrixDimensions;
         if(null != chunks) {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
+            sparseMatrixDimensions = calculateCSRMatrixDimensions(chunks, di, weight);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
@@ -504,7 +504,7 @@ public class XGBoostUtils {
                     di, actualRows, rowHeaders, data, colIndex,
                     respIdx, resp, weights);
         } else {
-            final SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
+            sparseMatrixDimensions = calculateCSRMatrixDimensions(f, chunksIds, vecs, w, di);
             SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
             data = sparseMatrix._sparseData;
             rowHeaders = sparseMatrix._rowIndices;
@@ -516,15 +516,8 @@ public class XGBoostUtils {
         }
 
 
-        long size = 0;
-        for(int i = 0; i < data.length; i++) {
-            size += data[i].length;
-        }
-
-        int rowHeadersSize = 0;
-        for(int i = 0; i < rowHeaders.length; i++) {
-            rowHeadersSize += rowHeaders[i].length;
-        }
+        long size = sparseMatrixDimensions._nonZeroElementsCount;
+        int rowHeadersSize = (int) sparseMatrixDimensions._rowIndicesCount;
 
         trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), rowHeadersSize, size);
         assert trainMat.rowNum() == actualRows;
@@ -540,7 +533,7 @@ public class XGBoostUtils {
         //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
         // extract predictors
-        int nz = 0;
+        int nonZeroCount = 0;
         int currentRow = 0;
         int currentCol = 0;
         int rwRow = 0;
@@ -548,87 +541,69 @@ public class XGBoostUtils {
         for (Integer chunk : chunks) {
             for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
-                int nzstart = nz;
+
+                final int startNonZeroCount = nonZeroCount;
                 // enlarge final data arrays by 2x if needed
 
                 for (int j = 0; j < di._cats; ++j) {
-                    if (!vecs[j].isNA(i)) {
-                        data[currentRow][currentCol] = 1; //one-hot encoding
+                    data[currentRow][currentCol] = 1; //one-hot encoding
+                    if (vecs[j].isNA(i)) {
+                        colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                    } else {
                         colIndex[currentRow][currentCol++] = di.getCategoricalId(j, vecs[j].at8(i));
-                        nz++;
                     }
+                    nonZeroCount++;
                 }
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
-                    if (!Float.isNaN(val) && val != 0) {
+                    if (val != 0) {
                         data[currentRow][currentCol] = val;
                         colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
-                        nz++;
+                        nonZeroCount++;
                     }
                 }
-                if (nz == nzstart) {
-                    // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-                    // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-                    data[currentRow][currentCol] = 0;
-                    colIndex[currentRow][currentCol++] = 0;
-                    nz++;
-                }
-                rowHeaders[0][++actualRows] = nz;
+
+                rowHeaders[0][++actualRows] = nonZeroCount;
 
                 rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i);
             }
         }
 
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % ARRAY_MAX);
-        colIndex[colIndex.length - 1] = Arrays.copyOf(colIndex[colIndex.length - 1], nz % ARRAY_MAX);
-
-        rowHeaders[0] = Arrays.copyOf(rowHeaders[rowHeaders.length - 1], actualRows + 1);
         return actualRows;
     }
 
     private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
-        int nz = 0;
+        int nonZeroCount = 0;
         int currentRow = 0;
         int currentCol = 0;
         int rwRow = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-            int nzstart = nz;
-
 
             for (int j = 0; j < di._cats; ++j) {
-                if (!chunks[j].isNA(i)) {
-                    data[currentRow][currentCol] = 1; //one-hot encoding
+                data[currentRow][currentCol] = 1; //one-hot encoding
+                if (chunks[j].isNA(i)) {
+                    colIndex[currentRow][currentCol++] = di.getCategoricalId(j, Float.NaN);
+                } else {
                     colIndex[currentRow][currentCol++] = di.getCategoricalId(j, chunks[j].at8(i));
-                    nz++;
                 }
+                nonZeroCount++;
             }
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
-                if (!Float.isNaN(val) && val != 0) {
+                if (val != 0) {
                     data[currentRow][currentCol] = val;
                     colIndex[currentRow][currentCol++] = di._catOffsets[di._catOffsets.length - 1] + j;
-                    nz++;
+                    nonZeroCount++;
                 }
             }
-            if (nz == nzstart) {
-                // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-                // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-                data[currentRow][currentCol] = 0;
-                colIndex[currentRow][currentCol++] = 0;
-                nz++;
-            }
-            rowHeaders[0][++actualRows] = nz;
+
+            rowHeaders[0][++actualRows] = nonZeroCount;
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-
-        data[data.length - 1] = Arrays.copyOf(data[data.length - 1], nz % ARRAY_MAX);
-        colIndex[colIndex.length - 1] = Arrays.copyOf(colIndex[colIndex.length - 1], nz % ARRAY_MAX);
-
-        rowHeaders[0] = Arrays.copyOf(rowHeaders[rowHeaders.length - 1], actualRows + 1);
         return actualRows;
     }
 
@@ -814,26 +789,19 @@ public class XGBoostUtils {
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
-        long colIndicesCount = 0;
 
         for (int i = 0; i < chunks[0].len(); i++) {
             // Rows with zero weights are going to be ignored
             if (weightColIndex != -1 && chunks[weightColIndex].atd(i) == 0) continue;
-            long nzstart = nonZeroElementsCount;
 
-            for (int j = 0; j < di._cats; ++j) {
-                if (!chunks[j].isNA(i)) {
-                    nonZeroElementsCount++;
-                }
-            }
+
+            nonZeroElementsCount += di._cats;
+
             for (int j = 0; j < di._nums; ++j) {
                 float val = (float) chunks[di._cats + j].atd(i);
-                if (!Float.isNaN(val) && val != 0) {
+                if (val != 0) {
                     nonZeroElementsCount++;
                 }
-            }
-            if (nonZeroElementsCount == nzstart) {
-                nonZeroElementsCount++;
             }
             rowIndicesCount++;
 
@@ -849,22 +817,14 @@ public class XGBoostUtils {
         for (Integer chunk : chunks) {
             for (long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk + 1]; i++) {
                 if (w != null && w.at(i) == 0) continue;
-                long nzstart = nonZeroElementsCount;
 
-                for (int j = 0; j < di._cats; ++j) {
-                    if (!vecs[j].isNA(i)) {
-                        nonZeroElementsCount++;
-                    }
-                }
+                nonZeroElementsCount+= di._cats;
 
                 for (int j = 0; j < di._nums; ++j) {
                     float val = (float) vecs[di._cats + j].at(i);
-                    if (!Float.isNaN(val) && val != 0) {
+                    if (val != 0) {
                         nonZeroElementsCount++;
                     }
-                }
-                if (nonZeroElementsCount == nzstart) {
-                    nonZeroElementsCount++;
                 }
                 rowIndicesCount++;
             }
