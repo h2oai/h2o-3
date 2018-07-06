@@ -62,7 +62,7 @@ public class DL_Example {
         dlParams.hidden=new int[]{200,200};
 
         ColSpecifierV3 responseColumn = new ColSpecifierV3();
-        responseColumn.columnName = "class";
+        responseColumn.columnName = "C1";
         dlParams.responseColumn = responseColumn;
 
         System.out.println("About to train DL. . .");

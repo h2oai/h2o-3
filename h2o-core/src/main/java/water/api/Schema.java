@@ -405,6 +405,13 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     throw H2O.fail("Unknown primitive type to parse: " + fclz.getSimpleName());
   }
 
+  static String[] removeQuotes(String[] a) {
+    String[] newA = new String[a.length];
+    for (int index = 0; index < a.length; index++) {
+      newA[index] = new String(a[index].replaceAll("^\"|\"$", ""));
+    }
+    return newA;
+  }
   // URL parameter parse
   static <E> Object parse(String field_name, String s, Class fclz, boolean required, Class schemaClass) {
     if (fclz.isPrimitive() || String.class.equals(fclz)) {
@@ -441,6 +448,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         splits = new String[] { s.trim() };
       }
 
+      if (afclz==int.class || afclz==double.class || afclz==float.class)
+        splits = removeQuotes(splits);
       // Can't cast an int[] to an Object[].  Sigh.
       if (afclz == int.class) { // TODO: other primitive types. . .
         a = (E[]) Array.newInstance(Integer.class, splits.length);
