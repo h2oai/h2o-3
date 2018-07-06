@@ -181,6 +181,8 @@ reference:
       - h2o.metric
       - h2o.min
       - h2o.mktime
+      - h2o.mojo_predict_csv
+      - h2o.mojo_predict_df
       - h2o.month
       - h2o.mse
       - h2o.na_omit
