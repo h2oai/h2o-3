@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.coxph.CoxPHModel;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
@@ -65,7 +66,7 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     @API(help = "component of var(cumhaz)")
     double[] var_cumhaz_1;
     @API(help = "component of var(cumhaz)")
-    double[][] var_cumhaz_2;
+    KeyV3.FrameKeyV3 var_cumhaz_2;
     @API(help = "formula")
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})
