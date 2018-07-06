@@ -315,7 +315,6 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         }
       } // hasCrossValidation
       row++;
-      assert col == colHeaders.size() - 1;
     }
     return table;
   }
