@@ -281,7 +281,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._r2 : Double.NaN);
         }
         if (modelCategory == ModelCategory.Binomial) {
-          table.set(row, col++, si.validation_AUC != null ? si.validation_AUC._auc : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._AUC : Double.NaN);
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._lift : Double.NaN);
         }
         if (isClassifier) {
@@ -299,11 +299,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
         if (isClassifier) {
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._rmse : Double.NaN);
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._logloss : Double.NaN);
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
         if (modelCategory == ModelCategory.Binomial) {
-          table.set(row, col++, si.validation_AUC != null ? si.validation_AUC._auc : Double.NaN);
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._AUC : Double.NaN);
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._lift : Double.NaN);
         }
         if (isClassifier) {
