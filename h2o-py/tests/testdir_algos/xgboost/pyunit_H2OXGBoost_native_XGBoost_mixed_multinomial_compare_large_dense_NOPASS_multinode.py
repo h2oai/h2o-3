@@ -14,7 +14,7 @@ def comparison_test_dense():
 
     runSeed = 1
     testTol = 1e-6
-    ntrees = 10
+    ntrees = 17
     maxdepth = 5
     nrows = 10000
     ncols = 10
@@ -59,7 +59,7 @@ def comparison_test_dense():
     # train the native XGBoost
     nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
     nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain)
+                            dtrain=nativeTrain, num_boost_round=ntrees)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
