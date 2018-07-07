@@ -24,7 +24,7 @@ Defining a CoxPH Model
 
 -  `start_column <algo-params/start_column.html>`__: (Optional) The name of an integer column in the **source** data set representing the start time. If supplied, the value of the **start_column** must be strictly less than the **stop_column** in each row.
 
--  `stop_column <algo-params/stop_column.html>`__: The name of an integer column in the **source** data set representing the stop time.
+-  `stop_column <algo-params/stop_column.html>`__: (Required) The name of an integer column in the **source** data set representing the stop time. 
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
