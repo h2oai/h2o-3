@@ -11,7 +11,7 @@ The dataset contains only enum columns.
 def comparison_test():
     assert H2OXGBoostEstimator.available() is True
     runSeed = 1
-    ntrees = 10
+    ntrees = 17
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                   "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
@@ -52,7 +52,7 @@ def comparison_test():
     # train the native XGBoost
     nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=[])
     nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain)
+                            dtrain=nativeTrain, num_boost_round=ntrees)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)

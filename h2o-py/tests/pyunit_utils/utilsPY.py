@@ -3630,7 +3630,7 @@ def summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTra
     # compare prediction probability and they should agree if they use the same seed
     for ind in range(h2oPredictD.nrow):
         assert abs((h2oPredictLocalD['predict'][ind]-nativePred[ind])/max(1, abs(h2oPredictLocalD['predict'][ind]), abs(nativePred[ind])))<tolerance, \
-            "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
+            "H2O prediction: {0} and native XGBoost prediction: {1}.  They are very " \
             "different.".format(h2oPredictLocalD['predict'][ind], nativePred[ind])
 
 def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,

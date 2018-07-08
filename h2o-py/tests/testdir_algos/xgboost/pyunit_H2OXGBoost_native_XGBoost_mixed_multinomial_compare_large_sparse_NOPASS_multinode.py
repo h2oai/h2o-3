@@ -12,7 +12,7 @@ def comparison_test_dense():
 
     runSeed = 1
     testTol = 1e-6
-    ntrees = 10
+    ntrees = 17
     maxdepth = 5
     responseL = 11
     # CPU Backend is forced for the results to be comparable
@@ -58,7 +58,7 @@ def comparison_test_dense():
     # train the native XGBoost
     nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
     nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain)
+                            dtrain=nativeTrain, num_boost_round=ntrees)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
