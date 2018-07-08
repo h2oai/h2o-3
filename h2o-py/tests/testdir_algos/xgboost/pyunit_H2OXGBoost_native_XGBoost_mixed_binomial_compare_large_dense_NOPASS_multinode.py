@@ -1,6 +1,5 @@
 import xgboost as xgb
 import time
-import random
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -14,7 +13,7 @@ def comparison_test_dense():
 
     runSeed = 1
     testTol = 1e-6
-    ntrees = 10
+    ntrees = 17
     maxdepth = 5
     # CPU Backend is forced for the results to be comparable
     h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
@@ -57,8 +56,8 @@ def comparison_test_dense():
 
     # train the native XGBoost
     nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
-    nativeModel = xgb.train(params=nativeParam,
-                            dtrain=nativeTrain)
+    nativeModel = xgb.trainxgb.train(params=nativeParam,
+                                     dtrain=nativeTrain, num_boost_round=ntrees)
     nativeTrainTime = time.time()-time1
     time1=time.time()
     nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
