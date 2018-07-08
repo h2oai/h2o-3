@@ -5,8 +5,10 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
+import org.apache.commons.lang.time.StopWatch;
 import water.*;
 import water.fvec.*;
+import water.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -150,6 +152,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 return;
             }
 
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
                 booster.setParams(_boosterParms.get());
@@ -157,6 +162,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 throw new IllegalStateException("Failed to load the booster.", e);
             }
             final float[][] preds = booster.predict(data);
+
+            stopWatch.stop();
+            Log.info("XGBoost scoring task - Booster finished prediction in " + stopWatch.getTime() + " ms");
+
+            stopWatch.reset();
+            stopWatch.start();
 
             float[] labels = data.getLabel();
 
