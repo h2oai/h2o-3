@@ -27,6 +27,9 @@ import java.util.Arrays;
  * returns a row per unique group, with the first columns being the grouping
  * columns, and the last column(s) the reduction result(s).
  * <p/>
+ * However, GroupBy operations will not be performed on String columns.  These columns
+ * will be skipped.
+ * <p/>
  * The returned column(s).
  */
 public class AstGroup extends AstPrimitive {
@@ -269,8 +272,19 @@ public class AstGroup extends AstPrimitive {
 
     // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
     // then count by triples.
-    int naggs = (asts.length - 3) / 3;
-    final AGG[] aggs = new AGG[naggs];
+    int validGroupByCols = 0;
+    for (int idx=3; idx < asts.length; idx+=3) {  // initial loop to count operations on valid columns, ignore String columns
+      AstNumList col = check(ncols, asts[idx + 1]);
+      if (col.cnt() != 1) throw new IllegalArgumentException("Group-By functions take only a single column");
+      int agg_col = (int) col.min(); // Aggregate column
+      if (fr.vec(agg_col).isString()) {
+        Log.warn("Column "+fr._names[agg_col]+" is a string column.  Groupby operations will be skipped for this column.");
+      } else
+        validGroupByCols++;
+    }
+    //int naggs = (asts.length - 3) / 3;
+    int countCols = 0;
+    final AGG[] aggs = new AGG[validGroupByCols];
     for (int idx = 3; idx < asts.length; idx += 3) {
       Val v = asts[idx].exec(env);
       String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
@@ -281,10 +295,12 @@ public class AstGroup extends AstPrimitive {
       if (fcn == FCN.mode && !fr.vec(agg_col).isCategorical())
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx + 2].exec(env).getStr().toUpperCase());
-      aggs[(idx - 3) / 3] = new AGG(fcn, agg_col, na, (int) fr.vec(agg_col).max() + 1);
+      if (!fr.vec(agg_col).isString())
+        aggs[countCols++] = new AGG(fcn, agg_col, na, (int) fr.vec(agg_col).max() + 1);
       if (fcn == FCN.median)
         _totMedianCols = 0;
     }
+    int naggs = countCols;
 
     // do the group by work now
     IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, _totMedianCols);
