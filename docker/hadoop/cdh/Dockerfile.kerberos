@@ -21,6 +21,7 @@ RUN \
     kadmin.local -q 'addprinc -pw h2o HTTP/localhost@H2O.AI' && \
     kadmin.local -q 'addprinc -pw h2o hive/localhost@H2O.AI' && \
     kadmin.local -q 'addprinc -pw h2o jenkins@H2O.AI' && \
+    kadmin.local -q 'addprinc -pw h2o root@H2O.AI' && \
     cd ${HADOOP_CONF_DIR} && \
     kadmin.local -q 'xst -norandkey -k hdfs.keytab hdfs/localhost@H2O.AI HTTP/localhost@H2O.AI' && \
     chown hdfs:hdfs hdfs.keytab && \
