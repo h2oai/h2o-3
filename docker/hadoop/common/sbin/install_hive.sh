@@ -16,6 +16,9 @@ chown -R hive:hive apache-hive-*/
 sudo -E -u hive ${HIVE_HOME}/bin/schematool -dbType derby -initSchema
 
 # Start HDFS, YARN, HIVE, etc.
+# We need to start datanode as user hdfs. Otherwise, when invoked by root, it requires --privileged, which is not
+# available while building the image. The datanode needs to be started by root in case of kerberos image, but shouldn't be needed here.
+export STARTUP_DATANODE_USER_OVERRIDE='-u hdfs'
 /usr/sbin/startup.sh
 
 # Download dataset and upload it to HDFS

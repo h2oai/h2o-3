@@ -1,14 +1,19 @@
 #! /usr/env/python
 
-import sys, os
-sys.path.insert(1, os.path.join("..","..","..", "h2o-py"))
-from tests import pyunit_utils
+import sys
+import os
 import h2o
+sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def gbm_on_hive():
     connection_url = "jdbc:hive2://localhost:10000/default"
+    krb_enabled = os.getenv('KRB_ENABLED', 'false')
+    if krb_enabled.lower() == 'true':
+        connection_url += ";principal=%s" % os.getenv('HIVE_PRINCIPAL', 'hive/localhost@H2O.AI')
+
     select_query = "select * from airlinestest"
     username = "hive"
     password = ""
@@ -30,6 +35,7 @@ def gbm_on_hive():
     gbm_v1 = H2OGradientBoostingEstimator(model_id="gbm_airlines_v1", seed=2000000)
     gbm_v1.train(airlines_X_col_names, airlines_y_col_name, training_frame=train, validation_frame=valid)
     gbm_v1.predict(test)
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(gbm_on_hive)
