@@ -3,12 +3,12 @@ package hex.tree.xgboost;
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import org.apache.commons.lang.time.StopWatch;
 import water.Key;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.Timer;
 import water.util.VecUtils;
 
 import java.math.BigInteger;
@@ -115,20 +115,17 @@ public class XGBoostUtils {
             float[][] data = allocateDenseMatrix(nRows, di);
             long actualRows = denseChunk(data, chunks, f, vecs, w, di, cols, resp, weights, f.vec(response).new Reader());
 
-            StopWatch denseMatrixCopyingStopWatch = new StopWatch();
-            denseMatrixCopyingStopWatch.start();
+            Timer timer = new Timer();
 
             trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
 
-            denseMatrixCopyingStopWatch.stop();
             Log.info("Copying dense matrix with " + actualRows + " logical rows and "
                     + cols + " logical columns "
-                    + "into native XGBoost finished in " + denseMatrixCopyingStopWatch.getTime() + " ms");
+                    + "into native XGBoost finished in " + timer.time() + " ms");
             assert trainMat.rowNum() == actualRows;
         }
 
-        StopWatch labelAndWeightsStopWatch = new StopWatch();
-        labelAndWeightsStopWatch.start();
+        Timer timer = new Timer();
 
         int len = (int) trainMat.rowNum();
         resp = Arrays.copyOf(resp, len);
@@ -139,8 +136,8 @@ public class XGBoostUtils {
             weights = Arrays.copyOf(weights, len);
             trainMat.setWeight(weights);
         }
-        labelAndWeightsStopWatch.stop();
-        Log.info("Setting label and weights to XGBoost DMatrix rows finished in " + labelAndWeightsStopWatch.getTime() + " ms");
+
+        Log.info("Setting label and weights to XGBoost DMatrix rows finished in " + timer.time() + " ms");
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
         return trainMat;
     }
@@ -346,15 +343,13 @@ public class XGBoostUtils {
             data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
         }
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
 
-        stopWatch.stop();
         Log.info("Copying dense matrix with " + actualRows + " logical rows and "
                 + cols + " logical columns "
-                + "into native XGBoost finished in " + stopWatch.getTime() + " ms");
+                + "into native XGBoost finished in " + timer.time() + " ms");
         assert trainMat.rowNum() == actualRows;
         return trainMat;
     }
@@ -367,8 +362,7 @@ public class XGBoostUtils {
                                    Vec.Reader[] vecs, Vec.Reader w, // for setupLocal
                                    DataInfo di, int cols,
                                    float[] resp, float[] weights, Vec.Reader respVec) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         int currentRow = 0;
         int currentCol = 0;
@@ -432,14 +426,12 @@ public class XGBoostUtils {
             }
         }
 
-        stopWatch.stop();
-        Log.info("Copying data into pre-allocated dense matrix finished in " + stopWatch.getTime() + " ms");
+        Log.info("Copying data into pre-allocated dense matrix finished in " + timer.time() + " ms");
         return actualRows;
     }
 
     private static long denseChunk(float[][] data, Chunk[] chunks, int weight, int respIdx, DataInfo di, int cols, float[] resp, float[] weights) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         int currentRow = 0;
         int currentCol = 0;
@@ -493,8 +485,7 @@ public class XGBoostUtils {
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
 
-        stopWatch.stop();
-        Log.info("Copying data into pre-allocated dense matrix finished in " + stopWatch.getTime() + " ms");
+        Log.info("Copying data into pre-allocated dense matrix finished in " + timer.time() + " ms");
         return actualRows;
     }
 
@@ -555,15 +546,13 @@ public class XGBoostUtils {
         long size = sparseMatrixDimensions._nonZeroElementsCount;
         int rowHeadersSize = (int) sparseMatrixDimensions._rowIndicesCount;
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN(), rowHeadersSize, size);
 
-        stopWatch.stop();
         Log.info("Copying CSR matrix with " + sparseMatrixDimensions._nonZeroElementsCount + " non-zero elements "
                 + "and " + sparseMatrixDimensions._rowIndicesCount + " row indices "
-                + "into native XGBoost finished in " + stopWatch.getTime() + " ms");
+                + "into native XGBoost finished in " + timer.time() + " ms");
 
         assert trainMat.rowNum() == actualRows;
         return trainMat;
@@ -572,8 +561,7 @@ public class XGBoostUtils {
     private static int initalizeFromChunkIds(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di, int actualRows,
                                              long[][] rowHeaders, float[][] data, int[][] colIndex,
                                              Vec.Reader respVec, float[] resp, float[] weights) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         int nonZeroCount = 0;
         int currentRow = 0;
@@ -612,14 +600,12 @@ public class XGBoostUtils {
             }
         }
 
-        stopWatch.stop();
-        Log.info("Constructing CSR data matrix (from chunks IDs) finished in " + stopWatch.getTime() + " ms");
+        Log.info("Constructing CSR data matrix (from chunks IDs) finished in " + timer + " ms");
         return actualRows;
     }
 
     private static int initializeFromChunks(Chunk[] chunks, int weight, DataInfo di, int actualRows, long[][] rowHeaders, float[][] data, int[][] colIndex, int respIdx, float[] resp, float[] weights) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         int nonZeroCount = 0;
         int currentRow = 0;
@@ -652,8 +638,7 @@ public class XGBoostUtils {
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
 
-        stopWatch.stop();
-        Log.info("Constructing CSR data matrix (from chunks) finished in " + stopWatch.getTime() + " ms");
+        Log.info("Constructing CSR data matrix (from chunks) finished in " + timer.time() + " ms");
         return actualRows;
     }
 
@@ -795,8 +780,8 @@ public class XGBoostUtils {
      * @return An instance of {@link SparseMatrix} with pre-allocated backing arrays.
      */
     private static SparseMatrix allocateCSRMatrix(SparseMatrixDimensions sparseMatrixDimensions) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
+
         // Number of rows in non-zero elements matrix
         final int dataRowsNumber = (int) (sparseMatrixDimensions._nonZeroElementsCount / ARRAY_MAX);
         final int dataLastRowSize = (int)(sparseMatrixDimensions._nonZeroElementsCount % ARRAY_MAX);
@@ -833,16 +818,14 @@ public class XGBoostUtils {
             colIndices[colIndices.length - 1] = malloc4(colIndicesLastRowSize);
         }
 
-        stopWatch.stop();
-        Log.info("Allocation of CSR data matrix arrays finished in " + stopWatch.getTime() + " ms");
+        Log.info("Allocation of CSR data matrix arrays finished in " + timer.time() + " ms");
 
         // Wrap backing arrays into a SparseMatrix object and return them
         return new SparseMatrix(sparseData, rowIndices, colIndices);
     }
 
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Chunk[] chunks, DataInfo di, int weightColIndex){
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
@@ -864,14 +847,12 @@ public class XGBoostUtils {
 
         }
 
-        stopWatch.stop();
-        Log.info("Calculating CSR Matrix dimensions from chunks finished in " + stopWatch.getTime() + " ms");
+        Log.info("Calculating CSR Matrix dimensions from chunks finished in " + timer.time() + " ms");
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
     private static SparseMatrixDimensions calculateCSRMatrixDimensions(Frame f, int[] chunks, Vec.Reader[] vecs, Vec.Reader w, DataInfo di) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
 
         long nonZeroElementsCount = 0;
         long rowIndicesCount = 0;
@@ -892,8 +873,7 @@ public class XGBoostUtils {
             }
         }
 
-        stopWatch.stop();
-        Log.info("Calculating CSR Matrix dimensions from frame vecs finished in " + stopWatch.getTime() + " ms");
+        Log.info("Calculating CSR Matrix dimensions from frame vecs finished in " + timer.time() + " ms");
         return new SparseMatrixDimensions(nonZeroElementsCount, ++rowIndicesCount);
     }
 
@@ -949,8 +929,8 @@ public class XGBoostUtils {
      * @return An exactly-sized Float[] backing array for XGBoost's {@link DMatrix} to be filled with data.
      */
     private static float[][] allocateDenseMatrix(final long rowCount, final DataInfo dataInfo) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        Timer timer = new Timer();
+
         final BigInteger totalValues = BigInteger.valueOf(rowCount)
             .multiply(BigInteger.valueOf(dataInfo.fullN()));
         Log.info("An attempt to allocate DMatrix backing array with " + totalValues.toString() + " elements.");
@@ -977,8 +957,7 @@ public class XGBoostUtils {
             data[data.length - 1] = malloc4f(lastLineSize);
         }
 
-        stopWatch.stop();
-        Log.info("Dense matrix allocation finished in " + stopWatch.getTime() + " ms");
+        Log.info("Dense matrix allocation finished in " + timer.time() + " ms");
 
         return data;
 

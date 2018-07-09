@@ -9,6 +9,7 @@ import org.apache.commons.lang.time.StopWatch;
 import water.*;
 import water.fvec.*;
 import water.util.Log;
+import water.util.Timer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -152,8 +153,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 return;
             }
 
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
+            Timer timer = new Timer();
 
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
@@ -163,11 +163,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             }
             final float[][] preds = booster.predict(data);
 
-            stopWatch.stop();
-            Log.info("XGBoost scoring task - Booster finished prediction in " + stopWatch.getTime() + " ms");
 
-            stopWatch.reset();
-            stopWatch.start();
+            Log.info("XGBoost scoring task - Booster finished prediction in " + timer.time() + " ms");
 
             float[] labels = data.getLabel();
 
