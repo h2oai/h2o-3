@@ -158,6 +158,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             }
             final float[][] preds = booster.predict(data);
 
+
             float[] labels = data.getLabel();
 
             float[] weights = data.getWeight();
