@@ -35,3 +35,5 @@ RUN \
     sync && \
     /usr/sbin/krb-edit-hadoop-confs.sh && \
     chmod 644 ${HADOOP_CONF_DIR}/container-executor.cfg
+
+ENV KRB_ENABLED=true

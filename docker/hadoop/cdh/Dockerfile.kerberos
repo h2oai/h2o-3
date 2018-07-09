@@ -40,3 +40,5 @@ RUN \
     sed -i 's|# export HADOOP_SECURE_DN_USER=hdfs|export HADOOP_SECURE_DN_USER=hdfs|g' /etc/default/hadoop-hdfs-datanode && \
     sed -i 's|# export HADOOP_SECURE_DN_PID_DIR=/var/run/hadoop-hdfs|export HADOOP_SECURE_DN_PID_DIR=/var/run/hadoop-hdfs|g' /etc/default/hadoop-hdfs-datanode && \
     sed -i 's|# export HADOOP_SECURE_DN_LOG_DIR=/var/log/hadoop-hdfs|export HADOOP_SECURE_DN_LOG_DIR=/var/log/hadoop-hdfs|g' /etc/default/hadoop-hdfs-datanode
+
+ENV KRB_ENABLED=true
