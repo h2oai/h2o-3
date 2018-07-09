@@ -285,7 +285,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._lift : Double.NaN);
         }
         if (isClassifier) {
-          table.set(row, col, si.scored_valid != null ? si.scored_valid._classError : Double.NaN);
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._classError : Double.NaN);
         }
         if (isAutoencoder) {
           table.set(row, col++, si.scored_valid != null ? si.scored_valid._mse : Double.NaN);
@@ -299,7 +299,6 @@ public class ScoringInfo extends Iced<ScoringInfo> {
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
         if (isClassifier) {
-          table.set(row, col++, si.scored_xval != null ? si.scored_xval._rmse : Double.NaN);
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._logloss : Double.NaN);
           table.set(row, col++, si.scored_xval != null ? si.scored_xval._r2 : Double.NaN);
         }
