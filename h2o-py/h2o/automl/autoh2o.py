@@ -17,10 +17,10 @@ class H2OAutoML(object):
 
     :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
       disable Stacked Ensemble (thus decreasing the overall model performance).
-    :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.  
-    :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling 
+    :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.
+    :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
       factors will be automatically computed to obtain class balance during training. Requires balance_classes.
-    :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0). 
+    :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
       Requires ``balance_classes``. Defaults to 5.0.
     :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
     :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
@@ -49,11 +49,12 @@ class H2OAutoML(object):
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
     :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. If set to ``False`` then running the same AutoML object for repeated runs will cause an exception as CV predictions are required to build additional Stacked Ensemble models in AutoML. Defaults to ``True``.
     :param keep_cross_validation_models: Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to ``True``.
+    :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. This option defaults to ``False``.
     :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
     For binomial classification choose between ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
             For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between
-            ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``. 
-    
+            ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+
     :examples:
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
@@ -92,6 +93,7 @@ class H2OAutoML(object):
                  exclude_algos=None,
                  keep_cross_validation_predictions=True,
                  keep_cross_validation_models=True,
+                 keep_cross_validation_fold_assignment = False,
                  sort_metric="AUTO"):
 
         # Check if H2O jar contains AutoML
@@ -123,7 +125,7 @@ class H2OAutoML(object):
             assert_is_type(nfolds,int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
         assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
-        self.build_control["nfolds"] = nfolds 
+        self.build_control["nfolds"] = nfolds
         self.nfolds = nfolds
 
         # Pass through to all algorithms
@@ -136,7 +138,7 @@ class H2OAutoML(object):
         if max_after_balance_size != 5.0:
             assert_is_type(max_after_balance_size,float)
             self.build_control["max_after_balance_size"] = max_after_balance_size
-            self.max_after_balance_size = max_after_balance_size      
+            self.max_after_balance_size = max_after_balance_size
 
         # If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
@@ -188,6 +190,9 @@ class H2OAutoML(object):
 
         assert_is_type(keep_cross_validation_models, bool)
         self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
+
+        assert_is_type(keep_cross_validation_fold_assignment, bool)
+        self.build_control["keep_cross_validation_fold_assignment"] = self.nfolds != 0 and keep_cross_validation_fold_assignment
 
         self._job = None
         self._leader_id = None

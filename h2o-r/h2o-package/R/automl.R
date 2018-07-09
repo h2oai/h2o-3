@@ -41,9 +41,10 @@
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. If set to FALSE then running the same AutoML object for repeated runs will cause an exception as CV predictions are are required to build additional Stacked Ensemble models in AutoML. Defaults to TRUE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Deleting cross-validation models will save memory in the H2O cluster. Defaults to TRUE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
 #' @param sort_metric Metric to sort the leaderboard by. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", "MSE".
 #'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
-#'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification, 
+#'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification,
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
@@ -76,6 +77,7 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        keep_cross_validation_predictions = TRUE,
                        keep_cross_validation_models = TRUE,
+                       keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"))
 {
 
@@ -182,7 +184,7 @@ h2o.automl <- function(x, y, training_frame,
   } else {
     build_control$project_name <- project_name
   }
-  
+
   sort_metric <- match.arg(sort_metric)
   # Only send for non-default
   if (sort_metric != "AUTO") {
@@ -190,7 +192,7 @@ h2o.automl <- function(x, y, training_frame,
       # Changed the API to use "deviance" to be consistent with stopping_metric values
       # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
       # After that we can take this out
-      sort_metric <- "mean_residual_deviance"  
+      sort_metric <- "mean_residual_deviance"
     }
     input_spec$sort_metric <- tolower(sort_metric)
   }
@@ -212,7 +214,7 @@ h2o.automl <- function(x, y, training_frame,
     stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
   }
   build_control$nfolds <- nfolds
-  
+
   # Update build_control with balance_classes & related args
   if (balance_classes == TRUE) {
     build_control$balance_classes <- balance_classes
@@ -223,9 +225,11 @@ h2o.automl <- function(x, y, training_frame,
   if (max_after_balance_size != 5) {
     build_control$max_after_balance_size <- max_after_balance_size
   }
-  
+
+  # Update build_control with what to save
   build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
   build_control$keep_cross_validation_models <- keep_cross_validation_models
+  build_control$keep_cross_validation_fold_assignment <- nfolds !=0  && keep_cross_validation_fold_assignment
 
   # Create the parameter list to POST to the AutoMLBuilder 
   if (length(build_models) == 0) {
