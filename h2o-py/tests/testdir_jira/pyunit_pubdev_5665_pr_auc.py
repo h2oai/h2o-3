@@ -32,6 +32,8 @@ def algo_pr_auc_test():
     dl_h2o = H2ODeepLearningEstimator(distribution='bernoulli', seed=seed, hidden=[2,2])
     dl_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
 
+    print("Printing model and notice the pr_auc field....")
+    print(dl_h2o)
     print("precision/recall AUC for gbm is {0}, for glm is {1},\n for rf is {2}, for deeplearning is"
           " {3}".format(gbm_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"],
                         glm_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"],
