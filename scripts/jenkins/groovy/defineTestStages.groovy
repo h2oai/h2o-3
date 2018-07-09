@@ -261,6 +261,7 @@ def call(final pipelineContext) {
         version: distribution.version,
         ldapConfigPath: 'scripts/jenkins/ldap-conf.txt'
       ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
+      customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
@@ -393,6 +394,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
           activateR = c['activateR']
+	  customDockerArgs = c['customDockerArgs']
         }
       }
     ]
@@ -420,6 +422,7 @@ private void invokeStage(final pipelineContext, final body) {
   config.rVersion = config.rVersion ?: DEFAULT_R
   config.javaVersion = config.javaVersion ?: DEFAULT_JAVA
   config.timeoutValue = config.timeoutValue ?: DEFAULT_TIMEOUT
+  config.customDockerArgs = config.customDockerArgs ?: []
   if (config.hasJUnit == null) {
     config.hasJUnit = true
   }

@@ -60,8 +60,8 @@ echo '''
 yarn.nodemanager.linux-container-executor.group=hadoop
 banned.users=hdfs,yarn,mapred
 min.user.id=1000
-''' > /etc/hadoop/conf/container-executor.cfg
-chown root:hadoop /etc/hadoop/conf/container-executor.cfg
-chmod 400 /etc/hadoop/conf/container-executor.cfg
+''' > ${HADOOP_CONF_DIR}/container-executor.cfg
+chown root:hadoop ${HADOOP_CONF_DIR}/container-executor.cfg
+chmod 400 ${HADOOP_CONF_DIR}/container-executor.cfg
 chown root:hadoop /usr/hdp/${HDP_VERSION}/hadoop-yarn/bin/container-executor
 chmod 6050 /usr/hdp/${HDP_VERSION}/hadoop-yarn/bin/container-executor

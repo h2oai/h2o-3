@@ -19,7 +19,7 @@ class BuildConfig {
   public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '47'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '48'
 
   private static final String XGB_IMAGE_VERSION_TAG = 'latest'
   public static final String XGB_TARGET_MINIMAL = 'minimal'
@@ -55,33 +55,33 @@ class BuildConfig {
           (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:21a6e898ac8a5facf96fd54e53d0ccb9e13f887ba18deabd2504a962ad2a1a95',
           (BENCHMARK_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-benchmark@sha256:1edd212621bb8a9e6469c450a86c5136cecdc5d5371179a6e9b513b032dbc182',
 
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:eda36a9c1b734209dd0302980c721800da1ff33926803528b6c14505fc3afc21",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:e6d724cfcc810aeec3d771699fbeaae0c3c45ef364628c894cb0b7009948ffa4",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:99908a54a640b5ddd5af1419a5cc21afc41032005d8f55cf479bd2c64392000e",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:26ab1dd2b7d9fa21f22cd671788d62b7b0b91630cfa57bd5948a7ce39e38975e",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:8a5945c9ef167646c005a7c20ff4d286e8b43dcc5eb019042b755203fe582863",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb@sha256:e0a1157e9eb4c7e673bd152db799ebc89e40a78055bd600ebf6d0f262c9d1ef1",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3-krb@sha256:b965bbc0aad32ebb68ca63767ec262913fd8dbefd63a6ca9e3227ed938fa495a",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4-krb@sha256:bb65b79285289a0182e35fd09ac6c7c6b90c9d13ff7b7cc3df9ab70612345a48",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5-krb@sha256:8288f27f11c2543602bf3e45e57936613d85f30ae2354f9357411a0224e3f832",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6-krb@sha256:2911bc7584d0a6db8f4c9920fbf5c75c456683022038dd176d32a66e3b5fe967",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:ea4aa3ad81d8cff2063c92afa9f7297a1565f7e3cfc5a7a997fcd5bf5bf948b2",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3@sha256:c59ccef9a5033cbcbc5953a5b5678528bd5e8c8adf64c75444b615be5183f4e7",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4@sha256:755ee5ac48aca1d4a4d492a52a89808e1c126a2d9ee8b2bff2ebd7de364ecbf1",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5@sha256:5b3136ba4b8ca031c2f265279ee045cf59adf64ef553237b29b50bf20ce95fc5",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6@sha256:d63d80b7c5b1af676539c9ad7767f7b4e3a68ffb0a0167caf6131154ac961811",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb@sha256:39dfc3381fd849454d17dfddfee5fe5c83692fc43d7bc75959a6b6ca9b9dfe88",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.3-krb@sha256:317af586243f97a363ce2250ce26e2855e5ea5da8458b9ae79e992a3e9e01aae",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.4-krb@sha256:877fc4138a601bc54c6969906b5d38eb89b32d5e30cdcd3cc6c96d0cd35e91d4",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.5-krb@sha256:dd0ec4005e7aac4c888327d06ba7617aae010b8894061d508fe106a43e4a4ec1",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.6-krb@sha256:8f702bca7d09514a09e855b3d04292838f141a75ed8d920987711f13a579c78d",
 
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:33d04bbef4712490c28b7b2ee62d2074c7f457b40e1d5242d196572bc48f6771",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:c9bda0197aa4bb8f27df506e0d1bcc9cc82d224df68bace3d164cb54d423602b",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:453876c44c64ce326eeb655259ce83708d9cd73ef07ae6577de3c4909e90222a",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:3ba46c1744736ae8f0507eb9d1c865432582460b74086387ea9ab51622aa1e47",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:290c27e7628b33af53bdfbc6e81fe09d5069bb00283bdb5680a2684a41cb9431",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:f5d33ae683db6d2074d14e2d9e428da5840222dd02fd2e3dabc17631824b487c",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:653c0e1e1408e12c53496ba5761b35f7a229eda49d87f8c2da6ab530fccfb636",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:ee19dfabfeed3e3ec0b1a047252a037cbde1f06e17669ab62d8329fd21433bd9",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4-krb@sha256:18de6c5ab231c0544ab67c567d7196599fbfbd3d636586e7a66c630a5995799f",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5-krb@sha256:cef46a238d0ee4edf0d6342d87a919c44e49bc6eaf9d5723328c77e8478c6b89",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6-krb@sha256:0fcbccca6dc4e00382d78ef71d54591f999fd28ee901f38e4f8cf58eb893ae04",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7-krb@sha256:56bae097af02b84a48363c8023c15faaa12aa2677ba5b509e3a8f56dc592da55",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8-krb@sha256:73cb69da42f53a01336f9ff159937eae7d7ed626260fee632b000ed41980f86a",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10-krb@sha256:eb1a15c8c852bee22fffa11e267c9246e31574172db77349387b8b25e207f722",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13-krb@sha256:8160e9e44431011949cf7a58935e2b17a030a761c2eb3666a7b522451b011cb4",
-          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14-krb:47": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14-krb@sha256:3c1c1fe14ccab88560955e5327108f6eb15d894a745ec12caf710bd9f4e0b181",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4@sha256:a85fb396d476e4e6140803ce72e47da96cd12036ebab493fd756264b46170a8e",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5@sha256:b8450e8136b7f7bfdf6f1a93f0793184f6a49d1dfb0734709a4597bb5d7fd19f",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6@sha256:af8209c055acc28062557099020d8bcbd455e7a0c290f9e663a95e3f915027ae",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7@sha256:21e682f228d8ba57a3700b7c0b5721d9b5cdd954fb4717507b015873e7ff2494",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8@sha256:c498a445b59dbd4e6878e4241184f2d9c9426a670b38235111936db79be3e65e",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10@sha256:aa4cb86955bc58a28865f83cdbc52cca0fdfcd1951ff0b03c1b94ae9687df282",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13@sha256:169123ea81a6adca4a59d8f96346a311ef68adaf563b4433c79c87b1fa547150",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14@sha256:66eda61956eacecb03f7af6a012b9065d393045e88cbe5f94ad9c344724f6fff",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.4-krb@sha256:74d3e858c5f00c7e2dfb17e3513beeeed5d581a51fcf156e6523d03e3c73bd9f",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.5-krb@sha256:4cbc6b542b94f3316350771ffce7f887efc3766f4b20d69be0be6dbb5088bcc7",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.6-krb@sha256:a06ed995c60644e8c99b4782bf25c4327fdc38a7ef9bef3bab25b5502336f923",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.7-krb@sha256:d99d19e11d82e127e83bee88117236272085ced0dfc71c86ba4feaf9cea20e42",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.8-krb@sha256:6aa3ae67738d7d00ac0791c96d4e1103b8bc82f271b6f769a5d8939af90d55ed",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.10-krb@sha256:9c1a30ffaf726eabd8bd2ebe3ea6e36fa92e1c95ca52431c3ac72bc92f6580fb",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.13-krb@sha256:cc5a1c2c67129668e841c594833ef9787e4c9fc7979adfd78d1bccbad3fe14dc",
+          "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-cdh-5.14-krb@sha256:5168ea1421bdbadeb9b014f4ff7af864fecf00fc6f56cc62293049d50e40d5d6",
 
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal@sha256:b77bb053dfce986b5a64c963031eaf611a3f7b1af4236a9df51ee7674d55f00e',
           'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp:ubuntu14': 'docker.h2o.ai/opsh2oai/h2o-3-xgb-runtime-omp@sha256:245a62fae91d2ede4c0074f58b4c32ea980b701cb08f1af19dc51e9058d3880a',

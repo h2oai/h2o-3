@@ -2,4 +2,9 @@
 
 set -e -x
 
-for x in $(cd /etc/init.d && ls hadoop-hdfs-*); do service ${x} start; done
+service hadoop-hdfs-namenode start
+service hadoop-hdfs-secondarynamenode start
+set +e
+echo 'FIXME IGNORE ERROR WHILE STARTING DATANODE'
+service hadoop-hdfs-datanode start
+set -e
