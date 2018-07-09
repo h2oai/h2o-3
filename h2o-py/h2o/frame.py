@@ -47,6 +47,9 @@ class H2OFrame(object):
     ``H2OFrame`` represents a mere handle to that data.
     """
 
+    # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
+    __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
+
     #-------------------------------------------------------------------------------------------------------------------
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
@@ -306,7 +309,7 @@ class H2OFrame(object):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
-        if is_type(path, str) and "://" not in path:
+        if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
