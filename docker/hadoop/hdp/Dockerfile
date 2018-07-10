@@ -10,11 +10,13 @@ ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
 ARG JAVA_VERSIONS='8'
 ARG HIVE_VERSION='2.2.0'
+ARG AWS_ACCESS_KEY
+ARG AWS_SECRET_ACCESS_KEY
 
 ENV DISTRIBUTION='hdp' \
     MASTER='yarn-client' \
     HADOOP_HOME=/usr/hdp/current/hadoop-client/ \
-    HADOOP_CONF_DIR=/usr/hdp/2*/hadoop/conf/ \
+    HADOOP_CONF_DIR=/etc/hadoop/conf \
     HADOOP_DAEMON=/usr/hdp/2*/hadoop/sbin/hadoop-daemon.sh \
     YARN_DAEMON=/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh \
     MAPRED_USER=mapred \
@@ -63,7 +65,11 @@ RUN rm /usr/hdp/2*/hadoop/conf/* && \
     cp /usr/hdp/2*/etc/hadoop/conf.pseudo/* /usr/hdp/2*/hadoop/conf/
 
 # Copy configs
-COPY ${PATH_PREFIX}/conf/ /etc/hadoop/conf/
+COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
+RUN \
+    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
+    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
+    cat ${HADOOP_CONF_DIR}/core-site.xml
 
 # Generate mapred-site.xml
 RUN chmod 700 /usr/sbin/generate-mapred-site && \

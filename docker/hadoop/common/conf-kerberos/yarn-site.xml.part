@@ -1,0 +1,29 @@
+    <!-- ResourceManager security configs -->
+    <property>
+        <name>yarn.resourcemanager.keytab</name>
+        <value>SUBST_HADOOP_CONF_DIR/yarn.keytab</value>
+        <!-- path to the YARN keytab -->
+    </property>
+    <property>
+        <name>yarn.resourcemanager.principal</name>
+        <value>yarn/localhost@H2O.AI</value>
+    </property>
+
+    <!-- NodeManager security configs -->
+    <property>
+        <name>yarn.nodemanager.keytab</name>
+        <value>SUBST_HADOOP_CONF_DIR/yarn.keytab</value>
+    <!-- path to the YARN keytab -->
+    </property>
+    <property>
+        <name>yarn.nodemanager.principal</name>
+        <value>yarn/localhost@H2O.AI</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.container-executor.class</name>
+        <value>org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.linux-container-executor.group</name>
+        <value>yarn</value>
+    </property>

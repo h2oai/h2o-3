@@ -9,14 +9,16 @@ fi
 
 # Download and initialize HIVE
 cd /home/hive
-wget http://www-eu.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
-#wget http://mirrors.ocf.berkeley.edu/apache/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
+wget http://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
 tar -xzvf apache-hive-${HIVE_VERSION}-bin.tar.gz
 rm apache-hive-${HIVE_VERSION}-bin.tar.gz
 chown -R hive:hive apache-hive-*/
 sudo -E -u hive ${HIVE_HOME}/bin/schematool -dbType derby -initSchema
 
 # Start HDFS, YARN, HIVE, etc.
+# We need to start datanode as user hdfs. Otherwise, when invoked by root, it requires --privileged, which is not
+# available while building the image. The datanode needs to be started by root in case of kerberos image, but shouldn't be needed here.
+export STARTUP_DATANODE_USER_OVERRIDE='-u hdfs'
 /usr/sbin/startup.sh
 
 # Download dataset and upload it to HDFS
