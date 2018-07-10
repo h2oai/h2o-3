@@ -11,13 +11,12 @@ yum localinstall -y ${JRE_FILE}
 rm ${JRE_FILE}
 
 mkdir -p /usr/lib/jvm
+chmod a+w /usr/lib/jvm
 ln -s -f /usr/java/default /usr/lib/jvm/java-8-oracle
 
 echo "Creating activation script"
 echo """ #! /bin/bash
 
 rm -f /usr/lib/jvm/java-current-oracle
-ln -s -f /usr/lib/jvm/java-8-oracle /usr/lib/jvm/java-current-oracle """ > /usr/bin/activate_java_8
+ln -s -f /usr/lib/jvm/java-8-oracle /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_8
 chmod a+x /usr/bin/activate_java_8
-
-/usr/bin/activate_java_8

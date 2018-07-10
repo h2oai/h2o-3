@@ -11,14 +11,12 @@ rm ${JDK_FILE}
 
 cd jdk*
 mkdir -p /usr/lib/jvm/
-echo "Symlinking /usr/lib/jvm/java-8-oracle/ -> $(pwd)"
+chmod a+w /usr/lib/jvm
 ln -s -f $(pwd) /usr/lib/jvm/java-8-oracle
 
 echo "Creating activation script"
 echo """ #! /bin/bash
 
 rm -f /usr/lib/jvm/java-current-oracle
-ln -s -f /usr/lib/jvm/java-8-oracle /usr/lib/jvm/java-current-oracle """ > /usr/bin/activate_java_8
+ln -s -f /usr/lib/jvm/java-8-oracle /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_8
 chmod a+x /usr/bin/activate_java_8
-
-/usr/bin/activate_java_8
