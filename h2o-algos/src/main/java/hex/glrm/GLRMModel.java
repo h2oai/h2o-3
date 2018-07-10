@@ -233,7 +233,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     if (orig.checksum()!=(_parms.train().checksum())) { // compare with checksum instead of frame keys.
       // need to generate the X matrix and put it in as a frame ID.  Mojo predict will return one row of x as a double[]
       GLRMGenX gs = new GLRMGenX(this, _parms._k);
-      gs.doAll(gs._k, Vec.T_NUM, orig);
+      gs.doAll(gs._k, Vec.T_NUM, adaptedFr);
       String[] loadingFrmNames = new String[gs._k];
       for (int index=1; index <= gs._k; index++)
         loadingFrmNames[index-1] = "Arch"+index;
