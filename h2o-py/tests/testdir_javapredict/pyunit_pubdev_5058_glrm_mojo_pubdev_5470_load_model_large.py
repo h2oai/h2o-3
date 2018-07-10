@@ -28,15 +28,20 @@ def glrm_mojo():
 
     MOJONAME = pyunit_utils.getMojoName(glrmModel._id)
     TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmReconstruct=True) # save mojo predict
+
+    h2o.save_model(glrmModel, TMPDIR)   # save GLRM model
+    glrmModel2 = h2o.load_model(os.path.join(TMPDIR,MOJONAME))
+    predict_model = glrmModel2.predict(test)
     for col in range(pred_h2o.ncols):
         if pred_h2o[col].isfactor():
             pred_h2o[col] = pred_h2o[col].asnumeric()
+            predict_model[col] = predict_model[col].asnumeric()
     print("Comparing mojo predict and h2o predict...")
     pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
-
+    print("Comparing mojo predict and h2o predict from saved model...")
+    pyunit_utils.compare_frames_local(pred_mojo, predict_model, 1, tol=1e-10)
     frameID, mojoXFactor = pyunit_utils.mojo_predict(glrmModel, TMPDIR, MOJONAME, glrmReconstruct=False) # save mojo XFactor
     glrmTestFactor = h2o.get_frame("GLRMLoading_"+frameID)   # store the x Factor for new test dataset
     print("Comparing mojo x Factor and model x Factor ...")
