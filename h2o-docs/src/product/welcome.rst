@@ -684,6 +684,39 @@ Accessing Logs
 
 Access logs for a YARN job with the ``yarn logs -applicationId <application_id>`` command from a terminal.  Note that this command must be run by the same userid as the job owner, and only after the job has finished.
 
+How H2O runs on YARN
+~~~~~~~~~~~~~~~~~~~~
+
+Let's say that you have a Hadoop cluster with six worker nodes and six HDFS nodes.
+For architectural diagramming purposes, the worker nodes and HDFS nodes are shown as separate blocks in the block diagram,
+but they may actually be running on the same physical machines.
+The ``hadoop jar`` command that you run on the edge node talks to the YARN Resource Manager to launch an H2O MRv2 (MapReduce v2) job.
+The Resource Manager places the requested number of H2O nodes (aka MRv2 mappers, aka YARN containers) -- three in this example -- on worker nodes.
+See the picture below:
+
+  .. figure:: images/h2o-on-yarn-1.png
+
+Once the H2O job's nodes all start, they find each other and create an H2O cluster (as shown by the dark blue line encircling the three H2O nodes).
+The three H2O nodes work together to perform distributed Machine Learning functions as a group, as shown below.
+
+Note how the three worker nodes that are not part of the H2O job have been removed from the picture below for explanatory purposes.
+They aren't part of the compute and memory resources used by the H2O job.
+The full complement of HDFS is still available, however:
+
+  .. figure:: images/h2o-on-yarn-2.png
+
+Data is then read in from HDFS *once* (as shown by the red lines), and stored as distributed H2O Frames in H2O's in-memory column-compressed Distributed Key/Value (DKV) store.  See the picture below:
+
+  .. figure:: images/h2o-on-yarn-3.png
+
+Machine Learning algorithms can then run very fast in a parallel and distributed way (as shown by the light blue lines).
+They iteratively sweep over the data over and over again to build models, which is why the in-memory storage makes H2O fast.
+
+Note how the HDFS nodes have been removed from the picture below for explanatory purposes, to emphasize that the data lives in memory during the model training process:
+
+  .. figure:: images/h2o-on-yarn-4.png
+
+
 Docker Users
 ------------
 
