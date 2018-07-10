@@ -23,7 +23,6 @@ public class PersistS3HdfsTest extends TestUtil  {
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  @Ignore
   public void testPubDev5663() { // Demonstrates that S3FileSystem is broken
     thrown.expect(water.api.HDFSIOException.class);
     thrown.expectMessage(endsWith("java.io.IOException: /smalldata/airlines/AirlinesTrain.csv.zip doesn't exist")); // should not start with a slash!!!
