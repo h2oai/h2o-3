@@ -1,14 +1,13 @@
 package hex;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
 import water.IcedWrapper;
 import water.util.TwoDimTable;
 
 import static org.junit.Assert.*;
 
-@RunWith(MockitoJUnitRunner.class)
 public class ScoringInfoTest {
 
 
@@ -48,8 +47,12 @@ public class ScoringInfoTest {
         assertNotNull(scoringHistoryTable);
 
         IcedWrapper[][] cellValues = scoringHistoryTable.getCellValues();
+        assertEquals(20, cellValues[0].length);
 
-        assertEquals("5882-03-11 01:32:03", cellValues[0][0].get());
+        // Test may run in different timezone. Expected timestmap can not be hardcoded.
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        assertEquals(fmt.print(scoringInfo.time_stamp_ms), cellValues[0][0].get());
+
         assertEquals("10.000 sec", cellValues[0][1].get());
         assertEquals(scoringInfo.scored_train._rmse, cellValues[0][2].get());
         assertEquals(scoringInfo.scored_train._logloss, cellValues[0][3].get());
