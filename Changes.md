@@ -2,6 +2,99 @@
 
 ## H2O
 
+### Wright (3.20.0.3) - 7/10/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5353'>PUBDEV-5353</a>] - The `fold_column` option now works correctly in XGBoost. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5560'>PUBDEV-5560</a>] - Calling `describe` on empty H2O frame no longer results in an error in Python. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5576'>PUBDEV-5576</a>] - In XGBoost, when performing a grid search from Flow, the correct cross validation AUC score is now reported back.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5612'>PUBDEV-5612</a>] - Fixed an issue that cause XGBoost to fail with Tesla V100 drivers 70 and above and with CUDA 9.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5654'>PUBDEV-5654</a>] - H2O's XGBoost results no longer  differ from native XGBoost when dmatrix_type="sparse". 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5672'>PUBDEV-5672</a>] - In the R documentation, fixed the description for h2o.sum to state that this function indicates whether to return an H2O frame or one single aggregated sum.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5673'>PUBDEV-5673</a>] - H2O data import for Parquet files no longer fails on numeric decimalTypes.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5683'>PUBDEV-5683</a>] - Fixed an error that occurred when viewing the AutoML Leaderboard in Flow before the first model was completed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5686'>PUBDEV-5686</a>] - When connecting to a Linux H2O Cluster from a Windows machine using Python, the `import_file()` function can now correctly locate the file on the Linux Server.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5692'>PUBDEV-5692</a>] - H2O now reports the project version in the logs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5700'>PUBDEV-5700</a>] - In CoxPH, fixed an issue that caused training to fail to create JSON output when the dataset included too many features.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5707'>PUBDEV-5707</a>] - Users can now switch between edit and command modes on Scala cells.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5721'>PUBDEV-5721</a>] - Fixed an issue with the way that RMSE was calculated for cross-validated models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5727'>PUBDEV-5727</a>] - In GLRM, fixed an issue that caused differences between the result of h2o.predict and MOJO predictions.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5680'>PUBDEV-5680</a>] - Added a new `-report_hostname` flag that can be specified along with `-proxy` when starting H2O on Hadoop. When this flag is enabled, users can replace the IP address with the machine's host name when starting Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5697'>PUBDEV-5697</a>] - Added support for the Amazon Redshift data warehouse. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5725'>PUBDEV-5725</a>] - Added support for CDH 5.9. 
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5628'>PUBDEV-5628</a>] - Accessing secured (Kerberized) HDFS from a standalone H2O instance works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5656'>PUBDEV-5656</a>] - AutoML Python tests always use max models to avoid running out of time. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5682'>PUBDEV-5682</a>] - CoxPH now validates that a `stop_column` is specified. `stop_column` is a required parameter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5688'>PUBDEV-5688</a>] - Fixed an issue that caused a GCS Exception to display when H2O was launched offline.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5572'>PUBDEV-5572</a>] - In Flow, improved the display of the confusion matrix for multinomial cases. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5665'>PUBDEV-5665</a>] - Users will now see a Precision-Recall AUC when training binomial models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5666'>PUBDEV-5666</a>] - Synchronous and Asynchronous Scala Cells are now allowed in H2O Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5687'>PUBDEV-5687</a>] - H2O now autodetects string columns and skips them before calculating `groupby`. H2O also warns the user when this happens.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5424'>PUBDEV-5424</a>] - The h2o.mojo_predict_csv and h2o.mojo_predict_df functions now appear in the R HTML documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5702'>PUBDEV-5702</a>] - In GLM, documented that the Poisson family uses the -log(maximum likelihood function) for deviance.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5710'>PUBDEV-5710</a>] - Fixed the R example in the "Replacing Values in a Frame" data munging topic. Columns and rows do not start at 0; R has a 1-based index.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5711'>PUBDEV-5711</a>] - Fixed the R example in the "Group By" data munging topic. Specify the "Month" column instead of the "NumberOfFlights" column when finding the number of flights in a given month based on origin.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5714'>PUBDEV-5714</a>] - Added the new `-report_hostname` flag to the list of Hadoop launch parameters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5715'>PUBDEV-5715</a>] - Added Amazon Redshift to the list of supported JDBC drivers.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5726'>PUBDEV-5726</a>] - Added CDH 5.9 to the list of supported Hadoop platforms. 
+</li>
+</ul>
+                        
 ### Wright (3.20.0.2) - 6/15/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/2/index.html</a>
