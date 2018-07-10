@@ -412,6 +412,7 @@ Supported Versions
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
+-  CDH 5.9
 -  CDH 5.10
 -  CDH 5.13
 -  CDH 5.14
