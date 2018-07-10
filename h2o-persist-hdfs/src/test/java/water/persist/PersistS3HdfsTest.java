@@ -31,7 +31,6 @@ public class PersistS3HdfsTest extends TestUtil  {
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  @Ignore
   public void testPubDev5663() throws Exception { // Demonstrates that S3FileSystem is broken
     final String bucket = "h2o-public-test-data";
     final String key = "smalldata/airlines/AirlinesTrain.csv.zip";
