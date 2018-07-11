@@ -191,6 +191,13 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+    ],
+    [
+      stageName: 'DMLC XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'build-and-benchmark-latest-dmlc-r-xgboost', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
     ]
   ]
 
