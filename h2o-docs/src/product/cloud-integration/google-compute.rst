@@ -5,6 +5,14 @@ Install H2O on the Google Cloud Platform Offering
 
 This section describes how to install and start H2O Flow (H2O-3 web offering) in a Google Compute environment using the available Cloud Launcher offering.
 
+Before You Begin
+''''''''''''''''
+
+If you are trying GCP for the first time and have just created an account, please check your Google Compute Engine (GCE) resource quota limits. Our default recommendation for launching H2O-3 is 4 CPUs, 15 GB RAM, and 3 nodes. By default, GCP allocates a maximum of 8 CPUs, so most H2O-3 users can easily run without reaching a quota limit. Some users of H2O, however, may require more resources. If necessary, you can change these settings to match your quota limit, or you can request more resources from GCP. Refer to https://cloud.google.com/compute/quotas for more information, including information on how to check your quota and request additional quota.
+
+Installation Procedure
+''''''''''''''''''''''
+
 1. In your browser, log in to the Google Compute Engine Console at https://console.cloud.google.com/. 
 
 2. In the left navigation panel, select **Cloud Launcher**.
