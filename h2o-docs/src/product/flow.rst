@@ -1358,7 +1358,7 @@ By default, H2O reports the Gains/Lift for all binary classification models if t
 How the Gains/Lift Chart is Built
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. Note that the default number of groups is 20; if there are fewer than 20 unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. For binning, H2O computes exact ventiles. (Weighted cases are in development.) ``h2o.quantile(x, probs=seq(0,1,0.05))`` is used for cut points, similar to R's ``quantile()`` method. 
+To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. Note that the default number of groups is 16; if there are fewer than 16 unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. For binning, H2O uses the following probabilities vector to create cut points (0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0). 
 
 For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets). 
 
