@@ -249,7 +249,7 @@ Getting Started with Sparkling Water
 
 -  Sparkling Water Documentation for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/index.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__: Read this document first to get started with Sparkling Water.
 
--  Launch on Hadoop and Import from HDFS (`2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/integ_tests.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__: Go here to learn how to start Sparkling Water on Hadoop.
+-  Launch on Hadoop and Import from HDFS (`2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/integ_tests.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
@@ -325,6 +325,7 @@ To check which version of H2O is installed in R, use ``versions::installed.versi
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
+-  `RStudio Cheat Sheet <https://github.com/rstudio/cheatsheets/raw/master/h2o.pdf>`__: Download this PDF to keep as a quick reference when using H2O in R.  
 
 **Note**: If you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize.
 

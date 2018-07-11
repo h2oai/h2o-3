@@ -11,6 +11,12 @@ Welcome to the H2O documentation site! Depending on your area of interest, selec
 
 We're glad you're interested in learning more about H2O. If you have questions or ideas to share, please post them to the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
 
+Additional Resources:
+
+- See how are customers are using H2O at https://www.h2o.ai/customers/.
+- Keep up to date with the H2O latest blogs at https://blog.h2o.ai/.
+- Review projects, applications, research papers, tutorials, courses, and books that use H2O at https://github.com/h2oai/awesome-h2o.
+
 .. toctree::
    :maxdepth: 2
    
