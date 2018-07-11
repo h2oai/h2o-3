@@ -3,13 +3,20 @@
 set -e
 set -x
 
-JDK_FILE='jdk-8u171-linux-x64.tar.gz'
+JDK_FILE='jdk-8u172-linux-x64.tar.gz'
 wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
-"http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/${JDK_FILE}"
+"http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/${JDK_FILE}"
 tar zxvf ${JDK_FILE}
 rm ${JDK_FILE}
 
 cd jdk*
 mkdir -p /usr/lib/jvm/
-echo "Symlinking /usr/lib/jvm/java-8-oracle/ -> $(pwd)"
+chmod a+w /usr/lib/jvm
 ln -s -f $(pwd) /usr/lib/jvm/java-8-oracle
+
+echo "Creating activation script"
+echo """ #! /bin/bash
+
+rm -f /usr/lib/jvm/java-current-oracle
+ln -s -f /usr/lib/jvm/java-8-oracle /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_8
+chmod a+x /usr/bin/activate_java_8
