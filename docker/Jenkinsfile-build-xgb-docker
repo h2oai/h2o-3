@@ -66,15 +66,11 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
                             sh """
                                 cd docker
                                 
-                                # docker pull ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)}
-
                                 docker build \
                                     -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
                                     -f ${xgbEnv.dockerfile} \
                                     --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
                                     --build-arg H2O_BRANCH=${params.gitBranch} \
-                                    --build-arg JENKINS_UID=\$(id -u) \
-                                    --build-arg JENKINS_GID=\$(id -g) \
                                     .
                             """
 
