@@ -138,6 +138,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     public double auc() {return new AUC2(_auc)._auc;}
+    public double pr_auc() { return new AUC2(_auc)._pr_auc;}
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;

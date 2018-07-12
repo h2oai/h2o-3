@@ -17,12 +17,20 @@ function() {
 
   gbm_model <- h2o.gbm(x=x_indices, y=y_index, training_frame=training1_data, distribution="bernoulli", seed=seed)
   gbm_pr_auc = gbm_model@model$training_metrics@metrics$pr_auc
+  print(gbm_model)
+  expect_equal(gbm_pr_auc, h2o.pr_auc(gbm_model))
   glm_model <- h2o.glm(y=y_index, x=x_indices, training_frame=training1_data, family='binomial', seed=seed)
   glm_pr_auc = glm_model@model$training_metrics@metrics$pr_auc
+  print(glm_model)
+  expect_equal(glm_pr_auc, h2o.pr_auc(glm_model))
   rf_model <- h2o.randomForest(y=y_index, x=x_indices, training_frame=training1_data, ntrees=10, score_tree_interval=0)
   rf_pr_auc = rf_model@model$training_metrics@metrics$pr_auc
+  print(rf_model)
+  expect_equal(rf_pr_auc, h2o.pr_auc(rf_model))
   dl_model <- h2o.deeplearning(x=x_indices,y=y_index,training_frame=training1_data, distribution='bernoulli', seed=seed, hidden=c(2,2))
   dl_pr_auc = dl_model@model$training_metrics@metrics$pr_auc
+  print(dl_model)
+  expect_equal(dl_pr_auc, h2o.pr_auc(dl_model))
   
   print("pr_auc for gbm, glm, randomforest and deeplearning are")
   print(c(gbm_pr_auc, glm_pr_auc, rf_pr_auc, dl_pr_auc))

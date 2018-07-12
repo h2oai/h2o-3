@@ -1,11 +1,5 @@
 package water.api;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import water.H2O;
 import water.Iced;
 import water.exceptions.H2OIllegalArgumentException;
@@ -13,6 +7,12 @@ import water.exceptions.H2ONotFoundArgumentException;
 import water.util.Log;
 import water.util.Pair;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -151,6 +151,7 @@ public class SchemaServer {
           if (name.equals("__meta") || name.equals("__http_status") || name.equals("_exclude_fields") ||
               name.equals("__schema") || name.equals("_fields")) continue;
           if (name.equals("Gini")) continue; // proper name
+          if (name.equals("pr_auc")) continue;
           if (name.endsWith("AUC")) continue; // trainAUC, validAUC
 
           // TODO: remove after we move these into a TwoDimTable:
