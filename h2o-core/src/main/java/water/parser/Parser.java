@@ -4,6 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.Job;
 import water.Key;
+import water.fvec.Vec;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +73,12 @@ public abstract class Parser extends Iced {
 
   // Parse this one Chunk (in parallel with other Chunks)
   protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
+
+
+  // Parse the Vec sequentially writing out one chunk after another
+  protected StreamParseWriter sequentialParse(Vec vec, StreamParseWriter dout) {
+    throw new UnsupportedOperationException("Sequential Parsing is not supported by " + this.getClass().getName());
+  }
 
   protected ParseWriter streamParse( final InputStream is, final StreamParseWriter dout) throws IOException {
     return streamParseZip(is,dout,is);

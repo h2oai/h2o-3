@@ -38,6 +38,51 @@ public class ParquetParser extends Parser {
   }
 
   @Override
+  protected final StreamParseWriter sequentialParse(Vec vec, final StreamParseWriter dout) {
+    final ParquetMetadata metadata = VecParquetReader.readFooter(_metadata);
+    final int nChunks = vec.nChunks();
+    final long totalRecs = totalRecords(metadata);
+    final long nChunkRecs = ((totalRecs / nChunks) + (totalRecs % nChunks > 0 ? 1 : 0));
+    if (nChunkRecs != (int) nChunkRecs) {
+      throw new IllegalStateException("Unsupported Parquet file. Too many records (#" + totalRecs + ", nChunks=" + nChunks + ").");
+    }
+
+    WriterDelegate w = new WriterDelegate(dout, _setup.getColumnTypes().length);
+    VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes());
+
+    StreamParseWriter nextChunk = dout;
+    try {
+      long parsedRecs = 0;
+      for (int i = 0; i < nChunks; i++) {
+        Long recordNumber;
+        do {
+          recordNumber = reader.read();
+          if (recordNumber != null)
+            parsedRecs++;
+        } while ((recordNumber != null) && (w.lineNum() < nChunkRecs));
+        if (_jobKey != null)
+          Job.update(vec.length() / nChunks, _jobKey);
+        nextChunk.close();
+        dout.reduce(nextChunk);
+        nextChunk = nextChunk.nextChunk();
+        w.setWriter(nextChunk);
+      }
+      assert parsedRecs == totalRecs;
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to parse records", e);
+    }
+    return dout;
+  }
+
+  private long totalRecords(ParquetMetadata metadata) {
+    long nr = 0;
+    for (BlockMetaData meta : metadata.getBlocks()) {
+      nr += meta.getRowCount();
+    }
+    return nr;
+  }
+
+  @Override
   protected final ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
     if (! (din instanceof FVecParseReader)) {
       // TODO: Should we modify the interface to expose the underlying chunk for non-streaming parsers?
@@ -56,7 +101,7 @@ public class ParquetParser extends Parser {
     Log.info("Processing ", metadata.getBlocks().size(), " blocks of chunk #", cidx);
     VecParquetReader reader = new VecParquetReader(vec, metadata, dout, _setup.getColumnTypes());
     try {
-      Integer recordNumber;
+      Long recordNumber;
       do {
         recordNumber = reader.read();
       } while (recordNumber != null);
@@ -200,7 +245,7 @@ public class ParquetParser extends Parser {
     VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes);
     try {
       int recordCnt = 0;
-      Integer recordNum;
+      Long recordNum;
       do {
         recordNum = reader.read();
       } while ((recordNum != null) && (++recordCnt < cnt));

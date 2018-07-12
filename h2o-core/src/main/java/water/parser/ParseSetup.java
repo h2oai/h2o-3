@@ -40,7 +40,7 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
 
   String [] _fileNames = new String[]{"unknown"};
-  public  boolean disableParallelParse;
+  public boolean disableParallelParse;
   Key<DecryptionTool> _decrypt_tool;
 
   public void setFileName(String name) {_fileNames[0] = name;}
@@ -217,6 +217,15 @@ public class ParseSetup extends Iced {
     }
 
     throw new H2OIllegalArgumentException("Unknown parser configuration! Configuration=" + this);
+  }
+
+  public final DecryptionTool getDecryptionTool() {
+    return DecryptionTool.get(_decrypt_tool);
+  }
+
+  public final ParserInfo.ParseMethod parseMethod(int nfiles, Vec v) {
+    boolean isEncrypted = ! getDecryptionTool().isTransparent();
+    return _parse_type.parseMethod(nfiles, v.nChunks(), disableParallelParse, isEncrypted);
   }
 
   // Set of duplicated column names

@@ -59,12 +59,16 @@ public class VecParquetReader implements Closeable {
 
   private final Vec vec;
   private final ParquetMetadata metadata;
-  private final ParseWriter writer;
+  private final WriterDelegate writer;
   private final byte[] chunkSchema;
 
-  private ParquetReader<Integer> reader;
+  private ParquetReader<Long> reader;
 
   public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema) {
+    this(vec, metadata, new WriterDelegate(writer, chunkSchema.length), chunkSchema);
+  }
+
+  VecParquetReader(Vec vec, ParquetMetadata metadata, WriterDelegate writer, byte[] chunkSchema) {
     this.vec = vec;
     this.metadata = metadata;
     this.writer = writer;
@@ -75,7 +79,7 @@ public class VecParquetReader implements Closeable {
    * @return the index of added Chunk record or null if finished
    * @throws IOException
    */
-  public Integer read() throws IOException {
+  public Long read() throws IOException {
     if (reader == null) {
       initReader();
     }
@@ -88,7 +92,7 @@ public class VecParquetReader implements Closeable {
     Configuration conf = VecFileSystem.makeConfiguration(vec);
     conf.setInt(PARQUET_READ_PARALLELISM, 1); // disable parallelism (just one virtual file!)
     ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema);
-    ParquetReader.Builder<Integer> prBuilder = ParquetReader.builder(crSupport, VecFileSystem.VEC_PATH)
+    ParquetReader.Builder<Long> prBuilder = ParquetReader.builder(crSupport, VecFileSystem.VEC_PATH)
             .withConf(conf)
             .withFilter(new FilterCompat.Filter() {
               @Override

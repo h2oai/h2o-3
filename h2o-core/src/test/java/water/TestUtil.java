@@ -322,8 +322,8 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname ) { 
-    return parse_test_file(Key.make(),fname); 
+  public static Frame parse_test_file( String fname) {
+    return parse_test_file(Key.make(), fname);
   }
 
   public static NFSFileVec makeNfsFileVec(String fname) {
@@ -334,10 +334,21 @@ public class TestUtil extends Iced {
       return null;
     }
   }
-  
+
   public static Frame parse_test_file( Key outputKey, String fname) {
+    return parse_test_file(outputKey, fname, null);
+  }
+
+  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
+    return parse_test_file(Key.make(), fname, transformer);
+  }
+
+  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer) {
     NFSFileVec nfs = makeNfsFileVec(fname);
-    return ParseDataset.parse(outputKey, nfs._key);
+    ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
+    if (transformer != null)
+      guessedSetup = transformer.transformSetup(guessedSetup);
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
@@ -345,7 +356,11 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
+  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
+    return parse_test_file(fname, na_string, check_header, column_types, null);
+  }
+
+  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
@@ -370,6 +385,9 @@ public class TestUtil extends Iced {
 
     if (column_types != null)
       p.setColumnTypes(column_types);
+
+    if (transformer != null)
+      p = transformer.transformSetup(p);
 
     return ParseDataset.parse(Key.make(), res, true, p);
 
@@ -399,7 +417,7 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types, boolean disableParallelParse) {
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -431,7 +449,10 @@ public class TestUtil extends Iced {
 
     if (column_types != null)
       p.setColumnTypes(column_types);
-    p.disableParallelParse = disableParallelParse;
+
+    if (transformer != null)
+      p = transformer.transformSetup(p);
+
     return ParseDataset.parse(Key.make(), res, true, p);
 
   }
@@ -810,9 +831,15 @@ public class TestUtil extends Iced {
   public static abstract class GenFrameAssertion extends FrameAssertion {
 
     public GenFrameAssertion(String file, int[] dim) {
-      super(file, dim);
+      this(file, dim, null);
     }
+    public GenFrameAssertion(String file, int[] dim, ParseSetupTransformer psTransformer) {
+      super(file, dim);
+      this.psTransformer = psTransformer;
+    }
+
     protected File generatedFile;
+    protected ParseSetupTransformer psTransformer;
 
     protected abstract File prepareFile() throws IOException;
 
@@ -822,9 +849,9 @@ public class TestUtil extends Iced {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
         if (f.isDirectory()) {
-          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, false);
+          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
         } else {
-          return parse_test_file(f.getCanonicalPath());
+          return parse_test_file(f.getCanonicalPath(), psTransformer);
         }
       } catch (IOException e) {
         throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
@@ -845,4 +872,9 @@ public class TestUtil extends Iced {
       return parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
     }
   }
+
+  public interface ParseSetupTransformer {
+    ParseSetup transformSetup(ParseSetup guessedSetup);
+  }
+
 }
