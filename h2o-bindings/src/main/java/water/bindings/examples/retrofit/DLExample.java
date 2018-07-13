@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * Created by laurend on 6/1/18.
  */
-public class DL_Example {
+public class DLExample {
     public static void dlExampleFlow(String url) throws IOException {
         //H2O start
         //String url = "http://localhost:54321/";

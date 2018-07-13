@@ -8,10 +8,10 @@ import java.io.IOException;
  * Created by laurend on 6/1/18.
  */
 
-public class DL_Example_Test extends ExampleTestFixture {
+public class DLExampleTest extends ExampleTestFixture {
 
     @Test
     public void testRun() throws IOException {
-        DL_Example.dlExampleFlow(getH2OUrl());
+        DLExample.dlExampleFlow(getH2OUrl());
     }
 }
