@@ -278,17 +278,15 @@ def lazy_import(path, pattern=None):
     """
     assert_is_type(path, str, [str])
     assert_is_type(pattern, str, None)
-    if is_type(path, str):
-        return _import(path, pattern)
-    else:
-        return [_import(p, pattern)[0] for p in path]
+    paths = [path] if is_type(path, str) else path
+    return _import_multi(paths, pattern)
 
 
-def _import(path, pattern):
-    assert_is_type(path, str)
+def _import_multi(paths, pattern):
+    assert_is_type(paths, [str])
     assert_is_type(pattern, str, None)
-    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
-    if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
+    j = api("POST /3/ImportFilesMulti", {"paths": paths, "pattern": pattern})
+    if j["fails"]: raise ValueError("ImportFiles of " + paths + " failed on " + str(j["fails"]))
     return j["destination_frames"]
 
 
