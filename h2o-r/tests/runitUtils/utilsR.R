@@ -902,7 +902,7 @@ buildModelSaveMojoTrees <- function(params, model_name) {
     model <- do.call("h2o.randomForest", params)
   }
   model_key <- model@model_id
-  tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+  tmpdir_name <- filePath(sandbox(), as.character(Sys.getpid()), fsep=.Platform$file.sep)
   if (.Platform$OS.type == "windows") {
     shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
     shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
