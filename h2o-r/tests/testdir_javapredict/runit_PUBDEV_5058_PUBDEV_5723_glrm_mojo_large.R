@@ -9,13 +9,12 @@ test.Glrm.mojo <-
     # Run the test
     #----------------------------------------------------------------------
     e <- tryCatch({
-      browser()
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       modelAndDir<-buildModelSaveMojoGLRM(params_prob_data$params) # build the model and save mojo
-      filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
+      filename = filePath(modelAndDir$dirName, "in.csv", fsep=.Platform$file.sep)
       h2o.downloadCSV(params_prob_data$tDataset, filename)
-      loadedModel = h2o.loadModel(paste(modelAndDir$dirName, modelAndDir$model@model_id, sep='/'))
+      loadedModel = h2o.loadModel(filePath(modelAndDir$dirName, modelAndDir$model@model_id, fsep=.Platform$file.sep))
       lpredict = h2o.predict(loadedModel, params_prob_data$tDataset)
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, glrmReconstruct=TRUE) # perform H2O and mojo prediction and return frames
       compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-6)
