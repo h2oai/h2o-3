@@ -143,13 +143,6 @@ public class XGBoostUtils {
         return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
     }
 
-    private static int getDataRows(int[] chunks, Vec vec, int cols) {
-        double totalRows = 0;
-        for(int ch : chunks) {
-            totalRows += vec.chunkLen(ch);
-        }
-        return (int) Math.ceil(totalRows * cols / ARRAY_MAX);
-    }
 
     /**
      * Counts a total sum of chunks inside a vector. Only chunks present in chunkIds are considered.
