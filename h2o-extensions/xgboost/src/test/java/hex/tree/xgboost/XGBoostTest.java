@@ -670,14 +670,27 @@ public class XGBoostTest extends TestUtil {
 
       assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
 
-      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
-        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
-        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+      Key[] crossValidationModelKeys = model._output._cross_validation_models;
 
-        assertNotEquals(trainingScore._rmse, validationScore._rmse);
-        assertNotEquals(trainingScore._AUC, validationScore._AUC);
-        assertNotEquals(trainingScore._r2, validationScore._r2);
-        assertNotEquals(trainingScore._logloss, validationScore._logloss);
+      for (Key cvKey : crossValidationModelKeys) {
+        XGBoostModel crossValidationModel = (XGBoostModel) cvKey.get();
+        double rmseDifference = 0D;
+        double r2Difference = 0D;
+        for (int scoreHistoryIndex = 0; scoreHistoryIndex < crossValidationModel._output._scored_train.length; scoreHistoryIndex++) {
+          final ScoreKeeper trainingScore = crossValidationModel._output._scored_train[scoreHistoryIndex];
+          final ScoreKeeper validationScore = crossValidationModel._output._scored_valid[scoreHistoryIndex];
+
+          // Empty model contains NaNs - false assertion pass is avoided by testing the values not to be NaN
+          assertNotEquals(Float.NaN, validationScore._rmse);
+          assertNotEquals(Float.NaN, validationScore._r2);
+
+          //First iterations might be the same, thus absolute value of total difference between training and validation
+          //is verified to be greater than 0
+          rmseDifference += Math.abs(trainingScore._rmse - validationScore._rmse);
+          r2Difference += Math.abs(trainingScore._r2 - validationScore._r2);
+        }
+        assertNotEquals(0, rmseDifference);
+        assertNotEquals(0, r2Difference);
       }
 
     } finally {
@@ -715,13 +728,23 @@ public class XGBoostTest extends TestUtil {
 
       assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
 
-      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
-        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
-        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+      Key[] crossValidationModelKeys = model._output._cross_validation_models;
 
-        assertNotEquals(trainingScore._rmse, validationScore._rmse);
-        assertNotEquals(trainingScore._r2, validationScore._r2);
+      for (Key cvKey : crossValidationModelKeys) {
+        XGBoostModel crossValidationModel = (XGBoostModel) cvKey.get();
+
+        for (int scoreHistoryIndex = 0; scoreHistoryIndex < crossValidationModel._output._scored_train.length; scoreHistoryIndex++) {
+          final ScoreKeeper trainingScore = crossValidationModel._output._scored_train[scoreHistoryIndex];
+          final ScoreKeeper validationScore = crossValidationModel._output._scored_valid[scoreHistoryIndex];
+
+          // Empty model contains NaNs - false assertion pass is avoided by testing the values not to be NaN
+          assertNotEquals(Float.NaN, validationScore._rmse);
+          assertNotEquals(Float.NaN, validationScore._r2);
+          assertNotEquals(trainingScore._rmse, validationScore._rmse);
+          assertNotEquals(trainingScore._r2, validationScore._r2);
+        }
       }
+
 
     } finally {
       Scope.exit();
@@ -757,12 +780,27 @@ public class XGBoostTest extends TestUtil {
 
       assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
 
-      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
-        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
-        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+      Key[] crossValidationModelKeys = model._output._cross_validation_models;
 
-        assertNotEquals(trainingScore._rmse, validationScore._rmse);
-        assertNotEquals(trainingScore._r2, validationScore._r2);
+      for (Key cvKey : crossValidationModelKeys) {
+        XGBoostModel crossValidationModel = (XGBoostModel) cvKey.get();
+        double rmseDifference = 0D;
+        double r2Difference = 0D;
+        for (int scoreHistoryIndex = 0; scoreHistoryIndex < crossValidationModel._output._scored_train.length; scoreHistoryIndex++) {
+          final ScoreKeeper trainingScore = crossValidationModel._output._scored_train[scoreHistoryIndex];
+          final ScoreKeeper validationScore = crossValidationModel._output._scored_valid[scoreHistoryIndex];
+
+          // Empty model contains NaNs - false assertion pass is avoided by testing the values not to be NaN
+          assertNotEquals(Float.NaN, validationScore._rmse);
+          assertNotEquals(Float.NaN, validationScore._r2);
+
+          //First iterations might be the same, thus absolute value of total difference between training and validation
+          //is verified to be greater than 0
+          rmseDifference += Math.abs(trainingScore._rmse - validationScore._rmse);
+          r2Difference += Math.abs(trainingScore._r2 - validationScore._r2);
+        }
+        assertNotEquals(0, rmseDifference);
+        assertNotEquals(0, r2Difference);
       }
 
     } finally {
