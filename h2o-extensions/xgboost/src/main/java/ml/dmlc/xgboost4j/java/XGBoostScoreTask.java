@@ -180,7 +180,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 double[] dpreds = new double[preds.length];
                 for (int j = 0; j < dpreds.length; ++j)
                     dpreds[j] = preds[j][0];
-                for (int i = 0; i < cs[0]._len; ++i) {
+                for (int i = 0; i < (weightColumnIndex != -1 ? weights.length : cs[0].len()); ++i) {
                     ncs[0].addNum(dpreds[i]);
                     ncs[1].addNum(labels[i]);
                 }
@@ -194,7 +194,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     for (int j = 0; j < dpreds.length; ++j)
                         assert weights[j] == 1.0;
 
-                for (int i = 0; i < cs[0]._len; ++i) {
+                for (int i = 0; i < (weightColumnIndex != -1 ? weights.length : cs[0].len()); ++i) {
                     double p = dpreds[i];
                     ncs[1].addNum(1.0d - p);
                     ncs[2].addNum(p);

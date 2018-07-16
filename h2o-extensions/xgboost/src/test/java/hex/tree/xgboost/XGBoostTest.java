@@ -1,9 +1,6 @@
 package hex.tree.xgboost;
 
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsMultinomial;
-import hex.ModelMetricsRegression;
-import hex.SplitFrame;
+import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
@@ -11,11 +8,9 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import ml.dmlc.xgboost4j.java.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -643,6 +638,137 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
       if (tfr!=null) tfr.remove();
       if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
+  public void testBinomialResponseCrossValidation() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/testng/airlines.csv");
+      Scope.track(tfr.replace(0, tfr.vecs()[0].toCategoricalVec()));
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = tfr._key;
+      parms._nfolds = 2;
+      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Binomial, model._output.getModelCategory());
+
+      assertNotEquals(model._output._cross_validation_metrics.rmse(), model._output._training_metrics.rmse());
+      assertNotEquals(model._output._cross_validation_metrics.auc_obj()._auc, model._output._training_metrics.auc_obj()._auc);
+
+      assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
+
+      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
+        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
+        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+
+        assertNotEquals(trainingScore._rmse, validationScore._rmse);
+        assertNotEquals(trainingScore._AUC, validationScore._AUC);
+        assertNotEquals(trainingScore._r2, validationScore._r2);
+        assertNotEquals(trainingScore._logloss, validationScore._logloss);
+      }
+
+    } finally {
+      Scope.exit();
+      if (tfr != null) tfr.remove();
+      if (model != null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
+  public void testRegressionCrossValidation() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = tfr._key;
+      parms._nfolds = 2;
+      parms._ignored_columns = new String[]{"ID"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Regression, model._output.getModelCategory());
+
+      assertNotEquals(model._output._cross_validation_metrics.rmse(), model._output._training_metrics.rmse());
+
+      assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
+
+      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
+        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
+        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+
+        assertNotEquals(trainingScore._rmse, validationScore._rmse);
+        assertNotEquals(trainingScore._r2, validationScore._r2);
+      }
+
+    } finally {
+      Scope.exit();
+      if (tfr != null) tfr.remove();
+      if (model != null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+
+  }
+
+  @Test
+  public void testMultinomialCrossValidation() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/extdata/iris.csv");
+      Scope.track(tfr.replace(4, tfr.vecs()[4].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "C5"; // iris-setosa, iris-versicolor, iris-virginica
+      parms._train = tfr._key;
+      parms._nfolds = 2;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Multinomial, model._output.getModelCategory());
+
+      assertNotEquals(model._output._cross_validation_metrics.rmse(), model._output._training_metrics.rmse());
+
+      assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
+
+      for (int scoreHistoryIndex = 0; scoreHistoryIndex < model._output._scored_train.length; scoreHistoryIndex++) {
+        final ScoreKeeper trainingScore = model._output._scored_train[scoreHistoryIndex];
+        final ScoreKeeper validationScore = model._output._scored_valid[scoreHistoryIndex];
+
+        assertNotEquals(trainingScore._rmse, validationScore._rmse);
+        assertNotEquals(trainingScore._r2, validationScore._r2);
+      }
+
+    } finally {
+      Scope.exit();
+      if (tfr != null) tfr.remove();
+      if (model != null) {
         model.delete();
         model.deleteCrossValidationModels();
       }
