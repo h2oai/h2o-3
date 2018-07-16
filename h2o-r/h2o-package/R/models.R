@@ -717,6 +717,72 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#' Retrieve the pr_auc
+#'
+#' Retrieves the pr_auc value from an \linkS4class{H2OBinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training pr_auc value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of pr_aucs are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param train Retrieve the training pr_auc
+#' @param valid Retrieve the validation pr_auc
+#' @param xval Retrieve the cross-validation pr_auc
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.pr_auc(perf)
+#' }
+#' @export
+h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$pr_auc
+      if ( !is.null(metric) ) return(metric)
+    }
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$pr_auc)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$pr_auc)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$pr_auc)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No pr_auc for ", class(object)))
+  invisible(NULL)
+}
+
 #' Retrieve the mean per class error
 #'
 #' Retrieves the mean per class error from an \linkS4class{H2OBinomialMetrics}.

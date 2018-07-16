@@ -797,6 +797,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
@@ -817,6 +818,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
@@ -856,6 +858,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, st._AUC);
+        table.set(row, col++, st._pr_auc);
         table.set(row, col++, st._lift);
       }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
@@ -871,6 +874,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, st._AUC);
+          table.set(row, col++, st._pr_auc);
           table.set(row, col++, st._lift);
         }
         if (_output.isClassifier()) table.set(row, col++, st._classError);

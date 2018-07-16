@@ -55,7 +55,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
     if (null != auc) {
       AUC  = auc._auc;
       Gini = auc._gini;
-      pr_auc = auc.pr_auc();
+      pr_auc = auc._pr_auc;
 
       // Fill TwoDimTable
       String[] thresholds = new String[auc._nBins];

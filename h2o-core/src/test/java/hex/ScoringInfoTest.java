@@ -1,12 +1,14 @@
 package hex;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 import water.IcedWrapper;
 import water.util.TwoDimTable;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ScoringInfoTest {
 
@@ -31,6 +33,7 @@ public class ScoringInfoTest {
         scoringInfo.scored_valid._logloss = 0.5857;
         scoringInfo.scored_valid._r2 = 0.5857;
         scoringInfo.scored_valid._AUC = 0.7607;
+        scoringInfo.scored_valid._pr_auc = 0.6607;
         scoringInfo.scored_valid._lift = 1.8014;
         scoringInfo.scored_valid._classError = 0.3299;
 
@@ -39,6 +42,7 @@ public class ScoringInfoTest {
         scoringInfo.scored_xval._logloss = 0.6194;
         scoringInfo.scored_xval._r2 = 0.1308;
         scoringInfo.scored_xval._AUC = 0.7095;
+        scoringInfo.scored_xval._pr_auc = 0.6095;
         scoringInfo.scored_xval._lift = 1.6670;
         scoringInfo.scored_xval._classError = 0.3703;
 
@@ -47,33 +51,36 @@ public class ScoringInfoTest {
         assertNotNull(scoringHistoryTable);
 
         IcedWrapper[][] cellValues = scoringHistoryTable.getCellValues();
-        assertEquals(20, cellValues[0].length);
+        String[] cellHeaders = scoringHistoryTable.getColHeaders();
+        assertEquals(23, cellValues[0].length);
 
         // Test may run in different timezone. Expected timestmap can not be hardcoded.
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         assertEquals(fmt.print(scoringInfo.time_stamp_ms), cellValues[0][0].get());
 
-        assertEquals("10.000 sec", cellValues[0][1].get());
-        assertEquals(scoringInfo.scored_train._rmse, cellValues[0][2].get());
-        assertEquals(scoringInfo.scored_train._logloss, cellValues[0][3].get());
-        assertEquals(scoringInfo.scored_train._r2, cellValues[0][4].get());
-        assertEquals(scoringInfo.training_AUC._auc, cellValues[0][5].get());
-        assertEquals(scoringInfo.scored_train._lift, cellValues[0][6].get());
-        assertEquals(scoringInfo.scored_train._classError, cellValues[0][7].get());
+        assertEquals("10.000 sec", cellValues[0][ArrayUtils.indexOf(cellHeaders, "Duration")].get());
+        assertEquals(scoringInfo.scored_train._rmse, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training RMSE")].get());
+        assertEquals(scoringInfo.scored_train._logloss, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training LogLoss")].get());
+        assertEquals(scoringInfo.scored_train._r2, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training r2")].get());
+        assertEquals(scoringInfo.training_AUC._auc, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training AUC")].get());
+        assertEquals(scoringInfo.scored_train._lift, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training Lift")].get());
+        assertEquals(scoringInfo.scored_train._classError, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Training Classification Error")].get());
 
-        assertEquals(scoringInfo.scored_valid._rmse, cellValues[0][8].get());
-        assertEquals(scoringInfo.scored_valid._logloss, cellValues[0][9].get());
-        assertEquals(scoringInfo.scored_valid._r2, cellValues[0][10].get());
-        assertEquals(scoringInfo.scored_valid._AUC, cellValues[0][11].get());
-        assertEquals(scoringInfo.scored_valid._lift, cellValues[0][12].get());
-        assertEquals(scoringInfo.scored_valid._classError, cellValues[0][13].get());
+        assertEquals(scoringInfo.scored_valid._rmse, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation RMSE")].get());
+        assertEquals(scoringInfo.scored_valid._logloss, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation LogLoss")].get());
+        assertEquals(scoringInfo.scored_valid._r2, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation r2")].get());
+        assertEquals(scoringInfo.scored_valid._AUC, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation AUC")].get());
+        assertEquals(scoringInfo.scored_valid._pr_auc, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation pr_auc")].get());
+        assertEquals(scoringInfo.scored_valid._lift, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation Lift")].get());
+        assertEquals(scoringInfo.scored_valid._classError, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Validation Classification Error")].get());
 
-        assertEquals(scoringInfo.scored_xval._rmse, cellValues[0][14].get());
-        assertEquals(scoringInfo.scored_xval._logloss, cellValues[0][15].get());
-        assertEquals(scoringInfo.scored_xval._r2, cellValues[0][16].get());
-        assertEquals(scoringInfo.scored_xval._AUC, cellValues[0][17].get());
-        assertEquals(scoringInfo.scored_xval._lift, cellValues[0][18].get());
-        assertEquals(scoringInfo.scored_xval._classError, cellValues[0][19].get());
+        assertEquals(scoringInfo.scored_xval._rmse, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation RMSE")].get());
+        assertEquals(scoringInfo.scored_xval._logloss, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation LogLoss")].get());
+        assertEquals(scoringInfo.scored_xval._r2, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation r2")].get());
+        assertEquals(scoringInfo.scored_xval._AUC, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation AUC")].get());
+        assertEquals(scoringInfo.scored_xval._pr_auc, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation pr_auc")].get());
+        assertEquals(scoringInfo.scored_xval._lift, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation Lift")].get());
+        assertEquals(scoringInfo.scored_xval._classError, cellValues[0][ArrayUtils.indexOf(cellHeaders, "Cross-Validation Classification Error")].get());
 
     }
 }

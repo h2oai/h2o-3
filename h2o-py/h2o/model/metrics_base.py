@@ -115,6 +115,7 @@ class MetricsBase(backwards_compatible()):
             print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
+            print("pr_auc: " + str(self.pr_auc()))
             print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
@@ -160,6 +161,9 @@ class MetricsBase(backwards_compatible()):
     def auc(self):
         """The AUC for this set of metrics."""
         return self._metric_json['AUC']
+
+    def pr_auc(self):
+        return self._metric_json['pr_auc']
 
 
     def aic(self):
