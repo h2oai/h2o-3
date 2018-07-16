@@ -71,6 +71,7 @@ Additional Resources:
    :maxdepth: 2
 
    checkpointing-models
+   performance-and-prediction
 
 .. toctree::
    :maxdepth: 2
