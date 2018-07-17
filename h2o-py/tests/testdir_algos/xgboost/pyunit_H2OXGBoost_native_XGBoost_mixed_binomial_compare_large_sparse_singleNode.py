@@ -13,6 +13,7 @@ def comparison_test_dense():
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
         runSeed = 1
+        dataSeed = 17
         testTol = 1e-6
         ntrees = 17
         maxdepth = 5
@@ -42,7 +43,8 @@ def comparison_test_dense():
         enumCols = ncols-numCols
         responseL = 2
 
-        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5, responseLevel=responseL)
+        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5,
+                                               responseLevel=responseL, randseed=dataSeed)
         myX = trainFile.names
         y='response'
         myX.remove(y)
@@ -64,7 +66,7 @@ def comparison_test_dense():
         while not(modelsfound): # loop to make sure accurate number of trees are built
             modelInfo = nativeModel.get_dump()
             print(modelInfo)
-            print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo, nrounds)))
+            print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
             if len(modelInfo)>=ntrees:
                 modelsfound=True
             else:

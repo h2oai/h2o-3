@@ -13,6 +13,7 @@ def comparison_test_dense():
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
         runSeed = 1
+        dataSeed = 17
         testTol = 1e-6
         ntrees = 17
         maxdepth = 5
@@ -44,7 +45,7 @@ def comparison_test_dense():
         enumCols = ncols - numCols
 
         trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL,
-                                               miscfrac=0.01)  # load in dataset and add response column
+                                               miscfrac=0.01, randseed=dataSeed)  # load in dataset and add response column
         myX = trainFile.names
         y = 'response'
         myX.remove(y)
@@ -61,9 +62,13 @@ def comparison_test_dense():
         h2oPredictTimeD = time.time() - time1
 
         # train the native XGBoost
+        nrounds = ntrees
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
-        nativeModel = xgb.train(params=nativeParam,
-                                         dtrain=nativeTrain, num_boost_round=ntrees+1)
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+        modelInfo = nativeModel.get_dump()
+        print(modelInfo)
+        print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
+
         nativeTrainTime = time.time() - time1
         time1 = time.time()
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)

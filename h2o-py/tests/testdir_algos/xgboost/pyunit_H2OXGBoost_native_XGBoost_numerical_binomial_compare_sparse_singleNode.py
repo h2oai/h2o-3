@@ -13,6 +13,7 @@ def comparison_test():
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
         runSeed = 1
+        dataSeed = 17
         ntrees = 17
         h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
                       "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
@@ -38,7 +39,8 @@ def comparison_test():
         numCols = 11
         enumCols = ncols-numCols
 
-        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5)
+        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.5,
+                                               randseed=dataSeed)
         print(trainFile)
         myX = trainFile.names
         y='response'
@@ -53,8 +55,18 @@ def comparison_test():
 
         # train the native XGBoost
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=[])
-        nativeModel = xgb.train(params=nativeParam,
-                                dtrain=nativeTrain, num_boost_round=ntrees+1)
+        nrounds=ntrees
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+        modelsfound = False
+        while not(modelsfound): # loop to make sure accurate number of trees are built
+            modelInfo = nativeModel.get_dump()
+            print(modelInfo)
+            print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
+            if len(modelInfo)>=ntrees:
+                modelsfound=True
+            else:
+                nrounds=nrounds+1
+                nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
         nativeTrainTime = time.time()-time1
         time1=time.time()
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)

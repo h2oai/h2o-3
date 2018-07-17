@@ -13,6 +13,7 @@ def comparison_test_dense():
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
         runSeed = 1
+        dataSeed = 17
         testTol = 1e-6
         ntrees = 17
         maxdepth = 5
@@ -41,10 +42,11 @@ def comparison_test_dense():
         numCols = 5
         enumCols = ncols-numCols
 
-        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.01)     # load in dataset and add response column
+        trainFile = pyunit_utils.genTrainFrame(nrows, numCols, enumCols=enumCols, enumFactors=factorL, miscfrac=0.01,
+                                               randseed=dataSeed)     # load in dataset and add response column
         y='response'
         trainFile = trainFile.drop(y)   # drop the enum response and generate real values here
-        yresp = 0.99*pyunit_utils.random_dataset_numeric_only(nrows, 1, integerR = 1000000, misFrac=0)
+        yresp = 0.99*pyunit_utils.random_dataset_numeric_only(nrows, 1, integerR = 1000000, misFrac=0, randSeed=dataSeed)
         yresp.set_name(0, y)
         trainFile = trainFile.cbind(yresp)
         myX = trainFile.names
@@ -61,8 +63,11 @@ def comparison_test_dense():
 
         # train the native XGBoost
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
-        nativeModel = xgb.train(params=nativeParam,
-                                dtrain=nativeTrain, num_boost_round=ntrees+1) # need to specify one more to get the right number
+        nrounds=ntrees+1
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds) # need to specify one more to get the right number
+        modelInfo = nativeModel.get_dump()
+        print(modelInfo)
+        print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
         nativeTrainTime = time.time()-time1
         time1=time.time()
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)

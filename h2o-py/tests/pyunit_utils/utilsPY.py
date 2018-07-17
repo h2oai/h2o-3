@@ -3403,7 +3403,7 @@ def random_dataset_strings_only(nrow, ncol):
     return df
 
 # generate random dataset of ncolumns of enums only, copied from Pasha
-def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
+def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
@@ -3414,11 +3414,11 @@ def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, factors=factorL,
-                          **fractions)
+                          seed=randSeed, **fractions)
     return df
 
 # generate random dataset of ncolumns of enums only, copied from Pasha
-def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
+def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
@@ -3429,11 +3429,11 @@ def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=rangeR,
-                          **fractions)
+                          seed=randSeed, **fractions)
     return df
 
 # generate random dataset of ncolumns of integer and reals, copied from Pasha
-def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
+def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0.25  # Right now we are dropping string columns, so no point in having them.
@@ -3443,8 +3443,8 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
 
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR
-                          , **fractions)
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR,
+                          seed=randSeed, **fractions)
     return df
 
 def getMojoName(modelID):
@@ -3615,13 +3615,13 @@ def summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
                 "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
                 "different.".format(h2oPredictLocalD[colnames[col+1]][ind], nativePred[ind][col])
 
-def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfrac=0):
+def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfrac=0, randseed=None):
     if ncol>0:
-        trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=miscfrac)
+        trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=miscfrac, randSeed=randseed)
     if enumCols > 0:
-        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=miscfrac)
+        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=miscfrac, randSeed=randseed)
 
-    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0)
+    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0, randSeed=randseed)
     yresponse.set_name(0,'response')
     if enumCols > 0:
         if ncol > 0:    # mixed datasets
