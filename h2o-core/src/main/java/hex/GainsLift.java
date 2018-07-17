@@ -261,7 +261,7 @@ public class GainsLift extends Iced {
       _response_rates = new double[_thresh.length];
       for (int i=0; i<_response_rates.length; ++i) {
         _response_rates[i] = _observations[i] == 0 ? 0 : (double) _events[i] / _observations[i];
-        _avg_scores[i] /= _observations[i];
+        _avg_scores[i] = _observations[i] == 0 ? 0 : _avg_scores[i] / (double)_observations[i];
       }
       _avg_response_rate = (double)_avg_response / ArrayUtils.sum(_observations);
       _avg_score /= ArrayUtils.sum(_observations);
