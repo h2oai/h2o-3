@@ -58,8 +58,19 @@ def comparison_test_dense():
 
         # train the native XGBoost
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
-        nativeModel = xgb.train(params=nativeParam,
-                                dtrain=nativeTrain, num_boost_round=ntrees+1)
+        nrounds = ntrees
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+        modelsfound = False
+        while not(modelsfound): # loop to make sure accurate number of trees are built
+            modelInfo = nativeModel.get_dump()
+            print(modelInfo)
+            print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo, nrounds)))
+            if len(modelInfo)>=ntrees:
+                modelsfound=True
+            else:
+                nrounds=nrounds+1
+                nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+
         nativeTrainTime = time.time()-time1
         time1=time.time()
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
