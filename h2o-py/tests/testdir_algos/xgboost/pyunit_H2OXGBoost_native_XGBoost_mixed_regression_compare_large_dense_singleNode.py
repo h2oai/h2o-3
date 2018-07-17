@@ -63,7 +63,7 @@ def comparison_test_dense():
 
         # train the native XGBoost
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrix(trainFile, y, enumCols=enumCols)
-        nrounds=ntrees+1
+        nrounds=ntrees
         nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds) # need to specify one more to get the right number
         modelInfo = nativeModel.get_dump()
         print(modelInfo)
