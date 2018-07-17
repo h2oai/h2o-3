@@ -47,8 +47,8 @@ public class ParquetParser extends Parser {
       throw new IllegalStateException("Unsupported Parquet file. Too many records (#" + totalRecs + ", nChunks=" + nChunks + ").");
     }
 
-    WriterDelegate w = new WriterDelegate(dout, _setup.getColumnTypes().length);
-    VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes());
+    final WriterDelegate w = new WriterDelegate(dout, _setup.getColumnTypes().length);
+    final VecParquetReader reader = new VecParquetReader(vec, metadata, w, _setup.getColumnTypes());
 
     StreamParseWriter nextChunk = dout;
     try {

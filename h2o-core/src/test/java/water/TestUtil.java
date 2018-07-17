@@ -873,6 +873,11 @@ public class TestUtil extends Iced {
     }
   }
 
+  /**
+   * Tests can hook into the parse process using this interface and modify some of the guessed parameters.
+   * This simplifies the test workflow as usually most of the guessed parameters are correct and the test really only
+   * needs to modify/add few parameters.
+   */
   public interface ParseSetupTransformer {
     ParseSetup transformSetup(ParseSetup guessedSetup);
   }

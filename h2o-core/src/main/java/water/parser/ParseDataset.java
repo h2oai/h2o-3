@@ -733,11 +733,12 @@ public final class ParseDataset {
             localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
             Parser p = localSetup.parser(_jobKey);
 
-            FVecParseWriter writer = makeDout(localSetup,chunkStartIdx,vec.nChunks());
+            final FVecParseWriter writer = makeDout(localSetup,chunkStartIdx,vec.nChunks());
             final ParseWriter dout;
             if (pm == ParserInfo.ParseMethod.StreamParse) {
-              InputStream bvs = vec.openStream(_jobKey);
-              dout = p.streamParse(decryptionTool.decryptInputStream(bvs), writer);
+              try (InputStream bvs = vec.openStream(_jobKey)) {
+                dout = p.streamParse(decryptionTool.decryptInputStream(bvs), writer);
+              }
             } else { // pm == ParserInfo.ParseMethod.SequentialParse
               dout = p.sequentialParse(vec, writer);
             }
