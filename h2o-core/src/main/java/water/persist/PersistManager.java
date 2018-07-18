@@ -1,11 +1,9 @@
 package water.persist;
 
-import water.H2O;
-import water.Key;
-import water.MRTask;
-import water.Value;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
+import water.parser.BufferedString;
 import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -264,6 +262,73 @@ public class PersistManager {
     }
 
     return I[Value.NFS].calcTypeaheadMatches(filter, limit);
+  }
+
+  public void importFiles(String[] paths, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    if (paths.length == 1) {
+      importFiles(paths[0], pattern, files, keys, fails, dels);
+      return;
+    }
+
+    ImportFilesTask importFilesTask = new ImportFilesTask(paths, pattern);
+    H2O.submitTask(new LocalMR(importFilesTask, paths.length)).join();
+
+    ImportFilesTask.addAllTo(importFilesTask._pFiles, files);
+    ImportFilesTask.addAllTo(importFilesTask._pKeys, keys);
+    ImportFilesTask.addAllTo(importFilesTask._pFails, fails);
+    ImportFilesTask.addAllTo(importFilesTask._pDels, dels);
+  }
+
+  private static class ImportFilesTask extends MrFun<ImportFilesTask> {
+
+    private final String[] _paths;
+    private final String _pattern;
+
+    BufferedString[][] _pFiles;
+    BufferedString[][] _pKeys;
+    BufferedString[][] _pFails;
+    BufferedString[][] _pDels;
+
+    public ImportFilesTask(String[] paths, String pattern) {
+      _paths = paths;
+      _pattern = pattern;
+      _pFiles = new BufferedString[paths.length][];
+      _pKeys = new BufferedString[paths.length][];
+      _pFails = new BufferedString[paths.length][];
+      _pDels = new BufferedString[paths.length][];
+    }
+
+    @Override
+    protected void map(int t) {
+      ArrayList<String> pFiles = new ArrayList<>();
+      ArrayList<String> pKeys = new ArrayList<>();
+      ArrayList<String> pFails = new ArrayList<>();
+      ArrayList<String> pDels = new ArrayList<>();
+
+      H2O.getPM().importFiles(_paths[t], _pattern, pFiles, pKeys, pFails, pDels);
+
+      _pFiles[t] = toArray(pFiles);
+      _pKeys[t] = toArray(pKeys);
+      _pFails[t] = toArray(pFails);
+      _pDels[t] = toArray(pDels);
+    }
+
+    private static BufferedString[] toArray(List<String> ls) {
+      BufferedString[] bss = new BufferedString[ls.size()];
+      int i = 0;
+      for (String s : ls) {
+        bss[i++] = new BufferedString(s);
+      }
+      return bss;
+    }
+
+    private static void addAllTo(BufferedString[][] bssAry, ArrayList<String> target) {
+      for (BufferedString[] bss : bssAry) {
+        for (BufferedString bs : bss)
+          target.add(bs.toString());
+      }
+    }
+
   }
 
   /**
