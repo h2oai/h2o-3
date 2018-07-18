@@ -286,7 +286,7 @@ def _import_multi(paths, pattern):
     assert_is_type(paths, [str])
     assert_is_type(pattern, str, None)
     j = api("POST /3/ImportFilesMulti", {"paths": paths, "pattern": pattern})
-    if j["fails"]: raise ValueError("ImportFiles of " + paths + " failed on " + str(j["fails"]))
+    if j["fails"]: raise ValueError("ImportFiles of '" + ".".join(paths) + "' failed on " + str(j["fails"]))
     return j["destination_frames"]
 
 
