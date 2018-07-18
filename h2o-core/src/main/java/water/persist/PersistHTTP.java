@@ -5,8 +5,10 @@ import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import water.H2O;
 import water.Key;
@@ -42,19 +44,20 @@ public class PersistHTTP extends Persist {
     HttpGet req = new HttpGet(source);
     req.setHeader(HttpHeaders.RANGE, "bytes=" + offset + "-" + (offset+v._max-1));
 
-    HttpClient client = HttpClientBuilder.create().build();
-    HttpResponse response = client.execute(req);
+    try (CloseableHttpClient client = HttpClientBuilder.create().build();
+         CloseableHttpResponse response = client.execute(req)) {
 
-    if (response.getStatusLine().getStatusCode() != HttpResponseStatus.PARTIAL_CONTENT.getCode()) {
-      throw new IllegalStateException("Expected to retrieve a partial content response (status: " + response.getStatusLine() + ").");
-    }
-    if (response.getEntity().getContentLength() != v._max) {
-      throw new IllegalStateException("Received incorrect amount of data (expected: " + v._max + "B," +
-              " received: " + response.getEntity().getContentLength() + "B).");
-    }
+      if (response.getStatusLine().getStatusCode() != HttpResponseStatus.PARTIAL_CONTENT.getCode()) {
+        throw new IllegalStateException("Expected to retrieve a partial content response (status: " + response.getStatusLine() + ").");
+      }
+      if (response.getEntity().getContentLength() != v._max) {
+        throw new IllegalStateException("Received incorrect amount of data (expected: " + v._max + "B," +
+                " received: " + response.getEntity().getContentLength() + "B).");
+      }
 
-    try (InputStream s = response.getEntity().getContent()) {
-      ByteStreams.readFully(s, b);
+      try (InputStream s = response.getEntity().getContent()) {
+        ByteStreams.readFully(s, b);
+      }
     }
 
     return b;
@@ -74,16 +77,17 @@ public class PersistHTTP extends Persist {
   long checkRangeSupport(URI uri) throws IOException {
     HttpHead req = new HttpHead(uri);
 
-    HttpClient client = HttpClientBuilder.create().build();
-    HttpResponse response = client.execute(req);
-    Header acceptRangesHeader = response.getFirstHeader(HttpHeaders.ACCEPT_RANGES);
-    Header contentLengthHeader = response.getFirstHeader(HttpHeaders.CONTENT_LENGTH);
-    boolean acceptByteRange = (acceptRangesHeader != null) && "bytes".equalsIgnoreCase(acceptRangesHeader.getValue());
-    if (! acceptByteRange || contentLengthHeader == null) {
-      return -1L;
-    }
+    try (CloseableHttpClient client = HttpClientBuilder.create().build();
+         CloseableHttpResponse response = client.execute(req)) {
+      Header acceptRangesHeader = response.getFirstHeader(HttpHeaders.ACCEPT_RANGES);
+      Header contentLengthHeader = response.getFirstHeader(HttpHeaders.CONTENT_LENGTH);
+      boolean acceptByteRange = (acceptRangesHeader != null) && "bytes".equalsIgnoreCase(acceptRangesHeader.getValue());
+      if (!acceptByteRange || contentLengthHeader == null) {
+        return -1L;
+      }
 
-    return Long.valueOf(contentLengthHeader.getValue());
+      return Long.valueOf(contentLengthHeader.getValue());
+    }
   }
 
   @Override
