@@ -11,12 +11,13 @@ import water.util.Log;
 import water.util.VecUtils;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 
 import static water.H2O.technote;
-import static water.MemoryManager.malloc4;
-import static water.MemoryManager.malloc4f;
-import static water.MemoryManager.malloc8;
+import static water.MemoryManager.*;
 
 public class XGBoostUtils {
 
@@ -163,17 +164,11 @@ public class XGBoostUtils {
         int totalChunkLength = 0;
 
         for (int chunk : chunkIds) {
-            totalChunkLength += vec.chunkLen(chunk);
-
-            if(weightsVector == null) continue;
-            Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
-            if (weightVecChunk.atd(0) == 0) totalChunkLength--;
-            int nzIndex = 0;
-            do {
-                nzIndex = weightVecChunk.nextNZ(nzIndex, true);
-                if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
-                if (weightVecChunk.atd(nzIndex) == 0) totalChunkLength--;
-            } while (true);
+            if (weightsVector == null) {
+                totalChunkLength += vec.chunkLen(chunk);
+            } else {
+                totalChunkLength += countNonZerosInChunk(weightsVector.chunkForChunkIdx(chunk));
+            }
         }
         return totalChunkLength;
     }
@@ -274,7 +269,7 @@ public class XGBoostUtils {
         float[] resp = malloc4f(nRows);
         float[] weights = null;
         if(-1 != weight) {
-            weights = malloc4f(nRows);
+            weights = malloc4f(countNonZerosInChunk(chunks[weight]));
         }
         try {
             if (sparse) {
@@ -306,7 +301,6 @@ public class XGBoostUtils {
             weights = Arrays.copyOf(weights, len);
             trainMat.setWeight(weights);
         }
-//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
         return trainMat;
     }
 
@@ -323,7 +317,13 @@ public class XGBoostUtils {
         float[][] data = allocateDenseMatrix(chunks[0].len(), di);
 
         long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
-        assert actualRows == chunks[0].len();
+        if (weight == -1) {
+            assert actualRows == chunks[0].len();
+        } else {
+            // Rows with weights zero are skipped, thus the resulting number of rows must be equal
+            // to number of non-zero weights in weights chunk
+            assert actualRows == weights.length;
+        }
 
         int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
         if(data[data.length - 1].length > lastRowSize) {
@@ -333,6 +333,24 @@ public class XGBoostUtils {
         trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
+    }
+
+    /**
+     * Counts number of truly non-zero elements in a chunk
+     * @param chunk A {@link Chunk} to count non-zero elements in
+     * @return Number of non-zero elements count in a chunk, possibly zero to {@link Integer}.MAX
+     */
+    private static int countNonZerosInChunk(final Chunk chunk) {
+        int nonZeroCount = chunk.len();
+        int nzIndex = 0;
+        if (chunk.atd(0) == 0) nonZeroCount--;
+        do {
+            nzIndex = chunk.nextNZ(nzIndex, true);
+            if (nzIndex < 0 || nzIndex >= chunk._len) break;
+            if (chunk.atd(nzIndex) == 0) nonZeroCount--;
+        } while (true);
+
+        return nonZeroCount;
     }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;

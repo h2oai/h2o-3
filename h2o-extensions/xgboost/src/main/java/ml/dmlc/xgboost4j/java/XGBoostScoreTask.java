@@ -5,8 +5,13 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
-import water.*;
-import water.fvec.*;
+import water.Key;
+import water.MRTask;
+import water.Scope;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -137,11 +142,20 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             // This might be fixed in future versions of XGBoost
             Rabit.init(rabitEnv);
 
+            final int weightColumnIndex;
+            DataInfo dataInfo = _sharedmodel._dataInfoKey.get();
+            if (dataInfo._weights) {
+                weightColumnIndex = dataInfo.weightChunkId();
+            } else {
+                weightColumnIndex = -1;
+            }
+
+            _sharedmodel._dataInfoKey.get().weightChunkId();
             data = XGBoostUtils.convertChunksToDMatrix(
                     _sharedmodel._dataInfoKey,
                     cs,
                     _fr.find(_parms._response_column),
-                    -1, // not used for preds
+                    weightColumnIndex,
                     _fr.find(_parms._fold_column),
                     _output._sparse);
 
@@ -166,7 +180,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 double[] dpreds = new double[preds.length];
                 for (int j = 0; j < dpreds.length; ++j)
                     dpreds[j] = preds[j][0];
-                for (int i = 0; i < cs[0]._len; ++i) {
+                for (int i = 0; i < (weightColumnIndex != -1 ? weights.length : cs[0].len()); ++i) {
                     ncs[0].addNum(dpreds[i]);
                     ncs[1].addNum(labels[i]);
                 }
@@ -180,7 +194,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     for (int j = 0; j < dpreds.length; ++j)
                         assert weights[j] == 1.0;
 
-                for (int i = 0; i < cs[0]._len; ++i) {
+                for (int i = 0; i < (weightColumnIndex != -1 ? weights.length : cs[0].len()); ++i) {
                     double p = dpreds[i];
                     ncs[1].addNum(1.0d - p);
                     ncs[2].addNum(p);
@@ -191,7 +205,13 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     ncs[3].addNum(labels[i]);
                 }
             } else {
-                for (int i = 0; i < cs[0]._len; ++i) {
+                for (int i = 0; i < (weightColumnIndex != -1 ? weights.length : cs[0].len()); ++i) {
+                    if (weightColumnIndex != -1){
+                        assert preds.length == weights.length;
+                    } else {
+                        assert preds.length == cs[0].len();
+                    }
+
                     double[] row = new double[ncs.length - 1];
                     for (int j = 1; j < row.length; ++j) {
                         double val = preds[i][j - 1];
