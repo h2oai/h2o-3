@@ -11,7 +11,9 @@ def read_invalid_file():
       hdfs_path = 'hdfs:///user/jenkins/tests/invalid'
       h2o.import_file(hdfs_path)
       assert False, "Read of file, which does not exists was sucessfull. This is impossible"
-  except ValueError:
+  except ValueError as ve:
+      print(ve)
+      assert str(ve) == "ImportFiles of 'hdfs:///user/jenkins/tests/invalid' failed on [u\"Path does not exist: 'hdfs:/user/jenkins/tests/invalid'\"]"
       pass
 
 if __name__ == "__main__":
