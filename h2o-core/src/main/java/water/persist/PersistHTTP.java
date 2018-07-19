@@ -3,8 +3,6 @@ package water.persist;
 import com.google.common.io.ByteStreams;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -26,6 +24,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -116,6 +115,11 @@ public class PersistHTTP extends Persist {
     }
   }
 
+  @Override
+  public List<String> calcTypeaheadMatches(String filter, int limit) {
+    return Collections.emptyList();
+  }
+
   /* ********************************************* */
   /* UNIMPLEMENTED methods (inspired by PersistS3) */
   /* ********************************************* */
@@ -133,17 +137,12 @@ public class PersistHTTP extends Persist {
 
   @Override
   public void delete(Value v) {
-    throw new UnsupportedOperationException();
+    throw H2O.unimpl();
   }
 
   @Override
   public void cleanUp() {
     throw H2O.unimpl(); /* user-mode swapping not implemented */
-  }
-
-  @Override
-  public List<String> calcTypeaheadMatches(String filter, int limit) {
-    throw new UnsupportedOperationException();
   }
 
 }
