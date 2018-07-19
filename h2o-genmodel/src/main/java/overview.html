@@ -372,9 +372,9 @@ tree built in the model. Note that each tree file is saved as a binary file type
                         learn_rate=0.1)
         </pre>
     </li>
-    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
-        <pre>modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
-		print("Model saved to " + modelfile)
+    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
+        <pre>modelfile <- h2o.download_mojo(model, path="~/experiments/", get_genmodel_jar=TRUE)
+		print("Model saved to " + modelfile) 
 		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
         </pre>
     </li>
@@ -400,7 +400,7 @@ tree built in the model. Note that each tree file is saved as a binary file type
         </pre>
     </li>
     <li>
-        Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
         <pre>
         modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
 		print("Model saved to " + modelfile)
@@ -414,13 +414,13 @@ tree built in the model. Note that each tree file is saved as a binary file type
 <p></p>
 
 <ol>
-    <li>Open a *new* terminal window and change directories to the **experiment** folder:
+    <li>Open a *new* terminal window and change directories to the <b>experiment</b> folder:
         <pre>
         $ cd experiment
         </pre>
     </li>
 
-    <li>Create your main program in the **experiment** folder by creating a new file
+    <li>Create your main program in the <b>experiment</b> folder by creating a new file
         called main.java (for example, using "vim main.java"). Include the following contents.
         Note that this file references the GBM model created above using R.
         <pre>
