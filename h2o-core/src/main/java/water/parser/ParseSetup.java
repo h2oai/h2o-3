@@ -289,7 +289,7 @@ public class ParseSetup extends Iced {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
       t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
-              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
+              H2O.ARGS.nthreads, H2O.getCloudSize(), false /*use new heuristic*/, true);
     }
 
     return t._gblSetup;
@@ -656,7 +656,7 @@ public class ParseSetup extends Iced {
    * @return The longest line length in the given bytes
    */
   private static final int maxLineLength(byte[] bytes) {
-    int start = bytes.length;
+    int start = bytes.length; //??? mistake? why not init at 0?
     int max = -1;
     for(int i = 0; i < bytes.length; ++i){
       if(CsvParser.isEOL(bytes[i])){
