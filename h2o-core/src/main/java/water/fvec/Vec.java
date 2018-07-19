@@ -394,7 +394,7 @@ public class Vec extends Keyed<Vec> {
 
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute, byte type) {
     int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
-    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
+    int chunks1 = (int)Math.min( 4 * H2O.ARGS.nthreads * H2O.CLOUD.size(), len); // redistribute = true
     int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
     long[] espc = new long[nchunks+1];
     espc[0] = 0;
