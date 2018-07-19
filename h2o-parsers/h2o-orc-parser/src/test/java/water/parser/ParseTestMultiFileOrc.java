@@ -39,10 +39,16 @@ public class ParseTestMultiFileOrc extends TestUtil {
 
     @Test
     public void testParseMultiFileOrcs() {
-
-        for(boolean disableParallelParse:new boolean[]{false,true}) {
+        for(final boolean disableParallelParse:new boolean[]{false,true}) {
+            final ParseSetupTransformer pst = new ParseSetupTransformer() {
+                @Override
+                public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                    guessedSetup.disableParallelParse = disableParallelParse;
+                    return guessedSetup;
+                }
+            };
             for (int f_index = 0; f_index < csvDirectories.length; f_index++) {
-                Frame csv_frame = parse_test_folder(csvDirectories[f_index], "\\N", 0, null,disableParallelParse);
+                Frame csv_frame = parse_test_folder(csvDirectories[f_index], "\\N", 0, null, pst);
 
                 byte[] types = csv_frame.types();
 
@@ -51,7 +57,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
                         types[index] = 4;
                 }
 
-                Frame orc_frame = parse_test_folder(orcDirectories[f_index], null, 0, types,disableParallelParse);
+                Frame orc_frame = parse_test_folder(orcDirectories[f_index], null, 0, types, pst);
                 assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
 
                 csv_frame.delete();

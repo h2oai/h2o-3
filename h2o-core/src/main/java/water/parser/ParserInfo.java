@@ -15,20 +15,28 @@ public class ParserInfo extends Iced<ParserInfo> {
   final boolean isParallelParseSupported;
   /** Does this parser support stream parse. */
   final boolean isStreamParseSupported;
+  /** Does this parser support sequential parse. */
+  final boolean isSequentialParseSupported;
   /** Does this parser need post update of vector categoricals. */
   final boolean isDomainProvided;
 
 
-  public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isStreamParseSupported,
+  public ParserInfo(String name, int prior,
+                    boolean isParallelParseSupported, boolean isStreamParseSupported, boolean isSequentialParseSupported,
                     boolean isDomainProvided) {
     this.name = name;
     this.prior = prior;
     this.isParallelParseSupported = isParallelParseSupported;
     this.isStreamParseSupported = isStreamParseSupported;
+    this.isSequentialParseSupported = isSequentialParseSupported;
     this.isDomainProvided = isDomainProvided;
+
+  }
+  public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isStreamParseSupported, boolean isDomainProvided) {
+    this(name, prior, isParallelParseSupported, isStreamParseSupported, false, isDomainProvided);
   }
   public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isDomainProvided) {
-    this(name, prior, isParallelParseSupported, true, isDomainProvided);
+    this(name, prior, isParallelParseSupported, true, false, isDomainProvided);
   }
   public ParserInfo(String name, int prior, boolean isParallelParseSupported) {
     this(name, prior, isParallelParseSupported, false);
@@ -52,15 +60,20 @@ public class ParserInfo extends Iced<ParserInfo> {
   // A file is considered to be small if it can fit into <SMALL_FILE_NCHUNKS> number of chunks.
   public static final int SMALL_FILE_NCHUNKS = 10;
 
-  public enum ParseMethod {StreamParse, DistributedParse}
-  /*
-  localSetup.disableParallelParse ||
-   */
-  public ParseMethod parseMethod(int nfiles, int nchunks){
-    if(isStreamParseSupported()) {
-      if (!isParallelParseSupported() || (nfiles > TOO_MANY_KEYS_COUNT && (nchunks <= SMALL_FILE_NCHUNKS)))
-        return ParseMethod.StreamParse;
+  public enum ParseMethod {StreamParse, DistributedParse, SequentialParse}
+
+  public ParseMethod parseMethod(int nfiles, int nchunks, boolean disableParallelParse, boolean isEncrypted){
+    if (isEncrypted) {
+      if (! isStreamParseSupported())
+        throw new UnsupportedOperationException("Parser " + name + " doesn't support encrypted files.");
+      return ParseMethod.StreamParse;
     }
+
+    if(isLocalParseSupported()) {
+      if (disableParallelParse || !isParallelParseSupported() || (nfiles > TOO_MANY_KEYS_COUNT && (nchunks <= SMALL_FILE_NCHUNKS)))
+        return getLocalParseMethod();
+    }
+
     if(isParallelParseSupported())
       return ParseMethod.DistributedParse;
     throw H2O.unimpl();
@@ -74,6 +87,22 @@ public class ParserInfo extends Iced<ParserInfo> {
   /** Does the parser support stream parse? */
   public boolean isStreamParseSupported() {
     return isStreamParseSupported;
+  }
+
+  public boolean isSequentialParseSupported() {
+    return isSequentialParseSupported;
+  }
+
+  private boolean isLocalParseSupported() {
+    return isStreamParseSupported() || isSequentialParseSupported();
+  }
+
+  private ParseMethod getLocalParseMethod() {
+    if (isStreamParseSupported())
+      return ParseMethod.StreamParse;
+    if (isSequentialParseSupported())
+      return ParseMethod.SequentialParse;
+    throw new UnsupportedOperationException("Local parse not supported.");
   }
 
   @Override

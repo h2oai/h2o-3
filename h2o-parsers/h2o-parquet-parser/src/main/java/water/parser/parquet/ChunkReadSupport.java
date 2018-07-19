@@ -9,12 +9,12 @@ import water.parser.ParseWriter;
 
 import java.util.Map;
 
-public class ChunkReadSupport extends ReadSupport<Integer> {
+public class ChunkReadSupport extends ReadSupport<Long> {
 
-  private ParseWriter _writer;
+  private WriterDelegate _writer;
   private byte[] _chunkSchema;
 
-  public ChunkReadSupport(ParseWriter writer, byte[] chunkSchema) {
+  public ChunkReadSupport(WriterDelegate writer, byte[] chunkSchema) {
     _writer = writer;
     _chunkSchema = chunkSchema;
   }
@@ -25,7 +25,7 @@ public class ChunkReadSupport extends ReadSupport<Integer> {
   }
 
   @Override
-  public RecordMaterializer<Integer> prepareForRead(Configuration configuration, Map<String, String> keyValueMetaData,
+  public RecordMaterializer<Long> prepareForRead(Configuration configuration, Map<String, String> keyValueMetaData,
                                                     MessageType fileSchema, ReadContext readContext) {
     return new ChunkRecordMaterializer(fileSchema, _chunkSchema, _writer);
   }

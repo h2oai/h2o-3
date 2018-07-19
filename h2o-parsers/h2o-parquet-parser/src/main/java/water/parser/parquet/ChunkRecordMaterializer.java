@@ -12,16 +12,16 @@ import water.parser.ParseWriter;
  * indirectly using a ParseWriter and function getCurrentRecord returns the index of the record
  * in the current chunk.
  */
-class ChunkRecordMaterializer extends RecordMaterializer<Integer> {
+class ChunkRecordMaterializer extends RecordMaterializer<Long> {
 
   private ChunkConverter _converter;
 
-  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, ParseWriter writer) {
+  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer) {
     _converter = new ChunkConverter(parquetSchema, chunkSchema, writer);
   }
 
   @Override
-  public Integer getCurrentRecord() {
+  public Long getCurrentRecord() {
     return _converter.getCurrentRecordIdx();
   }
 

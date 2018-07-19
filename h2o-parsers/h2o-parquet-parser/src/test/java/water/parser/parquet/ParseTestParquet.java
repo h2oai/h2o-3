@@ -17,13 +17,14 @@ import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
@@ -33,8 +34,6 @@ import water.util.PrettyPrint;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -48,23 +47,49 @@ import static org.junit.Assert.*;
 /**
  * Test suite for Parquet parser.
  */
+@RunWith(Parameterized.class)
 public class ParseTestParquet extends TestUtil {
 
   private static double EPSILON = 1e-9;
-  public ExpectedException expectedException = ExpectedException.none();
 
   @BeforeClass
   static public void setup() { TestUtil.stall_till_cloudsize(1); }
+
+  @Parameterized.Parameters
+  public static Object[] data() {
+    return new Object[] { false, true };
+  }
+
+  @Parameterized.Parameter
+  public boolean disableParallelParse;
+
+  public ParseSetupTransformer psTransformer;
+
+  @Before
+  public void makeParseSetupTransformer() {
+    psTransformer = new ParseSetupTransformer() {
+      @Override
+      public ParseSetup transformSetup(ParseSetup guessedSetup) {
+        guessedSetup.disableParallelParse = disableParallelParse;
+        return guessedSetup;
+      }
+    };
+  }
+
+  private Frame parse_parquet(String fname) {
+    return TestUtil.parse_test_file(fname, psTransformer);
+  }
 
   @Test
   public void testParseSimple() {
     Frame expected = null, actual = null;
     try {
       expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
-      actual = TestUtil.parse_test_file("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      actual = parse_parquet("smalldata/parser/parquet/airlines-simple.snappy.parquet");
 
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
+      assertEquals(expected.numRows(), actual.numRows());
       assertTrue(isBitIdentical(expected, actual));
     } finally {
       if (expected != null) expected.delete();
@@ -84,6 +109,7 @@ public class ParseTestParquet extends TestUtil {
       byte[] types = guessedSetup.getColumnTypes();
       types[1] = Vec.T_STR;
       guessedSetup.setColumnTypes(types);
+      guessedSetup.disableParallelParse = disableParallelParse;
 
       // parse the file with the modified setup
       ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
@@ -118,6 +144,7 @@ public class ParseTestParquet extends TestUtil {
       byte[] types = guessedSetup.getColumnTypes();
       types[9] = Vec.T_STR;
       guessedSetup.setColumnTypes(types);
+      guessedSetup.disableParallelParse = disableParallelParse;
 
       // parse the file with the modified setup
       ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
@@ -142,7 +169,7 @@ public class ParseTestParquet extends TestUtil {
   @Test
   public void testParseMulti() {
     final int nFiles = 10;
-    FrameAssertion assertion = new GenFrameAssertion("testParseMulti-$.parquet", TestUtil.ari(9, 100)) {
+    FrameAssertion assertion = new GenFrameAssertion("testParseMulti-$.parquet", TestUtil.ari(9, 100), psTransformer) {
       @Override protected File prepareFile() throws IOException {
         File dir = Files.createTempDir();
         for (int i = 0; i < nFiles; i++) {
@@ -166,7 +193,7 @@ public class ParseTestParquet extends TestUtil {
    */
   @Test
   public void testParseAvroPrimitiveTypes() {
-    FrameAssertion assertion = new GenFrameAssertion("avroPrimitiveTypes.parquet", TestUtil.ari(9, 100)) {
+    FrameAssertion assertion = new GenFrameAssertion("avroPrimitiveTypes.parquet", TestUtil.ari(9, 100), psTransformer) {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateAvroPrimitiveTypes(Files.createTempDir(), file, nrows(), new Date()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
@@ -189,7 +216,7 @@ public class ParseTestParquet extends TestUtil {
   @Test
   public void testParseTimestamps() {
     final Date date = new Date();
-    FrameAssertion assertion = new GenFrameAssertion("avroPrimitiveTypes.parquet", TestUtil.ari(5, 100)) {
+    FrameAssertion assertion = new GenFrameAssertion("avroPrimitiveTypes.parquet", TestUtil.ari(5, 100), psTransformer) {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFile(Files.createTempDir(), file, nrows(), date); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("int32_field", "int64_field", "float_field", "double_field", "timestamp_field"), f.names());
@@ -205,7 +232,7 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseSingleEmpty() {
-    FrameAssertion assertion = new GenFrameAssertion("empty.parquet", TestUtil.ari(5, 0)) {
+    FrameAssertion assertion = new GenFrameAssertion("empty.parquet", TestUtil.ari(5, 0), psTransformer) {
       @Override
       protected File prepareFile() throws IOException {
         return ParquetFileGenerator.generateEmptyWithSchema(Files.createTempDir(), file);
@@ -221,8 +248,8 @@ public class ParseTestParquet extends TestUtil {
   }
 
   @Test
-  public void testParseStringOverflow() throws IllegalAccessException, NoSuchFieldException {
-    FrameAssertion assertion = new GenFrameAssertion("large.parquet", TestUtil.ari(1, 1)) {
+  public void testParseStringOverflow() {
+    FrameAssertion assertion = new GenFrameAssertion("large.parquet", TestUtil.ari(1, 1), psTransformer) {
       @Override
       protected File prepareFile() throws IOException {
         return ParquetFileGenerator.generateStringParquet(Files.createTempDir(), file);
@@ -233,7 +260,7 @@ public class ParseTestParquet extends TestUtil {
         try {
           File f = super.generatedFile = prepareFile();
           System.out.println("File generated into: " + f.getCanonicalPath());
-            return parse_test_file(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, new byte[]{Vec.T_STR});
+            return parse_test_file(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, new byte[]{Vec.T_STR}, psTransformer);
         } catch (IOException e) {
           throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
         }
@@ -249,7 +276,7 @@ public class ParseTestParquet extends TestUtil {
       }
     };
 
-    Key<?> cfgKey = Key.make(ChunkConverter.class.getCanonicalName() + "_maxStringSize");
+    Key<?> cfgKey = Key.make(WriterDelegate.class.getCanonicalName() + "_maxStringSize");
     try {
       DKV.put(cfgKey, new IcedInt(6));
       assertFrameAssertion(assertion);
@@ -261,7 +288,7 @@ public class ParseTestParquet extends TestUtil {
   @Test
   public void testParseMultiWithEmpty() {
     final int nFiles = 10;
-    FrameAssertion assertion = new GenFrameAssertion("testParseMultiEmpty-$.parquet", TestUtil.ari(5, 90)) {
+    FrameAssertion assertion = new GenFrameAssertion("testParseMultiEmpty-$.parquet", TestUtil.ari(5, 90), psTransformer) {
       @Override
       protected File prepareFile() throws IOException {
         File dir = Files.createTempDir();
@@ -291,7 +318,7 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseSparseColumns() {
-    FrameAssertion assertion = new GenFrameAssertion("sparseColumns.parquet", TestUtil.ari(4, 100)) {
+    FrameAssertion assertion = new GenFrameAssertion("sparseColumns.parquet", TestUtil.ari(4, 100), psTransformer) {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateSparseParquetFile(Files.createTempDir(), file, nrows()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("int32_field", "string_field", "row", "int32_field2"), f.names());
@@ -315,7 +342,7 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseCategoricalsWithZeroCharacters() {
-    FrameAssertion assertion = new GenFrameAssertion("nullCharacters.parquet", TestUtil.ari(1, 100)) {
+    FrameAssertion assertion = new GenFrameAssertion("nullCharacters.parquet", TestUtil.ari(1, 100), psTransformer) {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFileWithNullCharacters(Files.createTempDir(), file, nrows()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("cat_field"), f.names());
@@ -332,7 +359,7 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseDecimals() {
-    FrameAssertion assertion = new GenFrameAssertion("decimals.parquet", TestUtil.ari(2, 18)) {
+    FrameAssertion assertion = new GenFrameAssertion("decimals.parquet", TestUtil.ari(2, 18), psTransformer) {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFileDecimals(Files.createTempDir(), file, nrows()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("decimal32", "decimal64"), f.names());
@@ -352,7 +379,7 @@ public class ParseTestParquet extends TestUtil {
   public void testPubdev5673() {
     Frame actual = null;
     try {
-      actual = TestUtil.parse_test_file("smalldata/jira/pubdev-5673.parquet");
+      actual = parse_parquet("smalldata/jira/pubdev-5673.parquet");
       double actualVal = actual.vec(0).at(0);
       assertEquals(98776543211.99876, actualVal, 0);
     } finally {
