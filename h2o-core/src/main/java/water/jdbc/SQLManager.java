@@ -183,7 +183,7 @@ public class SQLManager {
         } else {
           fr = new Frame(destination_key, retrieval_fr.names(), retrieval_fr.vecs());
         }
-        k.remove();
+        Frame.deleteTempFrameAndItsNonSharedVecs(retrieval_fr, fr);
         _retrieval_v.remove();
         _v.remove();
 
