@@ -43,8 +43,8 @@ Step 1: Build and Extract a Model
     # to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file 
     # is a library that supports scoring and contains the required readers 
     # and interpreters. This file is required when MOJO models are deployed 
-    # to production.
-    modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
+    # to production. Be sure to specify the entire path, not just the relative path.
+    modelfile <- h2o.download_mojo(model, path="~/experiments/", get_genmodel_jar=TRUE)
     print("Model saved to " + modelfile)
     Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
 
@@ -72,7 +72,7 @@ Step 1: Build and Extract a Model
     # to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file 
     # is a library that supports scoring and contains the required readers 
     # and interpreters. This file is required when MOJO models are deployed 
-    # to production.
+    # to production. Be sure to specify the entire path, not just the relative path.
     modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
     print("Model saved to " + modelfile)
     Model saved to /Users/user/GBM_model_python_1475248925871_888.zip           
