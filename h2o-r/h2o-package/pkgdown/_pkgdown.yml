@@ -49,6 +49,7 @@ reference:
       - h2o.asnumeric
       - h2o.assign
       - h2o.auc
+      - h2o.pr_auc
       - h2o.automl
       - h2o.betweenss
       - h2o.biases
