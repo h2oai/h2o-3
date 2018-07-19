@@ -371,12 +371,20 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,len,log_rows_per_chunk,true);
   }
 
+  private static int VALUE_MAX = 1<<28; //original = 1<<28 = Value.MAX / 8
   /**
    * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(long totSize, long len) {
-    int safetyInflationFactor = 8;
-    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
+      return makeCon(totSize, len, VALUE_MAX);
+  }
+
+  public static Vec makeCon(long totSize, long len, int valueMax) {
+    int nchunks = (int) Math.max(totSize / valueMax , 1);
+    return makeCon(len, nchunks);
+  }
+
+  public static Vec makeCon(long len, int nchunks) {
     long[] espc = new long[nchunks+1];
     espc[0] = 0;
     for( int i=1; i<nchunks; i++ )
@@ -394,7 +402,7 @@ public class Vec extends Keyed<Vec> {
 
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute, byte type) {
     int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
-    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
+    int chunks1 = (int)Math.min( 4 * H2O.ARGS.nthreads * H2O.CLOUD.size(), len); // redistribute = true
     int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
     long[] espc = new long[nchunks+1];
     espc[0] = 0;
