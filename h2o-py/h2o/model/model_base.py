@@ -702,13 +702,6 @@ class ModelBase(backwards_compatible()):
         return list(m.values())[0] if len(m) == 1 else m
 
 
-    def metalearner(self):
-        """Print the metalearner for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
-        model = self._model_json["output"]
-        if "metalearner" in model and model["metalearner"] is not None:
-            return model["metalearner"]
-        print("No metalearner for this model")
-
     def levelone_frame_id(self):
         """Fetch the levelone_frame_id for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
         model = self._model_json["output"]
