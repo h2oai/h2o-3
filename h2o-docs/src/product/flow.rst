@@ -488,8 +488,8 @@ The read-only **Sources** field shows the file path for the imported data select
 
  -  AUTO
  -  ARFF
- -  XLS
- -  XLSX
+ -  XLS (BIFF 8 only)
+ -  XLSX (BIFF 8 only)
  -  CSV
  -  SVMLight
  -  ORC
