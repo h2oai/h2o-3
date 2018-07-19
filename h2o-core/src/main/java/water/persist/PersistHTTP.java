@@ -2,7 +2,9 @@ package water.persist;
 
 import com.google.common.io.ByteStreams;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -49,7 +51,7 @@ public class PersistHTTP extends Persist {
       if (response.getStatusLine().getStatusCode() != HttpResponseStatus.PARTIAL_CONTENT.getCode()) {
         throw new IllegalStateException("Expected to retrieve a partial content response (status: " + response.getStatusLine() + ").");
       }
-      if (response.getEntity().getContentLength() != v._max) {
+      if (readContentLength(response) != v._max) {
         throw new IllegalStateException("Received incorrect amount of data (expected: " + v._max + "B," +
                 " received: " + response.getEntity().getContentLength() + "B).");
       }
@@ -60,6 +62,33 @@ public class PersistHTTP extends Persist {
     }
 
     return b;
+  }
+
+  static long readContentLength(HttpResponse response) {
+    long len = response.getEntity().getContentLength();
+    if (len >= 0)
+      return len;
+    final Header contentRange = response.getFirstHeader(HttpHeaders.CONTENT_RANGE);
+    try {
+      return parseContentRangeLength(contentRange);
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to determine response length: " + contentRange, e);
+    }
+  }
+
+  private static long parseContentRangeLength(Header contentRange) {
+    if (contentRange == null || contentRange.getValue() == null)
+      throw new IllegalStateException("Range not available");
+    if (!contentRange.getValue().startsWith("bytes"))
+      throw new IllegalStateException("Only 'bytes' range is supported: " + contentRange);
+    String value = contentRange.getValue().substring("bytes".length()).trim();
+    String[] crParts = value.split("/");
+    if (crParts.length != 2)
+      throw new IllegalStateException("Invalid HTTP response. Cannot parse header " + HttpHeaders.CONTENT_RANGE + ": " + contentRange.getValue());
+    String[] range = crParts[0].split("-");
+    if (range.length != 2)
+      throw new IllegalStateException("Invalid HTTP response. Cannot interpret range value in response header " + HttpHeaders.CONTENT_RANGE + ": " + contentRange.getValue());
+    return 1 + Long.valueOf(range[1]) - Long.valueOf(range[0]);
   }
 
   private static URI decodeKey(Key k) {

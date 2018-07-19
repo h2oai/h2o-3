@@ -1,5 +1,9 @@
 package water.persist;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -10,6 +14,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.junit.Assert.*;
 
 public class PersistHTTPTest extends TestUtil {
@@ -94,6 +101,29 @@ public class PersistHTTPTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testReadContentLength() {
+    HttpResponse r = mock(HttpResponse.class);
+    HttpEntity e = mock(HttpEntity.class);
+    when(e.getContentLength()).thenReturn(42L);
+    when(r.getEntity()).thenReturn(e);
+
+    assertEquals(42L, PersistHTTP.readContentLength(r));
+  }
+
+  @Test
+  public void testReadContentLengthFromRange() {
+    HttpResponse r = mock(HttpResponse.class);
+    HttpEntity e = mock(HttpEntity.class);
+    Header h = mock(Header.class);
+    when(e.getContentLength()).thenReturn(-1L);
+    when(r.getEntity()).thenReturn(e);
+    when(r.getFirstHeader(HttpHeaders.CONTENT_RANGE)).thenReturn(h);
+    when(h.getValue()).thenReturn("bytes 7-48/anything");
+
+    assertEquals(42L, PersistHTTP.readContentLength(r));
   }
 
 }

@@ -347,7 +347,7 @@ public class ParseSetup extends Iced {
         bits = ZipUtil.getFirstUnzippedBytesChecked(bv);
       } catch (Exception e) {
         throw new RuntimeException("This H2O node couldn't read data from '" + _file + "'. " +
-                "Please make sure the file is available on all H2O nodes and/or check the working directories.");
+                "Please make sure the file is available on all H2O nodes and/or check the working directories.", e);
       }
       // The bits can be null
       if (bits != null && bits.length > 0) {
