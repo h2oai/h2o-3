@@ -256,7 +256,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     # Print the metalearner of an H2OStackedEnsembleEstimator.
-    @staticmethod
     def metalearner(self):
         model = self._model_json["output"]
         if "metalearner" in model and model["metalearner"] is not None:

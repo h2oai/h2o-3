@@ -490,7 +490,6 @@ def class_extra_for(algo):
     elif algo == "stackedensemble":
         return """
         # Print the metalearner of an H2OStackedEnsembleEstimator.
-        @staticmethod
         def metalearner(self):
             model = self._model_json["output"]
             if "metalearner" in model and model["metalearner"] is not None:
