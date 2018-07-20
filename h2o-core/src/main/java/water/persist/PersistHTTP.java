@@ -48,6 +48,7 @@ public class PersistHTTP extends Persist {
     URI source = decodeKey(k);
     HttpGet req = new HttpGet(source);
     req.setHeader(HttpHeaders.RANGE, "bytes=" + offset + "-" + (offset+v._max-1));
+    req.setHeader(HttpHeaders.ACCEPT_ENCODING, "identity");
 
     try (CloseableHttpClient client = HttpClientBuilder.create().build();
          CloseableHttpResponse response = client.execute(req)) {
