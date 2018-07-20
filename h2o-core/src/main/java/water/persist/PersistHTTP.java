@@ -29,11 +29,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
+
 /**
  * Implementation of the Persist interface for HTTP/HTTPS data sources
  * Only subset of the API is supported.
  */
 public class PersistHTTP extends Persist {
+
+  public final static String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
 
   @Override
   public byte[] load(Value v) throws IOException {
@@ -121,18 +125,23 @@ public class PersistHTTP extends Persist {
   @Override
   public void importFiles(String path, String pattern,
                           /*OUT*/ ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    try {
-      URI source = URI.create(path);
-      long length = checkRangeSupport(source);
-      if (length >= 0) {
-        final Key destination_key = HTTPFileVec.make(path, length);
-        files.add(path);
-        keys.add(destination_key.toString());
-        return;
+
+    boolean lazyLoadEnabled = Boolean.parseBoolean(System.getProperty(ENABLE_LAZY_LOAD_KEY, "true"));
+    if (lazyLoadEnabled) {
+      try {
+        URI source = URI.create(path);
+        long length = checkRangeSupport(source);
+        if (length >= 0) {
+          final Key destination_key = HTTPFileVec.make(path, length);
+          files.add(path);
+          keys.add(destination_key.toString());
+          return;
+        }
+      } catch (Exception e) {
+        Log.debug("Failed to detect range support for " + path, e);
       }
-    } catch (Exception e) {
-      Log.debug("Failed to detect range support for " + path, e);
-    }
+    } else
+      Log.debug("HTTP lazy load disabled by user.");
 
     // Fallback - load the key eagerly if range-requests are not supported
     try {
