@@ -175,6 +175,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public  final static byte S3  = 3<<0; // Amazon S3
   public  final static byte NFS = 4<<0; // NFS: Standard file system
   public  final static byte GCS = 5<<0; // Google Cloud Storage
+  public  final static byte HTTP= 6<<0; // HTTP/HTTPS data source (that accepts byte ranges, "Accept-Ranges: bytes")
   public  final static byte TCP = 7<<0; // TCP: For profile purposes, not a storage system
   private final static byte BACKEND_MASK = (8-1);
   final byte backend() { return (byte)(_persist&BACKEND_MASK); }

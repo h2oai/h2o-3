@@ -40,6 +40,9 @@ dependencies {
     exclude group: 'org.mapdb', module: 'mapdb'
   }
 
+  // For HTTP Persist
+  compile "org.apache.httpcomponents:httpclient:4.5.2"
+
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 

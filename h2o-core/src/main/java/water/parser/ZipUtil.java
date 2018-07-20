@@ -33,6 +33,14 @@ abstract class ZipUtil {
    * @return
    */
   static byte [] getFirstUnzippedBytes( ByteVec bv ) {
+    try {
+      return getFirstUnzippedBytesChecked(bv);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  static byte[] getFirstUnzippedBytesChecked( ByteVec bv ) throws Exception {
     ZipUtil.Compression guessedCompression = null;
     try {
       byte[] bits = bv.getFirstBytes();
@@ -40,7 +48,7 @@ abstract class ZipUtil {
       return unzipBytes(bits, guessedCompression, FileVec.DFLT_CHUNK_SIZE);
     } catch (Exception e) {
       Log.debug("Cannot get unzipped bytes from ByteVec! Compression method: " + guessedCompression, e);
-      return null;
+      throw e;
     }
   }
 

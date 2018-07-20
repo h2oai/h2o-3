@@ -342,7 +342,13 @@ public class ParseSetup extends Iced {
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
-      byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
+      byte [] bits;
+      try {
+        bits = ZipUtil.getFirstUnzippedBytesChecked(bv);
+      } catch (Exception e) {
+        throw new RuntimeException("This H2O node couldn't read data from '" + _file + "'. " +
+                "Please make sure the file is available on all H2O nodes and/or check the working directories.", e);
+      }
       // The bits can be null
       if (bits != null && bits.length > 0) {
         Key<DecryptionTool> decryptToolKey = _userSetup._decrypt_tool != null ?
