@@ -9,7 +9,6 @@ from tests import pyunit_utils
 def pubdev_5023_rm_metalearner():
     # Import a sample binary outcome dataset into H2O
     data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-    test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
     # Identify predictors and response
     x = data.columns
@@ -18,40 +17,19 @@ def pubdev_5023_rm_metalearner():
 
     # For binary classification, response should be a factor
     data[y] = data[y].asfactor()
-    test[y] = test[y].asfactor()
+    gbm_h2o = H2OGradientBoostingEstimator(learn_rate=0.1, max_depth=4)
+    gbm_h2o.train(x=x, y=y, training_frame=data)
 
-    # Split data into train & validation
-    ss = data.split_frame(seed = 1)
-    train = ss[0]
-    valid = ss[1]
-
-
-    # GBM hyperparameters
-    gbm_params1 = {'learn_rate': [0.01, 0.1],
-                   'max_depth': [3],
-                   'sample_rate': [1.0],
-                   'col_sample_rate': [1.0]}
-
-    # Train and validate a cartesian grid of GBMs
-    gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
-                              grid_id='gbm_grid1',
-                              hyper_params=gbm_params1)
-    gbm_grid1.train(x=x, y=y,
-                    training_frame=train,
-                    validation_frame=valid,
-                    ntrees=100,
-                    seed=1)
-
-    # Get the grid results, sorted by validation AUC
-    gbm_gridperf1 = gbm_grid1.get_grid(sort_by='auc', decreasing=True)
-    # Grab the top GBM model, chosen by validation AUC
-    best_gbm1 = gbm_gridperf1.models[0]
-    try:
-        print(type(best_gbm1.metalearner()))
+    try:    # try to access metalearner method for GBM should encounter exception
+        print(type(gbm_h2o.metalearner()))
         exit(1) # should have failed the test
     except Exception as ex:
         print(ex)
 
+
+    # test to for method metalearner() can be found in pyunit_stackedensemble_regression.py
+    # test to for method levelone_frame_id() can be found in pyunit_stackedensemble_levelone_frame.py
+    # There is no need to add one here.
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_5023_rm_metalearner)

@@ -701,15 +701,6 @@ class ModelBase(backwards_compatible()):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
-
-    def levelone_frame_id(self):
-        """Fetch the levelone_frame_id for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
-        model = self._model_json["output"]
-        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
-            return model["levelone_frame_id"]
-        print("No levelone_frame_id for this model")
-
-
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.

@@ -254,3 +254,18 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
 
+
+    # Print the metalearner of an H2OStackedEnsembleEstimator.
+    @staticmethod
+    def metalearner(self):
+        model = self._model_json["output"]
+        if "metalearner" in model and model["metalearner"] is not None:
+            return model["metalearner"]
+        print("No metalearner for this model")  
+
+    #Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.   
+    def levelone_frame_id(self):
+        model = self._model_json["output"]
+        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+            return model["levelone_frame_id"]
+        print("No levelone_frame_id for this model")
