@@ -11,6 +11,7 @@ configurations {
     compile.exclude module: 'javax.mail.glassfish'
     compile.exclude module: 'servlet-api'
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
+    compile.exclude(group: 'com.amazonaws', module: 'aws-java-sdk') // this dependency is introduced by hdfs-persist but we only really need aws-java-sdk-s3 (for PersistS3)
 }
 
 // Dependencies

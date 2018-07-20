@@ -20,16 +20,12 @@ dependencies {
   compile('net.sourceforge.f2j:arpack_combined_all:0.1')
   compile('com.github.fommil.netlib:netlib-native_ref-osx-x86_64:1.1')
   compile('com.github.fommil.netlib:netlib-native_ref-linux-x86_64:1.1')
-  compile('com.github.fommil.netlib:netlib-native_ref-linux-i686:1.1')
   compile('com.github.fommil.netlib:netlib-native_ref-win-x86_64:1.1')
-  compile('com.github.fommil.netlib:netlib-native_ref-win-i686:1.1')
   compile('com.github.fommil.netlib:netlib-native_ref-linux-armhf:1.1')
   compile('com.github.fommil.netlib:netlib-native_system-osx-x86_64:1.1')
   compile('com.github.fommil.netlib:netlib-native_system-linux-x86_64:1.1')
-  compile('com.github.fommil.netlib:netlib-native_system-linux-i686:1.1')
   compile('com.github.fommil.netlib:netlib-native_system-linux-armhf:1.1')
   compile('com.github.fommil.netlib:netlib-native_system-win-x86_64:1.1')
-  compile('com.github.fommil.netlib:netlib-native_system-win-i686:1.1')
 
   compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4'){
     exclude group: 'com.github.fommil.netlib', module: 'all'
