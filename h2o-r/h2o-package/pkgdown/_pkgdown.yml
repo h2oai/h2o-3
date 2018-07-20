@@ -49,7 +49,6 @@ reference:
       - h2o.asnumeric
       - h2o.assign
       - h2o.auc
-      - h2o.pr_auc
       - h2o.automl
       - h2o.betweenss
       - h2o.biases
@@ -211,6 +210,7 @@ reference:
       - h2o.print
       - h2o.prod 
       - h2o.proj_archetypes
+      - h2o.pr_auc
       - h2o.quantile
       - h2o.r2
       - h2o.randomForest
