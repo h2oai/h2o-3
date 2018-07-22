@@ -68,7 +68,7 @@ public class TestUtil extends Iced {
       }
       if( 150 < leaked_keys ) System.err.println("... and "+(leaked_keys-150)+" more leaked keys");
     }
-    assertTrue("No keys leaked", leaked_keys <= 0 || cnt == 0);
+    assertTrue("Some keys have leaked, but they should not.", leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
