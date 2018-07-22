@@ -5,12 +5,12 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.task.UniqTask;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
-import water.util.IcedHashMap;
 
 public class AstUnique extends AstPrimitive {
   @Override
@@ -31,16 +31,19 @@ public class AstUnique extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec vec0 = fr.vec(0);
+    return new ValFrame(uniqueValuesBy(fr,0));
+  }
+
+  /** return a frame with unique values from the specified column */
+  public static Frame uniqueValuesBy(Frame fr, int columnIndex) {
+    Vec vec0 = fr.vec(columnIndex);
     Vec v;
-    if (fr.numCols() != 1)
-      throw new IllegalArgumentException("Unique applies to a single column only.");
     if (vec0.isCategorical()) {
       v = Vec.makeSeq(0, (long) vec0.domain().length, true);
       v.setDomain(vec0.domain());
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(fr);
+      UniqTask t = new UniqTask().doAll(vec0);
       int nUniq = t._uniq.size();
       final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
       v = Vec.makeZero(nUniq, vec0.get_type());
@@ -52,36 +55,6 @@ public class AstUnique extends AstPrimitive {
         }
       }.doAll(v);
     }
-    return new ValFrame(new Frame(v));
-  }
-
-  private static class UniqTask extends MRTask<UniqTask> {
-    IcedHashMap<AstGroup.G, String> _uniq;
-
-    @Override
-    public void map(Chunk[] c) {
-      _uniq = new IcedHashMap<>();
-      AstGroup.G g = new AstGroup.G(1, null);
-      for (int i = 0; i < c[0]._len; ++i) {
-        g.fill(i, c, new int[]{0});
-        String s_old = _uniq.putIfAbsent(g, "");
-        if (s_old == null) g = new AstGroup.G(1, null);
-      }
-    }
-
-    @Override
-    public void reduce(UniqTask t) {
-      if (_uniq != t._uniq) {
-        IcedHashMap<AstGroup.G, String> l = _uniq;
-        IcedHashMap<AstGroup.G, String> r = t._uniq;
-        if (l.size() < r.size()) {
-          l = r;
-          r = _uniq;
-        }  // larger on the left
-        for (AstGroup.G rg : r.keySet()) l.putIfAbsent(rg, "");  // loop over smaller set
-        _uniq = l;
-        t._uniq = null;
-      }
-    }
+    return new Frame(v);
   }
 }

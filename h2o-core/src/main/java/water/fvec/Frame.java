@@ -1209,7 +1209,6 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {
     return ("Frame key: " + _key + "\n") +

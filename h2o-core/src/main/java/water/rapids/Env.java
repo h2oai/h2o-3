@@ -249,6 +249,7 @@ public class Env extends Iced {
     init(new AstSetLevel());
     init(new AstPivot());
     init(new AstRankWithinGroupBy()); // provide ranking withing groupby groups sorted after certain columns
+//    init(new AstTargetEncoderFit()); // we register it with services approach
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new AstAppend());      // Add a column

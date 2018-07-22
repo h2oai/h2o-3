@@ -104,9 +104,17 @@ class ExprNode(object):
         assert self._cache.is_scalar()
         return self._cache._data
 
+    def _eager_map_frame(self):  # returns a scalar (or a list of scalars)
+        self._eval_driver(False)
+        return self._cache
+
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
+        if 'mapKeys' in res:
+            self._cache.mapKeys = res['mapKeys']
+            self._cache.frames = res['frames']
+
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
                 self._cache._data = [float(x) for x in res['scalar']]

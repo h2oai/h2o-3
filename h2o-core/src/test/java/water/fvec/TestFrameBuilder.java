@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
@@ -7,7 +8,10 @@ import water.Scope;
 import water.rapids.Env;
 import water.rapids.Session;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Class used for creating simple test frames using builder pattern
@@ -85,6 +89,59 @@ public class TestFrameBuilder {
     return this;
   }
 
+
+  /**
+   *  Genarate random double data for a particular column
+   * @param column for which to set data
+   * @param size size of randomly generated column
+   * @param min minimal value to generate
+   * @param max maximum value to generate
+   */
+  public TestFrameBuilder withRandomIntDataForCol(int column, int size, int min, int max, long seed) {
+    assert max > min;
+    assert seed + size * size <= Long.MAX_VALUE;
+    double[] arr = new double[size];
+    for(int i = 0; i < size; i++) {
+      arr[i] = min + new Random(seed + i * size).nextInt(max - min);
+    }
+    numericData.put(column, arr);
+    return this;
+  }
+
+  /**
+   *  Genarate random double data for a particular column
+   * @param column for which to set data
+   * @param size size of randomly generated column
+   * @param min minimal value to generate
+   * @param max maximum value to generate
+   */
+  public TestFrameBuilder withRandomDoubleDataForCol(int column, int size, int min, int max, long seed) {
+    assert max >= min;
+    double[] arr = new double[size];
+    for(int i = 0; i < size; i++) {
+      arr[i] = min + (max - min) * new Random(seed + i * size).nextDouble();
+    }
+    numericData.put(column, arr);
+    return this;
+  }
+
+  /**
+   * Genarate random binary data for a particular column
+   *
+   * @param column for which to set data
+   */
+  public TestFrameBuilder withRandomBinaryDataForCol(int column, int size, long seed) {
+    String[] arr = new String[size];
+    Random generator = new Random();
+    long multiplierFromRandomClass = 0x5DEECE66DL;
+    assert seed + size * multiplierFromRandomClass < Long.MAX_VALUE;
+    for(int i = 0; i < size; i++) {
+      generator.setSeed(seed + i * multiplierFromRandomClass);
+      arr[i] = Boolean.toString( generator.nextBoolean());
+    }
+    stringData.put(column, arr);
+    return this;
+  }
 
   /**
    * Sets data for a particular column
