@@ -26,6 +26,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final ModelMetrics.MetricBuilder _metricBuilder;
     private final boolean _computeMetrics;
     private final int _weightsChunkId;
+    private final Model _model;
 
 
     private byte[] rawBooster;
@@ -51,7 +52,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 booster,
                 boosterParms,
                 computeMetrics,
-                data.find(parms._weights_column)).doAll(outputTypes(output), data);
+                data.find(parms._weights_column),
+                m).doAll(outputTypes(output), data);
 
         String[] names = ObjectArrays.concat(Model.makeScoringNames(output), new String[] {"label"}, String.class);
         Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
@@ -116,13 +118,14 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
-    private XGBoostScoreTask(XGBoostModelInfo sharedmodel,
-                             XGBoostOutput output,
-                             XGBoostModel.XGBoostParameters parms,
-                             Booster booster,
-                             BoosterParms boosterParms,
-                             boolean computeMetrics,
-                             int weightsChunkId) {
+    private XGBoostScoreTask(final XGBoostModelInfo sharedmodel,
+                             final XGBoostOutput output,
+                             final XGBoostModel.XGBoostParameters parms,
+                             final Booster booster,
+                             final BoosterParms boosterParms,
+                             final boolean computeMetrics,
+                             final int weightsChunkId,
+                             final Model model) {
         _sharedmodel = sharedmodel;
         _output = output;
         _parms = parms;
@@ -131,6 +134,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _computeMetrics = computeMetrics;
         _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
         _weightsChunkId = weightsChunkId;
+        _model = model;
     }
 
     /**
@@ -193,7 +197,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     double[] currentPred = {dpreds[j]};
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(currentPred, new float[]{labels[j]}, weight, 0, null);
+                        _metricBuilder.perRow(currentPred, new float[]{labels[j]}, weight, 0, _model);
                     }
                 }
                 for (int i = 0; i < cs[0]._len; ++i) {
@@ -219,7 +223,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     if (_computeMetrics) {
                         double[] metricPreds = new double[]{predLab, p, row[1]};
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(metricPreds, new float[]{labels[i]}, weight, 0, null);
+                        _metricBuilder.perRow(metricPreds, new float[]{labels[i]}, weight, 0, _model);
                     }
                 }
             } else {
@@ -234,7 +238,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     ncs[ncs.length - 1].addNum(labels[i]);
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        if (_computeMetrics) _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, null);
+                        if (_computeMetrics) _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, _model);
                     }
                 }
             }
