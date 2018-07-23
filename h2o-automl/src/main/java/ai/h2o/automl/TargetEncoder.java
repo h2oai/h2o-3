@@ -236,11 +236,11 @@ public class TargetEncoder {
         return true;
     }
 
-    public Frame groupByTEColumnAndAggregate(Frame outOfFold, int teColumnIndex, String numeratorColumnIndex, String denominatorColumnIndex) {
-        String tree = String.format("(GB %s [%d] sum %s \"all\" sum %s \"all\")", outOfFold._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
+    public Frame groupByTEColumnAndAggregate(Frame fr, int teColumnIndex, int numeratorColumnIndex, int denominatorColumnIndex) {
+        String tree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")", fr._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
         Val val = Rapids.exec(tree);
         Frame resFrame = val.getFrame();
-        Key<Frame> key = Key.make(outOfFold._key.toString() + "_groupped");
+        Key<Frame> key = Key.make(fr._key.toString() + "_groupped");
         resFrame._key = key;
         DKV.put(key, resFrame);
         return resFrame;
@@ -363,6 +363,9 @@ public class TargetEncoder {
 
         Frame teFrame = data;
 
+        int targetEncodingMapNumeratorIdx = getColumnIndexByName(targetEncodingMap,"numerator");
+        int targetEncodingMapDenominatorIdx = getColumnIndexByName(targetEncodingMap,"denominator");
+
         for ( String teColumnName: columnIndexesToEncode) {
             int teColumnIndex = getColumnIndexByName(data, teColumnName);
             Frame holdoutEncodeMap = null;
@@ -381,7 +384,7 @@ public class TargetEncoder {
                         Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, "1", foldValue); // In targetEncodingMap it is always 1st column
                         System.out.println(" #### OutOfFold dataframe before grouping");
                         printOutFrameAsTable(outOfFoldData);
-                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndex, "2", "3");
+                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndex, 2, 3);
                         System.out.println(" #### groupedByTEColumnAndAggregate dataframe");
                         printOutFrameAsTable(groupedByTEColumnAndAggregate);
                         groupedByTEColumnAndAggregate = appendColumn(groupedByTEColumnAndAggregate, foldValue, "foldValueForMerge"); // TODO for now we don't need names for columns since we are working with indices
@@ -417,8 +420,15 @@ public class TargetEncoder {
                     teFrame = substractTargetValueForLOO(teFrame, numeratorIndex, denominatorIndex, targetColumnIndex);
 
                     break;
-                case HoldoutType.None:
-                default:
+                case HoldoutType.None: // TODO we'd better don't group it with folds during creation of targetEncodingMap
+                    System.out.println(" #### Grouping (back) targetEncodingMap without folds");
+                    if(foldColumnName != null) {
+                        targetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx);
+                    }
+                    targetEncodingMap = renameColumn(targetEncodingMap, "sum_numerator", "numerator");
+                    targetEncodingMap = renameColumn(targetEncodingMap, "sum_denominator", "denominator");
+
+                    teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, "0");
             }
 
             System.out.println(" #### After merging teFrame");
