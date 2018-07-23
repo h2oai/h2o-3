@@ -439,6 +439,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Frame res = tec.substractTargetValueForLOO(fr, 1, 2, 3);
         printOutFrameAsTable(res);
+        // We check here that for NA target column we do not substract anything and for other cases we substract current row's target value
         assertVecEquals(vec(1,0,3,6,3,2), res.vec(1), 1e-5);
         assertVecEquals(vec(0,0,3,6,3,6), res.vec(2), 1e-5);
     }
@@ -543,6 +544,41 @@ public class TargetEncodingTest extends TestUtil{
         renamedFrame = tec.renameColumn(fr, "NewColA", newName2);
         TwoDimTable table = renamedFrame.toTwoDimTable();
         assertEquals( table.getColHeaders()[Integer.parseInt(indexOfColumnToRename)], newName2);
+    }
+
+    @Test
+    public void ensureTargetColumnIsNumericOrBinaryCategoricalTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "ColD")
+                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_STR, Vec.T_CAT)
+                .withDataForCol(0, ar("a", "b", "c"))
+                .withDataForCol(1, ard(1, 2, 3))
+                .withDataForCol(2, ar("2", "6", "6"))
+                .withDataForCol(3, ar("2", "6", "6"))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+
+        try {
+            tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 0);
+            fail();
+        } catch (Exception ex) {
+            assertEquals( "`target` must be a binary vector", ex.getMessage());
+        }
+
+        try {
+            tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 2);
+            fail();
+        } catch (Exception ex) {
+            assertEquals( "`target` must be a numeric or binary vector", ex.getMessage());
+        }
+
+        // Check that numerical column is ok
+        tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 1);
+
+        // Check that binary categorical is ok (transformation is checked in another test)
+        tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 3);
     }
 
     @Test
