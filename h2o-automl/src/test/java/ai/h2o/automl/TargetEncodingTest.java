@@ -467,6 +467,36 @@ public class TargetEncodingTest extends TestUtil{
         assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(5), 1e-5);
     }
 
+    // ------------------------ None holdout type -------------------------------------------------------------//
+
+    @Test
+    public void targetEncoderNoneHoldoutApplyingTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ard(1, 1, 4, 7, 4))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {0};
+
+        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, "3");
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
+
+        TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
+        System.out.println("Result table" + resultTable.toString());
+        assertEquals(0.5, resultWithEncoding.vec(6).at(0), 1e-5);
+        assertEquals(0.5, resultWithEncoding.vec(6).at(1), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(6).at(2), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(6).at(3), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(6).at(4), 1e-5);
+    }
+
     @Test
     public void AddNoiseLevelTest() {
 
