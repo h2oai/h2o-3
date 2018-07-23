@@ -254,3 +254,60 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
 
+    def model_summary(self, base_model_detail=False):
+        """
+        Summary of stacked ensemble model
+        
+        :param base_model_detail: A string specifying boolean indicating whether or not to include
+            base model summary information
+        """
+        from collections import Counter
+        from h2o import api, no_progress, get_model
+        import pandas as pd
+        
+        assert_is_type(base_model_detail, bool)
+        
+        no_progress()
+
+        models = dict()
+        for model in  self._parms.get('base_models'):
+            model_json = api('GET /%d/Models/%s' % (3, model))['models'][0]
+            models[model] = model_json['algo']
+
+        # base model information
+        print('Base Model Information: \n')
+        print('Number of Base Models: {0}'.format(len(models.values())))
+        
+        print('Base Models (count by algorithm type):')
+        c = Counter(models.values())
+        print(H2OFrame(c))
+        
+        if base_model_detail:
+            print('Base model details:')
+            for model_id, algo in models.items():
+                print('{0}:'.format(algo))
+                model_summary = get_model(model_id).summary().as_data_frame()
+                # convert model_summary to H2OFrame and remove '0' key if it exists
+                model_summary = model_summary.to_dict(orient='list')
+                if '' in model_summary.keys():
+                    del model_summary['']
+                print(H2OFrame(model_summary))
+
+        print('\nMetalearner Information:\n')
+        
+        metalearner_algo = self._parms.get('metalearner_algorithm')
+        meta_algo = 'glm' if metalearner_algo is None or len(metalearner_algo) > 1 else metalearner_algo
+        if meta_algo is not None:
+            print('Metalearner Algorithm: {0}'.format(meta_algo))
+
+        metalearner_nfolds = self._parms.get('metalearner_nfolds')
+        if metalearner_nfolds is not None and metalearner_nfolds is not 0:
+            fold_assignment = 'Random' if len(metalearner_nfolds) > 1 else self._parms.get('metalearner_fold_assignment')
+            print('Metalearner cross-validation fold assignment:')
+            print('    Fold assignment scheme: {0}'.format(fold_assignment))
+            print('\n    Number of folds: {0}'.format(metalearner_nfolds))
+            print('\n    Fold column: {0}'.format(self._parms.get('metalearner_fold_column')))
+
+        metalearner_params = self._parms.get('metalearner_params')
+        if metalearner_params is not None:
+            print('Metalearner parameters: {0}'.format(metalearner_params))
