@@ -46,17 +46,8 @@ public class TargetEncoder {
             throw new IllegalStateException("Argument 'columnsToEncode' should contain only names of categorical columns");
 
         int targetIndex = getColumnIndexByName(data, targetColumnName);
-        if(! data.vec(targetIndex).isCategorical() ) {
-            throw new IllegalStateException("Argument 'target' should be categorical");
-        } else {
-            Vec targetVec = data.vec(targetIndex);
-            if(targetVec.cardinality() == 2) {
-                transformBinaryTargetColumn(data, targetIndex);
-            }
-            else {
-                throw new IllegalStateException("`target` must be a numeric or binary vector");
-            }
-        }
+
+        data = ensureTargetColumnIsNumericOrBinaryCategorical(data, targetIndex);
 
         if(Arrays.asList(columnNamesToEncode).contains(targetColumnName)) {
             throw new IllegalArgumentException("Columns for target encoding contain target column.");
@@ -125,6 +116,24 @@ public class TargetEncoder {
         DKV.put(inputForTargetEncoding, allColumnsEncodedFrame);
 
         return allColumnsEncodedFrame;
+    }
+
+    public Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, int targetIndex) {
+        if (data.vec(targetIndex).isCategorical()){
+            Vec targetVec = data.vec(targetIndex);
+            if(targetVec.cardinality() == 2) {
+                return transformBinaryTargetColumn(data, targetIndex);
+            }
+            else {
+                throw new IllegalStateException("`target` must be a binary vector");
+            }
+        }
+        else {
+            if(! data.vec(targetIndex).isNumeric()) {
+                throw new IllegalStateException("`target` must be a numeric or binary vector");
+            }
+            return data;
+        }
     };
 
     public Frame prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex) {
@@ -186,13 +195,12 @@ public class TargetEncoder {
 
         Vec targetVec = data.vec(targetIndex);
         String[] domains = targetVec.domain();
-//        (:= RTMP_sid_b91f_9 (ifelse (is.na (cols RTMP_sid_b91f_9 [1.0] ) ) NA (ifelse (== (cols RTMP_sid_b91f_9 [1.0] ) 0 ) 0.0 1.0 ) ) [1.0] [] )
-        //(tmp= RTMP_sid_8c98_1 (:= data (ifelse (< (cols data [4.0] ) 6.0 ) 666.0 (cols data [4.0] ) ) [4.0] [] ) )
         String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 1.0 0.0 ) )  [%d] [] )",
                 data._key, data._key, targetIndex,  data._key, targetIndex, domains[1], targetIndex);
         Val val = Rapids.exec(tree);
         Frame res = val.getFrame();
-
+        res._key = data._key;
+        DKV.put(res._key , res);
         return res;
     }
 
@@ -331,13 +339,14 @@ public class TargetEncoder {
                 data._key, data._key, targetIndex, data._key, denominatorIndex, data._key, denominatorIndex, denominatorIndex);
         Frame finalFrame = Rapids.exec(treeDenominator).getFrame();
 
-        DKV.put(data._key, finalFrame);
+        finalFrame._key = data._key;
+        DKV.put(finalFrame._key, finalFrame);
         return finalFrame;
     }
 
     public Frame applyTargetEncoding(Frame data,
                                      String[] columnIndexesToEncode,
-                                     String targetColumnIndex,   // TODO DO we need target ???
+                                     String targetColumnName,
                                      Frame targetEncodingMap, // TODO should be a Map( te_column -> Frame )
                                      byte holdoutType,
                                      String foldColumnName,
@@ -400,6 +409,12 @@ public class TargetEncoder {
                     printOutFrameAsTable(targetEncodingMap);
 
                     teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, "0");
+
+                    int numeratorIndex = getColumnIndexByName(teFrame,"numerator");
+                    int denominatorIndex = getColumnIndexByName(teFrame,"denominator");
+                    int targetColumnIndex = getColumnIndexByName(teFrame, targetColumnName);
+
+                    teFrame = substractTargetValueForLOO(teFrame, numeratorIndex, denominatorIndex, targetColumnIndex);
 
                     break;
                 case HoldoutType.None:
