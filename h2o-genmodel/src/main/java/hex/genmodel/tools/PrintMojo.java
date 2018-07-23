@@ -5,8 +5,12 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
@@ -19,6 +23,9 @@ public class PrintMojo {
   private static boolean detail = false;
   private static String outputFileName = null;
   private static String optionalTitle = null;
+  private static int nPlaces = -1;
+  private static int fontSize = 14; // default size is 14
+  private static boolean setDecimalPlaces = false;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -61,6 +68,10 @@ public class PrintMojo {
     System.out.println("");
     System.out.println("    --output | -o   Output dot filename.");
     System.out.println("                    [default stdout]");
+    System.out.println("    --decimalplaces | -d    Set decimal places of all numerical values.");
+    System.out.println("");
+    System.out.println("    --fontsize | -f    Set font sizes of strings.");
+    System.out.println("");
     System.out.println("");
     System.out.println("Example:");
     System.out.println("");
@@ -121,6 +132,23 @@ public class PrintMojo {
             loadMojo(s);
             break;
 
+          case "--fontsize":
+          case "-f":
+            i++;
+            if (i >= args.length) usage();
+            s = args[i];
+            fontSize = Integer.parseInt(s);
+            break;
+
+          case "--decimalplaces":
+          case "-d":
+            i++;
+            if (i >= args.length) usage();
+            setDecimalPlaces=true;
+            s = args[i];
+            nPlaces = Integer.parseInt(s);
+            break;
+
           case "--raw":
             printRaw = true;
             break;
@@ -164,21 +192,35 @@ public class PrintMojo {
 
     if (genModel instanceof GbmMojoModel) {
       SharedTreeGraph g = ((GbmMojoModel) genModel)._computeGraph(treeToPrint);
+      setFontSizeDecimalPlace(g);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, fontSize);
     }
     else if (genModel instanceof DrfMojoModel) {
       SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
+      setFontSizeDecimalPlace(g);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, fontSize);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
       System.exit(1);
+    }
+  }
+
+  private void setFontSizeDecimalPlace(SharedTreeGraph g) {
+    if (g.subgraphArray != null) {
+      for (SharedTreeSubgraph subg : g.subgraphArray) {
+        if (setDecimalPlaces) { // set SharedTreeSubgraph decimal places
+          subg.setDecimalPlace(nPlaces);
+
+        }
+        subg.setFontSize(fontSize);
+      }
     }
   }
 }

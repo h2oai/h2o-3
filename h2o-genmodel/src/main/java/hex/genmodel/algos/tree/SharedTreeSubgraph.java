@@ -11,6 +11,9 @@ public class SharedTreeSubgraph {
   public final int subgraphNumber;
   public final String name;
   public SharedTreeNode rootNode;
+  public int fontSize=14;                 // default size
+  public boolean setDecimalPlaces=false;  // default to not change tree split threshold decimal places
+  public int nPlaces = -1;
 
   // Even though all the nodes are reachable from rootNode, keep a second handy list of nodes.
   // For some bookkeeping tasks.
@@ -39,6 +42,14 @@ public class SharedTreeSubgraph {
     return n;
   }
 
+  public void setDecimalPlace(int nplaces) {
+    setDecimalPlaces=true;
+    nPlaces = nplaces;
+  }
+
+  public void setFontSize(int fontsize) {
+    fontSize = fontsize;
+  }
   /**
    * Make the left child of a node.
    * @param parent Parent node
@@ -85,7 +96,7 @@ public class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, int fontsize) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
@@ -101,17 +112,17 @@ public class SharedTreeSubgraph {
       os.println("");
       os.println("/* Level " + level + " */");
       os.println("{");
-      rootNode.printDotNodesAtLevel(os, level, detail);
+      rootNode.printDotNodesAtLevel(os, level, detail, fontsize, setDecimalPlaces, nPlaces);
       os.println("}");
     }
 
     os.println("");
     os.println("/* Edges */");
     for (SharedTreeNode n : nodesArray) {
-      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, fontsize);
     }
     os.println("");
-    os.println("fontsize=40");
+    os.println("fontsize="+40); // fix title label to be 40pts
     String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
     os.println("label=\"" + title + "\"");
     os.println("}");
