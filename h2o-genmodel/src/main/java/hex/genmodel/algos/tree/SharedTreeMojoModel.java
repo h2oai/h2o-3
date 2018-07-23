@@ -18,7 +18,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
-    protected Number _mojo_version;
+    protected double _mojo_version;
+    private ScoreTree _scoreTree;
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -50,6 +51,15 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected double[] _calib_glm_beta;
 
+
+    protected void postInit() {
+      if (_mojo_version == 1.0) {
+        _scoreTree = new ScoreTree0(); // First version
+      } else if (_mojo_version == 1.1) {
+        _scoreTree = new ScoreTree1(); // Second version
+      } else
+        _scoreTree = new ScoreTree2(); // Current version
+    }
 
   /**
    * Highly efficient (critical path) tree scoring
@@ -472,19 +482,15 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      *              To get final predictions pass the result to {@link SharedTreeMojoModel#unifyPreds}.
      */
     public final void scoreTreeRange(double[] row, int fromIndex, int toIndex, double[] preds) {
+        final int clOffset = _nclasses == 1 ? 0 : 1;
         for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
-            int k = _nclasses == 1 ? 0 : classIndex + 1;
+            int k = clOffset + classIndex;
+            int itree = treeIndex(fromIndex, classIndex);
             for (int groupIndex = fromIndex; groupIndex < toIndex; groupIndex++) {
-                int itree = treeIndex(groupIndex, classIndex);
-                // Skip all empty trees
-                if (_compressed_trees[itree] == null) continue;
-                if (_mojo_version.equals(1.0)) { //First version
-                    preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.1)) { //Second version
-                    preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                if (_compressed_trees[itree] != null) { // Skip all empty trees
+                  preds[k] += _scoreTree.scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
                 }
+                itree++;
             }
         }
     }
