@@ -25,7 +25,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final boolean _computeMetrics;
     private final int _weightsChunkId;
     private final Model _model;
-
+    private final double _threshold;
 
     private ModelMetrics.MetricBuilder _metricBuilder;
     private byte[] rawBooster;
@@ -133,6 +133,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
+        _threshold = Model.defaultThreshold(_output);
     }
 
     /**
@@ -204,25 +205,23 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     ncs[1].addNum(labels[i]);
                 }
             } else if (_output.nclasses() == 2) {
-                double[] dpreds = new double[preds.length];
-                for (int j = 0; j < dpreds.length; ++j) {
-                    dpreds[j] = preds[j][0];
-                }
-
+                double[] row = new double[3];
+                float[] yact = new float[1];
                 for (int i = 0; i < cs[0]._len; ++i) {
-                    final double p = dpreds[i];
-                    double[] row = new double[]{0, 1.0D - p, p};
-                    double predLab = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output));
+                    final double p = preds[i][0];
+                    row[1] = 1 - p;
+                    row[2] = p;
+                    row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
 
-                    ncs[0].addNum(predLab);
+                    ncs[0].addNum(row[0]);
                     ncs[1].addNum(row[1]);
-                    ncs[2].addNum(p);
-                    ncs[3].addNum(labels[i]);
+                    ncs[2].addNum(row[2]);
+                    ncs[3].addNum(Double.NaN); // FIXME: @pscheidl: this should be removed - it doesn't have to be here - metrics are calculate in this Task
 
                     if (_computeMetrics) {
-                        // double[] metricPreds = new double[]{predLab, p, row[1]};
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, _model);
+                        yact[0] = labels[i];
+                        _metricBuilder.perRow(row, yact, weight, 0, _model);
                     }
                 }
             } else {
