@@ -2,7 +2,6 @@ package ml.dmlc.xgboost4j.java;
 
 import com.google.common.collect.ObjectArrays;
 import hex.*;
-import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
 import water.*;
@@ -23,12 +22,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final XGBoostOutput _output;
     private final XGBoostModel.XGBoostParameters _parms;
     private final BoosterParms _boosterParms;
-    private final ModelMetrics.MetricBuilder _metricBuilder;
     private final boolean _computeMetrics;
     private final int _weightsChunkId;
     private final Model _model;
 
 
+    private ModelMetrics.MetricBuilder _metricBuilder;
     private byte[] rawBooster;
 
     public static class XGBoostScoreTaskResult {
@@ -132,7 +131,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _boosterParms = boosterParms;
         this.rawBooster = XGBoost.getRawArray(booster);
         _computeMetrics = computeMetrics;
-        _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
         _weightsChunkId = weightsChunkId;
         _model = model;
     }
@@ -160,6 +158,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     public void map(Chunk[] cs, NewChunk[] ncs) {
         DMatrix data = null;
         Booster booster = null;
+        _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
         try {
             Map<String, String> rabitEnv = new HashMap<>();
             // Rabit has to be initialized as parts of booster.predict() are using Rabit
