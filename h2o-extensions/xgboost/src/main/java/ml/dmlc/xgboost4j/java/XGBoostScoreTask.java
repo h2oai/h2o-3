@@ -54,13 +54,11 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 data.find(parms._weights_column),
                 m).doAll(outputTypes(output), data);
 
-        String[] names = ObjectArrays.concat(Model.makeScoringNames(output), new String[] {"label"}, String.class);
-        Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
+        final String[] names = Model.makeScoringNames(output);
+        final Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
 
         XGBoostScoreTaskResult res = new XGBoostScoreTaskResult();
 
-        Vec resp = preds.lastVec();
-        preds.remove(preds.vecs().length - 1);
         if (output.nclasses() == 1) {
             Vec pred = preds.vec(0);
             if (computeMetrics) {
@@ -69,12 +67,10 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } else if (output.nclasses() == 2) {
             Vec p1 = preds.vec(2);
             if (computeMetrics) {
-                resp.setDomain(output.classNames());
                 res.mm = task._metricBuilder.makeModelMetrics(m, originalData, data, new Frame(p1));
             }
         } else {
             if (computeMetrics) {
-                resp.setDomain(output.classNames());
                 Frame pp = new Frame(preds);
                 pp.remove(0);
                 Scope.enter();
@@ -92,11 +88,11 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private static byte[] outputTypes(XGBoostOutput output) {
         // Last output is the response, which eventually will be removed before returning the preds Frame but is needed to build metrics
         if(output.nclasses() == 1) {
-            return new byte[]{T_NUM, T_NUM};
+            return new byte[]{T_NUM};
         } else if(output.nclasses() == 2) {
-            return new byte[]{T_CAT, T_NUM, T_NUM, T_NUM};
+            return new byte[]{T_CAT, T_NUM, T_NUM};
         } else{
-            byte[] types = new byte[output.nclasses() + 2];
+            byte[] types = new byte[output.nclasses() + 1];
             Arrays.fill(types, T_NUM);
             return types;
         }
@@ -106,9 +102,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         if(output.nclasses() == 1) {
             return null;
         } else if(output.nclasses() == 2) {
-            String[][] domains = new String[4][];
+            String[][] domains = new String[3][];
             domains[0] = new String[]{"N", "Y"};
-            domains[3] = new String[]{"N", "Y"};
             return domains;
         } else{
             String[][] domains = new String[names.length][];
@@ -202,7 +197,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 }
                 for (int i = 0; i < cs[0]._len; ++i) {
                     ncs[0].addNum(dpreds[i]);
-                    ncs[1].addNum(labels[i]);
                 }
             } else if (_output.nclasses() == 2) {
                 double[] row = new double[3];
@@ -216,7 +210,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     ncs[0].addNum(row[0]);
                     ncs[1].addNum(row[1]);
                     ncs[2].addNum(row[2]);
-                    ncs[3].addNum(Double.NaN); // FIXME: @pscheidl: this should be removed - it doesn't have to be here - metrics are calculate in this Task
 
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
@@ -226,14 +219,13 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 }
             } else {
                 for (int i = 0; i < cs[0]._len; ++i) {
-                    double[] row = new double[ncs.length - 1];
+                    double[] row = new double[ncs.length];
                     for (int j = 1; j < row.length; ++j) {
                         double val = preds[i][j - 1];
                         ncs[j].addNum(val);
                         row[j] = val;
                     }
                     ncs[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output)));
-                    ncs[ncs.length - 1].addNum(labels[i]);
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
                         _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, _model);
