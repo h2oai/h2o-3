@@ -5,7 +5,6 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,9 +22,7 @@ public class PrintMojo {
   private static boolean detail = false;
   private static String outputFileName = null;
   private static String optionalTitle = null;
-  private static int nPlaces = -1;
-  private static int fontSize = 14; // default size is 14
-  private static boolean setDecimalPlaces = false;
+  private static PrintTreeOptions pTreeOptions;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -84,6 +81,9 @@ public class PrintMojo {
   }
 
   private void parseArgs(String[] args) {
+    int nPlaces = -1;
+    int fontSize = 14; // default size is 14
+    boolean setDecimalPlaces = false;
     try {
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
@@ -166,6 +166,7 @@ public class PrintMojo {
             break;
         }
       }
+      pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize);
     } catch (Exception e) {
       e.printStackTrace();
       usage();
@@ -181,7 +182,6 @@ public class PrintMojo {
 
   private void run() throws Exception {
     validateArgs();
-
     PrintStream os;
     if (outputFileName != null) {
       os = new PrintStream(new FileOutputStream(new File(outputFileName)));
@@ -192,19 +192,17 @@ public class PrintMojo {
 
     if (genModel instanceof GbmMojoModel) {
       SharedTreeGraph g = ((GbmMojoModel) genModel)._computeGraph(treeToPrint);
-      setFontSizeDecimalPlace(g);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, fontSize);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
     }
     else if (genModel instanceof DrfMojoModel) {
       SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
-      setFontSizeDecimalPlace(g);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, fontSize);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
@@ -212,15 +210,22 @@ public class PrintMojo {
     }
   }
 
-  private void setFontSizeDecimalPlace(SharedTreeGraph g) {
-    if (g.subgraphArray != null) {
-      for (SharedTreeSubgraph subg : g.subgraphArray) {
-        if (setDecimalPlaces) { // set SharedTreeSubgraph decimal places
-          subg.setDecimalPlace(nPlaces);
+  public class PrintTreeOptions {
+    public boolean _setDecimalPlace = false;
+    public int _nPlaces = -1;
+    public int _fontSize = 14;  // default
 
-        }
-        subg.setFontSize(fontSize);
-      }
+    public PrintTreeOptions(boolean setdecimalplaces, int nplaces, int fontsize) {
+      _setDecimalPlace = setdecimalplaces;
+      _nPlaces = _setDecimalPlace?nplaces:_nPlaces;
+      _fontSize = fontsize;
+    }
+
+    public float roundNPlace(float value) {
+      if (_nPlaces < 0)
+        return value;
+      double sc = Math.pow(10, _nPlaces);
+      return (float) (Math.round(value*sc)/sc);
     }
   }
 }

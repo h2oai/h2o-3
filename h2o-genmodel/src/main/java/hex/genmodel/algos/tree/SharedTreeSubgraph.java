@@ -1,5 +1,7 @@
 package hex.genmodel.algos.tree;
 
+import hex.genmodel.tools.PrintMojo;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 
@@ -96,7 +98,7 @@ public class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, int fontsize) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, PrintMojo.PrintTreeOptions treeOptions) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
@@ -112,14 +114,14 @@ public class SharedTreeSubgraph {
       os.println("");
       os.println("/* Level " + level + " */");
       os.println("{");
-      rootNode.printDotNodesAtLevel(os, level, detail, fontsize, setDecimalPlaces, nPlaces);
+      rootNode.printDotNodesAtLevel(os, level, detail, treeOptions);
       os.println("}");
     }
 
     os.println("");
     os.println("/* Edges */");
     for (SharedTreeNode n : nodesArray) {
-      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, fontsize);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, treeOptions);
     }
     os.println("");
     os.println("fontsize="+40); // fix title label to be 40pts
