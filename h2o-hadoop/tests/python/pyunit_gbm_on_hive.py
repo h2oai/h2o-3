@@ -1,10 +1,9 @@
 #! /usr/env/python
 
-import sys
-import os
-import h2o
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+import sys, os
+sys.path.insert(1, os.path.join("..","..",".."))
 from tests import pyunit_utils
+import h2o
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
@@ -31,7 +30,6 @@ def gbm_on_hive():
     airlines_X_col_names = airlines_dataset.col_names[:-2]
     airlines_y_col_name = airlines_dataset.col_names[-2]
     train, valid, test = airlines_dataset.split_frame([0.6, 0.2], seed=1234)
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
     gbm_v1 = H2OGradientBoostingEstimator(model_id="gbm_airlines_v1", seed=2000000)
     gbm_v1.train(airlines_X_col_names, airlines_y_col_name, training_frame=train, validation_frame=valid)
     gbm_v1.predict(test)
