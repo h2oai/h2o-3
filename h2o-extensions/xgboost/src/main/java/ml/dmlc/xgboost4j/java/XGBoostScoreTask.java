@@ -1,6 +1,5 @@
 package ml.dmlc.xgboost4j.java;
 
-import com.google.common.collect.ObjectArrays;
 import hex.*;
 import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
@@ -186,10 +185,11 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 
 
             if (_output.nclasses() == 1) {
-                double[] dpreds = new double[preds.length];
+                double[] dpreds = MemoryManager.malloc8d(preds.length);
+                double[] currentPred = new double[1];
                 for (int j = 0; j < dpreds.length; ++j) {
                     dpreds[j] = preds[j][0];
-                    double[] currentPred = {dpreds[j]};
+                    currentPred[0] = dpreds[j];
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
                         _metricBuilder.perRow(currentPred, new float[]{labels[j]}, weight, 0, _model);
@@ -218,14 +218,14 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     }
                 }
             } else {
+                double[] row = MemoryManager.malloc8d(ncs.length);
                 for (int i = 0; i < cs[0]._len; ++i) {
-                    double[] row = new double[ncs.length];
                     for (int j = 1; j < row.length; ++j) {
                         double val = preds[i][j - 1];
                         ncs[j].addNum(val);
                         row[j] = val;
                     }
-                    ncs[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output)));
+                    ncs[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold));
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
                         _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, _model);
