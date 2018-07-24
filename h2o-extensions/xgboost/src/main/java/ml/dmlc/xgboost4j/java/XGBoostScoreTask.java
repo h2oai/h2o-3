@@ -1,6 +1,5 @@
 package ml.dmlc.xgboost4j.java;
 
-import com.google.common.collect.ObjectArrays;
 import hex.*;
 import hex.tree.xgboost.*;
 import hex.tree.xgboost.XGBoost;
