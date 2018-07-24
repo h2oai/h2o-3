@@ -220,9 +220,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     ncs[3].addNum(labels[i]);
 
                     if (_computeMetrics) {
-                        double[] metricPreds = new double[]{predLab, p, row[1]};
+                        // double[] metricPreds = new double[]{predLab, p, row[1]};
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(metricPreds, new float[]{labels[i]}, weight, 0, _model);
+                        _metricBuilder.perRow(row, new float[]{labels[i]}, weight, 0, _model);
                     }
                 }
             } else {
