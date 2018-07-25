@@ -4,6 +4,7 @@ import water.H2O;
 import water.Key;
 import water.Value;
 import water.util.FrameUtils;
+import water.util.Log;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,7 +21,8 @@ public class PersistEagerHTTP extends Persist {
       Key destination_key = FrameUtils.eagerLoadFromHTTP(path);
       files.add(path);
       keys.add(destination_key.toString());
-    } catch( Throwable e) {
+    } catch (Exception e) {
+      Log.debug("Loading from `" + path + "` failed.", e);
       fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
     }
   }
