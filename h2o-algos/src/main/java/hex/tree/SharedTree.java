@@ -733,10 +733,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       try {
         Scope.enter();
         _job.update(0, "Calibrating probabilities");
+        Vec calibWeights = _parms._weights_column != null ? calib().vec(_parms._weights_column) : null;
         Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
 
         Frame calibInput = new Frame(calibInputKey,
                 new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
+        if (calibWeights != null) {
+          calibInput.add("weights", calibWeights);
+        }
         DKV.put(calibInput);
 
         Key<Model> calibModelKey = Key.make();
@@ -747,6 +751,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         calibBuilder._parms._train = calibInput._key;
         calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
         calibBuilder._parms._lambda = new double[] {0.0};
+        if (calibWeights != null) {
+          calibBuilder._parms._weights_column = "weights";
+        }
 
         _model._output._calib_model = calibBuilder.trainModel().get();
         _model.update(_job);
