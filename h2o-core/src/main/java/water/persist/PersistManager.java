@@ -127,7 +127,17 @@ public class PersistManager {
 
     I[Value.ICE ] = ice;
     I[Value.NFS ] = new PersistNFS();
-    I[Value.HTTP] = new PersistHTTP();
+
+    try {
+      Class klass = Class.forName("water.persist.PersistHTTP");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.HTTP] = (Persist) constructor.newInstance();
+      Log.info("Subsystem for distributed import from HTTP/HTTPS successfully initialized");
+    }
+    catch (Throwable ignore) {
+      I[Value.HTTP] = new PersistEagerHTTP();
+      Log.info("Distributed HTTP import not available (import from HTTP/HTTPS will be eager)");
+    }
 
     try {
       Class klass = Class.forName("water.persist.PersistHdfs");

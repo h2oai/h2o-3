@@ -23,7 +23,7 @@ public class PersistHTTPTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
   }
 
   @Test
@@ -117,7 +117,7 @@ public class PersistHTTPTest extends TestUtil {
   public void testReadContentLengthFromRange() {
     HttpResponse r = mock(HttpResponse.class);
     HttpEntity e = mock(HttpEntity.class);
-    Header h = mock(Header.class);
+    Header h =mock(Header.class);
     when(e.getContentLength()).thenReturn(-1L);
     when(r.getEntity()).thenReturn(e);
     when(r.getFirstHeader(HttpHeaders.CONTENT_RANGE)).thenReturn(h);
