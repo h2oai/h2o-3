@@ -567,7 +567,9 @@ Here is example output for a GBM model:
    :alt: GBM MOJO model
 
 
-The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. 
+The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. To better control the look and feel of your tree, we have added on two extra options off PrintMojo to allow you to control the number of decimal points shown for numbers and to control the font sizes.
+
+However, be careful not to choose a big font size that you cannot see your whole tree.  The default fontsize is 14.  We would not recommend using any font size over 20.
 
 ::
 
@@ -586,7 +588,7 @@ The following code snippet shows how to download a MOJO from R and run the Print
   # and run the PrintMojo tool from the command line.
   #
   # (For MacOS: brew install graphviz)
-  # java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
+  # java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
   # dot -Tpng model.gv -o model.png
   # open model.png
 

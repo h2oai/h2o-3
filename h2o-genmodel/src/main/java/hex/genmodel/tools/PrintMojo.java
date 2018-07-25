@@ -73,7 +73,7 @@ public class PrintMojo {
     System.out.println("Example:");
     System.out.println("");
     System.out.println("    (brew install graphviz)");
-    System.out.println("    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model_mojo.zip -o model.gv");
+    System.out.println("    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model_mojo.zip -o model.gv -f 20 -d 3");
     System.out.println("    dot -Tpng model.gv -o model.png");
     System.out.println("    open model.png");
     System.out.println("");
