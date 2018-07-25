@@ -17,6 +17,8 @@ import water.util.FrameUtils;
 import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -168,6 +170,7 @@ public class TargetEncodingTest extends TestUtil{
                 .build();
         try {
             tec.prepareEncodingMap(fr, teColumns, 2, null);
+            fail();
         } catch (IllegalStateException ex) {
             assertEquals("Argument 'columnsToEncode' should contain only names of categorical columns", ex.getMessage());
         }
@@ -178,9 +181,7 @@ public class TargetEncodingTest extends TestUtil{
                 .build();
 
         try {
-            Frame result = tec.prepareEncodingMap(fr, teColumns, 2, null);
-            String[]res = result.toTwoDimTable().getColHeaders();
-            Frame r = null;
+            tec.prepareEncodingMap(fr, teColumns, 2, null);
         } catch (IllegalStateException ex) {
             fail(String.format("All columns were categorical but something else went wrong: %s", ex.getMessage()));
         }
@@ -199,15 +200,16 @@ public class TargetEncodingTest extends TestUtil{
                 .build();
 
         TargetEncoder tec = new TargetEncoder();
-        String[] teColumns = {"0"};
+        int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, "2", "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        TwoDimTable twoDimTable = targetEncodingMap.toTwoDimTable();
+        Frame colAEncoding = targetEncodingMap.get("ColA");
+        TwoDimTable twoDimTable = colAEncoding.toTwoDimTable();
         System.out.println(twoDimTable.toString());
 
-        assertVecEquals(vec(0, 2, 1), targetEncodingMap.vec(2), 1e-5);
-        assertVecEquals(vec(1, 2, 1), targetEncodingMap.vec(3), 1e-5);
+        assertVecEquals(vec(0, 2, 1), colAEncoding.vec(2), 1e-5);
+        assertVecEquals(vec(1, 2, 1), colAEncoding.vec(3), 1e-5);
 
     }
 
@@ -225,13 +227,14 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
 
-        TwoDimTable twoDimTable = targetEncodingMap.toTwoDimTable();
+        Frame colAEncoding = targetEncodingMap.get("ColA");
+        TwoDimTable twoDimTable = colAEncoding.toTwoDimTable();
         System.out.println(twoDimTable.toString());
 
-        assertVecEquals(vec(0, 3), targetEncodingMap.vec(1), 1e-5);
-        assertVecEquals(vec(1, 3), targetEncodingMap.vec(2), 1e-5);
+        assertVecEquals(vec(0, 3), colAEncoding.vec(1), 1e-5);
+        assertVecEquals(vec(1, 3), colAEncoding.vec(2), 1e-5);
 
     }
 
@@ -254,11 +257,11 @@ public class TargetEncodingTest extends TestUtil{
                 .build();
 
         TargetEncoder tec = new TargetEncoder();
-        String[] teColumns = {"0"};
+        int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, "2", "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, "2", targetEncodingMap, TargetEncoder.HoldoutType.KFold, "3", false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 0, 1234.0);
 
         TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
         System.out.println("Result table" + resultTable.toString());
@@ -285,14 +288,14 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
         //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false);
 
         TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
         System.out.println("Result table" + resultTable.toString());
-        assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(6), 1e-2);
+        assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(6), 1e-2); // TODO ii it ok that encoding contains negative values?
     }
 
     @Test
@@ -310,7 +313,7 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 0.02, 1234.0);
 
@@ -405,7 +408,7 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, true, 0.0, 1234.0);
 
@@ -463,7 +466,7 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut,false, 0, 1234.0);
 
@@ -494,7 +497,7 @@ public class TargetEncodingTest extends TestUtil{
         assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(6), 1e-5);
     }
 
-    // ------------------------ None holdout type -------------------------------------------------------------//
+    // ------------------------ None holdout type --------------------------------------------------------------------//
 
     @Test
     public void targetEncoderNoneHoldoutApplyingTest() {
@@ -511,7 +514,7 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
 
-        Frame targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, "3");
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
 
@@ -524,6 +527,48 @@ public class TargetEncodingTest extends TestUtil{
         assertEquals(1, resultWithEncoding.vec(6).at(4), 1e-5);
     }
 
+    // ------------------------ Multiple columns for target encoding -------------------------------------------------//
+
+    @Test
+    public void targetEncoderNoneHoldoutMultipleTEColumnsTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {0, 1};
+
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
+
+        Frame firstColumnEncoding = targetEncodingMap.get("ColA");
+        printOutFrameAsTable(firstColumnEncoding);
+
+        Frame secondColumnEncoding = targetEncodingMap.get("ColB");
+        printOutFrameAsTable(secondColumnEncoding);
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
+
+        // TODO We need vec(..) for doubles to make it easier.
+        // For the first encoded column
+        assertEquals(0.5, resultWithEncoding.vec(4).at(0), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(4).at(1), 1e-5);
+        assertEquals(0.5, resultWithEncoding.vec(4).at(2), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(4).at(3), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(4).at(4), 1e-5);
+
+        // For the second encoded column
+        assertEquals(0.5, resultWithEncoding.vec(5).at(0), 1e-5);
+        assertEquals(0.5, resultWithEncoding.vec(5).at(1), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(5).at(2), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(5).at(3), 1e-5);
+        assertEquals(1, resultWithEncoding.vec(5).at(4), 1e-5);
+    }
     @Test
     public void AddNoiseLevelTest() {
 
