@@ -2,7 +2,6 @@ package water.persist;
 
 import com.google.common.io.ByteStreams;
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -10,14 +9,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import water.H2O;
 import water.Key;
 import water.MemoryManager;
 import water.Value;
 import water.fvec.FileVec;
 import water.fvec.HTTPFileVec;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 
@@ -26,8 +23,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
@@ -35,12 +30,12 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  * Implementation of the Persist interface for HTTP/HTTPS data sources
  * Only subset of the API is supported.
  */
-public class PersistHTTP extends Persist {
+public class PersistHTTP extends PersistEagerHTTP {
 
-  public final static String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
+  private final static String ENABLE_LAZY_LOAD_KEY = SYSTEM_PROP_PREFIX + "persist.http.enableLazyLoad";
 
   @Override
-  public byte[] load(Value v) throws IOException {
+  public final byte[] load(Value v) throws IOException {
     final byte[] b = MemoryManager.malloc1(v._max);
     final Key k = v._key;
     final long offset = (k._kb[0] == Key.CHK) ? FileVec.chunkOffset(k) : 0L;
@@ -145,43 +140,7 @@ public class PersistHTTP extends Persist {
       Log.debug("HTTP lazy load disabled by user.");
 
     // Fallback - load the key eagerly if range-requests are not supported
-    try {
-      Key destination_key = FrameUtils.eagerLoadFromHTTP(path);
-      files.add(path);
-      keys.add(destination_key.toString());
-    } catch( Throwable e) {
-      fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
-    }
-  }
-
-  @Override
-  public List<String> calcTypeaheadMatches(String filter, int limit) {
-    return Collections.emptyList();
-  }
-
-  /* ********************************************* */
-  /* UNIMPLEMENTED methods (inspired by PersistS3) */
-  /* ********************************************* */
-
-  @Override
-  public Key uriToKey(URI uri) {
-    throw new UnsupportedOperationException();
-  }
-
-  // Store Value v to disk.
-  @Override public void store(Value v) {
-    if( !v._key.home() ) return;
-    throw H2O.unimpl();         // VA only
-  }
-
-  @Override
-  public void delete(Value v) {
-    throw H2O.unimpl();
-  }
-
-  @Override
-  public void cleanUp() {
-    throw H2O.unimpl(); /* user-mode swapping not implemented */
+    super.importFiles(path, pattern, files, keys, fails, dels);
   }
 
 }
