@@ -121,7 +121,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( !_stop_requested )      // fast path cutout
       new JAtomic() {
         @Override boolean abort(Job job) { return job._stop_requested; }
-        @Override void update(Job job) { job._stop_requested = true; }
+        @Override void update(Job job) {
+          job._stop_requested = true;
+          Log.debug("Job "+job._description+" requested to stop");
+        }
       }.apply(this);
   }
 
@@ -301,7 +304,6 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       if(Job.isCancelledException(ex)) {
         new Barrier1OnCom().apply(Job.this);
-        _barrier = null;
       } else {
         try {
           Log.err(ex);

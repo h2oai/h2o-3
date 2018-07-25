@@ -338,7 +338,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       _job.setReadyForView(true);
       DKV.put(_job);
-
+    } catch (Exception e) {
+      DKV.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
     } finally {
       cleanUp();
       Scope.exit();
@@ -488,7 +489,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     int nRunning=0;
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      if (job.stop_requested() ) {
+        Log.info("Skipping last "+(N-i)+" out of "+N+" "+modelType+" models");
+        throw new Job.JobCancelledException();
+//        break; // Stop launching but still must block for all async jobs
+      }
       Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
       modelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
@@ -504,29 +509,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       try {
-        submodel_tasks[i].join();
+        final H2O.H2OCountedCompleter task = submodel_tasks[i];
+        if (task != null) task.join();
       } catch(RuntimeException t){
-        if(rt == null) rt = t;
+        if (rt == null) rt = t;
       }
     if(rt != null) throw rt;
   }
 
-  private void buildMainModel() {
-    if (_job.stop_requested()) return;
-    assert _job.isRunning();
-    Log.info("Building main model.");
-    _start_time = System.currentTimeMillis();
-    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
-    mm.join();  // wait for completion
-  }
-
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
-    if( _job.stop_requested() ) return null;
+    if( _job.stop_requested() ) {
+      Log.info("Skipping scoring of CV models");
+      throw new Job.JobCancelledException();
+    }
+    assert weights.length == 2*N;
+    assert cvModelBuilders.length == N;
+
+    Log.info("Scoring the "+N+" CV models");
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
-      if( _job.stop_requested() ) return null; //don't waste time scoring if the CV run is stopped
+      if( _job.stop_requested() ) {
+        throw new Job.JobCancelledException();
+//        return null; //don't waste time scoring if the CV run is stopped
+      }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
       M cvModel = cvModelBuilders[i].dest().get();
@@ -553,15 +560,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mbs;
   }
 
-  // Step 6: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
-  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
-    if( _job.stop_requested() ) return;
+  // Step 6: build the main model
+  private void buildMainModel() {
+    if (_job.stop_requested()) {
+      Log.info("Skipping main model");
+      throw new Job.JobCancelledException();
+    }
     assert _job.isRunning();
+    Log.info("Building main model.");
+    _start_time = System.currentTimeMillis();
+    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
+    mm.join();  // wait for completion
+  }
 
+  // Step 7: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
+  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
+    //never skipping CV main scores: we managed to reach last step and this should not be an expensive one, so let's offer this model
     M mainModel = _result.get();
 
     // Compute and put the cross-validation metrics into the main model
-    Log.info("Computing " + N + "-fold cross-validation metrics.");
+    Log.info("Computing "+N+"-fold cross-validation metrics.");
     mainModel._output._cross_validation_models = new Key[N];
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;

@@ -561,6 +561,11 @@ public class ArrayUtils {
     return false;
   }
 
+  public static <T> boolean contains(T[] arr, T target) {
+    for (T t : arr) if (t == target) return true;
+    return false;
+  }
+
   public static <T> T[] subarray(T[] a, int off, int len) {
     return Arrays.copyOfRange(a,off,off+len);
   }
