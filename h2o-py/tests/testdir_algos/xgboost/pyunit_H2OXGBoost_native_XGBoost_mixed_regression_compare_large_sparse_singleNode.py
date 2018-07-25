@@ -14,7 +14,7 @@ def comparison_test_dense():
     if len(ret.nodes) == 1:
         runSeed = 1
         dataSeed = 17
-        testTol = 1e-6
+        testTol = 1e-10
         ntrees = 17
         maxdepth = 5
         # CPU Backend is forced for the results to be comparable
@@ -68,12 +68,13 @@ def comparison_test_dense():
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
         nrounds=ntrees
         nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
-        modelInfo = nativeModel.get_dump()
-        print(modelInfo)
-        print("num_boost_round: {1}, Number of trees built: {0}".format(len(modelInfo), nrounds))
         nativeTrainTime = time.time()-time1
+        # create a "test" matrix - it will be identical to "train" matrix but it will not have any cached predictions
+        # if we tried to use matrix `nativeTrain` predict(..) will not actually compute anything it will return the cached predictions
+        # cached predictions are slightly different from the actual predictions
+        nativeTest = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
         time1=time.time()
-        nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
+        nativePred = nativeModel.predict(data=nativeTest, ntree_limit=ntrees)
         nativeScoreTime = time.time()-time1
 
         pyunit_utils.summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
