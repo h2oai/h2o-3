@@ -326,7 +326,7 @@ public class TargetEncoder {
         return val.getFrame();
     }
 
-    public Frame substractTargetValueForLOO(Frame data, int numeratorIndex, int denominatorIndex, int targetIndex)  {
+    public Frame subtractTargetValueForLOO(Frame data, int numeratorIndex, int denominatorIndex, int targetIndex)  {
 
         String treeNumerator = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) )   (cols %s [%d] )   (- (cols %s [%d] )  (cols %s [%d] )  ) )  [%d] [] )",
                 data._key, data._key, targetIndex, data._key, numeratorIndex, data._key, numeratorIndex, data._key, targetIndex,  numeratorIndex);
@@ -411,22 +411,22 @@ public class TargetEncoder {
 
                     printOutFrameAsTable(targetEncodingMap);
 
+                    // TODO we'd better don't group it with folds during creation of targetEncodingMap
+                    targetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx, teColumnIndex);
+                    printOutFrameAsTable(targetEncodingMap);
+
                     teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, "0");
 
                     int numeratorIndex = getColumnIndexByName(teFrame,"numerator");
                     int denominatorIndex = getColumnIndexByName(teFrame,"denominator");
                     int targetColumnIndex = getColumnIndexByName(teFrame, targetColumnName);
 
-                    teFrame = substractTargetValueForLOO(teFrame, numeratorIndex, denominatorIndex, targetColumnIndex);
+                    teFrame = subtractTargetValueForLOO(teFrame, numeratorIndex, denominatorIndex, targetColumnIndex);
 
                     break;
-                case HoldoutType.None: // TODO we'd better don't group it with folds during creation of targetEncodingMap
-                    System.out.println(" #### Grouping (back) targetEncodingMap without folds");
-                    if(foldColumnName != null) {
-                        targetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx);
-                    }
-                    targetEncodingMap = renameColumn(targetEncodingMap, "sum_numerator", "numerator");
-                    targetEncodingMap = renameColumn(targetEncodingMap, "sum_denominator", "denominator");
+                case HoldoutType.None:
+                    // TODO we'd better don't group it with folds during creation of targetEncodingMap
+                    targetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx, teColumnIndex);
 
                     teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, "0");
             }
@@ -456,6 +456,16 @@ public class TargetEncoder {
         }
 
         return teFrame;
+    }
+
+    private Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, int targetEncodingMapNumeratorIdx, int targetEncodingMapDenominatorIdx, int teColumnIndex) {
+        System.out.println(" #### Grouping (back) targetEncodingMap without folds");
+        if(foldColumnName != null) { // TODO we can't rely only on absence of the column name passed. User is able not to provide foldColumn name to apply method.
+            targetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx);
+            targetEncodingMap = renameColumn(targetEncodingMap, "sum_numerator", "numerator");
+            targetEncodingMap = renameColumn(targetEncodingMap, "sum_denominator", "denominator");
+        }
+        return targetEncodingMap;
     }
 
     public Frame applyTargetEncoding(Frame data,

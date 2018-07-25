@@ -423,7 +423,12 @@ public class TargetEncodingTest extends TestUtil{
     // ------------------------ LeaveOneOut holdout type -------------------------------------------------------------//
 
     @Test
-    public void targetEncoderLOOHoldoutSubstractCurrentRowTest() {
+    public void targetEncoderLOOHoldoutDivisionByZeroTest() {
+      //TODO Check division by zero when we subtract current row's value and then use results to calculate numerator/denominator
+    }
+
+    @Test
+    public void targetEncoderLOOHoldoutSubtractCurrentRowTest() {
         fr = new TestFrameBuilder()
                 .withName("testFrame")
                 .withColNames("ColA", "numerator", "denominator", "target")
@@ -437,9 +442,9 @@ public class TargetEncodingTest extends TestUtil{
         TargetEncoder tec = new TargetEncoder();
         printOutFrameAsTable(fr);
 
-        Frame res = tec.substractTargetValueForLOO(fr, 1, 2, 3);
+        Frame res = tec.subtractTargetValueForLOO(fr, 1, 2, 3);
         printOutFrameAsTable(res);
-        // We check here that for NA target column we do not substract anything and for other cases we substract current row's target value
+        // We check here that for  `target column = NA` we do not subtract anything and for other cases we subtract current row's target value
         assertVecEquals(vec(1,0,3,6,3,2), res.vec(1), 1e-5);
         assertVecEquals(vec(0,0,3,6,3,6), res.vec(2), 1e-5);
     }
@@ -465,6 +470,28 @@ public class TargetEncodingTest extends TestUtil{
         TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
         System.out.println("Result table" + resultTable.toString());
         assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(5), 1e-5);
+    }
+
+    @Test
+    public void targetEncoderLOOHoldoutApplyingWithFoldColumnTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ard(1, 1, 4, 7, 4))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {0};
+
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3,false, 0, 1234.0);
+
+        assertVecEquals(vec(1,0,1,1,1), resultWithEncoding.vec(6), 1e-5);
     }
 
     // ------------------------ None holdout type -------------------------------------------------------------//
