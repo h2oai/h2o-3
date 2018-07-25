@@ -58,10 +58,11 @@ public class NetworkInit {
     // API socket is only used to find opened port on given ip.
     ServerSocket apiSocket = null;
 
-    // At this point we would like to allocate 2 consecutive ports
+    // At this point we would like to allocate 2 consecutive ports - by default (if `port_offset` is not specified).
+    // If `port_offset` is specified we are trying to allocate a pair (port, port + port_offset).
     //
     while (true) {
-      H2O.H2O_PORT = H2O.API_PORT + 1;
+      H2O.H2O_PORT = H2O.API_PORT + H2O.ARGS.port_offset;
       try {
         // kbn. seems like we need to set SO_REUSEADDR before binding?
         // http://www.javadocexamples.com/java/net/java.net.ServerSocket.html#setReuseAddress:boolean
@@ -112,11 +113,11 @@ public class NetworkInit {
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +
-              ", " + (H2O.ARGS.port+1) +
+              ", " + (H2O.ARGS.port+H2O.ARGS.port_offset) +
               " are not available, change -port PORT and try again.");
       }
       // Try next available port to bound
-      H2O.API_PORT += 2;
+      H2O.API_PORT += (H2O.ARGS.port_offset == 1) ? 2 : 1;
       if (H2O.API_PORT > (1<<16)) {
         Log.err("Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport);
         H2O.exit(-1);
@@ -138,7 +139,7 @@ public class NetworkInit {
     AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
     if (ec != null) {
       // TODO: replace this call with ec.notifyAboutH2oCommunicationChannel(H2O.SELF_ADDRESS, H2O.H2O_PORT)
-      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds +1
+      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds `port_offset` (typically +1)
       //       to that in order to determine the H2O_PORT (which what it really cares about). Such
       //       assumption is dangerous: we should be free of using independent API_PORT and H2O_PORT,
       //       including the ability of not using any API_PORT at all...
@@ -305,7 +306,7 @@ public class NetworkInit {
     HashSet<H2ONode> h2os = new HashSet<>();
     List<FlatFileEntry> list = parseFlatFile(f);
     for(FlatFileEntry entry : list)
-      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+      h2os.add(H2ONode.intern(entry.inet, entry.port+H2O.ARGS.port_offset));// use the UDP port here
     return h2os;
   }
 
@@ -314,7 +315,7 @@ public class NetworkInit {
     InputStream is = new ByteArrayInputStream(StringUtils.bytesOf(s));
     List<FlatFileEntry> list = parseFlatFile(is);
     for(FlatFileEntry entry : list)
-      h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
+      h2os.add(H2ONode.intern(entry.inet, entry.port+H2O.ARGS.port_offset));// use the UDP port here
     return h2os;
   }
 
