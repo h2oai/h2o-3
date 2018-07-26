@@ -1,5 +1,6 @@
 package hex.genmodel.algos.tree;
 
+import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
@@ -274,29 +275,32 @@ public class SharedTreeNode {
     return s.replace("\"", "\\\"");
   }
 
-  private void printDotNode(PrintStream os, boolean detail) {
+  private void printDotNode(PrintStream os, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
     os.print("\"" + getDotName() + "\"");
     os.print(" [");
 
     if (leftChild==null && rightChild==null) {
-      os.print("label=\"");
-      os.print(predValue);
+      os.print("fontsize="+treeOptions._fontSize+", label=\"");
+      float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
+      os.print(predv);
     }
     else if (isBitset()) {
-      os.print("shape=box,label=\"");
+      os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
       os.print(escapeQuotes(colName));
     }
     else {
       assert(! Float.isNaN(splitValue));
-      os.print("shape=box,label=\"");
-      os.print(escapeQuotes(colName) + " < " + splitValue);
+      float splitV = treeOptions._setDecimalPlace?treeOptions.roundNPlace(splitValue):splitValue;
+      os.print("shape=box, fontsize="+treeOptions._fontSize+", label=\"");
+      os.print(escapeQuotes(colName) + " < " + splitV);
     }
 
     if (detail) {
       os.print("\\n\\nN" + getNodeNumber() + "\\n");
       if (leftChild != null || rightChild != null) {
         if (!Float.isNaN(predValue)) {
-          os.print("\\nPred: " + predValue);
+          float predv = treeOptions._setDecimalPlace?treeOptions.roundNPlace(predValue):predValue;
+          os.print("\\nPred: " + predv);
         }
       }
       if (!Float.isNaN(squaredError)) {
@@ -324,23 +328,25 @@ public class SharedTreeNode {
    * @param levelToPrint level number
    * @param detail include additional node detail information
    */
-  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail) {
+  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail, PrintMojo.PrintTreeOptions treeOptions) {
     if (getDepth() == levelToPrint) {
-      printDotNode(os, detail);
+      printDotNode(os, detail, treeOptions);
       return;
     }
 
     assert (getDepth() < levelToPrint);
 
     if (leftChild != null) {
-      leftChild.printDotNodesAtLevel(os, levelToPrint, detail);
+      leftChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
     }
     if (rightChild != null) {
-      rightChild.printDotNodesAtLevel(os, levelToPrint, detail);
+      rightChild.printDotNodesAtLevel(os, levelToPrint, detail, treeOptions);
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child, float totalWeight, boolean detail) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr,
+                                   SharedTreeNode child, float totalWeight, boolean detail,
+                                   PrintMojo.PrintTreeOptions treeOptions) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -366,7 +372,7 @@ public class SharedTreeNode {
       }
     }
 
-    os.print("label=\"");
+    os.print("fontsize="+treeOptions._fontSize+", label=\"");
     for (String s : arr) {
       os.print(escapeQuotes(s) + "\\n");
     }
@@ -381,7 +387,8 @@ public class SharedTreeNode {
    * @param totalWeight total weight of all observations (used to determine edge thickness)
    * @param detail include additional edge detail information
    */
-  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge, float totalWeight, boolean detail) {
+  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge, float totalWeight, boolean detail,
+                     PrintMojo.PrintTreeOptions treeOptions) {
     assert (leftChild == null) == (rightChild == null);
 
     if (leftChild != null) {
@@ -401,7 +408,7 @@ public class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail, treeOptions);
     }
 
     if (rightChild != null) {
@@ -418,7 +425,7 @@ public class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail, treeOptions);
     }
   }
 
