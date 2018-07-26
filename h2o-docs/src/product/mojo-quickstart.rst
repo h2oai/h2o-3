@@ -561,15 +561,15 @@ Viewing a MOJO Model
 
 A java tool for converting binary mojo files into human viewable graphs is packaged with H2O. This tool produces output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
 
-Here is example output for a GBM model:
+Here is an example output for a GBM model:
 
 .. figure:: images/gbm_mojo_graph.png
    :alt: GBM MOJO model
 
+The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. To better control the look and feel of your tree, we provide two options for PrintMojo:
 
-The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. To better control the look and feel of your tree, we have added on two extra options off PrintMojo to allow you to control the number of decimal points shown for numbers and to control the font sizes.
-
-However, be careful not to choose a big font size that you cannot see your whole tree.  The default fontsize is 14.  We would not recommend using any font size over 20.
+- ``--decimalplaces`` (or ``-d``) allows you to control the  number of decimal points shown for numbers. 
+- ``--fontsize`` (or ``-f``) controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than  20.
 
 ::
 
@@ -588,9 +588,9 @@ However, be careful not to choose a big font size that you cannot see your whole
   # and run the PrintMojo tool from the command line.
   #
   # (For MacOS: brew install graphviz)
-  # java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
-  # dot -Tpng model.gv -o model.png
-  # open model.png
+  java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+  dot -Tpng model.gv -o model.png
+  open model.png
 
 FAQ
 ~~~
