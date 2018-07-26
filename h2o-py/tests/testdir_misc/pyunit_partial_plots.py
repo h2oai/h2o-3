@@ -24,20 +24,38 @@ def partial_plot_test():
     # Plot Partial Dependence for one feature then for both
     pdp1=gbm_model.partial_plot(data=data,cols=['AGE'],server=True, plot=True)
     #Manual test
-    h2o_mean_response = pdp1[0]["mean_response"]
-    h2o_stddev_response = pdp1[0]["stddev_response"]
-    h2o_std_error_mean_response = pdp1[0]["std_error_mean_response"]
-    pdp_manual = partial_dependence(gbm_model, data, "AGE", pdp1)
+    h2o_mean_response_pdp1 = pdp1[0]["mean_response"]
+    h2o_stddev_response_pdp1 = pdp1[0]["stddev_response"]
+    h2o_std_error_mean_response_pdp1 = pdp1[0]["std_error_mean_response"]
+    pdp_manual = partial_dependence(gbm_model, data, "AGE", pdp1, 0)
 
-    assert h2o_mean_response == pdp_manual[0]
-    assert h2o_stddev_response == pdp_manual[1]
-    assert h2o_std_error_mean_response == pdp_manual[2]
+    assert h2o_mean_response_pdp1 == pdp_manual[0]
+    assert h2o_stddev_response_pdp1 == pdp_manual[1]
+    assert h2o_std_error_mean_response_pdp1 == pdp_manual[2]
 
     pdp2=gbm_model.partial_plot(data=data,cols=['AGE','RACE'], server=True, plot=False)
+    #Manual test
+    h2o_mean_response_pdp2 = pdp2[0]["mean_response"]
+    h2o_stddev_response_pdp2 = pdp2[0]["stddev_response"]
+    h2o_std_error_mean_response_pdp2 = pdp2[0]["std_error_mean_response"]
+    pdp_manual = partial_dependence(gbm_model, data, "AGE", pdp2, 0)
 
-def partial_dependence(object, pred_data, xname, h2o_pp):
-    x_pt = h2o_pp[0][xname.lower()] #Needs to be lower case here as the PDP response sets everything to lower
-    print(x_pt)
+    assert h2o_mean_response_pdp2 == pdp_manual[0]
+    assert h2o_stddev_response_pdp2 == pdp_manual[1]
+    assert h2o_std_error_mean_response_pdp2 == pdp_manual[2]
+
+    #Manual test
+    h2o_mean_response_pdp2_race = pdp2[1]["mean_response"]
+    h2o_stddev_response_pdp2_race = pdp2[1]["stddev_response"]
+    h2o_std_error_mean_response_pdp2_race = pdp2[1]["std_error_mean_response"]
+    pdp_manual = partial_dependence(gbm_model, data, "RACE", pdp2, 1)
+
+    assert h2o_mean_response_pdp2_race == pdp_manual[0]
+    assert h2o_stddev_response_pdp2_race == pdp_manual[1]
+    assert h2o_std_error_mean_response_pdp2_race == pdp_manual[2]
+
+def partial_dependence(object, pred_data, xname, h2o_pp, pdp_name_idx):
+    x_pt = h2o_pp[pdp_name_idx][xname.lower()] #Needs to be lower case here as the PDP response sets everything to lower
     y_pt = list(range(len(x_pt)))
     y_sd = list(range(len(x_pt)))
     y_sem = list(range(len(x_pt)))
