@@ -332,14 +332,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
 
-      // Step 7: Clean up potentially created temp frames
+      // Step 8: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
         mb.cleanUp();
 
       _job.setReadyForView(true);
       DKV.put(_job);
-    } catch (Exception e) {
-      DKV.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
+    } catch (Exception propagate) {
+      if (_job._result != null) _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
+      throw propagate;
     } finally {
       cleanUp();
       Scope.exit();
@@ -492,7 +493,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (job.stop_requested() ) {
         Log.info("Skipping last "+(N-i)+" out of "+N+" "+modelType+" models");
         throw new Job.JobCancelledException();
-//        break; // Stop launching but still must block for all async jobs
       }
       Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
       modelBuilders[i]._start_time = System.currentTimeMillis();
@@ -519,7 +519,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
-    if( _job.stop_requested() ) {
+    if (_job.stop_requested()) {
       Log.info("Skipping scoring of CV models");
       throw new Job.JobCancelledException();
     }
@@ -530,9 +530,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
-      if( _job.stop_requested() ) {
+      if (_job.stop_requested()) {
         throw new Job.JobCancelledException();
-//        return null; //don't waste time scoring if the CV run is stopped
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);

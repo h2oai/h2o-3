@@ -172,7 +172,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       // Number of traversed model parameters
       int counter = grid.getModelCount();
       while (it.hasNext(model)) {
-        if(_job.stop_requested() ) return;  // Handle end-user cancel request
+        if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
         double time_remaining_secs = Double.MAX_VALUE;
@@ -180,7 +180,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           time_remaining_secs = it.time_remaining_secs();
           if (time_remaining_secs < 0) {
             Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
-            return;
+            throw new Job.JobCancelledException();
           }
         }
 

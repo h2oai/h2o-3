@@ -1032,19 +1032,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     _parms._stopping_rounds = 0;
     _parms._max_runtime_secs = 0;
     int sum = 0;
-/*
-    int cv_completed = 0;
-    for( int i=0; i<cvModelBuilders.length; ++i ) {
-      Model model = DKV.getGet(cvModelBuilders[i].dest());
-      if (model == null) {
-        Log.info("CV model "+(i+1)+" didn't complete.");
-        continue;
-      }
-      cv_completed++;
-      sum += ((SharedTreeModel.SharedTreeOutput)model._output)._ntrees;
-    }
-    _parms._ntrees = (int)((double)sum/cv_completed);
-*/
     for( int i=0; i<cvModelBuilders.length; ++i )
       sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
     _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
