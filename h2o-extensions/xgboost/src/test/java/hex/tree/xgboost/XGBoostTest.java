@@ -19,13 +19,12 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.util.Log;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
@@ -703,6 +702,71 @@ public class XGBoostTest extends TestUtil {
       }
     }
 
+  }
+
+  @Test
+  public void testBinomialTrainingWeights() {
+    Frame airlinesFrame = null;
+    Frame trainingFrameSubset = null;
+    XGBoostModel model = null;
+    XGBoostModel verificationModel = null;
+    Scope.enter();
+    try {
+      airlinesFrame = parse_test_file("./smalldata/testng/airlines.csv");
+      Scope.track(airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()));
+      DKV.put(airlinesFrame);
+
+      final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
+      final String weightsColumnName = "weights";
+      airlinesFrame.add(weightsColumnName, weightsVector);
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._weights_column = weightsColumnName;
+      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Binomial, model._output.getModelCategory());
+      assertEquals(model._output.weightsName(), weightsColumnName);
+
+      trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", airlinesFrame._key, airlinesFrame._key)).getFrame();
+      trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      DKV.put(trainingFrameSubset);
+      parms._weights_column = null;
+      parms._train = trainingFrameSubset._key;
+
+      verificationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+      assertEquals(verificationModel._output._training_metrics.auc_obj()._auc, model._output._training_metrics.auc_obj()._auc, 1e-6);
+      assertEquals(verificationModel._output._training_metrics.rmse(), model._output._training_metrics.rmse(), 1e-6);
+
+    } finally {
+      Scope.exit();
+      if (airlinesFrame != null) airlinesFrame.remove();
+      if (trainingFrameSubset != null) trainingFrameSubset.remove();
+      if (model != null) model.delete();
+      if (verificationModel != null) verificationModel.delete();
+    }
+
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
+   */
+  private Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
+    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = new Random(randomSeed);
+    for (int i = 0; i < weightsVec.length(); i++) {
+      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
+    }
+
+    return weightsVec;
   }
 
   @Test
