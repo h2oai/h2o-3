@@ -79,9 +79,7 @@ public class GlrmMojoModel extends MojoModel {
     double alpha=1.0;  // reset back to 1 for each row
 
     // Step 0: prepare the data row
-    double[] a = new double[_ncolA];
-    for (int i = 0; i < _ncolA; i++)
-      a[i] = row[_permutation[i]];
+    double[] a = getRowData(row);
 
     // Step 1: initialize X  (for now do Random initialization only)
     double[] x = new double[_ncolX];
@@ -124,6 +122,19 @@ public class GlrmMojoModel extends MojoModel {
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
 
+  }
+
+  public double[] getRowData(double[] row) {
+    double[] a = new double[_ncolA];
+
+    for (int i=0; i < _ncats; i++) {
+      double temp = row[_permutation[i]];
+      a[i] = (temp>=_numLevels[i])?Double.NaN:temp; // set unseen levels to NaN
+    }
+    for (int i = _ncats; i < _ncolA; i++)
+      a[i] = row[_permutation[i]];
+
+    return a;
   }
 
   /**
