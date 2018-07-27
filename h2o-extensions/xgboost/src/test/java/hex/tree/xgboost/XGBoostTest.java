@@ -676,6 +676,7 @@ public class XGBoostTest extends TestUtil {
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", airlinesFrame._key, airlinesFrame._key)).getFrame();
       trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      assertEquals(airlinesFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
       parms._train = trainingFrameSubset._key;
@@ -730,6 +731,7 @@ public class XGBoostTest extends TestUtil {
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", prostateFrame._key, prostateFrame._key)).getFrame();
       trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      assertEquals(prostateFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
       parms._train = trainingFrameSubset._key;
@@ -784,6 +786,7 @@ public class XGBoostTest extends TestUtil {
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [5]) 1))", iristFrame._key, iristFrame._key)).getFrame();
       trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      assertEquals(iristFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
       parms._train = trainingFrameSubset._key;
