@@ -644,65 +644,6 @@ public class XGBoostTest extends TestUtil {
 
   }
 
-  @Test
-  public void testBinomialResponseCrossValidation() {
-    Frame tfr = null;
-    XGBoostModel model = null;
-    Scope.enter();
-    try {
-      tfr = parse_test_file("./smalldata/testng/airlines.csv");
-      Scope.track(tfr.replace(0, tfr.vecs()[0].toCategoricalVec()));
-      DKV.put(tfr);
-
-      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
-      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
-      parms._response_column = "IsDepDelayed";
-      parms._train = tfr._key;
-      parms._nfolds = 2;
-      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
-
-      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      assertEquals(ModelCategory.Binomial, model._output.getModelCategory());
-
-      assertNotEquals(model._output._cross_validation_metrics.rmse(), model._output._training_metrics.rmse());
-      assertNotEquals(model._output._cross_validation_metrics.auc_obj()._auc, model._output._training_metrics.auc_obj()._auc);
-
-      assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
-
-      Key[] crossValidationModelKeys = model._output._cross_validation_models;
-
-      for (Key cvKey : crossValidationModelKeys) {
-        XGBoostModel crossValidationModel = (XGBoostModel) cvKey.get();
-        double rmseDifference = 0D;
-        double r2Difference = 0D;
-        for (int scoreHistoryIndex = 0; scoreHistoryIndex < crossValidationModel._output._scored_train.length; scoreHistoryIndex++) {
-          final ScoreKeeper trainingScore = crossValidationModel._output._scored_train[scoreHistoryIndex];
-          final ScoreKeeper validationScore = crossValidationModel._output._scored_valid[scoreHistoryIndex];
-
-          // Empty model contains NaNs - false assertion pass is avoided by testing the values not to be NaN
-          assertNotEquals(Float.NaN, validationScore._rmse);
-          assertNotEquals(Float.NaN, validationScore._r2);
-
-          //First iterations might be the same, thus absolute value of total difference between training and validation
-          //is verified to be greater than 0
-          rmseDifference += Math.abs(trainingScore._rmse - validationScore._rmse);
-          r2Difference += Math.abs(trainingScore._r2 - validationScore._r2);
-        }
-        assertNotEquals(0, rmseDifference);
-        System.out.println(rmseDifference);
-        assertNotEquals(0, r2Difference);
-      }
-
-    } finally {
-      Scope.exit();
-      if (tfr != null) tfr.remove();
-      if (model != null) {
-        model.delete();
-        model.deleteCrossValidationModels();
-      }
-    }
-
-  }
 
   @Test
   public void testBinomialTrainingWeights() {
@@ -754,6 +695,61 @@ public class XGBoostTest extends TestUtil {
 
   }
 
+  @Test
+  public void testRegressionTrainingWeights() {
+    Frame prostateFrame = null;
+    Frame trainingFrameSubset = null;
+    XGBoostModel model = null;
+    XGBoostModel verificationModel = null;
+    Scope.enter();
+    try {
+      prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(prostateFrame);
+
+      final Vec weightsVector = createRandomBinaryWeightsVec(prostateFrame.numRows(), 10);
+      final String weightsColumnName = "weights";
+      prostateFrame.add(weightsColumnName, weightsVector);
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = prostateFrame._key;
+      parms._weights_column = weightsColumnName;
+      parms._ignored_columns = new String[]{"ID"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Regression, model._output.getModelCategory());
+      assertEquals(weightsColumnName, model._output.weightsName());
+
+      trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", prostateFrame._key, prostateFrame._key)).getFrame();
+      trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      DKV.put(trainingFrameSubset);
+      parms._weights_column = null;
+      parms._train = trainingFrameSubset._key;
+
+      verificationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      ModelMetricsRegression modelMetricsRegression = (ModelMetricsRegression) model._output._training_metrics;
+      ModelMetricsRegression verificationModelMetricsRegression = (ModelMetricsRegression) verificationModel._output._training_metrics;
+
+      assertEquals(modelMetricsRegression.rmse(), verificationModelMetricsRegression.rmse(), 1e-20);
+      assertEquals(modelMetricsRegression.mean_residual_deviance(), verificationModelMetricsRegression._mean_residual_deviance, 1e-6); // RMSE one line above, testing correct assignment, even if the value is derived
+      assertEquals(modelMetricsRegression._root_mean_squared_log_error, verificationModelMetricsRegression._root_mean_squared_log_error, 1e-20);
+      assertEquals(modelMetricsRegression._mean_absolute_error, verificationModelMetricsRegression._mean_absolute_error, 1e-6);
+      assertEquals(modelMetricsRegression._sigma, verificationModelMetricsRegression._sigma, 1e-20);
+      assertEquals(modelMetricsRegression._nobs, verificationModelMetricsRegression._nobs, 1e-20);
+
+    } finally {
+      Scope.exit();
+      if (prostateFrame != null) prostateFrame.remove();
+      if (trainingFrameSubset != null) trainingFrameSubset.remove();
+      if (model != null) model.delete();
+      if (verificationModel != null) verificationModel.delete();
+    }
+
+  }
+
   /**
    * @param len        Length of the resulting vector
    * @param randomSeed Seed for the random generator (for reproducibility)
@@ -767,59 +763,6 @@ public class XGBoostTest extends TestUtil {
     }
 
     return weightsVec;
-  }
-
-  @Test
-  public void testRegressionCrossValidation() {
-    Frame tfr = null;
-    XGBoostModel model = null;
-    Scope.enter();
-    try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
-      Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
-      DKV.put(tfr);
-
-      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
-      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
-      parms._response_column = "AGE";
-      parms._train = tfr._key;
-      parms._nfolds = 2;
-      parms._ignored_columns = new String[]{"ID"};
-
-      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      assertEquals(ModelCategory.Regression, model._output.getModelCategory());
-
-      assertNotEquals(model._output._cross_validation_metrics.rmse(), model._output._training_metrics.rmse());
-
-      assertEquals(model._output._scored_train.length, model._output._scored_valid.length);
-
-      Key[] crossValidationModelKeys = model._output._cross_validation_models;
-
-      for (Key cvKey : crossValidationModelKeys) {
-        XGBoostModel crossValidationModel = (XGBoostModel) cvKey.get();
-
-        for (int scoreHistoryIndex = 0; scoreHistoryIndex < crossValidationModel._output._scored_train.length; scoreHistoryIndex++) {
-          final ScoreKeeper trainingScore = crossValidationModel._output._scored_train[scoreHistoryIndex];
-          final ScoreKeeper validationScore = crossValidationModel._output._scored_valid[scoreHistoryIndex];
-
-          // Empty model contains NaNs - false assertion pass is avoided by testing the values not to be NaN
-          assertNotEquals(Float.NaN, validationScore._rmse);
-          assertNotEquals(Float.NaN, validationScore._r2);
-          assertNotEquals(trainingScore._rmse, validationScore._rmse);
-          assertNotEquals(trainingScore._r2, validationScore._r2);
-        }
-      }
-
-
-    } finally {
-      Scope.exit();
-      if (tfr != null) tfr.remove();
-      if (model != null) {
-        model.delete();
-        model.deleteCrossValidationModels();
-      }
-    }
-
   }
 
   @Test
