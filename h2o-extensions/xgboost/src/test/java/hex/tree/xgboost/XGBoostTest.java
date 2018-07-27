@@ -681,10 +681,15 @@ public class XGBoostTest extends TestUtil {
       parms._train = trainingFrameSubset._key;
 
       verificationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      ModelMetricsBinomial verificationModelMetrics = (ModelMetricsBinomial) verificationModel._output._training_metrics;
+      ModelMetricsBinomial modelMetrics = (ModelMetricsBinomial) model._output._training_metrics;
 
-      assertEquals(verificationModel._output._training_metrics.auc_obj()._auc, model._output._training_metrics.auc_obj()._auc, 1e-6);
-      assertEquals(verificationModel._output._training_metrics.rmse(), model._output._training_metrics.rmse(), 1e-6);
-
+      assertEquals(verificationModelMetrics.rmse(), modelMetrics.rmse(), 1e-20);
+      assertEquals(verificationModelMetrics._nobs, modelMetrics._nobs, 1e-20);
+      assertEquals(verificationModelMetrics._sigma, modelMetrics._sigma, 1e-20);
+      assertEquals(verificationModelMetrics._logloss, modelMetrics._logloss, 1e-20);
+      assertEquals(verificationModelMetrics._auc._auc, modelMetrics._auc._auc, 1e-20);
+      assertArrayEquals(verificationModelMetrics._domain, modelMetrics._domain);
     } finally {
       Scope.exit();
       if (airlinesFrame != null) airlinesFrame.remove();
