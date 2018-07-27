@@ -186,9 +186,10 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 
             if (_output.nclasses() == 1) {
                 double[] dpreds = MemoryManager.malloc8d(preds.length);
+                double[] currentPred = new double[1];
                 for (int j = 0; j < dpreds.length; ++j) {
                     dpreds[j] = preds[j][0];
-                    double[] currentPred = {dpreds[j]};
+                    currentPred[0] = dpreds[j];
                     if (_computeMetrics) {
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
                         _metricBuilder.perRow(currentPred, new float[]{labels[j]}, weight, 0, _model);
