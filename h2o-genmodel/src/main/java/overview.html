@@ -538,7 +538,13 @@ Here is example output for a GBM model:
 
 <h3>From R:</h3>
 The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on
-the command line to make a .png file.
+the command line to make a .png file. To better control the look and feel of your tree, we
+provide two options for PrintMojo. ``--decimalplaces`` (or ``-d``) allows you to control the 
+number of decimal points shown for numbers. ``--fontsize`` (or ``-f``) controls the font size. 
+The default font size is 14. When using this option, be careful not to choose a font size that 
+is so large that you cannot see your whole tree. We recommend using a font size no larger than 
+20.
+
 <pre>
 library(h2o)
 h2o.init()
@@ -555,9 +561,9 @@ h2o.download_mojo(model, getwd(), FALSE)
 # and run the PrintMojo tool from the command line.
 #
 # (For MacOS: brew install graphviz)
-# java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
-# dot -Tpng model.gv -o model.png
-# open model.png
+java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+dot -Tpng model.gv -o model.png
+open model.png
 </pre>
 
 <h1><u>Using an XGBoost MOJO with Maven</u></h1>
@@ -573,12 +579,12 @@ If you declare a dependency on h2o-genmodel, then you also have to include the h
     <dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel-ext-xgboost</artifactId>
-        <version>3.18.0.8</version>
+        <version>3.20.0.3</version>
     </dependency>
     <dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel</artifactId>
-        <version>3.18.0.8</version>
+        <version>3.20.0.3</version>
     </dependency>
 </dependencies>
 </xmp>
