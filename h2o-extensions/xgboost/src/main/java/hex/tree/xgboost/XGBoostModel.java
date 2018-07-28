@@ -340,34 +340,34 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   private ModelMetrics makeMetrics(Booster booster, Frame data, Frame originalData, String description, Key<Frame> predFrameKey) throws XGBoostError {
     Futures fs = new Futures();
     ModelMetrics[] mms = new ModelMetrics[1];
-    Frame predictions = makePreds(booster, data, mms, true, predFrameKey, fs);
+    Frame predictions = makePreds(booster,originalData, data, mms, true, predFrameKey, fs);
     if (predFrameKey == null) {
         predictions.remove(fs);
     } else {
       DKV.put(predictions, fs);
     }
     fs.blockForPending();
-    ModelMetrics mm = mms[0]
-        .withModelAndFrame(this, originalData)
-        .withDescription(description);
+    ModelMetrics mm = mms[0];
     return mm;
   }
 
   private Frame makePredsOnly(Booster booster, Frame data, Key<Frame> destinationKey) throws XGBoostError {
     Futures fs = new Futures();
-    Frame preds = makePreds(booster, data, null, false, destinationKey, fs);
+    Frame preds = makePreds(booster,null, data, null, false, destinationKey, fs);
     DKV.put(preds, fs);
     fs.blockForPending();
     return preds;
   }
 
-  private Frame makePreds(Booster booster, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey, Futures fs) throws XGBoostError {
+  private Frame makePreds(Booster booster,Frame originalData, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey, Futures fs) throws XGBoostError {
       assert (! computeMetrics) || (mms != null && mms.length == 1);
 
       XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
               model_info(), _output, _parms,
               booster, destinationKey, data,
-              computeMetrics
+              originalData,
+              computeMetrics,
+              this
       );
       if(computeMetrics) {
         mms[0] = score.mm;

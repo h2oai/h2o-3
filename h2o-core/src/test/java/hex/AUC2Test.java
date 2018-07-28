@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.exceptions.H2OIllegalArgumentException;
 
-import static org.junit.Assert.*;
+
 
 public class AUC2Test {
 
