@@ -829,6 +829,248 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
+  public void testMultinomialCrossValidationWeights() {
+    Frame iristFrame = null;
+    Frame crossValidationSubset = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      iristFrame = parse_test_file("./smalldata/extdata/iris.csv");
+      Scope.track(iristFrame.replace(4, iristFrame.vecs()[4].toCategoricalVec()));
+      DKV.put(iristFrame);
+
+      final Vec foldColumnVector = createRandomFoldColumn(iristFrame.numRows(), 2, 10);
+      final String foldColumnName = "foldColumn";
+      iristFrame.add(foldColumnName, foldColumnVector);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "C5"; // iris-setosa, iris-versicolor, iris-virginica
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._train = iristFrame._key;
+      parms._fold_column = foldColumnName;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Multinomial, model._output.getModelCategory());
+      assertEquals(foldColumnName, model._output.foldName());
+      parms._fold_column = null; // No longer required
+
+      Key[] originalCrossValidationModels = model._output._cross_validation_models;
+      assertEquals(2, originalCrossValidationModels.length);
+
+      for (int i = 0; i < originalCrossValidationModels.length; i++) {
+
+        crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [5]) %d))", iristFrame._key, iristFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
+        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        DKV.put(crossValidationSubset);
+        parms._train = crossValidationSubset._key;
+        XGBoostModel crossValidationModel = null;
+        try {
+          crossValidationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+          ModelMetricsMultinomial crossValidationModelMetrics = (ModelMetricsMultinomial) crossValidationModel._output._training_metrics;
+          ModelMetricsMultinomial originalCrossValidationMetrics = (ModelMetricsMultinomial) ((XGBoostModel) originalCrossValidationModels[i].get())._output._training_metrics;
+
+          assertEquals(originalCrossValidationMetrics.rmse(), crossValidationModelMetrics.rmse(), 1e-20);
+          assertEquals(originalCrossValidationMetrics._sigma, crossValidationModelMetrics._sigma, 1e-20);
+          assertEquals(originalCrossValidationMetrics._nobs, crossValidationModelMetrics._nobs, 1e-20);
+          assertEquals(originalCrossValidationMetrics._logloss, crossValidationModelMetrics._logloss, 1e-20);
+          assertEquals(originalCrossValidationMetrics._mean_per_class_error, crossValidationModelMetrics._mean_per_class_error, 1e-20);
+          assertArrayEquals(originalCrossValidationMetrics._domain, crossValidationModelMetrics._domain);
+          assertArrayEquals(originalCrossValidationMetrics._hit_ratios, crossValidationModelMetrics._hit_ratios, 1e-20F);
+        } finally {
+          if (crossValidationModel != null) {
+            crossValidationModel.deleteCrossValidationPreds();
+            crossValidationModel.deleteCrossValidationModels();
+            crossValidationModel.remove();
+          }
+        }
+
+      }
+
+    } finally {
+      Scope.exit();
+      if (iristFrame != null) iristFrame.remove();
+      if (model != null) {
+        model.deleteCrossValidationModels();
+        model.deleteCrossValidationPreds();
+        model.remove();
+      }
+      if (crossValidationSubset != null) {
+        crossValidationSubset.remove();
+      }
+    }
+  }
+
+  @Test
+  public void testBinomialCrossValidationWeights() {
+    Frame airlinesFrame = null;
+    Frame crossValidationSubset = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      airlinesFrame = parse_test_file("./smalldata/testng/airlines.csv");
+      Scope.track(airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()));
+      DKV.put(airlinesFrame);
+
+      final Vec foldColumnVector = createRandomFoldColumn(airlinesFrame.numRows(), 2, 10);
+      final String foldColumnName = "foldColumn";
+      airlinesFrame.add(foldColumnName, foldColumnVector);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
+      parms._fold_column = foldColumnName;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Binomial, model._output.getModelCategory());
+      assertEquals(foldColumnName, model._output.foldName());
+      parms._fold_column = null; // No longer required
+
+      Key[] originalCrossValidationModels = model._output._cross_validation_models;
+      assertEquals(2, originalCrossValidationModels.length);
+
+      for (int i = 0; i < originalCrossValidationModels.length; i++) {
+
+        crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) %d))", airlinesFrame._key, airlinesFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
+        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        DKV.put(crossValidationSubset);
+        parms._train = crossValidationSubset._key;
+        XGBoostModel crossValidationModel = null;
+        try {
+          crossValidationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+          ModelMetricsBinomial crossValidationModelMetrics = (ModelMetricsBinomial) crossValidationModel._output._training_metrics;
+          ModelMetricsBinomial originalCrossValidationMetrics = (ModelMetricsBinomial) ((XGBoostModel) originalCrossValidationModels[i].get())._output._training_metrics;
+
+          assertEquals(originalCrossValidationMetrics.rmse(), crossValidationModelMetrics.rmse(), 1e-20);
+          assertEquals(originalCrossValidationMetrics._nobs, crossValidationModelMetrics._nobs, 1e-20);
+          assertEquals(originalCrossValidationMetrics._sigma, crossValidationModelMetrics._sigma, 1e-20);
+          assertEquals(originalCrossValidationMetrics._logloss, crossValidationModelMetrics._logloss, 1e-20);
+          assertEquals(originalCrossValidationMetrics._auc._auc, crossValidationModelMetrics._auc._auc, 1e-20);
+          assertArrayEquals(originalCrossValidationMetrics._domain, crossValidationModelMetrics._domain);
+        } finally {
+          if (crossValidationModel != null) {
+            crossValidationModel.deleteCrossValidationPreds();
+            crossValidationModel.deleteCrossValidationModels();
+            crossValidationModel.remove();
+          }
+        }
+
+      }
+
+    } finally {
+      Scope.exit();
+      if (airlinesFrame != null) airlinesFrame.remove();
+      if (model != null) {
+        model.deleteCrossValidationModels();
+        model.deleteCrossValidationPreds();
+        model.remove();
+      }
+      if (crossValidationSubset != null) {
+        crossValidationSubset.remove();
+      }
+    }
+
+  }
+
+  @Test
+  public void testRegressionCrossValidationWeights() {
+    Frame prostateFrame = null;
+    Frame crossValidationSubset = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
+      Scope.track(prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
+      DKV.put(prostateFrame);
+
+      final Vec foldColumnVector = createRandomFoldColumn(prostateFrame.numRows(), 2, 10);
+      final String foldColumnName = "foldColumn";
+      prostateFrame.add(foldColumnName, foldColumnVector);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = prostateFrame._key;
+      parms._ignored_columns = new String[]{"ID"};
+      parms._fold_column = foldColumnName;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Regression, model._output.getModelCategory());
+      assertEquals(foldColumnName, model._output.foldName());
+      parms._fold_column = null; // No longer required
+
+      Key[] originalCrossValidationModels = model._output._cross_validation_models;
+      assertEquals(2, originalCrossValidationModels.length);
+
+      for (int i = 0; i < originalCrossValidationModels.length; i++) {
+
+        crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) %d))", prostateFrame._key, prostateFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
+        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        DKV.put(crossValidationSubset);
+        parms._train = crossValidationSubset._key;
+        XGBoostModel crossValidationModel = null;
+        try {
+          crossValidationModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+          ModelMetricsRegression crossValidationModelMetrics = (ModelMetricsRegression) crossValidationModel._output._training_metrics;
+          ModelMetricsRegression originalCrossValidationMetrics = (ModelMetricsRegression) ((XGBoostModel) originalCrossValidationModels[i].get())._output._training_metrics;
+
+          assertEquals(originalCrossValidationMetrics.rmse(), crossValidationModelMetrics.rmse(), 1e-20);
+          assertEquals(originalCrossValidationMetrics.mean_residual_deviance(), crossValidationModelMetrics._mean_residual_deviance, 1e-6); // RMSE one line above, testing correct assignment, even if the value is derived
+          assertEquals(originalCrossValidationMetrics._root_mean_squared_log_error, crossValidationModelMetrics._root_mean_squared_log_error, 1e-20);
+          assertEquals(originalCrossValidationMetrics._mean_absolute_error, crossValidationModelMetrics._mean_absolute_error, 1e-6);
+          assertEquals(originalCrossValidationMetrics._sigma, crossValidationModelMetrics._sigma, 1e-20);
+          assertEquals(originalCrossValidationMetrics._nobs, crossValidationModelMetrics._nobs, 1e-20);
+        } finally {
+          if (crossValidationModel != null) {
+            crossValidationModel.deleteCrossValidationPreds();
+            crossValidationModel.deleteCrossValidationModels();
+            crossValidationModel.remove();
+          }
+        }
+
+      }
+
+    } finally {
+      Scope.exit();
+      if (prostateFrame != null) prostateFrame.remove();
+      if (model != null) {
+        model.deleteCrossValidationModels();
+        model.deleteCrossValidationPreds();
+        model.remove();
+      }
+      if (crossValidationSubset != null) {
+        crossValidationSubset.remove();
+      }
+    }
+
+  }
+
+  /**
+   * Creates a {@link Vec} representing a randomly-generated fold column.
+   *
+   * @param len        Length of the resulting fold column vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @param nfolds     Number of folds. Basically number of categories in the fold column.
+   * @return An instance of {@link Vec} with integers ranging from 0 to nfoldsm representing the number of categories.
+   */
+  private Vec createRandomFoldColumn(final long len, final int nfolds, final int randomSeed) {
+    if (nfolds < 2) throw new IllegalArgumentException("Number of folds must be greater than or equal to 2.");
+    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = new Random(randomSeed);
+    for (int i = 0; i < weightsVec.length(); i++) {
+      weightsVec.set(i, random.nextInt(nfolds));
+    }
+
+    return weightsVec;
+  }
+
+  @Test
   public void denseMatrixDetectionTest() {
     Frame tfr = null;
     XGBoostModel model = null;
