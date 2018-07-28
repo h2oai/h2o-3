@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -248,6 +249,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                           computeCrossValidation();
                           tryComplete();
                         }
+                        @Override
+                        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+                          Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
+                          if (_job._result != null) _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                          return true;
+                        }
                       },
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
@@ -338,9 +345,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       _job.setReadyForView(true);
       DKV.put(_job);
-    } catch (Exception propagate) {
-      if (_job._result != null) _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
-      throw propagate;
     } finally {
       cleanUp();
       Scope.exit();
@@ -538,9 +542,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
-              _parms._keep_cross_validation_predictions ||
-              (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+              || _parms._keep_cross_validation_predictions
+              || (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         DKV.put(cvModel);

@@ -475,7 +475,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     jobs.remove(subJob);
-
   }
 
   // These are per (possibly concurrent) AutoML run.

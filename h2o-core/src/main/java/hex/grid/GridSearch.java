@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -135,6 +136,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       @Override public void compute2() {
         gridSearch(grid);
         tryComplete();
+      }
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
+        return true;
       }
     }, gridWork, it.max_runtime_secs());
   }
