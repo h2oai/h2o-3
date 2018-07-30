@@ -80,6 +80,7 @@ public class h2odriver extends Configured implements Tool {
   static int nthreads = -1;
   static String contextPath = null;
   static int basePort = -1;
+  static int portOffset = -1;
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
@@ -834,6 +835,13 @@ public class h2odriver extends Configured implements Tool {
             error("Base port must be between 1 and 65535");
         }
       }
+      else if (s.equals("-port_offset")) {
+        i++; if (i >= args.length) { usage(); }
+        portOffset = Integer.parseInt(args[i]);
+        if ((portOffset <= 0) || (portOffset > 65534)) {
+          error("Port offset must be between 1 and 65534");
+        }
+      }
       else if (s.equals("-beta")) {
         beta = true;
       }
@@ -1448,6 +1456,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (basePort >= 0) {
       addMapperArg(conf, "-baseport", Integer.toString(basePort));
+    }
+    if (portOffset >= 1) {
+      addMapperArg(conf, "-port_offset", Integer.toString(portOffset));
     }
     if (beta) {
       addMapperArg(conf, "-beta");
