@@ -82,7 +82,7 @@ final public class H2O {
             "          IP address of this node.\n" +
             "\n" +
             "    -port <port>\n" +
-            "          Port number for this node (note: port+1 is also used).\n" +
+            "          Port number for this node (note: port+1 is also used by default).\n" +
             "          (The default port is " + ARGS.port + ".)\n" +
             "\n" +
             "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
@@ -239,6 +239,9 @@ final public class H2O {
 
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
+
+    /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
+    public int port_offset = 1;
 
     /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
     public String web_ip = null;
@@ -454,6 +457,10 @@ final public class H2O {
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
         trgt.baseport = s.parsePort(args[i]);
+      }
+      else if (s.matches("port_offset")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.port_offset = s.parsePort(args[i]); // port offset has the same properties as a port, we don't allow negative offsets
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
