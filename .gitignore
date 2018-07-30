@@ -67,6 +67,7 @@ Rlibrary
 # Data folders
 bigdata
 smalldata
+fread
 
 # Ignore Eclipse project settings
 .classpath
