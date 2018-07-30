@@ -514,7 +514,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       try {
         final H2O.H2OCountedCompleter task = submodel_tasks[i];
-        if (task != null) task.join();
+        assert task != null;
+        task.join();
       } catch(RuntimeException t){
         if (rt == null) rt = t;
       }
