@@ -675,7 +675,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(model._output.weightsName(), weightsColumnName);
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", airlinesFrame._key, airlinesFrame._key)).getFrame();
-      trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      trainingFrameSubset._key = Key.make();
       assertEquals(airlinesFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
@@ -730,7 +730,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(weightsColumnName, model._output.weightsName());
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", prostateFrame._key, prostateFrame._key)).getFrame();
-      trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      trainingFrameSubset._key = Key.make();
       assertEquals(prostateFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
@@ -785,7 +785,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(weightsColumnName, model._output.weightsName());
 
       trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [5]) 1))", iristFrame._key, iristFrame._key)).getFrame();
-      trainingFrameSubset = trainingFrameSubset.deepCopy("trainingFrameSubset");
+      trainingFrameSubset._key = Key.make();
       assertEquals(iristFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
@@ -861,7 +861,7 @@ public class XGBoostTest extends TestUtil {
       for (int i = 0; i < originalCrossValidationModels.length; i++) {
 
         crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [5]) %d))", iristFrame._key, iristFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
-        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        crossValidationSubset._key = Key.make();
         DKV.put(crossValidationSubset);
         parms._train = crossValidationSubset._key;
         XGBoostModel crossValidationModel = null;
@@ -884,6 +884,7 @@ public class XGBoostTest extends TestUtil {
             crossValidationModel.deleteCrossValidationModels();
             crossValidationModel.remove();
           }
+          if (crossValidationSubset != null) crossValidationSubset.delete();
         }
 
       }
@@ -936,7 +937,7 @@ public class XGBoostTest extends TestUtil {
       for (int i = 0; i < originalCrossValidationModels.length; i++) {
 
         crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) %d))", airlinesFrame._key, airlinesFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
-        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        crossValidationSubset._key = Key.make();
         DKV.put(crossValidationSubset);
         parms._train = crossValidationSubset._key;
         XGBoostModel crossValidationModel = null;
@@ -958,6 +959,7 @@ public class XGBoostTest extends TestUtil {
             crossValidationModel.deleteCrossValidationModels();
             crossValidationModel.remove();
           }
+          if (crossValidationSubset != null) crossValidationSubset.delete();
         }
 
       }
@@ -1010,7 +1012,7 @@ public class XGBoostTest extends TestUtil {
       for (int i = 0; i < originalCrossValidationModels.length; i++) {
 
         crossValidationSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) %d))", prostateFrame._key, prostateFrame._key, originalCrossValidationModels.length - (i + 1))).getFrame();
-        crossValidationSubset = crossValidationSubset.deepCopy("trainingFrameSubset");
+        crossValidationSubset._key = Key.make();
         DKV.put(crossValidationSubset);
         parms._train = crossValidationSubset._key;
         XGBoostModel crossValidationModel = null;
@@ -1030,8 +1032,9 @@ public class XGBoostTest extends TestUtil {
           if (crossValidationModel != null) {
             crossValidationModel.deleteCrossValidationPreds();
             crossValidationModel.deleteCrossValidationModels();
-            crossValidationModel.remove();
+            crossValidationModel.delete();
           }
+          if (crossValidationSubset != null) crossValidationSubset.delete();
         }
 
       }
@@ -1063,8 +1066,10 @@ public class XGBoostTest extends TestUtil {
     if (nfolds < 2) throw new IllegalArgumentException("Number of folds must be greater than or equal to 2.");
     final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
     final Random random = new Random(randomSeed);
-    for (int i = 0; i < weightsVec.length(); i++) {
-      weightsVec.set(i, random.nextInt(nfolds));
+    try (Vec.Writer vecWriter = weightsVec.open()) {
+      for (int i = 0; i < weightsVec.length(); i++) {
+        vecWriter.set(i, random.nextInt(nfolds));
+      }
     }
 
     return weightsVec;
