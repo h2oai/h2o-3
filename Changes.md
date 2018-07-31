@@ -2,6 +2,68 @@
 
 ## H2O
 
+### Wright (3.20.0.4) - 7/31/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5555'>PUBDEV-5555</a>] - In Flow, increased the height of the summary section for the column summary.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5720'>PUBDEV-5720</a>] - Cross-validation now works correctly in XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5739'>PUBDEV-5739</a>] - Documentation for the MOJO predict functions (mojo_predict_pandas and mojo_predict_csv) is now available in the Python User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5744'>PUBDEV-5744</a>] - Regression comparison tests no longer fail between H2OXGBoost and native XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5760'>PUBDEV-5760</a>] - GBM/DRF MOJO scoring no longer allocates unnecessary objects for each scored row.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5736'>PUBDEV-5736</a>] - In GBM, added point estimation as a metric.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5730'>PUBDEV-5730</a>] - Reduced the size of the h2o.jar.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5429'>PUBDEV-5429</a>] - The h2o.importFile([List of Directory Paths]) function will now import all the files located in the specified folders.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5637'>PUBDEV-5637</a>] - Added Standard Error of Mean (SEM) to Partial Dependence Plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5718'>PUBDEV-5718</a>] - Added two new formatting options to hex.genmodel.tools.PrintMojo. The --decimalplaces (or -d) option allows you to set the number of places after the decimal point. The --fontsize (or -f) option allows you to set the fontsize. The default fontsize is 14.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5733'>PUBDEV-5733</a>] - Optimized the performance of ingesting large number of small Parquet files by using sequential parse.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5749'>PUBDEV-5749</a>] - Added support for weights in a calibration frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5752'>PUBDEV-5752</a>] - Added a new port_offset command. This parameter lets you specify the relationship of the API port ("web port") and the internal communication port. The previous implementation expected h2o port = api port + 1. Because there are assumptions in the code that the h2o port and API port can be derived from each other, we cannot fully decouple them. Instead, this new option lets the user specify an offset such that h2o port = api port + offset. This enables the user to move the communication port to a specific range, which can be firewalled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5765'>PUBDEV-5765</a>] - Improved speed of ingesting data from HTTP/HTTPS data sources in standalone H2O.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5694'>PUBDEV-5694</a>] - The User Guide now specifies that XLS/XLSX files must be BIFF 8 format. Other formats are not supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5731'>PUBDEV-5731</a>] - Added to docs that when downloading MOJOs/POJOs, users must specify the entire path and not just the relative path.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5774'>PUBDEV-5774</a>] - Added documentation for the new port_offset command when starting H2O.
+</ul>
+
 ### Wright (3.20.0.3) - 7/10/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html</a>
