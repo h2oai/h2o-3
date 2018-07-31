@@ -23,7 +23,7 @@
 
     <property>
         <name>yarn.scheduler.capacity.maximum-am-resource-percent</name>
-        <value>0.4</value>
+        <value>0.6</value>
         <description>
             Maximum percent of resources in the cluster which can be used to run
             application masters i.e. controls number of concurrent running
