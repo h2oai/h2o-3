@@ -2,6 +2,8 @@ package hex;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -2429,6 +2431,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return targetUri;
     } finally {
       FileUtils.close(os);
+    }
+  }
+
+  /**
+   * Convenience method to convert Model to a MOJO representation. Please be aware that converting models
+   * to MOJOs using this function will require sufficient memory (to hold the mojo representation and interim
+   * serialized representation as well).
+   *
+   * @return instance of MojoModel
+   * @throws IOException when writing MOJO fails
+   */
+  public MojoModel toMojo() throws IOException {
+    if (! haveMojo())
+      throw new IllegalStateException("Model doesn't support MOJOs.");
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+      this.getMojo().writeTo(os);
+      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+              new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+      return MojoModel.load(mojoReaderBackend);
     }
   }
 

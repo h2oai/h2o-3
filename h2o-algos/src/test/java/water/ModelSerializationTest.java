@@ -1,5 +1,6 @@
 package water;
 
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,6 +19,7 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -68,6 +70,26 @@ public class ModelSerializationTest extends TestUtil {
     try {
       model = prepareGBMModel("smalldata/logreg/prostate.csv", ar("ID"), "CAPSULE", true, 5);
       CompressedTree[][] trees = getTrees(model);
+      loadedModel = saveAndLoad(model);
+      // And compare
+      assertModelBinaryEquals(model, loadedModel);
+      CompressedTree[][] loadedTrees = getTrees(loadedModel);
+      assertTreeEquals("Trees have to be binary same", trees, loadedTrees);
+    } finally {
+      if (loadedModel!=null) loadedModel.delete();
+    }
+  }
+
+  @Test // FIXME: should be somewhere else
+  public void testGBMModelBinomialSharedTree() throws IOException {
+    GBMModel model, loadedModel = null;
+    try {
+      model = prepareGBMModel("smalldata/logreg/prostate.csv", ar("ID"), "CAPSULE", true, 5);
+      CompressedTree[][] trees = getTrees(model);
+      CompressedTree[][] auxTreeInfos = getAuxTreeInfos(model);
+
+      SharedTreeSubgraph sg = trees[0][0].toSharedTreeSubgraph(auxTreeInfos[0][0], model._output._names, model._output._domains);
+
       loadedModel = saveAndLoad(model);
       // And compare
       assertModelBinaryEquals(model, loadedModel);
@@ -272,4 +294,22 @@ public class ModelSerializationTest extends TestUtil {
 
     return result;
   }
+
+  public static CompressedTree[][] getAuxTreeInfos(SharedTreeModel tm) {
+    SharedTreeModel.SharedTreeOutput tmo = (SharedTreeModel.SharedTreeOutput) tm._output;
+    int ntrees   = tmo._ntrees;
+    int nclasses = tmo.nclasses();
+    CompressedTree[][] result = new CompressedTree[ntrees][nclasses];
+
+    for (int i = 0; i < ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        if (tmo._treeKeysAux[i][j] != null)
+          result[i][j] = tmo._treeKeysAux[i][j].get();
+      }
+    }
+
+    return result;
+  }
+
+
 }
