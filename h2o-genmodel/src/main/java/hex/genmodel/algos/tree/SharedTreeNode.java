@@ -5,7 +5,9 @@ import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Objects;
 
 /**
  * Node in a tree.
@@ -479,5 +481,34 @@ public class SharedTreeNode {
 
   public boolean isInclusiveNa() {
     return inclusiveNa;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SharedTreeNode that = (SharedTreeNode) o;
+    return subgraphNumber == that.subgraphNumber &&
+            nodeNumber == that.nodeNumber &&
+            Float.compare(that.weight, weight) == 0 &&
+            depth == that.depth &&
+            colId == that.colId &&
+            leftward == that.leftward &&
+            naVsRest == that.naVsRest &&
+            Float.compare(that.splitValue, splitValue) == 0 &&
+            Float.compare(that.predValue, predValue) == 0 &&
+            Float.compare(that.squaredError, squaredError) == 0 &&
+            inclusiveNa == that.inclusiveNa &&
+            Objects.equals(colName, that.colName) &&
+            Arrays.equals(domainValues, that.domainValues) &&
+            Objects.equals(leftChild, that.leftChild) &&
+            Objects.equals(rightChild, that.rightChild) &&
+            Objects.equals(inclusiveLevels, that.inclusiveLevels);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return Objects.hash(subgraphNumber, nodeNumber);
   }
 }
