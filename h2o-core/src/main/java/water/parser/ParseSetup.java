@@ -177,6 +177,7 @@ public class ParseSetup extends Iced {
       case "numeric": types[i] = Vec.T_NUM;  break;
       case "categorical":
       case "factor":
+      case "ordered":
       case "enum":    types[i] = Vec.T_CAT;  break;
       case "time":    types[i] = Vec.T_TIME; break;
       default:        types[i] = Vec.T_BAD;
