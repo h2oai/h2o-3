@@ -184,7 +184,7 @@ def prostate_automl_args():
 
     print("Check that automl gets interrupted after `max_runtime_secs`")
     max_runtime_secs = 30
-    cancel_tolerance_secs = max_runtime_secs * .1 + 1   # adding 1s for backend time checking loop
+    cancel_tolerance_secs = max_runtime_secs * .1 + 2   # adding 1s for python polling loop + 1s for backend time checking loop
     aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
     start = time.time()
     aml.train(y="CAPSULE", training_frame=train)
