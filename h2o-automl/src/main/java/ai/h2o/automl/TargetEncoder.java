@@ -359,6 +359,8 @@ public class TargetEncoder {
                         System.out.println(" #### OutOfFold dataframe before grouping");
                         printOutFrameAsTable(outOfFoldData);
                         Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndex, 2, 3);
+                        groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
+                        groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
                         System.out.println(" #### groupedByTEColumnAndAggregate dataframe");
                         printOutFrameAsTable(groupedByTEColumnAndAggregate);
                         groupedByTEColumnAndAggregate = appendColumn(groupedByTEColumnAndAggregate, foldValue, "foldValueForMerge"); // TODO for now we don't need names for columns since we are working with indices
