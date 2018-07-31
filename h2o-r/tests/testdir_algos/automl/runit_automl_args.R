@@ -250,7 +250,7 @@ automl.args.test <- function() {
 
   print("Check that automl gets interrupted after `max_runtime_secs`")
   max_runtime_secs <- 30
-  cancel_tolerance_secs <- max_runtime_secs * .1 + 2    # adding 1s for R polling + 1s for backend checking loop
+  cancel_tolerance_secs <- 5 # should be enough for most cases given job notification mechanism
   time <- system.time(aml19 <- h2o.automl(x=x, y=y, training_frame=train,
                                          project_name="aml_max_runtime_secs",
                                          max_runtime_secs=max_runtime_secs))[['elapsed']]
