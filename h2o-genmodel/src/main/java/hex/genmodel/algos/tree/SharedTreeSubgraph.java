@@ -4,6 +4,7 @@ import hex.genmodel.tools.PrintMojo;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Subgraph for representing a tree.
@@ -128,5 +129,30 @@ public class SharedTreeSubgraph {
     String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
     os.println("label=\"" + title + "\"");
     os.println("}");
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SharedTreeSubgraph that = (SharedTreeSubgraph) o;
+    return subgraphNumber == that.subgraphNumber &&
+            Objects.equals(name, that.name) &&
+            Objects.equals(rootNode, that.rootNode) &&
+            Objects.equals(nodesArray, that.nodesArray);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return Objects.hash(subgraphNumber);
+  }
+
+  @Override
+  public String toString() {
+    return "SharedTreeSubgraph{" +
+            "subgraphNumber=" + subgraphNumber +
+            ", name='" + name + '\'' +
+            '}';
   }
 }

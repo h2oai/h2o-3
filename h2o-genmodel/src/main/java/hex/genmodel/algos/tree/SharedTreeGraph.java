@@ -4,6 +4,7 @@ import hex.genmodel.tools.PrintMojo;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Graph for representing a GBM or DRF forest.
@@ -73,4 +74,19 @@ public class SharedTreeGraph {
     os.println("}");
     os.println("");
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SharedTreeGraph that = (SharedTreeGraph) o;
+    return Objects.equals(subgraphArray, that.subgraphArray);
+  }
+
+  @Override
+  public int hashCode() {
+
+    return Objects.hash(subgraphArray);
+  }
+
 }
