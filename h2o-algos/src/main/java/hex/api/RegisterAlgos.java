@@ -1,6 +1,7 @@
 package hex.api;
 
 import hex.ModelBuilder;
+import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
 import water.api.SchemaServer;
@@ -58,6 +59,8 @@ public class RegisterAlgos extends AlgoAbstractRegister {
 
     context.registerEndpoint("glm_datainfo_frame", "POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame",
             "Test only" );
+
+    context.registerEndpoint("tree_get", "GET /3/Tree", TreeHandler.class, "getTree", "Obtain a traverseable representation of a specific tree");
   }
 
   @Override

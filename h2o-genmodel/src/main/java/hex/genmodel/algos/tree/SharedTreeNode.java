@@ -29,9 +29,7 @@ public class SharedTreeNode {
   float predValue = Float.NaN;
   float squaredError = Float.NaN;
   SharedTreeNode leftChild;
-
-
-  public  SharedTreeNode rightChild;
+  SharedTreeNode rightChild;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
