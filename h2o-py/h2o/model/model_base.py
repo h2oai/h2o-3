@@ -130,6 +130,25 @@ class ModelBase(backwards_compatible()):
         return h2o.get_frame(j["predictions_frame"]["name"])
 
 
+    def predict_staged_proba(self, test_data):
+        """
+        Predict class probabilities at each stage of an H2O Model (only GBM models).
+
+        The output structure is analogous to the output of function predict_leaf_node_assignment. For each tree t and
+        class c there will be a column Tt.Cc (eg. T3.C1 for tree 3 and class 1). The value will be the corresponding
+        predicted probability of this class by combining the raw contributions of trees T1.Cc,..,TtCc. Binomial models
+        build the trees just for the first class and values in columns Tx.C1 thus correspond to the the probability p0.
+
+        :param H2OFrame test_data: Data on which to make predictions.
+
+        :returns: A new H2OFrame of staged predictions.
+        """
+        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"predict_staged_proba": True})
+        return h2o.get_frame(j["predictions_frame"]["name"])
+
+
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.

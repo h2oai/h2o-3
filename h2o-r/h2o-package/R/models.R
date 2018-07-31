@@ -505,6 +505,48 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   model
 }
 
+#' Predict class probabilities at each stage of an H2O Model
+#'
+#' The output structure is analogous to the output of \link{h2o.predict_leaf_node_assignment}. For each tree t and
+#' class c there will be a column Tt.Cc (eg. T3.C1 for tree 3 and class 1). The value will be the corresponding
+#' predicted probability of this class by combining the raw contributions of trees T1.Cc,..,TtCc. Binomial models build
+#' the trees just for the first class and values in columns Tx.C1 thus correspond to the the probability p0.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with predicted probability for each tree in the model.
+#' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' h2o.predict(prostate.gbm, prostate.hex)
+#' h2o.predict_staged_proba(prostate.gbm, prostate.hex)
+#' }
+#' @export
+predict_staged_proba.H2OModel <- function(object, newdata, ...) {
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", predict_staged_proba=TRUE)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
+}
+
+#' @rdname predict_staged_proba.H2OModel
+#' @export
+h2o.predict_staged_proba <- predict_staged_proba.H2OModel
+
 #' Model Performance Metrics in H2O
 #'
 #' Given a trained h2o model, compute its performance on the given

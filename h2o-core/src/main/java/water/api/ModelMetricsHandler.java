@@ -121,6 +121,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false)
     public boolean leaf_node_assignment;
 
+    @API(help = "Predict the class probabilities at each stage (optional, only for GBM models)", json = false)
+    public boolean predict_staged_proba;
+
     @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false)
     public int exemplar_index;
 
@@ -416,7 +419,7 @@ class ModelMetricsHandler extends Handler {
     Frame predictions;
     Frame deviances = null;
     if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
-        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && s.exemplar_index < 0) {
+        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       String customMetricFunc = s.custom_metric_func;
@@ -466,6 +469,10 @@ class ModelMetricsHandler extends Handler {
         if (null == parms._predictions_name)
           parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.<Frame>make(parms._predictions_name));
+      } else if(s.predict_staged_proba) {
+        if (null == parms._predictions_name)
+          parms._predictions_name = "staged_proba_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = ((Model.StagedPredictions) parms._model).scoreStagedPredictions(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
