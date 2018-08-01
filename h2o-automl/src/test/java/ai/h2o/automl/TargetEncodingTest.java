@@ -20,9 +20,7 @@ import water.util.TwoDimTable;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static water.util.FrameUtils.generateNumKeys;
 
 public class TargetEncodingTest extends TestUtil {
@@ -120,20 +118,6 @@ public class TargetEncodingTest extends TestUtil {
         //TODO test other validation checks
 
     }
-
-  @Ignore
-  @Test public void groupByWithAstGroupTest() {
-      Frame fr=null;
-      try {
-          fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-          int[] gbCols = {1};
-          IcedHashMap<AstGroup.G, String> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());
-          IcedHashMap<AstGroup.G, String> g = gss;
-      }
-      finally {
-          if(fr != null) fr.remove();
-      }
-  }
 
     @Test
     public void targetEncoderFilterOutNAsTest() {
@@ -431,7 +415,6 @@ public class TargetEncodingTest extends TestUtil {
       //TODO Check division by zero when we subtract current row's value and then use results to calculate numerator/denominator
     }
 
-    @Ignore
     @Test
     public void targetEncoderLOOHoldoutSubtractCurrentRowTest() {
         fr = new TestFrameBuilder()
@@ -449,13 +432,24 @@ public class TargetEncodingTest extends TestUtil {
 
         Frame res = tec.subtractTargetValueForLOO(fr, 1, 2, 3);
         printOutFrameAsTable(res);
+
         // We check here that for  `target column = NA` we do not subtract anything and for other cases we subtract current row's target value
-        assertVecEquals(vec(1,0,3,6,3,2), res.vec(1), 1e-5);
-        assertVecEquals(vec(0,0,3,6,3,6), res.vec(2), 1e-5);
+        Vec vecNotSubtracted = vec(1, 0, 3, 6, 3, 2);
+        assertVecEquals(vecNotSubtracted, res.vec(1), 1e-5);
+        Vec vecSubtracted = vec(0, 0, 3, 6, 3, 6);
+        assertVecEquals(vecSubtracted, res.vec(2), 1e-5);
     }
 
-    // This test is causing AssertionError in Vec.rowLayout method.
-    @Ignore
+    @Test
+    public void vecESPCTest() {
+        Vec vecOfALengthTwo = vec(1, 0);
+        long [] espcForLengthTwo = {0, 2};
+        assertArrayEquals(espcForLengthTwo, Vec.ESPC.espc(vecOfALengthTwo));
+        Vec vecOfALengthThree = vec(1, 0, 3);
+        long [] espcForVecOfALengthThree = {0, 3};
+        assertArrayEquals(espcForVecOfALengthThree, Vec.ESPC.espc(vecOfALengthThree));
+    }
+
     @Test
     public void targetEncoderLOOHoldoutApplyingTest() {
         fr = new TestFrameBuilder()
@@ -690,7 +684,6 @@ public class TargetEncodingTest extends TestUtil {
         tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 3);
     }
 
-    @Ignore
     @Test
     public void transformBinaryTargetColumnTest() {
         fr = new TestFrameBuilder()
@@ -715,7 +708,8 @@ public class TargetEncodingTest extends TestUtil {
 
         Vec transformedVector = res.vec(2);
         assertTrue(transformedVector.isNumeric());
-//        assertVecEquals(vec(0, 1), transformedVector, 1e-5);   //TODO this row is causing an error with layout as well.
+        assertEquals(0, transformedVector.at(0), 1e-5);
+        assertEquals(1, transformedVector.at(1), 1e-5);
     }
 
     @Test
@@ -749,6 +743,7 @@ public class TargetEncodingTest extends TestUtil {
     @After
     public void afterEach() {
         System.out.println("After each setup");
+        Vec.ESPC.clear();
         // TODO in checkLeakedKeys method from TestUntil we are purging store anyway. So maybe we should add default cleanup? or we need to inform developer about specific leakages?
         H2O.STORE.clear();
     }
