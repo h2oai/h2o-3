@@ -31,7 +31,12 @@ def call(final pipelineContext, final stageConfig) {
         }
 
         makeTarget(pipelineContext) {
+            preBuildAction = stageConfig.preBuildAction
             customBuildAction = stageConfig.customBuildAction
+            postSuccessfulBuildAction = stageConfig.postSuccessfulBuildAction
+            postFailedBuildAction = stageConfig.postFailedBuildAction
+            postSuccessfulBuildAction = stageConfig.postSuccessfulBuildAction
+            postBuildAction = stageConfig.postBuildAction
             target = stageConfig.target
             hasJUnit = stageConfig.hasJUnit
             h2o3dir = h2oFolder
