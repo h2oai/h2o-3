@@ -145,18 +145,31 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
 
   /** Adds double value to the column. */
   @Override public void addNumCol(int colIdx, double value) {
-    if (Double.isNaN(value)) {
+    if (Double.isNaN(value) || Double.isInfinite(value)) {
       addInvalidCol(colIdx);
+    } else if (value == 0.0) {
+      // Avoid potential hang in the loop below.
+      addNumCol(colIdx, 0, 0);
     } else {
-      double d= value;
-      int exp = 0;
-      long number = (long)d;
-      while (number != d) {
-        d *= 10;
-        --exp;
-        number = (long)d;
+      // Do rounding, make sure we have decimal form of the number.
+      double exp = Math.floor(Math.log10(Math.abs(value)));
+      double d = Math.abs(value / Math.pow(10.0, exp));
+
+      // This conversion is safe as double cannot store values above someSatanicValueE+308
+      int iExp = (int)exp;
+
+      // This is safe.
+      int sign = (int)Math.signum(value);
+      long number = (long)Math.floor(d);
+
+      // Keep number low enough to avoid overflow.
+      while (number < Long.MAX_VALUE / 10) {
+        d -= Math.floor(d);
+        d *= 10.0;
+        number = number * 10 + (long)Math.floor(d);
+        iExp--;
       }
-      addNumCol(colIdx, number, exp);
+      addNumCol(colIdx, number * sign, iExp);
     }
   }
   @Override public void setColumnNames(String [] names){}
