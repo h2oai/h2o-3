@@ -17,5 +17,10 @@ public class FVecParseWriterTest {
                 new AppendableVec[0]
         );
         writer.addNumCol(1, 2E19);
+        writer.addNumCol(2, -123.123);
+        writer.addNumCol(3, 3e39);
+        writer.addNumCol(4, 0.0);
+        writer.addNumCol(5, 1.0);
+        writer.addNumCol(6, 3);
     }
 }
