@@ -377,9 +377,8 @@ class ModelBase(backwards_compatible()):
         :returns: A list of VarImp tuples, or pandas.DataFrame with variable importances.
         """
         model = self._model_json["output"]
-        propname = "importance" if isinstance(self, h2o.model.H2ODimReductionModel) else \
-                   "variable_importances"
-        variable_importances = model.get(propname, None)
+        variable_importances = model.get("variable_importances",
+                                         model.get("importance", None))
         if variable_importances:
             assert tuple(variable_importances.col_header) == VarImp._fields
             vals = [VarImp(*t) for t in variable_importances.cell_values]
@@ -389,7 +388,6 @@ class ModelBase(backwards_compatible()):
             else:
                 return vals
         else:
-            print(list(model.keys()))
             print("Warning: This model doesn't have variable importances")
 
 

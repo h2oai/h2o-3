@@ -22,6 +22,7 @@ def pca_pubdev_4314():
     print("PCA with k = 3, retx = FALSE, transform = 'STANDARDIZE'")
     fitPCA = H2OPCA(k=3, transform="StANDARDIZE", pca_method="GramSVD")
     fitPCA.train(x=list(range(0,8)), training_frame=prostate)
+    print("Model summary:")
     print(fitPCA.summary())
     varimpPandas = fitPCA.varimp(use_pandas=True)
     assert_is_type(varimpPandas, DataFrame)
