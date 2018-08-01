@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-test.predict_staged_proba <- function() {
+test.staged_predict_proba <- function() {
     prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
     prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 
@@ -12,7 +12,7 @@ test.predict_staged_proba <- function() {
     prostate.gbm.10 <- h2o.gbm(3:9, "CAPSULE", prostate.hex, ntrees = 10, seed = 123)
     predict.10 <- h2o.predict(prostate.gbm.10, prostate.hex)
 
-    predict.staged <- h2o.predict_staged_proba(prostate.gbm.50, prostate.hex)
+    predict.staged <- h2o.staged_predict_proba(prostate.gbm.50, prostate.hex)
 
     expect_equal(50, ncol(predict.staged))
     expect_equal(nrow(prostate.hex), nrow(predict.staged))
@@ -26,4 +26,4 @@ test.predict_staged_proba <- function() {
     expect_equal(expected.10, as.data.frame(predict.staged$T10.C1)) # T10.C1 == p0
 }
 
-doTest("Test predicting staged probabilites with GBM", test.predict_staged_proba)
+doTest("Test predicting staged probabilites with GBM", test.staged_predict_proba)

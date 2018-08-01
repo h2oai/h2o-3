@@ -130,7 +130,7 @@ class ModelBase(backwards_compatible()):
         return h2o.get_frame(j["predictions_frame"]["name"])
 
 
-    def predict_staged_proba(self, test_data):
+    def staged_predict_proba(self, test_data):
         """
         Predict class probabilities at each stage of an H2O Model (only GBM models).
 

@@ -529,10 +529,10 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.predict(prostate.gbm, prostate.hex)
-#' h2o.predict_staged_proba(prostate.gbm, prostate.hex)
+#' h2o.staged_predict_proba(prostate.gbm, prostate.hex)
 #' }
 #' @export
-predict_staged_proba.H2OModel <- function(object, newdata, ...) {
+staged_predict_proba.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
@@ -545,7 +545,7 @@ predict_staged_proba.H2OModel <- function(object, newdata, ...) {
 
 #' @rdname predict_staged_proba.H2OModel
 #' @export
-h2o.predict_staged_proba <- predict_staged_proba.H2OModel
+h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
 #' Model Performance Metrics in H2O
 #'
