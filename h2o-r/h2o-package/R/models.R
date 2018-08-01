@@ -543,7 +543,7 @@ staged_predict_proba.H2OModel <- function(object, newdata, ...) {
   h2o.getFrame(res$name)
 }
 
-#' @rdname predict_staged_proba.H2OModel
+#' @rdname staged_predict_proba.H2OModel
 #' @export
 h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
