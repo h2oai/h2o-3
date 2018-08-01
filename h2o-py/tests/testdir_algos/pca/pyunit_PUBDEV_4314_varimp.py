@@ -28,6 +28,8 @@ def pca_pubdev_4314():
     varimpList = fitPCA.varimp()
     print(varimpList)
     assert_is_type(varimpList, list)
+    assert_is_type(varimpList, [tuple])
+    assert_is_type(varimpList, [h2o.model.model_base.VarImp])
     sys.stdout.flush()
 
 if __name__ == "__main__":

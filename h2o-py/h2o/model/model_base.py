@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import traceback
 import warnings
+from collections import namedtuple
 
 import h2o
 from h2o.exceptions import H2OValueError
@@ -13,6 +14,9 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies
+
+VarImp = namedtuple("VarImp", ["variable", "relative_importance",
+                               "scaled_importance", "percentage"])
 
 
 class ModelBase(backwards_compatible()):
@@ -368,17 +372,20 @@ class ModelBase(backwards_compatible()):
         """
         Pretty print the variable importances, or return them in a list.
 
-        :param use_pandas: If True, then the variable importances will be returned as a pandas data frame.
+        :param use_pandas: If True, then the variable importances will be returned as a pandas.DataFrame.
 
-        :returns: A list or Pandas DataFrame.
+        :returns: A list of VarImp tuples, or pandas.DataFrame with variable importances.
         """
         model = self._model_json["output"]
-        if "variable_importances" in list(model.keys()) and model["variable_importances"]:
-            vals = model["variable_importances"].cell_values
-            header = model["variable_importances"].col_header
+        propname = "importance" if isinstance(self, h2o.model.H2ODimReductionModel) else \
+                   "variable_importances"
+        variable_importances = model.get(propname, None)
+        if variable_importances:
+            assert tuple(variable_importances.col_header) == VarImp._fields
+            vals = [VarImp(*t) for t in variable_importances.cell_values]
             if use_pandas and can_use_pandas():
                 import pandas
-                return pandas.DataFrame(vals, columns=header)
+                return pandas.DataFrame(vals)
             else:
                 return vals
         else:
@@ -971,9 +978,9 @@ class ModelBase(backwards_compatible()):
         # get the variable importances as a list of tuples, do not use pandas dataframe
         importances = self.varimp(use_pandas=False)
         # features labels correspond to the first value of each tuple in the importances list
-        feature_labels = [tup[0] for tup in importances]
+        feature_labels = [tup.variable for tup in importances]
         # relative importances correspond to the first value of each tuple in the importances list
-        scaled_importances = [tup[2] for tup in importances]
+        scaled_importances = [tup.scaled_importance for tup in importances]
         # specify bar centers on the y axis, but flip the order so largest bar appears at top
         pos = range(len(feature_labels))[::-1]
         # specify the bar lengths
