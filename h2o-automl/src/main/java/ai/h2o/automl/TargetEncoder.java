@@ -234,8 +234,8 @@ public class TargetEncoder {
         return rBindRes;
     }
 
-    public Frame mergeByTEColumnAndFold(Frame a, Frame b, int teColumnIndexOriginal, int foldColumnIndexOriginal, String teColumnIndex, String foldColumnIndex ) {
-        String tree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%s, %s] 'auto' )", a._key, b._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndex);
+    public Frame mergeByTEColumnAndFold(Frame a, Frame b, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex, int foldColumnIndex ) {
+        String tree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )", a._key, b._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndex);
         Val val = Rapids.exec(tree);
         Frame res = val.getFrame();
         res._key = a._key;
@@ -333,7 +333,7 @@ public class TargetEncoder {
 
         //TODO Should we remove string columns from `data` as it is done in R version (see: https://0xdata.atlassian.net/browse/PUBDEV-5266) ?
 
-        Frame teFrame = data;
+        Frame teFrame = data; // TODO should we clone here? mutable or immutable approach?
 
         for ( String teColumnName: columnsToEncode) {
             Frame targetEncodingMap = columnToEncodingMap.get(teColumnName);
@@ -341,7 +341,8 @@ public class TargetEncoder {
             int targetEncodingMapNumeratorIdx = getColumnIndexByName(targetEncodingMap,"numerator");
             int targetEncodingMapDenominatorIdx = getColumnIndexByName(targetEncodingMap,"denominator");
 
-            int teColumnIndex = getColumnIndexByName(data, teColumnName);
+            int teColumnIndex = getColumnIndexByName(teFrame, teColumnName);
+            int teColumnIndexInEncodingMap = getColumnIndexByName(targetEncodingMap, teColumnName);
             Frame holdoutEncodeMap = null;
 
             switch( holdoutType ) {
@@ -349,7 +350,7 @@ public class TargetEncoder {
                     if(foldColumnName == null)
                         throw new IllegalStateException("`foldColumn` must be provided for holdoutType = KFold");
 
-                    int foldColumnIndex = getColumnIndexByName(data, foldColumnName);
+                    int foldColumnIndex = getColumnIndexByName(teFrame, foldColumnName);
                     // I assume here that fold column is numerical not categorical. Otherwise we could calculate it with following piece of code.
                     // String[] folds = targetEncodingMap.vec(Integer.parseInt(foldColumn)).domain();
                     long[] foldValues = getUniqueValuesOfTheFoldColumn(targetEncodingMap, Integer.parseInt("1")); // "1" fold column in targetEncodingMap
@@ -358,7 +359,9 @@ public class TargetEncoder {
                         Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, "1", foldValue); // TODO In targetEncodingMap it is always 1st column. Change
                         System.out.println(" #### OutOfFold dataframe before grouping");
                         printOutFrameAsTable(outOfFoldData);
-                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndex, 2, 3);
+                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap, 2, 3);
+                        System.out.println(" #### OutOfFold dataframe after grouping");
+                        printOutFrameAsTable(groupedByTEColumnAndAggregate);
                         groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
                         groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
                         System.out.println(" #### groupedByTEColumnAndAggregate dataframe");
@@ -377,7 +380,8 @@ public class TargetEncoder {
 
                     printOutFrameAsTable(holdoutEncodeMap);
 
-                    teFrame = mergeByTEColumnAndFold(teFrame, holdoutEncodeMap, teColumnIndex, foldColumnIndex, "0", "3");
+                    int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
+                    teFrame = mergeByTEColumnAndFold(teFrame, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap, foldColumnIndexInEncodingMap);
 
                     break;
                 case HoldoutType.LeaveOneOut:
