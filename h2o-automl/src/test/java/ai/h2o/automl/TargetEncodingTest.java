@@ -17,6 +17,7 @@ import water.util.FrameUtils;
 import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -253,6 +254,32 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
+    public void targetEncoderKFoldHoldout_WithNonZeroColumnToEncode_ApplyingTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColA2", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT,  Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(2, ard(1, 1, 4, 7, 4))
+                .withDataForCol(3, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(4, ar(1, 2, 2, 3, 2))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {1};
+
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 3, 4);
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 3, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 4, false, 0, 1234.0);
+
+        TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
+        System.out.println("Result table" + resultTable.toString());
+        Vec vec = resultWithEncoding.vec(5);
+        assertVecEquals(vec(1,0,1,1,1), vec, 1e-5);
+    }
+
+    @Test
     public void targetEncoderKFoldHoldoutApplyingWithoutFoldColumnTest() {
       //TODO fold_column = null case
     }
@@ -339,6 +366,7 @@ public class TargetEncodingTest extends TestUtil{
         assertEquals(result, 0.5, 1e-5);
     }
 
+    // ----------------------------- blended average -----------------------------------------------------------------//
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
 
@@ -528,7 +556,95 @@ public class TargetEncodingTest extends TestUtil{
     // ------------------------ Multiple columns for target encoding -------------------------------------------------//
 
     @Test
-    public void targetEncoderNoneHoldoutMultipleTEColumnsTest() {
+    public void KFoldHoldoutMultipleTEColumnsWithFoldColumnTest() {
+        TestFrameBuilder frameBuilder = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2));
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {0, 1};
+
+        fr = frameBuilder.withName("testFrame").build();
+
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Vec encodingForColumnA_Multiple = resultWithEncoding.sort(new int[]{2}).vec(4);
+        Vec encodingForColumnB_Multiple = resultWithEncoding.sort(new int[]{0}).vec(5);
+
+        //Let's check it with Single TE version of the algorithm. So we rely here on a correctness of the single-column encoding.
+        //  For the first encoded column
+        Frame frA = frameBuilder.withName("testFrameA").build();
+
+        int[] indexForColumnA = Arrays.copyOfRange(teColumns, 0, 1);
+        Map<String, Frame> targetEncodingMapForColumn1 = tec.prepareEncodingMap(frA, indexForColumnA, 2, 3);
+        Frame resultWithEncodingForColumn1 = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumn1, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Vec encodingForColumnA_Single = resultWithEncodingForColumn1.vec(4);
+
+        assertVecEquals(encodingForColumnA_Single, encodingForColumnA_Multiple, 1e-5);
+
+        // For the second encoded column
+        Frame frB = frameBuilder.withName("testFrameB").build();
+
+        int[] indexForColumnB = Arrays.copyOfRange(teColumns, 1, 2);
+        Map<String, Frame> targetEncodingMapForColumn2 = tec.prepareEncodingMap(frB, indexForColumnB, 2, 3);
+        Frame resultWithEncodingForColumnB = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumn2, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Vec encodingForColumnB_Single = resultWithEncodingForColumnB.vec(4);
+
+        assertVecEquals(encodingForColumnB_Single, encodingForColumnB_Multiple, 1e-5);
+    }
+
+    @Test
+    public void LOOHoldoutMultipleTEColumnsWithFoldColumnTest() {
+        TestFrameBuilder frameBuilder = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB", "ColC", "fold_column")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+                .withDataForCol(1, ar("d", "e", "d", "e", "e"))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2));
+
+        fr = frameBuilder.withName("testFrame").build();
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {0, 1};
+
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
+
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3,false, 0, 1234.0);
+        Vec encodingForColumnA_Multiple = resultWithEncoding.sort(new int[]{1}).vec(4);
+        Vec encodingForColumnB_Multiple = resultWithEncoding.sort(new int[]{0}).vec(5);
+
+        // Let's check it with Single TE version of the algorithm. So we rely here on a correctness of the single-column encoding.
+        //  For the first encoded column
+        Frame frA = frameBuilder.withName("testFrameA").build();
+
+        int[] indexForColumnA = Arrays.copyOfRange(teColumns, 0, 1);
+        Map<String, Frame> targetEncodingMapForColumn1 = tec.prepareEncodingMap(frA, indexForColumnA, 2, 3);
+        Frame resultWithEncodingForColumn1 = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumn1, TargetEncoder.HoldoutType.LeaveOneOut, 3,false, 0, 1234.0);
+        Vec encodingForColumnA_Single = resultWithEncodingForColumn1.vec(4);
+
+        assertVecEquals(encodingForColumnA_Single, encodingForColumnA_Multiple, 1e-5);
+
+        // For the second encoded column
+        Frame frB = frameBuilder.withName("testFrameB").build();
+
+        int[] indexForColumnB = Arrays.copyOfRange(teColumns, 1, 2);
+        Map<String, Frame> targetEncodingMapForColumn2 = tec.prepareEncodingMap(frB, indexForColumnB, 2, 3);
+        Frame resultWithEncodingForColumnB = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumn2, TargetEncoder.HoldoutType.LeaveOneOut, 3,false, 0, 1234.0);
+        Vec encodingForColumnB_Single = resultWithEncodingForColumnB.vec(4);
+
+        assertVecEquals(encodingForColumnB_Single, encodingForColumnB_Multiple, 1e-5);
+    }
+
+    @Test
+    public void NoneHoldoutMultipleTEColumnsWithFoldColumnTest() {
         fr = new TestFrameBuilder()
                 .withName("testFrame")
                 .withColNames("ColA", "ColB", "ColC", "fold_column")
@@ -543,12 +659,6 @@ public class TargetEncodingTest extends TestUtil{
         int[] teColumns = {0, 1};
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
-
-        Frame firstColumnEncoding = targetEncodingMap.get("ColA");
-        printOutFrameAsTable(firstColumnEncoding);
-
-        Frame secondColumnEncoding = targetEncodingMap.get("ColB");
-        printOutFrameAsTable(secondColumnEncoding);
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
 
