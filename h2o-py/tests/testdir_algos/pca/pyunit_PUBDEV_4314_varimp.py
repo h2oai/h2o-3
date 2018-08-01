@@ -33,6 +33,6 @@ def pca_pubdev_4314():
     sys.stdout.flush()
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(pca_pubdev_4314())
+    pyunit_utils.standalone_test(pca_pubdev_4314)
 else:
     pca_pubdev_4314()

@@ -389,6 +389,7 @@ class ModelBase(backwards_compatible()):
             else:
                 return vals
         else:
+            print(list(model.keys()))
             print("Warning: This model doesn't have variable importances")
 
 
