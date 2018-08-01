@@ -380,7 +380,9 @@ class ModelBase(backwards_compatible()):
         variable_importances = model.get("variable_importances",
                                          model.get("importance", None))
         if variable_importances:
-            assert tuple(variable_importances.col_header) == VarImp._fields
+            assert tuple(variable_importances.col_header) == VarImp._fields, \
+                "Unexpected variable importances fields: %s" \
+                % variable_importances.col_header
             vals = [VarImp(*t) for t in variable_importances.cell_values]
             if use_pandas and can_use_pandas():
                 import pandas
