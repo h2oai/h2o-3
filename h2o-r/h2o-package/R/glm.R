@@ -18,6 +18,7 @@
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -143,6 +144,7 @@ h2o.glm <- function(x, y, training_frame,
                     validation_frame = NULL,
                     nfolds = 0,
                     seed = -1,
+                    keep_cross_validation_models = FALSE,
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -237,6 +239,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))

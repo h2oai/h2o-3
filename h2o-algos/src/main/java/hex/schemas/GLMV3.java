@@ -23,6 +23,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "validation_frame",
             "nfolds",
             "seed",
+            "keep_cross_validation_models",
             "keep_cross_validation_predictions",
             "keep_cross_validation_fold_assignment",
             "fold_assignment",

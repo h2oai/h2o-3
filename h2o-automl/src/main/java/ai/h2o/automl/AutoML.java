@@ -653,7 +653,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
       params._keep_cross_validation_predictions = true;
 
-      // TODO: StackedEnsemble doesn't support weights yet in score0
+      // TODO: StackedEnsemble doesn't support eights yet in score0
       params._fold_column = buildSpec.input_spec.fold_column;
       params._weights_column = buildSpec.input_spec.weights_column;
 
@@ -673,6 +673,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       //TODO: add a check that gives an error when class_sampling_factors, max_after_balance_size is set and balance_classes = false
     }
 
+    params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
     params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
   }
 
@@ -929,8 +930,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else {
       stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
     }
-
-    stackedEnsembleParameters._keep_cross_validation_fold_assignment = buildSpec.build_control.keep_cross_validation_fold_assignment;
 
     Key modelKey = modelKey(modelName);
     Job ensembleJob = trainModel(modelKey, Algo.StackedEnsemble, stackedEnsembleParameters, true);
@@ -1370,16 +1369,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void cleanUpModelsCVPreds() {
-    //Clear out all CV preds and CV models
+    Log.info("Cleaning up all CV Predictions for AutoML");
     for (Model model : leaderboard().getModels()) {
-        Log.info("Remove CV Preds for " + model._key.toString());
         model.deleteCrossValidationPreds();
     }
   }
 
   private void cleanUpModelsCVModels() {
+    Log.info("Cleaning up all CV Models for AutoML");
     for (Model model : leaderboard().getModels()) {
-      Log.info("Remove CV Models for " + model._key.toString());
       model.deleteCrossValidationModels();
     }
   }

@@ -15,6 +15,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -89,6 +90,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
+                             keep_cross_validation_models = FALSE,
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              score_each_iteration = FALSE,
@@ -173,6 +175,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(nfolds))
     parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))

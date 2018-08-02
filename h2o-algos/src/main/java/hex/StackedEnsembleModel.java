@@ -427,25 +427,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   @Override
   public void deleteCrossValidationModels() {
-    if (_output._metalearner._output._cross_validation_models != null) {
-      for (Key k : _output._metalearner._output._cross_validation_models) {
-        Model m = DKV.getGet(k);
-        if (m!=null) m.delete(); //delete all subparts
-      }
-    }
+    _output._metalearner.deleteCrossValidationModels();
   }
 
   @Override
   public void deleteCrossValidationPreds() {
-    if (_output._metalearner._output._cross_validation_predictions != null) {
-      for (Key k : _output._metalearner._output._cross_validation_predictions) {
-        Frame f = DKV.getGet(k);
-        if (f!=null) f.delete();
-      }
-    }
-    if (_output._metalearner._output._cross_validation_holdout_predictions_frame_id != null) {
-      _output._metalearner._output._cross_validation_holdout_predictions_frame_id.remove();
-    }
+    _output._metalearner.deleteCrossValidationModels();
   }
 
 }
