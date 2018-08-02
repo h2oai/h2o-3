@@ -252,7 +252,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                           Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
-                          if (_job._result != null) _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                          if (_job._result != null) {
+                            try {
+                              _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                            } catch (Exception logged) {
+                              Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+                            }
+                          }
                           return true;
                         }
                       },
