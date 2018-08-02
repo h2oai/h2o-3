@@ -5,6 +5,8 @@ import hex.*;
 import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
 
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.utils.ByteBufferWrapper;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -16,11 +18,14 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -267,6 +272,24 @@ public abstract class SharedTreeModel<
     return res;
   }
 
+  public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
+    private final byte[] _buf = new byte[64];
+    private final BufferedString _bs = new BufferedString(_buf, 0, 0);
+    private int _pos = 0;
+    @Override
+    public boolean go(int depth, boolean right) {
+      _buf[depth] = right ? (byte) 'R' : (byte) 'L';
+      if (right) _pos = depth;
+      return true;
+    }
+    @Override
+    public BufferedString terminate() {
+      _bs.setLen(_pos);
+      _pos = 0;
+      return _bs;
+    }
+  }
+
   private static class AssignLeafNodeTask extends MRTask<AssignLeafNodeTask> {
     private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
     private final String _domains[][];
@@ -279,8 +302,8 @@ public abstract class SharedTreeModel<
     @Override
     public void map(Chunk chks[], NewChunk[] idx) {
       double[] input = new double[chks.length];
-      String[] output = new String[idx.length];
 
+      BufStringDecisionPathTracker tr = new BufStringDecisionPathTracker();
       for (int row = 0; row < chks[0]._len; row++) {
         for (int i = 0; i < chks.length; i++)
           input[i] = chks[i].atd(row);
@@ -290,14 +313,12 @@ public abstract class SharedTreeModel<
           Key[] keys = _treeKeys[tidx];
           for (Key key : keys) {
             if (key != null) {
-              String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input, _domains);
-              output[col++] = pred;
+              BufferedString pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input, _domains, tr);
+              idx[col++].addStr(pred);
             }
           }
         }
         assert (col == idx.length);
-        for (int i = 0; i < idx.length; ++i)
-          idx[i].addStr(output[i]);
       }
     }
   }

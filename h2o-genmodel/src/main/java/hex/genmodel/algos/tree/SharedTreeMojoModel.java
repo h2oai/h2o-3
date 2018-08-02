@@ -177,16 +177,39 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    public static String getDecisionPath(double leafAssignment) {
+    public interface DecisionPathTracker<T> {
+        boolean go(int depth, boolean right);
+        T terminate();
+    }
+
+    public static class StringDecisionPathTracker implements DecisionPathTracker<String> {
+        private final char[] _sb = new char[64];
+        private int _pos = 0;
+        @Override
+        public boolean go(int depth, boolean right) {
+            _sb[depth] = right ? 'R' : 'L';
+            if (right) _pos = depth;
+            return true;
+        }
+        @Override
+        public String terminate() {
+            String path = new String(_sb, 0, _pos);
+            _pos = 0;
+            return path;
+        }
+    }
+
+    public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
         long l = Double.doubleToRawLongBits(leafAssignment);
-        StringBuilder sb = new StringBuilder();
-        int pos = 0;
         for (int i = 0; i < 64; ++i) {
             boolean right = ((l>>i) & 0x1L) == 1;
-            sb.append(right? "R" : "L");
-            if (right) pos = i;
+            if (! tr.go(i, right)) break;
         }
-        return sb.substring(0, pos);
+        return tr.terminate();
+    }
+
+    public static String getDecisionPath(double leafAssignment) {
+        return getDecisionPath(leafAssignment, new StringDecisionPathTracker());
     }
 
     //------------------------------------------------------------------------------------------------------------------

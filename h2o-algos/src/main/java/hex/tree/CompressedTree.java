@@ -43,9 +43,15 @@ public class CompressedTree extends Keyed<CompressedTree> {
     return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false, domains);
   }
 
+  @Deprecated
   public String getDecisionPath(final double row[], final String[][] domains) {
     double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d);
+  }
+
+  public <T> T getDecisionPath(final double row[], final String[][] domains, SharedTreeMojoModel.DecisionPathTracker<T> tr) {
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, domains);
+    return SharedTreeMojoModel.getDecisionPath(d, tr);
   }
 
   public SharedTreeSubgraph toSharedTreeSubgraph(final CompressedTree auxTreeInfo,
