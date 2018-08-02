@@ -27,10 +27,10 @@ def pca_pubdev_4314():
     varimpPandas = fitPCA.varimp(use_pandas=True)
     assert_is_type(varimpPandas, DataFrame)
     varimpList = fitPCA.varimp()
+    print("Variable importances (as list):")
     print(varimpList)
     assert_is_type(varimpList, list)
     assert_is_type(varimpList, [tuple])
-    assert_is_type(varimpList, [h2o.model.model_base.VarImp])
     sys.stdout.flush()
 
 if __name__ == "__main__":

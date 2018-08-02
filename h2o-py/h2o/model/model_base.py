@@ -12,7 +12,7 @@ from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
-from h2o.utils.shared_utils import can_use_pandas
+from h2o.utils.shared_utils import can_use_pandas, get_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies
 
 VarImp = namedtuple("VarImp", ["variable", "relative_importance",
@@ -379,18 +379,21 @@ class ModelBase(backwards_compatible()):
         model = self._model_json["output"]
         variable_importances = model.get("variable_importances",
                                          model.get("importance", None))
-        if variable_importances:
-            assert tuple(variable_importances.col_header) == VarImp._fields, \
-                "Unexpected variable importances fields: %s" \
-                % variable_importances.col_header
-            vals = [VarImp(*t) for t in variable_importances.cell_values]
-            if use_pandas and can_use_pandas():
-                import pandas
-                return pandas.DataFrame(vals)
-            else:
-                return vals
-        else:
+        if not variable_importances:
             print("Warning: This model doesn't have variable importances")
+            return
+        pandas = get_pandas(use_pandas)
+
+        names = tuple(variable_importances.col_header)
+        if names == VarImp._fields:
+            vals = [VarImp(*t) for t in variable_importances.cell_values]
+            if pandas:
+                vals = pandas.DataFrame(vals)
+        else:
+            vals = variable_importances.cell_values
+            if pandas:
+                vals = pandas.DataFrame(vals, columns=names)
+        return vals
 
 
     def residual_deviance(self, train=False, valid=False, xval=None):

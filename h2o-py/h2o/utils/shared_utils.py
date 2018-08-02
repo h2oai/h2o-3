@@ -70,6 +70,15 @@ def can_use_pandas():
     except ImportError:
         return False
 
+def get_pandas(not_kidding=True):
+    if not_kidding:
+        try:
+            import pandas
+            return pandas
+        except ImportError:
+            pass
+    return None
+
 
 def can_use_numpy():
     try:
