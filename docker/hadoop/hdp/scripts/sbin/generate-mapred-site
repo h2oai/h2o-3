@@ -46,8 +46,8 @@ echo -e """<configuration>
 
   <property>
     <name>mapreduce.application.classpath</name>
-    <value>\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/*:\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/common/*:\$PWD/mr-framework/hadoop/share/hadoop/common/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/lib/*:/usr/hdp/2.2.9.0/hadoop/lib/hadoop-lzo-0.6.0.${HDP_VERSION}.jar:/etc/hadoop/conf/secure</value>
+    <value>/usr/hdp/${HDP_VERSION}/hadoop-mapreduce/*:\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/*:\$PWD/mr-framework/hadoop/share/hadoop/mapreduce/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/common/*:\$PWD/mr-framework/hadoop/share/hadoop/common/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/*:\$PWD/mr-framework/hadoop/share/hadoop/yarn/lib/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/*:\$PWD/mr-framework/hadoop/share/hadoop/hdfs/lib/*:/usr/hdp/2.2.9.0/hadoop/lib/hadoop-lzo-0.6.0.${HDP_VERSION}.jar:/etc/hadoop/conf/secure</value>
   </property>
 
-  </configuration>
+</configuration>
 """ > ${HADOOP_CONF_DIR}/mapred-site.xml
