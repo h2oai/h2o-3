@@ -8,6 +8,7 @@ import hex.genmodel.utils.GenmodelBitSet;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
@@ -384,12 +385,31 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       node.setPredValue(Float.NaN);
       ByteBufferWrapper ab = new ByteBufferWrapper(tree);
       ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
+      HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
+      computeTreeGraph(sg, node, tree, ab, auxMap, nclasses, names, domains);
+    }
+
+    private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
       HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
+      Map<Integer, AuxInfo> nodeIdToParent = new HashMap<>();
+      nodeIdToParent.put(0, new AuxInfo());
+      boolean reservedFieldIsParentId = false; // In older H2O versions `reserved` field was used for parent id
       while (abAux.hasRemaining()) {
         AuxInfo auxInfo = new AuxInfo(abAux);
+        if (auxMap.size() == 0) {
+          reservedFieldIsParentId = auxInfo.reserved < 0; // `-1` indicates No Parent, reserved >= 0 indicates reserved is not used for parent ids!
+        }
+        AuxInfo parent = nodeIdToParent.get(auxInfo.nid);
+        if (parent == null)
+          throw new IllegalStateException("Parent for nodeId=" + auxInfo.nid + " not found.");
+        assert !reservedFieldIsParentId || parent.nid == auxInfo.reserved : "Corrupted Tree Info: parent nodes do not correspond (pid: " +
+                parent.nid + ", reserved: " + auxInfo.reserved + ")";
+        auxInfo.setPid(parent.nid);
+        nodeIdToParent.put(auxInfo.nidL, auxInfo);
+        nodeIdToParent.put(auxInfo.nidR, auxInfo);
         auxMap.put(auxInfo.nid, auxInfo);
       }
-      computeTreeGraph(sg, node, tree, ab, auxMap, nclasses, names, domains);
+      return auxMap;
     }
 
     public static String treeName(int groupIndex, int classIndex, String[] domainValues) {
@@ -403,12 +423,20 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     }
 
     static class AuxInfo {
+      private static int SIZE = 10 * 4;
+
+      private AuxInfo() {
+        nid = -1;
+        reserved = -1;
+      }
+
+      // Warning: any changes in this structure need to be reflected also in AuxInfoLightReader!!!
       AuxInfo(ByteBufferWrapper abAux) {
         // node ID
         nid = abAux.get4();
 
-        // parent node ID
-        pid = abAux.get4();
+        // ignored - can contain either parent id or number of children (depending on a MOJO version)
+        reserved = abAux.get4();
 
         //sum of observation weights (typically, that's just the count of observations)
         weightL = abAux.get4f();
@@ -427,6 +455,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         nidR = abAux.get4();
       }
 
+      final void setPid(int parentId) {
+        pid = parentId;
+      }
+
       @Override public String toString() {
         return  "nid: " + nid + "\n" +
                 "pid: " + pid + "\n" +
@@ -437,10 +469,12 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 "predL: " + predL + "\n" +
                 "predR: " + predR + "\n" +
                 "sqErrL: " + sqErrL + "\n" +
-                "sqErrR: " + sqErrR + "\n";
+                "sqErrR: " + sqErrR + "\n" +
+                "reserved: " + reserved + "\n";
       }
 
       public int nid, pid, nidL, nidR;
+      private final int reserved;
       public float weightL, weightR, predL, predR, sqErrL, sqErrR;
     }
 
