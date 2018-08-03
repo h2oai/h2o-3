@@ -7,6 +7,7 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
 import water.H2O;
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -24,7 +25,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static water.util.FrameUtils.generateNumKeys;
 
-public class TargetEncodingTest extends TestUtil {
+public class TargetEncodingTest extends TestUtil{
 
 
   @BeforeClass public static void setup() {
@@ -850,9 +851,109 @@ public class TargetEncodingTest extends TestUtil {
 
     }
 
+    @Test
+    public void targetEncoderIsWorkingWithRealDataSetsTest() {
+
+        Key parsed = Key.make("airlines_parsed");
+        Key parsedTest = Key.make("airlines_test_parsed");
+
+        Frame airlinesTrainFrame = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
+        Frame airlinesTestFrame = parse_test_file(parsedTest, "smalldata/airlines/AirlinesTest.csv.zip");
+
+        for( String header : airlinesTrainFrame.toTwoDimTable().getColHeaders()) {
+            String type = airlinesTrainFrame.vec(header).get_type_str();
+            int cardinality = airlinesTrainFrame.vec(header).cardinality();
+            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+
+        }
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {7}; // 7 stands for Origin column
+
+        Map<String, Frame> encodingMap = tec.prepareEncodingMap(airlinesTrainFrame, teColumns, 10); // 10 stands for IsDepDelayed column
+        Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
+
+
+        // Preparing test frame
+        Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
+
+        testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
+
+//        testEncoded = FrameUtils.categoricalEncoder(testEncoded, new String[]{}, Model.Parameters.CategoricalEncodingScheme.Enum, null, -1);
+//        Vec categColumnTest = testEncoded.vec("IsDepDelayed").toCategoricalVec();
+//        testEncoded.remove("IsDepDelayed");
+//        testEncoded.add("IsDepDelayed", categColumnTest);
+
+
+        for( String header : testEncoded.toTwoDimTable().getColHeaders()) {
+            String type = testEncoded.vec(header).get_type_str();
+            int cardinality = testEncoded.vec(header).cardinality();
+            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+        }
+
+
+        printOutFrameAsTable(airlinesTrainFrame);
+        printOutFrameAsTable(trainEncoded);
+        printOutFrameAsTable(testEncoded);
+
+        // With target encoded Origin column
+
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = trainEncoded._key;
+        parms._response_column = "IsDepDelayed";
+        parms._ntrees = 20;
+        parms._max_depth = 3;
+        parms._distribution = DistributionFamily.quasibinomial;
+        parms._keep_cross_validation_predictions=true;
+        parms._valid = testEncoded._key;
+        parms._ignored_columns = new String[]{"IsDepDelayed_REC", "Origin"};
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+
+        Assert.assertTrue(job.isStopped());
+
+        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.valid());
+        double auc = mm._auc._auc;
+
+
+        // WITHOUT
+        Key parsed2 = Key.make("airlines_parsed2");
+
+        Frame airlinesTrainFrame2 = parse_test_file(parsed2, "smalldata/airlines/AirlinesTrain.csv.zip");
+
+        // DO we convert to quasibinomial properly? maybe in training set we get opposite values to the test set because we are converting separately.
+        airlinesTrainFrame2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTrainFrame2, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
+
+        int originCardinality = testEncoded.vec("Origin").cardinality();
+
+        GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
+        parms2._train = airlinesTrainFrame2._key;
+        parms2._response_column = "IsDepDelayed";
+        parms2._ntrees = 20;
+        parms2._max_depth = 3;
+        parms2._distribution = DistributionFamily.quasibinomial;
+        parms2._keep_cross_validation_predictions=true;
+        parms2._valid = testEncoded._key;
+        parms2._ignored_columns = new String[]{"IsDepDelayed_REC"};
+        GBM job2 = new GBM(parms2);
+        GBMModel gbm2 = job2.trainModel().get();
+
+        Assert.assertTrue(job2.isStopped());
+
+        hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm2, parms2.valid());
+        double auc2 = mm2._auc._auc;
+
+        System.out.println("Origin cardinality:" + originCardinality);
+        System.out.println("AUC with encoding:" + auc);
+        System.out.println("AUC without encoding:" + auc2);
+
+        // Fails. Maybe it is not of that high cardinality and target encoding actually hurts. Maybe not in terms of speed but in terms of performance.
+        Assert.assertTrue(auc2 < auc );
+    }
+
     @After
     public void afterEach() {
-        System.out.println("After each setup");
+        System.out.println("After each test we do H2O.STORE.clear() and Vec.ESPC.clear()");
         Vec.ESPC.clear();
         // TODO in checkLeakedKeys method from TestUntil we are purging store anyway. So maybe we should add default cleanup? or we need to inform developer about specific leakages?
         H2O.STORE.clear();
