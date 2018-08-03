@@ -57,10 +57,22 @@ def call(final pipelineContext, final Closure body) {
   }
 
   boolean success = false
+  if (config.preBuildAction) {
+    execMake(config.preBuildAction, config.h2o3dir)
+  }
   try {
     execMake(config.customBuildAction, config.h2o3dir)
     success = true
   } finally {
+    if (success && config.postSuccessfulBuildAction) {
+      execMake(config.postSuccessfulBuildAction, config.h2o3dir)
+    }
+    if (!success && config.postFailedBuildAction) {
+      execMake(config.postFailedBuildAction, config.h2o3dir)
+    }
+    if (config.postBuildAction) {
+      execMake(config.postBuildAction, config.h2o3dir)
+    }
     if (config.hasJUnit) {
       final GString findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
       final GString replaceCmd = "${findCmd} -exec sed -i 's/&#[0-9]\\+;//g' {} +"
