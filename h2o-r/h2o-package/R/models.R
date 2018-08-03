@@ -3064,5 +3064,29 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
+setClass("H2OTree", representation(left_children="integer", right_children="integer", thresholds="integer", model_name = "character",tree_number = "integer", tree_class="integer"))
+
+#' Fetchces a model's tree
+#'
+#' Extract the non-linear feature from an H2O data set using an H2O deep learning
+#' model.
+#' @param model Models with trees
+#' @param tree_number Number of tree in the model to fetch
+#' @param tree_class Class of the tree (if applicable)
+#' @return Returns an H2OTree object with detailed information about a tree.
+#' @export
+h2o.getModelTree <- function(model, tree_number, tree_class) {
+
+  url <- "Tree"
+  res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3, model = model@model_id, tree_number = tree_number, tree_class = tree_class )
+  
+  tree <- new("H2OTree", left_children = res$left_children, right_children = res$right_children, model_name = res$model$name, tree_number = res$tree_number, tree_class = res$tree_class)
+  if(!is.null(res$thresholds)){
+    tree@thresholds <- res$thresholds
+  }
+  
+  tree
+}
+
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
