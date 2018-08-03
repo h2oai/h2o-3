@@ -333,6 +333,8 @@ public class TargetEncoder {
 
         //TODO Should we remove string columns from `data` as it is done in R version (see: https://0xdata.atlassian.net/browse/PUBDEV-5266) ?
 
+        int targetColumnIndex = getColumnIndexByName(data, targetColumnName);
+
         Frame teFrame = data; // TODO should we clone here? mutable or immutable approach?
 
         for ( String teColumnName: columnsToEncode) {
@@ -399,7 +401,7 @@ public class TargetEncoder {
 
                     int numeratorIndex = getColumnIndexByName(teFrame,"numerator");
                     int denominatorIndex = getColumnIndexByName(teFrame,"denominator");
-                    int targetColumnIndex = getColumnIndexByName(teFrame, targetColumnName);
+//                    int targetColumnIndex = getColumnIndexByName(teFrame, targetColumnName);
 
                     teFrame = subtractTargetValueForLOO(teFrame, numeratorIndex, denominatorIndex, targetColumnIndex);
 
