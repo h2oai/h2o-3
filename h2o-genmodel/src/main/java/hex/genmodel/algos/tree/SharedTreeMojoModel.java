@@ -200,6 +200,52 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
+    public static class LeafDecisionPathTracker implements DecisionPathTracker<LeafDecisionPathTracker> {
+        private final AuxInfoLightReader _auxInfo;
+        private boolean _wentRight = false; // Was the last step _right_?
+
+        // OUT
+        private int _nodeId = 0;
+
+        private LeafDecisionPathTracker(byte[] auxTree) {
+          _auxInfo = new AuxInfoLightReader(new ByteBufferWrapper(auxTree));
+        }
+
+        @Override
+        public boolean go(int depth, boolean right) {
+          if (!_auxInfo.hasNext()) {
+            assert _wentRight;
+            return false;
+          }
+          _auxInfo.readNext();
+          if (right) {
+            if (_wentRight && _nodeId != _auxInfo._nid)
+              return false;
+            _nodeId = _auxInfo.getRightNodeIdAndSkipNode();
+            _auxInfo.skipNodes(_auxInfo._numLeftChildren);
+            _wentRight = true;
+          } else { // left
+            _wentRight = false;
+            if (_auxInfo._numLeftChildren == 0) {
+              _nodeId = _auxInfo.getLeftNodeIdAndSkipNode();
+              return false;
+            } else {
+              _auxInfo.skipNode(); // proceed to next _left_ node
+            }
+          }
+          return true;
+        }
+
+        @Override
+        public LeafDecisionPathTracker terminate() {
+          return this;
+        }
+
+        public final int getLeafNodeId() {
+          return _nodeId;
+        }
+    }
+
     public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
         long l = Double.doubleToRawLongBits(leafAssignment);
         for (int i = 0; i < 64; ++i) {
@@ -211,6 +257,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
 
     public static String getDecisionPath(double leafAssignment) {
         return getDecisionPath(leafAssignment, new StringDecisionPathTracker());
+    }
+
+    public static int getLeafNodeId(double leafAssignment, byte[] auxTree) {
+        LeafDecisionPathTracker tr = new LeafDecisionPathTracker(auxTree);
+        return getDecisionPath(leafAssignment, tr).getLeafNodeId();
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -422,6 +473,47 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       return "Tree " + groupIndex + className;
     }
 
+    // Please see AuxInfo for details of the serialized format
+    private static class AuxInfoLightReader {
+      private final ByteBufferWrapper _abAux;
+      int _nid;
+      int _numLeftChildren;
+
+      private AuxInfoLightReader(ByteBufferWrapper abAux) {
+        _abAux = abAux;
+      }
+
+      private void readNext() {
+        _nid = _abAux.get4();
+        _numLeftChildren = _abAux.get4();
+      }
+
+      private boolean hasNext() {
+        return _abAux.hasRemaining();
+      }
+
+      private int getLeftNodeIdAndSkipNode() {
+        _abAux.skip(4 * 6);
+        int n = _abAux.get4();
+        _abAux.skip(4);
+        return n;
+      }
+
+      private int getRightNodeIdAndSkipNode() {
+        _abAux.skip(4 * 7);
+        return _abAux.get4();
+      }
+
+      private void skipNode() {
+        _abAux.skip(AuxInfo.SIZE - 8);
+      }
+
+      private void skipNodes(int num) {
+        _abAux.skip(AuxInfo.SIZE * num);
+      }
+
+    }
+
     static class AuxInfo {
       private static int SIZE = 10 * 4;
 
@@ -589,20 +681,40 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       return names;
     }
 
-    public String[] getDecisionPath(final double row[]) {
-      if ((double) _mojo_version < 1.2) {
-        throw new IllegalArgumentException("You can only obtain decision tree path with mojo verions 1.2 or higher");
-      } else {
-        String[] output = new String[_compressed_trees.length];
-        for (int j = 0; j < _ntree_groups; j++) {
-          for (int i = 0; i < _ntrees_per_group; i++) {
+    public static class LeafNodeAssignments {
+      public String[] _paths;
+      public int[] _nodeIds;
+    }
 
-            int itree = treeIndex(j, i);
-            double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
-            output[itree] = SharedTreeMojoModel.getDecisionPath(d);
-          }
+    public LeafNodeAssignments getLeafNodeAssignments(final double[] row) {
+      LeafNodeAssignments assignments = new LeafNodeAssignments();
+      assignments._paths = new String[_compressed_trees.length];
+      if (_mojo_version >= 1.3 && _compressed_trees_aux != null) { // enable only for compatible MOJOs
+        assignments._nodeIds = new int[_compressed_trees_aux.length];
+      }
+      traceDecisions(row, assignments._paths, assignments._nodeIds);
+      return assignments;
+    }
+
+    public String[] getDecisionPath(final double[] row) {
+      String[] paths = new String[_compressed_trees.length];
+      traceDecisions(row, paths, null);
+      return paths;
+    }
+
+    private void traceDecisions(final double[] row, String[] paths, int[] nodeIds) {
+      if (_mojo_version < 1.2) {
+        throw new IllegalArgumentException("You can only obtain decision tree path with mojo versions 1.2 or higher");
+      }
+      for (int j = 0; j < _ntree_groups; j++) {
+        for (int i = 0; i < _ntrees_per_group; i++) {
+          int itree = treeIndex(j, i);
+          double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
+          if (paths != null)
+            paths[itree] = SharedTreeMojoModel.getDecisionPath(d);
+          if (nodeIds != null)
+            nodeIds[itree] = SharedTreeMojoModel.getLeafNodeId(d, _compressed_trees_aux[itree]);
         }
-        return output;
       }
     }
 
