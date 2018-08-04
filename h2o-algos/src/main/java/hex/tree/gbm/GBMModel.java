@@ -1,16 +1,23 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.CompressedTree;
 import hex.tree.Score;
 import hex.tree.SharedTreeModel;
+import water.DKV;
 import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.SBPrintStream;
 
 import java.util.Arrays;
 
-public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
+public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> implements Model.StagedPredictions {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -59,6 +66,66 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
   public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
     super(selfKey,parms,output);
+  }
+
+  @Override
+  public Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    final String[] names = makeAllTreeColumnNames();
+    final int outputcols = names.length;
+
+    return new StagedPredictionsTask(this)
+            .doAll(outputcols, Vec.T_NUM, adaptFrm)
+            .outputFrame(destination_key, names, null);
+  }
+
+  private static class StagedPredictionsTask extends MRTask<StagedPredictionsTask> {
+    private final Key<GBMModel> _modelKey;
+
+    private transient GBMModel _model;
+
+    private StagedPredictionsTask(GBMModel model) {
+      _modelKey = model._key;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _model = _modelKey.get();
+      assert _model != null;
+    }
+
+    @Override
+    public void map(Chunk chks[], NewChunk[] nc) {
+      double[] input = new double[chks.length];
+      int contribOffset = _model._output.nclasses() == 1 ? 0 : 1;
+
+      for (int row = 0; row < chks[0]._len; row++) {
+        for (int i = 0; i < chks.length; i++)
+          input[i] = chks[i].atd(row);
+
+        double[] contribs = new double[contribOffset + _model._output.nclasses()];
+        double[] preds = new double[contribs.length];
+
+        int col = 0;
+        for (int tidx = 0; tidx < _model._output._treeKeys.length; tidx++) {
+          Key[] keys = _model._output._treeKeys[tidx];
+          for (int i = 0; i < keys.length; i++) {
+            if (keys[i] != null)
+              contribs[contribOffset + i] += DKV.get(keys[i]).<CompressedTree>get().score(input, _model._output._domains);
+            preds[contribOffset + i] = contribs[contribOffset + i];
+          }
+          _model.score0Probabilities(preds, 0);
+          _model.score0PostProcessSupervised(preds, input);
+          for (int i = 0; i < keys.length; i++) {
+            if (keys[i] != null)
+              nc[col++].addNum(preds[contribOffset + i]);
+          }
+        }
+        assert (col == nc.length);
+      }
+    }
   }
 
   @Override
