@@ -315,6 +315,7 @@ reference:
       - predict.H2OAutoML 
       - predict.H2OModel 
       - predict_leaf_node_assignment.H2OModel
+      - staged_predict_proba.H2OModel
       - print.H2OFrame 
       - print.H2OTable 
       - prostate
