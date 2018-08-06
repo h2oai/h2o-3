@@ -63,23 +63,22 @@ stackedensemble.multinomial.test <- function() {
     print(perf_rf_test)
 
 
-    # Train & Cross-validate a extremely-randomized RF
-    my_xrf <- h2o.randomForest(x = x,
-                               y = y,
-                               training_frame = train,
-                               ntrees = 10,
-                               histogram_type = "Random",
-                               nfolds = nfolds,
-                               fold_assignment = "Modulo",
-                               keep_cross_validation_predictions = TRUE,
-                               seed = 1)
+    # Train & Cross-validate an XGBoost GBM
+    my_xgb <- h2o.xgboost(x = x,
+                          y = y,
+                          training_frame = train,
+                          ntrees = 10,
+                          nfolds = nfolds,
+                          fold_assignment = "Modulo",
+                          keep_cross_validation_predictions = TRUE,
+                          seed = 1)
     # Eval perf
-    perf_xrf_train <- h2o.performance(my_xrf)
-    perf_xrf_test <- h2o.performance(my_xrf, newdata = test)
-    print("XRF training performance: ")
-    print(perf_xrf_train)
-    print("XRF test performance: ")
-    print(perf_xrf_test)
+    perf_xgb_train <- h2o.performance(my_xgb)
+    perf_xgb_test <- h2o.performance(my_xgb, newdata = test)
+    print("XGB training performance: ")
+    print(perf_xgb_train)
+    print("XGB test performance: ")
+    print(perf_xgb_test)
 
 
     print("Train StackedEnsemble Model")
@@ -88,7 +87,7 @@ stackedensemble.multinomial.test <- function() {
                                  y = y,
                                  training_frame = train,
                                  validation_frame = test,  #also test that validation_frame is working
-                                 base_models = list(my_gbm, my_rf, my_xrf))
+                                 base_models = list(my_gbm, my_rf, my_xgb))
     expect_true( inherits(stack, "H2OMultinomialModel") )
     
     # Check that prediction works
