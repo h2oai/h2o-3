@@ -9,13 +9,17 @@ sys.path.insert(1,"../../../")  # allow us to run this standalone
 
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.estimators.xgboost import H2OXGBoostEstimator
+from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator 
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils
 
 
 def stackedensemble_multinomial_test():
     """This test check the following (for multinomial regression):
-    1) That H2OStackedEnsembleEstimator executes w/o errors on a 3-model manually constructed ensemble.
+    1) That H2OStackedEnsembleEstimator executes w/o errors on a 6-model manually constructed ensemble.
     2) That .predict() works on a stack.
     3) That .model_performance() works on a stack.
     4) That test performance is better on ensemble vs the base learners.
@@ -49,13 +53,13 @@ def stackedensemble_multinomial_test():
     print("GBM test performance: ")
     print(perf_gbm_test)
 
+
     # train and cross-validate a RF
     my_rf = H2ORandomForestEstimator(ntrees=10,
                                      nfolds=nfolds,
                                      fold_assignment="Modulo",
                                      keep_cross_validation_predictions=True,
                                      seed=1)
-
     my_rf.train(x=x, y=y, training_frame=train)
 
     # evaluate performance
@@ -66,26 +70,75 @@ def stackedensemble_multinomial_test():
     print("RF test performance: ")
     print(perf_rf_test)
 
-    # Train and cross-validate an extremely-randomized RF
-    my_xrf = H2ORandomForestEstimator(ntrees=10,
+
+    # Train and cross-validate an XGBoost GBM
+    my_xgb = H2OXGBoostEstimator(ntrees=10,
+                                 nfolds=nfolds,
+                                 fold_assignment="Modulo",
+                                 keep_cross_validation_predictions=True,
+                                 seed=1)
+    my_xgb.train(x=x, y=y, training_frame=train)
+
+    # evaluate performance
+    perf_xgb_train = my_xgb.model_performance()
+    perf_xgb_test = my_xgb.model_performance(test_data=test)
+    print("XGB training performance: ")
+    print(perf_xgb_train)
+    print("XGB test performance: ")
+    print(perf_xgb_test)
+
+
+    # Train and cross-validate a Naive Bayes model
+    my_nb = H2ONaiveBayesEstimator(nfolds=nfolds,
+                                   fold_assignment="Modulo",
+                                   keep_cross_validation_predictions=True,
+                                   seed=1)
+    my_nb.train(x=x, y=y, training_frame=train)
+
+    # evaluate performance
+    perf_nb_train = my_nb.model_performance()
+    perf_nb_test = my_nb.model_performance(test_data=test)
+    print("NB training performance: ")
+    print(perf_nb_train)
+    print("NB test performance: ")
+    print(perf_nb_test)
+
+
+    # Train and cross-validate a Deep Learning model
+    my_dnn = H2ODeepLearningEstimator(hidden = [10,10],
                                       nfolds=nfolds,
-                                      histogram_type="Random",
                                       fold_assignment="Modulo",
                                       keep_cross_validation_predictions=True,
                                       seed=1)
-
-    my_xrf.train(x=x, y=y, training_frame=train)
+    my_dnn.train(x=x, y=y, training_frame=train)
 
     # evaluate performance
-    perf_xrf_train = my_xrf.model_performance()
-    perf_xrf_test = my_xrf.model_performance(test_data=test)
-    print("XRF training performance: ")
-    print(perf_xrf_train)
-    print("XRF test performance: ")
-    print(perf_xrf_test)
+    perf_dnn_train = my_dnn.model_performance()
+    perf_dnn_test = my_dnn.model_performance(test_data=test)
+    print("DNN training performance: ")
+    print(perf_dnn_train)
+    print("DNN test performance: ")
+    print(perf_dnn_test)
+
+
+    # Train and cross-validate a GLM model
+    my_glm = H2OGeneralizedLinearEstimator(family="multinomial",
+                                           nfolds=nfolds,
+                                           fold_assignment="Modulo",
+                                           keep_cross_validation_predictions=True,
+                                           seed=1)
+    my_glm.train(x=x, y=y, training_frame=train)
+
+    # evaluate performance
+    perf_glm_train = my_glm.model_performance()
+    perf_glm_test = my_glm.model_performance(test_data=test)
+    print("GLM training performance: ")
+    print(perf_glm_train)
+    print("GLM test performance: ")
+    print(perf_glm_test)
 
     # Train a stacked ensemble using the GBM and GLM above
-    stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id,  my_rf.model_id, my_xrf.model_id])
+    stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id,  my_rf.model_id, my_xgb.model_id, my_nb.model_id, my_dnn.model_id, my_glm.model_id])
     stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
     assert type(stack) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     assert stack.type == "classifier"
@@ -109,7 +162,10 @@ def stackedensemble_multinomial_test():
     # Test Mean Per Class Error for each base learner
     baselearner_best_mean_per_class_error_test = min(perf_gbm_test.mean_per_class_error(), \
                                                      perf_rf_test.mean_per_class_error(), \
-                                                     perf_xrf_test.mean_per_class_error())
+                                                     perf_xgb_test.mean_per_class_error(), \
+                                                     perf_nb_test.mean_per_class_error(), \
+                                                     perf_dnn_test.mean_per_class_error(),
+                                                     perf_glm_test.mean_per_class_error())
     stack_mean_per_class_error_test = perf_stack_test.mean_per_class_error()
     print("Best Base-learner Test Mean Per Class Error:  {0}".format(baselearner_best_mean_per_class_error_test))
     print("Ensemble Test Mean Per Class Error:  {0}".format(stack_mean_per_class_error_test))
