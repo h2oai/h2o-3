@@ -28,7 +28,6 @@ public class TreeHandler extends Handler {
 
         args.left_children = treeProperties.leftChildren;
         args.right_children = treeProperties.rightChildren;
-        args.root_node_number = treeProperties.rootNodeNumber;
         return args;
     }
 
@@ -52,7 +51,6 @@ public class TreeHandler extends Handler {
         Objects.requireNonNull(sharedTreeSubgraph);
 
         final TreeProperties stf = new TreeProperties();
-        stf.rootNodeNumber = sharedTreeSubgraph.rootNode.getNodeNumber();
 
         stf.leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
         stf.rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
@@ -140,7 +138,6 @@ public class TreeHandler extends Handler {
         private int[] leftChildren;
         private int[] rightChildren;
         private String[] descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
-        private int rootNodeNumber;
 
         public int[] getLeftChildren() {
             return leftChildren;
@@ -148,10 +145,6 @@ public class TreeHandler extends Handler {
 
         public int[] getRightChildren() {
             return rightChildren;
-        }
-
-        public int getRootNodeNumber() {
-            return rootNodeNumber;
         }
 
         public String[] getDescriptions() {

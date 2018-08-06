@@ -27,7 +27,4 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Graph features")
     public String[] features;
 
-    @API(direction = API.Direction.OUTPUT, help = "NumberOf the root node")
-    public int root_node_number;
-
 }
