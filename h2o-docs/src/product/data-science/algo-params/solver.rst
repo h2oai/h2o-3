@@ -24,7 +24,7 @@ Detailed information about each of these options is available in the `Solvers <.
 -  If there are more than 5k active predictors, GLM uses L_BFGS.
 -  If ``family=multinomial`` and ``alpha=0`` (ridge or no penalty), GLM uses L_BFGS.
 -  If lambda search is enabled, GLM uses COORDINATE_DESCENT.
--  If your data has upper/lower bounds and no proximal penlaty, GLM uses COORDINATE_DESCENT.
+-  If your data has upper/lower bounds and no proximal penalty, GLM uses COORDINATE_DESCENT.
 -  If none above is true, then GLM defaults to IRLSM. This is because COORDINATE_DESCENT works much better with lambda search.
 
 Below are some general guidelines to follow when specifying a solver.  
