@@ -266,7 +266,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           if (aModel._output.isBinomialClassifier())
             distributionFamily = DistributionFamily.bernoulli;
           else if (aModel._output.isClassifier())
-            throw new H2OIllegalArgumentException("Don't know how to determine the distribution for a multinomial classifier.");
+            distributionFamily = DistributionFamily.multinomial;
           else
             distributionFamily = DistributionFamily.gaussian;
         } // DistributionFamily.AUTO
