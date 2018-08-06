@@ -24,11 +24,11 @@ public class TreeHandler extends Handler {
         final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[args.tree_number][args.tree_class].get()
                 .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
 
-        final CompressedTreeFormat compressedTreeFormat = convertSharedTreeSubgraph(sharedTreeSubgraph);
+        final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
 
-        args.left_children = compressedTreeFormat.leftChildren;
-        args.right_children = compressedTreeFormat.rightChildren;
-        args.root_node_number = compressedTreeFormat.rootNodeNumber;
+        args.left_children = treeProperties.leftChildren;
+        args.right_children = treeProperties.rightChildren;
+        args.root_node_number = treeProperties.rootNodeNumber;
         return args;
     }
 
@@ -46,12 +46,12 @@ public class TreeHandler extends Handler {
      * Convers H2O-3's internal representation of a boosted tree in a form of {@link SharedTreeSubgraph} to a compressed format.
      *
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert
-     * @return An instance of {@link CompressedTreeFormat} with some attributes possibly empty if suitable. Never null.
+     * @return An instance of {@link TreeProperties} with some attributes possibly empty if suitable. Never null.
      */
-    static CompressedTreeFormat convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
+    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
-        final CompressedTreeFormat stf = new CompressedTreeFormat();
+        final TreeProperties stf = new TreeProperties();
         stf.rootNodeNumber = sharedTreeSubgraph.rootNode.getNodeNumber();
 
         stf.leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
@@ -130,7 +130,7 @@ public class TreeHandler extends Handler {
 
     }
 
-    public static class CompressedTreeFormat {
+    public static class TreeProperties {
 
         private int[] leftChildren;
         private int[] rightChildren;

@@ -49,11 +49,11 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.CompressedTreeFormat compressedTreeFormat = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
-            assertNotNull(compressedTreeFormat);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            assertNotNull(treeProperties);
 
-            final int[] leftChildren = compressedTreeFormat.getLeftChildren();
-            final int[] rightChildren = compressedTreeFormat.getRightChildren();
+            final int[] leftChildren = treeProperties.getLeftChildren();
+            final int[] rightChildren = treeProperties.getRightChildren();
             assertEquals(leftChildren.length, rightChildren.length);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -118,10 +118,10 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.CompressedTreeFormat compressedTreeFormat = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
-            assertNotNull(compressedTreeFormat);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            assertNotNull(treeProperties);
 
-            final String[] nodeDescriptions = compressedTreeFormat.getDescriptions();
+            final String[] nodeDescriptions = treeProperties.getDescriptions();
             assertEquals(sharedTreeSubgraph.nodesArray.size(), nodeDescriptions.length);
 
             for (String nodeDescription : nodeDescriptions) {
