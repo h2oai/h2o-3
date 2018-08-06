@@ -6,7 +6,7 @@ stackedensemble.multinomial.test <- function() {
     # This test checks the following (for multinomial regression):
     #
     # 1) That h2o.stackedEnsemble executes w/o errors
-    #    on a 5-model "manually constucted" ensemble.
+    #    on a 6-model "manually constucted" ensemble.
     # 2) That h2o.predict works on a stack
     # 3) That h2o.performance works on a stack
     # 4) That the test performance is
