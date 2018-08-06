@@ -6,7 +6,7 @@ stackedensemble.multinomial.test <- function() {
     # This test checks the following (for multinomial regression):
     #
     # 1) That h2o.stackedEnsemble executes w/o errors
-    #    on a 3-model "manually constucted" ensemble.
+    #    on a 5-model "manually constucted" ensemble.
     # 2) That h2o.predict works on a stack
     # 3) That h2o.performance works on a stack
     # 4) That the test performance is
@@ -98,11 +98,12 @@ stackedensemble.multinomial.test <- function() {
     print(perf_nb_test)
     
     
-    # Train & Cross-validate an Deep Learning model
+    # Train & Cross-validate a Deep Learning model
     my_dnn <- h2o.deeplearning(x = x,
                                y = y,
                                training_frame = train,
                                nfolds = nfolds,
+                               hidden = c(10,10),
                                fold_assignment = "Modulo",
                                keep_cross_validation_predictions = TRUE,
                                seed = 1)
@@ -112,7 +113,25 @@ stackedensemble.multinomial.test <- function() {
     print("DNN training performance: ")
     print(perf_dnn_train)
     print("DNN test performance: ")
-    print(perf_dnn_test)    
+    print(perf_dnn_test)
+    
+    
+    # Train & Cross-validate a GLM model
+    my_glm <- h2o.glm(x = x,
+                      y = y,
+                      family = "multinomial",
+                      training_frame = train,
+                      nfolds = nfolds,
+                      fold_assignment = "Modulo",
+                      keep_cross_validation_predictions = TRUE,
+                      seed = 1)
+    # Eval perf
+    perf_glm_train <- h2o.performance(my_glm)
+    perf_glm_test <- h2o.performance(my_glm, newdata = test)
+    print("GLM training performance: ")
+    print(perf_glm_train)
+    print("GLM test performance: ")
+    print(perf_glm_test) 
 
 
     print("Train StackedEnsemble Model")
@@ -121,15 +140,14 @@ stackedensemble.multinomial.test <- function() {
                                  y = y,
                                  training_frame = train,
                                  validation_frame = test,  #also test that validation_frame is working
-                                 base_models = list(my_gbm, my_rf, my_xgb, my_nb, my_dnn))
+                                 base_models = list(my_gbm, my_rf, my_xgb, my_nb, my_dnn, my_glm))
     expect_true( inherits(stack, "H2OMultinomialModel") )
     
     # Check that prediction works
     pred <- h2o.predict(stack, newdata = test)
     print(pred)
     expect_equal(nrow(pred), nrow(test))
-    # TO DO: Modify the ncol to include two extra models: NB and DNN
-    #expect_equal(ncol(pred), 11)
+    expect_equal(ncol(pred), 11)
 
     # Evaluate ensemble performance
     perf_stack_train <- h2o.performance(stack)
@@ -145,10 +163,11 @@ stackedensemble.multinomial.test <- function() {
                                                       h2o.mean_per_class_error(perf_rf_test), 
                                                       h2o.mean_per_class_error(perf_xgb_test),
                                                       h2o.mean_per_class_error(perf_nb_test),
-                                                      h2o.mean_per_class_error(perf_dnn_test))
+                                                      h2o.mean_per_class_error(perf_dnn_test),
+                                                      h2o.mean_per_class_error(perf_glm_test))
     stack_mean_per_class_error_test <- h2o.mean_per_class_error(perf_stack_test)
     print(sprintf("Best Base-learner Test mean_per_class_error:  %s", baselearner_best_mean_per_class_error_test))
-    print(sprintf("Ensemble Test mean_per_class_error:  %s", stack_mean_per_class_error_test))
+    print(sprintf("Stacked Ensemble Test mean_per_class_error:  %s", stack_mean_per_class_error_test))
     expect_equal(TRUE, stack_mean_per_class_error_test <= baselearner_best_mean_per_class_error_test)
 
     # Check that passing `test` as a validation_frame
