@@ -63,23 +63,56 @@ stackedensemble.multinomial.test <- function() {
     print(perf_rf_test)
 
 
-    # Train & Cross-validate a extremely-randomized RF
-    my_xrf <- h2o.randomForest(x = x,
+    # Train & Cross-validate an XGBoost GBM
+    my_xgb <- h2o.xgboost(x = x,
+                          y = y,
+                          training_frame = train,
+                          ntrees = 10,
+                          nfolds = nfolds,
+                          fold_assignment = "Modulo",
+                          keep_cross_validation_predictions = TRUE,
+                          seed = 1)
+    # Eval perf
+    perf_xgb_train <- h2o.performance(my_xgb)
+    perf_xgb_test <- h2o.performance(my_xgb, newdata = test)
+    print("XGB training performance: ")
+    print(perf_xgb_train)
+    print("XGB test performance: ")
+    print(perf_xgb_test)
+    
+    
+    # Train & Cross-validate a Naive Bayes model
+    my_nb <- h2o.naiveBayes(x = x,
+                            y = y,
+                            training_frame = train,
+                            nfolds = nfolds,
+                            fold_assignment = "Modulo",
+                            keep_cross_validation_predictions = TRUE,
+                            seed = 1)
+    # Eval perf
+    perf_nb_train <- h2o.performance(my_nb)
+    perf_nb_test <- h2o.performance(my_nb, newdata = test)
+    print("NB training performance: ")
+    print(perf_nb_train)
+    print("NB test performance: ")
+    print(perf_nb_test)
+    
+    
+    # Train & Cross-validate an Deep Learning model
+    my_dnn <- h2o.deeplearning(x = x,
                                y = y,
                                training_frame = train,
-                               ntrees = 10,
-                               histogram_type = "Random",
                                nfolds = nfolds,
                                fold_assignment = "Modulo",
                                keep_cross_validation_predictions = TRUE,
                                seed = 1)
     # Eval perf
-    perf_xrf_train <- h2o.performance(my_xrf)
-    perf_xrf_test <- h2o.performance(my_xrf, newdata = test)
-    print("XRF training performance: ")
-    print(perf_xrf_train)
-    print("XRF test performance: ")
-    print(perf_xrf_test)
+    perf_dnn_train <- h2o.performance(my_dnn)
+    perf_dnn_test <- h2o.performance(my_dnn, newdata = test)
+    print("DNN training performance: ")
+    print(perf_dnn_train)
+    print("DNN test performance: ")
+    print(perf_dnn_test)    
 
 
     print("Train StackedEnsemble Model")
@@ -88,14 +121,15 @@ stackedensemble.multinomial.test <- function() {
                                  y = y,
                                  training_frame = train,
                                  validation_frame = test,  #also test that validation_frame is working
-                                 base_models = list(my_gbm, my_rf, my_xrf))
+                                 base_models = list(my_gbm, my_rf, my_xgb, my_nb, my_dnn))
     expect_true( inherits(stack, "H2OMultinomialModel") )
     
     # Check that prediction works
     pred <- h2o.predict(stack, newdata = test)
     print(pred)
     expect_equal(nrow(pred), nrow(test))
-    expect_equal(ncol(pred), 11)
+    # TO DO: Modify the ncol to include two extra models: NB and DNN
+    #expect_equal(ncol(pred), 11)
 
     # Evaluate ensemble performance
     perf_stack_train <- h2o.performance(stack)
@@ -109,7 +143,9 @@ stackedensemble.multinomial.test <- function() {
     # Test mean_per_class_error for each base learner
     baselearner_best_mean_per_class_error_test <- min(h2o.mean_per_class_error(perf_gbm_test), 
                                                       h2o.mean_per_class_error(perf_rf_test), 
-                                                      h2o.mean_per_class_error(perf_xrf_test))
+                                                      h2o.mean_per_class_error(perf_xgb_test),
+                                                      h2o.mean_per_class_error(perf_nb_test),
+                                                      h2o.mean_per_class_error(perf_dnn_test))
     stack_mean_per_class_error_test <- h2o.mean_per_class_error(perf_stack_test)
     print(sprintf("Best Base-learner Test mean_per_class_error:  %s", baselearner_best_mean_per_class_error_test))
     print(sprintf("Ensemble Test mean_per_class_error:  %s", stack_mean_per_class_error_test))
