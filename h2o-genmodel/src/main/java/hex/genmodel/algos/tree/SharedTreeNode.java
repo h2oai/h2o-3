@@ -267,7 +267,7 @@ public class SharedTreeNode {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
-  private boolean isBitset() {
+  public boolean isBitset() {
     return (domainValues != null);
   }
 

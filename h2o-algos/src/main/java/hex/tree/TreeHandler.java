@@ -5,6 +5,8 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
 import water.MemoryManager;
 import water.api.Handler;
+import water.util.ArrayUtils;
+import water.util.CollectionUtils;
 
 import java.util.*;
 
@@ -56,7 +58,7 @@ public class TreeHandler extends Handler {
 
         stf.leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
         stf.rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf.thresholds = MemoryManager.malloc8d(sharedTreeSubgraph.nodesArray.size());
+        stf.thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
 
         // Create a temporary nodeMap for faster search. Our nodes are not always numbered sequentially,
         // thus searching in the array of nodes by index is not possible.
@@ -68,7 +70,7 @@ public class TreeHandler extends Handler {
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
-        append(stf.rightChildren, stf.leftChildren, nodesToTraverse, -1);
+        append(stf.rightChildren, stf.leftChildren, stf.thresholds, nodesToTraverse, -1);
 
         return stf;
     }
@@ -91,32 +93,51 @@ public class TreeHandler extends Handler {
         return treeNodeMap;
     }
 
-    private static void append(final int[] rightChildren, final int[] leftChildren, List<SharedTreeNode> nodesToTraverse, int pointer) {
+    private static void append(final int[] rightChildren, final int[] leftChildren, final float[] thresholds,
+                               List<SharedTreeNode> nodesToTraverse, int pointer) {
         if(nodesToTraverse.isEmpty()) return;
 
-        List<SharedTreeNode> newNodes = new ArrayList<>();
+        List<SharedTreeNode> discoveredNodes = new ArrayList<>();
 
         for (SharedTreeNode node : nodesToTraverse) {
             pointer++;
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
+            thresholds[pointer] = node.getSplitValue();
+            final String[] inclusiveLevels = getInclusiveLevels(node);// How to compress 'em & send them to FE ? ?
             if (leftChild != null) {
-                newNodes.add(leftChild);
+                discoveredNodes.add(leftChild);
                 leftChildren[pointer] = leftChild.getNodeNumber();
             } else {
                 leftChildren[pointer] = NO_CHILD;
             }
 
             if (rightChild != null) {
-                newNodes.add(rightChild);
+                discoveredNodes.add(rightChild);
                 rightChildren[pointer] = rightChild.getNodeNumber();
             } else {
                 rightChildren[pointer] = NO_CHILD;
             }
-
         }
 
-        append(rightChildren, leftChildren, newNodes, pointer);
+        append(rightChildren, leftChildren, thresholds, discoveredNodes, pointer);
+    }
+
+    private static String[] getInclusiveLevels(final SharedTreeNode node) {
+        if (!node.isBitset() || node.getInclusiveLevels() == null) return new String[0];
+
+        final BitSet childInclusiveLevels = node.getInclusiveLevels();
+        final int cardinality = childInclusiveLevels.cardinality();
+        List<String> domainLevel = new ArrayList<>(cardinality);
+        if ((cardinality > 0)) {
+            for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
+                domainLevel.add(node.getDomainValues()[i]);
+            }
+        } else {
+            domainLevel.add(cardinality + " levels");
+        }
+
+        return CollectionUtils.unboxStrings(domainLevel);
 
     }
 
@@ -124,7 +145,7 @@ public class TreeHandler extends Handler {
 
         private int[] leftChildren;
         private int[] rightChildren;
-        private double[] thresholds;
+        private float[] thresholds;
         private String[] features;
         private int rootNodeNumber;
 
@@ -136,7 +157,7 @@ public class TreeHandler extends Handler {
             return rightChildren;
         }
 
-        public double[] getThresholds() {
+        public float[] getThresholds() {
             return thresholds;
         }
 
