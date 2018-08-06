@@ -5,8 +5,6 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
 import water.MemoryManager;
 import water.api.Handler;
-import water.util.ArrayUtils;
-import water.util.CollectionUtils;
 
 import java.util.*;
 
@@ -58,11 +56,7 @@ public class TreeHandler extends Handler {
 
         stf.leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
         stf.rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf.thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
-
-        // Create a temporary nodeMap for faster search. Our nodes are not always numbered sequentially,
-        // thus searching in the array of nodes by index is not possible.
-        final Map<Integer, SharedTreeNode> nodeMap = createTreeNodeMap(sharedTreeSubgraph.nodesArray);
+        stf.descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
 
         // Set root node's children, there is no guarantee the root node will be number 0
         stf.rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
@@ -70,30 +64,13 @@ public class TreeHandler extends Handler {
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
-        append(stf.rightChildren, stf.leftChildren, stf.thresholds, nodesToTraverse, -1);
+        append(stf.rightChildren, stf.leftChildren,
+                stf.descriptions, nodesToTraverse, -1);
 
         return stf;
     }
 
-    /**
-     * Creates a map of {@link SharedTreeNode} where number of the node is the key.
-     *
-     * @param sharedTreeNodes A {@link List} of {@link SharedTreeNode} to create map from
-     * @return An non-thread-safe instance of {@link Map} with node number being the key to a {@link SharedTreeNode}
-     */
-    private static Map<Integer, SharedTreeNode> createTreeNodeMap(List<SharedTreeNode> sharedTreeNodes) {
-        Map<Integer, SharedTreeNode> treeNodeMap = new HashMap<>(sharedTreeNodes.size());
-
-        for (SharedTreeNode sharedTreeNode : sharedTreeNodes) {
-            treeNodeMap.put(sharedTreeNode.getNodeNumber(), sharedTreeNode);
-        }
-
-        assert treeNodeMap.size() == sharedTreeNodes.size(); // Verify there are no duplicated tree nodes (nodes with the same node number)
-
-        return treeNodeMap;
-    }
-
-    private static void append(final int[] rightChildren, final int[] leftChildren, final float[] thresholds,
+    private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
                                List<SharedTreeNode> nodesToTraverse, int pointer) {
         if(nodesToTraverse.isEmpty()) return;
 
@@ -103,8 +80,8 @@ public class TreeHandler extends Handler {
             pointer++;
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
-            thresholds[pointer] = node.getSplitValue();
-            final String[] inclusiveLevels = getInclusiveLevels(node);// How to compress 'em & send them to FE ? ?
+            nodesDescriptions[pointer] = serializeNodeDescription(node);
+
             if (leftChild != null) {
                 discoveredNodes.add(leftChild);
                 leftChildren[pointer] = leftChild.getNodeNumber();
@@ -120,24 +97,36 @@ public class TreeHandler extends Handler {
             }
         }
 
-        append(rightChildren, leftChildren, thresholds, discoveredNodes, pointer);
+        append(rightChildren, leftChildren, nodesDescriptions, discoveredNodes, pointer);
     }
 
-    private static String[] getInclusiveLevels(final SharedTreeNode node) {
-        if (!node.isBitset() || node.getInclusiveLevels() == null) return new String[0];
+    private static String serializeNodeDescription(final SharedTreeNode node) {
+        final StringBuffer nodeDescriptionBuffer = new StringBuffer();
+
+        if (!Float.isNaN(node.getSplitValue())) {
+            if (node.isLeftward()) {
+                nodeDescriptionBuffer.append("Split < ");
+            } else {
+                nodeDescriptionBuffer.append("Split >= ");
+            }
+            nodeDescriptionBuffer.append(node.getSplitValue());
+        }
+
+
+        // Append inclusive levels, if there are any. Otherwise return the node description immediately.
+        if (!node.isBitset() || node.getInclusiveLevels() == null) return nodeDescriptionBuffer.toString();
 
         final BitSet childInclusiveLevels = node.getInclusiveLevels();
         final int cardinality = childInclusiveLevels.cardinality();
-        List<String> domainLevel = new ArrayList<>(cardinality);
         if ((cardinality > 0)) {
+            nodeDescriptionBuffer.append(" | Inclusive levels: ");
             for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
-                domainLevel.add(node.getDomainValues()[i]);
+                nodeDescriptionBuffer.append(node.getDomainValues()[i]);
+                nodeDescriptionBuffer.append(", ");
             }
-        } else {
-            domainLevel.add(cardinality + " levels");
         }
 
-        return CollectionUtils.unboxStrings(domainLevel);
+        return nodeDescriptionBuffer.toString();
 
     }
 
@@ -145,8 +134,7 @@ public class TreeHandler extends Handler {
 
         private int[] leftChildren;
         private int[] rightChildren;
-        private float[] thresholds;
-        private String[] features;
+        private String[] descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
         private int rootNodeNumber;
 
         public int[] getLeftChildren() {
@@ -157,16 +145,12 @@ public class TreeHandler extends Handler {
             return rightChildren;
         }
 
-        public float[] getThresholds() {
-            return thresholds;
-        }
-
-        public String[] getFeatures() {
-            return features;
-        }
-
         public int getRootNodeNumber() {
             return rootNodeNumber;
+        }
+
+        public String[] getDescriptions() {
+            return descriptions;
         }
     }
 }

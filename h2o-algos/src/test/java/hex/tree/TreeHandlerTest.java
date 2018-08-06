@@ -213,6 +213,53 @@ public class TreeHandlerTest extends TestUtil {
             if (tfr != null) tfr.remove();
             if (model != null) model.remove();
         }
+    }
+
+    @Test
+    public void testSharedTreeSubgraphConversion_inclusiveLevelsIris() {
+
+        Frame tfr = null;
+        GBMModel model = null;
+
+        Scope.enter();
+        try {
+            tfr = parse_test_file("./smalldata/iris/iris2.csv");
+            DKV.put(tfr);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = tfr._key;
+            parms._response_column = "response";
+            parms._ntrees = 1;
+            parms._seed = 0;
+
+            model = new GBM(parms).trainModel().get();
+            final SharedTreeModel.SharedTreeOutput sharedTreeOutput = model._output;
+            assertEquals(parms._ntrees, sharedTreeOutput._ntrees);
+            assertEquals(parms._ntrees, sharedTreeOutput._treeKeys.length);
+            assertEquals(parms._ntrees, sharedTreeOutput._treeKeysAux.length);
+
+            final int treeNumber = 0;
+            final int treeClass = 2;
+            final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[treeNumber][treeClass].get();
+            final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[treeNumber][treeClass].get()
+                    .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
+
+
+            assertNotNull(sharedTreeSubgraph);
+
+            final TreeHandler.CompressedTreeFormat compressedTreeFormat = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            assertNotNull(compressedTreeFormat);
+
+            final String[] nodeDescriptions = compressedTreeFormat.getDescriptions();
+            assertEquals(sharedTreeSubgraph.nodesArray.size(), nodeDescriptions.length);
+
+            for (String nodeDescription : nodeDescriptions) {
+                assertNotNull(nodeDescription);
+            }
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (model != null) model.remove();
+        }
 
     }
 
