@@ -167,7 +167,21 @@ public class TargetEncoder {
 
         Vec targetVec = data.vec(targetIndex);
         String[] domains = targetVec.domain();
+        assert domains[1].equals("YES"); // TODO remove because we don't have YES/NO levels all the time. R's implementation relies on the fact that target class is always domain[1]. But who guarantees that?
         String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 1.0 0.0 ) )  [%d] [] )",
+                data._key, data._key, targetIndex,  data._key, targetIndex, domains[1], targetIndex);
+        Val val = Rapids.exec(tree);
+        Frame res = val.getFrame();
+        res._key = data._key;
+        DKV.put(res._key , res);
+        return res;
+    }
+
+    public Frame appendBinaryTargetColumn(Frame data, int targetIndex)  {
+
+        Vec targetVec = data.vec(targetIndex);
+        String[] domains = targetVec.domain();
+        String tree = String.format("(append %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 1.0 0.0 ) )  'appended' )",
                 data._key, data._key, targetIndex,  data._key, targetIndex, domains[1], targetIndex);
         Val val = Rapids.exec(tree);
         Frame res = val.getFrame();

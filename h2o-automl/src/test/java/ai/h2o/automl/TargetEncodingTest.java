@@ -2,10 +2,12 @@ package ai.h2o.automl;
 
 import hex.FrameSplitter;
 import hex.Model;
+import hex.ModelMetricsBinomial;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
+import water.DKV;
 import water.H2O;
 import water.Key;
 import water.TestUtil;
@@ -15,12 +17,14 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.rapids.vals.ValFrame;
 import water.util.FrameUtils;
 import water.util.IcedHashMap;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 import static water.util.FrameUtils.generateNumKeys;
@@ -36,64 +40,8 @@ public class TargetEncodingTest extends TestUtil{
 
   @Before
   public void beforeEach() {
-        System.out.println("Before each setup");
     }
 
-  /*@Ignore
-  @Test public void TitanicDemoWithTargetEncodingTest() {
-    Frame fr=null;
-    try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-
-
-      fr = FrameUtils.categoricalEncoder(fr, new String[]{},
-              Model.Parameters.CategoricalEncodingScheme.LabelEncoder, null, -1);
-
-      // Splitting phase
-
-      double[] ratios  = ard(0.7f, 0.1f, 0.1f);
-      Frame[] splits  = null;
-      long numberOfRows = fr.numRows();
-      FrameSplitter fs = new FrameSplitter(fr, ratios, generateNumKeys(fr._key, ratios.length+1), null);
-      H2O.submitTask(fs).join();
-      splits = fs.getResult();
-      Frame train = splits[0];
-      Frame valid = splits[1];
-      Frame te_holdout = splits[2];
-      Frame test = splits[3];
-      long l = train.numRows();
-      double v = Math.floor(numberOfRows * 0.7);
-      assert l == v;
-      assert splits.length == 4;
-
-      String[] colNames = train.names();
-
-      //myX <- setdiff(colnames(train), c("survived", "name", "ticket", "boat", "body"))
-
-
-      // Building default GBM
-      GBMModel gbm = null;
-      Frame fr2 = null;
-
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = train._key;
-      parms._response_column = "survived";
-      parms._ntrees = 2;
-      parms._max_depth = 3;
-      parms._distribution = DistributionFamily.AUTO;
-      parms._keep_cross_validation_predictions=true;
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-
-      Assert.assertTrue(job.isStopped());
-
-      fr2 = gbm.score(fr);
-
-    } finally {
-      if(fr != null) fr.remove();
-    }
-  }
-*/
     @Test(expected = IllegalStateException.class)
     public void targetEncoderPrepareEncodingFrameValidationDataIsNotNullTest() {
 
@@ -796,6 +744,53 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
+    public void ensureTargetColumnIsNumericOrBinaryCategoricalOrderTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_CAT)
+                .withDataForCol(0, ar("NO", "YES", "NO"))
+                .build();
+
+        Frame fr2 = new TestFrameBuilder()
+                .withName("testFrame2")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_CAT)
+                .withDataForCol(0, ar("YES", "NO", "NO"))
+                .build();
+
+        TargetEncoder tec = new TargetEncoder();
+
+        Frame encoded = tec.appendBinaryTargetColumn(fr, 0);
+        Frame encoded2 = tec.appendBinaryTargetColumn(fr2, 0);
+
+
+        //So, domains could be different. They seem to be sorted in a natural order.
+        try {
+            assertArrayEquals(fr.vec(0).domain(), fr2.vec(0).domain());
+            fail();
+        } catch (AssertionError ex) {
+        }
+
+        Vec frVec = fr.vec(0);
+        frVec.setDomain(fr.vec(0).domain());
+        Vec fr2Vec = fr2.vec(0);
+        fr2Vec.setDomain(fr2.vec(0).domain());
+
+        //So, setDomain does not do ordering.
+        try {
+            assertArrayEquals(frVec.domain(), fr2Vec.domain());
+            fail();
+        } catch (AssertionError ex) {
+        }
+
+
+        // Checking that Label Encoding will assign 0 label to the first category it encounters.
+        assertEquals(0, encoded.vec(0).at(0), 1e-5);
+        assertEquals(0, encoded2.vec(0).at(0), 1e-5);
+    }
+
+    @Test
     public void transformBinaryTargetColumnTest() {
         fr = new TestFrameBuilder()
                 .withName("testFrame")
@@ -851,104 +846,221 @@ public class TargetEncodingTest extends TestUtil{
 
     }
 
+    @Ignore
     @Test
-    public void targetEncoderIsWorkingWithRealDataSetsTest() {
-
+    public void inconsistentBinaryEncodingOfTheTargetColumnTest() {
         Key parsed = Key.make("airlines_parsed");
         Key parsedTest = Key.make("airlines_test_parsed");
 
         Frame airlinesTrainFrame = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
         Frame airlinesTestFrame = parse_test_file(parsedTest, "smalldata/airlines/AirlinesTest.csv.zip");
 
-        for( String header : airlinesTrainFrame.toTwoDimTable().getColHeaders()) {
-            String type = airlinesTrainFrame.vec(header).get_type_str();
-            int cardinality = airlinesTrainFrame.vec(header).cardinality();
-            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
 
-        }
+//        String [] newDomain = new String []{"YES", "NO"};
+//        Vec newTarget = airlinesTrainFrame.vec(10);
+//        newTarget.setDomain(new String []{"YES", "NO"});
+//        String[] domains1 = airlinesTrainFrame.replace(10, newTarget).domain();
+//        String[] domains2 = airlinesTestFrame.vec(10).domain();
+//
+//        Frame uuids = parse_test_file(Key.make("uuid"), "smalldata/airlines/airlineUUID.csv");
+//        long numberOfTraining = airlinesTrainFrame.numRows();
+//        long numberOfUUIDs = uuids.numRows();
+//
+//        String[] uuidStrings = new String [(int)numberOfTraining];
+//        for(int i = 0; i < numberOfTraining; i ++) {
+//            uuidStrings[i] = UUID.randomUUID().toString();
+//        }
+//        Vec uuidVec = Vec.makeVec(uuidStrings, Vec.newKey() );
+//
+//        airlinesTrainFrame.add("uuid", uuidVec);
+//        printOutColumnsMeta(airlinesTrainFrame);
+//
+//        Frame tmp = airlinesTrainFrame.sort(new int[]{7});
+//        tmp._key = airlinesTrainFrame._key;
+//        DKV.put(tmp._key , tmp);
+//        airlinesTrainFrame = tmp;
+//        airlinesTrainFrame = filterOutBy(airlinesTrainFrame, 7, "ABE");
+//
+//        Vec targetVec = airlinesTrainFrame.vec(10);
+//        String[] domains = targetVec.domain();
+//
+//        printOutFrameAsTable(airlinesTrainFrame);
 
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {7}; // 7 stands for Origin column
 
         Map<String, Frame> encodingMap = tec.prepareEncodingMap(airlinesTrainFrame, teColumns, 10); // 10 stands for IsDepDelayed column
-        Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
 
+        System.out.println("Before applying -------------------------------> ");
+        printOutFrameAsTable(airlinesTrainFrame);
+        Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
 
         // Preparing test frame
         Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
 
         testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
 
-//        testEncoded = FrameUtils.categoricalEncoder(testEncoded, new String[]{}, Model.Parameters.CategoricalEncodingScheme.Enum, null, -1);
-//        Vec categColumnTest = testEncoded.vec("IsDepDelayed").toCategoricalVec();
-//        testEncoded.remove("IsDepDelayed");
-//        testEncoded.add("IsDepDelayed", categColumnTest);
+        printOutColumnsMeta(testEncoded);
+    }
+
+    @Test
+    public void targetEncoderIsWorkingWithRealDataSetsTest() {
+
+        Frame airlinesTrainFrame = parse_test_file(Key.make("airlines_parsed"), "smalldata/airlines/AirlinesTrain.csv.zip");
+        Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test_parsed"), "smalldata/airlines/AirlinesTest.csv.zip");
+
+        //Split training into training and validation sets
+        double[] ratios  = ard(0.8f);
+        Frame[] splits  = null;
+        FrameSplitter fs = new FrameSplitter(airlinesTrainFrame, ratios, generateNumKeys(airlinesTrainFrame._key, ratios.length+1), null);
+        H2O.submitTask(fs).join();
+        splits = fs.getResult();
+        Frame train = splits[0];
+        Frame valid = splits[1];
+
+        TargetEncoder tec = new TargetEncoder();
+        int[] teColumns = {7, 8}; // 7 stands for Origin column
+
+        // Create encoding
+        Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, 10); // 10 stands for IsDepDelayed column
+
+        // Apply encoding to the training set
+        Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
+
+        printOutFrameAsTable(trainEncoded, true);
+
+        // Applying encoding to the valid set
+        Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
+        validEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(validEncoded, 10);
+
+        // Applying encoding to the test set
+        Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, 10, encodingMap, TargetEncoder.HoldoutType.None,false, 0, 1234.0);
+        testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
 
 
-        for( String header : testEncoded.toTwoDimTable().getColHeaders()) {
-            String type = testEncoded.vec(header).get_type_str();
-            int cardinality = testEncoded.vec(header).cardinality();
-            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-        }
-
-
-        printOutFrameAsTable(airlinesTrainFrame);
+        printOutColumnsMeta(testEncoded);
         printOutFrameAsTable(trainEncoded);
-        printOutFrameAsTable(testEncoded);
 
         // With target encoded Origin column
 
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = trainEncoded._key;
         parms._response_column = "IsDepDelayed";
-        parms._ntrees = 20;
+        parms._ntrees = 1000;
         parms._max_depth = 3;
         parms._distribution = DistributionFamily.quasibinomial;
-        parms._keep_cross_validation_predictions=true;
-        parms._valid = testEncoded._key;
-        parms._ignored_columns = new String[]{"IsDepDelayed_REC", "Origin"};
+        parms._valid = validEncoded._key;
+        parms._ignored_columns = new String[]{"IsDepDelayed_REC", "Origin", "Dest"};
         GBM job = new GBM(parms);
         GBMModel gbm = job.trainModel().get();
 
         Assert.assertTrue(job.isStopped());
 
-        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.valid());
+        Frame preds = gbm.score(testEncoded);
+        printOutFrameAsTable(preds);
+        hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
         double auc = mm._auc._auc;
 
 
-        // WITHOUT
-        Key parsed2 = Key.make("airlines_parsed2");
+        // Without target encoded Origin column
 
-        Frame airlinesTrainFrame2 = parse_test_file(parsed2, "smalldata/airlines/AirlinesTrain.csv.zip");
+        Frame airlinesTrainFrame2 = parse_test_file(Key.make("airlines_parsed2"), "smalldata/airlines/AirlinesTrain.csv.zip");
+        Frame airlinesTestFrame2 = parse_test_file(Key.make("airlines_test_parsed2"), "smalldata/airlines/AirlinesTest.csv.zip");
+
 
         // DO we convert to quasibinomial properly? maybe in training set we get opposite values to the test set because we are converting separately.
+        printOutFrameAsTable(airlinesTrainFrame2);
         airlinesTrainFrame2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTrainFrame2, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
+
+        double[] ratios2  = ard(0.8f);
+        Frame[] splits2  = null;
+        FrameSplitter fs2 = new FrameSplitter(airlinesTrainFrame2, ratios2, generateNumKeys(airlinesTrainFrame._key, ratios.length+1), null);
+        H2O.submitTask(fs2).join();
+        splits2 = fs2.getResult();
+        Frame train2 = splits2[0];
+        Frame valid2 = splits2[1];
+
+        train2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(train2, 10);
+        valid2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(valid2, 10);
 
         int originCardinality = testEncoded.vec("Origin").cardinality();
 
         GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
-        parms2._train = airlinesTrainFrame2._key;
+        parms2._train = train2._key;
         parms2._response_column = "IsDepDelayed";
-        parms2._ntrees = 20;
+        parms2._ntrees = 1000;
         parms2._max_depth = 3;
         parms2._distribution = DistributionFamily.quasibinomial;
-        parms2._keep_cross_validation_predictions=true;
-        parms2._valid = testEncoded._key;
+        parms2._valid = valid2._key;
         parms2._ignored_columns = new String[]{"IsDepDelayed_REC"};
         GBM job2 = new GBM(parms2);
         GBMModel gbm2 = job2.trainModel().get();
 
         Assert.assertTrue(job2.isStopped());
 
-        hex.ModelMetricsBinomial mm2 = hex.ModelMetricsBinomial.getFromDKV(gbm2, parms2.valid());
+        airlinesTestFrame2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTestFrame2, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
+
+        Frame preds2 = gbm2.score(airlinesTestFrame2);
+
+        Assert.assertTrue(gbm2.testJavaScoring(airlinesTestFrame2, preds2, 1e-6));
+        printOutFrameAsTable(preds2);
+        hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), airlinesTestFrame2.vec(parms2._response_column));
         double auc2 = mm2._auc._auc;
 
         System.out.println("Origin cardinality:" + originCardinality);
         System.out.println("AUC with encoding:" + auc);
         System.out.println("AUC without encoding:" + auc2);
 
-        // Fails. Maybe it is not of that high cardinality and target encoding actually hurts. Maybe not in terms of speed but in terms of performance.
         Assert.assertTrue(auc2 < auc );
+    }
+
+    @Test
+    public void filterOutByTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_STR)
+                .withDataForCol(0, ar("SAN", "SFO"))
+                .build();
+        Frame res = filterOutBy(fr, 0, "SAN");
+        printOutFrameAsTable(res);
+
+    }
+
+    @Test
+    public void filterByTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_STR)
+                .withDataForCol(0, ar("SAN", "SFO"))
+                .build();
+        Frame res = filterBy(fr, 0, "SAN");
+        printOutFrameAsTable(res);
+
+    }
+
+    public Frame filterOutBy(Frame data, int columnIndex, String value)  {
+
+        String tree = String.format("(rows %s  (!= (cols %s [%s] ) '%s' )  )", data._key, data._key, columnIndex, value);
+        Val val = Rapids.exec(tree);
+        Frame res = val.getFrame();
+
+        res._key = data._key;
+        DKV.put(res._key , res);
+        return res;
+    }
+
+    public Frame filterBy(Frame data, int columnIndex, String value)  {
+
+        String tree = String.format("(rows %s  (==(cols %s [%s] ) '%s' ) )", data._key, data._key, columnIndex, value);
+        Val val = Rapids.exec(tree);
+        Frame res = val.getFrame();
+
+        res._key = data._key;
+        DKV.put(res._key , res);
+
+        return res;
     }
 
     @After
@@ -963,6 +1075,20 @@ public class TargetEncodingTest extends TestUtil{
     private void printOutFrameAsTable(Frame fr) {
 
         TwoDimTable twoDimTable = fr.toTwoDimTable();
-        System.out.println(twoDimTable.toString());
+        System.out.println(twoDimTable.toString(2, false));
+    }
+    private void printOutFrameAsTable(Frame fr, boolean full) {
+
+        TwoDimTable twoDimTable = fr.toTwoDimTable(0,100, false);
+        System.out.println(twoDimTable.toString(2, full));
+    }
+
+    private void printOutColumnsMeta(Frame fr) {
+        for( String header : fr.toTwoDimTable().getColHeaders()) {
+            String type = fr.vec(header).get_type_str();
+            int cardinality = fr.vec(header).cardinality();
+            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+
+        }
     }
 }
