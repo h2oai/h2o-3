@@ -107,25 +107,27 @@ public class TreeHandler extends Handler {
 
     private static String serializeNodeDescription(final SharedTreeNode node) {
         final StringBuffer nodeDescriptionBuffer = new StringBuffer();
-            nodeDescriptionBuffer.append(node.getParent().getColName());
 
+        if (!Float.isNaN(node.getParent().getSplitValue())) {
+            nodeDescriptionBuffer.append(node.getParent().getColName());
             if (node.isLeftward()) {
                 nodeDescriptionBuffer.append(" < ");
             } else {
                 nodeDescriptionBuffer.append(" >= ");
             }
             nodeDescriptionBuffer.append(node.getParent().getSplitValue());
-
-        // Append inclusive levels, if there are any. Otherwise return the node description immediately.
-        if (!node.isBitset()) return nodeDescriptionBuffer.toString();
+            return nodeDescriptionBuffer.toString();
+        }
 
         final BitSet childInclusiveLevels = node.getInclusiveLevels();
         final int cardinality = childInclusiveLevels.cardinality();
         if ((cardinality > 0)) {
-            nodeDescriptionBuffer.append(" | Inclusive levels: ");
+            nodeDescriptionBuffer.append("Inclusive levels: ");
+            int bitsignCounter = 0;
             for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
-                nodeDescriptionBuffer.append(node.getDomainValues()[i]);
-                nodeDescriptionBuffer.append(", ");
+                nodeDescriptionBuffer.append(node.getParent().getDomainValues()[i]);
+                if (bitsignCounter != cardinality - 1) nodeDescriptionBuffer.append(", ");
+                bitsignCounter++;
             }
         }
 
