@@ -6,12 +6,14 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 import water.*;
 import water.fvec.Frame;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class TreeHandlerTest extends TestUtil {
 
@@ -110,11 +112,10 @@ public class TreeHandlerTest extends TestUtil {
             assertEquals(parms._ntrees, sharedTreeOutput._treeKeysAux.length);
 
             final int treeNumber = 0;
-            final int treeClass = 2;
+            final int treeClass = 0;
             final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[treeNumber][treeClass].get();
             final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[treeNumber][treeClass].get()
                     .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
-
 
             assertNotNull(sharedTreeSubgraph);
 
@@ -125,7 +126,8 @@ public class TreeHandlerTest extends TestUtil {
             assertEquals(sharedTreeSubgraph.nodesArray.size(), nodeDescriptions.length);
 
             for (String nodeDescription : nodeDescriptions) {
-                assertNotNull(nodeDescription);
+                assertFalse(nodeDescription.isEmpty());
+                assertFalse(nodeDescription.contains("Inclusive levels:")); // Iris-only, no categoricals
             }
 
         } finally {
@@ -134,5 +136,12 @@ public class TreeHandlerTest extends TestUtil {
         }
 
     }
+
+    @Test
+    public void testArtificialTreeConversion(){
+        final SharedTreeSubgraph mock = mock(SharedTreeSubgraph.class);
+    }
+
+
 
 }

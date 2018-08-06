@@ -65,13 +65,13 @@ public class TreeHandler extends Handler {
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
         append(stf.rightChildren, stf.leftChildren,
-                stf.descriptions, nodesToTraverse, -1);
+                stf.descriptions, nodesToTraverse, -1, false);
 
         return stf;
     }
 
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
-                               List<SharedTreeNode> nodesToTraverse, int pointer) {
+                               List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
         if(nodesToTraverse.isEmpty()) return;
 
         List<SharedTreeNode> discoveredNodes = new ArrayList<>();
@@ -80,7 +80,12 @@ public class TreeHandler extends Handler {
             pointer++;
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
-            nodesDescriptions[pointer] = serializeNodeDescription(node);
+            if(visitedRoot){
+                nodesDescriptions[pointer] = serializeNodeDescription(node);
+            } else {
+                nodesDescriptions[pointer] = "Root node";
+                visitedRoot = true;
+            }
 
             if (leftChild != null) {
                 discoveredNodes.add(leftChild);
@@ -97,24 +102,22 @@ public class TreeHandler extends Handler {
             }
         }
 
-        append(rightChildren, leftChildren, nodesDescriptions, discoveredNodes, pointer);
+        append(rightChildren, leftChildren, nodesDescriptions, discoveredNodes, pointer, true);
     }
 
     private static String serializeNodeDescription(final SharedTreeNode node) {
         final StringBuffer nodeDescriptionBuffer = new StringBuffer();
+            nodeDescriptionBuffer.append(node.getParent().getColName());
 
-        if (!Float.isNaN(node.getSplitValue())) {
             if (node.isLeftward()) {
-                nodeDescriptionBuffer.append("Split < ");
+                nodeDescriptionBuffer.append(" < ");
             } else {
-                nodeDescriptionBuffer.append("Split >= ");
+                nodeDescriptionBuffer.append(" >= ");
             }
-            nodeDescriptionBuffer.append(node.getSplitValue());
-        }
-
+            nodeDescriptionBuffer.append(node.getParent().getSplitValue());
 
         // Append inclusive levels, if there are any. Otherwise return the node description immediately.
-        if (!node.isBitset() || node.getInclusiveLevels() == null) return nodeDescriptionBuffer.toString();
+        if (!node.isBitset()) return nodeDescriptionBuffer.toString();
 
         final BitSet childInclusiveLevels = node.getInclusiveLevels();
         final int cardinality = childInclusiveLevels.cardinality();
