@@ -226,7 +226,8 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                         ncs[j].addNum(val);
                         row[j] = val;
                     }
-                    ncs[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold));
+                    row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
+                    ncs[0].addNum(row[0]);
                     if (_computeMetrics) {
                         yact[0] = labels[i];
                         double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
