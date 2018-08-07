@@ -930,6 +930,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else {
       stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
     }
+    stackedEnsembleParameters.initMetalearnerParams();
+    stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
 
     Key modelKey = modelKey(modelName);
     Job ensembleJob = trainModel(modelKey, Algo.StackedEnsemble, stackedEnsembleParameters, true);

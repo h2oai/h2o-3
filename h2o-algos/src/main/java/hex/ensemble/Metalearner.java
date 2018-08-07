@@ -25,6 +25,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
+//TODO: lots of copy/paste in this class, needs some abstraction
 class Metalearner {
 
     private Frame _levelOneTrainingFrame;
@@ -59,13 +60,19 @@ class Metalearner {
         //GLM Metalearner
         GLM metaGLMBuilder = ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
 
+        //Metalearner parameters
+        if (_hasMetalearnerParams) {
+            GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) _metalearner_parameters;
+            metaGLMBuilder._parms = glmParams;
+        }
+
         metaGLMBuilder._parms._seed = _metalearnerSeed;
         metaGLMBuilder._parms._non_negative = true;
         //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
-        if (_model._parms._metalearner_fold_column == null) {
+        if (_model._parms._metalearner_fold_column == null) { //todo: KISS, those metalearner_* params should probably be passed directly as metalearner parameters
             metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
             if (_model._parms._metalearner_nfolds > 1) {
                 if (_model._parms._metalearner_fold_assignment == null) {

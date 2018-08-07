@@ -631,7 +631,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(mainModel._output._cross_validation_models);
 
-    if (!mainModel._parms._keep_cross_validation_models) {
+    if (!_parms._keep_cross_validation_models) {
       mainModel.deleteCrossValidationModels();
     }
 
