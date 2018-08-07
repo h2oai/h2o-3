@@ -1242,6 +1242,9 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  /**
+   * PUBDEV-5816: Tests correctness of training metrics returned for Multinomial XGBoost models
+   */
   @Test
   public void testPubDev5816() {
     Scope.enter();
@@ -1272,7 +1275,6 @@ public class XGBoostTest extends TestUtil {
     } finally {
       Scope.exit();
     }
-
   }
 
   private static XGBoostMojoModel getMojo(XGBoostModel model) throws IOException {
