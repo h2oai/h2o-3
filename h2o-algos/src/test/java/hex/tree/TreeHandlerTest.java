@@ -16,7 +16,6 @@ import water.fvec.Frame;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class TreeHandlerTest extends TestUtil {
 
@@ -231,11 +230,6 @@ public class TreeHandlerTest extends TestUtil {
             if (tfr != null) tfr.remove();
             if (model != null) model.remove();
         }
-    }
-
-    @Test
-    public void testArtificialTreeConversion(){
-        final SharedTreeSubgraph mock = mock(SharedTreeSubgraph.class);
     }
 
 

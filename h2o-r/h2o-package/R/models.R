@@ -3064,30 +3064,59 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
-setClass("H2OTree", representation(left_children="integer", right_children="integer", descriptions="character", model_name = "character",tree_number = "integer", tree_class="integer"))
-
-#' Fetchces a model's tree
 #'
-#' Extract the non-linear feature from an H2O data set using an H2O deep learning
-#' model.
+#' The H2OTree class.
+#'
+#' This class represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
+#' @slot left_children An \code{integer} vector with left children of tree's nodes
+#' @slot right_children An \code{integer} vector with right children of tree's nodes
+#' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree.
+#' @slot model_name A \code{character} string with the name of the model this tree has been generated in.
+#' @slot tree_number An \code{integer} representing the order in which the tree has been built in the model.
+#' @slot tree_class An \code{integer} representing tree's class.
+#' @aliases H2OTree
+#' @export
+setClass(
+  "H2OTree",
+  representation(
+    left_children = "integer",
+    right_children = "integer",
+    descriptions = "character",
+    model_name = "character",
+    tree_number = "integer",
+    tree_class = "integer",
+    root_node_id = "integer"
+  )
+)
+
+
+
+
+#' Fetchces a single tree of a H2O model.
+#' 
+#' Usage example:
+#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
+#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
+#' tree <-h2o.getModelTree(gbm.model, 1, 1);
+#'
 #' @param model Models with trees
-#' @param tree_number Number of tree in the model to fetch, starting with 1
+#' @param tree_number Number of the tree in the model to fetch, starting with 1
 #' @param tree_class Class of the tree (if applicable), starting with 1
-#' @return Returns an H2OTree object with detailed information about a tree.
+#' @return Returns an H2OTree object with detailed information about a tree. 
 #' @export
 h2o.getModelTree <- function(model, tree_number, tree_class) {
 
   url <- "Tree"
   res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3, model = model@model_id, tree_number = tree_number - 1, tree_class = tree_class - 1 )
   
+  
   tree <- new("H2OTree", left_children = res$left_children,
               right_children = res$right_children,
               descriptions = res$descriptions,
               model_name = res$model$name,
               tree_number = res$tree_number,
-              tree_class = res$tree_class)
-  
-  tree
+              tree_class = res$tree_class,
+              root_node_id = res$root_node_id)
 }
 
 #' @export

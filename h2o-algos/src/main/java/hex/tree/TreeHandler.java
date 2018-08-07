@@ -29,6 +29,7 @@ public class TreeHandler extends Handler {
         args.left_children = treeProperties._leftChildren;
         args.right_children = treeProperties._rightChildren;
         args.descriptions = treeProperties._descriptions;
+        args.root_node_id = sharedTreeSubgraph.rootNode.getNodeNumber();
 
         return args;
     }

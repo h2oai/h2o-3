@@ -15,13 +15,16 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.INPUT, help = "Tree class (if applicable)", level = API.Level.critical)
     public int tree_class;
 
-    @API(direction = API.Direction.OUTPUT, help = "Left children in the tree")
+    @API(direction = API.Direction.OUTPUT, help = "Left child nodes in the tree")
     public int[] left_children;
 
-    @API(direction = API.Direction.OUTPUT, help = "Right children in the tree")
+    @API(direction = API.Direction.OUTPUT, help = "Right child nodes in the tree")
     public int[] right_children;
 
-    @API(direction = API.Direction.OUTPUT, help = "Description of tree's nodes")
+    @API(direction = API.Direction.OUTPUT, help = "Number of the root node")
+    public int root_node_id;
+
+    @API(direction = API.Direction.OUTPUT, help = "Description of the tree's nodes")
     public String[] descriptions;
 
 }
