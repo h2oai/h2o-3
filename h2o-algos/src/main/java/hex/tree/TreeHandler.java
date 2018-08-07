@@ -15,11 +15,11 @@ public class TreeHandler extends Handler {
     private static final int NO_CHILD = -1;
 
     public TreeV3 getTree(final int version, final TreeV3 args) {
-        validateArgs(args);
         final SharedTreeModel model = (SharedTreeModel) args.model.key().get();
         if (model == null) throw new IllegalArgumentException("Unknown tree key: " + args.model.toString());
-
         final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
+        validateArgs(args, sharedTreeOutput);
+
         final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[args.tree_number][args.tree_class].get();
         final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[args.tree_number][args.tree_class].get()
                 .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
@@ -30,17 +30,22 @@ public class TreeHandler extends Handler {
         args.right_children = treeProperties.rightChildren;
         args.descriptions = treeProperties.descriptions;
 
-        
         return args;
     }
 
 
     /**
      * @param args An instance of {@link TreeV3} input arguments to validate
+     * @param output An instance of {@link hex.tree.SharedTreeModel.SharedTreeOutput} to validate input arguments against
      */
-    private void validateArgs(TreeV3 args) {
+    private void validateArgs(TreeV3 args, SharedTreeModel.SharedTreeOutput output) {
         if (args.tree_number < 0) throw new IllegalArgumentException("Tree number must be greater than 0.");
         if (args.tree_class < 0) throw new IllegalArgumentException("Tree class must be greater than 0.");
+
+        if (args.tree_number > output._treeKeys.length - 1)
+            throw new IllegalArgumentException("There is no such tree.");
+        if (args.tree_class > output._treeKeys[args.tree_number].length - 1)
+            throw new IllegalArgumentException("There is no tree class.");
     }
 
 
