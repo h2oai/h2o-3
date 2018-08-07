@@ -9,7 +9,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
@@ -61,8 +60,8 @@ public class TreeHandlerTest extends TestUtil {
             final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
             assertNotNull(treeProperties);
 
-            final int[] leftChildren = treeProperties.getLeftChildren();
-            final int[] rightChildren = treeProperties.getRightChildren();
+            final int[] leftChildren = treeProperties._leftChildren;
+            final int[] rightChildren = treeProperties._rightChildren;
             assertEquals(leftChildren.length, rightChildren.length);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -129,7 +128,7 @@ public class TreeHandlerTest extends TestUtil {
             final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
             assertNotNull(treeProperties);
 
-            final String[] nodeDescriptions = treeProperties.getDescriptions();
+            final String[] nodeDescriptions = treeProperties._descriptions;
             assertEquals(sharedTreeSubgraph.nodesArray.size(), nodeDescriptions.length);
 
             for (String nodeDescription : nodeDescriptions) {

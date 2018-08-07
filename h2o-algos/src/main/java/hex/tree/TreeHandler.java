@@ -26,9 +26,9 @@ public class TreeHandler extends Handler {
 
         final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
 
-        args.left_children = treeProperties.leftChildren;
-        args.right_children = treeProperties.rightChildren;
-        args.descriptions = treeProperties.descriptions;
+        args.left_children = treeProperties._leftChildren;
+        args.right_children = treeProperties._rightChildren;
+        args.descriptions = treeProperties._descriptions;
 
         return args;
     }
@@ -60,18 +60,18 @@ public class TreeHandler extends Handler {
 
         final TreeProperties stf = new TreeProperties();
 
-        stf.leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf.rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf.descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
+        stf._leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
+        stf._rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
+        stf._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
 
         // Set root node's children, there is no guarantee the root node will be number 0
-        stf.rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
-        stf.leftChildren[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
+        stf._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        stf._leftChildren[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
-        append(stf.rightChildren, stf.leftChildren,
-                stf.descriptions, nodesToTraverse, -1, false);
+        append(stf._rightChildren, stf._leftChildren,
+                stf._descriptions, nodesToTraverse, -1, false);
 
         return stf;
     }
@@ -112,7 +112,7 @@ public class TreeHandler extends Handler {
     }
 
     private static String serializeNodeDescription(final SharedTreeNode node) {
-        final StringBuffer nodeDescriptionBuffer = new StringBuffer();
+        final StringBuilder nodeDescriptionBuffer = new StringBuilder();
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
             nodeDescriptionBuffer.append(node.getParent().getColName());
@@ -142,20 +142,8 @@ public class TreeHandler extends Handler {
 
     public static class TreeProperties {
 
-        private int[] leftChildren;
-        private int[] rightChildren;
-        private String[] descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
-
-        public int[] getLeftChildren() {
-            return leftChildren;
-        }
-
-        public int[] getRightChildren() {
-            return rightChildren;
-        }
-
-        public String[] getDescriptions() {
-            return descriptions;
-        }
+        public int[] _leftChildren;
+        public int[] _rightChildren;
+        public String[] _descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
     }
 }
