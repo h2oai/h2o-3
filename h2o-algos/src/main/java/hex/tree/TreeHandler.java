@@ -28,6 +28,9 @@ public class TreeHandler extends Handler {
 
         args.left_children = treeProperties.leftChildren;
         args.right_children = treeProperties.rightChildren;
+        args.descriptions = treeProperties.descriptions;
+
+        
         return args;
     }
 

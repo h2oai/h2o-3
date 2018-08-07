@@ -21,10 +21,7 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Right children in the tree")
     public int[] right_children;
 
-    @API(direction = API.Direction.OUTPUT, help = "Thresholds in the tree")
-    public double[] thresholds;
-
-    @API(direction = API.Direction.OUTPUT, help = "Graph features")
-    public String[] features;
+    @API(direction = API.Direction.OUTPUT, help = "Description of tree's nodes")
+    public String[] descriptions;
 
 }
