@@ -16,7 +16,7 @@ public class TreeHandler extends Handler {
 
     public TreeV3 getTree(final int version, final TreeV3 args) {
         final SharedTreeModel model = (SharedTreeModel) args.model.key().get();
-        if (model == null) throw new IllegalArgumentException("Unknown tree key: " + args.model.toString());
+        if (model == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
         final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
         validateArgs(args, sharedTreeOutput);
 
@@ -45,7 +45,7 @@ public class TreeHandler extends Handler {
         if (args.tree_number > output._treeKeys.length - 1)
             throw new IllegalArgumentException("There is no such tree.");
         if (args.tree_class > output._treeKeys[args.tree_number].length - 1)
-            throw new IllegalArgumentException("There is no tree class.");
+            throw new IllegalArgumentException("There is no such tree class.");
     }
 
 
