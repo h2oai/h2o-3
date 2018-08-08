@@ -85,4 +85,46 @@ public class SQLManagerTest {
     Assert.assertEquals(expectedConnectionsPerNode, maxConnectionsPerNode);
   }
 
+  /**
+   * Test generated SQL based on database type
+   */
+  @Test
+  public void testBuildSelectOneRowSql() {
+
+    // Oracle
+    Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
+            SQLManager.buildSelectSingleRowSql("oracle","mytable","*"));
+
+    // SQL Server
+    Assert.assertEquals("SELECT * FROM mytable FETCH NEXT 1 ROWS ONLY",
+            SQLManager.buildSelectSingleRowSql("sqlserver", "mytable", "*"));
+
+    // Teradata
+    Assert.assertEquals("SELECT TOP 1 * FROM mytable",
+            SQLManager.buildSelectSingleRowSql("teradata", "mytable", "*"));
+
+    // default: PostgreSQL, MySQL
+    Assert.assertEquals("SELECT * FROM mytable LIMIT 1",
+            SQLManager.buildSelectSingleRowSql("", "mytable", "*"));
+  }
+
+  @Test
+  public void testBuildSelectChunkSql() {
+
+    // Oracle
+    Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
+            SQLManager.buildSelectChunkSql("oracle", "mytable", 0, 1310, "*", null));
+
+    // SQL Server
+    Assert.assertEquals("SELECT * FROM mytable OFFSET 0 ROWS FETCH NEXT 1310 ROWS ONLY",
+            SQLManager.buildSelectChunkSql("sqlserver", "mytable", 0, 1310, "*", null));
+
+    // Teradata
+    Assert.assertEquals("SELECT * FROM mytable QUALIFY ROW_NUMBER() OVER (ORDER BY id) BETWEEN 1 AND 1310",
+            SQLManager.buildSelectChunkSql("teradata", "mytable", 0, 1310, "*", new String[]{"id","col1","col2"}));
+
+    // default: PostgreSQL, mySQL
+    Assert.assertEquals("SELECT * FROM mytable LIMIT 1310 OFFSET 0",
+            SQLManager.buildSelectChunkSql("", "mytable", 0, 1310, "*", null));
+  }
 }
