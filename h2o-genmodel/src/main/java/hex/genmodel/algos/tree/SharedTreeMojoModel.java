@@ -62,6 +62,14 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         _scoreTree = new ScoreTree2(); // Current version
     }
 
+    public final int getNTreeGroups() {
+      return _ntree_groups;
+    }
+
+    public final int getNTreesPerGroup() {
+      return _ntrees_per_group;
+    }
+
   /**
    * Highly efficient (critical path) tree scoring
    *
@@ -205,7 +213,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         private boolean _wentRight = false; // Was the last step _right_?
 
         // OUT
-        private int _nodeId = 0;
+        private int _nodeId = 0; // Returned when the tree is empty (consistent with SharedTreeNode of an empty tree)
 
         private LeafDecisionPathTracker(byte[] auxTree) {
           _auxInfo = new AuxInfoLightReader(new ByteBufferWrapper(auxTree));
@@ -214,7 +222,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         @Override
         public boolean go(int depth, boolean right) {
           if (!_auxInfo.hasNext()) {
-            assert _wentRight;
+            assert _wentRight || depth == 0; // this can only happen if previous step was _right_ or the tree has no nodes
             return false;
           }
           _auxInfo.readNext();
@@ -241,7 +249,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           return this;
         }
 
-        public final int getLeafNodeId() {
+        final int getLeafNodeId() {
           return _nodeId;
         }
     }
@@ -712,8 +720,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
           if (paths != null)
             paths[itree] = SharedTreeMojoModel.getDecisionPath(d);
-          if (nodeIds != null)
+          if (nodeIds != null) {
+            assert _mojo_version >= 1.3;
             nodeIds[itree] = SharedTreeMojoModel.getLeafNodeId(d, _compressed_trees_aux[itree]);
+          }
         }
       }
     }
