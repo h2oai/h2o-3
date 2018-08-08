@@ -490,6 +490,48 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testWeatherBinaryCVEarlyStopping() {
+    XGBoostModel model = null;
+    try {
+      Scope.enter();
+      Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
+      final String response = "RainTomorrow";
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
+      // remove columns correlated with the response
+      tfr.remove("RISK_MM").remove();
+      tfr.remove("EvapMM").remove();
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 50;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._nfolds = 5;
+      parms._response_column = response;
+      parms._stopping_rounds = 3;
+      parms._score_tree_interval = 1;
+      parms._seed = 123;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      final int ntrees = model._output._ntrees;
+
+      int expected = 0;
+      for (Key k : model._output._cross_validation_models) {
+        expected += ((XGBoostModel) k.get())._output._ntrees;
+      }
+      expected = (int) ((double) expected) / model._output._cross_validation_models.length;
+
+      assertEquals(expected, ntrees);
+    } finally {
+      Scope.exit();
+      if (model!=null) {
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
+    }
+  }
+
   @Test(expected = H2OModelBuilderIllegalArgumentException.class)
   public void RegressionCars() {
     Frame tfr = null;
