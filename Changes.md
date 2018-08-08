@@ -2,6 +2,39 @@
 
 ## H2O
 
+### Wright (3.20.0.5) - 8/8/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5543'>PUBDEV-5543</a>] - Hive smoke tests no longer time out on HDP.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5793'>PUBDEV-5793</a>] - AutoML now correctly ignores columns specified in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5794'>PUBDEV-5794</a>] - In Flow, the Import SQL Table button now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5806'>PUBDEV-5806</a>] - XGBoost cross validation now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5811'>PUBDEV-5811</a>] - Fixed an issue that caused AutoML to fail in Flow due to the keep_cross_validation_fold_assignment option.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5814'>PUBDEV-5814</a>] - Multinomial Stacked Ensemble no longer fails when either XGBoost or Naive Bayes is the base model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5819'>PUBDEV-5819</a>] - Increased the client_disconnect_timeout value when ClientDisconnectCheckThread searches for connected clients.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5816'>PUBDEV-5816</a>] - Fixed an issue that caused XGBoost to generate the wrong metrics for multinomial cases.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5813'>PUBDEV-5813</a>] - Added automated Flow test for AutoML.
+</li>
+</ul>
+
+
 ### Wright (3.20.0.4) - 7/31/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html</a>
