@@ -339,7 +339,7 @@ final public class H2O {
     public boolean useUDP = false;
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
-    public int clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 2;
+    public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
