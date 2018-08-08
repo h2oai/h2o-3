@@ -118,6 +118,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         }
         new FailedNodeWatchdogThread().start();
         H2O.SELF._heartbeat._watchdog_client = watchDogClient;
+        // When running on External Backend, we need to set the client disconnect timeout
+        // to the same value as the watchdogClientRetryTimeout
+
+        // Failed Watchdog thread is responsible for checking whether the client has disappeared from all the nodes
+        // in the cluster, however the ClientDisconnectCheckThread (which uses clientDisconnectTimeout) is responsible
+        // for disconnecting single clients if the timeout has been reached. In case of external backend
+        // we need to set the client disconnect timeout to the same value as the watchdogClientRetryTimeout
+        // as we don't want to remove client from specific nodes earlier
+        H2O.ARGS.clientDisconnectTimeout = watchdogClientRetryTimeout;
     }
 
     private class CheckWatchdogConnectedThread extends Thread {
