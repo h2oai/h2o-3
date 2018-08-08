@@ -3068,12 +3068,14 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' The H2OTree class.
 #'
 #' This class represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
-#' @slot left_children An \code{integer} vector with left children of tree's nodes
-#' @slot right_children An \code{integer} vector with right children of tree's nodes
-#' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree.
+#' @slot left_children An \code{integer} vector with left child nodes of tree's nodes
+#' @slot right_children An \code{integer} vector with right child nodes of tree's nodes
+#' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree. Contains split threshold if the split is based on numerical column.
+#'                    For cactegorical splits, it contains list of categorical levels for transition from the parent node.
 #' @slot model_name A \code{character} string with the name of the model this tree has been generated in.
 #' @slot tree_number An \code{integer} representing the order in which the tree has been built in the model.
-#' @slot tree_class An \code{integer} representing tree's class.
+#' @slot tree_class An \code{integer} representing tree's class, starting with 1.
+#' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -3101,7 +3103,8 @@ setClass(
 #'
 #' @param model Models with trees
 #' @param tree_number Number of the tree in the model to fetch, starting with 1
-#' @param tree_class Class of the tree (if applicable), starting with 1
+#' @param tree_class Class of the tree (if applicable), starting with 1. Number of classes equals to the number of categorical levels in the response variable, if the variable is categorical.
+#'                   In case of regression, the number of levels equals to 1.
 #' @return Returns an H2OTree object with detailed information about a tree.
 #' @export
 h2o.getModelTree <- function(model, tree_number, tree_class) {
