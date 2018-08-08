@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys, os
+import sys, os, time
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
@@ -180,6 +180,16 @@ def prostate_automl_args():
     amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
     assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
+
+
+    print("Check that automl gets interrupted after `max_runtime_secs`")
+    max_runtime_secs = 30
+    cancel_tolerance_secs = 5   # should work for most cases given current mechanism
+    aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
+    start = time.time()
+    aml.train(y="CAPSULE", training_frame=train)
+    end = time.time()
+    assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit

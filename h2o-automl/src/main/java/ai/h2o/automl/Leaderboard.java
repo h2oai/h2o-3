@@ -288,7 +288,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
               mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             }
           }
-          updating.leaderboard_set_metrics.put(mm._key, mm);
+          if (mm != null) updating.leaderboard_set_metrics.put(mm._key, mm);
         }
 
         // Sort by metric on the leaderboard/test set or cross-validation metrics.

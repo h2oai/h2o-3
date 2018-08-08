@@ -1035,6 +1035,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     for( int i=0; i<cvModelBuilders.length; ++i )
       sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
     _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
+
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
     warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");

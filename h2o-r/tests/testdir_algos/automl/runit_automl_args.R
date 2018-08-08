@@ -25,7 +25,7 @@ automl.args.test <- function() {
   print("Check arguments to H2OAutoML class")
 
   #print("Try without a y")
-  #expect_failure(h2o.automl(training_frame = train,
+  #expect_failure(h2o.automl(training_rframe = train,
   #                          max_models = max_models,
   #                          project_name = "aml0"))
 
@@ -246,6 +246,15 @@ automl.args.test <- function() {
   base_model <- h2o.getModel(non_ensemble_model_ids[1])
   expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, NULL)
   expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
+
+
+  print("Check that automl gets interrupted after `max_runtime_secs`")
+  max_runtime_secs <- 30
+  cancel_tolerance_secs <- 5 # should be enough for most cases given job notification mechanism
+  time <- system.time(aml19 <- h2o.automl(x=x, y=y, training_frame=train,
+                                         project_name="aml_max_runtime_secs",
+                                         max_runtime_secs=max_runtime_secs))[['elapsed']]
+  expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
 }
 
 doTest("AutoML Args Test", automl.args.test)
