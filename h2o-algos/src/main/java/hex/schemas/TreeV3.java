@@ -12,8 +12,8 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(required = true, direction = API.Direction.INPUT, help = "Index of the tree in the model.", level = API.Level.critical)
     public int tree_number;
 
-    @API(direction = API.Direction.INPUT, help = "Tree class index. Equals to 1 for regression/binomial. For multinomial, ranges from 0 to response column cardinality - 1.", level = API.Level.critical)
-    public int tree_class;
+    @API(direction = API.Direction.INOUT, help = "Name of the class of the tree. Ignored for regression and binomial.", level = API.Level.critical)
+    public String tree_class;
 
     @API(direction = API.Direction.OUTPUT, help = "Left child nodes in the tree")
     public int[] left_children;

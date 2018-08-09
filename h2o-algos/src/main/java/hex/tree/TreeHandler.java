@@ -18,10 +18,11 @@ public class TreeHandler extends Handler {
         final SharedTreeModel model = (SharedTreeModel) args.model.key().get();
         if (model == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
         final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
-        validateArgs(args, sharedTreeOutput);
+        final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
+        validateArgs(args, sharedTreeOutput, treeClass);
 
-        final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[args.tree_number][args.tree_class].get();
-        final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[args.tree_number][args.tree_class].get()
+        final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[args.tree_number][treeClass].get();
+        final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[args.tree_number][treeClass].get()
                 .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
 
         final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
@@ -33,23 +34,46 @@ public class TreeHandler extends Handler {
         args.thresholds = treeProperties._thresholds;
         args.features = treeProperties.features;
         args.nas = treeProperties.nas;
+        // Class may not be provided by the user, should be always filled correctly on output.
+        args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
 
         return args;
     }
 
+    private static int getResponseLevelIndex(final String categorical, final SharedTreeModel.SharedTreeOutput sharedTreeOutput) {
+        final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
+        final String trimmedCategorical = categorical.trim(); // Trim the categorical once - input from the user
+
+        switch (sharedTreeOutput.getModelCategory()) {
+            case Binomial:
+                // Fall through to regression - handling is equal
+            case Regression:
+                return 0; // There is only one tree for regression and binomial
+            default:
+                // Search for the index of categorical in case of multinomial
+                for (int i = 0; i < responseColumnDomain.length; i++) {
+                    // User is supposed to enter the name of the categorical level correctly, not ignoring case
+                    if (trimmedCategorical.equals(responseColumnDomain[i])) return i;
+                }
+                break;
+        }
+        // Not a regression or binomial and the given categorical has not been found in the response column's domain.
+        return -1;
+    }
 
     /**
      * @param args An instance of {@link TreeV3} input arguments to validate
-     * @param output An instance of {@link hex.tree.SharedTreeModel.SharedTreeOutput} to validate input arguments against
+     * @param output An instance of {@link SharedTreeModel.SharedTreeOutput} to validate input arguments against
+     * @param responseLevelIndex
      */
-    private void validateArgs(TreeV3 args, SharedTreeModel.SharedTreeOutput output) {
+    private static void validateArgs(TreeV3 args, SharedTreeModel.SharedTreeOutput output, final int responseLevelIndex) {
         if (args.tree_number < 0) throw new IllegalArgumentException("Tree number must be greater than 0.");
-        if (args.tree_class < 0) throw new IllegalArgumentException("Tree class must be greater than 0.");
 
         if (args.tree_number > output._treeKeys.length - 1)
             throw new IllegalArgumentException("There is no such tree.");
-        if (args.tree_class > output._treeKeys[args.tree_number].length - 1)
-            throw new IllegalArgumentException("There is no such tree class.");
+
+        if (responseLevelIndex < 0)
+            throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + args.tree_class.trim());
     }
 
 

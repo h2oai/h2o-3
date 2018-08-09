@@ -3086,7 +3086,7 @@ setClass(
     descriptions = "character",
     model_id = "character",
     tree_number = "integer",
-    tree_class = "integer",
+    tree_class = "character",
     root_node_id = "integer",
     thresholds = "numeric",
     features = "character",
@@ -3103,11 +3103,10 @@ setClass(
 #'
 #' @param model Models with trees
 #' @param tree_number Number of the tree in the model to fetch, starting with 1
-#' @param tree_class Class of the tree (if applicable), starting with 1. Number of classes equals to the number of categorical levels in the response variable, if the variable is categorical.
-#'                   In case of regression, the number of levels equals to 1.
+#' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
 #' @return Returns an H2OTree object with detailed information about a tree.
 #' @export
-h2o.getModelTree <- function(model, tree_number, tree_class) {
+h2o.getModelTree <- function(model, tree_number, tree_class = NULL) {
   url <- "Tree"
   res <-
     .h2o.__remoteSend(
@@ -3116,7 +3115,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class) {
       h2oRestApiVersion = 3,
       model = model@model_id,
       tree_number = tree_number - 1,
-      tree_class = tree_class - 1
+      tree_class = tree_class
     )
   
   tree <- new(
@@ -3126,7 +3125,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class) {
     descriptions = res$descriptions,
     model_id = res$model$name,
     tree_number = as.integer(res$tree_number + 1),
-    tree_class = as.integer(res$tree_class + 1),
+    tree_class = res$tree_class,
     root_node_id = res$root_node_id,
     thresholds = res$thresholds,
     features = res$features,

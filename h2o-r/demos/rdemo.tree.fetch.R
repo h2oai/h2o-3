@@ -19,9 +19,10 @@ airlines.data <- h2o.importFile(locate_source(airlines.filePath))
 gbm.model <- h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 10)
 
 # An example of fetching a single tree from H2O. H2O needs to know about model the tree is fetched from. Then the number of the tree and tree class.
-# Trees are numbered starting from 1 to ntrees, where ntrees is the variable in h2o.gbm() function. If not specified, the default number of trees is used.
-# Number of classes corresponds to the numbero of categorical levels, if the response variable is categorical. In case of regression, the number is 1.
-gbm.tree <- h2o.getModelTree(gbm.model, 1,1)
+# One tree class is built per each level in categorical response, thus the third argument is a character vector representing the name of the categorical level.
+# Note: In case of regression and binomial, the name of the categorical level is ignored can be omitted, as there is exactly one tree built in both cases.
+gbm.tree <- h2o.getModelTree(gbm.model, 1,"NO")
+
 # Show the structure of the three fetched. The tree contains lists of left and right child nodes. A list with description of each edge in the graph is also present.
 # The length of the descriptions list equals to the number of nodes in the tree. For each node's index, there is a description to be found.
 # The descriptions consists of categorical levels/thresholds related to the edge leading from node's parent to the node itself.
@@ -49,5 +50,5 @@ for(node_index in 1:length(gbm.tree@left_children)){
 # First, a list is allocated. Size of the equals the number of trees built in the model.
 gbm.trees <- list(gbm.model@parameters$ntrees)
 for (tree_number in 1:gbm.model@parameters$ntrees) {
-  gbm.trees[[tree_number]] <- h2o.getModelTree(gbm.model,tree_number,1)
+  gbm.trees[[tree_number]] <- h2o.getModelTree(gbm.model,tree_number)
 }

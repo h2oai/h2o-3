@@ -155,7 +155,6 @@ public class TreeHandlerTest extends TestUtil {
             parms._seed = 0;
 
             model = new GBM(parms).trainModel().get();
-            final SharedTreeModel.SharedTreeOutput sharedTreeOutput = model._output;
 
             final TreeHandler treeHandler = new TreeHandler();
             TreeV3 args = new TreeV3();
@@ -175,7 +174,7 @@ public class TreeHandlerTest extends TestUtil {
 
             // Invalid tree index
             args.tree_number = 1;
-            args.tree_class = 0;
+            args.tree_class = "Iris-setosa";
             args.model = new KeyV3.ModelKeyV3(model._key);
             try {
                 treeHandler.getTree(3, args);
@@ -188,12 +187,12 @@ public class TreeHandlerTest extends TestUtil {
 
             // Invalid tree class
             args.tree_number = 0;
-            args.tree_class = 10;
+            args.tree_class = "NonExistingCategoricalLevel";
 
             try {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e) {
-                assertTrue(e.getMessage().contains("There is no such tree class."));
+                assertTrue(e.getMessage().contains("There is no such tree class. Given categorical level does not exist in response column: NonExistingCategoricalLevel"));
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
@@ -209,19 +208,7 @@ public class TreeHandlerTest extends TestUtil {
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
-            exceptionThrown = false;
 
-            //Tree class < 0
-            args.tree_number = 0;
-            args.tree_class = -1;
-            try {
-                treeHandler.getTree(3, args);
-            } catch (IllegalArgumentException e){
-                assertTrue(e.getMessage().contains("Tree class must be greater than 0."));
-                exceptionThrown = true;
-            }
-            assertTrue(exceptionThrown);
-            exceptionThrown = false;
 
         } finally {
             if (tfr != null) tfr.remove();
