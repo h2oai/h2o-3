@@ -51,7 +51,8 @@ public class TreeHandler extends Handler {
 
 
     /**
-     * Convers H2O-3's internal representation of a boosted tree in a form of {@link SharedTreeSubgraph} to a compressed format.
+     * Converts H2O-3's internal representation of a boosted tree in a form of {@link SharedTreeSubgraph} to a format
+     * expected by H2O clients.
      *
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert
      * @return An instance of {@link TreeProperties} with some attributes possibly empty if suitable. Never null.
@@ -113,34 +114,34 @@ public class TreeHandler extends Handler {
     }
 
     private static String serializeNodeDescription(final SharedTreeNode node) {
-        final StringBuilder nodeDescriptionBuffer = new StringBuilder();
+        final StringBuilder nodeDescriptionBuilder = new StringBuilder();
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
-            nodeDescriptionBuffer.append(node.getParent().getColName());
+            nodeDescriptionBuilder.append(node.getParent().getColName());
             if (node.isLeftward()) {
-                nodeDescriptionBuffer.append(" < ");
+                nodeDescriptionBuilder.append(" < ");
             } else {
-                nodeDescriptionBuffer.append(" >= ");
+                nodeDescriptionBuilder.append(" >= ");
             }
-            nodeDescriptionBuffer.append(node.getParent().getSplitValue());
-            return nodeDescriptionBuffer.toString();
+            nodeDescriptionBuilder.append(node.getParent().getSplitValue());
+            return nodeDescriptionBuilder.toString();
         }
 
         final BitSet childInclusiveLevels = node.getInclusiveLevels();
         final int cardinality = childInclusiveLevels.cardinality();
         if ((cardinality > 0)) {
-            nodeDescriptionBuffer.append("Split column [");
-            nodeDescriptionBuffer.append(node.getColName());
-            nodeDescriptionBuffer.append("]: ");
+            nodeDescriptionBuilder.append("Split column [");
+            nodeDescriptionBuilder.append(node.getParent().getColName());
+            nodeDescriptionBuilder.append("]: ");
             int bitsignCounter = 0;
             for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
-                nodeDescriptionBuffer.append(node.getParent().getDomainValues()[i]);
-                if (bitsignCounter != cardinality - 1) nodeDescriptionBuffer.append(", ");
+                nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
+                if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
                 bitsignCounter++;
             }
         }
 
-        return nodeDescriptionBuffer.toString();
+        return nodeDescriptionBuilder.toString();
 
     }
 

@@ -2,8 +2,18 @@ library(h2o)
 h2o.init()
 
 # Import Airlines training dataset
-filePath <- "smalldata/airlines/AirlinesTrain.csv.zip"
-airlines.data <- h2o.importFile(h2o:::.h2o.locate(filePath))
+
+locate_source <- function(file) {
+  file_path <- try(h2o:::.h2o.locate(file), silent = TRUE)
+  if (inherits(file_path, "try-error")) {
+    file_path <- paste0("https://s3.amazonaws.com/h2o-public-test-data/", file)
+  }
+  file_path
+}
+
+airlines.filePath <- "smalldata/airlines/AirlinesTrain.csv.zip"
+airlines.data <- h2o.importFile(locate_source(airlines.filePath))
+
 # Traing a Gradient Boosting Machine model on the dataset. The model predicts delayed departure best on the travel distance, origin and destination of the flight.
 # There are 10 trees built
 gbm.model <- h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 10)

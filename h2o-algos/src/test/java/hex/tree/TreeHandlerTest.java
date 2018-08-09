@@ -24,9 +24,6 @@ public class TreeHandlerTest extends TestUtil {
         stall_till_cloudsize(1);
     }
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void testSharedTreeSubgraphConversion() {
         Frame tfr = null;

@@ -3072,7 +3072,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' @slot right_children An \code{integer} vector with right child nodes of tree's nodes
 #' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree. Contains split threshold if the split is based on numerical column.
 #'                    For cactegorical splits, it contains list of categorical levels for transition from the parent node.
-#' @slot model_name A \code{character} string with the name of the model this tree has been generated in.
+#' @slot model_id A \code{character} string with the name of the model this tree has been generated in.
 #' @slot tree_number An \code{integer} representing the order in which the tree has been built in the model.
 #' @slot tree_class An \code{integer} representing tree's class, starting with 1.
 #' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
@@ -3084,15 +3084,12 @@ setClass(
     left_children = "integer",
     right_children = "integer",
     descriptions = "character",
-    model_name = "character",
+    model_id = "character",
     tree_number = "integer",
     tree_class = "integer",
     root_node_id = "integer"
   )
 )
-
-
-
 
 #' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
 #'
@@ -3119,13 +3116,12 @@ h2o.getModelTree <- function(model, tree_number, tree_class) {
       tree_class = tree_class - 1
     )
   
-  
   tree <- new(
     "H2OTree",
     left_children = res$left_children,
     right_children = res$right_children,
     descriptions = res$descriptions,
-    model_name = res$model$name,
+    model_id = res$model$name,
     tree_number = as.integer(res$tree_number + 1),
     tree_class = as.integer(res$tree_class + 1),
     root_node_id = res$root_node_id
