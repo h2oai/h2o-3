@@ -24,6 +24,15 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Number of the root node")
     public int root_node_id;
 
+    @API(direction = API.Direction.OUTPUT, help = "Split thresholds (numeric and possibly categorical columns)")
+    public float[] thresholds;
+
+    @API(direction = API.Direction.OUTPUT, help = "Names of the column of the split")
+    public String[] features;
+
+    @API(direction = API.Direction.OUTPUT, help = "NAs belonging to the nodes")
+    public boolean[] nas;
+
     @API(direction = API.Direction.OUTPUT, help = "Description of the tree's nodes")
     public String[] descriptions;
 

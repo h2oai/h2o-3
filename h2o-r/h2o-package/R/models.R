@@ -3087,7 +3087,10 @@ setClass(
     model_id = "character",
     tree_number = "integer",
     tree_class = "integer",
-    root_node_id = "integer"
+    root_node_id = "integer",
+    thresholds = "numeric",
+    features = "character",
+    nas = "logical"
   )
 )
 
@@ -3124,7 +3127,10 @@ h2o.getModelTree <- function(model, tree_number, tree_class) {
     model_id = res$model$name,
     tree_number = as.integer(res$tree_number + 1),
     tree_class = as.integer(res$tree_class + 1),
-    root_node_id = res$root_node_id
+    root_node_id = res$root_node_id,
+    thresholds = res$thresholds,
+    features = res$features,
+    nas = res$nas
   )
 }
 

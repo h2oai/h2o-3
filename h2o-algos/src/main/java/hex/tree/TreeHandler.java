@@ -30,6 +30,9 @@ public class TreeHandler extends Handler {
         args.right_children = treeProperties._rightChildren;
         args.descriptions = treeProperties._descriptions;
         args.root_node_id = sharedTreeSubgraph.rootNode.getNodeNumber();
+        args.thresholds = treeProperties._thresholds;
+        args.features = treeProperties.features;
+        args.nas = treeProperties.nas;
 
         return args;
     }
@@ -60,25 +63,30 @@ public class TreeHandler extends Handler {
     static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
-        final TreeProperties stf = new TreeProperties();
+        final TreeProperties treeprops = new TreeProperties();
 
-        stf._leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf._rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
-        stf._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
+        treeprops._leftChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
+        treeprops._rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
+        treeprops._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
+        treeprops._thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
+        treeprops.features = new String[sharedTreeSubgraph.nodesArray.size()];
+        treeprops.nas = MemoryManager.mallocZ(sharedTreeSubgraph.nodesArray.size());
 
         // Set root node's children, there is no guarantee the root node will be number 0
-        stf._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
-        stf._leftChildren[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
+        treeprops._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        treeprops._leftChildren[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
-        append(stf._rightChildren, stf._leftChildren,
-                stf._descriptions, nodesToTraverse, -1, false);
+        append(treeprops._rightChildren, treeprops._leftChildren,
+                treeprops._descriptions, treeprops._thresholds, treeprops.features, treeprops.nas,
+                nodesToTraverse, -1, false);
 
-        return stf;
+        return treeprops;
     }
 
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
+                               final float[] thresholds, final String[] splitColumns, final boolean[] naHandlings,
                                List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
         if(nodesToTraverse.isEmpty()) return;
 
@@ -89,7 +97,7 @@ public class TreeHandler extends Handler {
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
             if(visitedRoot){
-                nodesDescriptions[pointer] = serializeNodeDescription(node);
+                fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, naHandlings, pointer);
             } else {
                 nodesDescriptions[pointer] = "Root node";
                 visitedRoot = true;
@@ -110,10 +118,13 @@ public class TreeHandler extends Handler {
             }
         }
 
-        append(rightChildren, leftChildren, nodesDescriptions, discoveredNodes, pointer, true);
+        append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings,
+                discoveredNodes, pointer, true);
     }
 
-    private static String serializeNodeDescription(final SharedTreeNode node) {
+    private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,
+                                             final float[] thresholds, final String[] splitColumns,
+                                             final boolean[] naHandlings, final int pointer) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
@@ -124,24 +135,26 @@ public class TreeHandler extends Handler {
                 nodeDescriptionBuilder.append(" >= ");
             }
             nodeDescriptionBuilder.append(node.getParent().getSplitValue());
-            return nodeDescriptionBuilder.toString();
-        }
-
-        final BitSet childInclusiveLevels = node.getInclusiveLevels();
-        final int cardinality = childInclusiveLevels.cardinality();
-        if ((cardinality > 0)) {
-            nodeDescriptionBuilder.append("Split column [");
-            nodeDescriptionBuilder.append(node.getParent().getColName());
-            nodeDescriptionBuilder.append("]: ");
-            int bitsignCounter = 0;
-            for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
-                nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
-                if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
-                bitsignCounter++;
+            thresholds[pointer] = node.getParent().getSplitValue();
+        } else {
+            final BitSet childInclusiveLevels = node.getInclusiveLevels();
+            final int cardinality = childInclusiveLevels.cardinality();
+            if ((cardinality > 0)) {
+                nodeDescriptionBuilder.append("Split column [");
+                nodeDescriptionBuilder.append(node.getParent().getColName());
+                nodeDescriptionBuilder.append("]: ");
+                int bitsignCounter = 0;
+                for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
+                    nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
+                    if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
+                    bitsignCounter++;
+                }
             }
         }
 
-        return nodeDescriptionBuilder.toString();
+        nodeDescriptions[pointer] = nodeDescriptionBuilder.toString();
+        splitColumns[pointer] = node.getParent().getColName();
+        naHandlings[pointer] = node.getInclusiveNa();
 
     }
 
@@ -150,5 +163,9 @@ public class TreeHandler extends Handler {
         public int[] _leftChildren;
         public int[] _rightChildren;
         public String[] _descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
+        public float[] _thresholds;
+        public String[] features;
+        public boolean[] nas;
+
     }
 }
