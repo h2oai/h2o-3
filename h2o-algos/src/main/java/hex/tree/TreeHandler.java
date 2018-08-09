@@ -129,6 +129,9 @@ public class TreeHandler extends Handler {
         final BitSet childInclusiveLevels = node.getInclusiveLevels();
         final int cardinality = childInclusiveLevels.cardinality();
         if ((cardinality > 0)) {
+            nodeDescriptionBuffer.append("Split column [");
+            nodeDescriptionBuffer.append(node.getColName());
+            nodeDescriptionBuffer.append("]: ");
             int bitsignCounter = 0;
             for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
                 nodeDescriptionBuffer.append(node.getParent().getDomainValues()[i]);
