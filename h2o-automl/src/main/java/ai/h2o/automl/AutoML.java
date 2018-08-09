@@ -653,7 +653,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
       params._keep_cross_validation_predictions = true;
 
-      // TODO: StackedEnsemble doesn't support eights yet in score0
+      // TODO: StackedEnsemble doesn't support weights yet in score0
       params._fold_column = buildSpec.input_spec.fold_column;
       params._weights_column = buildSpec.input_spec.weights_column;
 

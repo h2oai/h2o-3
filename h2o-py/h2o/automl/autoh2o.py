@@ -91,9 +91,9 @@ class H2OAutoML(object):
                  seed=None,
                  project_name=None,
                  exclude_algos=None,
-                 keep_cross_validation_predictions=True,
-                 keep_cross_validation_models=True,
-                 keep_cross_validation_fold_assignment = False,
+                 keep_cross_validation_predictions=False,
+                 keep_cross_validation_models=False,
+                 keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO"):
 
         # Check if H2O jar contains AutoML
