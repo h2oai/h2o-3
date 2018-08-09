@@ -40,10 +40,10 @@ def list_keys_in_memory():
     cv_mod_keys = [k for k in cv_keys if k in model_keys]
     return dict(
         total=mem_keys,
-        models = model_keys,
-        predictions = pred_keys,
-        metrics = metrics_keys,
-        automl = automl_keys,
+        models=model_keys,
+        predictions=pred_keys,
+        metrics=metrics_keys,
+        automl=automl_keys,
         cv_all=cv_keys,
         cv_models=cv_mod_keys,
         cv_predictions=cv_pred_keys,
@@ -72,36 +72,47 @@ def test_clean_cv_predictions():
     aml = H2OAutoML(project_name='keep_cross_validation_predictions_default',
                     nfolds=nfolds, max_models=3, seed=1)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
+    # print(aml.leaderboard)
+    models, _, _ = get_partitioned_model_names(aml.leaderboard)
     keys = list_keys_in_memory()
     preds = len(keys['cv_predictions'])
     assert preds == 0, "{preds} CV predictions were not cleaned from memory".format(preds=preds)
+    for m in models:
+        assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
 
     print("\n=== enabling "+kcvp+" ===")
     h2o.remove_all()
     train, _, _ = prepare_data()
-    aml = H2OAutoML(project_name='keep_cross_validation_predictions_default',
+    aml = H2OAutoML(project_name='keep_cross_validation_predictions_enabled',
                     nfolds=nfolds, max_models=3, seed=1,
                     keep_cross_validation_predictions=True)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
-    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    # print(aml.leaderboard)
+    models, non_se, se = get_partitioned_model_names(aml.leaderboard)
     keys = list_keys_in_memory()
     preds = len(keys['cv_predictions'])
-    expected = len(non_se) * (nfolds + 1) # +1 for holdout prediction
+    expected = len(models) * (nfolds + 1)  # +1 for holdout prediction
     assert preds == expected, "missing CV predictions in memory, got {actual}, expected {expected}".format(actual=preds, expected=expected)
+    for m in non_se:
+        assert h2o.get_model(m).cross_validation_predictions(), "missing cv predictions for model "+m
+    for m in se:
+        metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+        assert metal.cross_validation_predictions(), "missing cv predictions for metalearner of model "+m
 
     print("\n=== disabling "+kcvp+" ===")
     h2o.remove_all()
     train, _, _ = prepare_data()
-    aml = H2OAutoML(project_name='keep_cross_validation_predictions_default',
+    aml = H2OAutoML(project_name='keep_cross_validation_predictions_disabled',
                     nfolds=nfolds, max_models=3, seed=1,
                     keep_cross_validation_predictions=False)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
+    # print(aml.leaderboard)
+    models, _, _ = get_partitioned_model_names(aml.leaderboard)
     keys = list_keys_in_memory()
     preds = len(keys['cv_predictions'])
     assert preds == 0, "{preds} CV predictions were not cleaned from memory".format(preds=preds)
+    for m in models:
+        assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
 
 
 def test_clean_cv_models():
@@ -114,9 +125,8 @@ def test_clean_cv_models():
     aml = H2OAutoML(project_name='keep_cross_validation_models_default',
                     nfolds=nfolds, max_models=3, seed=1)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
-
-    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    # print(aml.leaderboard)
+    models, non_se, se = get_partitioned_model_names(aml.leaderboard)
     check_model_property(se, kcvm, False)
     check_model_property(non_se, kcvm, True, False, False)
     keys = list_keys_in_memory()
@@ -124,7 +134,8 @@ def test_clean_cv_models():
     print("total models in memory = {tot}, among which {cv} CV models".format(tot=tot, cv=cv))
     assert tot > 0, "no models left in memory"
     assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
-
+    for m in models:
+        assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
 
     print("\n=== enabling "+kcvm+" ===")
     h2o.remove_all()
@@ -133,8 +144,7 @@ def test_clean_cv_models():
                     nfolds=nfolds,  max_models=8, seed=1,
                     keep_cross_validation_models=True)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
-
+    # print(aml.leaderboard)
     models, non_se, se = get_partitioned_model_names(aml.leaderboard)
     check_model_property(se, kcvm, False)
     check_model_property(non_se, kcvm, True, True, False)
@@ -144,6 +154,11 @@ def test_clean_cv_models():
     assert tot > 0, "no models left in memory"
     expected = len(models) * nfolds
     assert cv == expected, "missing CV models in memory, got {actual}, expected {expected}".format(actual=cv, expected=expected)
+    for m in non_se:
+        assert h2o.get_model(m).cross_validation_models(), "missing cv models for model "+m
+    for m in se:
+        metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+        assert metal.cross_validation_models(), "missing cv models for metalearner of model "+m
 
 
     print("\n=== disabling "+kcvm+" ===")
@@ -153,9 +168,8 @@ def test_clean_cv_models():
                     nfolds=nfolds, max_models=8, seed=1,
                     keep_cross_validation_models=False)
     aml.train(y='CAPSULE', training_frame=train)
-    print(aml.leaderboard)
-
-    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    # print(aml.leaderboard)
+    models, non_se, se = get_partitioned_model_names(aml.leaderboard)
     check_model_property(se, kcvm, False)
     check_model_property(non_se, kcvm, True, False, False)
     keys = list_keys_in_memory()
@@ -163,6 +177,8 @@ def test_clean_cv_models():
     print("total models in memory = {tot}, among which {cv} CV models".format(tot=tot, cv=cv))
     assert tot > 0, "no models left in memory"
     assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
+    for m in models:
+        assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
 
 
 if __name__ == "__main__":
