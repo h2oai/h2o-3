@@ -590,16 +590,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing "+N+"-fold cross-validation metrics.");
-    mainModel._output._cross_validation_models = new Key[N];
+    Key<M>[] cvModKeys = new Key[N];
+    mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
 
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
       Key<M> cvModelKey = cvModelBuilders[i]._result;
-      mainModel._output._cross_validation_models[i] = cvModelKey;
+      cvModKeys[i] = cvModelKey;
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
+
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -628,11 +630,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
-
-    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(mainModel._output._cross_validation_models);
+    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
     if (!_parms._keep_cross_validation_models) {
-      mainModel.deleteCrossValidationModels();
+      for (Key<M> k : cvModKeys) {
+        Model m = DKV.getGet(k);
+        if (m != null) m.remove();
+      }
     }
 
     // Now, the main model is complete (has cv metrics)

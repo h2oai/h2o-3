@@ -924,6 +924,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
     // Add cross-validation args
+    //TODO: cf. comment in Metalearner; assigning some buildSpec params directly to _metalearner_parameters
+    //  avoid having us to redefine defaults once more here, as well as the duplicate logic here and in  Metalearner
     if (buildSpec.input_spec.fold_column != null) {
       stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
       stackedEnsembleParameters._metalearner_nfolds = 0;  //if fold_column is used, set nfolds to 0 (default)
