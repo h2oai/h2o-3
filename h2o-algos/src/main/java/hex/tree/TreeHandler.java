@@ -102,11 +102,14 @@ public class TreeHandler extends Handler {
         treeprops._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
         treeprops._thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
         treeprops._features = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops._nas = MemoryManager.mallocZ(sharedTreeSubgraph.nodesArray.size());
+        treeprops._nas = new String[sharedTreeSubgraph.nodesArray.size()];
 
         // Set root node's children, there is no guarantee the root node will be number 0
         treeprops._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
         treeprops._leftChildren[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
+        treeprops._thresholds[0] = sharedTreeSubgraph.rootNode.getSplitValue();
+        treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
+        treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
@@ -118,7 +121,7 @@ public class TreeHandler extends Handler {
     }
 
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
-                               final float[] thresholds, final String[] splitColumns, final boolean[] naHandlings,
+                               final float[] thresholds, final String[] splitColumns, final String[] naHandlings,
                                List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
         if(nodesToTraverse.isEmpty()) return;
 
@@ -156,10 +159,11 @@ public class TreeHandler extends Handler {
 
     private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,
                                              final float[] thresholds, final String[] splitColumns,
-                                             final boolean[] naHandlings, final int pointer) {
+                                             final String[] naHandlings, final int pointer) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
+            nodeDescriptionBuilder.append("Parent split threshold: ");
             nodeDescriptionBuilder.append(node.getParent().getColName());
             if (node.isLeftward()) {
                 nodeDescriptionBuilder.append(" < ");
@@ -167,12 +171,11 @@ public class TreeHandler extends Handler {
                 nodeDescriptionBuilder.append(" >= ");
             }
             nodeDescriptionBuilder.append(node.getParent().getSplitValue());
-            thresholds[pointer] = node.getParent().getSplitValue();
         } else {
             final BitSet childInclusiveLevels = node.getInclusiveLevels();
             final int cardinality = childInclusiveLevels.cardinality();
             if ((cardinality > 0)) {
-                nodeDescriptionBuilder.append("Split column [");
+                nodeDescriptionBuilder.append("Parent split column [");
                 nodeDescriptionBuilder.append(node.getParent().getColName());
                 nodeDescriptionBuilder.append("]: ");
                 int bitsignCounter = 0;
@@ -185,9 +188,24 @@ public class TreeHandler extends Handler {
         }
 
         nodeDescriptions[pointer] = nodeDescriptionBuilder.toString();
-        splitColumns[pointer] = node.getParent().getColName();
-        naHandlings[pointer] = node.getInclusiveNa();
+        splitColumns[pointer] = node.getColName();
+        naHandlings[pointer] = getNaDirection(node);
+        thresholds[pointer] = node.getSplitValue();
 
+
+    }
+
+    private static String getNaDirection(final SharedTreeNode node) {
+        final boolean leftNa = node.getLeftChild() != null && node.getLeftChild().isInclusiveNa();
+        final boolean rightNa = node.getRightChild() != null && node.getRightChild().isInclusiveNa();
+        assert (rightNa ^ leftNa) || (rightNa == false && leftNa == false);
+
+        if (leftNa) {
+            return "LEFT";
+        } else if (rightNa) {
+            return "RIGHT";
+        }
+        return null; // No direction
     }
 
     public static class TreeProperties {
@@ -197,7 +215,7 @@ public class TreeHandler extends Handler {
         public String[] _descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
         public float[] _thresholds;
         public String[] _features;
-        public boolean[] _nas;
+        public String[] _nas;
 
     }
 }

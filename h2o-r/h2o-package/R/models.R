@@ -3080,7 +3080,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
 #' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
 #' @slot features A \code{character} with names of the feature/column used for the split.
-#' @slot nas A \code{logical} representing if NA values belong to the split on given child's parent.
+#' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @aliases H2OTree
 #' @export
 setClass(
@@ -3095,7 +3095,7 @@ setClass(
     root_node_id = "integer",
     thresholds = "numeric",
     features = "character",
-    nas = "logical"
+    nas = "character"
   )
 )
 
@@ -3127,6 +3127,8 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       tree_number = tree_number - 1,
       tree_class = tree_class_request
     )
+  
+  res$thresholds[is.nan(res$thresholds)] <- NA
   
   tree <- new(
     "H2OTree",
