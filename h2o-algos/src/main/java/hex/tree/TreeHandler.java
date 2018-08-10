@@ -51,18 +51,21 @@ public class TreeHandler extends Handler {
 
         switch (sharedTreeOutput.getModelCategory()) {
             case Binomial:
-                // Fall through to regression - handling is equal
+                if (!trimmedCategorical.isEmpty() && !trimmedCategorical.equals(responseColumnDomain[0])) {
+                    throw new IllegalArgumentException("For binomial, only one tree class has been built per each iteration: " + responseColumnDomain[0]);
+                } else {
+                    return 0;
+                }
             case Regression:
-                return 0; // There is only one tree for regression and binomial
+                if (!trimmedCategorical.isEmpty())
+                    throw new IllegalArgumentException("There are no tree classes for regression.");
+                return 0; // There is only one tree for regression
             default:
-                // Search for the index of categorical in case of multinomial
                 for (int i = 0; i < responseColumnDomain.length; i++) {
                     // User is supposed to enter the name of the categorical level correctly, not ignoring case
                     if (trimmedCategorical.equals(responseColumnDomain[i])) return i;
                 }
-                break;
         }
-        // Not a regression or binomial and the given categorical has not been found in the response column's domain.
         return -1;
     }
 

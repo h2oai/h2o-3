@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.gbm.trees <- function() {
   airlines.data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
   gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1)
-  gbm.tree <-h2o.getModelTree(gbm.model, 1, "Yes") # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
+  gbm.tree <-h2o.getModelTree(gbm.model, 1, "NO") # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
   expect_equal("H2OTree", class(gbm.tree)[1])
   expect_equal("integer", class(gbm.tree@left_children)[1])

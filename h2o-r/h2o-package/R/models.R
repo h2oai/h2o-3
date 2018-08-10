@@ -3112,8 +3112,12 @@ setClass(
 #'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
 #' @return Returns an H2OTree object with detailed information about a tree.
 #' @export
-h2o.getModelTree <- function(model, tree_number, tree_class = NULL) {
+h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   url <- "Tree"
+  tree_class_request = tree_class;
+  if(is.na(tree_class)){
+    tree_class_request <- "";
+  }
   res <-
     .h2o.__remoteSend(
       url,
@@ -3121,7 +3125,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NULL) {
       h2oRestApiVersion = 3,
       model = model@model_id,
       tree_number = tree_number - 1,
-      tree_class = tree_class
+      tree_class = tree_class_request
     )
   
   tree <- new(

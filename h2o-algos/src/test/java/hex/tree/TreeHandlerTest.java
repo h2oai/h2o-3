@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.TreeV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -139,7 +140,7 @@ public class TreeHandlerTest extends TestUtil {
     }
 
     @Test
-    public void testSharedTreeSubgraphConversion_argumentValidation() {
+    public void testSharedTreeSubgraphConversion_argumentValidationMultinomial() {
 
         Frame tfr = null;
         GBMModel model = null;
@@ -157,10 +158,10 @@ public class TreeHandlerTest extends TestUtil {
             model = new GBM(parms).trainModel().get();
 
             final TreeHandler treeHandler = new TreeHandler();
-            TreeV3 args = new TreeV3();
+            final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(Key.make());
 
-            //Unexisting key
+            //Non-existing key
 
             boolean exceptionThrown = false;
             try {
@@ -208,14 +209,102 @@ public class TreeHandlerTest extends TestUtil {
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
-
-
         } finally {
+            Scope.exit();
             if (tfr != null) tfr.remove();
             if (model != null) model.remove();
         }
     }
 
+    @Test
+    public void testSharedTreeSubgraphConversion_argumentValidationRegression() {
+
+
+        Frame tfr = null;
+        GBMModel regressionModel = null;
+
+        Scope.enter();
+        try {
+            tfr = parse_test_file("./smalldata/iris/iris2.csv");
+            DKV.put(tfr);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = tfr._key;
+            parms._ntrees = 1;
+            parms._seed = 0;
+            parms._response_column = "Sepal.Length";
+
+            final TreeV3 args = new TreeV3();
+            regressionModel = new GBM(parms).trainModel().get();
+            args.model = new KeyV3.ModelKeyV3(regressionModel._key);
+            args.tree_class = "NonExistingClass";
+
+
+            final TreeHandler treeHandler = new TreeHandler();
+            boolean exceptionThrown = false;
+            try {
+                treeHandler.getTree(3, args);
+            } catch (IllegalArgumentException e) {
+                assertTrue(e.getMessage().contains("There are no tree classes for regression."));
+                exceptionThrown = true;
+            }
+            assertTrue(exceptionThrown);
+
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (regressionModel != null) regressionModel.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSharedTreeSubgraphConversion_argumentValidationBinomial() {
+
+
+        Frame tfr = null;
+        GBMModel model = null;
+
+        Scope.enter();
+        try {
+            tfr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            DKV.put(tfr);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = tfr._key;
+            parms._ntrees = 1;
+            parms._seed = 0;
+            parms._response_column = "IsDepDelayed";
+
+            // Test incorrect tree request
+            final TreeV3 args = new TreeV3();
+            model = new GBM(parms).trainModel().get();
+            args.model = new KeyV3.ModelKeyV3(model._key);
+            args.tree_class = "YES";
+
+            // If the tree class name is specified, it must be the tree class built exactly
+            final TreeHandler treeHandler = new TreeHandler();
+            boolean exceptionThrown = false;
+            try {
+                treeHandler.getTree(3, args);
+            } catch (IllegalArgumentException e) {
+                assertTrue(e.getMessage().contains("For binomial, only one tree class has been built per each iteration: NO"));
+                exceptionThrown = true;
+            }
+            assertTrue(exceptionThrown);
+
+            args.tree_class = "NO";
+            final TreeV3 correctlySpecifiedClassTree = treeHandler.getTree(3, args);
+            assertNotNull(correctlySpecifiedClassTree);
+
+            args.tree_class = "";
+            final TreeV3 noClassTree = treeHandler.getTree(3, args);
+            assertNotNull(noClassTree);
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (model != null) model.remove();
+            Scope.exit();
+        }
+    }
 
 
 }
