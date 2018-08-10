@@ -8,6 +8,7 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.ast.prims.advmath.AstKFold;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -948,5 +949,18 @@ public class FrameUtils {
     for (Lockable l : frs) {
       if (l != null) l.delete();
     }
+  }
+
+  /**
+   *
+   * @param frame
+   * @param name name of the fold column
+   * @param nfolds number of folds
+   * @param seed
+   */
+  static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
+    Vec foldVec = frame.anyVec().makeZero();
+    frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
+    return frame;
   }
 }

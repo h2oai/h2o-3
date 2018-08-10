@@ -71,7 +71,8 @@ public class Merge {
     // for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) {
       if (id_maps[i] == null) continue;
-      assert id_maps[i].length >= leftFrame.vec(leftCols[i]).max()+1;
+      double left_max = leftFrame.vec(leftCols[i]).max();
+      assert id_maps[i].length >= (Double.isNaN(left_max) ? 0:left_max) +1;
       if( !hasRite ) continue;
       int right_max = (int)riteFrame.vec(riteCols[i]).max();
       for (int j=0; j<id_maps[i].length; j++) {

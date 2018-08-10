@@ -139,6 +139,66 @@ public class AstMergeTest extends TestUtil {
 
   }
 
+  @Test
+  public void mergeByEmptyOrComplexStringsTest() {
+
+    fr = new TestFrameBuilder()
+            .withName("leftFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("y", "z", "", "?Havana  Cuba", "Aberdeen / Portland  OR"))
+            .withDataForCol(1, ar(1, 2, 3, 4, 5))
+            .build();
+
+    Frame frRight = new TestFrameBuilder()
+            .withName("rightFrame")
+            .withColNames("ColA_R", "ColB_R")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM )
+            .withDataForCol(0, ar("", "?Havana  Cuba", "Aberdeen / Portland  OR"))
+            .withDataForCol(1, ar(11, 22, 33))
+            .build();
+
+    String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
+    Val val = Rapids.exec(tree);
+    Frame result = val.getFrame();
+
+
+    TwoDimTable twoDimTable = result.toTwoDimTable();
+    System.out.println(twoDimTable.toString());
+
+    assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
+  }
+
+  @Test
+  public void mergeByOnlyEmptyStringsTest() {
+
+    fr = new TestFrameBuilder()
+            .withName("leftFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("y", "z", null, "?Havana  Cuba", "Aberdeen / Portland  OR"))
+            .withDataForCol(1, ar(1, 2, 3, 4, 5))
+            .build();
+
+    Frame frRight = new TestFrameBuilder()
+            .withName("rightFrame")
+            .withColNames("ColA_R", "ColB_R")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM )
+            .withDataForCol(0, new String[]{null, null, null})
+            .withDataForCol(1, ar(11, 22, 33))
+            .build();
+
+    String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
+    Val val = Rapids.exec(tree);
+    Frame result = val.getFrame();
+
+
+    TwoDimTable twoDimTable = result.toTwoDimTable();
+    System.out.println(twoDimTable.toString());
+
+//    assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
+  }
+
   @After
   public void afterEach() {
     H2O.STORE.clear();
