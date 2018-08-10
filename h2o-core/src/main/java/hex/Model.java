@@ -2230,9 +2230,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             for (int t = 0; t < trees.length; t++) {
               SharedTreeGraph tree = trees[t];
               SharedTreeNode node = tree.walkNodes(0, decisionPath[t]);
-              if ((node == null) && (nodeIds[t] == 0) && (tree.subgraphArray.get(0).nodesArray.size() == 1)) {
-                System.err.println("Ignoring a BUG in MOJO leaf node assignment!!! See PUBDEV-5818.");
-              } else if (node.getNodeNumber() != nodeIds[t]) {
+              if (node == null || node.getNodeNumber() != nodeIds[t]) {
                 throw new IllegalStateException("Path to leaf node is inconsistent with predicted node id: path=" + decisionPath[t] + ", nodeId=" + nodeIds[t]);
               }
             }
