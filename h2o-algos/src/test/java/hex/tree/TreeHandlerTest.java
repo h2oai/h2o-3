@@ -56,6 +56,10 @@ public class TreeHandlerTest extends TestUtil {
 
             final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
             assertNotNull(treeProperties);
+            assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._descriptions.length);
+            assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._thresholds.length);
+            assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._features.length);
+            assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._nas.length);
 
             final int[] leftChildren = treeProperties._leftChildren;
             final int[] rightChildren = treeProperties._rightChildren;

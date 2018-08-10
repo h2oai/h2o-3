@@ -61,6 +61,9 @@ test.gbm.trees <- function() {
   
   totalLength <- length(drf.tree@left_children)
   expect_equal(totalLength, length(drf.tree@descriptions))
+  expect_equal(totalLength, length(drf.tree@thresholds))
+  expect_equal(totalLength, length(drf.tree@nas))
+  expect_equal(totalLength, length(drf.tree@features))
   
   # All descriptions must be non-empty
   for (description in drf.tree@descriptions) {
@@ -97,6 +100,9 @@ test.gbm.trees <- function() {
   
   totalLength <- length(multinomial.tree@left_children)
   expect_equal(totalLength, length(multinomial.tree@descriptions))
+  expect_equal(totalLength, length(multinomial.tree@thresholds))
+  expect_equal(totalLength, length(multinomial.tree@nas))
+  expect_equal(totalLength, length(multinomial.tree@features))
   
   # All descriptions must be non-empty
   for (description in multinomial.tree@descriptions) {
@@ -133,6 +139,9 @@ test.gbm.trees <- function() {
   
   totalLength <- length(regression.tree@left_children)
   expect_equal(totalLength, length(regression.tree@descriptions))
+  expect_equal(totalLength, length(regression.tree@thresholds))
+  expect_equal(totalLength, length(regression.tree@nas))
+  expect_equal(totalLength, length(regression.tree@features))
   
   # All descriptions must be non-empty
   for (description in regression.tree@descriptions) {
