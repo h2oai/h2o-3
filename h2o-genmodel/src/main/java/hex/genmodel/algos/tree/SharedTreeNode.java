@@ -29,9 +29,7 @@ public class SharedTreeNode {
   float predValue = Float.NaN;
   float squaredError = Float.NaN;
   SharedTreeNode leftChild;
-
-
-  public  SharedTreeNode rightChild;
+  public SharedTreeNode rightChild;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
@@ -269,7 +267,7 @@ public class SharedTreeNode {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
-  private boolean isBitset() {
+  public boolean isBitset() {
     return (domainValues != null);
   }
 
