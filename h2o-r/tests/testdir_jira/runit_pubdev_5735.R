@@ -109,6 +109,43 @@ test.gbm.trees <- function() {
   expect_equal(1, multinomial.tree@tree_number)
   expect_equal("4", multinomial.tree@tree_class)
   
+  
+  # Cars test - regression
+  regression.model = h2o.randomForest(x=c("cylinders", "acceleration"),y="power",training_frame=cars.data ,model_id="gbm_trees_model", ntrees = 1)
+  expect_equal("Regression", regression.model@model$training_metrics@metrics$model_category)
+  regression.tree <-h2o.getModelTree(regression.model, 1) # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
+  
+  expect_equal("H2OTree", class(regression.tree)[1])
+  expect_equal("integer", class(regression.tree@left_children)[1])
+  expect_equal("integer", class(regression.tree@right_children)[1])
+  expect_equal("numeric", class(regression.tree@thresholds)[1])
+  expect_equal("character", class(regression.tree@features)[1])
+  expect_equal("logical", class(regression.tree@nas)[1])
+  expect_equal("character", class(regression.tree@descriptions)[1])
+  expect_equal("character", class(regression.tree@model_id)[1])
+  expect_equal("integer", class(regression.tree@tree_number)[1])
+  expect_equal("character", class(regression.tree@tree_class)[1])
+  expect_equal("integer", class(regression.tree@root_node_id)[1])
+  
+  expect_equal(length(regression.tree@left_children)[1], length(regression.tree@right_children)[1])
+  expect_true(is.na(match(0, regression.tree@left_children)[1])) # There are no zeros in the list of nodes
+  expect_true(is.na(match(0, regression.tree@right_children)[1])) # There are no zeros in the list of nodes
+  
+  totalLength <- length(regression.tree@left_children)
+  expect_equal(totalLength, length(regression.tree@descriptions))
+  
+  # All descriptions must be non-empty
+  for (description in regression.tree@descriptions) {
+    expect_false(identical(description, ""))
+  }
+  
+  # First node's description is root node
+  expect_equal("Root node", regression.tree@descriptions[1])
+  
+  expect_equal(0, length(regression.tree@tree_class))
+  
+  expect_equal(1, regression.tree@tree_number)
+  
 }
 
 doTest("GBM & DRF tree fetching", test.gbm.trees)

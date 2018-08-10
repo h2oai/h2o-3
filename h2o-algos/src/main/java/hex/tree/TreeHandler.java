@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
@@ -34,8 +35,12 @@ public class TreeHandler extends Handler {
         args.thresholds = treeProperties._thresholds;
         args.features = treeProperties._features;
         args.nas = treeProperties._nas;
-        // Class may not be provided by the user, should be always filled correctly on output.
-        args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
+        // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
+        if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
+            args.tree_class = null;
+        } else {
+            args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
+        }
 
         return args;
     }

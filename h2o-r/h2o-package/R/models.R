@@ -3131,12 +3131,17 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NULL) {
     descriptions = res$descriptions,
     model_id = res$model$name,
     tree_number = as.integer(res$tree_number + 1),
-    tree_class = res$tree_class,
     root_node_id = res$root_node_id,
     thresholds = res$thresholds,
     features = res$features,
     nas = res$nas
   )
+  
+  if(!is.null(res$tree_class)){
+    tree@tree_class <- res$tree_class
+  }
+  
+  tree
 }
 
 #' @export
