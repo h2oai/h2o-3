@@ -32,8 +32,8 @@ public class TreeHandler extends Handler {
         args.descriptions = treeProperties._descriptions;
         args.root_node_id = sharedTreeSubgraph.rootNode.getNodeNumber();
         args.thresholds = treeProperties._thresholds;
-        args.features = treeProperties.features;
-        args.nas = treeProperties.nas;
+        args.features = treeProperties._features;
+        args.nas = treeProperties._nas;
         // Class may not be provided by the user, should be always filled correctly on output.
         args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
 
@@ -93,8 +93,8 @@ public class TreeHandler extends Handler {
         treeprops._rightChildren = MemoryManager.malloc4(sharedTreeSubgraph.nodesArray.size());
         treeprops._descriptions = new String[sharedTreeSubgraph.nodesArray.size()];
         treeprops._thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
-        treeprops.features = new String[sharedTreeSubgraph.nodesArray.size()];
-        treeprops.nas = MemoryManager.mallocZ(sharedTreeSubgraph.nodesArray.size());
+        treeprops._features = new String[sharedTreeSubgraph.nodesArray.size()];
+        treeprops._nas = MemoryManager.mallocZ(sharedTreeSubgraph.nodesArray.size());
 
         // Set root node's children, there is no guarantee the root node will be number 0
         treeprops._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
@@ -103,7 +103,7 @@ public class TreeHandler extends Handler {
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
         append(treeprops._rightChildren, treeprops._leftChildren,
-                treeprops._descriptions, treeprops._thresholds, treeprops.features, treeprops.nas,
+                treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
                 nodesToTraverse, -1, false);
 
         return treeprops;
@@ -188,8 +188,8 @@ public class TreeHandler extends Handler {
         public int[] _rightChildren;
         public String[] _descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
         public float[] _thresholds;
-        public String[] features;
-        public boolean[] nas;
+        public String[] _features;
+        public boolean[] _nas;
 
     }
 }
