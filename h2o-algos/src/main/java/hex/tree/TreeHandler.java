@@ -171,7 +171,7 @@ public class TreeHandler extends Handler {
                 nodeDescriptionBuilder.append(" >= ");
             }
             nodeDescriptionBuilder.append(node.getParent().getSplitValue());
-        } else {
+        } else if (node.getParent().isBitset()) {
             final BitSet childInclusiveLevels = node.getInclusiveLevels();
             final int cardinality = childInclusiveLevels.cardinality();
             if ((cardinality > 0)) {
@@ -185,6 +185,8 @@ public class TreeHandler extends Handler {
                     bitsignCounter++;
                 }
             }
+        } else{
+            nodeDescriptionBuilder.append("NA only");
         }
 
         nodeDescriptions[pointer] = nodeDescriptionBuilder.toString();
