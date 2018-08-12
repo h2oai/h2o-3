@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.gbm.trees <- function() {
   airlines.data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
-  gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1)
+  gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
   gbm.tree <-h2o.getModelTree(gbm.model, 1, "NO") # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
   expect_equal("H2OTree", class(gbm.tree)[1])
@@ -40,7 +40,7 @@ test.gbm.trees <- function() {
   
   # DRF model test
   
-  drf.model = h2o.randomForest(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1)
+  drf.model = h2o.randomForest(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
   drf.tree <-h2o.getModelTree(drf.model, 1) # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
   expect_equal("H2OTree", class(drf.tree)[1])
@@ -79,7 +79,7 @@ test.gbm.trees <- function() {
   # Cars test - multinomial
   cars.data <- h2o.importFile(path = locate('smalldata/junit/cars_nice_header.csv'))
   cars.data['cylinders'] <- h2o.asfactor(cars.data['cylinders'])
-  multinomial.model = h2o.randomForest(x=c("power", "acceleration"),y="cylinders",training_frame=cars.data ,model_id="gbm_trees_model", ntrees = 1)
+  multinomial.model = h2o.randomForest(x=c("power", "acceleration"),y="cylinders",training_frame=cars.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
   multinomial.tree <-h2o.getModelTree(multinomial.model, 1, "4") # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
   expect_equal("H2OTree", class(multinomial.tree)[1])
@@ -117,7 +117,7 @@ test.gbm.trees <- function() {
   
   
   # Cars test - regression
-  regression.model = h2o.randomForest(x=c("cylinders", "acceleration"),y="power",training_frame=cars.data ,model_id="gbm_trees_model", ntrees = 1)
+  regression.model = h2o.randomForest(x=c("cylinders", "acceleration"),y="power",training_frame=cars.data ,model_id="gbm_trees_model", ntrees = 1, seed = 1)
   expect_equal("Regression", regression.model@model$training_metrics@metrics$model_category)
   regression.tree <-h2o.getModelTree(regression.model, 1) # Model only has one tree. If these numbers are changed, tests fails. This ensures index translation between R API and Java works.
   
