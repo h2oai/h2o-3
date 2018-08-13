@@ -264,20 +264,25 @@ public class TargetEncoder {
         return val.getNum();
     }
 
-    public Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName ) {
-        // TODO check support for denominator = 0
-        double globalMean = calculateGlobalMean(encodingMap);
+    public Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
         int numeratorIndex = getColumnIndexByName(fr,"numerator");
         int denominatorIndex = getColumnIndexByName(fr,"denominator");
+        int targetColumnIndex = getColumnIndexByName(fr, targetColumnName);
+
+        double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
+        double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;
 
         int k = 20;
         int f = 10;
         String expTerm = String.format("(exp ( / ( - %d (cols %s [%s] )) %d ))", k, fr._key, denominatorIndex, f);
         String lambdaTree = String.format("(  / 1     ( + 1 %s  )  ) ", expTerm);
 
-        String treeForLambda_1 = String.format(" ( * ( - 1 %s ) %f)", lambdaTree, globalMean);
-        String treeForLambda_2 = String.format("( * %s  ( / (cols %s [%s]) (cols %s [%s])  )  )", lambdaTree, fr._key,  numeratorIndex, fr._key, denominatorIndex);
-        String treeForLambda = String.format("( append %s ( + %s  %s )  '%s' )", fr._key, treeForLambda_1, treeForLambda_2, appendedColumnName);
+        String oneMinusLambdaMultGlobalTerm = String.format(" ( * ( - 1 %s ) %f)", lambdaTree, globalMeanForTargetClass);
+
+        String localTermTree = String.format("( ifelse ( == (cols %s [%d]) 0 ) ( ifelse ( == (cols %s [%d]) 1) %f  %f) ( / (cols %s [%d]) (cols %s [%d])) )",
+                fr._key, denominatorIndex, fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass, fr._key,  numeratorIndex, fr._key, denominatorIndex);
+        String lambdaMultLocalTerm = String.format("( * %s  %s  )", lambdaTree, localTermTree);
+        String treeForLambda = String.format("( append %s ( + %s  %s )  '%s' )", fr._key, oneMinusLambdaMultGlobalTerm, lambdaMultLocalTerm, appendedColumnName);
         return Rapids.exec(treeForLambda).getFrame();
     }
 
@@ -297,8 +302,6 @@ public class TargetEncoder {
         double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;
         String tree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) ( ifelse ( == (cols %s [%d]) 1) %f  %f) ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
                 fr._key , fr._key, denominatorIndex, fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass,  fr._key, numeratorIndex, fr._key, denominatorIndex, appendedColumnName);
-//        String tree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) 1 ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
-//                fr._key , fr._key, denominatorIndex,  fr._key, numeratorIndex, fr._key, denominatorIndex, appendedColumnName);
         Val val = Rapids.exec(tree);
         Frame res = val.getFrame();
         res._key = fr._key;
@@ -436,7 +439,7 @@ public class TargetEncoder {
             }
 
             if (withBlendedAvg) {
-                teFrame = calculateAndAppendBlendedTEEncoding(teFrame, targetEncodingMap, teColumnName + "_te");
+                teFrame = calculateAndAppendBlendedTEEncoding(teFrame, targetEncodingMap, targetColumnName, teColumnName + "_te");
 
             } else {
 

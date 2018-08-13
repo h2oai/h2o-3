@@ -322,7 +322,6 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     // ----------------------------- blended average -----------------------------------------------------------------//
-    @Ignore //TODO we need fix for divizion by zero
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
 
@@ -337,7 +336,14 @@ public class TargetEncodingTest extends TestUtil{
         int[] teColumns = {0};
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
 
-        Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get("ColA"),"targetEncoded" );
+        printOutFrameAsTable(targetEncodingMap.get("ColA"));
+        printOutColumnsMeta(targetEncodingMap.get("ColA"));
+        printOutColumnsMeta(fr);
+
+        fr = tec.mergeByTEColumn(fr, targetEncodingMap.get("ColA"), 0, 0);
+        printOutFrameAsTable(fr);
+
+        Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get("ColA"),"ColB", "targetEncoded" );
 
         TwoDimTable twoDimTable = result.toTwoDimTable();
         System.out.println(twoDimTable.toString());
@@ -348,20 +354,51 @@ public class TargetEncodingTest extends TestUtil{
         // lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
         // te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
 
-        double globalMean = (1.0 + 2.0 + 3.0) / (3 + 4 + 5);
-        double lambda1 = 1.0 /( 1 + Math.exp( (20.0 - 3) / 10));
-        double te1 = (1 - lambda1) * globalMean + ( lambda1 * 1 / 3);
+        double globalMean = 2.0 / 3;
+        double lambda1 = 1.0 /( 1.0 + (Math.exp( (20.0 - 2) / 10)));
+        double te1 = (1.0 - lambda1) * globalMean + ( lambda1 * 2 / 2);
 
-        double lambda2 = 1.0 /( 1 + Math.exp( (20.0 - 4) / 10));
-        double te2 = (1.0 - lambda2) * globalMean + ( lambda2 * 2 / 4);
+        double lambda2 = 1.0 /( 1 + Math.exp( (20.0 - 1) / 10));
+        double te2 = (1.0 - lambda2) * globalMean + ( lambda2 * 0 / 1);
 
-        double lambda3 = 1.0 /( 1 + Math.exp( (20.0 - 5) / 10));
-        double te3 = (1.0 - lambda3) * globalMean + ( lambda3 * 3 / 5);
+        double lambda3 = 1.0 /( 1.0 + (Math.exp( (20.0 - 2) / 10)));
+        double te3 = (1.0 - lambda3) * globalMean + ( lambda3 * 2 / 2);
 
-        assertEquals(te1, result.vec(2).at(0), 1e-5);
-        assertEquals(te2, result.vec(2).at(1), 1e-5);
-        assertEquals(te3, result.vec(2).at(2), 1e-5);
+        assertEquals(te1, result.vec(4).at(0), 1e-5);
+        assertEquals(te3, result.vec(4).at(1), 1e-5);
+        assertEquals(te2, result.vec(4).at(2), 1e-5);
 
+    }
+
+    // In case of LOO holdout we subtract target value of the current row from aggregated values per group.
+    // This is where we can end up with 0 in denominator column.
+    @Test
+    public void calculateAndAppendBlendedTEEncodingDivisionByZeroTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "numerator", "denominator")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar("yes", "no", "yes"))
+              .withDataForCol(2, ar(2, 0, 2))
+              .withDataForCol(3, ar(2, 0, 2))  // For b row we set denominator to 0
+              .build();
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+
+      Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
+
+      TwoDimTable twoDimTable = result.toTwoDimTable();
+      System.out.println(twoDimTable.toString());
+
+      double globalMean = 2.0 / 3;
+      double lambda2 = 1.0 / (1 + Math.exp((20.0 - 0) / 10));
+      double te2 = (1.0 - lambda2) * globalMean + (lambda2 * (1 - globalMean)); //because target value for row b is 0 we use (1 - globalMean) substitution.
+
+      assertEquals(te2, result.vec(4).at(1), 1e-5);
+      assertFalse(result.vec(2).isNA(1));
     }
 
     @Ignore
@@ -371,10 +408,10 @@ public class TargetEncodingTest extends TestUtil{
                 .withName("testFrame")
                 .withColNames("ColA", "ColB", "ColC", "fold_column")
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT,  Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-                .withDataForCol(1, ard(1, 1, 4, 7, 4))
-                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-                .withDataForCol(3, ar(1, 2, 2, 3, 2))
+                .withDataForCol(0, ar("a", "b", "b", "b", "a", "c"))
+                .withDataForCol(1, ard(1, 1, 4, 7, 4, 9))
+                .withDataForCol(2, ar("2", "6", "6", "6", "6", "2"))
+                .withDataForCol(3, ar(1, 2, 2, 3, 2, 2))
                 .build();
 
         TargetEncoder tec = new TargetEncoder();
@@ -935,5 +972,14 @@ public class TargetEncodingTest extends TestUtil{
 
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
     System.out.println(twoDimTable.toString(2, full));
+  }
+
+  private void printOutColumnsMeta(Frame fr) {
+    for (String header : fr.toTwoDimTable().getColHeaders()) {
+      String type = fr.vec(header).get_type_str();
+      int cardinality = fr.vec(header).cardinality();
+      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+
+    }
   }
 }
