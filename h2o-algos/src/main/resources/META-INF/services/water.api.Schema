@@ -66,6 +66,7 @@ hex.schemas.StackedEnsembleModelV99
 hex.schemas.StackedEnsembleModelV99$StackedEnsembleModelOutputV99
 hex.schemas.StackedEnsembleV99
 hex.schemas.StackedEnsembleV99$StackedEnsembleParametersV99
+hex.schemas.TreeV3
 hex.schemas.TreeStatsV3
 hex.schemas.Word2VecModelV3
 hex.schemas.Word2VecModelV3$Word2VecModelOutputV3

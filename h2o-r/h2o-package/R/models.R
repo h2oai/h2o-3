@@ -3172,5 +3172,91 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
+#'
+#' The H2OTree class.
+#'
+#' This class represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
+#' @slot left_children An \code{integer} vector with left child nodes of tree's nodes
+#' @slot right_children An \code{integer} vector with right child nodes of tree's nodes
+#' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree. Contains split threshold if the split is based on numerical column.
+#'                    For cactegorical splits, it contains list of categorical levels for transition from the parent node.
+#' @slot model_id A \code{character} string with the name of the model this tree has been generated in.
+#' @slot tree_number An \code{integer} representing the order in which the tree has been built in the model.
+#' @slot tree_class A \code{character} representing name of tree's class. Number of tree classes equals to the number of levels in categorical response column.
+#'                  As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
+#'                  In case of regression and binomial, the name of the categorical level is ignored can be omitted, as there is exactly one tree built in both cases.
+#' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
+#' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
+#' @slot features A \code{character} with names of the feature/column used for the split.
+#' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
+#' @aliases H2OTree
+#' @export
+setClass(
+  "H2OTree",
+  representation(
+    left_children = "integer",
+    right_children = "integer",
+    descriptions = "character",
+    model_id = "character",
+    tree_number = "integer",
+    tree_class = "character",
+    root_node_id = "integer",
+    thresholds = "numeric",
+    features = "character",
+    nas = "character"
+  )
+)
+
+#' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
+#'
+#' Usage example:
+#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
+#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
+#' tree <-h2o.getModelTree(gbm.model, 1, 1);
+#'
+#' @param model Models with trees
+#' @param tree_number Number of the tree in the model to fetch, starting with 1
+#' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
+#'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
+#' @return Returns an H2OTree object with detailed information about a tree.
+#' @export
+h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
+  url <- "Tree"
+  tree_class_request = tree_class;
+  if(is.na(tree_class)){
+    tree_class_request <- "";
+  }
+  res <-
+    .h2o.__remoteSend(
+      url,
+      method = "GET",
+      h2oRestApiVersion = 3,
+      model = model@model_id,
+      tree_number = tree_number - 1,
+      tree_class = tree_class_request
+    )
+  
+  res$thresholds[is.nan(res$thresholds)] <- NA
+  
+  tree <- new(
+    "H2OTree",
+    left_children = res$left_children,
+    right_children = res$right_children,
+    descriptions = res$descriptions,
+    model_id = res$model$name,
+    tree_number = as.integer(res$tree_number + 1),
+    root_node_id = res$root_node_id,
+    thresholds = res$thresholds,
+    features = res$features,
+    nas = res$nas
+  )
+  
+  if(!is.null(res$tree_class)){
+    tree@tree_class <- res$tree_class
+  }
+  
+  tree
+}
+
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
