@@ -117,21 +117,46 @@ def test_clean_cv_predictions():
         for m in models:
             assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
 
-    def test_retraining_fails_when_param_disabled():
+    def test_SE_retraining_fails_when_param_disabled():
         print("\n=== disabling "+kcvp+" and retraining ===")
-        aml = setup_and_train(False)
-        new_training_data, _, _ = prepare_data(2)
-        aml.train(y='CAPSULE', training_frame=new_training_data)
-        models, _, _ = get_partitioned_model_names(aml.leaderboard)
-        keys = list_keys_in_memory()
-        preds = len(keys['cv_predictions'])
-        assert preds == 0, "{preds} CV predictions were not cleaned from memory".format(preds=preds)
+        total_runs = 4
+        aml = setup_and_train(False)  # first run
+        _, _, first_se = get_partitioned_model_names(aml.leaderboard)
+        train, _, _ = prepare_data()
+        for i in range(total_runs - 1):
+            aml.train(y='CAPSULE', training_frame=train)
+        _, _, se = get_partitioned_model_names(aml.leaderboard)
+        se_all_models = [m for m in se if re.search(r'_AllModels_', m)]
+        se_best_of_family = [m for m in se if re.search(r'_BestOfFamily_', m)]
+        assert len(se) == len(se_all_models) + len(se_best_of_family)
+        assert len(se_all_models) == 1, "expecting only the first StackedEnsemble_AllModels, but got {}".format(len(se_all_models))
+        assert se_all_models[0] in first_se, "first StackedEnsemble_AllModels got replaced by new one"
+        assert len(se_best_of_family) == 1, "expecting only the first StackedEnsemble_BestOfFamily, but got {}".format(len(se_all_models))
+        assert se_best_of_family[0] in first_se, "first StackedEnsemble_AllModels got replaced by new one"
+
+
+    def test_SE_retraining_works_when_param_enabled():
+        print("\n=== enabling "+kcvp+" and retraining ===")
+        total_runs = 4
+        aml = setup_and_train(True)  # first run
+        _, _, first_se = get_partitioned_model_names(aml.leaderboard)
+        train, _, _ = prepare_data()
+        for i in range(total_runs - 1):
+            aml.train(y='CAPSULE', training_frame=train)
+        _, _, se = get_partitioned_model_names(aml.leaderboard)
+        se_all_models = [m for m in se if re.search(r'_AllModels_', m)]
+        se_best_of_family = [m for m in se if re.search(r'_BestOfFamily_', m)]
+        assert len(se) == len(se_all_models) + len(se_best_of_family)
+        assert len(se_all_models) == total_runs, "some StackedEnsemble_AllModels are missing"
+        # assert len(se_best_of_family) == total_runs, "some StackedEnsemble_BestOfFamily are missing"
+        assert len(se_best_of_family) == 1, "BUG! should be fixed by PUBDEV-5824"
 
 
     test_default_behaviour()
     test_param_enabled()
     test_param_disabled()
-    test_retraining_fails_when_param_disabled()
+    test_SE_retraining_fails_when_param_disabled()
+    test_SE_retraining_works_when_param_enabled()
 
 
 def test_clean_cv_models():
