@@ -30,16 +30,16 @@ def check_model_property(model_names, prop_name, present=True, actual_value=None
 
 def list_keys_in_memory():
     mem_keys = h2o.ls().key
-    automl_keys = [k for k in mem_keys if re.search('_AutoML_', k)]
-    pred_keys = [k for k in mem_keys if re.search('(^|_)prediction_', k)]
-    metrics_keys = [k for k in mem_keys if re.search('^modelmetrics_', k)]
+    automl_keys = [k for k in mem_keys if re.search(r'_AutoML_', k)]
+    pred_keys = [k for k in mem_keys if re.search(r'(^|_)prediction_', k)]
+    metrics_keys = [k for k in mem_keys if re.search(r'^modelmetrics_', k)]
     model_keys = [k for k in automl_keys if k not in pred_keys and k not in metrics_keys]
-    cv_keys = [k for k in mem_keys if re.search('(^|_)cv_', k)]
+    cv_keys = [k for k in mem_keys if re.search(r'(^|_)cv_', k)]
     cv_pred_keys = [k for k in cv_keys if k in pred_keys]
     cv_metrics_keys = [k for k in cv_keys if k in metrics_keys]
     cv_mod_keys = [k for k in cv_keys if k in model_keys]
     return dict(
-        total=mem_keys,
+        all=mem_keys,
         models=model_keys,
         predictions=pred_keys,
         metrics=metrics_keys,
@@ -154,6 +154,7 @@ def test_clean_cv_models():
         # print(aml.leaderboard)
         return aml
 
+
     def test_default_behaviour():
         print("\n=== "+kcvm+" default behaviour ===")
         aml = setup_and_train()
@@ -199,6 +200,7 @@ def test_clean_cv_models():
         assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
         for m in models:
             assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
+
 
     test_default_behaviour()
     test_param_enabled()
