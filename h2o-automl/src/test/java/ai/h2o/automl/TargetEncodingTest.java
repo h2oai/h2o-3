@@ -675,23 +675,6 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
-    public void getColumnIndexByNameTest() {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA", "ColB", "ColC", "fold_column")
-                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT,  Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b"))
-                .withDataForCol(1, ard(1, 1))
-                .withDataForCol(2, ar("2", "6"))
-                .withDataForCol(3, ar(1, 2))
-                .build();
-
-        TargetEncoder tec = new TargetEncoder();
-        assertEquals(2, tec.getColumnIndexByName(fr, "ColC"));
-        assertEquals(3, tec.getColumnIndexByName(fr, "fold_column"));
-    }
-
-    @Test
     public void getColumnNamesByIndexesTest() {
         fr = new TestFrameBuilder()
                 .withName("testFrame")

@@ -12,6 +12,8 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.util.TwoDimTable;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -28,7 +30,7 @@ public class AstFactorTest extends TestUtil {
   }
 
   @Test
-  public void asFactorTest() {
+  public void asFactorForDataSetTest() {
 
     fr = new TestFrameBuilder()
             .withName("testFrame")
@@ -47,6 +49,29 @@ public class AstFactorTest extends TestUtil {
     assertTrue(fr.vec(0).isCategorical());
   }
 
+  @Test
+  public void asFactorForVecTest() {
+
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_STR, Vec.T_NUM)
+            .withDataForCol(0, ar("yes", "no"))
+            .withDataForCol(1, ard(1, 2))
+            .build();
+
+    assertTrue(fr.vec(0).isString());
+    assertFalse(fr.vec(0).isCategorical());
+    assertTrue(fr.vec(1).isNumeric());
+
+    String tree = "(:= testFrame (as.factor (cols testFrame [0])) [0] [])";
+    Val val = Rapids.exec(tree);
+    if (val instanceof ValFrame)
+      fr = val.getFrame();
+
+    assertTrue(fr.vec(0).isCategorical());
+    assertTrue(fr.vec(1).isNumeric());
+  }
 
   @After
   public void afterEach() {

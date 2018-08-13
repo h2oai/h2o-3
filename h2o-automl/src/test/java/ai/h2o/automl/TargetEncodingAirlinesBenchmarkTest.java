@@ -9,6 +9,7 @@ import hex.tree.gbm.GBMModel;
 import org.junit.*;
 import water.H2O;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.FrameUtils;

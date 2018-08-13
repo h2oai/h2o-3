@@ -11,6 +11,7 @@ import org.junit.*;
 import water.DKV;
 import water.H2O;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -25,7 +26,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static water.util.FrameUtils.generateNumKeys;
 
-public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
+public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
 
   @BeforeClass public static void setup() {
@@ -90,20 +91,9 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
     Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
 
-    trainFrame.remove("name");
-    trainFrame.remove("ticket");
-    trainFrame.remove("boat");
-    trainFrame.remove("body");
-
-    validFrame.remove("name");
-    validFrame.remove("ticket");
-    validFrame.remove("boat");
-    validFrame.remove("body");
-
-    testFrame.remove("name");
-    testFrame.remove("ticket");
-    testFrame.remove("boat");
-    testFrame.remove("body");
+    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
 
     String foldColumnName = "fold";
     FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
@@ -155,49 +145,8 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
     double auc = mm._auc._auc;
 
-    // WITHOUT
-
-    Frame trainFrame2 = parse_test_file(Key.make("titanic_train_parsed2"), "smalldata/gbm_test/titanic_train.csv");
-    Frame validFrame2 = parse_test_file(Key.make("titanic_valid_parsed2"), "smalldata/gbm_test/titanic_valid.csv");
-    Frame testFrame2 = parse_test_file(Key.make("titanic_test_parsed2"), "smalldata/gbm_test/titanic_test.csv");
-
-    trainFrame2.remove("name");
-    trainFrame2.remove("ticket");
-    trainFrame2.remove("boat");
-    trainFrame2.remove("body");
-
-    validFrame2.remove("name");
-    validFrame2.remove("ticket");
-    validFrame2.remove("boat");
-    validFrame2.remove("body");
-
-    testFrame2.remove("name");
-    testFrame2.remove("ticket");
-    testFrame2.remove("boat");
-    testFrame2.remove("body");
-
-    GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
-    parms2._train = trainFrame2._key;
-    parms2._response_column = targetColumnName;
-    parms2._score_tree_interval = 10;
-    parms2._ntrees = 1000;
-    parms2._max_depth = 5;
-    parms2._distribution = DistributionFamily.quasibinomial;
-    parms2._valid = validFrame2._key;
-    parms2._stopping_tolerance = 0.001;
-    parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-    parms2._stopping_rounds = 5;
-    parms2._seed = 1234L;
-
-    GBM job2 = new GBM(parms2);
-    GBMModel gbm2 = job2.trainModel().get();
-
-    Assert.assertTrue(job2.isStopped());
-
-    Frame preds2 = gbm2.score(testFrame2);
-
-    hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), testFrame2.vec(parms2._response_column));
-    double auc2 = mm2._auc._auc;
+    // Without target encoding
+    double auc2 = trainDefaultGBM(targetColumnName);
 
 
     System.out.println("AUC with encoding:" + auc);
@@ -215,23 +164,12 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
     Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
 
-    trainFrame.remove("name");
-    trainFrame.remove("ticket");
-    trainFrame.remove("boat");
-    trainFrame.remove("body");
-
-    validFrame.remove("name");
-    validFrame.remove("ticket");
-    validFrame.remove("boat");
-    validFrame.remove("body");
-
-    testFrame.remove("name");
-    testFrame.remove("ticket");
-    testFrame.remove("boat");
-    testFrame.remove("body");
+    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
 
 
-    String[] teColumns = {/*"cabin" ,"embarked",*/ "home.dest"};
+    String[] teColumns = {"cabin" ,"embarked", "home.dest"};
 
     String targetColumnName = "survived";
 
@@ -278,28 +216,93 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
     double auc = mm._auc._auc;
 
-    // WITHOUT
+    // Without target encoding
+    double auc2 = trainDefaultGBM(targetColumnName);
 
-    Frame trainFrame2 = parse_test_file(Key.make("titanic_train_parsed2"), "smalldata/gbm_test/titanic_train.csv");
+    System.out.println("AUC with encoding:" + auc);
+    System.out.println("AUC without encoding:" + auc2);
+
+    Assert.assertTrue(auc2 < auc);
+  }
+
+  @Test
+  public void noneHoldoutTypeTest() {
+
+    TargetEncoder tec = new TargetEncoder();
+
+    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_wteh.csv");
+    Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
+    Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+    Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+
+    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    teHoldoutFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+
+    teHoldoutFrame = FrameUtils.asFactor(teHoldoutFrame, "cabin");
+
+    String[] teColumns = {"cabin" ,"embarked", "home.dest"};
+
+    String targetColumnName = "survived";
+
+    Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrame, teColumns, targetColumnName, null);
+
+    Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+
+    // Preparing valid frame
+    Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+
+    printOutFrameAsTable(validEncoded, true, true);
+
+    // Preparing test frame
+    Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+
+    printOutFrameAsTable(testEncoded, true, true);
+
+    // With target encoded Origin column
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = trainEncoded._key;
+    parms._response_column = targetColumnName;
+    parms._score_tree_interval = 10;
+    parms._ntrees = 1000;
+    parms._max_depth = 5;
+    parms._distribution = DistributionFamily.quasibinomial;
+    parms._valid = validEncoded._key;
+    parms._stopping_tolerance = 0.001;
+    parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+    parms._stopping_rounds = 5;
+    parms._ignored_columns = teColumns;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+
+    Assert.assertTrue(job.isStopped());
+
+    System.out.println(gbm._output._variable_importances.toString(2, true));
+
+    Frame preds = gbm.score(testEncoded);
+
+    hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
+    double auc = mm._auc._auc;
+
+    // Without target encoding
+    double auc2 = trainDefaultGBM(targetColumnName);
+
+    System.out.println("AUC with encoding:" + auc);
+    System.out.println("AUC without encoding:" + auc2);
+
+    Assert.assertTrue(auc2 < auc);
+  }
+
+
+  private double trainDefaultGBM(String targetColumnName) {
+    Frame trainFrame2 = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
     Frame validFrame2 = parse_test_file(Key.make("titanic_valid_parsed2"), "smalldata/gbm_test/titanic_valid.csv");
     Frame testFrame2 = parse_test_file(Key.make("titanic_test_parsed2"), "smalldata/gbm_test/titanic_test.csv");
 
-    trainFrame2.remove("name");
-    trainFrame2.remove("ticket");
-    trainFrame2.remove("boat");
-    trainFrame2.remove("body");
-
-    validFrame2.remove("name");
-    validFrame2.remove("ticket");
-    validFrame2.remove("boat");
-    validFrame2.remove("body");
-
-    testFrame2.remove("name");
-    testFrame2.remove("ticket");
-    testFrame2.remove("boat");
-    testFrame2.remove("body");
-
-//    printOutFrameAsTable(trainFrame2,false, false);
+    trainFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
+    validFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
+    testFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
 
     GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
     parms2._train = trainFrame2._key;
@@ -324,11 +327,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     printOutFrameAsTable(preds2, false, false);
     hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), testFrame2.vec(parms2._response_column));
     double auc2 = mm2._auc._auc;
-
-    System.out.println("AUC with encoding:" + auc);
-    System.out.println("AUC without encoding:" + auc2);
-
-    Assert.assertTrue(auc2 < auc);
+    return auc2;
   }
 
   @After

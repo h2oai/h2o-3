@@ -8,7 +8,10 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
+import water.rapids.vals.ValFrame;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -962,6 +965,27 @@ public class FrameUtils {
     Vec foldVec = frame.anyVec().makeZero();
     frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
     return frame;
+  }
+
+  static public int getColumnIndexByName(Frame fr, String name) {
+    String[] names = fr.names();
+    return Arrays.asList(names).indexOf(name);
+  }
+
+  /**
+   *
+   * @param frame
+   * @param columnName
+   * @return Frame with factorized column
+   */
+  static public Frame asFactor(Frame frame, String columnName) {
+    int columnIndex = getColumnIndexByName(frame, columnName);
+    String astTree = String.format("(:= %s (as.factor (cols %s [%d])) [%d] [])", frame._key, frame._key, columnIndex, columnIndex);
+    Val val = Rapids.exec(astTree);
+    Frame res = val.getFrame();
+    res._key = frame._key;
+    DKV.put(res._key , res);
+    return res;
   }
 
   /**

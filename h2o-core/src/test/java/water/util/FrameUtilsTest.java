@@ -17,8 +17,8 @@ import water.fvec.Vec;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -159,6 +159,51 @@ public class FrameUtilsTest extends TestUtil {
       countAppear = new FrameTestUtil.CountIntValueRows(2000, 0, 0,
               f).doAll(f).getNumberAppear();
       assertEquals("Value of interest should not been found....", countAppear, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void getColumnIndexByName() {
+    Scope.enter();
+    try {
+
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ard(1, 1))
+              .build();
+      Scope.track(fr);
+
+      assertEquals(0, FrameUtils.getColumnIndexByName(fr, "ColA"));
+      assertEquals(1, FrameUtils.getColumnIndexByName(fr, "ColB"));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void asFactor() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, ar("yes", "no"))
+              .build();
+      Scope.track(fr);
+
+      assertTrue(fr.vec(0).isString());
+
+      fr = FrameUtils.asFactor(fr, "ColA");
+
+      assertTrue(fr.vec(0).isCategorical());
+
     } finally {
       Scope.exit();
     }
