@@ -228,7 +228,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     Frame fullFrm = new Frame(adaptedFr);
     Frame loadingFrm = null;  // get this from DKV or generate it from scratch
     // call resconstruct only if test frame key and training frame key matches plus frame dimensions match as well
-    if ((_parms.train() == null) || orig.checksum()!=(_parms.train().checksum())) { // compare with checksum instead of frame keys.
+    if ((_parms.train() == null) || orig.checksum()!=(_parms.train().checksum()) ||
+            !(orig._key.equals(_parms.train()._key))) { // compare with checksum instead of frame keys.
       // need to generate the X matrix and put it in as a frame ID.  Mojo predict will return one row of x as a double[]
       GLRMGenX gs = new GLRMGenX(this, _parms._k);
       gs.doAll(gs._k, Vec.T_NUM, adaptedFr);
@@ -262,7 +263,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   public Key<Frame> gen_representation_key(Frame fr) {
-    if ((_parms.train() != null) && (fr.checksum() == _parms.train().checksum())) // use training X factor here.
+    if ((_parms.train() != null) && (fr.checksum() == _parms.train().checksum()) && fr._key.equals(_parms.train()._key)) // use training X factor here.
       return _output._representation_key;
     else
       return Key.make("GLRMLoading_"+fr._key);

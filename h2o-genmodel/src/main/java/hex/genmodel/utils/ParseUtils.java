@@ -37,11 +37,29 @@ public class ParseUtils {
     public static Object tryParse(String input, Object defVal) {
         if (input.equals("null")) return defVal;
 
-        if (defVal instanceof Boolean) {
-            return Boolean.valueOf(input);
-        } else {
-            if (input.equals("true")) return true;
-            if (input.equals("false")) return false;
+        if (input.equals("true")) return true;
+        if (input.equals("false")) return false;
+
+        if (defVal != null && !(defVal.getClass().isArray())) {
+            if (defVal instanceof Boolean)     // parse according to data type of defVal
+                return Boolean.valueOf(input);
+            else if (defVal instanceof Long)
+                return Long.valueOf(input);
+            else if (defVal instanceof Integer)
+                return Integer.valueOf(input);
+            else if (defVal instanceof Float)
+                return Float.valueOf(input);
+            else if (defVal instanceof Double)
+                return Double.valueOf(input);
+        }
+
+        if (defVal != null && (defVal.getClass().isArray())) {
+            if (defVal instanceof Long[])
+                return parseArrayOfLongs(input);
+            else if (defVal instanceof Integer[])
+                return parseArrayOfInts(input);
+            else if (defVal instanceof Double[])
+                return parseArrayOfDoubles(input);
         }
 
         if ("[]".equals(input) && (defVal != null) && defVal.getClass().isArray())

@@ -3266,6 +3266,95 @@ def compare_string_frames_local(f1, f2, prob=0.5):
                                                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
 
+def check_data_rows(f1, f2, index_list=[], num_rows=10):
+    '''
+        This method will compare the relationships of the data rows within each frames.  In particular, we are
+        interested in the relative direction of each row vectors and the relative distances. No assertions will
+        be thrown.
+
+    :param f1:
+    :param f2:
+    :param index_list:
+    :param num_rows:
+    :return:
+    '''
+    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
+    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    if len(index_list)==0:
+        index_list = random.sample(range(f1.nrow), num_rows)
+
+    maxInnerProduct = 0
+    maxDistance = 0
+
+    for row_index in range(1, len(index_list)):
+        r1 = np.inner(temp1[index_list[row_index-1]], temp1[index_list[row_index]])
+        r2 = np.inner(temp2[index_list[row_index-1]], temp2[index_list[row_index]])
+        d1 = np.linalg.norm(temp1[index_list[row_index-1]]-temp1[index_list[row_index]])
+        d2 = np.linalg.norm(temp2[index_list[row_index-1]]-temp2[index_list[row_index]])
+
+        diff1 = min(abs(r1-r2), abs(r1-r2)/max(abs(r1), abs(r2)))
+        maxInnerProduct = max(maxInnerProduct, diff1)
+        diff2 = min(abs(d1-d2), abs(d1-d2)/max(abs(d1), abs(d2)))
+        maxDistance = max(maxDistance, diff2)
+
+    print("Maximum inner product different is {0}.  Maximum distance difference is "
+      "{1}".format(maxInnerProduct, maxDistance))
+
+
+def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
+    '''
+        This method will compare the relationships of the data rows within each frames.  In particular, we are
+        interested in the relative direction of each row vectors and the relative distances. An assertion will be
+        thrown if they are different beyond a tolerance.
+
+    :param f1:
+    :param f2:
+    :param index_list:
+    :param num_rows:
+    :return:
+    '''
+    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
+    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    if len(index_list)==0:
+        index_list = random.sample(range(f1.nrow), num_rows)
+
+    maxInnerProduct = 0
+    maxDistance = 0
+    for row_index in range(1, len(index_list)):
+        r1 = np.inner(temp1[index_list[row_index-1]], temp1[index_list[row_index]])
+        r2 = np.inner(temp2[index_list[row_index-1]], temp2[index_list[row_index]])
+        d1 = np.linalg.norm(temp1[index_list[row_index-1]]-temp1[index_list[row_index]])
+        d2 = np.linalg.norm(temp2[index_list[row_index-1]]-temp2[index_list[row_index]])
+
+        diff1 = min(abs(r1-r2), abs(r1-r2)/max(abs(r1), abs(r2)))
+        maxInnerProduct = max(maxInnerProduct, diff1)
+        diff2 = min(abs(d1-d2), abs(d1-d2)/max(abs(d1), abs(d2)))
+        maxDistance = max(maxDistance, diff2)
+
+        assert diff1 < tol, \
+            "relationship between data row {0} and data row {1} are different among the two dataframes.  Inner " \
+            "product from frame 1 is {2}.  Inner product from frame 2 is {3}.  The difference between the two is" \
+            " {4}".format(index_list[row_index-1], index_list[row_index], r1, r2, diff1)
+
+
+        assert diff2 < tol, \
+                "distance betwee data row {0} and data row {1} are different among the two dataframes.  Distance " \
+                "between 2 rows from frame 1 is {2}.  Distance between 2 rows from frame 2 is {3}.  The difference" \
+                " between the two is {4}".format(index_list[row_index-1], index_list[row_index], d1, d2, diff2)
+    print("Maximum inner product different is {0}.  Maximum distance difference is "
+          "{1}".format(maxInnerProduct, maxDistance))
+
+def compute_frame_diff(f1, f2):
+    '''
+    This method will take the absolute difference two frames and sum across all elements
+    :param f1:
+    :param f2:
+    :return:
+    '''
+
+    frameDiff = h2o.H2OFrame.sum(h2o.H2OFrame.sum(h2o.H2OFrame.abs(f1-f2)), axis=1)[0,0]
+    return frameDiff
+
 def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
