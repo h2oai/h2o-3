@@ -1059,55 +1059,50 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else if (allModels.length == 1) {
       this.job.update(50, "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    }
-    else if (ArrayUtils.contains(skipAlgosList, Algo.StackedEnsemble)) { //TODO: can be removed, check is done later before starting model
+    } else if (ArrayUtils.contains(skipAlgosList, Algo.StackedEnsemble)) { //TODO: can be removed, check is done later before starting model
       this.job.update(50, "StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
+    } else if (buildSpec.build_control.nfolds == 0) {
+      this.job.update(50, "Cross-validation disabled by the user; StackedEnsemble build skipped");
+      userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
     } else {
-      Model m = allModels[0];
-      // If nfolds == 0, then skip the Stacked Ensemble
-      if (buildSpec.build_control.nfolds == 0) {
-        this.job.update(50, "Cross-validation disabled by the user; StackedEnsemble build skipped");
-        userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
-      } else {
-        ///////////////////////////////////////////////////////////
-        // stack all models
-        ///////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////
+      // stack all models
+      ///////////////////////////////////////////////////////////
 
-        // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
-        int nonEnsembleCount = 0;
-        for (Model aModel : allModels)
-          if (!(aModel instanceof StackedEnsembleModel))
-            nonEnsembleCount++;
+      // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
+      int nonEnsembleCount = 0;
+      for (Model aModel : allModels)
+        if (!(aModel instanceof StackedEnsembleModel))
+          nonEnsembleCount++;
 
-        Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
-        int notEnsembleIndex = 0;
-        for (Model aModel : allModels)
-          if (!(aModel instanceof StackedEnsembleModel))
-            notEnsembles[notEnsembleIndex++] = aModel._key;
+      Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
+      int notEnsembleIndex = 0;
+      for (Model aModel : allModels)
+        if (!(aModel instanceof StackedEnsembleModel))
+          notEnsembles[notEnsembleIndex++] = aModel._key;
 
-        Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
+      Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
 
-        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
-        // This will give another ensemble that is smaller than the original which takes all models into consideration.
-        List<Model> bestModelsOfEachType = new ArrayList();
-        Set<String> typesOfGatheredModels = new HashSet();
+      // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+      // This will give another ensemble that is smaller than the original which takes all models into consideration.
+      List<Model> bestModelsOfEachType = new ArrayList();
+      Set<String> typesOfGatheredModels = new HashSet();
 
-        for (Model aModel : allModels) {
-          String type = getModelType(aModel);
-          if (typesOfGatheredModels.contains(type)) continue;
-          typesOfGatheredModels.add(type);
-          bestModelsOfEachType.add(aModel);
-        }
+      for (Model aModel : allModels) {
+        String type = getModelType(aModel);
+        if (typesOfGatheredModels.contains(type)) continue;
+        typesOfGatheredModels.add(type);
+        bestModelsOfEachType.add(aModel);
+      }
 
-        Key<Model>[] bestModelKeys = new Key[bestModelsOfEachType.size()];
-        for (int i = 0; i < bestModelsOfEachType.size(); i++)
+      Key<Model>[] bestModelKeys = new Key[bestModelsOfEachType.size()];
+      for (int i = 0; i < bestModelsOfEachType.size(); i++)
           bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
-        Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
-      }
+      Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
