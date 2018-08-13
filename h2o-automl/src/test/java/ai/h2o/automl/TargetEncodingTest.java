@@ -757,49 +757,59 @@ public class TargetEncodingTest extends TestUtil{
 
     @Test
     public void ensureTargetColumnIsNumericOrBinaryCategoricalOrderTest() {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA")
-                .withVecTypes(Vec.T_CAT)
-                .withDataForCol(0, ar("NO", "YES", "NO"))
-                .build();
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT ,Vec.T_NUM)
+              .withDataForCol(0, ar("NO", "YES", "NO"))
+              .withDataForCol(1, ar(1, 2, 3))
+              .build();
 
-        Frame fr2 = new TestFrameBuilder()
-                .withName("testFrame2")
-                .withColNames("ColA")
-                .withVecTypes(Vec.T_CAT)
-                .withDataForCol(0, ar("YES", "NO", "NO"))
-                .build();
+      Frame fr2 = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("ColA2", "ColB2")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("YES", "NO", "NO"))
+              .withDataForCol(1, ar(1, 2, 3))
+              .build();
 
-        TargetEncoder tec = new TargetEncoder();
+      TargetEncoder tec = new TargetEncoder();
 
-        Frame encoded = tec.appendBinaryTargetColumn(fr, 0);
-        Frame encoded2 = tec.appendBinaryTargetColumn(fr2, 0);
+      Frame encoded = tec.transformBinaryTargetColumn(fr, 0);
+      Frame encoded2 = tec.transformBinaryTargetColumn(fr2, 0);
 
+      try {
+        assertArrayEquals(fr.vec(0).domain(), fr2.vec(0).domain());
+        fail();
+      } catch (AssertionError ex) {
+        assertEquals("arrays first differed at element [0]; expected:<[NO]> but was:<[YES]>", ex.getMessage());
+      }
 
-        //So, domains could be different. They seem to be sorted in a natural order.
-        try {
-            assertArrayEquals(fr.vec(0).domain(), fr2.vec(0).domain());
-            fail();
-        } catch (AssertionError ex) {
-        }
+      // Checking that Label Encoding will not assign 0 label to the first category it encounters. We are sorting domain to make order consistent.
+      assertEquals(0, encoded.vec(0).at(0), 1e-5);
+      assertEquals(1, encoded2.vec(0).at(0), 1e-5);
+    }
 
-        Vec frVec = fr.vec(0);
-        frVec.setDomain(fr.vec(0).domain());
-        Vec fr2Vec = fr2.vec(0);
-        fr2Vec.setDomain(fr2.vec(0).domain());
+    @Ignore
+    @Test
+    public void ensureTargetColumnIsNumericOrBinaryCategoricalUnderrepresentedClassTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT ,Vec.T_NUM)
+              .withDataForCol(0, ar("NO")) //case 2: ("yes") let say all the examples are "yes" // case 3: YES
+              .withDataForCol(1, ar(111))
+              .build();
 
-        //So, setDomain does not do ordering.
-        try {
-            assertArrayEquals(frVec.domain(), fr2Vec.domain());
-            fail();
-        } catch (AssertionError ex) {
-        }
+      Frame fr2 = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("ColA2", "ColB2")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("YES")) //case 2: ("no", "yes")  in validation set we will be comparing YESs with NOs // case 3: NO - we will think that all examples are of 0 class.
+              .withDataForCol(1, ar(222))
+              .build();
 
-
-        // Checking that Label Encoding will assign 0 label to the first category it encounters.
-        assertEquals(0, encoded.vec(0).at(0), 1e-5);
-        assertEquals(0, encoded2.vec(0).at(0), 1e-5);
+      // TODO consider all possible combinations. Some of them does not make sense but still we should check them.
     }
 
     @Test
