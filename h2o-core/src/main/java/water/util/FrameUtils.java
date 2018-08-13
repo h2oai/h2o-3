@@ -967,15 +967,26 @@ public class FrameUtils {
     return frame;
   }
 
+  /**
+   *
+   * @param fr
+   * @param name name of the column we wan't to know index of
+   * @return
+   */
   static public int getColumnIndexByName(Frame fr, String name) {
     String[] names = fr.names();
-    return Arrays.asList(names).indexOf(name);
+
+    int foundIndex = Arrays.asList(names).indexOf(name);
+    if (foundIndex == -1) {
+      throw new IllegalArgumentException(String.format("Column with name `%s` was not found in the Frame with key: %s", name,  fr._key));
+    }
+    return foundIndex;
   }
 
   /**
    *
    * @param frame
-   * @param columnName
+   * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
   static public Frame asFactor(Frame frame, String columnName) {
