@@ -314,3 +314,11 @@ coverage-junit-algos:
 	$(call sed_test_scripts)
 	./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 	./gradlew jacocoMergeExecs $$ADDITIONAL_GRADLE_OPTS
+
+test-mojo-compatibility:
+ifeq ($(wildcard ../mojoland),)
+	git clone https://github.com/h2oai/mojoland ../mojoland
+endif
+	cd ../mojoland && ./gradlew clean
+	cd ../mojoland && ./gradlew build
+	cd ../mojoland/mojo-py && python in_mojo_veritas.py

@@ -167,6 +167,11 @@ def call(final pipelineContext) {
       stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
       timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
       archiveAdditionalFiles: ['h2o-r/h2o-package/**/*.html', 'r-generated-docs.zip']
+    ],
+    [
+      stageName: 'MOJO Compatibility', target: 'test-mojo-compatibility',
+      archiveFiles: false, timeoutValue: 20, , pythonVersion: '3.5', hasJUnit: false,
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ]
   ]
 
