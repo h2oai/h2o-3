@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static water.util.FrameUtils.getColumnIndexByName;
+
 // TODO probably should call this logic from FrameUtils
 public class TargetEncoder {
 
@@ -144,11 +146,6 @@ public class TargetEncoder {
 
     public Frame renameColumn(Frame fr, String oldName, String newName) {
         return renameColumn(fr, getColumnIndexByName(fr, oldName), newName);
-    }
-
-    public int getColumnIndexByName(Frame fr, String name) {
-        String[] names = fr.names();
-        return Arrays.asList(names).indexOf(name);
     }
 
     public Frame filterOutNAsFromTargetColumn(Frame data, int targetIndex)  {
