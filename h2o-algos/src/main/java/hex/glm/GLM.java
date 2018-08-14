@@ -766,7 +766,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _state._lsNeeded = true;
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
-              System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
+              Log.warn(LogMsg("DONE after " + (iterCnt-1) + " iterations (1)"));
               return;
             }
             betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda()):ADMM_solve(gram.gram,gram.xy);
