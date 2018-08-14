@@ -88,7 +88,14 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         while (true) {
             int nodeType = ab.get1U();
             int colId = ab.get2();
-            if (colId == 65535) return ab.get4f();
+            if (colId == 65535) {
+              if (computeLeafAssignment) {
+                bitsRight |= 1 << level;  // mark the end of the tree
+                return Double.longBitsToDouble(bitsRight);
+              } else {
+                return ab.get4f();
+              }
+            }
             int naSplitDir = ab.get1U();
             boolean naVsRest = naSplitDir == NsdNaVsRest;
             boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
