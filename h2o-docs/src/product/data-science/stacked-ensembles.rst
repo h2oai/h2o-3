@@ -103,7 +103,7 @@ You can follow the progress of H2O's Stacked Ensemble development `here <https:/
 
 
 Example
-'''''''
+~~~~~~~
 
 .. example-code::
    .. code-block:: r
@@ -347,6 +347,73 @@ Example
 
     # Generate predictions on a test set (if neccessary)
     pred = ensemble.predict(test)
+
+   .. code-block:: Scala
+
+    import org.apache.spark.h2o._
+    import water.Key
+    import java.io.File
+
+    val h2oContext = H2OContext.getOrCreate(sc)
+    import h2oContext._
+    import h2oContext.implicits._
+
+    // Import data from the local file system as an H2O DataFrame
+    val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
+
+    // Build a Deep Learning model
+    import _root_.hex.deeplearning.DeepLearning
+    import _root_.hex.deeplearning.DeepLearningModel.DeepLearningParameters
+    val dlParams = new DeepLearningParameters()
+    dlParams._epochs = 100
+    dlParams._train = prostateData
+    dlParams._response_column = 'CAPSULE
+    dlParams._variable_importances = true
+    dlParams._nfolds = 5
+    dlParams._seed = 1111
+    dlParams._keep_cross_validation_predictions = true;
+    val dl = new DeepLearning(dlParams, Key.make("dlProstateModel.hex"))
+    val dlModel = dl.trainModel.get
+
+    // Build a GBM model
+    import _root_.hex.tree.gbm.GBM
+    import _root_.hex.tree.gbm.GBMModel.GBMParameters
+    val gbmParams = new GBMParameters()
+    gbmParams._train = prostateData
+    gbmParams._response_column = 'CAPSULE
+    gbmParams._nfolds = 5
+    gbmParams._seed = 1111
+    gbmParams._keep_cross_validation_predictions = true;
+    val gbm = new GBM(gbmParams,Key.make("gbmRegModel.hex"))
+    val gbmModel = gbm.trainModel().get()
+
+    // Import required classes for Stacked Ensembles
+    import _root_.hex.Model
+    import _root_.hex.StackedEnsembleModel
+    import _root_.hex.ensemble.StackedEnsemble
+
+    // Define Stacked Ensemble parameters
+    val stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters()
+    stackedEnsembleParameters._train = prostateData._key
+    stackedEnsembleParameters._response_column = 'CAPSULE
+
+    // Pass in the keys for the GBM and Deep Learning using one of the following options
+    // Option 1
+    stackedEnsembleParameters._base_models = Array(gbmRegModel._key.asInstanceOf[T_MODEL_KEY], dlModel._key.asInstanceOf[T_MODEL_KEY])
+    // Option 2
+    stackedEnsembleParameters._base_models = Array(gbmRegModel, dlModel).map(model => model._key.asInstanceOf[T_MODEL_KEY])
+
+    // Define the Stacked Ensemble job
+    val stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters)
+
+    // Build the Stacked Ensemble model
+    val stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+
+    // Review the Stacked Ensemble model
+    stackedEnsembleModel
+
+    // Review the parameters (meta learner) from the Stacked Ensemble model
+    stackedEnsembleModel._output._metalearner
 
 FAQ
 ~~~
