@@ -190,8 +190,6 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         print(rv$httpStatusCode)
         print(rv$curlErrorMessage)
 
-        #try a hail mary curl
-        print(system("curl 'http://localhost:54321'"))
         stop("H2O failed to start, stopping execution.")
       }
     } else
@@ -547,6 +545,13 @@ h2o.clusterStatus <- function() {
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
+  }
+
+  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
+  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
+    stop("Your java is not supported: ", jver[1], "\n",
+    "Please download the latest Java SE JDK 8 from the following URL:\n",
+    "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
   }
 
   if (.Platform$OS.type == "windows") {
