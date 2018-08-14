@@ -452,8 +452,11 @@ public class EasyPredictModelWrapper implements Serializable {
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
-    if (enableLeafAssignment)  // only get leaf node assignment if enabled
-      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
@@ -469,13 +472,17 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
   public String[] leafNodeAssignment(RowData data) throws PredictException {
-    String[] leafNodeAssignments = null;
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    leafNodeAssignments = ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+    return ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+  }
 
-    return leafNodeAssignments;
+  public SharedTreeMojoModel.LeafNodeAssignments leafNodeAssignmentExtended(RowData data) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    return ((SharedTreeMojoModel) m).getLeafNodeAssignments(rawData);
   }
 
   /**
@@ -501,8 +508,11 @@ public class EasyPredictModelWrapper implements Serializable {
     double[] preds = preamble(ModelCategory.Multinomial, data, offset);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
-    if (enableLeafAssignment)
-      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
     p.classProbabilities = new double[m.getNumResponseClasses()];
     p.labelIndex = (int) preds[0];
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
@@ -622,8 +632,11 @@ public class EasyPredictModelWrapper implements Serializable {
     double[] preds = preamble(ModelCategory.Regression, data, offset);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
-    if (enableLeafAssignment)
-      p.leafNodeAssignments = leafNodeAssignment(data);  // assign leaf node assignment if desired
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
     p.value = preds[0];
 
     return p;

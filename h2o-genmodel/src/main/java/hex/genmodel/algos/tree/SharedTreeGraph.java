@@ -43,6 +43,10 @@ public class SharedTreeGraph {
     }
   }
 
+  public SharedTreeNode walkNodes(int subgraphId, String path) {
+    return subgraphArray.get(subgraphId).walkNodes(path);
+  }
+
   /**
    * Print graph output in a format readable by dot (graphviz).
    * @param os Stream to write the output to

@@ -85,6 +85,26 @@ public class SharedTreeSubgraph {
     parent.setRightChild(child);
   }
 
+  SharedTreeNode walkNodes(final String path) {
+    SharedTreeNode n = rootNode;
+    for (int i = 0; i < path.length(); i++) {
+      if (n == null)
+        return null;
+      switch (path.charAt(i)) {
+        case 'L':
+          n = n.getLeftChild();
+          break;
+        case 'R':
+          n = n.getRightChild();
+          break;
+        default:
+          throw new IllegalArgumentException("Invalid path specification '" + path +
+                  "'. Paths must only be made of 'L' and 'R' characters.");
+      }
+    }
+    return n;
+  }
+
   void print() {
     System.out.println("");
     System.out.println("    ----- " + name + " -----");
