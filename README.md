@@ -145,7 +145,7 @@ Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/te
 
 ### 4.1. Before building
 
-Installation of `h2o` requires properly set up Python environment and following packages:
+Building `h2o` requires a properly set up Python environment and the following packages:
 ```
 grip
 colorama
