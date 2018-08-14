@@ -25,7 +25,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
-//TODO: lots of copy/paste in this class, needs some abstraction
 class Metalearner {
 
     private Frame _levelOneTrainingFrame;
@@ -72,7 +71,7 @@ class Metalearner {
         metaGLMBuilder._parms._train = _levelOneTrainingFrame._key;
         metaGLMBuilder._parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
         metaGLMBuilder._parms._response_column = _model.responseColumn;
-        if (_model._parms._metalearner_fold_column == null) { //todo: KISS, those metalearner_* params should probably be passed directly as metalearner parameters
+        if (_model._parms._metalearner_fold_column == null) {
             metaGLMBuilder._parms._nfolds = _model._parms._metalearner_nfolds;  //cross-validation of the metalearner
             if (_model._parms._metalearner_nfolds > 1) {
                 if (_model._parms._metalearner_fold_assignment == null) {

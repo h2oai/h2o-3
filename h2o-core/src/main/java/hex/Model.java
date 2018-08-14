@@ -2224,41 +2224,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
+    int c = 0;
+    for (Key k : keys) {
+      T t = DKV.getGet(k);
+      if (t != null) {
+        t.delete(); //delete all subparts
+        c++;
+      }
+    }
+    return c;
+  }
+
   public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
       Log.info("Cleaning up CV Models for " + this._key.toString());
-      int c = 0;
-      for (Key k : _output._cross_validation_models) {
-        Model m = DKV.getGet(k);
-        if (m!=null) {
-          m.delete(); //delete all subparts
-          c++;
-        }
-      }
-      Log.info(c+" models were removed");
-      _output._cross_validation_models = null;
+      int count = deleteAll(_output._cross_validation_models);
+      Log.info(count+" CV models were removed");
     }
   }
 
   public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
       Log.info("Cleaning up CV Predictions for " + this._key.toString());
-      int c = 0;
-      for (Key k : _output._cross_validation_predictions) {
-        Frame f = DKV.getGet(k);
-        if (f!=null) {
-          f.delete();
-          c++;
-        }
-      }
-      Log.info(c+" predictions were removed");
+      int count = deleteAll(_output._cross_validation_predictions);
+      Log.info(count+" CV predictions were removed");
     }
     _output._cross_validation_predictions = null;
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
     }
-    _output._cross_validation_holdout_predictions_frame_id = null;
   }
 
   @Override public String toString() {

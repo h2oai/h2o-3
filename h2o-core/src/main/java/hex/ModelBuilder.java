@@ -616,13 +616,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.untrack(xvalidation_fold_assignment_frame.keysList());
     }
     // Keep or toss predictions
-    for (Key<Frame> k : predKeys) {
-      Frame fr = DKV.getGet(k);
-      if( fr != null ) {
-        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keysList());
-        else fr.remove();
+    if (_parms._keep_cross_validation_predictions) {
+      for (Key<Frame> k : predKeys) {
+        Frame fr = DKV.getGet(k);
+        if (fr != null) Scope.untrack(fr.keysList());
       }
+    } else {
+      int count = Model.deleteAll(predKeys);
+      Log.info(count+" CV predictions were removed");
     }
+
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -633,10 +636,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
     if (!_parms._keep_cross_validation_models) {
-      for (Key<M> k : cvModKeys) {
-        Model m = DKV.getGet(k);
-        if (m != null) m.remove();
-      }
+      int count = Model.deleteAll(cvModKeys);
+      Log.info(count+" CV models were removed");
     }
 
     // Now, the main model is complete (has cv metrics)
