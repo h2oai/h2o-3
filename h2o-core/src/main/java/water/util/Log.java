@@ -1,8 +1,6 @@
 package water.util;
 
-import org.apache.log4j.H2OPropertyConfigurator;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.*;
 import water.H2O;
 import water.persist.PersistManager;
 
@@ -96,6 +94,11 @@ abstract public class Log {
     org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
     String s = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
     l.info(s);
+  }
+
+  public static void telemetry( String record){
+    org.apache.log4j.Logger l = LogManager.getLogger("Telemetry");
+    l.info(record);
   }
 
   public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, new String[]{s}); }
@@ -228,6 +231,7 @@ abstract public class Log {
       case "error": return "-5-error.log";
       case "fatal": return "-6-fatal.log";
       case "httpd": return "-httpd.log";
+      case "telemetry": return "-telemetry.log";
       default:
         throw new RuntimeException("Unknown level " + level);
     }
@@ -301,6 +305,13 @@ abstract public class Log {
     p.setProperty("log4j.appender.R6.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R6.layout.ConversionPattern", "%m%n");
+
+    // Telemetry: to collect logs from Log.Telemetry(String msg) one needs to register an appender for the >AsyncTelemetryAppender<
+    // just like in water.telemetry.HearthBeatFileLoggingExtension.registerRollingFileAppenderToAsyncAppender()
+    p.setProperty("log4j.logger.Telemetry",                             "TRACE, AsyncTelemetryAppender");
+    p.setProperty("log4j.additivity.Telemetry",                         "false");
+    p.setProperty("log4j.appender.AsyncTelemetryAppender",              "org.apache.log4j.AsyncAppender");
+    p.setProperty("log4j.appender.AsyncTelemetryAppender.Threshold",    "TRACE");
 
     // HTTPD logging
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
@@ -384,7 +395,7 @@ abstract public class Log {
         PropertyConfigurator.configure(p);
       }
     }
-    
+
     return (_logger = LogManager.getLogger("water.default"));
   }
 
