@@ -2241,19 +2241,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Log.info("Cleaning up CV Models for " + this._key.toString());
       int count = deleteAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
+      try {
+        write_lock();
+        _output._cross_validation_models = null;
+        update();
+      } finally {
+        unlock();
+      }
     }
   }
 
   public void deleteCrossValidationPreds() {
+    boolean needsUpdate = false;
     if (_output._cross_validation_predictions != null) {
       Log.info("Cleaning up CV Predictions for " + this._key.toString());
       int count = deleteAll(_output._cross_validation_predictions);
       Log.info(count+" CV predictions were removed");
+      needsUpdate = true;
     }
-    _output._cross_validation_predictions = null;
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      try {
+        write_lock();
+        _output._cross_validation_predictions = null;
+        _output._cross_validation_holdout_predictions_frame_id = null;
+        update();
+      } finally {
+        unlock();
+      }
     }
   }
 
