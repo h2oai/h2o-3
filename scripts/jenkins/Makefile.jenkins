@@ -32,14 +32,11 @@ test-package-py:
 	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList tests/pyunitSingleNodeList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -q -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/h2o-package/**/*.Rd h2o-r/h2o-package/DESCRIPTION \
-		h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
-		h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	zip -q -r test-package-r.zip h2o-r h2o-docs/src/booklets/v2_2015/source \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
-		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
-		scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
+		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py h2o-3-DESCRIPTION
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
