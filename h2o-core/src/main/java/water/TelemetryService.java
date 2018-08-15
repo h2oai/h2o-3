@@ -1,7 +1,7 @@
 package water;
 
 /**
- * Service used to write to registered H2O listeners
+ * Service used to write to registered H2O telemetry listeners
  */
 public class TelemetryService {
 
@@ -13,14 +13,9 @@ public class TelemetryService {
         return service;
     }
 
-    public void report(HeartBeat heartBeat, long timestamp, String ipAndPort){
-        //TODO: cache the collection and do the calls async
+    public void report(H2ONode self){
         for (H2OTelemetryExtension ext : ExtensionManager.getInstance().getTelemetryExtensions()) {
-            ext.report(heartBeat, timestamp, ipAndPort);
+            ext.report(self);
         }
-    }
-
-    public void report(H2ONode h2o){
-        report(h2o._heartbeat, h2o._last_heard_from, h2o.getIpPortString());
     }
 }

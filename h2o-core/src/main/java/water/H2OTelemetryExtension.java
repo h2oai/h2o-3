@@ -7,5 +7,5 @@ public interface H2OTelemetryExtension {
     /** Initialize the extension */
     void init();
 
-    void report(HeartBeat data, long timestamp, String ipAndPort);
+    void report(H2ONode self);
 }
