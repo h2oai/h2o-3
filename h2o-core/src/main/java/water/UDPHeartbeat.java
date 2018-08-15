@@ -13,16 +13,13 @@ class UDPHeartbeat extends UDP {
       // The self-heartbeat is the sole holder of racey cloud-concensus hashes
       // and if we update it here we risk dropping an update.
       ab._h2o._heartbeat = new HeartBeat().read(ab);
+      
+      // Collect Telemetry
+      TelemetryService.getInstance().report(ab._h2o);
       if(ab._h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
         return ab;
       }
       Paxos.doHeartbeat(ab._h2o);
-
-      if (H2O.ARGS.client){
-        long timestamp = ab._h2o._last_heard_from;
-        String ipAndPort = ab._h2o.getIpPortString();
-        TelemetryService.getInstance().report(ab._h2o._heartbeat, timestamp, ipAndPort);
-      }
     }
     return ab;
   }

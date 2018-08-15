@@ -19,4 +19,8 @@ public class TelemetryService {
             ext.report(heartBeat, timestamp, ipAndPort);
         }
     }
+
+    public void report(H2ONode h2o){
+        report(h2o._heartbeat, h2o._last_heard_from, h2o.getIpPortString());
+    }
 }

@@ -219,6 +219,7 @@ public class TimeLine extends UDP {
     }
   }
 
+  // Send our most recent timeline to the remote via TCP
   @Override AutoBuffer call( AutoBuffer ab ) {
     long[] a = snapshot();
     if( ab._h2o == H2O.SELF ) {
@@ -232,7 +233,6 @@ public class TimeLine extends UDP {
       new AutoBuffer(ab._h2o,udp.timeline._prior).putUdp(UDP.udp.timeline).putA8(a).close();
     return null;
   }
-  // Send our most recent timeline to the remote via TCP
 
   // Receive a remote timeline
   static void tcp_call( final AutoBuffer ab ) {
