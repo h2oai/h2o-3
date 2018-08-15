@@ -163,8 +163,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
-    :param max_mem_size: Maximum memory to use for the new h2o server.
-    :param min_mem_size: Minimum memory to use for the new h2o server.
+    :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+    :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
