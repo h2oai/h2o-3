@@ -177,4 +177,24 @@ public class FrameTest extends TestUtil {
     }
   }
 
+  @Test
+  public void addVecToFrameTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .build();
+
+      Vec vec = vec(1, 2);
+      fr.add("ColB", vec);
+
+      Scope.track(vec);
+      assertVecEquals(vec, fr.vec("ColB"), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

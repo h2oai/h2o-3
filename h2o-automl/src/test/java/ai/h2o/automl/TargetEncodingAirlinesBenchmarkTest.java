@@ -26,6 +26,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  @Ignore
   @Test
   public void KFoldHoldoutTypeTest() {
 
@@ -149,6 +150,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
     Assert.assertTrue(auc2 < auc);
   }
 
+  @Ignore
   @Test
   public void noneHoldoutTypeTest() {
 

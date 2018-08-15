@@ -6,7 +6,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.rapids.vals.ValFrame;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -48,39 +47,42 @@ public class TargetEncoder {
         if(! checkAllTEColumnsAreCategorical(data, columnNamesToEncode))
             throw new IllegalStateException("Argument 'columnsToEncode' should contain only names of categorical columns");
 
-        int targetIndex = getColumnIndexByName(data, targetColumnName);
-
-        data = ensureTargetColumnIsNumericOrBinaryCategorical(data, targetIndex);
-
         if(Arrays.asList(columnNamesToEncode).contains(targetColumnName)) {
             throw new IllegalArgumentException("Columns for target encoding contain target column.");
         }
 
-        filterOutNAsFromTargetColumn(data, targetIndex);
+        int targetIndex = getColumnIndexByName(data, targetColumnName);
+
+        Frame  dataWithoutNAsForTarget = filterOutNAsFromTargetColumn(data, targetIndex);
+
+        Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataWithoutNAsForTarget, targetIndex);
 
         Map<String, Frame> columnToEncodingMap = new HashMap<String, Frame>();
 
         for ( String teColumnName: columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
-            int colIndex = getColumnIndexByName(data, teColumnName);
+            int colIndex = getColumnIndexByName(dataWithEncodedTarget, teColumnName);
             String tree = null;
             if (foldColumnName == null) {
-                tree = String.format("(GB %s [%d] sum %s \"all\" nrow %s \"all\")", data._key, colIndex, targetIndex, targetIndex);
+                tree = String.format("(GB %s [%d] sum %s \"all\" nrow %s \"all\")", dataWithEncodedTarget._key, colIndex, targetIndex, targetIndex);
             } else {
-                int foldColumnIndex = getColumnIndexByName(data, foldColumnName);
+                int foldColumnIndex = getColumnIndexByName(dataWithEncodedTarget, foldColumnName);
 
-                tree = String.format("(GB %s [%d, %d] sum %s \"all\" nrow %s \"all\")", data._key, colIndex, foldColumnIndex, targetIndex, targetIndex);
+                tree = String.format("(GB %s [%d, %d] sum %s \"all\" nrow %s \"all\")", dataWithEncodedTarget._key, colIndex, foldColumnIndex, targetIndex, targetIndex);
             }
             Val val = Rapids.exec(tree);
             teColumnFrame = val.getFrame();
-            teColumnFrame._key = Key.make(data._key.toString() + "_" + teColumnName + "_encodingMap");
+            teColumnFrame._key = Key.make(dataWithEncodedTarget._key.toString() + "_" + teColumnName + "_encodingMap");
             DKV.put(teColumnFrame._key, teColumnFrame);
 
-            teColumnFrame = renameColumn(teColumnFrame, "sum_"+ targetColumnName, "numerator");
-            teColumnFrame = renameColumn(teColumnFrame, "nrow", "denominator");
+            renameColumn(teColumnFrame, "sum_"+ targetColumnName, "numerator");
+            renameColumn(teColumnFrame, "nrow", "denominator");
 
             columnToEncodingMap.put(teColumnName, teColumnFrame);
         }
+
+        dataWithEncodedTarget.delete();
+        dataWithoutNAsForTarget.delete();
 
         return columnToEncodingMap;
     }
@@ -148,49 +150,44 @@ public class TargetEncoder {
         return renameColumn(fr, getColumnIndexByName(fr, oldName), newName);
     }
 
-    public Frame filterOutNAsFromTargetColumn(Frame data, int targetIndex)  {
-        String tree = String.format("(rows %s  (!! (is.na (cols %s [%s] ) ) ) )", data._key, data._key, targetIndex);
-        Val val = Rapids.exec(tree);
-        if (val instanceof ValFrame)
-            data = val.getFrame();
-
-        return data;
-    }
-
-    public Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
-
-        Vec targetVec = data.vec(targetIndex);
-        String[] domains = targetVec.domain().clone();
-        Arrays.sort(domains);
-        String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 0.0 1.0 ) )  [%d] [] )",
-                data._key, data._key, targetIndex,  data._key, targetIndex, domains[0], targetIndex);
-        Val val = Rapids.exec(tree);
+    private Frame execRapidsAndGetFrame(String astTree) {
+        Val val = Rapids.exec(astTree);
         Frame res = val.getFrame();
-        res._key = data._key;
-        DKV.put(res._key , res);
+        res._key = Key.make();
+        DKV.put(res);
         return res;
     }
 
-    public Frame getOutOfFoldData(Frame data, int foldColumnIndex, long currentFoldValue)  {
-
-        String tree = String.format("(rows %s (!= (cols %s [%d] ) %d ) )", data._key, data._key, foldColumnIndex, currentFoldValue);
-        Val val = Rapids.exec(tree);
-        Frame outOfFoldFrame = val.getFrame();
-        Key<Frame> outOfFoldKey = Key.make(data._key.toString() + "_outOfFold-" + currentFoldValue);
-        outOfFoldFrame._key = outOfFoldKey;
-        DKV.put(outOfFoldKey, outOfFoldFrame);
-        return outOfFoldFrame;
+    public Frame filterOutNAsFromTargetColumn(Frame data, int targetIndex)  {
+        String tree = String.format("(rows %s  (!! (is.na (cols %s [%s] ) ) ) )", data._key, data._key, targetIndex);
+        return execRapidsAndGetFrame(tree);
     }
 
-    private long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
+    public Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
+        String[] domains = data.vec(targetIndex).domain().clone();
+        Arrays.sort(domains);
+        String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 0.0 1.0 ) )  [%d] [] )",
+                data._key, data._key, targetIndex,  data._key, targetIndex, domains[0], targetIndex);
+        return execRapidsAndGetFrame(tree);
+    }
+
+    public Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
+        int foldColumnIndexInEncodingMap = getColumnIndexByName(encodingMap, foldColumnName);
+        String astTree = String.format("(rows %s (!= (cols %s [%d] ) %d ) )", encodingMap._key, encodingMap._key, foldColumnIndexInEncodingMap, currentFoldValue);
+        return execRapidsAndGetFrame(astTree);
+    }
+
+    public long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
         String tree = String.format("(unique (cols %s [%d]))", data._key, columnIndex);
-        Val val = Rapids.exec(tree);
-        Vec uniqueValues = val.getFrame().vec(0);
+        Frame frame = Rapids.exec(tree).getFrame();
+        Vec uniqueValues = frame.vec(0);
         int length = (int) uniqueValues.length(); // We assume that fold column should not has many different values and we will fit into node's memory
         long[] uniqueValuesArr = new long[length];
         for(int i = 0; i < uniqueValues.length(); i++) {
             uniqueValuesArr[i] = uniqueValues.at8(i);
         }
+        uniqueValues.remove();
+        frame.delete();
         return uniqueValuesArr;
     }
 
@@ -202,57 +199,37 @@ public class TargetEncoder {
         return true;
     }
 
-    public Frame groupByTEColumnAndAggregate(Frame fr, int teColumnIndex, int numeratorColumnIndex, int denominatorColumnIndex) {
-        String tree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")", fr._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
-        Val val = Rapids.exec(tree);
-        Frame resFrame = val.getFrame();
-        Key<Frame> key = Key.make(fr._key.toString() + "_groupped");
-        resFrame._key = key;
-        DKV.put(key, resFrame);
-        return resFrame;
+    public Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
+        int numeratorColumnIndex = getColumnIndexByName(data, "numerator");
+        int denominatorColumnIndex = getColumnIndexByName(data, "denominator");
+        String astTree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")", data._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
+        return execRapidsAndGetFrame(astTree);
     }
 
     public Frame rBind(Frame a, Frame b) {
-        Frame rBindRes = null;
         if(a == null) {
             assert b != null;
-            rBindRes = b;
+            return b;
         } else {
             String tree = String.format("(rbind %s %s)", a._key, b._key);
-            Val val = Rapids.exec(tree);
-            rBindRes = val.getFrame();
+            return execRapidsAndGetFrame(tree);
         }
-        Key<Frame> key = Key.make("holdoutEncodeMap");
-        rBindRes._key = key;
-        DKV.put(key, rBindRes);
-        return rBindRes;
     }
 
-    public Frame mergeByTEColumnAndFold(Frame a, Frame b, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex, int foldColumnIndex ) {
-        String tree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )", a._key, b._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndex);
-        Val val = Rapids.exec(tree);
-        Frame res = val.getFrame();
-        res._key = a._key;
-        DKV.put(a._key, res);
-        return res;
+    public Frame mergeByTEColumnAndFold(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex ) {
+        int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
+        String astTree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )", a._key, holdoutEncodeMap._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndexInEncodingMap);
+        return execRapidsAndGetFrame(astTree);
     }
 
     public Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {
-        String tree = String.format("(merge %s %s TRUE FALSE [%d] [%d] 'auto' )", a._key, b._key, teColumnIndexOriginal, teColumnIndex);
-        Val val = Rapids.exec(tree);
-        Frame res = val.getFrame();
-        res._key = a._key;
-        DKV.put(a._key, res);
-        return res;
+        String astTree = String.format("(merge %s %s TRUE FALSE [%d] [%d] 'auto' )", a._key, b._key, teColumnIndexOriginal, teColumnIndex);
+        return execRapidsAndGetFrame(astTree);
     }
 
     public Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
-        String tree = String.format("( append %s %d '%s' )", a._key , columnValue, appendedColumnName);
-        Val val = Rapids.exec(tree);
-        Frame withAppendedColumn = val.getFrame();
-        withAppendedColumn._key = a._key;  // TODO should we set key here?
-        DKV.put(a._key, withAppendedColumn);
-        return withAppendedColumn;
+        String astTree = String.format("( append %s %d '%s' )", a._key , columnValue, appendedColumnName);
+        return execRapidsAndGetFrame(astTree);
     }
 
     // Maybe it's better to calculate mean before any aggregations?
@@ -300,20 +277,15 @@ public class TargetEncoder {
         int denominatorIndex = getColumnIndexByName(fr,"denominator");
         double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
         double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;
-        String tree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) ( ifelse ( == (cols %s [%d]) 1) %f  %f) ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
+        String astTree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) ( ifelse ( == (cols %s [%d]) 1) %f  %f) ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
                 fr._key , fr._key, denominatorIndex, fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass,  fr._key, numeratorIndex, fr._key, denominatorIndex, appendedColumnName);
-        Val val = Rapids.exec(tree);
-        Frame res = val.getFrame();
-        res._key = fr._key;
-        DKV.put(fr._key, res);
-        return res;
+        return execRapidsAndGetFrame(astTree);
     }
 
     public Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, double seed) {
         int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
         String tree = String.format("(:= %s (+ (cols %s [%d] ) (- (* (* (h2o.runif %s %f ) 2.0 ) %f ) %f ) ) [%d] [] )", fr._key, fr._key, appyToColumnIndex, fr._key, seed, noiseLevel, noiseLevel, appyToColumnIndex);
-        Val val = Rapids.exec(tree);
-        return val.getFrame();
+        return Rapids.exec(tree).getFrame();
     }
 
     public Frame subtractTargetValueForLOO(Frame data, String targetColumnName)  {
@@ -323,18 +295,14 @@ public class TargetEncoder {
 
         String treeNumerator = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) )   (cols %s [%d] )   (- (cols %s [%d] )  (cols %s [%d] )  ) )  [%d] [] )",
                 data._key, data._key, targetIndex, data._key, numeratorIndex, data._key, numeratorIndex, data._key, targetIndex,  numeratorIndex);
-        Val val = Rapids.exec(treeNumerator);
-        Frame res = val.getFrame();
-        res._key = data._key;
-        DKV.put(res._key, res);
+        Frame withNumeratorSubtracted = execRapidsAndGetFrame(treeNumerator);
 
+        Key<Frame> tmpNumeratorFrame = withNumeratorSubtracted._key;
         String treeDenominator = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) )   (cols %s [%d] )   (- (cols %s [%d] )  1  ) )  [%d] [] )",
-                data._key, data._key, targetIndex, data._key, denominatorIndex, data._key, denominatorIndex, denominatorIndex);
-        Frame finalFrame = Rapids.exec(treeDenominator).getFrame();
-
-        finalFrame._key = data._key;
-        DKV.put(finalFrame._key, finalFrame);
-        return finalFrame;
+                tmpNumeratorFrame, tmpNumeratorFrame, targetIndex, tmpNumeratorFrame, denominatorIndex, tmpNumeratorFrame, denominatorIndex, denominatorIndex);
+        Frame result = execRapidsAndGetFrame(treeDenominator);
+        withNumeratorSubtracted.delete();
+        return result;
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -352,20 +320,26 @@ public class TargetEncoder {
 
         //TODO Should we remove string columns from `data` as it is done in R version (see: https://0xdata.atlassian.net/browse/PUBDEV-5266) ?
 
-        Frame teFrame = new Frame(data);
-        teFrame._key = Key.make(data._key.toString() + "_applyTE");
-        DKV.put(teFrame._key, teFrame);
+        Frame dataCopy = data.deepCopy(Key.make().toString());
+        DKV.put(dataCopy);
 
-        teFrame = ensureTargetColumnIsNumericOrBinaryCategorical(teFrame, targetColumnName);
+        Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataCopy, targetColumnName); // TODO target value could be NA... it is fine. Check this.
+
+        Frame dataWithAllEncodings = dataWithEncodedTarget.deepCopy(Key.make().toString());
+        DKV.put(dataWithAllEncodings);
+
 
         for ( String teColumnName: columnsToEncode) {
+
+            String newEncodedColumnName = teColumnName + "_te";
+
+            Frame dataWithMergedAggregations = null;
+            Frame dataWithEncodings = null;
+            Frame dataWithEncodingsAndNoise = null;
+
             Frame targetEncodingMap = columnToEncodingMap.get(teColumnName);
 
-            int targetEncodingMapNumeratorIdx = getColumnIndexByName(targetEncodingMap,"numerator");
-            int targetEncodingMapDenominatorIdx = getColumnIndexByName(targetEncodingMap,"denominator");
-
-            int teColumnIndex = getColumnIndexByName(teFrame, teColumnName);
-            int teColumnIndexInEncodingMap = getColumnIndexByName(targetEncodingMap, teColumnName);
+            int teColumnIndex = getColumnIndexByName(dataWithAllEncodings, teColumnName);
             Frame holdoutEncodeMap = null;
 
             switch( holdoutType ) {
@@ -373,106 +347,149 @@ public class TargetEncoder {
                     if(foldColumnName == null)
                         throw new IllegalStateException("`foldColumn` must be provided for holdoutType = KFold");
 
-                    int foldColumnIndex = getColumnIndexByName(teFrame, foldColumnName);
+                    int teColumnIndexInEncodingMap = getColumnIndexByName(targetEncodingMap, teColumnName);
+
+                    int foldColumnIndex = getColumnIndexByName(dataWithAllEncodings, foldColumnName);
                     long[] foldValues = getUniqueValuesOfTheFoldColumn(targetEncodingMap, 1);
 
                     for(long foldValue : foldValues) { // TODO what if our te column is not represented in every foldValue? Then when merging with original dataset we will get NA'a on the right side
-                        int foldColumnIndexInEncodingMap = getColumnIndexByName(targetEncodingMap, foldColumnName);
-                        assert foldColumnIndexInEncodingMap != -1 : "Target encoding map was created without fold, so KFold holdout_type can't be applied.";
-                        printOutFrameAsTable(targetEncodingMap);
-                        Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnIndexInEncodingMap, foldValue);
+                        Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnName, foldValue);
 
-                        System.out.println(" #### OutOfFold dataframe before grouping");
-                        printOutFrameAsTable(outOfFoldData);
-                        int numeratorColumnIndex = getColumnIndexByName(outOfFoldData, "numerator");
-                        int denominatorColumnIndex = getColumnIndexByName(outOfFoldData, "denominator");
-                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap, numeratorColumnIndex, denominatorColumnIndex);
 
-                        System.out.println(" #### OutOfFold dataframe after grouping");
-                        printOutFrameAsTable(groupedByTEColumnAndAggregate);
-                        groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
-                        groupedByTEColumnAndAggregate = renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
+                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
-                        System.out.println(" #### groupedByTEColumnAndAggregate dataframe");
-                        printOutFrameAsTable(groupedByTEColumnAndAggregate);
-                        groupedByTEColumnAndAggregate = appendColumn(groupedByTEColumnAndAggregate, foldValue, "foldValueForMerge"); // TODO for now we don't need names for columns since we are working with indices
+                        renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
+                        renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
 
-                        holdoutEncodeMap = rBind(holdoutEncodeMap, groupedByTEColumnAndAggregate);
+                        Frame groupedWithAppendedFoldColumn = appendColumn(groupedByTEColumnAndAggregate, foldValue, "foldValueForMerge");
 
-                        TwoDimTable twoDimTable = holdoutEncodeMap.toTwoDimTable();
-                        System.out.println(String.format("Column with foldValueForMerge=%d were appended.", foldValue) + twoDimTable.toString());
+                        if(holdoutEncodeMap == null) {
+                            holdoutEncodeMap = groupedWithAppendedFoldColumn;
+                        }
+                        else {
+                            Frame newHoldoutEncodeMap = rBind(holdoutEncodeMap, groupedWithAppendedFoldColumn);
+                            groupedWithAppendedFoldColumn.delete();
+                            holdoutEncodeMap.delete();
+                            holdoutEncodeMap = newHoldoutEncodeMap;
+                        }
+
+                        outOfFoldData.delete();
+                        groupedByTEColumnAndAggregate.delete();
                     }
 
-                    System.out.println(" #### Merging holdoutEncodeMap to teFrame");
+                    dataWithMergedAggregations = mergeByTEColumnAndFold(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
 
-                    printOutFrameAsTable(teFrame);
+                    dataWithEncodings = calculateEncoding(dataWithMergedAggregations, targetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
-                    printOutFrameAsTable(holdoutEncodeMap);
+                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
-                    int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
-                    teFrame = mergeByTEColumnAndFold(teFrame, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap, foldColumnIndexInEncodingMap);
+                    Vec removedNumK = dataWithEncodingsAndNoise.remove("numerator");
+                    removedNumK.remove();
+                    Vec removedDenK = dataWithEncodingsAndNoise.remove("denominator");
+                    removedDenK.remove();
+
+                    dataWithAllEncodings.delete();
+                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    DKV.put(dataWithAllEncodings);
+
+                    dataWithEncodingsAndNoise.delete();
+                    holdoutEncodeMap.delete();
 
                     break;
                 case HoldoutType.LeaveOneOut:
 
-                    targetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx, teColumnName);
-//                    printOutFrameAsTable(targetEncodingMap, true, true);
+                    Frame groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, teColumnName);
 
-//                    System.out.println(" #### Merging targetEncodingMap to teFrame");
+                    int teColumnIndexInGroupedEncodingMap = getColumnIndexByName(groupedTargetEncodingMap, teColumnName);
+                    dataWithMergedAggregations = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMap, teColumnIndex, teColumnIndexInGroupedEncodingMap);
 
-                    teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, teColumnIndexInEncodingMap);
+                    Frame preparedFrame = subtractTargetValueForLOO(dataWithMergedAggregations,  targetColumnName);
 
-//                    System.out.println(" #### After merging teFrame");
-//                    printOutFrameAsTable(teFrame);
+                    dataWithEncodings = calculateEncoding(preparedFrame, groupedTargetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg); // do we really need to pass groupedTargetEncodingMap again?
 
-                    teFrame = subtractTargetValueForLOO(teFrame,  targetColumnName);
-//                    System.out.println(" #### After subtractTargetValueForLOO teFrame");
-//                    printOutFrameAsTable(teFrame, false, true);
+                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
+
+                    Vec removedNumLoo = dataWithEncodingsAndNoise.remove("numerator");
+                    removedNumLoo.remove();
+                    Vec removedDenLoo = dataWithEncodingsAndNoise.remove("denominator");
+                    removedDenLoo.remove();
+
+                    dataWithAllEncodings.delete();
+                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    DKV.put(dataWithAllEncodings);
+
+                    preparedFrame.delete();
+                    dataWithEncodingsAndNoise.delete();
+                    groupedTargetEncodingMap.delete();
 
                     break;
                 case HoldoutType.None:
                     // TODO we'd better don't group it with folds during creation of targetEncodingMap
-                    targetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx, teColumnName);
+                    Frame groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, teColumnName);
 
-                    printOutFrameAsTable(targetEncodingMap);
-                    teFrame = mergeByTEColumn(teFrame, targetEncodingMap, teColumnIndex, teColumnIndexInEncodingMap);
+                    printOutFrameAsTable(groupedTargetEncodingMapForNone);
+                    int teColumnIndexInGroupedEncodingMapNone = getColumnIndexByName(groupedTargetEncodingMapForNone, teColumnName);
+                    dataWithMergedAggregations = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
+
+                    dataWithEncodings = calculateEncoding(dataWithMergedAggregations, groupedTargetEncodingMapForNone, targetColumnName, newEncodedColumnName, withBlendedAvg);
+
+                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
+
+                    Vec removedNumeratorNone = dataWithEncodingsAndNoise.remove("numerator");
+                    removedNumeratorNone.remove();
+                    Vec removedDenominatorNone = dataWithEncodingsAndNoise.remove("denominator");
+                    removedDenominatorNone.remove();
+
+                    dataWithAllEncodings.delete();
+                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    DKV.put(dataWithAllEncodings);
+
+                    dataWithEncodingsAndNoise.delete();
+                    groupedTargetEncodingMapForNone.delete();
             }
 
-            if (withBlendedAvg) {
-                teFrame = calculateAndAppendBlendedTEEncoding(teFrame, targetEncodingMap, targetColumnName, teColumnName + "_te");
-
-            } else {
-
-                teFrame = calculateAndAppendTEEncoding(teFrame, targetEncodingMap, targetColumnName,teColumnName + "_te");
-
-//                System.out.println(" #### After appending calculated TE encoding");
-//                printOutFrameAsTable(teFrame, true, true);
-            }
-
-            if(noiseLevel > 0) {
-                teFrame = addNoise(teFrame, teColumnName + "_te", noiseLevel, seed);
-            }
-
-            teFrame.remove("numerator");
-            teFrame.remove("denominator");
+            dataWithMergedAggregations.delete();
+            dataWithEncodings.delete();
         }
 
-//        System.out.println(" #### Final result of applying TE encoding");
-//        printOutFrameAsTable(teFrame);
+        dataCopy.delete();
+        dataWithEncodedTarget.delete();
 
-        return teFrame;
+        return dataWithAllEncodings;
     }
 
-    private Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, int targetEncodingMapNumeratorIdx, int targetEncodingMapDenominatorIdx, String teColumnName) {
+    private Frame calculateEncoding(Frame preparedFrame, Frame encodingMap, String targetColumnName, String newEncodedColumnName, boolean withBlendedAvg) {
+        if (withBlendedAvg) {
+            return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
+
+        } else {
+
+            return calculateAndAppendTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
+        }
+    }
+
+    private Frame applyNoise(Frame frameWithEncodings, String newEncodedColumnName, double noiseLevel, double seed) {
+        if(noiseLevel > 0) {
+            return addNoise(frameWithEncodings, newEncodedColumnName, noiseLevel, seed);
+        } else {
+            return frameWithEncodings;
+        }
+    }
+
+    private Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
         if(foldColumnName != null) { // TODO we can't rely only on absence of the column name passed. User is able not to provide foldColumn name to apply method.
           System.out.println(" #### Grouping (back) targetEncodingMap without folds");
           int teColumnIndex = getColumnIndexByName(targetEncodingMap, teColumnName);
 
-          targetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex, targetEncodingMapNumeratorIdx, targetEncodingMapDenominatorIdx);
-          targetEncodingMap = renameColumn(targetEncodingMap, "sum_numerator", "numerator");
-          targetEncodingMap = renameColumn(targetEncodingMap, "sum_denominator", "denominator");
+          Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
+          renameColumn(newTargetEncodingMap, "sum_numerator", "numerator");
+          renameColumn(newTargetEncodingMap, "sum_denominator", "denominator");
+          return newTargetEncodingMap;
+        } else {
+            Frame targetEncodingMapCopy = targetEncodingMap.deepCopy(Key.make().toString());
+            DKV.put(targetEncodingMapCopy);
+            return targetEncodingMapCopy;
         }
-        return targetEncodingMap;
     }
 
     public Frame applyTargetEncoding(Frame data,

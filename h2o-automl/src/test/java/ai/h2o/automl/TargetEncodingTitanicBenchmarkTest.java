@@ -4,25 +4,20 @@ import hex.FrameSplitter;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
-import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.*;
-import water.DKV;
 import water.H2O;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
-import water.rapids.Rapids;
-import water.rapids.Val;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static water.util.FrameUtils.generateNumKeys;
 
 public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
@@ -32,308 +27,378 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
     stall_till_cloudsize(1);
   }
 
-  private Frame fr = null;
-
   @Before
   public void beforeEach() {
-        System.out.println("Before each setup");
-    }
+
+  }
 
 
   @Test
   public void assertionErrorDuringMergeDueToNAsTest() {
-    TargetEncoder tec = new TargetEncoder();
+    Scope.enter();
+    try {
 
-    Frame titanicFrame = parse_test_file(Key.make("titanic_parsed"), "smalldata/gbm_test/titanic.csv");
+      TargetEncoder tec = new TargetEncoder();
 
-    titanicFrame.remove("name");
-    titanicFrame.remove("ticket");
-    titanicFrame.remove("boat");
-    titanicFrame.remove("body");
+      Frame titanicFrame = parse_test_file(Key.make("titanic_parsed"), "smalldata/gbm_test/titanic.csv");
+      Scope.track(titanicFrame);
 
-    double[] ratios = ard(0.7f, 0.1f);
-    Frame[] splits = null;
-    FrameSplitter fs = new FrameSplitter(titanicFrame, ratios, generateNumKeys(titanicFrame._key, ratios.length + 1), null);
-    H2O.submitTask(fs).join();
-    splits = fs.getResult();
-    Frame train = splits[0];
-    Frame valid = splits[1];
-    Frame test = splits[2];
+      titanicFrame.remove("name");
+      titanicFrame.remove("ticket");
+      titanicFrame.remove("boat");
+      titanicFrame.remove("body");
+
+      double[] ratios = ard(0.7f, 0.1f);
+      Frame[] splits = null;
+      FrameSplitter fs = new FrameSplitter(titanicFrame, ratios, generateNumKeys(titanicFrame._key, ratios.length + 1), null);
+      H2O.submitTask(fs).join();
+      splits = fs.getResult();
+      Frame train = splits[0];
+      Frame valid = splits[1];
+      Frame test = splits[2];
+      Scope.track(train, valid, test);
 
 
-    String[] teColumns = {"home.dest"};
+      String[] teColumns = {"home.dest"};
 
-    String targetColumnName = "survived";
+      String targetColumnName = "survived";
 
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, null);
-    Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, null);
+      Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Scope.track(trainEncoded);
 
-    printOutFrameAsTable(test, true);
-    printOutFrameAsTable(valid, true);
-    printOutColumnsMeta(valid);
-    assertEquals( valid.vec("home.dest").max(), Double.NaN, 1e-5);
+      printOutFrameAsTable(test, true);
+      printOutFrameAsTable(valid, true);
+      printOutColumnsMeta(valid);
+      assertEquals(valid.vec("home.dest").max(), Double.NaN, 1e-5);
 
-    assertTrue( valid.vec("home.dest").isNA(0));
-    assertEquals("null", valid.vec("home.dest").stringAt(0)); // "null" is just a string representation of NA. It could have been easy to merge by this string.
+      assertTrue(valid.vec("home.dest").isNA(0));
+      assertEquals("null", valid.vec("home.dest").stringAt(0)); // "null" is just a string representation of NA. It could have been easy to merge by this string.
 
-    // Preparing valid frame
-    Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
-
+      // Preparing valid frame
+      Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Scope.track(validEncoded);
+      encodingMapCleanUp(encodingMap);
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
   public void KFoldHoldoutTypeTest() {
+    Scope.enter();
+    GBMModel gbm = null;
+    try {
 
-    TargetEncoder tec = new TargetEncoder();
+      TargetEncoder tec = new TargetEncoder();
 
-    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-    Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-    Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
 
-    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+      Scope.track(trainFrame, validFrame, testFrame);
 
-    String foldColumnName = "fold";
-    FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
+      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-    System.out.println("Training frame with fold columns");
-    printOutFrameAsTable(trainFrame, true);
-    FrameUtils.addKFoldColumn(validFrame, foldColumnName, 5, 1234L);
-    FrameUtils.addKFoldColumn(testFrame, foldColumnName, 5, 1234L);
+      String foldColumnName = "fold";
+      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
 
-    String targetColumnName = "survived";
+      System.out.println("Training frame with fold columns");
+      printOutFrameAsTable(trainFrame, true);
 
+      FrameUtils.addKFoldColumn(validFrame, foldColumnName, 5, 1234L);
+      FrameUtils.addKFoldColumn(testFrame, foldColumnName, 5, 1234L);
 
-    String[] teColumns = {"cabin", "embarked", "home.dest"};
-    String[] teColumnsWithFold = {"cabin", "embarked", "home.dest", foldColumnName};
+      String targetColumnName = "survived";
 
-
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName);
-    Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, false, 0, 1234.0);
-
-    // Preparing valid frame
-    Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
-
-    // Preparing test frame
-    Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
-
-    printOutColumnsMeta(trainEncoded);
-
-    // With target encoded Origin column
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-    parms._train = trainEncoded._key;
-    parms._response_column = targetColumnName;
-    parms._score_tree_interval = 10;
-    parms._ntrees = 1000;
-    parms._max_depth = 5;
-    parms._distribution = DistributionFamily.quasibinomial;
-    parms._valid = validEncoded._key;
-    parms._stopping_tolerance = 0.001;
-    parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-    parms._stopping_rounds = 5;
-    parms._ignored_columns = teColumnsWithFold;
-    GBM job = new GBM(parms);
-    GBMModel gbm = job.trainModel().get();
-
-    System.out.println(gbm._output._variable_importances.toString(2, true));
-    Assert.assertTrue(job.isStopped());
-
-    Frame preds = gbm.score(testEncoded);
-
-    hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-    double auc = mm._auc._auc;
-
-    // Without target encoding
-    double auc2 = trainDefaultGBM(targetColumnName);
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
+      String[] teColumnsWithFold = {"cabin", "embarked", "home.dest", foldColumnName};
 
 
-    System.out.println("AUC with encoding:" + auc);
-    System.out.println("AUC without encoding:" + auc2);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, false, 0, 1234.0);
 
-    Assert.assertTrue(auc2 < auc);
+      // Preparing valid frame
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
+
+      // Preparing test frame
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
+
+      Scope.track(trainEncoded, validEncoded, testEncoded);
+      printOutColumnsMeta(trainEncoded);
+
+      // With target encoded Origin column
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainEncoded._key;
+      parms._response_column = targetColumnName;
+      parms._score_tree_interval = 10;
+      parms._ntrees = 1000;
+      parms._max_depth = 5;
+      parms._distribution = DistributionFamily.quasibinomial;
+      parms._valid = validEncoded._key;
+      parms._stopping_tolerance = 0.001;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms._stopping_rounds = 5;
+      parms._ignored_columns = teColumnsWithFold;
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      System.out.println(gbm._output._variable_importances.toString(2, true));
+      Assert.assertTrue(job.isStopped());
+
+      Frame preds = gbm.score(testEncoded);
+      Scope.track(preds);
+
+      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
+      double auc = mm._auc._auc;
+
+      // Without target encoding
+      double auc2 = trainDefaultGBM(targetColumnName);
+
+      System.out.println("AUC with encoding:" + auc);
+      System.out.println("AUC without encoding:" + auc2);
+
+      Assert.assertTrue(auc2 < auc);
+      encodingMapCleanUp(encodingMap);
+    } finally {
+      if( gbm != null ) {
+        gbm.delete();
+        gbm.deleteCrossValidationModels();
+      }
+      Scope.exit();
+    }
   }
 
+  @Ignore
   @Test
   public void leaveOneOutHoldoutTypeTest() {
+    GBMModel gbm = null;
+    Scope.enter();
+    try {
+      TargetEncoder tec = new TargetEncoder();
 
-    TargetEncoder tec = new TargetEncoder();
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
 
-    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-    Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-    Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      Scope.track(trainFrame, validFrame, testFrame);
 
-    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
 
-    String[] teColumns = {"cabin" ,"embarked", "home.dest"};
+      String targetColumnName = "survived";
 
-    String targetColumnName = "survived";
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
 
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
-
-    Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, false, 0, 1234.0);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, false, 0, 1234.0);
 
 
-    printOutFrameAsTable(trainEncoded, true, true);
-    printOutColumnsMeta(trainEncoded);
+      printOutFrameAsTable(trainEncoded, true, true);
+      printOutColumnsMeta(trainEncoded);
 
-    // Preparing valid frame
-    Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      // Preparing valid frame
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
 
-    printOutFrameAsTable(validEncoded, true, true);
+      printOutFrameAsTable(validEncoded, true, true);
 
-    // Preparing test frame
-    Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      // Preparing test frame
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
 
-    printOutFrameAsTable(testEncoded, true, true);
+      Scope.track(trainEncoded, validEncoded, testEncoded);
+      printOutFrameAsTable(testEncoded, true, true);
 
-    // With target encoded Origin column
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-    parms._train = trainEncoded._key;
-    parms._response_column = targetColumnName;
-    parms._score_tree_interval = 10;
-    parms._ntrees = 1000;
-    parms._max_depth = 5;
-    parms._distribution = DistributionFamily.quasibinomial;
-    parms._valid = validEncoded._key;
-    parms._stopping_tolerance = 0.001;
-    parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-    parms._stopping_rounds = 5;
-    parms._ignored_columns = teColumns;
-    GBM job = new GBM(parms);
-    GBMModel gbm = job.trainModel().get();
+      // With target encoded Origin column
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainEncoded._key;
+      parms._response_column = targetColumnName;
+      parms._score_tree_interval = 10;
+      parms._ntrees = 1000;
+      parms._max_depth = 5;
+      parms._distribution = DistributionFamily.quasibinomial;
+      parms._valid = validEncoded._key;
+      parms._stopping_tolerance = 0.001;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms._stopping_rounds = 5;
+      parms._ignored_columns = teColumns;
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
 
-    Assert.assertTrue(job.isStopped());
+      Assert.assertTrue(job.isStopped());
 
-    System.out.println(gbm._output._variable_importances.toString(2, true));
+      System.out.println(gbm._output._variable_importances.toString(2, true));
 
-    Frame preds = gbm.score(testEncoded);
+      Frame preds = gbm.score(testEncoded);
+      Scope.track(preds);
 
-    hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-    double auc = mm._auc._auc;
+      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
+      double auc = mm._auc._auc;
 
-    // Without target encoding
-    double auc2 = trainDefaultGBM(targetColumnName);
+      // Without target encoding
+      double auc2 = trainDefaultGBM(targetColumnName);
 
-    System.out.println("AUC with encoding:" + auc);
-    System.out.println("AUC without encoding:" + auc2);
+      System.out.println("AUC with encoding:" + auc);
+      System.out.println("AUC without encoding:" + auc2);
 
-    Assert.assertTrue(auc2 < auc);
+      Assert.assertTrue(auc2 < auc);
+
+      encodingMapCleanUp(encodingMap);
+    } finally {
+      if( gbm != null ) {
+        gbm.delete();
+        gbm.deleteCrossValidationModels();
+      }
+      Scope.exit();
+    }
   }
 
   @Test
   public void noneHoldoutTypeTest() {
+    Scope.enter();
+    try {
 
-    TargetEncoder tec = new TargetEncoder();
+      TargetEncoder tec = new TargetEncoder();
 
-    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_wteh.csv");
-    Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
-    Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-    Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_wteh.csv");
+      Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
 
-    trainFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    teHoldoutFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    validFrame.remove(new String[] {"name", "ticket", "boat", "body"});
-    testFrame.remove(new String[] {"name", "ticket", "boat", "body"});
+      Scope.track(trainFrame, teHoldoutFrame, validFrame, testFrame);
 
-    teHoldoutFrame = FrameUtils.asFactor(teHoldoutFrame, "cabin");
+      trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      teHoldoutFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-    String[] teColumns = {"cabin" ,"embarked", "home.dest"};
+      Frame teHoldoutFrameFactorized = FrameUtils.asFactor(teHoldoutFrame, "cabin");
+      Scope.track(teHoldoutFrameFactorized);
 
-    String targetColumnName = "survived";
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
 
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrame, teColumns, targetColumnName, null);
+      String targetColumnName = "survived";
 
-    Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, teColumns, targetColumnName, null);
 
-    // Preparing valid frame
-    Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Scope.track(trainEncoded);
 
-    printOutFrameAsTable(validEncoded, true, true);
+      // Preparing valid frame
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Scope.track(validEncoded);
 
-    // Preparing test frame
-    Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      printOutFrameAsTable(validEncoded, true, true);
 
-    printOutFrameAsTable(testEncoded, true, true);
+      // Preparing test frame
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Scope.track(testEncoded);
 
-    // With target encoded Origin column
-    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-    parms._train = trainEncoded._key;
-    parms._response_column = targetColumnName;
-    parms._score_tree_interval = 10;
-    parms._ntrees = 1000;
-    parms._max_depth = 5;
-    parms._distribution = DistributionFamily.quasibinomial;
-    parms._valid = validEncoded._key;
-    parms._stopping_tolerance = 0.001;
-    parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-    parms._stopping_rounds = 5;
-    parms._ignored_columns = teColumns;
-    GBM job = new GBM(parms);
-    GBMModel gbm = job.trainModel().get();
+      printOutFrameAsTable(testEncoded, true, true);
 
-    Assert.assertTrue(job.isStopped());
+      // With target encoded Origin column
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainEncoded._key;
+      parms._response_column = targetColumnName;
+      parms._score_tree_interval = 10;
+      parms._ntrees = 1000;
+      parms._max_depth = 5;
+      parms._distribution = DistributionFamily.quasibinomial;
+      parms._valid = validEncoded._key;
+      parms._stopping_tolerance = 0.001;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms._stopping_rounds = 5;
+      parms._ignored_columns = teColumns;
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
 
-    System.out.println(gbm._output._variable_importances.toString(2, true));
+      Assert.assertTrue(job.isStopped());
 
-    Frame preds = gbm.score(testEncoded);
+      System.out.println(gbm._output._variable_importances.toString(2, true));
 
-    hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-    double auc = mm._auc._auc;
+      Frame preds = gbm.score(testEncoded);
+      Scope.track(preds);
 
-    // Without target encoding
-    double auc2 = trainDefaultGBM(targetColumnName);
+      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
+      double auc = mm._auc._auc;
 
-    System.out.println("AUC with encoding:" + auc);
-    System.out.println("AUC without encoding:" + auc2);
+      // Without target encoding
+      double auc2 = trainDefaultGBM(targetColumnName);
 
-    Assert.assertTrue(auc2 < auc);
+      System.out.println("AUC with encoding:" + auc);
+      System.out.println("AUC without encoding:" + auc2);
+      Assert.assertTrue(auc2 < auc);
+
+      encodingMapCleanUp(encodingMap);
+      if( gbm != null ) {
+        gbm.delete();
+        gbm.deleteCrossValidationModels();
+      }
+    } finally {
+      Scope.exit();
+    }
   }
 
 
   private double trainDefaultGBM(String targetColumnName) {
-    Frame trainFrame2 = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-    Frame validFrame2 = parse_test_file(Key.make("titanic_valid_parsed2"), "smalldata/gbm_test/titanic_valid.csv");
-    Frame testFrame2 = parse_test_file(Key.make("titanic_test_parsed2"), "smalldata/gbm_test/titanic_test.csv");
+    GBMModel gbm2 = null;
+    Scope.enter();
+    try {
+      Frame trainFrame2 = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+      Frame validFrame2 = parse_test_file(Key.make("titanic_valid_parsed2"), "smalldata/gbm_test/titanic_valid.csv");
+      Frame testFrame2 = parse_test_file(Key.make("titanic_test_parsed2"), "smalldata/gbm_test/titanic_test.csv");
+      Scope.track(trainFrame2, testFrame2, validFrame2);
 
-    trainFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
-    validFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
-    testFrame2.remove(new String[] {"name", "ticket", "boat", "body"});
+      trainFrame2.remove(new String[]{"name", "ticket", "boat", "body"});
+      validFrame2.remove(new String[]{"name", "ticket", "boat", "body"});
+      testFrame2.remove(new String[]{"name", "ticket", "boat", "body"});
 
-    GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
-    parms2._train = trainFrame2._key;
-    parms2._response_column = targetColumnName;
-    parms2._score_tree_interval = 10;
-    parms2._ntrees = 1000;
-    parms2._max_depth = 5;
-    parms2._distribution = DistributionFamily.quasibinomial;
-    parms2._valid = validFrame2._key;
-    parms2._stopping_tolerance = 0.001;
-    parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-    parms2._stopping_rounds = 5;
-    parms2._seed = 1234L;
+      GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
+      parms2._train = trainFrame2._key;
+      parms2._response_column = targetColumnName;
+      parms2._score_tree_interval = 10;
+      parms2._ntrees = 1000;
+      parms2._max_depth = 5;
+      parms2._distribution = DistributionFamily.quasibinomial;
+      parms2._valid = validFrame2._key;
+      parms2._stopping_tolerance = 0.001;
+      parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms2._stopping_rounds = 5;
+      parms2._seed = 1234L;
 
-    GBM job2 = new GBM(parms2);
-    GBMModel gbm2 = job2.trainModel().get();
+      GBM job2 = new GBM(parms2);
+      gbm2 = job2.trainModel().get();
 
-    Assert.assertTrue(job2.isStopped());
+      Assert.assertTrue(job2.isStopped());
 
-    Frame preds2 = gbm2.score(testFrame2);
-
-    printOutFrameAsTable(preds2, false, false);
-    hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), testFrame2.vec(parms2._response_column));
-    double auc2 = mm2._auc._auc;
-    return auc2;
+      Frame preds2 = gbm2.score(testFrame2);
+      Scope.track(preds2);
+      printOutFrameAsTable(preds2, false, false);
+      hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), testFrame2.vec(parms2._response_column));
+      double auc2 = mm2._auc._auc;
+      return auc2;
+    } finally {
+      if( gbm2 != null ) {
+        gbm2.delete();
+        gbm2.deleteCrossValidationModels();
+      }
+      Scope.exit();
+    }
   }
 
   @After
   public void afterEach() {
     System.out.println("After each test we do H2O.STORE.clear() and Vec.ESPC.clear()");
-    Vec.ESPC.clear();
-    H2O.STORE.clear();
+//    Vec.ESPC.clear();
+  }
+
+  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for( Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
+    }
   }
 
   private void printOutFrameAsTable(Frame fr, boolean full) {
