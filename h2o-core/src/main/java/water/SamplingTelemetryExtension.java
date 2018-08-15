@@ -2,9 +2,6 @@ package water;
 
 import water.util.Log;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-
 /**
  * This Extension is used to regularly report specific metrics about the system.
  *
@@ -56,41 +53,11 @@ public class SamplingTelemetryExtension extends AbstractH2OExtension {
     }
 
     private class TelemetryThread extends Thread {
-        private static final String formatDecimal = "|                       |%1$10d|%2$10d|%3$10d|%4$10d|%5$10d|\n";
-        private static final String header = "|Mem[MB]/GC[ms] metrics:|Total mem | Free mem |  Max Mem |  GC Cnt  |  GC Dur  |\n";
-        private final static int mb = 1024 * 1024;
 
-        public TelemetryThread() {
+        TelemetryThread() {
             super("TelemetryThread");
             // don't prevent JVM exit with this thread
             setDaemon(true);
-        }
-
-        private String getMemInfo() {
-            Runtime runtime = Runtime.getRuntime();
-            return header + String.format(formatDecimal, runtime.totalMemory() / mb, runtime.freeMemory() / mb, runtime.maxMemory() / mb, getGcCount(), getGcTime());
-        }
-
-        private long getGcTime() {
-            long sum = 0;
-            for (GarbageCollectorMXBean b : ManagementFactory.getGarbageCollectorMXBeans()) {
-                long count = b.getCollectionTime();
-                if (count != -1) {
-                    sum += count;
-                }
-            }
-            return sum;
-        }
-
-        private long getGcCount() {
-            long sum = 0;
-            for (GarbageCollectorMXBean b : ManagementFactory.getGarbageCollectorMXBeans()) {
-                long count = b.getCollectionCount();
-                if (count != -1) {
-                    sum += count;
-                }
-            }
-            return sum;
         }
 
         @Override

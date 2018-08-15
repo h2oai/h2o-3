@@ -1,5 +1,6 @@
 package water.telemetry;
 import org.apache.log4j.*;
+import water.H2ONode;
 import water.H2OTelemetryExtension;
 import water.HeartBeat;
 import water.util.Log;
@@ -41,7 +42,7 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
     }
 
     @Override
-    public void report(HeartBeat data, long timestamp, String ipAndPort) {
+    public void report(H2ONode self) {
         if (!initializedLogger){
             synchronized (this) {
                 if (!initializedLogger) {
@@ -50,7 +51,7 @@ public class HearthBeatFileLoggingExtension implements H2OTelemetryExtension {
                 }
             }
         }
-        hbs.add(new EnhancedHearBeat(data, timestamp, ipAndPort));
+        hbs.add(new EnhancedHearBeat(self._heartbeat, self._last_heard_from, self.getIpPortString()));
     }
 
     private void writeLog(HeartBeat hb, long timestamp, String ipAndPort){
