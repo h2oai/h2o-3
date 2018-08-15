@@ -4,6 +4,7 @@ dependencies {
   compile project(":h2o-genmodel")
   compile project(":h2o-core")
   compile project(":h2o-algos")
+  compile project(":h2o-ext-xgboost")
 
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"

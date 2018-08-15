@@ -116,7 +116,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       super();
     }
 
-    @API(help="A list algorithms to skip during the model-building phase.", values = {"GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"}, direction=API.Direction.INPUT)
+    @API(help="A list algorithms to skip during the model-building phase.", values = {"GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble", "XGBoost", "LightGBM"}, direction=API.Direction.INPUT)
     public AutoML.algo[] exclude_algos;
 
   } // class AutoMLBuildModels
