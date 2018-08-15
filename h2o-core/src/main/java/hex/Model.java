@@ -5,6 +5,9 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -87,6 +90,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public interface LeafNodeAssignment {
     Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key);
+  }
+
+  public interface StagedPredictions {
+    Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
   }
 
   public interface ExemplarMembers {
@@ -2116,9 +2123,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         }
 
-        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(
-                config.setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
-        );
+        SharedTreeGraph[] trees = null;
+        if (genmodel instanceof SharedTreeMojoModel) {
+          SharedTreeMojoModel treemodel = (SharedTreeMojoModel) genmodel;
+          final int ntrees = treemodel.getNTreeGroups();
+          trees = new SharedTreeGraph[ntrees];
+          for (int t = 0; t < ntrees; t++)
+            trees[t] = treemodel._computeGraph(t);
+        }
+
+        EasyPredictModelWrapper epmw;
+        try {
+          epmw = new EasyPredictModelWrapper(
+                  config.setModel(genmodel)
+                          .setConvertUnknownCategoricalLevelsToNa(true)
+                          .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+          );
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
@@ -2159,6 +2182,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Convert model predictions and "internal" predictions into the same shape
           double[] expected_preds = new double[pvecs.length];
           double[] actual_preds = new double[pvecs.length];
+          String[] decisionPath = null;
+          int[] nodeIds = null;
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
@@ -2171,11 +2196,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 d2 = ((ClusteringModelPrediction) p).cluster;
                 break;
               case Regression:
-                d2 = ((RegressionModelPrediction) p).value;
+                RegressionModelPrediction rmp = (RegressionModelPrediction) p;
+                d2 = rmp.value;
+                decisionPath = rmp.leafNodeAssignments;
+                nodeIds = rmp.leafNodeAssignmentIds;
                 break;
               case Binomial:
                 BinomialModelPrediction bmp = (BinomialModelPrediction) p;
                 d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                decisionPath = bmp.leafNodeAssignments;
+                nodeIds = bmp.leafNodeAssignmentIds;
                 break;
               case Ordinal:
                 OrdinalModelPrediction orp = (OrdinalModelPrediction) p;
@@ -2184,6 +2214,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               case Multinomial:
                 MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
                 d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
+                decisionPath = mmp.leafNodeAssignments;
+                nodeIds = mmp.leafNodeAssignmentIds;
                 break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
@@ -2192,6 +2224,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
             expected_preds[col] = d;
             actual_preds[col] = d2;
+          }
+
+          if (trees != null) {
+            for (int t = 0; t < trees.length; t++) {
+              SharedTreeGraph tree = trees[t];
+              SharedTreeNode node = tree.walkNodes(0, decisionPath[t]);
+              if (node == null || node.getNodeNumber() != nodeIds[t]) {
+                throw new IllegalStateException("Path to leaf node is inconsistent with predicted node id: path=" + decisionPath[t] + ", nodeId=" + nodeIds[t]);
+              }
+            }
           }
 
           // Verify the correctness of the prediction
