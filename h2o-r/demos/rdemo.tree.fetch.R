@@ -25,7 +25,7 @@ gbm.tree <- h2o.getModelTree(gbm.model, 1,"NO")
 
 # Show the structure of the three fetched. The tree contains lists of left and right child nodes. A list with description of each edge in the graph is also present.
 # The length of the descriptions list equals to the number of nodes in the tree. For each node's index, there is a description to be found.
-# The descriptions consists of categorical levels/thresholds related to the edge leading from node's parent to the node itself.
+# The descriptions consists of categorical levels/thresholds related to the edge leadingh2o from node's parent to the node itself.
 print(gbm.tree)
 
 # Iterate over the nodes in the tree, printing numbers (identifiers) of nodes and the split rules.
