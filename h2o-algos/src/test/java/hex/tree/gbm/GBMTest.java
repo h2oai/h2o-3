@@ -1,6 +1,8 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import org.junit.Assert;
@@ -14,6 +16,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -373,6 +376,49 @@ public class GBMTest extends TestUtil {
       parms._train.remove();
       parms._valid.remove();
       if( gbm != null ) gbm.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test public void testPredictLeafNodeAssignment() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+
+      Frame pred = Scope.track(parse_test_file("smalldata/gbm_test/ecology_eval.csv"));
+      pred.remove("Angaus").remove();    // No response column during scoring
+
+      Frame nodeIds = Scope.track(gbm.scoreLeafNodeAssignment(pred, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, target));
+      Frame nodePaths = Scope.track(gbm.scoreLeafNodeAssignment(pred, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, target));
+
+      assertArrayEquals(nodePaths._names, nodeIds._names);
+      assertEquals(nodePaths.numRows(), nodeIds.numRows());
+
+      for (int i = 0; i < nodePaths.numCols(); i++) {
+        String[] paths = nodePaths.vec(i).domain();
+        Vec.Reader pathVecRdr = nodePaths.vec(i).new Reader();
+        Vec.Reader nodeIdVecRdr = nodeIds.vec(i).new Reader();
+        SharedTreeSubgraph tree = gbm.getSharedTreeSubgraph(i, 0);
+        for (long j = 0; j < nodePaths.numRows(); j++) {
+          String path = paths[(int) pathVecRdr.at8(j)];
+          int nodeId = (int) nodeIdVecRdr.at8(j);
+          SharedTreeNode node = tree.walkNodes(path);
+          assertEquals(node.getNodeNumber(), nodeId);
+        }
+      }
+    } finally {
       Scope.exit();
     }
   }

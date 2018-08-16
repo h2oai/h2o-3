@@ -46,6 +46,10 @@ test.checkpointing <- function() {
   print(preds1)
   preds2 <- h2o.predict_leaf_node_assignment(model1, train)
   print(preds2)
+  expect_error(h2o.predict_leaf_node_assignment(model1, train, type="TyPo"), "type must be one of: Path, Node_ID")
+  preds3 <- h2o.predict_leaf_node_assignment(model1, train, type = "Node_ID")
+  print(preds3)
+  expect_equal("integer", class(as.data.frame(preds3)$T1))
 }
 
 doTest("Test GBM checkpointing", test.checkpointing)

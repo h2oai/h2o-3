@@ -22,10 +22,7 @@ public class TreeHandler extends Handler {
         final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
         validateArgs(args, sharedTreeOutput, treeClass);
 
-        final CompressedTree auxCompressedTree = sharedTreeOutput._treeKeysAux[args.tree_number][treeClass].get();
-        final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeOutput._treeKeys[args.tree_number][treeClass].get()
-                .toSharedTreeSubgraph(auxCompressedTree, sharedTreeOutput._names, sharedTreeOutput._domains);
-
+        final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(args.tree_number, treeClass);
         final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
 
         args.left_children = treeProperties._leftChildren;

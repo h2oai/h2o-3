@@ -89,7 +89,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public interface LeafNodeAssignment {
-    Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key);
+    enum LeafNodeAssignmentType {Path, Node_ID}
+    Frame scoreLeafNodeAssignment(Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key);
   }
 
   public interface StagedPredictions {

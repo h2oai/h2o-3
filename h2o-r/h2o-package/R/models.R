@@ -424,8 +424,8 @@ h2o.predict <- function(object, newdata, ...){
 #'
 #' Obtains leaf node assignment from fitted H2O model objects.
 #'
-#' For every row in the test set, return a set of factors that identify the leaf placements
-#' of the row in all the trees in the model.
+#' For every row in the test set, return the leaf placements of the row in all the trees in the model.
+#' Placements can be represented either by paths to the leaf nodes from the tree root or by H2O's internal identifiers.
 #' The order of the rows in the results is the same as the order in which the
 #' data was loaded
 #'
@@ -433,6 +433,8 @@ h2o.predict <- function(object, newdata, ...){
 #'        desired
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
+#' @param type choice of either "Path" when tree paths are to be returned (default); or "Node_ID" when the output
+#         should be the leaf node IDs.
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame object with categorical leaf assignment identifiers for
 #'         each tree in the model.
@@ -450,13 +452,20 @@ h2o.predict <- function(object, newdata, ...){
 #' h2o.predict_leaf_node_assignment(prostate.gbm, prostate.hex)
 #' }
 #' @export
-predict_leaf_node_assignment.H2OModel <- function(object, newdata, ...) {
+predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Path", "Node_ID"), ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
+  params <- list(leaf_node_assignment = TRUE)
+  if (!missing(type)) {
+    if (!(type %in% c("Path", "Node_ID"))) {
+      stop("type must be one of: Path, Node_ID")
+    }
+    params$leaf_node_assignment_type <- type
+  }
 
   url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST", leaf_node_assignment=TRUE)
+  res <- .h2o.__remoteSend(url, method = "POST", .params = params)
   res <- res$predictions_frame
   h2o.getFrame(res$name)
 }
