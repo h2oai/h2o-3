@@ -290,20 +290,25 @@ public abstract class SharedTreeModel<
     }
   }
 
-  private static class AssignLeafNodeTask extends MRTask<AssignLeafNodeTask> {
-    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
-    private final String _domains[][];
+  private static abstract class AssignLeafNodeTaskBase extends MRTask<AssignLeafNodeTaskBase> {
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    final String _domains[][];
 
-    private AssignLeafNodeTask(SharedTreeOutput output) {
+    AssignLeafNodeTaskBase(SharedTreeOutput output) {
       _treeKeys = output._treeKeys;
       _domains = output._domains;
     }
+
+    protected abstract void initMap();
+
+    protected abstract void assignNode(final int tidx, final int cls, final CompressedTree tree, final double[] input,
+                                       final NewChunk out);
 
     @Override
     public void map(Chunk chks[], NewChunk[] idx) {
       double[] input = new double[chks.length];
 
-      BufStringDecisionPathTracker tr = new BufStringDecisionPathTracker();
+      initMap();
       for (int row = 0; row < chks[0]._len; row++) {
         for (int i = 0; i < chks.length; i++)
           input[i] = chks[i].atd(row);
@@ -311,15 +316,36 @@ public abstract class SharedTreeModel<
         int col = 0;
         for (int tidx = 0; tidx < _treeKeys.length; tidx++) {
           Key[] keys = _treeKeys[tidx];
-          for (Key key : keys) {
+          for (int cls = 0; cls < keys.length; cls++) {
+            Key key = keys[cls];
             if (key != null) {
-              BufferedString pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input, _domains, tr);
-              idx[col++].addStr(pred);
+              CompressedTree tree = DKV.get(key).get();
+              assignNode(tidx, cls, tree, input, idx[col++]);
             }
           }
         }
         assert (col == idx.length);
       }
+    }
+
+  }
+
+  private static class AssignLeafNodeTask extends AssignLeafNodeTaskBase {
+    private transient BufStringDecisionPathTracker _tr;
+
+    private AssignLeafNodeTask(SharedTreeOutput output) {
+      super(output);
+    }
+
+    @Override
+    protected void initMap() {
+      _tr = new BufStringDecisionPathTracker();
+    }
+
+    @Override
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+      BufferedString pred = tree.getDecisionPath(input, _domains, _tr);
+      out.addStr(pred);
     }
   }
 
