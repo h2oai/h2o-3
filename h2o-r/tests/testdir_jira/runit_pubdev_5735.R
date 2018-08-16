@@ -19,10 +19,13 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(gbm.tree@tree_number)[1])
   expect_equal("character", class(gbm.tree@tree_class)[1])
   expect_equal("integer", class(gbm.tree@root_node_id)[1])
+  expect_equal("list", class(gbm.tree@levels)[1])
   
   expect_equal(length(gbm.tree@left_children)[1], length(gbm.tree@right_children)[1])
   expect_true(is.na(match(0, gbm.tree@left_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.na(match(0, gbm.tree@right_children)[1])) # There are no zeros in the list of nodes
+  expect_true(is.null(gbm.tree@levels[[1]])) # Root node has no categorical splits
+  expect_equal(length(gbm.tree@left_children), length(gbm.tree@levels))
   
   totalLength <- length(gbm.tree@left_children)
   expect_equal(totalLength, length(gbm.tree@descriptions))
@@ -54,10 +57,13 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(drf.tree@tree_number)[1])
   expect_equal("character", class(drf.tree@tree_class)[1]) # The value must be properly filled by the backend, even if unspecified
   expect_equal("integer", class(drf.tree@root_node_id)[1])
+  expect_equal("list", class(drf.tree@levels)[1])
   
   expect_equal(length(drf.tree@left_children)[1], length(drf.tree@right_children)[1])
   expect_true(is.na(match(0, drf.tree@left_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.na(match(0, drf.tree@right_children)[1])) # There are no zeros in the list of nodes
+  expect_true(is.null(drf.tree@levels[[1]])) # Root node has no categorical splits
+  expect_equal(length(drf.tree@left_children), length(drf.tree@levels))
   
   totalLength <- length(drf.tree@left_children)
   expect_equal(totalLength, length(drf.tree@descriptions))
@@ -93,10 +99,13 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(multinomial.tree@tree_number)[1])
   expect_equal("character", class(multinomial.tree@tree_class)[1]) # The value must be properly filled by the backend, even if unspecified
   expect_equal("integer", class(multinomial.tree@root_node_id)[1])
+  expect_equal("list", class(multinomial.tree@levels)[1])
   
   expect_equal(length(multinomial.tree@left_children)[1], length(multinomial.tree@right_children)[1])
   expect_true(is.na(match(0, multinomial.tree@left_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.na(match(0, multinomial.tree@right_children)[1])) # There are no zeros in the list of nodes
+  expect_true(is.null(multinomial.tree@levels[[1]])) # Root node has no categorical splits
+  expect_equal(length(multinomial.tree@left_children), length(multinomial.tree@levels))
   
   totalLength <- length(multinomial.tree@left_children)
   expect_equal(totalLength, length(multinomial.tree@descriptions))
@@ -132,6 +141,7 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(regression.tree@tree_number)[1])
   expect_equal("character", class(regression.tree@tree_class)[1])
   expect_equal("integer", class(regression.tree@root_node_id)[1])
+  expect_equal("list", class(regression.tree@levels)[1])
   
   expect_equal(length(regression.tree@left_children)[1], length(regression.tree@right_children)[1])
   expect_true(is.na(match(0, regression.tree@left_children)[1])) # There are no zeros in the list of nodes
@@ -142,6 +152,8 @@ test.gbm.trees <- function() {
   expect_equal(totalLength, length(regression.tree@thresholds))
   expect_equal(totalLength, length(regression.tree@nas))
   expect_equal(totalLength, length(regression.tree@features))
+  expect_true(is.null(regression.tree@levels[[1]])) # Root node has no categorical splits
+  expect_equal(length(regression.tree@left_children), length(regression.tree@levels))
   
   # All descriptions must be non-empty
   for (description in regression.tree@descriptions) {
