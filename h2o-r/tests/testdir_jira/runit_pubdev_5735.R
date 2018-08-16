@@ -25,7 +25,7 @@ test.gbm.trees <- function() {
   expect_true(is.na(match(0, gbm.tree@right_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.null(gbm.tree@levels[[1]])) # Root node has no categorical splits
   expect_equal(length(gbm.tree@left_children), length(gbm.tree@levels))
-  expect_true(!is.null(gbm.tree@model))
+  expect_true(!is.null(gbm.tree@model_id))
   
   totalLength <- length(gbm.tree@left_children)
   expect_equal(totalLength, length(gbm.tree@descriptions))
@@ -69,7 +69,7 @@ test.gbm.trees <- function() {
   expect_equal(totalLength, length(drf.tree@thresholds))
   expect_equal(totalLength, length(drf.tree@nas))
   expect_equal(totalLength, length(drf.tree@features))
-  expect_true(!is.null(drf.tree@model))
+  expect_true(!is.null(drf.tree@model_id))
   
   # All descriptions must be non-empty
   for (description in drf.tree@descriptions) {
@@ -105,7 +105,7 @@ test.gbm.trees <- function() {
   expect_true(is.na(match(0, multinomial.tree@right_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.null(multinomial.tree@levels[[1]])) # Root node has no categorical splits
   expect_equal(length(multinomial.tree@left_children), length(multinomial.tree@levels))
-  expect_true(!is.null(multinomial.tree@model))
+  expect_true(!is.null(multinomial.tree@model_id))
   
   totalLength <- length(multinomial.tree@left_children)
   expect_equal(totalLength, length(multinomial.tree@descriptions))
@@ -145,7 +145,7 @@ test.gbm.trees <- function() {
   expect_equal(length(regression.tree@left_children)[1], length(regression.tree@right_children)[1])
   expect_true(is.na(match(0, regression.tree@left_children)[1])) # There are no zeros in the list of nodes
   expect_true(is.na(match(0, regression.tree@right_children)[1])) # There are no zeros in the list of nodes
-  expect_true(!is.null(multinomial.tree@model))
+  expect_true(!is.null(multinomial.tree@model_id))
   
   totalLength <- length(regression.tree@left_children)
   expect_equal(totalLength, length(regression.tree@descriptions))
