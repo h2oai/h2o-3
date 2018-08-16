@@ -2237,21 +2237,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public void deleteCrossValidationModels() {
+    deleteCrossValidationModels(false);
+  }
+
+  /**
+   * delete from the output all associated CV models from DKV.
+   * @param nullify if set to true, this will also lock and update the model.
+   */
+  public void deleteCrossValidationModels(boolean nullify) {
     if (_output._cross_validation_models != null) {
       Log.info("Cleaning up CV Models for " + this._key.toString());
       int count = deleteAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
-      try {
-        write_lock();
-        _output._cross_validation_models = null;
-        update();
-      } finally {
-        unlock();
+      if (nullify) {
+        try {
+          write_lock();
+          _output._cross_validation_models = null;
+          update();
+        } finally {
+          unlock();
+        }
       }
     }
   }
 
   public void deleteCrossValidationPreds() {
+    deleteCrossValidationPreds(false);
+  }
+
+  /**
+   * delete from the output all associated CV predictions from DKV.
+   * @param nullify if set to true, this will also lock and update the model.
+   */
+  public void deleteCrossValidationPreds(boolean nullify) {
     boolean needsUpdate = false;
     if (_output._cross_validation_predictions != null) {
       Log.info("Cleaning up CV Predictions for " + this._key.toString());
@@ -2265,7 +2283,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       needsUpdate = true;
     }
 
-    if (needsUpdate) {
+    if (nullify && needsUpdate) {
       try {
         write_lock();
         _output._cross_validation_predictions = null;
