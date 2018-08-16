@@ -3185,12 +3185,17 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     root_node_id = res$root_node_id,
     thresholds = res$thresholds,
     features = res$features,
-    levels = res$levels,
     nas = res$nas
   )
   
   if(!is.null(res$tree_class)){
     tree@tree_class <- res$tree_class
+  }
+  
+  if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
+    tree@levels <- rep(list(NULL), length(res$levels))
+  } else {
+    tree@levels <- res$levels
   }
   
   for (i in 1:length(tree@levels)){
@@ -3205,7 +3210,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     
     right <- tree@right_children[i];
     left <- tree@left_children[i]
-    split_column_cat_index <- match(tree@features[i], gbm.model@model$columns$names) # Indexof split column on children's parent node
+    split_column_cat_index <- match(tree@features[i], model@model$columns$names) # Indexof split column on children's parent node
     if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
       if(right != -1) pointer <- pointer + 1;
       if(left != -1) pointer <- pointer + 1;
