@@ -85,7 +85,7 @@ public class SharedTreeSubgraph {
     parent.setRightChild(child);
   }
 
-  SharedTreeNode walkNodes(final String path) {
+  public SharedTreeNode walkNodes(final String path) {
     SharedTreeNode n = rootNode;
     for (int i = 0; i < path.length(); i++) {
       if (n == null)
