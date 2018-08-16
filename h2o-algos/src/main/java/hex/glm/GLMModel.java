@@ -211,7 +211,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
 
     public void validate(GLM glm) {
-      if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE))
+      if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
         throw H2O.unimpl("Naive coordinate descent is not supported.");
       if(_alpha != null && (1 < _alpha[0] || _alpha[0] < 0))
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
