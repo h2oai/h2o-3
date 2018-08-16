@@ -3122,6 +3122,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
 #' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
 #' @slot features A \code{character} with names of the feature/column used for the split.
+#' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @aliases H2OTree
 #' @export
