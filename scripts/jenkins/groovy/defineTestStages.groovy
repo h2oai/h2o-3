@@ -165,8 +165,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
-      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
-      archiveAdditionalFiles: ['h2o-r/h2o-package/**/*.html', 'r-generated-docs.zip']
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
+      archiveAdditionalFiles: ['r-generated-docs.zip'], installRPackage: false
     ],
     [
       stageName: 'MOJO Compatibility', target: 'test-mojo-compatibility',
@@ -391,6 +391,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           target = c['target']
           pythonVersion = c['pythonVersion']
           rVersion = c['rVersion']
+          installRPackage = c['installRPackage']
           javaVersion = c['javaVersion']
           timeoutValue = c['timeoutValue']
           hasJUnit = c['hasJUnit']
@@ -406,7 +407,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
           activateR = c['activateR']
-	  customDockerArgs = c['customDockerArgs']
+	      customDockerArgs = c['customDockerArgs']
         }
       }
     ]
@@ -447,6 +448,10 @@ private void invokeStage(final pipelineContext, final body) {
   config.excludeAdditionalFiles = config.excludeAdditionalFiles ?: []
   if (config.archiveFiles == null) {
     config.archiveFiles = true
+  }
+
+  if (config.installRPackage == null) {
+      config.installRPackage = true
   }
 
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
