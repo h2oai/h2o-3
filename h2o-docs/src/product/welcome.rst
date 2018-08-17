@@ -729,7 +729,7 @@ This section describes how to use H2O on Docker and walks you through the follow
 -  Building a Docker image from the Dockerfile
 -  Running the Docker build
 -  Launching H2O
--  Accessing H2O from the web browser or R
+-  Accessing H2O from the web browser or from R/Python
 
 Prerequisites
 ~~~~~~~~~~~~~
@@ -741,10 +741,9 @@ Prerequisites
    daemon window
 -  Using ``User`` directory (not ``root``)
 
-Notes
-~~~~~
+**Notes**:
 
--  Older Linux kernel versions are known to cause kernel panics that break Docker; there are ways around it, but these should be attempted at your own risk. To check the version of your kernel, run ``uname -r`` at the command prompt. The walkkthrough that follows has been tested on a Mac OS X 10.10.1.
+-  Older Linux kernel versions are known to cause kernel panics that break Docker. There are ways around it, but these should be attempted at your own risk. To check the version of your kernel, run ``uname -r`` at the command prompt. The walkthrough that follows has been tested on a Mac OS X 10.10.1.
 -  The Dockerfile always pulls the latest H2O release.
 -  The Docker image only needs to be built once.
 
@@ -756,7 +755,7 @@ Walkthrough
 Depending on your OS, select the appropriate installation method:
 
 -  `Mac
-   Installation <https://docs.docker.com/installation/mac/#installation>`__
+   Installation <https://docs.docker.com/installation/mac/#installation>`__. **Note**: By default, Docker allocates 2GB of memory for Mac installations. Be sure to increase this value. We normally suggest 3-4 times the size of the dataset for the amount of memory required.     
 -  `Ubuntu
    Installation <https://docs.docker.com/installation/ubuntulinux/>`__
 -  `Other OS Installations <https://docs.docker.com/installation/>`__
@@ -791,29 +790,25 @@ Depending on your OS, select the appropriate installation method:
 
 **Step 3 - Build Docker image from Dockerfile**
 
-From the **/data/h2o-{{branch\_name}}** directory, run:
+From the **/data/h2o-{{branch\_name}}** directory, run the following. Note below that ``v5`` represents the current version number.
 
 ::
 
     docker build -t "h2o.ai/{{branch_name}}:v5" .
 
-    **Note**: ``v5`` represents the current version number.
-
 Because it assembles all the necessary parts for the image, this process can take a few minutes.
 
 **Step 4 - Run Docker Build**
 
-On a Mac, use the argument *-p 54321:54321* to expressly map the port 54321. This is not necessary on Linux.
+On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. This is not necessary on Linux. Note below that ``v5`` represents the version number.
 
 ::
 
     docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
 
-    **Note**: ``v5`` represents the version number.
-
 **Step 5 - Launch H2O**
 
-Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321.
+Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321. 
 
 ::
 
@@ -822,13 +817,13 @@ Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` 
 
 **Step 6 - Access H2O from the web browser or R**
 
--  *On Linux*: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
+-  **On Linux**: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
 
   ::
 
      03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
 
--  *On OSX*: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
+-  **On OSX**: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
 
   ::
 
@@ -853,9 +848,18 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
     docker is configured to use the default machine with IP 192.168.99.100
     For help getting started, check out the docs at https://docs.docker.com
 
-After obtaining the IP address, point your browser to the specified ip address and port. In R, you can access the instance by installing the latest version of the H2O R package and running:
+After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
-::
 
-    library(h2o)
-    dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+  .. example-code::
+     .. code-block:: r
+
+      # Initialize H2O
+      library(h2o)
+      dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+
+     .. code-block:: python
+
+      # Initialize H2O 
+      import h2o
+      docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
