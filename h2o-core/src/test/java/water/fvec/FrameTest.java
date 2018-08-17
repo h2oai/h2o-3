@@ -4,7 +4,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.util.FrameUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -106,6 +105,70 @@ public class FrameTest extends TestUtil {
 //      subset2.delete();
       if (x != null) x.delete();
       if (y != null) y.delete();
+    }
+  }
+
+  @Test
+  public void testRowDeepSlice() {
+    Scope.enter();
+    try {
+      long[] numericalCol = ar(1, 2, 3, 4);
+      Frame input = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, numericalCol)
+              .withChunkLayout(numericalCol.length)
+              .build();
+
+      // Single number row slice
+      Frame sliced = input.deepSlice(new long[]{1}, null);
+      assertEquals(1, sliced.numRows());
+      assertEquals("b", sliced.vec(0).stringAt(0));
+      assertEquals(2, sliced.vec(1).at(0), 1e-5);
+
+      //checking that 0-based indexing is allowed as well
+      Frame slicedRange = input.deepSlice(new long[]{0, 3}, null);
+      assertEquals(2, slicedRange.numRows());
+      assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
+      assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
+
+      //TODO add test for new long[]{-4} values
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testRowDeepSliceWithPredicateFrame() {
+    Scope.enter();
+    try {
+      long[] numericalCol = ar(1, 2, 3, 4);
+      Frame input = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, numericalCol)
+              .withChunkLayout(numericalCol.length)
+              .build();
+
+      // Single number row slice
+      Frame sliced = input.deepSlice(new Frame(vec(0, 1, 0, 0)), null);
+      assertEquals(1, sliced.numRows());
+      assertEquals("b", sliced.vec(0).stringAt(0));
+      assertEquals(2, sliced.vec(1).at(0), 1e-5);
+
+      //checking that 0-based indexing is allowed as well
+      Frame slicedRange = input.deepSlice(new Frame(vec(1, 0, 0, 1)), null);
+      assertEquals(2, slicedRange.numRows());
+      assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
+      assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
+
+      //TODO add test for new long[]{-4} values
+    } finally {
+      Scope.exit();
     }
   }
 
