@@ -80,11 +80,11 @@ Step 1: Build and Extract a Model
 
    .. code-block:: Java
 
-    # Compile the source: 
+    // Compile the source: 
     javac -classpath ~/h2o/h2o-3.20.0.1/h2o.jar src/h2oDirect/h2oDirect.java
 
-    # Execute as a classfile. This also downloads the LoanStats4 demo,
-    # which trains a GBM model.
+    // Execute as a classfile. This also downloads the LoanStats4 demo,
+    // which trains a GBM model.
     Erics-MBP-2:h2oDirect ericgudgion$ java -cp /Users/ericgudgion/NetBeansProjects/h2oDirect/src/:/Users/ericgudgion/h2o/h2o-3.20.0.1/h2o.jar h2oDirect.h2oDirect /Demos/Lending-Club/LoanStats4.csv 
     ...
     06-14 20:40:29.420 192.168.1.160:54321   55005  main      INFO: Found XGBoost backend with library: xgboost4j_minimal
@@ -116,7 +116,7 @@ Step 1: Build and Extract a Model
     Model AUC 0.8289237508508612
     Model written out as a mojo to file /Demos/Lending-Club/LoanStats4.csv.zip
 
-    # Save as h2oDirect.java
+    // Save as h2oDirect.java
     package h2oDirect;
 
     import hex.tree.gbm.GBM;
