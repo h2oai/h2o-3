@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
@@ -228,8 +229,7 @@ public class TargetEncoder {
     }
 
     public Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
-        String astTree = String.format("( append %s %d '%s' )", a._key , columnValue, appendedColumnName);
-        return execRapidsAndGetFrame(astTree);
+        return a.addCon(appendedColumnName, columnValue);
     }
 
     // Maybe it's better to calculate mean before any aggregations?
@@ -352,28 +352,31 @@ public class TargetEncoder {
                     int foldColumnIndex = getColumnIndexByName(dataWithAllEncodings, foldColumnName);
                     long[] foldValues = getUniqueValuesOfTheFoldColumn(targetEncodingMap, 1);
 
-                    for(long foldValue : foldValues) { // TODO what if our te column is not represented in every foldValue? Then when merging with original dataset we will get NA'a on the right side
-                        Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnName, foldValue);
+                    Scope.enter();
+                    try {
+                        for (long foldValue : foldValues) { // TODO what if our te column is not represented in every foldValue? Then when merging with original dataset we will get NA'a on the right side
+                            Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnName, foldValue);
 
-                        Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
+                            Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
-                        renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
-                        renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
+                            renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
+                            renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
 
-                        Frame groupedWithAppendedFoldColumn = appendColumn(groupedByTEColumnAndAggregate, foldValue, "foldValueForMerge");
+                            Frame groupedWithAppendedFoldColumn = groupedByTEColumnAndAggregate.addCon("foldValueForMerge", foldValue);
 
-                        if(holdoutEncodeMap == null) {
-                            holdoutEncodeMap = groupedWithAppendedFoldColumn;
+                            if (holdoutEncodeMap == null) {
+                                holdoutEncodeMap = groupedWithAppendedFoldColumn;
+                            } else {
+                                Frame newHoldoutEncodeMap = rBind(holdoutEncodeMap, groupedWithAppendedFoldColumn);
+                                holdoutEncodeMap.delete();
+                                holdoutEncodeMap = newHoldoutEncodeMap;
+                            }
+
+                            outOfFoldData.delete();
+                            Scope.track(groupedByTEColumnAndAggregate);
                         }
-                        else {
-                            Frame newHoldoutEncodeMap = rBind(holdoutEncodeMap, groupedWithAppendedFoldColumn);
-                            groupedWithAppendedFoldColumn.delete();
-                            holdoutEncodeMap.delete();
-                            holdoutEncodeMap = newHoldoutEncodeMap;
-                        }
-
-                        outOfFoldData.delete();
-                        groupedByTEColumnAndAggregate.delete();
+                    } finally {
+                        Scope.exit();
                     }
 
                     dataWithMergedAggregations = mergeByTEColumnAndFold(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);

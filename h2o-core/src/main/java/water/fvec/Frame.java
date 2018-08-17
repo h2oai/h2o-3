@@ -630,6 +630,9 @@ public class Frame extends Lockable<Frame> {
    *  @return the expanded Frame, for flow-coding */
   public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
 
+  /** @return the expanded with constant vector Frame, for flow-coding */
+  public Frame addCon(String appendedColumnName, long constant ) { add(appendedColumnName, Vec.makeCon(constant, numRows(), Vec.T_NUM)); return this; }
+
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
     if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
