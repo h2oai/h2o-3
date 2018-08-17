@@ -33,7 +33,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
   }
 
-
   @Test
   public void assertionErrorDuringMergeDueToNAsTest() {
     Scope.enter();
@@ -99,33 +98,28 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       Scope.track(trainFrame, validFrame, testFrame);
 
+      String foldColumnName = "fold";
+      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
+
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-      String foldColumnName = "fold";
-      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
-
-      System.out.println("Training frame with fold columns");
-      printOutFrameAsTable(trainFrame, true);
-
-      FrameUtils.addKFoldColumn(validFrame, foldColumnName, 5, 1234L);
-      FrameUtils.addKFoldColumn(testFrame, foldColumnName, 5, 1234L);
-
       String targetColumnName = "survived";
 
-      String[] teColumns = {"cabin", "embarked", "home.dest"};
-      String[] teColumnsWithFold = {"cabin", "embarked", "home.dest", foldColumnName};
+      String[] teColumns = {"cabin", "home.dest", "embarked"};
+      String[] teColumnsWithFold = {"cabin", "home.dest", "embarked", foldColumnName};
 
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName);
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, false, 0, 1234.0);
+
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, true);
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, true, 0.0, 1234.0);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName,true, 0.0, 1234.0);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       printOutColumnsMeta(trainEncoded);
@@ -172,7 +166,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void leaveOneOutHoldoutTypeTest() {
     GBMModel gbm = null;
@@ -190,28 +183,23 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-      String[] teColumns = {"cabin", "embarked", "home.dest"};
+      String[] teColumns = {"cabin", "embarked"/*, "home.dest"*/};
 
       String targetColumnName = "survived";
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, false, 0, 1234.0);
+      //TODO does prepareEncodingMap change trainFrame somehow?
 
-
-      printOutFrameAsTable(trainEncoded, true, true);
-      printOutColumnsMeta(trainEncoded);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, true);
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
-
-      printOutFrameAsTable(validEncoded, true, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 0, 1234.0);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 0, 1234.0);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
-      printOutFrameAsTable(testEncoded, true, true);
 
       // With target encoded Origin column
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -276,6 +264,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
+      // TODO we need to make it automatically just in case if user will try to load frames from separate sources like we did here
       Frame teHoldoutFrameFactorized = FrameUtils.asFactor(teHoldoutFrame, "cabin");
       Scope.track(teHoldoutFrameFactorized);
 
@@ -285,20 +274,16 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, teColumns, targetColumnName, null);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
       Scope.track(trainEncoded);
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
       Scope.track(validEncoded);
 
-      printOutFrameAsTable(validEncoded, true, true);
-
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, false, 0, 1234.0);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
       Scope.track(testEncoded);
-
-      printOutFrameAsTable(testEncoded, true, true);
 
       // With target encoded Origin column
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -392,8 +377,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
   @After
   public void afterEach() {
-    System.out.println("After each test we do H2O.STORE.clear() and Vec.ESPC.clear()");
-//    Vec.ESPC.clear();
   }
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
