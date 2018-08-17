@@ -190,9 +190,15 @@ public class FrameTest extends TestUtil {
 
       Vec vec = vec(1, 2);
       fr.add("ColB", vec);
-
       Scope.track(vec);
+
       assertVecEquals(vec, fr.vec("ColB"), 1e-5);
+
+      // add constant vector
+      Frame tmp = fr.addCon("ColC", 42);
+      Vec expectedConstVec = vec(42, 42);
+
+      assertVecEquals(expectedConstVec, tmp.vec("ColC"), 1e-5);
     } finally {
       Scope.exit();
     }
