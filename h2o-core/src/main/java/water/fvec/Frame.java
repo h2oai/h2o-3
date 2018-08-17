@@ -1052,7 +1052,7 @@ public class Frame extends Lockable<Frame> {
    *  <li><em>an unordered list of positive</em> - just these, allowing dups
    *  </ul>
    *
-   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values.
+   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values. // TODO is it true? see Frametest.testRowDeepSlice test
    *  @return the sliced Frame
    */
   public Frame deepSlice( Object orows, Object ocols ) {
@@ -1212,6 +1212,35 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
+  /**
+   *
+   * @param columnIndex
+   * @return frame without rows with NAs in `columnIndex` column
+   */
+  public Frame filterOutNAsInColumn(int columnIndex) {
+    Frame noNaPredicateFrame = new IsNaTask().doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
+    String[] names = names().clone();
+    byte[] types = types().clone();
+    String[][] domains = domains().clone();
+
+    add("predicate", noNaPredicateFrame.anyVec());
+    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains); // TODO here we do a copy of the Frame. probably can do better.
+    noNaPredicateFrame.delete();
+    remove("predicate");
+    return filtered;
+  }
+
+  private static class IsNaTask extends MRTask<IsNaTask> {
+    @Override
+    public void map(Chunk cs[], NewChunk ncs[]) {
+      for (int col = 0; col < cs.length; col++) {
+        Chunk c = cs[col];
+        NewChunk nc = ncs[col];
+        for (int i = 0; i < c._len; i++)
+          nc.addNum(c.isNA(i) ? 0 : 1);
+      }
+    }
+  }
 
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {

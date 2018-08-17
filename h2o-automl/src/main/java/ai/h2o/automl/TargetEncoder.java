@@ -3,8 +3,7 @@ package ai.h2o.automl;
 import water.DKV;
 import water.Key;
 import water.Scope;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.TwoDimTable;
@@ -159,9 +158,8 @@ public class TargetEncoder {
         return res;
     }
 
-    public Frame filterOutNAsFromTargetColumn(Frame data, int targetIndex)  {
-        String tree = String.format("(rows %s  (!! (is.na (cols %s [%s] ) ) ) )", data._key, data._key, targetIndex);
-        return execRapidsAndGetFrame(tree);
+    public Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
+        return data.filterOutNAsInColumn(targetColumnIndex);
     }
 
     public Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
