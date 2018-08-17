@@ -6,8 +6,11 @@ import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.task.IsNaTask;
+import water.fvec.task.UniqTask;
 import water.parser.BufferedString;
 import water.rapids.Merge;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 
 import java.io.IOException;
@@ -1230,16 +1233,30 @@ public class Frame extends Lockable<Frame> {
     return filtered;
   }
 
-  private static class IsNaTask extends MRTask<IsNaTask> {
-    @Override
-    public void map(Chunk cs[], NewChunk ncs[]) {
-      for (int col = 0; col < cs.length; col++) {
-        Chunk c = cs[col];
-        NewChunk nc = ncs[col];
-        for (int i = 0; i < c._len; i++)
-          nc.addNum(c.isNA(i) ? 0 : 1);
-      }
+  /** return a frame with unique values from the specified column */
+  public Frame uniqueValuesBy(int columnIndex) {
+    Vec vec0 = vec(columnIndex);
+    Vec v;
+    if (numCols() != 1)
+      throw new IllegalArgumentException("Unique applies to a single column only.");
+    if (vec0.isCategorical()) {
+      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
+      v.setDomain(vec0.domain());
+      DKV.put(v);
+    } else {
+      UniqTask t = new UniqTask().doAll(this);
+      int nUniq = t._uniq.size();
+      final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
+      v = Vec.makeZero(nUniq, vec0.get_type());
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          int start = (int) c.start();
+          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
+        }
+      }.doAll(v);
     }
+    return new Frame(v);
   }
 
   // Convert len rows starting at off to a 2-d ascii table
