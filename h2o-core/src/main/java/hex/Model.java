@@ -2236,28 +2236,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return c;
   }
 
-  public void deleteCrossValidationModels() {
-    deleteCrossValidationModels(false);
-  }
-
   /**
    * delete from the output all associated CV models from DKV.
-   * @param nullify if set to true, this will also lock and update the model.
    */
-  public void deleteCrossValidationModels(boolean nullify) {
+  public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
       Log.info("Cleaning up CV Models for " + this._key.toString());
       int count = deleteAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
-      if (nullify) {
-        try {
-          write_lock();
-          _output._cross_validation_models = null;
-          update();
-        } finally {
-          unlock();
-        }
-      }
     }
   }
 

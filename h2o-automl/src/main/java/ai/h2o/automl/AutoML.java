@@ -1139,10 +1139,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       cleanUpModelsCVPreds();
     }
 
-    if (!buildSpec.build_control.keep_cross_validation_models) {
-      cleanUpModelsCVModels();
-    }
-
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
   } // end of learn()
@@ -1373,10 +1369,4 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  private void cleanUpModelsCVModels() {
-    Log.info("Cleaning up all CV Models for AutoML");
-    for (Model model : leaderboard().getModels()) {
-      model.deleteCrossValidationModels(true);
-    }
-  }
 }
