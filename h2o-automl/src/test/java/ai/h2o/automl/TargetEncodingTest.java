@@ -343,6 +343,11 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
+    public void encodingWasCreatedWithFoldsCheckTest() {
+      //TODO encoding contains fold column but user did not provide fold column name during application phase.
+    }
+
+    @Test
     public void targetEncoderKFoldHoldoutApplyingWithNoiseTest() {
       fr = new TestFrameBuilder()
               .withName("testFrame")
@@ -539,6 +544,11 @@ public class TargetEncodingTest extends TestUtil{
         encodedVec.remove();
       encodingMapCleanUp(targetEncodingMap);
       resultWithEncoding.delete();
+    }
+
+    @Test
+    public void blendingTest() {
+      //      //TODO more tests for blending
     }
 
     // ------------------------ LeaveOneOut holdout type -------------------------------------------------------------//
@@ -753,6 +763,51 @@ public class TargetEncodingTest extends TestUtil{
     assertEquals(1, vec.at(2), expectedDifferenceDueToNoise);
     assertEquals(1, vec.at(3), expectedDifferenceDueToNoise);
     assertEquals(1, vec.at(4), expectedDifferenceDueToNoise);
+
+    encodingMapCleanUp(targetEncodingMap);
+    resultWithEncoding.delete();
+  }
+
+  @Test
+  public void manualHighCardinalityKFoldTest() {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "ColB", "fold_column")
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "b", "c", "c", "a", "d", "d", "d", "d", "e", "e", "a", "f", "f"))
+            .withDataForCol(1, ar("2", "6", "6", "6", "6", "6", "2", "6", "6", "6", "6", "2", "2", "2", "2"))
+            .withDataForCol(2, ar( 1 ,  2 ,  1 ,  2 ,  1 ,  3 ,  2 ,  2 ,  1 ,  3 ,  1 ,  2 ,  3 ,  3 ,  2))
+            .build();
+
+    TargetEncoder tec = new TargetEncoder();
+    int[] teColumns = {0};
+
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1, 2);
+
+    printOutFrameAsTable(targetEncodingMap.get("ColA"))
+    ;
+    //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 2, false, 0.0, 1234);
+
+    printOutFrameAsTable(resultWithEncoding, true, true);
+    double expectedDifferenceDueToNoise = 1e-5;
+    Vec vec = resultWithEncoding.vec(3);
+    assertEquals(0.5, vec.at(0), expectedDifferenceDueToNoise);
+    assertEquals(0, vec.at(1), expectedDifferenceDueToNoise);
+    assertEquals(0, vec.at(2), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(3), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(4), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(5), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(6), expectedDifferenceDueToNoise);
+    assertEquals(0.66666, vec.at(7), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(8), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(9), expectedDifferenceDueToNoise);
+    assertEquals(0.66666, vec.at(10), expectedDifferenceDueToNoise);
+    assertEquals(0, vec.at(11), expectedDifferenceDueToNoise);
+    assertEquals(1, vec.at(12), expectedDifferenceDueToNoise);
+    assertEquals(0, vec.at(13), expectedDifferenceDueToNoise);
+    assertEquals(0, vec.at(14), expectedDifferenceDueToNoise);
+
 
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
@@ -1164,6 +1219,38 @@ public class TargetEncodingTest extends TestUtil{
 
         outOfFoldData.delete();
         outOfFoldData2.delete();
+    }
+
+    // Can we do it simply ? with mutation?
+    @Test
+    public void appendingColumnsInTheLoopTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ar(1,2))
+              .build();
+
+      Frame accFrame = fr.deepCopy(Key.make().toString());;
+      DKV.put(accFrame);
+
+      printOutFrameAsTable(accFrame, true, false);
+
+      for(int i = 0 ; i < 3; i ++) {
+
+        String tree = String.format("( append %s %d 'col_%d' )", accFrame._key, i, i);
+        Frame withAppendedFrame = Rapids.exec(tree).getFrame();
+        withAppendedFrame._key = Key.make();
+        DKV.put(withAppendedFrame);
+
+        accFrame.delete();
+        accFrame = withAppendedFrame.deepCopy(Key.make().toString());
+        DKV.put(accFrame);
+        withAppendedFrame.delete();
+        printOutFrameAsTable(accFrame);
+      }
+
+      accFrame.delete();
     }
 
     @Test

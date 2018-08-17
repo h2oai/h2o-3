@@ -1,9 +1,6 @@
 package water.rapids.ast.prims.mungers;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.H2O;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -169,6 +166,7 @@ public class AstMergeTest extends TestUtil {
     assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
   }
 
+  @Ignore
   @Test
   public void mergeByOnlyEmptyStringsTest() {
 
@@ -196,6 +194,7 @@ public class AstMergeTest extends TestUtil {
     TwoDimTable twoDimTable = result.toTwoDimTable();
     System.out.println(twoDimTable.toString());
 
+    //TODO add asserts
 //    assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
   }
 
