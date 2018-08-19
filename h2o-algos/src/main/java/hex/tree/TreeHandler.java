@@ -4,7 +4,6 @@ import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
-import org.apache.commons.lang.ArrayUtils;
 import water.MemoryManager;
 import water.api.Handler;
 
