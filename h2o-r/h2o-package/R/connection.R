@@ -496,6 +496,21 @@ h2o.clusterStatus <- function() {
 
 .Last <- function() { if ( .isConnected() ) try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)}
 
+#
+# Returns error string if the check finds a problem with version.
+# This implementation is supposed to blacklist known unsupported versions.
+#
+.h2o.check_java_version <- function(jver = NULL) {
+  if(any(grepl("GNU libgcj", jver))) {
+    return("Sorry, GNU Java is not supported for H2O.")
+  }
+  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
+  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
+    return(paste0("Your java is not supported: ", jver[1]))
+  }
+  return(NULL)
+}
+
 .h2o.startJar <- function(ip = "localhost", port = 54321, nthreads = -1, max_memory = NULL, min_memory = NULL,
                           enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
                           ice_root, stdout) {
@@ -531,13 +546,12 @@ h2o.clusterStatus <- function() {
         "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
       }
     )
-
-  if(any(grepl("GNU libgcj", jver))) {
-    stop("Sorry, GNU Java is not supported for H2O.\n",
-         "Please download the latest Java SE JDK 8 from the following URL:\n",
-         "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
+  jver_error <- .h2o.check_java_version(jver);
+  if (!is.null(jver_error)) {
+    stop(jver_error, "\n",
+    "Please download the latest Java SE JDK 8 from the following URL:\n",
+    "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
   }
-
   if(any(grepl("Client VM", jver))) {
     warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
             "Please download the latest Java SE JDK 8 from the following URL:\n",
@@ -545,13 +559,6 @@ h2o.clusterStatus <- function() {
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
-  }
-
-  # NOTE for developers: keep the following blacklist in logically consistent with whitelist in java code - see water.H2O.checkUnsupportedJava, near line 1849
-  if (any(grepl("^java version \"1\\.[1-6]\\.", jver))) {
-    stop("Your java is not supported: ", jver[1], "\n",
-    "Please download the latest Java SE JDK 8 from the following URL:\n",
-    "http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html")
   }
 
   if (.Platform$OS.type == "windows") {
