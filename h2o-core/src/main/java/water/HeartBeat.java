@@ -38,18 +38,18 @@ public class HeartBeat extends Iced<HeartBeat> {
   // Memory & Disk scaled by K or by M setters & getters.
 
   // Sum of KV + POJO + FREE == MEM_MAX (heap set at JVM launch)
-  private int _kv_mem;          // Memory used by K/V as of last FullGC
-  private int _pojo_mem;        // POJO used as of last FullGC
-  private int _free_mem;        // Free memory as of last FullGC
-  private int _swap_mem;        // Swapped K/V as of last FullGC
-  void   set_kv_mem (long n) { _kv_mem =        (int)(n>>10); }
-  void set_pojo_mem (long n) { _pojo_mem =      (int)(n>>10); }
-  void set_free_mem (long n) { _free_mem =      (int)(n>>10); }
-  void set_swap_mem (long n) { _swap_mem =      (int)(n>>10); }
-  public long get_kv_mem  () { return ((long) _kv_mem )<<10 ; }
-  public long get_pojo_mem() { return ((long)_pojo_mem)<<10 ; }
-  public long get_free_mem() { return ((long)_free_mem)<<10 ; }
-  public long get_swap_mem() { return ((long)_swap_mem)<<10 ; }
+  private long _kv_mem;          // Memory used by K/V as of last FullGC
+  private long _pojo_mem;        // POJO used as of last FullGC
+  private long _free_mem;        // Free memory as of last FullGC
+  private long _swap_mem;        // Swapped K/V as of last FullGC
+  void   set_kv_mem (long n) { _kv_mem = n; }
+  void set_pojo_mem (long n) { _pojo_mem = n; }
+  void set_free_mem (long n) { _free_mem = n; }
+  void set_swap_mem (long n) { _swap_mem = n; }
+  public long get_kv_mem  () { return _kv_mem; }
+  public long get_pojo_mem() { return _pojo_mem; }
+  public long get_free_mem() { return _free_mem; }
+  public long get_swap_mem() { return _swap_mem; }
 
   public int _keys;       // Number of LOCAL keys in this node, cached or homed
 
