@@ -3210,7 +3210,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     
     right <- tree@right_children[i];
     left <- tree@left_children[i]
-    split_column_cat_index <- match(tree@features[i], model@model$var.names$columns) # Indexof split column on children's parent node
+    split_column_cat_index <- match(tree@features[i], model@model$names) # Indexof split column on children's parent node
     if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
       if(right != -1) pointer <- pointer + 1;
       if(left != -1) pointer <- pointer + 1;
@@ -3223,7 +3223,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       if(!is.null(tree@levels[[pointer]])){
         char_categoricals <- c()
         for(level_index in 1:length(tree@levels[[pointer]])){
-          char_categoricals[level_index] <- model@model$var.names$domains[[split_column_cat_index]][tree@levels[[pointer]][level_index]]
+          char_categoricals[level_index] <- model@model$domains[[split_column_cat_index]][tree@levels[[pointer]][level_index]]
         }
         tree@levels[[pointer]] <- char_categoricals;
       }
@@ -3235,7 +3235,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       if(!is.null(tree@levels[[pointer]])){
         char_categoricals <- c()
         for(level_index in 1:length(tree@levels[[pointer]])){
-          char_categoricals[level_index] <- model@model$var.names$domains[[split_column_cat_index]][tree@levels[[pointer]][level_index]]
+          char_categoricals[level_index] <- model@model$domains[[split_column_cat_index]][tree@levels[[pointer]][level_index]]
         }
         tree@levels[[pointer]] <- char_categoricals;
       }
