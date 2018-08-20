@@ -12,7 +12,7 @@ from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies
+from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum
 
 
 class ModelBase(backwards_compatible()):
@@ -116,17 +116,20 @@ class ModelBase(backwards_compatible()):
         return ""
 
 
-    def predict_leaf_node_assignment(self, test_data):
+    def predict_leaf_node_assignment(self, test_data, type="Path"):
         """
         Predict on a dataset and return the leaf node assignment (only for tree-based models).
 
         :param H2OFrame test_data: Data on which to make predictions.
+        :param Enum type: How to identify the leaf node. Nodes can be either identified by a path from to the root node
+        of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
 
         :returns: A new H2OFrame of predictions.
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        assert_is_type(type, None, Enum("Path", "Node_ID"))
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                    data={"leaf_node_assignment": True})
+                    data={"leaf_node_assignment": True, "leaf_node_assignment_type": type})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
 

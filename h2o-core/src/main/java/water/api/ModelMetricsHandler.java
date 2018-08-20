@@ -121,6 +121,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false)
     public boolean leaf_node_assignment;
 
+    @API(help = "Type of the leaf node assignment (optional, only for DRF/GBM models)", values = {"Path", "Node_ID"}, json = false)
+    public Model.LeafNodeAssignment.LeafNodeAssignmentType leaf_node_assignment_type;
+
     @API(help = "Predict the class probabilities at each stage (optional, only for GBM models)", json = false)
     public boolean predict_staged_proba;
 
@@ -468,7 +471,8 @@ class ModelMetricsHandler extends Handler {
         assert(Model.LeafNodeAssignment.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
           parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.<Frame>make(parms._predictions_name));
+        Model.LeafNodeAssignment.LeafNodeAssignmentType type = null == s.leaf_node_assignment_type ? Model.LeafNodeAssignment.LeafNodeAssignmentType.Path : s.leaf_node_assignment_type;
+        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, type, Key.<Frame>make(parms._predictions_name));
       } else if(s.predict_staged_proba) {
         if (null == parms._predictions_name)
           parms._predictions_name = "staged_proba_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
