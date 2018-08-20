@@ -25,6 +25,7 @@ public class SQLManager {
   private static final String HIVE_DB_TYPE = "hive2";
   private static final String ORACLE_DB_TYPE = "oracle";
   private static final String SQL_SERVER_DB_TYPE = "sqlserver";
+  private static final String TERADATA_DB_TYPE = "teradata";
 
   private static final String NETEZZA_JDBC_DRIVER_CLASS = "org.netezza.Driver";
   private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
@@ -44,18 +45,8 @@ public class SQLManager {
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
-    /** Pagination in following Databases:
-    SQL Server, Oracle 12c: OFFSET x ROWS FETCH NEXT y ROWS ONLY
-     SQL Server, Vertica may need ORDER BY
-    MySQL, PostgreSQL, MariaDB: LIMIT y OFFSET x 
-    ? Teradata (and possibly older Oracle): 
-     SELECT * FROM (
-        SELECT ROW_NUMBER() OVER () AS RowNum_, <table>.* FROM <table>
-     ) QUALIFY RowNum_ BETWEEN x and x+y;
-     */
-    String databaseType = connection_url.split(":", 3)[1];
+    final String databaseType = connection_url.split(":", 3)[1];
     initializeDatabaseDriver(databaseType);
-    final boolean needFetchClause = ORACLE_DB_TYPE.equals(databaseType) || SQL_SERVER_DB_TYPE.equals(databaseType);
     int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0;
     final int numCol;
     long numRow = 0;
@@ -85,11 +76,8 @@ public class SQLManager {
         numRow = rs.getLong(1);
         rs.close();
       }
-      //get H2O column names and types 
-      if (needFetchClause)
-        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " FETCH NEXT 1 ROWS ONLY");
-      else
-        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " LIMIT 1");
+      //get H2O column names and types
+      rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
       ResultSetMetaData rsmd = rs.getMetaData();
       numCol = rsmd.getColumnCount();
 
@@ -193,7 +181,7 @@ public class SQLManager {
       @Override
       public void compute2() {
         ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, _v.nChunks());
-        Frame fr = new SqlTableToH2OFrame(finalTable, needFetchClause, columns, numCol, j, provider).doAll(columnH2OTypes, _v)
+        Frame fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -207,6 +195,71 @@ public class SQLManager {
     
     return j;
   }
+
+  /**
+   * Builds SQL SELECT to retrieve single row from a table based on type of database
+   *
+   * @param databaseType
+   * @param table
+   * @param columns
+   * @return String SQL SELECT statement
+   */
+  static String buildSelectSingleRowSql(String databaseType, String table, String columns) {
+
+    switch(databaseType) {
+      case ORACLE_DB_TYPE:
+      case SQL_SERVER_DB_TYPE:
+        return "SELECT " + columns + " FROM " + table + " FETCH NEXT 1 ROWS ONLY";
+
+      case TERADATA_DB_TYPE:
+        return "SELECT TOP 1 " + columns + " FROM " + table;
+
+      default:
+        return "SELECT " + columns + " FROM " + table + " LIMIT 1";
+    }
+  }
+
+  /**
+   * Builds SQL SELECT to retrieve chunk of rows from a table based on row offset and number of rows in a chunk.
+   *
+   * Pagination in following Databases:
+   *     SQL Server, Oracle 12c: OFFSET x ROWS FETCH NEXT y ROWS ONLY
+   * SQL Server, Vertica may need ORDER BY
+   *
+   * MySQL, PostgreSQL, MariaDB: LIMIT y OFFSET x
+   *
+   * Teradata (and possibly older Oracle):
+   *      SELECT * FROM mytable
+   *         QUALIFY ROW_NUMBER() OVER (ORDER BY column_name) BETWEEN x and x+y;
+   *
+   * @param databaseType
+   * @param table
+   * @param start
+   * @param length
+   * @param columns
+   * @param columnNames array of column names retrieved and parsed from single row SELECT prior to this call
+   * @return String SQL SELECT statement
+   */
+  static String buildSelectChunkSql(String databaseType, String table, long start, int length, String columns, String[] columnNames) {
+
+    String sqlText = "SELECT " + columns + " FROM " + table;
+    switch(databaseType) {
+      case ORACLE_DB_TYPE:
+      case SQL_SERVER_DB_TYPE:
+        sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
+        break;
+
+      case TERADATA_DB_TYPE:
+        sqlText += " QUALIFY ROW_NUMBER() OVER (ORDER BY " + columnNames[0] + ") BETWEEN " + (start+1) + " AND " + (start+length);
+        break;
+
+      default:
+        sqlText += " LIMIT " + length + " OFFSET " + start;
+    }
+
+    return sqlText;
+  }
+
 
   static class ConnectionPoolProvider extends Iced<ConnectionPoolProvider> {
 
@@ -345,19 +398,21 @@ public class SQLManager {
   }
 
   static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
-    final String _table, _columns;
+    final String _table, _columns, _databaseType;
     final int _numCol;
-    final boolean _needFetchClause;
     final Job _job;
     final ConnectionPoolProvider _poolProvider;
+    final String[] _columnNames;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(final String table, final boolean needFetchClause, final String columns, final int numCol,
+    public SqlTableToH2OFrame(final String table, final String databaseType,
+                              final String columns, final String[] columnNames, final int numCol,
                               final Job job, final ConnectionPoolProvider poolProvider) {
       _table = table;
-      _needFetchClause = needFetchClause;
+      _databaseType = databaseType;
       _columns = columns;
+      _columnNames = columnNames;
       _numCol = numCol;
       _job = job;
       _poolProvider = poolProvider;
@@ -376,11 +431,7 @@ public class SQLManager {
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
-      String sqlText = "SELECT " + _columns + " FROM " + _table;
-      if (_needFetchClause)
-        sqlText += " OFFSET " + c0.start() + " ROWS FETCH NEXT " + c0._len + " ROWS ONLY";
-      else
-        sqlText += " LIMIT " + c0._len + " OFFSET " + c0.start();
+      String sqlText = buildSelectChunkSql(_databaseType, _table, c0.start(), c0._len , _columns, _columnNames);
       try {
         conn = sqlConn.take();
         stmt = conn.createStatement();
