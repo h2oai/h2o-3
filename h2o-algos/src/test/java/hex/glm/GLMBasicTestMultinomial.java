@@ -356,7 +356,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @Test
   public void testNaiveCoordinateDescent() {
     expectedException.expect(H2OIllegalArgumentException.class);
-    expectedException.expectMessage("Naive coordinate descent is not supported.");
+    expectedException.expectMessage("Naive coordinate descent is not supported for multinomial.");
     GLMParameters params = new GLMParameters(Family.multinomial);
     params._solver = Solver.COORDINATE_DESCENT_NAIVE;
 
