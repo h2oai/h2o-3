@@ -35,6 +35,7 @@ public class TreeHandler extends Handler {
         args.thresholds = treeProperties._thresholds;
         args.features = treeProperties._features;
         args.nas = treeProperties._nas;
+        args.levels = treeProperties.levels;
         // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
         if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
             args.tree_class = null;
@@ -110,19 +111,21 @@ public class TreeHandler extends Handler {
         treeprops._thresholds[0] = sharedTreeSubgraph.rootNode.getSplitValue();
         treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
         treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
+        treeprops.levels = new int[sharedTreeSubgraph.nodesArray.size()][];
 
         List<SharedTreeNode> nodesToTraverse = new ArrayList<>();
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
-                nodesToTraverse, -1, false);
+                treeprops.levels, nodesToTraverse, -1, false);
 
         return treeprops;
     }
 
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
                                final float[] thresholds, final String[] splitColumns, final String[] naHandlings,
-                               List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
+                               final int[][] levels,
+                               final List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
         if(nodesToTraverse.isEmpty()) return;
 
         List<SharedTreeNode> discoveredNodes = new ArrayList<>();
@@ -132,7 +135,7 @@ public class TreeHandler extends Handler {
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
             if(visitedRoot){
-                fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, naHandlings, pointer);
+                fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, levels, naHandlings, pointer);
             } else {
                 nodesDescriptions[pointer] = "Root node";
                 visitedRoot = true;
@@ -153,14 +156,15 @@ public class TreeHandler extends Handler {
             }
         }
 
-        append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings,
+        append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings, levels,
                 discoveredNodes, pointer, true);
     }
 
     private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,
-                                             final float[] thresholds, final String[] splitColumns,
+                                             final float[] thresholds, final String[] splitColumns, final int[][] levels,
                                              final String[] naHandlings, final int pointer) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
+        int[] nodeLevels = null;
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
             nodeDescriptionBuilder.append("Parent split threshold: ");
@@ -174,15 +178,19 @@ public class TreeHandler extends Handler {
         } else if (node.getParent().isBitset()) {
             final BitSet childInclusiveLevels = node.getInclusiveLevels();
             final int cardinality = childInclusiveLevels.cardinality();
-            if ((cardinality > 0)) {
+            if (cardinality > 0) {
                 nodeDescriptionBuilder.append("Parent split column [");
                 nodeDescriptionBuilder.append(node.getParent().getColName());
                 nodeDescriptionBuilder.append("]: ");
+
+                if (!node.isLeftward()) nodeLevels = new int[cardinality];
                 int bitsignCounter = 0;
                 for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
                     nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
                     if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
+                    if (!node.isLeftward()) nodeLevels[bitsignCounter] = i;
                     bitsignCounter++;
+
                 }
             }
         } else{
@@ -192,9 +200,8 @@ public class TreeHandler extends Handler {
         nodeDescriptions[pointer] = nodeDescriptionBuilder.toString();
         splitColumns[pointer] = node.getColName();
         naHandlings[pointer] = getNaDirection(node);
+        levels[pointer] = nodeLevels;
         thresholds[pointer] = node.getSplitValue();
-
-
     }
 
     private static String getNaDirection(final SharedTreeNode node) {
@@ -217,6 +224,7 @@ public class TreeHandler extends Handler {
         public String[] _descriptions; // General node description, most likely to contain serialized threshold or inclusive dom. levels
         public float[] _thresholds;
         public String[] _features;
+        public int[][] levels; // Categorical levels, points to a list of categoricals that is already existing within the model on the client.
         public String[] _nas;
 
     }
