@@ -1237,14 +1237,12 @@ public class Frame extends Lockable<Frame> {
   public Frame uniqueValuesBy(int columnIndex) {
     Vec vec0 = vec(columnIndex);
     Vec v;
-    if (numCols() != 1)
-      throw new IllegalArgumentException("Unique applies to a single column only.");
     if (vec0.isCategorical()) {
       v = Vec.makeSeq(0, (long) vec0.domain().length, true);
       v.setDomain(vec0.domain());
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(this);
+      UniqTask t = new UniqTask().doAll(vec0);
       int nUniq = t._uniq.size();
       final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
       v = Vec.makeZero(nUniq, vec0.get_type());
