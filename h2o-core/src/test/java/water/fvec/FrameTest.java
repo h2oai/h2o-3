@@ -141,6 +141,56 @@ public class FrameTest extends TestUtil {
   }
 
   @Test
+  public void testUniqueValuesBy() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("column1")
+              .withVecTypes( Vec.T_NUM)
+              .withDataForCol(0, ar(1, 2, 2, 3, 2))
+              .build();
+      Frame uniqueValuesFrame = fr.uniqueValuesBy(0);
+      Vec uniqueValuesVec = uniqueValuesFrame.vec(0);
+      long numberOfUniqueValues = uniqueValuesVec.length();
+      int length = (int) numberOfUniqueValues;
+      long[] uniqueValuesArr = new long[length];
+      for(int i = 0; i < numberOfUniqueValues; i++) {
+        uniqueValuesArr[i] = uniqueValuesVec.at8(i);
+      }
+
+      Arrays.sort(uniqueValuesArr);
+      assertArrayEquals( ar(1L, 2L, 3L), uniqueValuesArr);
+      Scope.track(uniqueValuesFrame);
+    } finally {
+        Scope.exit();
+    }
+  }
+
+  @Test
+  public void targetEncoderFilterOutNAsTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_NUM, Vec.T_STR)
+              .withDataForCol(0, ard(1, 42, 33))
+              .withDataForCol(1, ar(null, "6", null))
+              .build();
+
+      Frame result = fr.filterOutNAsInColumn(1);
+
+      Scope.track(result);
+      assertEquals(1L, result.numRows());
+      assertEquals(42, result.vec(0).at(0), 1e-5);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testRowDeepSliceWithPredicateFrame() {
     Scope.enter();
     try {

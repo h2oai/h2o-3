@@ -50,29 +50,6 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
-    public void targetEncoderFilterOutNAsTest() {
-      Scope.enter();
-      try {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA", "ColB")
-                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                .withDataForCol(0, ard(1, 42, 33))
-                .withDataForCol(1, ar(null, "6", null))
-                .build();
-        TargetEncoder tec = new TargetEncoder();
-        Frame result = tec.filterOutNAsFromTargetColumn(fr, 1);
-
-        Scope.track(result);
-        assertEquals(1L, result.numRows());
-        assertEquals(42, result.vec(0).at(0), 1e-5);
-
-      } finally {
-        Scope.exit();
-      }
-    }
-
-    @Test
     public void changeKeyFrameTest() {
       Frame res = null;
       try {
