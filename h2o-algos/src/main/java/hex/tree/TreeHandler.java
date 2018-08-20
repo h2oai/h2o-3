@@ -183,12 +183,12 @@ public class TreeHandler extends Handler {
                 nodeDescriptionBuilder.append(node.getParent().getColName());
                 nodeDescriptionBuilder.append("]: ");
 
-                nodeLevels = new int[cardinality];
+                if (!node.isLeftward()) nodeLevels = new int[cardinality];
                 int bitsignCounter = 0;
                 for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
                     nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
                     if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
-                    nodeLevels[bitsignCounter] = i;
+                    if (!node.isLeftward()) nodeLevels[bitsignCounter] = i;
                     bitsignCounter++;
 
                 }
