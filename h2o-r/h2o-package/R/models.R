@@ -3122,6 +3122,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
 #' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
 #' @slot features A \code{character} with names of the feature/column used for the split.
+#' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
 #' @aliases H2OTree
 #' @export
@@ -3137,8 +3138,10 @@ setClass(
     root_node_id = "integer",
     thresholds = "numeric",
     features = "character",
+    levels = "list",
     nas = "character"
   )
+  
 )
 
 #' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
@@ -3148,7 +3151,7 @@ setClass(
 #' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
 #' tree <-h2o.getModelTree(gbm.model, 1, 1);
 #'
-#' @param model Models with trees
+#' @param model Model with trees
 #' @param tree_number Number of the tree in the model to fetch, starting with 1
 #' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
 #'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
@@ -3177,7 +3180,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     left_children = res$left_children,
     right_children = res$right_children,
     descriptions = res$descriptions,
-    model_id = res$model$name,
+    model_id = model@model_id,
     tree_number = as.integer(res$tree_number + 1),
     root_node_id = res$root_node_id,
     thresholds = res$thresholds,
@@ -3187,6 +3190,55 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   
   if(!is.null(res$tree_class)){
     tree@tree_class <- res$tree_class
+  }
+  
+  if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
+    tree@levels <- rep(list(NULL), length(res$levels))
+  } else {
+    tree@levels <- res$levels
+  }
+  
+  for (i in 1:length(tree@levels)){
+    if(!is.null(tree@levels[[i]])){
+    tree@levels[[i]] <- tree@levels[[i]] + 1
+    }
+  }
+  
+  # Convert numerical categorical levels to characters
+  pointer <-as.integer(1);
+  for(i in 1:length(tree@left_children)){
+
+    right <- tree@right_children[i];
+    left <- tree@left_children[i]
+    split_column_cat_index <- match(tree@features[i], model@model$names) # Indexof split column on children's parent node
+    if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
+      if(right != -1) pointer <- pointer + 1;
+      if(left != -1) pointer <- pointer + 1;
+      next
+    }
+    split_column_domain <- model@model$domains[[split_column_cat_index]]
+    
+    # Left child node's levels converted to characters
+    left_char_categoricals <- c()
+    if(left != -1)  {
+      pointer <- pointer + 1;
+      
+      if(!is.null(tree@levels[[pointer]])){
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          left_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
+        }
+        tree@levels[[pointer]] <- left_char_categoricals;
+      }
+    }
+    
+    # Right child node's levels converted to characters, if there is any
+    if(right != -1)  {
+      pointer <- pointer + 1;
+      if(!is.null(tree@levels[[pointer]])){
+        right_char_categoricals <-setdiff(split_column_domain, left_char_categoricals)
+        tree@levels[[pointer]] <- right_char_categoricals
+      }
+    }
   }
   
   tree
