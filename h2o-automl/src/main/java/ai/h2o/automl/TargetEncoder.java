@@ -87,11 +87,11 @@ public class TargetEncoder {
         return columnToEncodingMap;
     }
 
-    public Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, String targetColumnName) {
+    Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, String targetColumnName) {
         return ensureTargetColumnIsNumericOrBinaryCategorical(data, getColumnIndexByName(data, targetColumnName));
     };
 
-    public Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, int targetIndex) {
+    Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, int targetIndex) {
         if (data.vec(targetIndex).isCategorical()){
             Vec targetVec = data.vec(targetIndex);
             if(targetVec.cardinality() == 2) {
@@ -109,23 +109,23 @@ public class TargetEncoder {
         }
     };
 
-    public Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex) {
+    Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), null);
     }
 
-    public Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, String foldColumnName) {
+    Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, String foldColumnName) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName);
     }
 
-    public Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, int foldColumnIndex) {
+    Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, int foldColumnIndex) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String foldColumnName = getColumnNameBy(data, foldColumnIndex);
         return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName);
     }
 
-    public String[] getColumnNamesBy(Frame data, int[] columnIndexes) {
+    String[] getColumnNamesBy(Frame data, int[] columnIndexes) {
         String [] allColumnNames = data._names.clone();
         ArrayList<String> columnNames = new ArrayList<String>();
 
@@ -134,19 +134,20 @@ public class TargetEncoder {
         }
         return columnNames.toArray(new String[columnIndexes.length]);
     }
-    public String getColumnNameBy(Frame data, int columnIndex) {
+
+    String getColumnNameBy(Frame data, int columnIndex) {
         String [] allColumnNames = data._names.clone();
         return allColumnNames[columnIndex];
     }
 
-    public Frame renameColumn(Frame fr, int indexOfColumnToRename, String newName) {
+    Frame renameColumn(Frame fr, int indexOfColumnToRename, String newName) {
         String[] names = fr.names();
         names[indexOfColumnToRename] = newName;
         fr.setNames(names);
         return fr;
     }
 
-    public Frame renameColumn(Frame fr, String oldName, String newName) {
+    Frame renameColumn(Frame fr, String oldName, String newName) {
         return renameColumn(fr, getColumnIndexByName(fr, oldName), newName);
     }
 
@@ -158,11 +159,11 @@ public class TargetEncoder {
         return res;
     }
 
-    public Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
+    Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
         return data.filterOutNAsInColumn(targetColumnIndex);
     }
 
-    public Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
+    Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
         String[] domains = data.vec(targetIndex).domain().clone();
         Arrays.sort(domains);
         String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 0.0 1.0 ) )  [%d] [] )",
@@ -170,13 +171,13 @@ public class TargetEncoder {
         return execRapidsAndGetFrame(tree);
     }
 
-    public Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
+    Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
         int foldColumnIndexInEncodingMap = getColumnIndexByName(encodingMap, foldColumnName);
         String astTree = String.format("(rows %s (!= (cols %s [%d] ) %d ) )", encodingMap._key, encodingMap._key, foldColumnIndexInEncodingMap, currentFoldValue);
         return execRapidsAndGetFrame(astTree);
     }
 
-    public long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
+    long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
         Vec uniqueValues = data.uniqueValuesBy(columnIndex).vec(0);
         long numberOfUniqueValues = uniqueValues.length();
         assert numberOfUniqueValues <= Integer.MAX_VALUE : "Number of unique values exceeded Integer.MAX_VALUE";
@@ -198,14 +199,14 @@ public class TargetEncoder {
         return true;
     }
 
-    public Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
+    Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
         int numeratorColumnIndex = getColumnIndexByName(data, "numerator");
         int denominatorColumnIndex = getColumnIndexByName(data, "denominator");
         String astTree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")", data._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
         return execRapidsAndGetFrame(astTree);
     }
 
-    public Frame rBind(Frame a, Frame b) {
+    Frame rBind(Frame a, Frame b) {
         if(a == null) {
             assert b != null;
             return b;
@@ -215,23 +216,23 @@ public class TargetEncoder {
         }
     }
 
-    public Frame mergeByTEColumnAndFold(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex ) {
+    Frame mergeByTEColumnAndFold(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex ) {
         int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
         String astTree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )", a._key, holdoutEncodeMap._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndexInEncodingMap);
         return execRapidsAndGetFrame(astTree);
     }
 
-    public Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {
+    Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {
         String astTree = String.format("(merge %s %s TRUE FALSE [%d] [%d] 'auto' )", a._key, b._key, teColumnIndexOriginal, teColumnIndex);
         return execRapidsAndGetFrame(astTree);
     }
 
-    public Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
+    Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
         return a.addCon(appendedColumnName, columnValue);
     }
 
     // Maybe it's better to calculate mean before any aggregations?
-    public double calculateGlobalMean(Frame fr) {
+    double calculateGlobalMean(Frame fr) {
         int numeratorIndex = getColumnIndexByName(fr,"numerator");
         int denominatorIndex = getColumnIndexByName(fr,"denominator");
         String tree = String.format("( / (sum (cols %s [%d] )) (sum (cols %s [%d] )) )", fr._key, numeratorIndex, fr._key, denominatorIndex);
@@ -239,7 +240,7 @@ public class TargetEncoder {
         return val.getNum();
     }
 
-    public Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
+    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
         int numeratorIndex = getColumnIndexByName(fr,"numerator");
         int denominatorIndex = getColumnIndexByName(fr,"denominator");
         int targetColumnIndex = getColumnIndexByName(fr, targetColumnName);
@@ -261,7 +262,7 @@ public class TargetEncoder {
         return execRapidsAndGetFrame(treeForLambda);
     }
 
-    public Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
+    Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
         // TODO int valueForSingleItemGroups = ??? ;
         // These groups have this singleness in common and we probably want to represent it somehow.
         // If we choose just global average then we just lose difference between single-row-groups that have different target values.
@@ -280,13 +281,13 @@ public class TargetEncoder {
         return execRapidsAndGetFrame(astTree);
     }
 
-    public Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, double seed) {
+    Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, double seed) {
         int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
         String tree = String.format("(:= %s (+ (cols %s [%d] ) (- (* (* (h2o.runif %s %f ) 2.0 ) %f ) %f ) ) [%d] [] )", fr._key, fr._key, appyToColumnIndex, fr._key, seed, noiseLevel, noiseLevel, appyToColumnIndex);
         return Rapids.exec(tree).getFrame();
     }
 
-    public Frame subtractTargetValueForLOO(Frame data, String targetColumnName)  {
+    Frame subtractTargetValueForLOO(Frame data, String targetColumnName)  {
         int numeratorIndex = getColumnIndexByName(data,"numerator");
         int denominatorIndex = getColumnIndexByName(data,"denominator");
         int targetIndex = getColumnIndexByName(data, targetColumnName);
@@ -481,7 +482,7 @@ public class TargetEncoder {
         }
     }
 
-    private Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
+    Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
         if(foldColumnName != null) { // TODO we can't rely only on absence of the column name passed. User is able not to provide foldColumn name to apply method.
           System.out.println(" #### Grouping (back) targetEncodingMap without folds");
           int teColumnIndex = getColumnIndexByName(targetEncodingMap, teColumnName);
