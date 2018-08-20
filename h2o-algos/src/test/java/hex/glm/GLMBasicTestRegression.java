@@ -162,34 +162,14 @@ public class GLMBasicTestRegression extends TestUtil {
         parms._train = _weighted._key;
         parms._solver = s;
         parms._weights_column = "weights";
-        boolean naive_descent_exception_thrown = false;
-        try {
-          model1 = new GLM(parms).trainModel().get();
-        } catch (H2OIllegalArgumentException e) {
-          naive_descent_exception_thrown = true;
-        }
-        if (s.equals(Solver.COORDINATE_DESCENT_NAIVE)) {
-          assertTrue(naive_descent_exception_thrown);
-        } else {
-          assertFalse(naive_descent_exception_thrown);
-        }
+        model1 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs1 = model1.coefficients();
         System.out.println("coefs1 = " + coefs1);
         parms._train = _upsampled._key;
         parms._weights_column = null;
         parms._lambda = new double[]{1e-5};
         parms._alpha = null;
-        naive_descent_exception_thrown = false;
-        try {
-          model2 = new GLM(parms).trainModel().get();
-        } catch (H2OIllegalArgumentException e) {
-          naive_descent_exception_thrown = true;
-        }
-        if (s.equals(Solver.COORDINATE_DESCENT_NAIVE)) {
-          assertTrue(naive_descent_exception_thrown);
-        } else {
-          assertFalse(naive_descent_exception_thrown);
-        }
+        model2 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs2 = model2.coefficients();
         System.out.println("coefs2 = " + coefs2);
         System.out.println("mse1 = " + model1._output._training_metrics.mse() + ", mse2 = " + model2._output._training_metrics.mse());
