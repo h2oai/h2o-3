@@ -82,16 +82,37 @@ def test_clean_cv_predictions():
         # print(aml.leaderboard)
         return aml
 
+    def assert_cv_predictions_on_model(model_name, present=True):
+        model = h2o.get_model(model_name)
+        cv_predictions = model.cross_validation_predictions()
+        holdout_predictions = model.cross_validation_holdout_predictions()
+
+        # see last comment line below for ideal assertion if cv predictions could be returned as null,
+        #  but this can't be done in a clean way for autoML right now due to StackedEnsemble
+        # assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
+        for p in cv_predictions:
+            if present:
+                assert p is not None, "missing cv predictions for model "+model_name
+            else:
+                assert not p, "unexpected cv predictions for model "+model_name
+
+        if present:
+            assert holdout_predictions is not None, "missing holdout predictions for model "+model_name
+        else:
+            assert not holdout_predictions, "unexpected holdout predictions for model "+model_name
 
     def test_default_behaviour():
         print("\n=== "+kcvp+" default behaviour ===")
         aml = setup_and_train()
-        models, _, _ = get_partitioned_model_names(aml.leaderboard)
+        _, non_se, se = get_partitioned_model_names(aml.leaderboard)
         keys = list_keys_in_memory()
         preds = len(keys['cv_predictions'])
         assert preds == 0, "{preds} CV predictions were not cleaned from memory".format(preds=preds)
-        for m in models:
-            assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
+        for m in non_se:
+            assert_cv_predictions_on_model(m, False)
+        for m in se:
+            assert not h2o.get_model(h2o.get_model(m).metalearner()['name']).cross_validation_predictions()
+
 
     def test_param_enabled():
         print("\n=== enabling "+kcvp+" ===")
@@ -102,20 +123,21 @@ def test_clean_cv_predictions():
         expected = len(models) * (nfolds + 1)  # +1 for holdout prediction
         assert preds == expected, "missing CV predictions in memory, got {actual}, expected {expected}".format(actual=preds, expected=expected)
         for m in non_se:
-            assert h2o.get_model(m).cross_validation_predictions(), "missing cv predictions for model "+m
+            assert_cv_predictions_on_model(m)
         for m in se:
-            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
-            assert metal.cross_validation_predictions(), "missing cv predictions for metalearner of model "+m
+            assert_cv_predictions_on_model(h2o.get_model(m).metalearner()['name'])
 
     def test_param_disabled():
         print("\n=== disabling "+kcvp+" ===")
         aml = setup_and_train(False)
-        models, _, _ = get_partitioned_model_names(aml.leaderboard)
+        _, non_se, se = get_partitioned_model_names(aml.leaderboard)
         keys = list_keys_in_memory()
         preds = len(keys['cv_predictions'])
         assert preds == 0, "{preds} CV predictions were not cleaned from memory".format(preds=preds)
-        for m in models:
-            assert not h2o.get_model(m).cross_validation_predictions(), "unexpected cv predictions for model "+m
+        for m in non_se:
+            assert_cv_predictions_on_model(m, False)
+        for m in se:
+            assert not h2o.get_model(h2o.get_model(m).metalearner()['name']).cross_validation_predictions()
 
     def test_SE_retraining_fails_when_param_disabled():
         print("\n=== disabling "+kcvp+" and retraining ===")
@@ -191,8 +213,11 @@ def test_clean_cv_models():
         print("total models in memory = {tot}, among which {cv} CV models".format(tot=tot, cv=cv))
         assert tot > 0, "no models left in memory"
         assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
-        for m in models:
+        for m in non_se:
             assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
+        for m in se:
+            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+            assert not metal.cross_validation_models(), "unexpected cv models for metalearner of model "+m
 
     def test_param_enabled():
         print("\n=== enabling "+kcvm+" ===")
@@ -223,8 +248,11 @@ def test_clean_cv_models():
         print("total models in memory = {tot}, among which {cv} CV models".format(tot=tot, cv=cv))
         assert tot > 0, "no models left in memory"
         assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
-        for m in models:
+        for m in non_se:
             assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
+        for m in se:
+            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+            assert not metal.cross_validation_models(), "unexpected cv models for metalearner of model "+m
 
 
     test_default_behaviour()

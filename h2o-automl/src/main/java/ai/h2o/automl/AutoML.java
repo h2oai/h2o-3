@@ -1365,7 +1365,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void cleanUpModelsCVPreds() {
     Log.info("Cleaning up all CV Predictions for AutoML");
     for (Model model : leaderboard().getModels()) {
-        model.deleteCrossValidationPreds(true);
+        model.deleteCrossValidationPreds();
     }
   }
 

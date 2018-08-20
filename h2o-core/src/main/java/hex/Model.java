@@ -2247,37 +2247,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  public void deleteCrossValidationPreds() {
-    deleteCrossValidationPreds(false);
-  }
-
   /**
    * delete from the output all associated CV predictions from DKV.
-   * @param nullify if set to true, this will also lock and update the model.
    */
-  public void deleteCrossValidationPreds(boolean nullify) {
-    boolean needsUpdate = false;
+  public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
       Log.info("Cleaning up CV Predictions for " + this._key.toString());
       int count = deleteAll(_output._cross_validation_predictions);
       Log.info(count+" CV predictions were removed");
-      needsUpdate = true;
     }
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
-      needsUpdate = true;
-    }
-
-    if (nullify && needsUpdate) {
-      try {
-        write_lock();
-        _output._cross_validation_predictions = null;
-        _output._cross_validation_holdout_predictions_frame_id = null;
-        update();
-      } finally {
-        unlock();
-      }
     }
   }
 
