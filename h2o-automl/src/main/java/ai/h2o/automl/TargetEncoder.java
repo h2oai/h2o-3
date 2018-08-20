@@ -177,16 +177,16 @@ public class TargetEncoder {
     }
 
     public long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
-        String tree = String.format("(unique (cols %s [%d]))", data._key, columnIndex);
-        Frame frame = Rapids.exec(tree).getFrame();
-        Vec uniqueValues = frame.vec(0);
-        int length = (int) uniqueValues.length(); // We assume that fold column should not has many different values and we will fit into node's memory
+        Vec uniqueValues = data.uniqueValuesBy(columnIndex).vec(0);
+        long numberOfUniqueValues = uniqueValues.length();
+        assert numberOfUniqueValues <= Integer.MAX_VALUE : "Number of unique values exceeded Integer.MAX_VALUE";
+
+        int length = (int) numberOfUniqueValues; // We assume that fold column should not has that many different values and we will fit into node's memory.
         long[] uniqueValuesArr = new long[length];
         for(int i = 0; i < uniqueValues.length(); i++) {
             uniqueValuesArr[i] = uniqueValues.at8(i);
         }
         uniqueValues.remove();
-        frame.delete();
         return uniqueValuesArr;
     }
 
