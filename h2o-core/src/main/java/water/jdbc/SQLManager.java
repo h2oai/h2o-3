@@ -10,8 +10,6 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import static water.fvec.Vec.makeCon;
-
 public class SQLManager {
 
   private static final String TEMP_TABLE_NAME = "table_for_h2o_import";
@@ -29,6 +27,8 @@ public class SQLManager {
 
   private static final String NETEZZA_JDBC_DRIVER_CLASS = "org.netezza.Driver";
   private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
+
+  private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
   /**
    * @param connection_url (Input) 
@@ -62,9 +62,18 @@ public class SQLManager {
         if (!select_query.toLowerCase().startsWith("select")) {
           throw new IllegalArgumentException("The select_query must start with `SELECT`, but instead is: " + select_query);
         }
-        table = SQLManager.TEMP_TABLE_NAME;
-        //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
-        numRow = stmt.executeUpdate("CREATE TABLE " + table + " AS " + select_query);
+
+        //if tmp table disabled, we use sub-select instead, which outperforms tmp table for very large queries/tables
+        // the main drawback of sub-selects is that we lose isolation, but as we're only reading data
+        // and counting the rows from the beginning, it should not an issue (at least when using hive...)
+        final boolean createTmpTable = Boolean.parseBoolean(System.getProperty(TMP_TABLE_ENABLED, "true")); //default to true to keep old behaviour
+        if (createTmpTable) {
+          table = SQLManager.TEMP_TABLE_NAME;
+          //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
+          numRow = stmt.executeUpdate("CREATE TABLE " + table + " AS " + select_query);
+        } else {
+          table = "(" + select_query + ") sub_h2o_import";
+        }
       } else if (table.equals(SQLManager.TEMP_TABLE_NAME)) {
         //tables with this name are assumed to be created here temporarily and are dropped
         throw new IllegalArgumentException("The specified table cannot be named: " + SQLManager.TEMP_TABLE_NAME);
@@ -159,39 +168,48 @@ public class SQLManager {
     double binary_ones_fraction = 0.5; //estimate
 
     //create template vectors in advance and run MR
-    long totSize =
+    final long totSize =
             (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
-    final Vec _v;
+
+    final Vec vec;
+    final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+            H2O.ARGS.nthreads, H2O.getCloudSize(), false, false);
+    final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
+    final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+
     if (optimize) {
-      _v = makeCon(totSize, numRow);
+      final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
+      vec = num_retrieval_chunks >= num_chunks
+              ? Vec.makeConN(numRow, num_chunks)
+              : Vec.makeConN(numRow, num_retrieval_chunks);
     } else {
-      double rows_per_chunk = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
-              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, false);
-      _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+      vec = Vec.makeConN(numRow, num_chunks);
     }
-    Log.info("Number of chunks: " + _v.nChunks());
+    Log.info("Number of chunks for data retrieval: " + vec.nChunks());
     //create frame
-    final Key destination_key = Key.make(table + "_sql_to_hex");
+    final Key destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
 
     final String finalTable = table;
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, _v.nChunks());
-        Frame fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider).doAll(columnH2OTypes, _v)
+        final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
+        final Frame fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+                .doAll(columnH2OTypes, vec)
                 .outputFrame(destination_key, columnNames, null);
+        vec.remove();
+
         DKV.put(fr);
-        _v.remove();
         ParseDataset.logParseResults(fr);
-        if (finalTable.equals(SQLManager.TEMP_TABLE_NAME)) 
+        if (finalTable.equals(SQLManager.TEMP_TABLE_NAME))
           dropTempTable(connection_url, username, password);
         tryComplete();
       }
     };
-    j.start(work, _v.nChunks());
+    j.start(work, vec.nChunks());
     
     return j;
   }
@@ -322,26 +340,26 @@ public class SQLManager {
 
     }
 
+    private static int getMaxConnectionsTotal() {
+      int maxConnections = MAX_CONNECTIONS;
+      final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
+      try {
+        Integer userMaxConnections = Integer.valueOf(userDefinedMaxConnections);
+        if (userMaxConnections > 0 && userMaxConnections < MAX_CONNECTIONS) {
+          maxConnections = userMaxConnections;
+        }
+      } catch (NumberFormatException e) {
+        Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
+                + ". Falling back to default settings (" + MAX_CONNECTIONS + ").");
+      }
+      return maxConnections;
+    }
+
     /**
      * @return Number of connections to an SQL database to be opened on a single node.
      */
     static int getMaxConnectionsPerNode(final int cloudSize, final short nThreads, final int nChunks) {
-      int conPerNode;
-      final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
-      try {
-        Integer connectionAmount = Integer.valueOf(userDefinedMaxConnections);
-        if (connectionAmount > 0 && connectionAmount < MAX_CONNECTIONS) {
-          conPerNode = calculateLocalConnectionCount(connectionAmount, cloudSize, nThreads, nChunks);
-        } else {
-          conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads, nChunks);
-        }
-      } catch (NumberFormatException e) {
-        Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
-            + ". Falling back to default settings.");
-        conPerNode = calculateLocalConnectionCount(MAX_CONNECTIONS, cloudSize, nThreads, nChunks);
-      }
-
-      return conPerNode;
+     return calculateLocalConnectionCount(getMaxConnectionsTotal(), cloudSize, nThreads, nChunks);
     }
 
     /**
@@ -350,12 +368,23 @@ public class SQLManager {
      * @param maxTotalConnections Maximal number of total connections to be opened by the whole cluster
      * @return Number of connections to open per node, within given minmal and maximal range
      */
-    private static final int calculateLocalConnectionCount(final int maxTotalConnections, final int cloudSize,
+    private static int calculateLocalConnectionCount(final int maxTotalConnections, final int cloudSize,
                                                            final short nThreads, final int nChunks) {
       int conPerNode = (int) Math.min(Math.ceil((double) nChunks / cloudSize), nThreads);
       conPerNode = Math.min(conPerNode, maxTotalConnections / cloudSize);
       //Make sure at least some connections are available to a node
       return Math.max(conPerNode, MIN_CONNECTIONS_PER_NODE);
+    }
+
+    /**
+     * for data retrieval and rebalancing, use
+     *   minimum 1 connection per node,
+     *   maximum = min(max(total threads), max(total allowed connections))
+     * t
+     * @return an estimation of the optimal amount of total concurrent connections available to retrieve data
+     */
+    private static int estimateConcurrentConnections(final int cloudSize, final short nThreads) {
+      return cloudSize * Math.min(nThreads, Math.max(getMaxConnectionsTotal() / cloudSize, MIN_CONNECTIONS_PER_NODE));
     }
   }
 
