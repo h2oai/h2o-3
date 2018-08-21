@@ -404,7 +404,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             }
           }
         } else
-          centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+          centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY, _parms._seed);
 
         if (_parms._user_x != null) {   // Set X = user-specified initial points
           Frame tmp = new Frame(dfrm);
@@ -429,7 +429,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
       } else if (_parms._init == GlrmInitialization.Random) {  // Generate X and Y from standard normal distribution
-        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
+        centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY, _parms._seed);
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
@@ -1319,7 +1319,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     @Override public void map(Chunk[] chks) {
-      Random rand = RandomUtils.getRNG(0);
+      Random rand = RandomUtils.getRNG(_parms._seed); // may have to set back to 0 for compatibility
 
       for (int row = 0; row < chks[0]._len; row++) {
         rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
