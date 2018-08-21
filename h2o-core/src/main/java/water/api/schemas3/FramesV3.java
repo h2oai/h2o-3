@@ -45,7 +45,7 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
-  public FrameBaseV3[] frames;
+  public FrameV3[] frames;
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   public ModelSchemaV3[] compatible_models;
@@ -80,20 +80,6 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
       int i = 0;
       for (Frame frame : f.frames) {
         this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count);
-      }
-    }
-    return this;
-  }
-
-  public FramesV3 fillFromImplWithSynopsis(Frames f) {
-    this.frame_id = new KeyV3.FrameKeyV3(f.frame_id);
-
-    if (f.frames != null) {
-      this.frames = new FrameSynopsisV3[f.frames.length];
-
-      int i = 0;
-      for (Frame frame : f.frames) {
-        this.frames[i++] = new FrameSynopsisV3(frame);
       }
     }
     return this;
