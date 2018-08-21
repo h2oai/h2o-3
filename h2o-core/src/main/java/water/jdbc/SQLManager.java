@@ -28,7 +28,6 @@ public class SQLManager {
   private static final String NETEZZA_JDBC_DRIVER_CLASS = "org.netezza.Driver";
   private static final String HIVE_JDBC_DRIVER_CLASS = "org.apache.hive.jdbc.HiveDriver";
 
-  private static final String AUTO_REBALANCE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.rebalance.enabled";
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
   /**
@@ -188,10 +187,7 @@ public class SQLManager {
     } else {
       vec = Vec.makeConN(numRow, num_chunks);
     }
-    //if autoRebalance set to true, we first use optimal #chunks for retrieval and then immediately rebalance to optimal #chunks for later data processing
-    final boolean autoRebalance = vec.nChunks() != num_chunks && Boolean.parseBoolean(System.getProperty(AUTO_REBALANCE_ENABLED, "false"));
     Log.info("Number of chunks for data retrieval: " + vec.nChunks());
-    Log.info("Number of final chunks: " + num_chunks);
     //create frame
     final Key destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
@@ -201,22 +197,9 @@ public class SQLManager {
       @Override
       public void compute2() {
         final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
-        final Frame retrieval_fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+        final Frame fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
                 .doAll(columnH2OTypes, vec)
-                .outputFrame(null, columnNames, null);
-
-        Frame fr;
-
-        if (autoRebalance) {
-          final RebalanceDataSet rds = new RebalanceDataSet(retrieval_fr, destination_key, num_chunks);
-          H2O.submitTask(rds);
-          fr = rds.getResult();
-          retrieval_fr.remove();
-        } else {
-          fr = retrieval_fr;
-          fr._key = destination_key;
-        }
-
+                .outputFrame(destination_key, columnNames, null);
         vec.remove();
 
         DKV.put(fr);
