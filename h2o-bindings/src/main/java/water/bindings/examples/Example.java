@@ -195,11 +195,11 @@ public class Example {
 
         try {
             // NOTE: the Call objects returned by the service can't be reused, but they can be cloned.
-            Response<FramesListV3> all_frames_response = framesService.list().execute();
+            Response<FramesV3> all_frames_response = framesService.list().execute();
             Response<ModelsV3> all_models_response = modelsService.list().execute();
 
             if (all_frames_response.isSuccessful()) {
-                FramesListV3 all_frames = all_frames_response.body();
+                FramesV3 all_frames = all_frames_response.body();
                 System.out.println("All Frames: ");
                 System.out.println(all_frames);
             } else {
@@ -227,7 +227,7 @@ public class Example {
 
                 all_frames_response = framesService.list().execute();
                 if (all_frames_response.isSuccessful()) {
-                    FramesListV3 all_frames = all_frames_response.body();
+                    FramesV3 all_frames = all_frames_response.body();
                     System.out.println("All Frames (after createFrame): ");
                     System.out.println(all_frames);
                 } else {
