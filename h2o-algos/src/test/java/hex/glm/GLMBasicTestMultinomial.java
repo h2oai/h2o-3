@@ -356,12 +356,28 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @Test
   public void testNaiveCoordinateDescent() {
     expectedException.expect(H2OIllegalArgumentException.class);
-    expectedException.expectMessage("Naive coordinate descent is not supported.");
+    expectedException.expectMessage("Naive coordinate descent is not supported for multinomial.");
     GLMParameters params = new GLMParameters(Family.multinomial);
     params._solver = Solver.COORDINATE_DESCENT_NAIVE;
 
     // Should throw exception with information about unsupported message
-    new GLM(params).trainModel().get();
+    new GLM(params);
+  }
+
+  @Test
+  public void testNaiveCoordinateDescent_families() {
+    GLMParameters params = new GLMParameters(Family.binomial);
+    params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+    final Family[] families = {Family.binomial, Family.gaussian, Family.gamma, Family.tweedie, Family.poisson, Family.ordinal,
+    Family.quasibinomial};
+    GLMParameters.Link[] linkingfuncs = {GLMParameters.Link.logit, GLMParameters.Link.identity, GLMParameters.Link.log,
+            GLMParameters.Link.tweedie, GLMParameters.Link.log, GLMParameters.Link.ologit, GLMParameters.Link.logit};
+
+    for (int i = 0; i < families.length; i++) {
+      params._family = families[i];
+      params._link = linkingfuncs[i];
+      new GLM(params);
+    }
   }
 
 

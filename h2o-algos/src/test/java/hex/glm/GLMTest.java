@@ -690,7 +690,6 @@ public class GLMTest  extends TestUtil {
     Key<GLMModel> modelKey = Key.make("airlines_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/airlines/AirlinesTrain.csv.zip");
-    boolean naive_descent_exception_thrown = false;
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
@@ -705,13 +704,10 @@ public class GLMTest  extends TestUtil {
       assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
-    } catch (H2OIllegalArgumentException e) {
-      naive_descent_exception_thrown = true;
     } finally {
       fr.delete();
       if (model != null) model.delete();
     }
-    assertTrue(naive_descent_exception_thrown);
   }
 
   @Test
@@ -750,7 +746,6 @@ public class GLMTest  extends TestUtil {
     Key<GLMModel> modelKey = Key.make("anomaly_model");
 
     Frame fr = parse_test_file(parsed, "smalldata/anomaly/ecg_discord_train.csv");
-    boolean naive_descent_exception_thrown = false;
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
@@ -764,13 +759,10 @@ public class GLMTest  extends TestUtil {
       assertTrue(glm.isStopped());
       System.out.println(model._output._training_metrics);
 
-    } catch (H2OIllegalArgumentException e) {
-      naive_descent_exception_thrown = true;
     } finally {
       fr.delete();
       if (model != null) model.delete();
     }
-    assertTrue(naive_descent_exception_thrown);
   }
 
 
@@ -1231,7 +1223,6 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
-    boolean naive_descent_exception_thrown = false;
     try {
       Scope.enter();
       GLMParameters params = new GLMParameters(Family.binomial);
@@ -1257,13 +1248,10 @@ public class GLMTest  extends TestUtil {
 //              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
 //      System.out.println( " objective value " + objective);
 //      assertEquals(0.670921, objective,1e-4);
-    } catch (H2OIllegalArgumentException e) {
-      naive_descent_exception_thrown = true;
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
     }
-    assertTrue(naive_descent_exception_thrown);
   }
 
 
@@ -1305,7 +1293,6 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"); //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"IsDepDelayed_REC"};
-    boolean naive_descent_exception_thrown = false;
     try {
       Scope.enter();
       GLMParameters params = new GLMParameters(Family.binomial);
@@ -1329,13 +1316,10 @@ public class GLMTest  extends TestUtil {
 //      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
 //              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
 //      assertEquals(0.65689, objective,1e-4);
-    } catch (H2OIllegalArgumentException e) {
-      naive_descent_exception_thrown = true;
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
     }
-    assertTrue(naive_descent_exception_thrown);
   }
 
 
