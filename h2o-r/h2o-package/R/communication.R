@@ -205,7 +205,7 @@
     if(!autoML){
       header['Expect'] = ''
     }else{
-      header = "Content-Type: application/json"
+      header["Content-Type"] <- "application/json"
     }
     tmp = tryCatch(curlPerform(url = URLencode(url),
                                postfields = postBody,
