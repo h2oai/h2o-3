@@ -36,4 +36,7 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Description of the tree's nodes")
     public String[] descriptions;
 
+    @API(direction = API.Direction.OUTPUT, help = "Categorical levels on the edge from the parent node")
+    public int[][] levels;
+
 }
