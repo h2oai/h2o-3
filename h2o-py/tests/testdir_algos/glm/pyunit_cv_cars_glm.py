@@ -59,7 +59,7 @@ def cv_cars_glm():
   fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1)] for f in range(cars.nrow)])
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
-  glm = H2OGeneralizedLinearEstimator(family=family, keep_cross_validation_predictions=True)
+  glm = H2OGeneralizedLinearEstimator(family=family, keep_cross_validation_models=True, keep_cross_validation_predictions=True)
   glm.train(x=predictors, y=response_col, training_frame=cars, fold_column="fold_assignments")
   num_cv_models = len(glm._model_json['output']['cross_validation_models'])
   assert num_cv_models==num_folds, "Expected {0} cross-validation models, but got " \
