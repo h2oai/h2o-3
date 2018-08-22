@@ -2,14 +2,13 @@ package hex.tree;
 
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.utils.DistributionFamily;
+
 import hex.schemas.TreeV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
@@ -310,5 +309,138 @@ public class TreeHandlerTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testNaHandling_airlines_train() {
+
+
+        Frame tfr = null;
+        GBMModel model = null;
+
+        Scope.enter();
+        try {
+            tfr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            DKV.put(tfr);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = tfr._key;
+            parms._ntrees = 1;
+            parms._seed = 0;
+            parms._response_column = "IsDepDelayed";
+
+            // Test incorrect tree request
+            final TreeV3 args = new TreeV3();
+            model = new GBM(parms).trainModel().get();
+            final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            assertNotNull(treeProperties);
+
+            final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
+
+            final String[] noExcludedSplits = new String[]{};
+            final int naSplits = checkNaPath(rootNode, noExcludedSplits);
+
+            //Count number of nonNull NA splits generate by TreeHandler.convertSharedTreeSubgraph and compare with number
+            // of NA splits detected while walking the tree. Must be the same number.
+            int nonNullNaSplits = 0;
+
+            for (String naSplitDescription: treeProperties._nas){
+                if(naSplitDescription != null) nonNullNaSplits++;
+            }
+
+            assertEquals(naSplits, nonNullNaSplits);
+
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (model != null) model.remove();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testNaHandling_cars() {
+
+        Frame tfr = null;
+        GBMModel model = null;
+
+        Scope.enter();
+        try {
+            tfr = parse_test_file("./smalldata/junit/cars_nice_header.csv");
+            DKV.put(tfr);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = tfr._key;
+            parms._ignored_columns = new String[]{"name", "economy", "displacement", "weight", "acceleration", "year"}; // Cylinders-only
+            parms._response_column = "power"; //Regression
+            parms._ntrees = 1;
+            parms._seed = 0;
+
+            model = new GBM(parms).trainModel().get();
+            final SharedTreeModel.SharedTreeOutput sharedTreeOutput = model._output;
+            assertEquals(parms._ntrees, sharedTreeOutput._ntrees);
+            assertEquals(parms._ntrees, sharedTreeOutput._treeKeys.length);
+            assertEquals(parms._ntrees, sharedTreeOutput._treeKeysAux.length);
+
+            final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
+            assertNotNull(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            assertNotNull(treeProperties);
+
+            final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
+            final String[] noExcludedSplits = new String[]{};
+            final int naSplits = checkNaPath(rootNode, noExcludedSplits);
+
+            //Count number of nonNull NA splits generate by TreeHandler.convertSharedTreeSubgraph and compare with number
+            // of NA splits detected while walking the tree. Must be the same number.
+            int nonNullNaSplits = 0;
+
+            for (String naSplitDescription: treeProperties._nas){
+                if(naSplitDescription != null) nonNullNaSplits++;
+            }
+
+            assertEquals(naSplits, nonNullNaSplits);
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (model != null) model.remove();
+        }
+    }
+
+    private int checkNaPath(SharedTreeNode parentNode, String[] previousNaSplits) {
+        final SharedTreeNode leftChild = parentNode.getLeftChild();
+        final SharedTreeNode rightChild = parentNode.getRightChild();
+
+        if (leftChild == null && rightChild == null) return 0;
+
+
+        final boolean isRightInclusive = rightChild != null ? rightChild.isInclusiveNa() : false;
+        final boolean isLeftInclusive = leftChild != null ? leftChild.isInclusiveNa() : false;
+
+        if (!(isLeftInclusive ^ isRightInclusive) && isLeftInclusive) {
+            fail("Parent node " + parentNode.getNodeNumber() + " includes NAs for both children");
+        }
+
+        final boolean splitsOnExcluded = ArrayUtils.contains(previousNaSplits, parentNode.getColName());
+        if (splitsOnExcluded
+                && (isRightInclusive || isLeftInclusive)) {
+            // If NAs for given column went any other way before, there should be no NA direction for the column
+            fail("Parent node " + parentNode.getNodeNumber() + " includes NAs for column " + parentNode.getColName());
+        } else if (!splitsOnExcluded && !(isLeftInclusive ^ isRightInclusive)) {
+            // If NAs for given column may appear on this node, it should point a way to one of its children
+            fail("Parent node " + parentNode.getNodeNumber() + " should set NA direction to one of its children");
+        }
+
+
+        final String[] leftPreviousSplits = isRightInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+        final String[] rightPreviousSplits = isLeftInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+
+        int naSplits = 0;
+        if(isRightInclusive ^ isLeftInclusive){
+            naSplits++;
+        }
+
+        if (leftChild != null) naSplits += checkNaPath(leftChild, leftPreviousSplits);
+        if (rightChild != null) naSplits += checkNaPath(rightChild, rightPreviousSplits);
+
+        return naSplits;
+    }
 
 }
