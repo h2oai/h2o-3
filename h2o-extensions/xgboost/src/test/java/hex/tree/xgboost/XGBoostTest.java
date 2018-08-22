@@ -512,6 +512,7 @@ public class XGBoostTest extends TestUtil {
       parms._stopping_rounds = 3;
       parms._score_tree_interval = 1;
       parms._seed = 123;
+      parms._keep_cross_validation_models = true;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       final int ntrees = model._output._ntrees;
