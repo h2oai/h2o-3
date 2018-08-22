@@ -520,7 +520,7 @@ In GLM, you can specify one of the following solvers:
 - L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
 - AUTO: Sets the solver based on given data and parameters.
 - COORDINATE_DESCENT: Coordinate Decent (experimental)
-- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
+- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental, and not available when ``family=multinomial``)
 - GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
@@ -549,6 +549,7 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 - Coordinate Descent is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. This version is faster when :math:`N > p` and :math:`p` ~ :math:`500`.
 - Coordinate Descent Naive is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
 - Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
+- Coordinate Descent cannot be used with ``family=multinomial``.
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
