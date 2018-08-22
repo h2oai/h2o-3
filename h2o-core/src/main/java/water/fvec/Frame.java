@@ -6,7 +6,8 @@ import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.task.IsNaTask;
+import water.fvec.task.AsQuasiBinomialTask;
+import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
 import water.parser.BufferedString;
 import water.rapids.Merge;
@@ -1221,7 +1222,7 @@ public class Frame extends Lockable<Frame> {
    * @return frame without rows with NAs in `columnIndex` column
    */
   public Frame filterOutNAsInColumn(int columnIndex) {
-    Frame noNaPredicateFrame = new IsNaTask().doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
+    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
     String[] names = names().clone();
     byte[] types = types().clone();
     String[][] domains = domains().clone();
@@ -1231,6 +1232,22 @@ public class Frame extends Lockable<Frame> {
     noNaPredicateFrame.delete();
     remove("predicate");
     return filtered;
+  }
+
+  /**
+   *
+   * @param columnIndex
+   * @return frame with specified column encoded into binary enumeration column
+   */
+  public Frame asQuasiBinomial(int columnIndex) {
+
+    Vec columnToEncode = vec(columnIndex);
+    String[] domains = columnToEncode.domain().clone();
+    Frame encodedFrame = new AsQuasiBinomialTask(domains).doAll( Vec.T_NUM, columnToEncode).outputFrame(); // TODO how to avoid creation of Frame when doing MRT?
+    replace(columnIndex, encodedFrame.vec(0));
+    DKV.put(this);
+    columnToEncode.remove();
+    return this;
   }
 
   /** return a frame with unique values from the specified column */
