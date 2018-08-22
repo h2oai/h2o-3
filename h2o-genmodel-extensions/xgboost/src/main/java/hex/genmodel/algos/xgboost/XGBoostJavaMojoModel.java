@@ -10,7 +10,7 @@ import java.io.InputStream;
 
 /**
  * Implementation of XGBoostMojoModel that uses Pure Java Predict
- * see https://github.com/komiya-atsushi/xgboost-predictor-java
+ * see https://github.com/h2oai/xgboost-predictor
  */
 public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
