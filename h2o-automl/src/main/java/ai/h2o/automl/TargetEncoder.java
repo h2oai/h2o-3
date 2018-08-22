@@ -474,7 +474,7 @@ public class TargetEncoder {
 
     private void foldColumnIsInEncodingMapCheck(String foldColumnName, Frame targetEncodingMap) {
         if(foldColumnName == null && targetEncodingMap.names().length > 3) {
-            throw new IllegalStateException("Passed along encoding map possibly contains fold column. Please provide fold column name so that group ignoring folds.");
+            throw new IllegalStateException("Passed along encoding map possibly contains fold column. Please provide fold column name so that it becomes possible to regroup (by ignoring folds).");
         }
     }
 
