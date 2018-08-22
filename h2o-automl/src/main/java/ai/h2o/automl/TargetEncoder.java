@@ -164,11 +164,7 @@ public class TargetEncoder {
     }
 
     Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
-        String[] domains = data.vec(targetIndex).domain().clone();
-        Arrays.sort(domains);
-        String tree = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) ) NA (ifelse (== (cols %s [%d] ) '%s' ) 0.0 1.0 ) )  [%d] [] )",
-                data._key, data._key, targetIndex,  data._key, targetIndex, domains[0], targetIndex);
-        return execRapidsAndGetFrame(tree);
+        return data.asQuasiBinomial(targetIndex);
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {

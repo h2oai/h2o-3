@@ -1122,6 +1122,20 @@ public class TargetEncodingTest extends TestUtil{
       encoded2.delete();
     }
 
+  @Test
+  public void isBinaryTest() {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("NO", "YES", "NO"))
+            .withDataForCol(1, ard(0, 0.5, 1))
+            .build();
+
+    assertTrue(fr.vec(0).isBinary());
+    assertFalse(fr.vec(1).isBinary());
+  }
+
     @Ignore
     @Test
     public void ensureTargetColumnIsNumericOrBinaryCategoricalUnderrepresentedClassTest() {
@@ -1160,12 +1174,24 @@ public class TargetEncodingTest extends TestUtil{
 
         TargetEncoder tec = new TargetEncoder();
 
+        // So with TestFrameBuilder column is automatically seen as binary but it is not Numerical
+        assertTrue(fr.vec(2).isBinary());
+        assertTrue(fr.vec(2).isCategorical());
+        assertFalse(fr.vec(2).isString());
+        assertFalse(fr.vec(2).isNumeric());
+
         Frame res = tec.transformBinaryTargetColumn(fr, 2);
 
         Vec transformedVector = res.vec(2);
+
+        assertTrue(transformedVector.isBinary());
+        assertFalse(transformedVector.isCategorical());
         assertTrue(transformedVector.isNumeric());
+
         assertEquals(0, transformedVector.at(0), 1e-5);
         assertEquals(1, transformedVector.at(1), 1e-5);
+
+        transformedVector.remove();
         res.delete();
     }
 

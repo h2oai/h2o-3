@@ -4,7 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
-public class IsNaTask extends MRTask<IsNaTask> {
+public class IsNotNaTask extends MRTask<IsNotNaTask> {
   @Override
   public void map(Chunk cs[], NewChunk ncs[]) {
     for (int col = 0; col < cs.length; col++) {
