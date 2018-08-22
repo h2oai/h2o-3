@@ -21,7 +21,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     _predictor = makePredictor(boosterBytes);
   }
 
-  private static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
       return new Predictor(is);
     } catch (IOException e) {
@@ -35,7 +35,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
             _nclasses, _priorClassDistrib, _defaultThreshold, _sparse);
   }
 
-  private static double[] score0(double[] doubles, double offset, double[] preds,
+  public static double[] score0(double[] doubles, double offset, double[] preds,
                                 Predictor predictor, int _nums, int _cats,
                                 int[] _catOffsets, boolean _useAllFactorLevels,
                                 int nclasses, double[] _priorClassDistrib,
