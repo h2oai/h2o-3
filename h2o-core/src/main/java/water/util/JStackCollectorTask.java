@@ -49,18 +49,6 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
     public boolean hasAny(){return _parked + _active + _blocked + _unknown > 0;}
   }
 
-  enum ThreadType {HTTP_REQUEST, FJ, OTHER, TCP, JETTY, HADOOP}
-  private static class ThreadKey implements Comparable<ThreadKey> {
-    ThreadType _type;
-
-    @Override
-    public int compareTo(ThreadKey o) {
-      return _type.ordinal() - o._type.ordinal();
-    }
-    @Override
-    public String toString() {return _type.toString();}
-  }
-
   // bruteforce search for H2O Servlet, don't call until other obvious cases were filtered out
   private int isH2OHTTPRequestThread(StackTraceElement [] elms){
     for(int i = 0; i < elms.length; ++i)
