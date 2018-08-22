@@ -5,6 +5,8 @@ Model Performance
 -----------------
 
 
+
+
 Evaluation Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -301,7 +303,7 @@ Comparison
 Stopping Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Stopping metric parameters are specified in conjunction with a stopping tolerance and a number of stopping rounds. A metric specified in the `stopping_metric <data-science/algo-pararms/stopping_metric.html>`__ option specifies the metric to consider when early stopping is specified. In addition to scoring metrics, the following can also be specified as a stopping_metric: 
+Stopping metric parameters are specified in conjunction with a stopping tolerance and a number of stopping rounds. A metric specified in the `stopping_metric <data-science/algo-pararms/stopping_metric.html>`__ option specifies the metric to consider when early stopping is specified. 
 
 Misclassification
 '''''''''''''''''
@@ -316,14 +318,19 @@ This parameter specifies that a model must improve its lift within the top 1% of
 Deviance
 ''''''''
 
+The model will stop building if the deviance fails to continue to improve. Deviance is computed as follows:
+
+::
+
+  Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
 
 
 Mean-Per-Class-Error
 ''''''''''''''''''''
 
+The model will stop building after the mean per-class error rate fails to improve. 
 
-
-In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can be used as the stopping metric. 
+In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
 Model Performance Graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -368,7 +375,6 @@ The hit ratio is a table representing the number of times that the prediction wa
 .. figure:: images/HitRatioTable.png
    :alt: Hit Ratio Table
 
-
 Standardized Coefficient Magnitudes
 '''''''''''''''''''''''''''''''''''
 
@@ -384,23 +390,127 @@ This provides a graphical representation of the marginal effect of a variable on
 
 .. figure:: images/pdp_summary.png
     :alt: Partial Dependence Summary
+    :height: 483
+    :width: 355
 
 Prediction
 ----------
 
 
+
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
+
+This section provides examples of performing predictions in Python and R. Refer to the :ref:`predictions_flow` topic in the Flow chapter to view an example of how to predict in Flow. 
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the prostate dataset
+    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
+                                   destination_frame = "prostate.hex")
+
+
+    # Split dataset giving the training dataset 75% of the data
+    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+
+    # Create a training set from the 1st dataset in the split
+    prostate.train <- prostate.split[[1]]
+
+    # Create a testing set from the 2nd dataset in the split
+    prostate.test <- prostate.split[[2]]
+
+    # Convert the response column to a factor
+    prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
+
+    # Build a GBM model
+    model <- h2o.gbm(y="CAPSULE",
+                     x=c("AGE", "RACE", "PSA", "GLEASON"),
+                     training_frame=prostate.train,
+                     distribution="bernoulli",
+                     ntrees=100,
+                     max_depth=4,
+                     learn_rate=0.1)
+
+    # Predict using the GBM model and the testing dataset
+    pred = h2o.predict(object=model, newdata=prostate.test)
+    pred
+      predict         p0          p1
+    1       1 0.39080085 0.609199153
+    2       0 0.75531958 0.244680420
+    3       1 0.09730223 0.902697771
+    4       0 0.99386932 0.006130679
+    5       0 0.89263247 0.107367533
+    6       0 0.98590611 0.014093887
+
+    [38 rows x 3 columns] 
+
+    # View a summary of the prediction with a probability of TRUE
+    summary(pred$p1, exact_quantiles=TRUE)
+     p1                
+     Min.   :0.006131  
+     1st Qu.:0.123465  
+     Median :0.375684  
+     Mean   :0.414250  
+     3rd Qu.:0.676742  
+     Max.   :0.971854  
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    h2o.init()
+    
+    # Import the prostate dataset
+    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+    
+    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
+    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
+
+    # Convert the response column to a factor
+    h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+    
+    # Generate a GBM model using the training dataset
+    model = H2OGradientBoostingEstimator(distribution="bernoulli",
+                                         ntrees=100,
+                                         max_depth=4,
+                                         learn_rate=0.1)
+    model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
+    
+    # Predict using the GBM model and the testing dataset
+    predict = model.predict(test)
+    
+    # View a summary of the prediction
+    predict.head()
+    predict        p0        p1
+    ---------  --------  --------
+            0  0.8993    0.1007
+            1  0.168391  0.831609
+            1  0.166067  0.833933
+            1  0.327212  0.672788
+            1  0.25991   0.74009
+            0  0.758978  0.241022
+            0  0.540797  0.459203
+            0  0.838489  0.161511
+            0  0.704853  0.295147
+            0  0.642381  0.357619
+
+    [10 rows x 3 columns]
+
 
 
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
 
+An end-to-end example from building a model through predictions using MOJOs is available in the :ref:`mojo_quickstart` topic. 
 
 Predict using POJOs
 ~~~~~~~~~~~~~~~~~~~
 
-
+An end-to-end example from building a model through predictions using POJOs is available in the :ref:`pojo_quickstart` topic. 
 
 

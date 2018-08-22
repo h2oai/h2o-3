@@ -56,7 +56,7 @@ Note that when splitting frames, H2O does not give an exact split. It's designed
 	>>> prostate_df = h2o.import_file(path=prostate)
 	
 	# Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
-	>>> train,test,valid = prostate_df.split_frame(ratios=(.7, .15))
+	>>> train,test,valid = prostate_df.split_frame(ratios=[.7, .15])
 	
 	# Generate a GLM model using the training dataset
 	>>> glm_classifier = H2OGeneralizedLinearEstimator(family="binomial", nfolds=10, alpha=0.5)

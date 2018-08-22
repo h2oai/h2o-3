@@ -1322,6 +1322,8 @@ Viewing Partial Dependence Plots
 
 --------------
 
+.. _predictions_flow:
+
 Predictions
 -----------
 

@@ -1,3 +1,5 @@
+.. _pojo_quickstart:
+
 POJO Quick Start
 ----------------
 

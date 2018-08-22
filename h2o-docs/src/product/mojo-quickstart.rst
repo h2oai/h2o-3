@@ -1,3 +1,5 @@
+.. _mojo_quickstart:
+
 MOJO Quick Start
 ----------------
 
