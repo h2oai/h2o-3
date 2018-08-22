@@ -32,7 +32,7 @@ Below are some general guidelines to follow when specifying a solver.
 - L_BFGS works much better for L2-only multininomial and if you have too many active predictors. 
 - You must use IRLSM if you have p-values. 
 - IRLSM and COORDINATE_DESCENT share the same path (i.e., they both compute the same gram matrix), they just solve it differently.
-- Use COORDINATE_DESCENT if you have less than 5000 predictors and L1 penalty.
+- Use COORDINATE_DESCENT if you have less than 5000 predictors and L1 penalty and when ``family`` is not ``multinomial``. 
 - COORDINATE_DESCENT performs better when ``lambda_search`` is enabled. Also with bounds, it tends to get a higher accuracy.
 - Use GRADIENT_DESCENT_LH or GRADIENT_DESCENT_SQERR when ``family=ordinal``. With GRADIENT_DESCENT_LH, the model parameters are adjusted by minimizing the loss function; with GRADIENT_DESCENT_SQERR, the model parameters are adjusted using the loss function. 
 
