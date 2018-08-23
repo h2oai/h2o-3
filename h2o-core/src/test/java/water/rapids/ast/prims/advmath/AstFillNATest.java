@@ -2,9 +2,12 @@ package water.rapids.ast.prims.advmath;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import water.Scope;
 import water.TestUtil;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -14,8 +17,12 @@ import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 import water.rapids.Session;
 public class AstFillNATest extends TestUtil {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @BeforeClass
     static public void setup() { stall_till_cloudsize(1); }
+
 
     @Test public void TestFillNA() {
         Scope.enter();
@@ -40,7 +47,26 @@ public class AstFillNATest extends TestUtil {
             Scope.exit();
         }
 
-
-
     }
+
+    @Test
+    public void testBackwardMethodIsUnimplemented() {
+        expectedException.expect(H2OIllegalArgumentException.class);
+        expectedException.expectMessage("Backward fillNA method is not yet implemented.");
+
+        Scope.enter();
+        try {
+            Session sess = new Session();
+            Frame fr = Scope.track(new TestFrameBuilder()
+                    .withName("$fr", sess)
+                    .withColNames("C1")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, ard(1, Double.NaN, Double.NaN, Double.NaN, Double.NaN))
+                    .build());
+            Rapids.exec("(h2o.fillna $fr 'backward' 0 3)", sess);
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }
