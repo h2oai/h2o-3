@@ -7,6 +7,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import water.Key;
@@ -41,9 +42,8 @@ public class PersistHTTP extends PersistEagerHTTP {
     final long offset = (k._kb[0] == Key.CHK) ? FileVec.chunkOffset(k) : 0L;
 
     URI source = decodeKey(k);
-    HttpGet req = new HttpGet(source);
+    HttpRequestBase req = createReq(source, false);
     req.setHeader(HttpHeaders.RANGE, "bytes=" + offset + "-" + (offset+v._max-1));
-    req.setHeader(HttpHeaders.ACCEPT_ENCODING, "identity");
 
     try (CloseableHttpClient client = HttpClientBuilder.create().build();
          CloseableHttpResponse response = client.execute(req)) {
@@ -103,8 +103,7 @@ public class PersistHTTP extends PersistEagerHTTP {
    * @throws IOException when communication fails
    */
   long checkRangeSupport(URI uri) throws IOException {
-    HttpHead req = new HttpHead(uri);
-
+    HttpRequestBase req = createReq(uri, true);
     try (CloseableHttpClient client = HttpClientBuilder.create().build();
          CloseableHttpResponse response = client.execute(req)) {
       Header acceptRangesHeader = response.getFirstHeader(HttpHeaders.ACCEPT_RANGES);
@@ -116,6 +115,12 @@ public class PersistHTTP extends PersistEagerHTTP {
 
       return Long.valueOf(contentLengthHeader.getValue());
     }
+  }
+
+  private HttpRequestBase createReq(URI uri, boolean isHead) {
+    HttpRequestBase req = isHead ? new HttpHead(uri) : new HttpGet(uri);
+    req.setHeader(HttpHeaders.ACCEPT_ENCODING, "identity");
+    return req;
   }
 
   @Override
