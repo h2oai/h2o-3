@@ -44,6 +44,7 @@ public class h2odriver extends Configured implements Tool {
   final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
+  final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
 
   static {
     String javaVersionString = System.getProperty("java.version");
@@ -1804,9 +1805,10 @@ public class h2odriver extends Configured implements Tool {
     abstract boolean isSuccessful() throws IOException;
 
     static JobWrapper wrap(Job job) {
-      if (driverDebug)
-        return new AsyncExecutingJobWrapper(job);
-      else
+      if (driverDebug) {
+        int timeoutSeconds = job.getConfiguration().getInt(DRIVER_JOB_CALL_TIMEOUT_SEC, 10);
+        return new AsyncExecutingJobWrapper(job, timeoutSeconds);
+      } else
         return new DelegatingJobWrapper(job);
     }
   }
@@ -1835,9 +1837,10 @@ public class h2odriver extends Configured implements Tool {
   private static class AsyncExecutingJobWrapper extends JobWrapper {
     private final ExecutorService _es;
     private final int _timeoutSeconds = 10;
-    AsyncExecutingJobWrapper(Job job) {
+    AsyncExecutingJobWrapper(Job job, int timeoutSeconds) {
       super(job);
       _es = Executors.newCachedThreadPool();
+      _timeoutSeconds = timeoutSeconds;
     }
 
     @Override
