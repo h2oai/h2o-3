@@ -2,6 +2,7 @@ def NODE_LABEL = 'master'
 
 def pipelineContext = null
 def result = 'FAILURE'
+def buildNumber = currentBuild.number
 
 try {
     ansiColor('xterm') {
@@ -10,7 +11,10 @@ try {
             node(NODE_LABEL) {
                 def insideDocker = null
 
-                env.BUILD_NUMBER_DIR = currentBuild.number
+                if (env.BRANCH_NAME != 'master' || !env.BRANCH_NAME.startsWith('rel-')) {
+                    buildNumber = "9999${currentBuild.number}"
+                }
+                env.BUILD_NUMBER_DIR = buildNumber
                 env.DATA_DIR = "/home/0xdiag"
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
@@ -50,7 +54,7 @@ try {
                     final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo 'version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
                     String releaseContent = """
                         <ul>
-                            <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
+                            <li><strong>Version:</strong> ${version}.${buildNumber}</li>
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
@@ -102,7 +106,7 @@ try {
 
                                 # Update the build number.
                                 mkdir -p ci
-                                echo "BUILD_NUMBER=${currentBuild.number}" > gradle/buildnumber.properties
+                                echo "BUILD_NUMBER=${buildNumber}" > gradle/buildnumber.properties
                                 echo "BUILD_BRANCH_NAME=${env.BRANCH_NAME}" > gradle/git.properties
                                 echo "BUILD_HASH=${env.THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
                                 echo "BUILD_HASH_SHORT=${env.THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
@@ -145,7 +149,7 @@ try {
                 }
 
                 env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
-                env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
+                env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${buildNumber}.zip", returnStdout: true).trim()
 
                 if (!params.TEST_RELEASE) {
                     final String TAG_STAGE_NAME = 'Create Git Tag'
@@ -155,12 +159,12 @@ try {
                             pipelineContext.getBuildSummary().setStageDetails(this, TAG_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
-                                git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                git tag -a jenkins-${env.BRANCH_NAME}-${buildNumber} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
                             """
                             if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
-    
+
                                     echo "Process release tags"
                                     git tag -d jenkins-rel-latest-stable
                                     git push origin :refs/tags/jenkins-rel-latest-stable
@@ -190,7 +194,7 @@ try {
                                 cd ${env.BUILD_NUMBER_DIR}
 
                                 # Publish the output to S3.
-                                s3cmd --rexclude='target/maven' --acl-public sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/
+                                s3cmd --rexclude='target/maven' --acl-public sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/
 
                                 # This is really awful.  This old version of s3cmd does not set Content-Encoding metadata in S3.
                                 # The newer version of s3cmd sets the Content-Encoding to UTF-8 and gradle fails.
@@ -204,37 +208,37 @@ try {
                                 s3cmd del ${env.S3_ROOT}/latest_stable_Py/h2o-*.tar.gz
                                 s3cmd --acl-public -r put target/Python/ ${env.S3_ROOT}/latest_stable_Py/
 
-                                s3cmd --acl-public sync target/maven/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/maven/
-                                s3cmd --acl-public put target/sha256.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/sha256.txt
+                                s3cmd --acl-public sync target/maven/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/maven/
+                                s3cmd --acl-public put target/sha256.txt ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/sha256.txt
 
                                 echo EXPLICITLY SET MIME TYPES AS NEEDED
                                 list_of_html_files=`find target -name '*.html' | sed 's/target\\///g'`
                                 echo \${list_of_html_files}
                                 for f in \${list_of_html_files}
                                 do
-                                    s3cmd --acl-public --mime-type text/html put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                    s3cmd --acl-public --mime-type text/html put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/\${f}
                                 done
 
                                 list_of_js_files=`find target -name '*.js' | sed 's/target\\///g'`
                                 echo \${list_of_js_files}
                                 for f in \${list_of_js_files}
                                 do
-                                    s3cmd --acl-public --mime-type text/javascript put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                    s3cmd --acl-public --mime-type text/javascript put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/\${f}
                                 done
 
                                 list_of_css_files=`find target -name '*.css' | sed 's/target\\///g'`
                                 echo \${list_of_css_files}
                                 for f in \${list_of_css_files}
                                 do
-                                    s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/\${f}
+                                    s3cmd --acl-public --mime-type text/css put target/\${f} ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/\${f}
                                 done
 
                                 echo UPDATE LATEST POINTER
                                 tmpdir=./buildh2odev.tmp
                                 mkdir -p \${tmpdir}
-                                echo ${currentBuild.number} > \${tmpdir}/latest
+                                echo ${buildNumber} > \${tmpdir}/latest
                                 echo "<head>" > \${tmpdir}/latest.html
-                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${currentBuild.number}/index.html\\" />" >> \${tmpdir}/latest.html
+                                echo "<meta http-equiv=\\"refresh\\" content=\\"0; url=${buildNumber}/index.html\\" />" >> \${tmpdir}/latest.html
                                 echo "</head>" >> \${tmpdir}/latest.html
                             """
                         }
@@ -304,23 +308,23 @@ latest_stable_javadoc_scala_2_10:docs-website/h2o-scala_2.10/scaladoc/index.html
 latest_stable_javadoc_scala_2_11:docs-website/h2o-scala_2.11/scaladoc/index.html
 latest_stable_restdoc_route_reference:docs-website/h2o-docs/index.html#route-reference
 latest_stable_restdoc_schema_reference:docs-website/h2o-docs/index.html#schema-reference"
-                                
+
                                     # Output stable link
-                                    echo "https://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${currentBuild.number}/h2o-${env.PROJECT_VERSION}.zip" > \${tmpdir}/latest_stable
-                                    
+                                    echo "https://h2o-release.s3.amazonaws.com/h2o/${env.BRANCH_NAME}/${buildNumber}/h2o-${env.PROJECT_VERSION}.zip" > \${tmpdir}/latest_stable
+
                                     # Output all other links
-                                    echo "\$LINKS" | while IFS=":" read link dest; do 
+                                    echo "\$LINKS" | while IFS=":" read link dest; do
                                     cat <<EOF > \${tmpdir}/\${link}.html
 <head>
-<meta http-equiv="refresh" content="0; url=/h2o/${env.BRANCH_NAME}/${currentBuild.number}/\${dest}" />
+<meta http-equiv="refresh" content="0; url=/h2o/${env.BRANCH_NAME}/${buildNumber}/\${dest}" />
 </head>
 EOF
                                     done
-                                    
+
                                     # Upload
                                     # Upload first stable link
                                     s3cmd --acl-public put \${tmpdir}/latest_stable ${env.S3_ROOT}/latest_stable
-                                    echo "\$LINKS" | while IFS=":" read link dest; do 
+                                    echo "\$LINKS" | while IFS=":" read link dest; do
                                     s3cmd --acl-public put \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html
                                     done
                                 """
@@ -338,7 +342,7 @@ EOF
 
                     if (params.UPLOAD_CONDA) {
 
-                        final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+                        final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/Python/Conda"
 
                         // build for all Python versions
                         for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
@@ -359,13 +363,13 @@ EOF
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
                                                 # Convert conda package for all other platforms
                                                 conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
-                                                
+
                                                 s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
                                                 s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
                                                 s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
                                                 s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
                                                 s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
-                                                
+
                                                 if [ "\$TEST_RELEASE" = true ]; then
                                                     echo '****** WARNING! Upload to Conda suppressed ******'
                                                 else
@@ -378,7 +382,7 @@ EOF
                                                     anaconda upload linux-64/\${PKG_NAME}
                                                     anaconda upload win-32/\${PKG_NAME}
                                                     anaconda upload win-64/\${PKG_NAME}
-                                                fi 
+                                                fi
                                             """
                                         }
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
@@ -405,7 +409,7 @@ EOF
                                         sh """
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
-        
+
                                                     conda install ${pkgName} --offline
                                                     python --version
                                                     python h2o_test.py
@@ -435,7 +439,7 @@ EOF
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
                                                     conda config --append channels conda-forge
-        
+
                                                     conda install -y -c h2oai h2o
                                                     python --version
                                                     python h2o_test.py
@@ -466,12 +470,12 @@ EOF
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
                                             . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-                                
+
                                             cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                             python setup.py sdist
-                                            
-                                            s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
-                                            
+
+                                            s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${buildNumber}/Python/
+
                                             if [ "\$TEST_RELEASE" = true ]; then
                                                 echo '****** WARNING! Upload to PyPI suppressed ******'
                                             else
@@ -547,7 +551,7 @@ private setReleaseJobProperties(final pipelineContext) {
     }
     properties(jobProperties)
 
-    if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
+    if (!params.TEST_RELEASE) {
         env.S3_ROOT = RELEASE_BUCKET
     } else {
         env.S3_ROOT = "${TEST_RELEASE_BUCKET}/${env.BRANCH_NAME}"
