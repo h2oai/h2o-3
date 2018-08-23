@@ -304,11 +304,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 0.0);
-  }
-
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(model_info._dataInfoKey);
     return super.writeAll_impl(ab);
@@ -362,11 +357,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
+  protected double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 0.0);
+  }
+
+  @Override
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
     return XGBoostJavaMojoModel.score0(data, offset, preds,
             model_info.getPredictor(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
+  }
+
+  @Override
+  protected boolean needsPostProcess() {
+    return false; // result of score0 doesn't need post-processing
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
