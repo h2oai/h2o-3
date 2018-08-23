@@ -24,6 +24,8 @@ public class GLRMGenX  extends MRTask<GLRMGenX> {
   @Override
   protected void setupLocal() {
     _gMojoModel = new GlrmMojoModel(_m._output._names, _m._output._domains, null);
+    _gMojoModel._allAlphas = GlrmMojoModel.initializeAlphas(_gMojoModel._numAlphaFactors);  // set _allAlphas array
+
     GLRM.Archetypes arch = _m._output._archetypes_raw;
     // fill out the mojo model, no need to fill out every field
     _gMojoModel._ncolA = _m._output._lossFunc.length;
