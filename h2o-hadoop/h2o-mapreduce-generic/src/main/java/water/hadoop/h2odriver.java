@@ -1807,6 +1807,7 @@ public class h2odriver extends Configured implements Tool {
     static JobWrapper wrap(Job job) {
       if (driverDebug) {
         int timeoutSeconds = job.getConfiguration().getInt(DRIVER_JOB_CALL_TIMEOUT_SEC, 10);
+        DBG("Timeout for Hadoop calls set to ", timeoutSeconds, "s");
         return new AsyncExecutingJobWrapper(job, timeoutSeconds);
       } else
         return new DelegatingJobWrapper(job);
