@@ -6,6 +6,7 @@ import water.Scope;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -223,6 +224,16 @@ public class TargetEncoder {
         return execRapidsAndGetFrame(astTree);
     }
 
+    Frame imputeWithMean(Frame a, int columnIndex) {
+        long numberOfNAs = a.naCount();
+        if (numberOfNAs > 0) {
+            String astTree = String.format("(h2o.impute %s %d 'mean' 'interpolate' [] _ _)", a._key, columnIndex);
+            Rapids.exec(astTree);
+            Log.warn(String.format("Frame with id = %s was imputed with mean ( %d rows were affected)", a._key, numberOfNAs));
+        }
+        return a;
+    }
+
     Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
         return a.addCon(appendedColumnName, columnValue);
     }
@@ -280,7 +291,7 @@ public class TargetEncoder {
     Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, double seed) {
         int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
         String tree = String.format("(:= %s (+ (cols %s [%d] ) (- (* (* (h2o.runif %s %f ) 2.0 ) %f ) %f ) ) [%d] [] )", fr._key, fr._key, appyToColumnIndex, fr._key, seed, noiseLevel, noiseLevel, appyToColumnIndex);
-        return Rapids.exec(tree).getFrame();
+        return execRapidsAndGetFrame(tree);
     }
 
     Frame subtractTargetValueForLOO(Frame data, String targetColumnName)  {
@@ -380,6 +391,8 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
+                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
+
                     Vec removedNumK = dataWithEncodingsAndNoise.remove("numerator");
                     removedNumK.remove();
                     Vec removedDenK = dataWithEncodingsAndNoise.remove("denominator");
@@ -407,6 +420,8 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
+                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
+
                     Vec removedNumLoo = dataWithEncodingsAndNoise.remove("numerator");
                     removedNumLoo.remove();
                     Vec removedDenLoo = dataWithEncodingsAndNoise.remove("denominator");
@@ -428,6 +443,10 @@ public class TargetEncoder {
                     dataWithMergedAggregations = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
                     dataWithEncodings = calculateEncoding(dataWithMergedAggregations, groupedTargetEncodingMapForNone, targetColumnName, newEncodedColumnName, withBlendedAvg);
+
+                    // In cases when encoding has not seen some levels we will impute NAs with mean. Mean is a dataleakage btw.
+                    // we'd better use stratified sampling for te_Holdout. Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
+                    imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName));
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
@@ -469,6 +488,14 @@ public class TargetEncoder {
             return addNoise(frameWithEncodings, newEncodedColumnName, noiseLevel, seed);
         } else {
             return frameWithEncodings;
+        }
+    }
+
+    //TODO remove
+    public void checkNumRows(Frame before, Frame after) {
+        long droppedCount = before.numRows()- after.numRows();
+        if(droppedCount != 0) {
+            Log.warn(String.format("Number of rows has dropped by %d after manipulations with frame ( %s , %s ).", droppedCount, before._key, after._key));
         }
     }
 

@@ -30,39 +30,31 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
   @Test
   public void KFoldHoldoutTypeTest() {
 
-    Frame airlinesTrainFrame = parse_test_file(Key.make("airlines_parsed"), "smalldata/airlines/AirlinesTrain.csv.zip");
-    Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test_parsed"), "smalldata/airlines/AirlinesTest.csv.zip");
+    Frame airlinesTrainWithTEH = parse_test_file(Key.make("airlines_train"), "smalldata/airlines/target_encoding/airlines_train_with_teh.csv");
+    Frame airlinesValid = parse_test_file(Key.make("airlines_valid"), "smalldata/airlines/target_encoding/airlines_valid.csv");
+    Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test"), "smalldata/airlines/AirlinesTest.csv.zip");
 
     String foldColumnName = "fold";
-    FrameUtils.addKFoldColumn(airlinesTrainFrame, foldColumnName, 5, 1234L);
-
-    //Split training into training and validation sets
-    double[] ratios = ard(0.8f);
-    Frame[] splits = null;
-    FrameSplitter fs = new FrameSplitter(airlinesTrainFrame, ratios, generateNumKeys(airlinesTrainFrame._key, ratios.length + 1), null);
-    H2O.submitTask(fs).join();
-    splits = fs.getResult();
-    Frame train = splits[0];
-    Frame valid = splits[1];
+    FrameUtils.addKFoldColumn(airlinesTrainWithTEH, foldColumnName, 5, 1234L);
 
     TargetEncoder tec = new TargetEncoder();
     String[] teColumns = {"Origin", "Dest"};
     String targetColumnName = "IsDepDelayed";
 
     // Create encoding
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, foldColumnName);
+    Map<String, Frame> encodingMap = tec.prepareEncodingMap(airlinesTrainWithTEH, teColumns, targetColumnName, foldColumnName);
 
     // Apply encoding to the training set
-    Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, false, 0, 1234.0);
+    Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, true);
 
     printOutFrameAsTable(trainEncoded, true);
 
     // Applying encoding to the valid set
-    Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, false, 0, 1234.0);
+    Frame validEncoded = tec.applyTargetEncoding(airlinesValid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, true, 0, 1234.0);
     validEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(validEncoded, 10);
 
     // Applying encoding to the test set
-    Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName,false, 0, 1234.0);
+    Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName,true, 0, 1234.0);
     testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10);
 
 
@@ -106,41 +98,36 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
   @Test
   public void noneHoldoutTypeTest() {
 
-    Frame airlinesTrainFrame = parse_test_file(Key.make("airlines_parsed"), "smalldata/airlines/AirlinesTrain.csv.zip");
-    Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test_parsed"), "smalldata/airlines/AirlinesTest.csv.zip");
-
-    //Split training into training and validation sets
-    double[] ratios = ard(0.8f, 0.1f);
-    Frame[] splits = null;
-    FrameSplitter fs = new FrameSplitter(airlinesTrainFrame, ratios, generateNumKeys(airlinesTrainFrame._key, ratios.length + 1), null);
-    H2O.submitTask(fs).join();
-    splits = fs.getResult();
-    Frame train = splits[0];
-    Frame teHoldout = splits[1];
-    Frame valid = splits[2];
+    Frame airlinesTrainWithoutTEH = parse_test_file(Key.make("airlines_train"), "smalldata/airlines/target_encoding/airlines_train_without_teh.csv");
+    Frame airlinesTEHoldout = parse_test_file(Key.make("airlines_te_holdout"), "smalldata/airlines/target_encoding/airlines_te_holdout.csv");
+    Frame airlinesValid = parse_test_file(Key.make("airlines_valid"), "smalldata/airlines/target_encoding/airlines_valid.csv");
+    Frame airlinesTestFrame = parse_test_file(Key.make("airlines_test"), "smalldata/airlines/AirlinesTest.csv.zip");
 
     TargetEncoder tec = new TargetEncoder();
-    String foldColumnName = "fold";
-    String[] teColumns = {"Origin"/*, "Dest"*/};
+    String[] teColumns = {"Origin", "Dest"};
     String targetColumnName = "IsDepDelayed";
 
     // Create encoding
-    Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldout, teColumns, targetColumnName, null);
+    Map<String, Frame> encodingMap = tec.prepareEncodingMap(airlinesTEHoldout, teColumns, targetColumnName, null);
 
+    printOutFrameAsTable(encodingMap.get("Origin"), true);
+    printOutFrameAsTable(encodingMap.get("Dest"), true);
     // Apply encoding to the training set
-    Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 0, 1234.0);
+    Frame trainEncoded = tec.applyTargetEncoding(airlinesTrainWithoutTEH, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 0, 1234.0);
 
     // Applying encoding to the valid set
-    Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None,true, 0, 1234.0);
+    Frame validEncoded = tec.applyTargetEncoding(airlinesValid, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None,true, 0, 1234.0);
     validEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(validEncoded, 10);
 
     // Applying encoding to the test set
     Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None,true, 0, 1234.0);
     testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10);
 
-    printOutFrameAsTable(trainEncoded);
+    // With target encoded  columns
 
-    // With target encoded Origin column
+    tec.checkNumRows(airlinesTrainWithoutTEH, trainEncoded);
+    tec.checkNumRows(airlinesValid, validEncoded);
+    tec.checkNumRows(airlinesTestFrame, testEncoded);
 
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     parms._train = trainEncoded._key;
@@ -153,7 +140,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
     parms._stopping_tolerance = 0.001;
     parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
     parms._stopping_rounds = 5;
-    parms._ignored_columns = new String[]{"IsDepDelayed_REC", "Origin"/*, "Dest"*/};
+    parms._ignored_columns = new String[]{"IsDepDelayed_REC", "Origin", "Dest"};
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
 
@@ -176,29 +163,24 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
     GBMModel gbm2 = null;
     Scope.enter();
     try {
-      Frame airlinesTrainFrame2 = parse_test_file(Key.make("airlines_parsed2"), "smalldata/airlines/AirlinesTrain.csv.zip");
-      Frame airlinesTestFrame2 = parse_test_file(Key.make("airlines_test_parsed2"), "smalldata/airlines/AirlinesTest.csv.zip");
+      Frame airlinesTrainWithTEHDefault = parse_test_file(Key.make("airlines_train_d"), "smalldata/airlines/target_encoding/airlines_train_with_teh.csv");
+      Frame airlinesValidDefault = parse_test_file(Key.make("airlines_valid_d"), "smalldata/airlines/target_encoding/airlines_valid.csv");
+      Frame airlinesTestFrameDefault = parse_test_file(Key.make("airlines_test_d"), "smalldata/airlines/AirlinesTest.csv.zip");
 
-      airlinesTrainFrame2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTrainFrame2, 10);
+      airlinesTrainWithTEHDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTrainWithTEHDefault, 10);
+      airlinesValidDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesValidDefault, 10);
+      airlinesTestFrameDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTestFrameDefault, 10);
 
-      double[] ratios2 = ard(0.8f);
-      Frame[] splits2 = null;
-      FrameSplitter fs2 = new FrameSplitter(airlinesTrainFrame2, ratios2, generateNumKeys(airlinesTrainFrame2._key, ratios2.length + 1), null);
-      H2O.submitTask(fs2).join();
-      splits2 = fs2.getResult();
-      Frame train2 = splits2[0];
-      Frame valid2 = splits2[1];
-
-      train2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(train2, 10);
-      valid2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(valid2, 10);
+      printOutFrameAsTable(airlinesTrainWithTEHDefault, true);
 
       GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
-      parms2._train = train2._key;
+      parms2._train = airlinesTrainWithTEHDefault._key;
       parms2._response_column = "IsDepDelayed";
-      parms2._ntrees = 10;
-      parms2._max_depth = 3;
+      parms2._score_tree_interval = 10;
+      parms2._ntrees = 1000;
+      parms2._max_depth = 5;
       parms2._distribution = DistributionFamily.quasibinomial;
-      parms2._valid = valid2._key;
+      parms2._valid = airlinesValidDefault._key;
       parms2._stopping_tolerance = 0.001;
       parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms2._stopping_rounds = 5;
@@ -208,13 +190,9 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
 
       Assert.assertTrue(job2.isStopped());
 
-      airlinesTestFrame2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTestFrame2, 10); // TODO we  need here pseudobinary numerical(quasibinomial).
+      Frame preds2 = gbm2.score(airlinesTestFrameDefault);
 
-      Frame preds2 = gbm2.score(airlinesTestFrame2);
-
-//      Assert.assertTrue(gbm2.testJavaScoring(airlinesTestFrame2, preds2, 1e-6));
-
-      hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), airlinesTestFrame2.vec(parms2._response_column));
+      hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), airlinesTestFrameDefault.vec(parms2._response_column));
       double auc2 = mm2._auc._auc;
       return auc2;
     } finally {
@@ -239,7 +217,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
 
   private void printOutFrameAsTable(Frame fr, boolean full) {
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, 100, false);
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int)fr.numRows(), false);
     System.out.println(twoDimTable.toString(2, full));
   }
 
