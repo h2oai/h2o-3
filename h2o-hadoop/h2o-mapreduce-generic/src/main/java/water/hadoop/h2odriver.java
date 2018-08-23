@@ -1836,7 +1836,7 @@ public class h2odriver extends Configured implements Tool {
 
   private static class AsyncExecutingJobWrapper extends JobWrapper {
     private final ExecutorService _es;
-    private final int _timeoutSeconds = 10;
+    private final int _timeoutSeconds;
     AsyncExecutingJobWrapper(Job job, int timeoutSeconds) {
       super(job);
       _es = Executors.newCachedThreadPool();
