@@ -104,6 +104,37 @@ public class PersistHTTPTest extends TestUtil {
   }
 
   @Test
+  public void testPubdev5847ParseCompressed() {
+    try {
+      Scope.enter();
+
+      final String remoteUrl = "https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/h2o-package/inst/extdata/australia.csv";
+
+      PersistHTTP p = new PersistHTTP();
+
+      ArrayList<String> files = new ArrayList<>();
+      ArrayList<String> keys = new ArrayList<>();
+      ArrayList<String> fails = new ArrayList<>();
+      ArrayList<String> dels = new ArrayList<>();
+      p.importFiles(remoteUrl, null, files, keys, fails, dels);
+
+
+      Key<Frame> k = Key.make(remoteUrl);
+      Frame imported = Scope.track(k.get());
+      assertEquals(1, imported.numCols());
+      assertTrue(imported.vec(0) instanceof HTTPFileVec);
+
+      Key<Frame> out = Key.make();
+      Frame parsed = Scope.track(ParseDataset.parse(out, k));
+
+      assertEquals(251, parsed.numRows());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test
   public void testReadContentLength() {
     HttpResponse r = mock(HttpResponse.class);
     HttpEntity e = mock(HttpEntity.class);
