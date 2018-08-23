@@ -196,6 +196,24 @@ public class TestUtil extends Iced {
     return vec;
   }
 
+  /** A Numeric Vec from an array of doubles
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec vec(double...rows) { return vec(null, rows); }
+
+  public static Vec vec(String[] domain, double ...rows) {
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( double r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
   public static String[][] ar (String[] ...a) { return a; }
