@@ -210,6 +210,7 @@ reference:
       - h2o.print
       - h2o.prod 
       - h2o.proj_archetypes
+      - h2o.pr_auc
       - h2o.quantile
       - h2o.r2
       - h2o.randomForest
@@ -314,12 +315,12 @@ reference:
       - predict.H2OAutoML 
       - predict.H2OModel 
       - predict_leaf_node_assignment.H2OModel
-      - staged_predict_proba.H2OModel
       - print.H2OFrame 
       - print.H2OTable 
       - prostate
       - range.H2OFrame
       - show,H2OCoxPHModelSummary-method
+      - staged_predict_proba.H2OModel
       - str.H2OFrame
       - summary,H2OCoxPHModel-method
       - summary,H2OGrid-method

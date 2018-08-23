@@ -286,8 +286,9 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
 
 **Notes**: 
 
-- H2O can only load data from Hive v2 due to a limited implementation of the JDBC interface by Hive in earlier versions.
-- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets. 
+- H2O can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
+
+- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets.
 
 A demo showing how to ingest data from Hive through the Hive v2 JDBC driver is available `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
 
