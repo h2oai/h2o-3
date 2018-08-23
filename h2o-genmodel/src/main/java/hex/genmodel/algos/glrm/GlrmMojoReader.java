@@ -49,7 +49,7 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
 
     // new fields added after version 1.00
     try {
-      _model._seed = readkv("seed");
+      _model._seed = readkv("seed", 0l);
       _model._reverse_transform = readkv("reverse_transform");
       _model._transposed = readkv("transposed");
       _model._catOffsets = readkv("catOffsets");
@@ -74,7 +74,9 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
 
   @Override
   protected GlrmMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
-    return new GlrmMojoModel(columns, domains, responseColumn);
+    GlrmMojoModel glrmModel = new GlrmMojoModel(columns, domains, responseColumn);
+    glrmModel._allAlphas = GlrmMojoModel.initializeAlphas(glrmModel._numAlphaFactors);  // set _allAlphas array
+    return glrmModel;
   }
 
 }

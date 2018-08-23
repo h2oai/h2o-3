@@ -25,11 +25,13 @@ public class GlrmMojoModel extends MojoModel {
   public GlrmInitialization _init;
   public int _ncats;
   public int _nnums;
-  public double[] _normSub;
-  public double[] _normMul;
+  public double[] _normSub; // used to perform dataset transformation.  When no transform is needed, will be 0
+  public double[] _normMul; // used to perform dataset transformation.  When no transform is needed, will be 1
   public long _seed;  // added to ensure reproducibility
   public boolean _transposed;
   public boolean _reverse_transform;
+  public double _accuracyEps = 1e-10; // reconstruction accuracy A=X*Y
+  public int _iterNumber = 200; // maximum number of iterations to perform X update.
 
   // We don't really care about regularization of Y since it is changed during scoring
 
@@ -49,6 +51,8 @@ public class GlrmMojoModel extends MojoModel {
   private static final double DOWN_FACTOR = 0.5;
   private static final double UP_FACTOR = Math.pow(1.0/DOWN_FACTOR, 1.0/4);
   public long _rcnt = 0;  // increment per row and can be changed to different values to ensure reproducibility
+  public int _numAlphaFactors = 20;
+  public double[] _allAlphas;
 
   static {
     //noinspection ConstantAssertCondition,ConstantConditions
@@ -70,54 +74,51 @@ public class GlrmMojoModel extends MojoModel {
     return _ncolX;
   }
 
+  public static double[] initializeAlphas(int numAlpha) {
+    double[] alphas = new double[numAlpha];
+    double alpha = 1.0;
+    for (int index=0; index < numAlpha; index++) {
+      alpha *= DOWN_FACTOR;
+      alphas[index] = alpha;
+    }
+    return alphas;
+  }
+
   public double[] score0(double[] row, double[] preds, long seedValue) {
     assert row.length == _ncolA;
     assert preds.length == _ncolX;
     assert _nrowY == _ncolX;
     assert _archetypes.length == _nrowY;
     assert _archetypes[0].length == _ncolY;
-    double alpha=1.0;  // reset back to 1 for each row
 
     // Step 0: prepare the data row
     double[] a = getRowData(row);
 
     // Step 1: initialize X  (for now do Random initialization only)
     double[] x = new double[_ncolX];
+    double[] u = new double[_ncolX];
     Random random = new Random(seedValue);  // change the random seed everytime it is used
-    for (int i = 0; i < _ncolX; i++)
+    for (int i = 0; i < _ncolX; i++)  // randomly generate initial x coefficients
       x[i] = random.nextGaussian();
     x = _regx.project(x, random);
 
     // Step 2: update X based on prox-prox algorithm, iterate until convergence
     double obj = objective(x, a);
+    double oldObj = obj;  // store original obj value
     boolean done = false;
     int iters = 0;
-    while (!done && iters++ < 100) {
+
+    while (!done && iters++ < _iterNumber) {
       // Compute the gradient of the loss function
       double[] grad = gradientL(x, a);
       // Try to make a step of size alpha, until we can achieve improvement in the objective.
-      double[] u = new double[_ncolX];
-      while (true) {  // inner loop to run and make sure we find a stepsize and x factor that decrease objective
-        // System.out.println("  " + alpha);
-        // Compute the tentative new x (using the prox algorithm)
-        for (int k = 0; k < _ncolX; k++) {
-          u[k] = x[k] - alpha * grad[k];
-        }
-        double[] xnew = _regx.rproxgrad(u, alpha * _gammax, random);
-        double newobj = objective(xnew, a);
 
-        if (newobj == 0) break;
-        double obj_improvement = 1 - newobj/obj;
-        if (obj_improvement >= 0) {
-          if (obj_improvement < 1e-6) done = true;
-          obj = newobj;
-          x = xnew;
-          alpha *= UP_FACTOR;
-          break;
-        } else {
-          alpha *= DOWN_FACTOR;
-        }
-      }
+      obj = applyBestAlpha(u, x, grad, a, oldObj, random);
+      double obj_improvement = 1 - obj/oldObj;
+      if ((obj_improvement < 0) || (obj_improvement < _accuracyEps))
+        done = true;  // not getting improvement or significant improvement, quit
+      oldObj = obj;
+
     }
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
@@ -135,6 +136,51 @@ public class GlrmMojoModel extends MojoModel {
       a[i] = row[_permutation[i]];
 
     return a;
+  }
+
+  /***
+   * This method will try a bunch of arbitray alpha values and pick the best to return which get the best obj
+   * improvement.
+   *
+   * @param u
+   * @param x
+   * @param grad
+   * @param a
+   * @param oldObj
+   * @param random
+   * @return
+   */
+  public double applyBestAlpha(double[] u, double[] x, double[] grad, double[] a, double oldObj, Random random) {
+    double[] bestX = new double[x.length];
+    double lowestObj = Double.MAX_VALUE;
+
+    if (oldObj == 0) { // done optimization, loss is now zero.
+      return 0;
+    }
+
+    double alphaScale = oldObj > 10?(1.0/oldObj):1.0;
+
+    for (int index=0; index < _numAlphaFactors; index++) {
+      double alpha = _allAlphas[index]*alphaScale;  // scale according to object function size
+      // Compute the tentative new x (using the prox algorithm)
+      for (int k = 0; k < _ncolX; k++) {
+        u[k] = x[k] - alpha * grad[k];
+      }
+      double[] xnew = _regx.rproxgrad(u, alpha * _gammax, random);
+      double newobj = objective(xnew, a);
+
+      if (lowestObj > newobj) {
+        System.arraycopy(xnew, 0, bestX, 0, xnew.length);
+        lowestObj = newobj;
+      }
+
+      if (newobj == 0)
+        break;
+    }
+    if (lowestObj < oldObj) // only copy if new result is good
+      System.arraycopy(bestX, 0, x, 0, x.length);
+
+    return lowestObj;
   }
 
   /**
