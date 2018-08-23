@@ -22,6 +22,7 @@ import water.util.StringUtils;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1562,11 +1563,11 @@ public class h2odriver extends Configured implements Tool {
 
     // Run job.  We are running a zero combiner and zero reducer configuration.
     // ------------------------------------------------------------------------
-    JobWrapper job = submitJob(conf);
+    job = submitJob(conf);
 
     System.out.println("Job name '" + jobtrackerName + "' submitted");
     System.out.println("JobTracker job ID is '" + job.getJobID() + "'");
-    hadoopJobId = job.getJobID().toString();
+    hadoopJobId = job.getJobID();
     applicationId = hadoopJobId.replace("job_", "application_");
     maybePrintYarnLogsMessage(false);
 
@@ -1803,7 +1804,10 @@ public class h2odriver extends Configured implements Tool {
     abstract boolean isSuccessful() throws IOException;
 
     static JobWrapper wrap(Job job) {
-      return new DelegatingJobWrapper(job);
+      if (driverDebug)
+        return new AsyncExecutingJobWrapper(job);
+      else
+        return new DelegatingJobWrapper(job);
     }
   }
 
@@ -1825,6 +1829,61 @@ public class h2odriver extends Configured implements Tool {
     @Override
     void killJob() throws IOException {
       _job.killJob();
+    }
+  }
+
+  private static class AsyncExecutingJobWrapper extends JobWrapper {
+    private final ExecutorService _es;
+    private final int _timeoutSeconds = 10;
+    AsyncExecutingJobWrapper(Job job) {
+      super(job);
+      _es = Executors.newCachedThreadPool();
+    }
+
+    @Override
+    boolean isComplete() throws IOException {
+      return runAsync("isComplete", new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          return _job.isComplete();
+        }
+      });
+    }
+
+    @Override
+    boolean isSuccessful() throws IOException {
+      return runAsync("isSuccessful", new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          return _job.isSuccessful();
+        }
+      });
+    }
+
+    @Override
+    void killJob() throws IOException {
+      runAsync("killJob", new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+          _job.killJob();
+          return null;
+        }
+      });
+    }
+
+    private <T> T runAsync(String taskName, Callable<T> task) throws IOException {
+      Future<T> future = _es.submit(task);
+      try {
+        long start = System.currentTimeMillis();
+        DBG("Executing job.", taskName, "(); id=", _jobId);
+        T result = future.get(_timeoutSeconds, TimeUnit.SECONDS);
+        DBG("Operation job.", taskName, "() took ", (System.currentTimeMillis() - start), "ms");
+        return result;
+      } catch (TimeoutException ex) {
+        throw new RuntimeException("Operation " + taskName + " was not able to complete in " + _timeoutSeconds + "s.", ex);
+      } catch (Exception e) {
+        throw new IOException("Operation " + taskName + " failed", e);
+      }
     }
   }
 
