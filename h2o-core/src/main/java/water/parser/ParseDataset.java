@@ -15,6 +15,7 @@ import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -715,7 +716,42 @@ public final class ParseDataset {
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       if (localSetup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
-        byte[] bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size));
+
+        int previewSize = _parseSetup._chunk_size;
+        int estimatedHeaderSize = 0;
+        if (_parseSetup._column_names != null) {
+
+          for (String s : _parseSetup.getColumnNames()) {
+            estimatedHeaderSize += s.length(); // Assumed 1 char = one byte
+          }
+          final int maxNumQuotes = _parseSetup._column_names.length * 2; // Maximal number of two quotes per column name
+          final int maxSeparators = _parseSetup._column_names.length * 1; // Maximal number of separators between column names
+          estimatedHeaderSize += maxNumQuotes + maxSeparators;
+
+        }
+
+        final byte[] bits;
+        if (estimatedHeaderSize > _parseSetup._chunk_size) {
+          previewSize = estimatedHeaderSize;
+          int nChunks = previewSize / _parseSetup._chunk_size;
+          if (previewSize % _parseSetup._chunk_size > 0) nChunks++;
+          nChunks = Math.min(nChunks, vec.nChunks());
+
+          bits = MemoryManager.malloc1(previewSize);
+          int writtenBytesAmount = 0;
+          for (int i = 0; i < nChunks; i++) {
+            final byte[] decrompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
+
+            int copyLen = decrompressedBytes.length + writtenBytesAmount > previewSize ? previewSize - writtenBytesAmount : decrompressedBytes.length;
+
+            System.arraycopy(decrompressedBytes, 0, bits, writtenBytesAmount, copyLen);
+
+            writtenBytesAmount += copyLen;
+          }
+        } else {
+          bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size));
+        }
+
         localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(bits, localSetup);
       }
       // Parse the file
