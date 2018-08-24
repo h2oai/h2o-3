@@ -185,6 +185,7 @@ public class TreeHandler extends Handler {
             nodeDescriptionBuilder.append(".");
         } else if (node.getParent().isBitset()) {
             nodeLevels = extractNodeLevels(node);
+            assert nodeLevels != null;
             nodeDescriptionBuilder.append(" Parent node split on column [");
             nodeDescriptionBuilder.append(node.getParent().getColName());
             nodeDescriptionBuilder.append("]. Inherited categorical levels from parent split: ");
@@ -262,7 +263,7 @@ public class TreeHandler extends Handler {
 
         if (rightChild != null) {
             nodeDescriptionBuilder.append(". Right child node (");
-            nodeDescriptionBuilder.append(leftChild.getNodeNumber());
+            nodeDescriptionBuilder.append(rightChild.getNodeNumber());
             nodeDescriptionBuilder.append(") inherits categorical levels: ");
 
             for (int nodeLevelsindex = 0; nodeLevelsindex < rightChildLevels.length; nodeLevelsindex++) {
