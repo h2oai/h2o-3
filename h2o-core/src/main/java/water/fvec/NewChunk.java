@@ -16,6 +16,16 @@ import static water.H2OConstants.MAX_STR_LEN;
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
 
+  private static final int[] EXP10s = new int[Double.MAX_EXPONENT - Double.MIN_EXPONENT];
+  private static final double[] INV_POW10s = new double[EXP10s.length];
+
+  static {
+    for (int i = 0; i < EXP10s.length; i++) {
+      EXP10s[i] = (int) Math.log10(Math.pow(2, i + Double.MIN_EXPONENT));
+      INV_POW10s[i] = Math.pow(10, -EXP10s[i]);
+    }
+  }
+
   public void alloc_mantissa(int sparseLen) {_ms = new Mantissas(sparseLen);}
 
   public void alloc_exponent(int sparseLen) {_xs = new Exponents(sparseLen);}
@@ -489,6 +499,46 @@ public class NewChunk extends Chunk {
       }
     }
     ++_len;
+  }
+
+  public void addNumDecompose(final double d) {
+    if (isUUID() || isString()) { // not worth trying
+      addNA();
+      return;
+    }
+    if (_ds != null) { // already using doubles
+      addNum(d);
+      return;
+    }
+    if ((long) d == d) {
+      addNum((long) d, 0);
+      return;
+    }
+
+    final int expIdx = Math.getExponent(d) - Double.MIN_EXPONENT;
+    if (expIdx == -1) { // zero or subnormal
+      if (d == 0)
+        addNum(0, 0);
+      else // subnormal
+        addNum(d);
+      return;
+    }
+
+    final int sign = d < 0 ? -1 : 1;
+    int exp = EXP10s[expIdx];
+    double val = sign * d * INV_POW10s[expIdx];
+
+    while ((long) val != val) {
+      double x = val * 10;
+      if (x > Long.MAX_VALUE) {
+        addNum(d);
+        return;
+      }
+      val = x;
+      exp--;
+    }
+
+    addNum(sign * (long) val, exp);
   }
 
   public void addNum (long val, int exp) {
