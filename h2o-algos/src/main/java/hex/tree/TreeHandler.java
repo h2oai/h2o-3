@@ -134,7 +134,12 @@ public class TreeHandler extends Handler {
             if(visitedRoot){
                 fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, levels, naHandlings, pointer);
             } else {
-                nodesDescriptions[pointer] = "Root node";
+                StringBuilder rootDescriptionBuilder = new StringBuilder();
+                rootDescriptionBuilder.append("Root node has id ");
+                rootDescriptionBuilder.append(node.getNodeNumber());
+                rootDescriptionBuilder.append(". ");
+                fillNodeSplitTowardsChildren(rootDescriptionBuilder, node);
+                nodesDescriptions[pointer] = rootDescriptionBuilder.toString();
                 visitedRoot = true;
             }
 
@@ -161,36 +166,33 @@ public class TreeHandler extends Handler {
                                              final float[] thresholds, final String[] splitColumns, final int[][] levels,
                                              final String[] naHandlings, final int pointer) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
-        int[] nodeLevels = null;
+        int[] nodeLevels = node.getParent().isBitset() ? extractNodeLevels(node) : null;
+        nodeDescriptionBuilder.append("Node has id ");
+        nodeDescriptionBuilder.append(node.getNodeNumber());
+        if (node.getColName() != null) {
+            nodeDescriptionBuilder.append(" and splits on column [");
+            nodeDescriptionBuilder.append(node.getColName());
+            nodeDescriptionBuilder.append("]. ");
+        } else {
+            nodeDescriptionBuilder.append(" and is a terminal node. ");
+        }
+
+        fillNodeSplitTowardsChildren(nodeDescriptionBuilder, node);
 
         if (!Float.isNaN(node.getParent().getSplitValue())) {
-            nodeDescriptionBuilder.append("Parent split threshold: ");
-            nodeDescriptionBuilder.append(node.getParent().getColName());
-            if (node.isLeftward()) {
-                nodeDescriptionBuilder.append(" < ");
-            } else {
-                nodeDescriptionBuilder.append(" >= ");
-            }
+            nodeDescriptionBuilder.append(" Parent node split threshold is ");
             nodeDescriptionBuilder.append(node.getParent().getSplitValue());
+            nodeDescriptionBuilder.append(".");
         } else if (node.getParent().isBitset()) {
-            final BitSet childInclusiveLevels = node.getInclusiveLevels();
-            final int cardinality = childInclusiveLevels.cardinality();
-            if (cardinality > 0) {
-                nodeDescriptionBuilder.append("Parent split column [");
-                nodeDescriptionBuilder.append(node.getParent().getColName());
-                nodeDescriptionBuilder.append("]: ");
-
-                if (!node.isLeftward()) nodeLevels = new int[cardinality];
-                int bitsignCounter = 0;
-                for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
-                    nodeDescriptionBuilder.append(node.getParent().getDomainValues()[i]);
-                    if (bitsignCounter != cardinality - 1) nodeDescriptionBuilder.append(", ");
-                    if (!node.isLeftward()) nodeLevels[bitsignCounter] = i;
-                    bitsignCounter++;
-
-                }
+            nodeLevels = extractNodeLevels(node);
+            nodeDescriptionBuilder.append(" Parent node split on column [");
+            nodeDescriptionBuilder.append(node.getParent().getColName());
+            nodeDescriptionBuilder.append("]. Inherited categorical levels from parent split: ");
+            for (int nodeLevelsindex = 0; nodeLevelsindex < nodeLevels.length; nodeLevelsindex++) {
+                nodeDescriptionBuilder.append(node.getParent().getDomainValues()[nodeLevels[nodeLevelsindex]]);
+                if (nodeLevelsindex != nodeLevels.length - 1) nodeDescriptionBuilder.append(",");
             }
-        } else{
+        } else {
             nodeDescriptionBuilder.append("NA only");
         }
 
@@ -199,6 +201,78 @@ public class TreeHandler extends Handler {
         naHandlings[pointer] = getNaDirection(node);
         levels[pointer] = nodeLevels;
         thresholds[pointer] = node.getSplitValue();
+    }
+
+    private static void fillNodeSplitTowardsChildren(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node){
+        if (!Float.isNaN(node.getSplitValue())) {
+            nodeDescriptionBuilder.append("Split threshold is ");
+            if (node.getLeftChild() != null) {
+                nodeDescriptionBuilder.append(" < ");
+                nodeDescriptionBuilder.append(node.getSplitValue());
+                nodeDescriptionBuilder.append(" to the left node (");
+                nodeDescriptionBuilder.append(node.getLeftChild().getNodeNumber());
+                nodeDescriptionBuilder.append(")");
+            }
+
+            if (node.getLeftChild() != null) {
+                if(node.getLeftChild() != null) nodeDescriptionBuilder.append(", ");
+                nodeDescriptionBuilder.append(" >= ");
+                nodeDescriptionBuilder.append(node.getSplitValue());
+                nodeDescriptionBuilder.append(" to the right node (");
+                nodeDescriptionBuilder.append(node.getRightChild().getNodeNumber());
+                nodeDescriptionBuilder.append(")");
+            }
+            nodeDescriptionBuilder.append(".");
+        } else if (node.isBitset()) {
+            fillNodeCategoricalSplitDescription(nodeDescriptionBuilder, node);
+        }
+    }
+
+    private static int[] extractNodeLevels(final SharedTreeNode node) {
+        final BitSet childInclusiveLevels = node.getInclusiveLevels();
+        final int cardinality = childInclusiveLevels.cardinality();
+        if (cardinality > 0) {
+            int[] nodeLevels = MemoryManager.malloc4(cardinality);
+            int bitsignCounter = 0;
+            for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i + 1)) {
+                nodeLevels[bitsignCounter] = i;
+                bitsignCounter++;
+            }
+            return nodeLevels;
+        }
+        return null;
+    }
+
+    private static void fillNodeCategoricalSplitDescription(final StringBuilder nodeDescriptionBuilder, final SharedTreeNode node) {
+        final SharedTreeNode leftChild = node.getLeftChild();
+        final SharedTreeNode rightChild = node.getRightChild();
+        final int[] leftChildLevels = extractNodeLevels(leftChild);
+        final int[] rightChildLevels = extractNodeLevels(rightChild);
+
+        if (leftChild != null) {
+            nodeDescriptionBuilder.append(" Left child node (");
+            nodeDescriptionBuilder.append(leftChild.getNodeNumber());
+            nodeDescriptionBuilder.append(") inherits categorical levels: ");
+
+            for (int nodeLevelsindex = 0; nodeLevelsindex < leftChildLevels.length; nodeLevelsindex++) {
+                nodeDescriptionBuilder.append(node.getDomainValues()[leftChildLevels[nodeLevelsindex]]);
+                if (nodeLevelsindex != leftChildLevels.length - 1) nodeDescriptionBuilder.append(",");
+            }
+        }
+
+        if (rightChild != null) {
+            nodeDescriptionBuilder.append(". Right child node (");
+            nodeDescriptionBuilder.append(leftChild.getNodeNumber());
+            nodeDescriptionBuilder.append(") inherits categorical levels: ");
+
+            for (int nodeLevelsindex = 0; nodeLevelsindex < rightChildLevels.length; nodeLevelsindex++) {
+                nodeDescriptionBuilder.append(node.getDomainValues()[rightChildLevels[nodeLevelsindex]]);
+                if (nodeLevelsindex != rightChildLevels.length - 1) nodeDescriptionBuilder.append(",");
+            }
+        }
+        nodeDescriptionBuilder.append(". ");
+
+
     }
 
     private static String getNaDirection(final SharedTreeNode node) {

@@ -34,10 +34,7 @@ test.gbm.trees <- function() {
   for (description in gbm.tree@descriptions) {
     expect_false(identical(description, ""))
   }
-  
-  # First node's description is root node
-  expect_equal("Root node", gbm.tree@descriptions[1])
-  
+
   expect_equal(1, gbm.tree@tree_number)
   expect_equal("NO", gbm.tree@tree_class)
   
@@ -75,9 +72,7 @@ test.gbm.trees <- function() {
   for (description in drf.tree@descriptions) {
     expect_false(identical(description, ""))
   }
-  
-  # First node's description is root node
-  expect_equal("Root node", drf.tree@descriptions[1])
+
   
   expect_equal(1, drf.tree@tree_number)
   expect_equal("NO", drf.tree@tree_class)
@@ -117,9 +112,7 @@ test.gbm.trees <- function() {
   for (description in multinomial.tree@descriptions) {
     expect_false(identical(description, ""))
   }
-  
-  # First node's description is root node
-  expect_equal("Root node", multinomial.tree@descriptions[1])
+
   
   expect_equal(1, multinomial.tree@tree_number)
   expect_equal("4", multinomial.tree@tree_class)
@@ -159,10 +152,7 @@ test.gbm.trees <- function() {
   for (description in regression.tree@descriptions) {
     expect_false(identical(description, ""))
   }
-  
-  # First node's description is root node
-  expect_equal("Root node", regression.tree@descriptions[1])
-  
+
   expect_equal(0, length(regression.tree@tree_class))
   
   expect_equal(1, regression.tree@tree_number)
