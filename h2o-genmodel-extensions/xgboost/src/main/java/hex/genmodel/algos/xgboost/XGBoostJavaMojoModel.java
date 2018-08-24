@@ -1,8 +1,10 @@
 package hex.genmodel.algos.xgboost;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.learner.ObjFunction;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
+import hex.genmodel.utils.DistributionFamily;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,6 +17,10 @@ import java.io.InputStream;
 public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   Predictor _predictor;
+
+  static {
+    ObjFunction.register();
+  }
 
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -57,5 +63,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   public void close() {
     _predictor = null;
   }
+
+  private static class RegObjFunction
+
 
 }
