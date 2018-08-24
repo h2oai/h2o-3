@@ -3241,10 +3241,13 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     }
     
     # Right child node's levels converted to characters, if there is any
+    right_char_categoricals <- c()
     if(right != -1)  {
       pointer <- pointer + 1;
       if(!is.null(tree@levels[[pointer]])){
-        right_char_categoricals <-setdiff(split_column_domain, left_char_categoricals)
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          right_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
+        }
         tree@levels[[pointer]] <- right_char_categoricals
       }
     }
@@ -3252,6 +3255,8 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   
   tree
 }
+
+
 
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
