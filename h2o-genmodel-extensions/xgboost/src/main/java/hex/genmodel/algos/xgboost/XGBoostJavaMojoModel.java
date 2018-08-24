@@ -19,7 +19,9 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   Predictor _predictor;
 
   static {
-    ObjFunction.register();
+    ObjFunction.register("reg:gamma", new RegObjFunction());
+    ObjFunction.register("reg:tweedie", new RegObjFunction());
+    ObjFunction.register("count:poisson", new RegObjFunction());
   }
 
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
@@ -64,7 +66,20 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     _predictor = null;
   }
 
-  private static class RegObjFunction
+  private static class RegObjFunction extends ObjFunction {
+    @Override
+    public double[] predTransform(double[] preds) {
+      if (preds.length != 1)
+        throw new IllegalStateException("Regression problem is supposed to have just a single predicted value, got " +
+                preds.length + " instead.");
+      preds[0] = Math.exp(preds[0]);
+      return preds;
+    }
 
+    @Override
+    public double predTransform(double pred) {
+      return Math.exp(pred);
+    }
+  }
 
 }
