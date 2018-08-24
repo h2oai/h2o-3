@@ -544,7 +544,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater, DeepLearning and XGBoost (models that require explicit one-hot encoding on the fly)
+  // Helper for DeepWater and XGBoost (models that require explicit one-hot encoding on the fly)
   static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time

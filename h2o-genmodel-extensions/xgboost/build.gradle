@@ -5,7 +5,7 @@ description = "H2O GenModel XGBoost support"
 dependencies {
     compile project(":h2o-genmodel")
 
-    compile('ai.h2o:xgboost-predictor:0.3.1') {
+    compile('ai.h2o:xgboost-predictor:0.3.3') {
         exclude group: 'net.jafama', 'module': 'jafama'
     }
 

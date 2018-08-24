@@ -1,11 +1,16 @@
 package hex.tree.xgboost;
 
+import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.util.FVec;
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 import hex.ModelMetrics;
@@ -364,6 +369,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
+    assert di != null;
     return XGBoostJavaMojoModel.score0(data, offset, preds,
             model_info.getPredictor(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
@@ -372,6 +378,48 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   protected boolean needsPostProcess() {
     return false; // result of score0 doesn't need post-processing
+  }
+
+  @Override
+  protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    return new XGBoostBigScorePredict();
+  }
+
+  private class XGBoostBigScorePredict implements BigScorePredict {
+    private final DataInfo _di;
+    private final Predictor _predictor;
+    private final int _cats;
+    private final double _threshold;
+    private final float[] _floats;
+    private final FVec _row;
+
+    private XGBoostBigScorePredict() {
+      _di = model_info._dataInfoKey.get();
+      assert _di != null;
+      _predictor = model_info.getPredictor();
+      _cats = _di._catOffsets == null ? 0 : _di._catOffsets[_di._cats];
+      _threshold = defaultThreshold();
+      _floats = new float[_di._nums + _cats];
+      _row = FVec.Transformer.fromArray(_floats, _output._sparse);
+    }
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
+
+      assert(_output.nfeatures() == tmp.length);
+      for( int i=0; i< tmp.length; i++ )
+        tmp[i] = chks[i].atd(row_in_chunk);
+
+      GenModel.setInput(tmp, _floats, _di._nums, _di._cats, _di._catOffsets, null, null,
+              _di._useAllFactorLevels, _output._sparse /*replace NA with 0*/);
+      double[] out = _predictor.predict(_row);
+
+      return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
+    }
+
+    @Override
+    public void close() {}
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
