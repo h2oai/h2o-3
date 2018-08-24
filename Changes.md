@@ -2,6 +2,73 @@
 
 ## H2O
 
+### Wright (3.20.0.6) - 8/24/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html</a>
+
+<h2>Bug</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5724'>PUBDEV-5724</a>] - H2oApi.frameColumn in h2o-bindings.jar now correctly parses responses. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5751'>PUBDEV-5751</a>] - biz.k11i:xgboost-predictor:0.3.0 is now ported to the h2oai repo and released to Maven Central. This allows for easier deployment of H2O and Sparkling Water.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5786'>PUBDEV-5786</a>] - In GLM, the coordinate descent solver is now only disabled for when family=multinomial. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5792'>PUBDEV-5792</a>] - Fixed an issue that caused the H2O parser to hang when reading a Parquet file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5803'>PUBDEV-5803</a>] -  Fixed an issue that resulted in an AutoML "Unauthorized" Error when running through Enterprise Steam via R.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5818'>PUBDEV-5818</a>] - Leaf Node assignment no longer produces the wrong paths for degenerated trees.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5823'>PUBDEV-5823</a>] - Updated the list of Python dependencies on the release download page and in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5826'>PUBDEV-5826</a>] - Fixed an issue that resulted in a mismatch between GLRM predict and GLRM MOJO predict.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5844'>PUBDEV-5844</a>] - Launching H2O on a machine with greater than 2TB no longer results in an integer overflow error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5847'>PUBDEV-5847</a>] - The HTTP parser no longer reads fewer rows when the data is compressed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5851'>PUBDEV-5851</a>] - AstFillNA Rapids expression now returns H2O.unimp() on backward methods.
+</li>
+</ul>
+        
+<h2>New Feature</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5735'>PUBDEV-5735</a>] - In GBM and DRF, tree traversal and information is now accessible from the R and Python clients. This can be done using the new h2o.getModelTree function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5779'>PUBDEV-5779</a>] - In GBM, added a new staged_predict_proba function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5812'>PUBDEV-5812</a>] - MOJO output now includes terminal node IDs. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5832'>PUBDEV-5832</a>] - GBM/DRF, the H2OTreeClass function now allows you to specify categorical levels. 
+</li>
+</ul>
+        
+<h2>Task</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5845'>PUBDEV-5845</a>] - Updated the XGBoost dependency to ai.h2o:xgboost-predictor:0.3.1. 
+</li>
+</ul>
+    
+<h2>Improvement</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5837'>PUBDEV-5837</a>] - Terminal node IDs can now be retrieved in the predict_leaf_node_assignment function.
+</li>
+</ul>
+    
+<h2>Docs</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5836'>PUBDEV-5836</a>] - The User Guide now indicates that only Hive versions 2.2.0 or greater are supported for JDBC drivers. Hive 2.1 is not currently supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5838'>PUBDEV-5838</a>] - In GLM, the documentation for the Coordinate Descent solver now notes that Coordinate Descent is not available when family=multinomial. 
+</li>
+</ul>
+
 ### Wright (3.20.0.5) - 8/8/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html</a>
@@ -21,9 +88,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5814'>PUBDEV-5814</a>] - Multinomial Stacked Ensemble no longer fails when either XGBoost or Naive Bayes is the base model.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5819'>PUBDEV-5819</a>] - Increased the client_disconnect_timeout value when ClientDisconnectCheckThread searches for connected clients.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5816'>PUBDEV-5816</a>] - Fixed an issue that caused XGBoost to generate the wrong metrics for multinomial cases.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5819'>PUBDEV-5819</a>] - Increased the client_disconnect_timeout value when ClientDisconnectCheckThread searches for connected clients.
 </li>
 </ul>
 
