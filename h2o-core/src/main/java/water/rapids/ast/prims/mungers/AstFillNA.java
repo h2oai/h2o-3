@@ -26,6 +26,9 @@ import java.util.Arrays;
  * @return New Frame with filled values
  */
 public class AstFillNA extends AstPrimitive {
+
+  private static final String METHOD_BACKWARD = "backward";
+
   @Override
   public String[] args() {
     return new String[]{"ary", "method", "axis", "limit" };
@@ -52,8 +55,8 @@ public class AstFillNA extends AstPrimitive {
     if (!(Arrays.asList("forward","backward")).contains(method.toLowerCase()))
       throw new IllegalArgumentException("Method must be forward or backward");
     // Not impl yet
-    if (method.toLowerCase() == "backward")
-      throw H2O.unimpl("Backward fillna not implemented yet");
+    if (METHOD_BACKWARD.equalsIgnoreCase(method.trim()))
+      throw H2O.unimpl("Backward fillNA method is not yet implemented.");
 
     final int axis = (int) asts[3].exec(env).getNum();
     if (!(Arrays.asList(0,1)).contains(axis))
