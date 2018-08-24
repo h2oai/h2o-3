@@ -123,6 +123,7 @@ reference:
       - h2o.getGrid
       - h2o.getId
       - h2o.getModel
+      - h2o.getModelTree
       - h2o.getTimezone
       - h2o.getTypes
       - h2o.getVersion
