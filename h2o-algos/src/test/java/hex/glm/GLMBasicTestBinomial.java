@@ -15,6 +15,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -451,6 +452,77 @@ public class GLMBasicTestBinomial extends TestUtil {
         fTest.remove("offset").remove();
         DKV.remove(fTest._key);
       }
+    }
+  }
+
+
+  /*
+  I have separated fitCOD from fitIRLSM and here is to test and made sure my changes are correct and they should
+  generate the same coefficients as the old method.
+   */
+  @Test
+  public void testCODGradients(){
+    Scope.enter();
+    Frame train;
+    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMModel model = null;
+    double[] goldenCoeffs = new double[] {3.315139700626461,0.9929054923448074, -1.0655426388234126,-3.7892948800495154,
+            -2.0865591118999833,0.7867696413635438, -1.8615599223372965,1.0643138374753327,1.0986728686030014,
+            0.10479049125777502,-1.7812358987823367,0.8647531123879351, 2.0849120863386665, -0.8774966728502775,
+            -0.42153877552507385,3.2634187521383566,-1.9624237021260278,-0.34691475925538673, -1.646532127145956,
+            1.6306397833575321,-3.044501939682644,0.8944464253207084,0.9895807015140112,-2.6717292838527205,
+            -3.521867765191535, -2.4013802719175663, 5.1067282883832394,-2.6453709205608122, -3.1305849772174876,
+            -3.431102221875896, 1.9010730022389033, -1.7904328104400145,-0.26701745669682453,-4.546721592533792,
+            2.711748945952299,3.8151882842344387, -4.966584969931568,0.4072915316377201, -1.4716951033978412,
+            -0.9600779293443411, -4.1033253093776505, -0.900138450590691, -3.41567157570875, 3.9532415786014323,
+            -4.152487787492122,-4.816302785007451, -2.0646847130482033,4.916683882613988, -1.0828334669455186,
+            -1.7535227306034435, 3.543101904113447,3.365050014714852,1.09947447201617, 3.801711118872804,
+            -4.327701880800191, 2.949107493656704,1.2974956967558495,-4.766971479293396,3.608879061144071,
+            -4.432383409841722, -1.945588990329554, -0.5741123903558344, 3.0082971652620296,1.2105456702290207,
+            -2.0058145215980505, 4.633057967358068, 4.69177641215046,3.2313754439814084,-3.87050641561738,
+            0.3902584675760716,1.2180174243872703,0.652166829687263, -2.934162573531005,1.8163438452614908,
+            -1.1131945394628258,3.711779285831191,-1.2771611943142913,-3.0180677371604494, -1.0002653053027677,
+            2.109019933558617,1.681095046876924,0.026980109195036545,4.515676428483863,3.4584826805338142,
+            -4.884432397071569,-3.089270335492296, -0.2693643511214426,0.8903491083888826, 4.596551636071276,
+            -1.9091402449943644, 0.42187489841011877,0.7507290472538346, -0.4545335921717534,-1.843531271821739,
+            -10.450169230334527};
+
+    try {
+   //   train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
+      train = parse_test_file("smalldata/glm_test/binomial_1000Rows.csv");
+      String[] names = train._names;
+      Vec[] en = train.remove(new int[] {0,1,2,3,4,5,6});
+      for (int cind = 0; cind <7; cind++) {
+        train.add(names[cind], VecUtils.toCategoricalVec(en[cind]));
+        Scope.track(en[cind]);
+      }
+      Scope.track(train);
+      params._response_column = "C79";
+      params._train = train._key;
+      params._lambda = new double[]{4.881e-05};
+      params._alpha = new double[]{0.5};
+      params._objective_epsilon = 1e-6;
+      params._beta_epsilon = 1e-4;
+      params._max_iterations = 10; // one iteration
+      params._seed = 12345; // don't think this one matters but set it anyway
+      Solver s = Solver.COORDINATE_DESCENT;
+      System.out.println("solver = " + s);
+      params._solver = s;
+      model = new GLM(params).trainModel().get();
+      Scope.track_generic(model);
+
+      compareGLMCoeffs(model._output._submodels[0].beta, goldenCoeffs, 1e-10);  // compare to original GLM
+    } finally{
+      Scope.exit();
+    }
+  }
+
+  public void compareGLMCoeffs(double[] coeff1, double[] coeff2, double tol) {
+
+    assertTrue(coeff1.length==coeff2.length); // assert coefficients having the same length first
+    for (int index=0; index < coeff1.length; index++) {
+      assert Math.abs(coeff1[index]-coeff2[index]) < tol :
+              "coefficient difference "+Math.abs(coeff1[index]-coeff2[index])+" in row "+ index+" exceeded tolerance of "+tol;
     }
   }
 
