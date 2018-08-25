@@ -68,17 +68,17 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   private static class RegObjFunction extends ObjFunction {
     @Override
-    public double[] predTransform(double[] preds) {
+    public float[] predTransform(float[] preds) {
       if (preds.length != 1)
         throw new IllegalStateException("Regression problem is supposed to have just a single predicted value, got " +
                 preds.length + " instead.");
-      preds[0] = Math.exp(preds[0]);
+      preds[0] = (float) Math.exp(preds[0]);
       return preds;
     }
 
     @Override
-    public double predTransform(double pred) {
-      return Math.exp(pred);
+    public float predTransform(float pred) {
+      return (float) Math.exp(pred);
     }
   }
 
