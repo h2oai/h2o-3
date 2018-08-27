@@ -17,9 +17,9 @@ import java.util.Formatter;
  * Warning: This data structure is not designed for parallel access!
  */
 public class BufferedString extends Iced implements Comparable<BufferedString> {
-   private byte [] _buf;
-   private int _off;
-   private int _len;
+   protected byte [] _buf;
+   protected int _off;
+   protected int _len;
 
    public BufferedString(byte[] buf, int off, int len) { 
      _buf = buf;  
@@ -75,6 +75,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    // TODO(vlad): make sure that this method is not as destructive as it now is (see tests) 
    void addChar() {
      _len++;
+   }
+
+   void removeChar(){
+     _len--;
    }
 
    void addBuff(byte [] bits){
@@ -145,7 +149,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return set(buf, 0, buf.length);
   }
 
-  public final BufferedString set(byte[] buf, int off, int len) {
+  public BufferedString set(byte[] buf, int off, int len) {
     _buf = buf;
     _off = off;
     _len = len;
