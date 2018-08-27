@@ -67,7 +67,7 @@ def get_glrm_xmatrix(train, test, K = 3, compare_predict=True, tol=1e-3):
     frameID, mojoXFactor = pyunit_utils.mojo_predict(glrmModel, mojoDir, MOJONAME, glrmReconstruct=False) # save mojo XFactor
     print("Comparing mojo x Factor and model x Factor ...")
 
-    if transformN=="NONE":  # bad performance with no transformation on dataset
+    if transformN=="NONE" or not(compare_predict):  # bad performance with no transformation on dataset
         pyunit_utils.check_data_rows(mojoXFactor, glrmTrainFactor, num_rows=mojoXFactor.nrow)
     else:
         pyunit_utils.compare_data_rows(mojoXFactor, glrmTrainFactor, num_rows=mojoXFactor.nrow, tol=tol)
