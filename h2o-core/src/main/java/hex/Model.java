@@ -1515,7 +1515,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  protected class BigScore extends CMetricScoringTask<BigScore> implements BigScorePredict {
+  protected class BigScore extends CMetricScoringTask<BigScore> implements BigScorePredict, BigScoreChunkPredict {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     final double[] _mean;  // Column means of test frame
@@ -1523,6 +1523,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final public boolean _hasWeights;
     final public boolean _makePreds;
     final public Job _j;
+
+    private transient BigScorePredict _localPredict;
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
@@ -1537,7 +1539,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = testHasWeights;
     }
 
-    @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+    @Override
+    protected void setupLocal() {
+      _localPredict = setupBigScorePredict(this);
+      assert _localPredict != null;
+    }
+
+    @Override public void map(Chunk chks[], NewChunk cpreds[] ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
@@ -1552,7 +1560,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           actual = new float[chks.length];
       }
       int len = chks[0]._len;
-      try (BigScorePredict predict = setupBigScorePredict(this)) {
+      try (BigScoreChunkPredict predict = _localPredict.initMap()) {
         double [] tmp = new double[_output.nfeatures()];
         for (int row = 0; row < len; row++) {
           double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
@@ -1590,6 +1598,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override
+    public BigScoreChunkPredict initMap() {
+      return this;
+    }
+
+    @Override
     public void close() {
       // nothing to do - meant to be overridden
     }
@@ -1607,7 +1620,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  protected interface BigScorePredict extends AutoCloseable {
+  protected interface BigScorePredict {
+    BigScoreChunkPredict initMap();
+  }
+
+  protected interface BigScoreChunkPredict extends AutoCloseable {
     double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds);
     @Override
     void close();

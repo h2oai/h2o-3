@@ -388,15 +388,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   private class XGBoostBigScorePredict implements BigScorePredict {
     private final DataInfo _di;
     private final Predictor _predictor;
-    private final int _cats;
-    private final double _threshold;
-    private final float[] _floats;
-    private final FVec _row;
 
     private XGBoostBigScorePredict() {
       _di = model_info._dataInfoKey.get();
       assert _di != null;
       _predictor = model_info.getPredictor();
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap() {
+      return new XGBoostBigScoreChunkPredict(_di, _predictor);
+    }
+  }
+
+  private class XGBoostBigScoreChunkPredict implements BigScoreChunkPredict {
+    private final DataInfo _di;
+    private final Predictor _predictor;
+
+    private final int _cats;
+    private final double _threshold;
+    private final float[] _floats;
+    private final FVec _row;
+
+    private XGBoostBigScoreChunkPredict(DataInfo di, Predictor predictor) {
+      _di = di;
+      _predictor = predictor;
       _cats = _di._catOffsets == null ? 0 : _di._catOffsets[_di._cats];
       _threshold = defaultThreshold();
       _floats = new float[_di._nums + _cats];
@@ -419,7 +435,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     @Override
-    public void close() {}
+    public void close() {
+      // nothing to do
+    }
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {

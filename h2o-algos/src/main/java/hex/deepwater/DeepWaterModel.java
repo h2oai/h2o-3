@@ -513,18 +513,15 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   private int backendCount = 0;
 
-  private class DeepWaterBigScorePredict implements BigScorePredict {
-
-    private DeepWaterBigScorePredict() {
-      init();
-    }
+  private class DeepWaterBigScorePredict implements BigScorePredict, BigScoreChunkPredict {
 
     @Override
     public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
       return DeepWaterModel.this.score0(chks, offset, row_in_chunk, tmp, preds);
     }
 
-    private void init() {
+    @Override
+    public BigScoreChunkPredict initMap() {
       synchronized (model_info()) {
         backendCount++;
         // Initial init of backend + model, backend is shared across threads
@@ -536,6 +533,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           model_info().initModel();
         }
       }
+      return this;
     }
 
     @Override
