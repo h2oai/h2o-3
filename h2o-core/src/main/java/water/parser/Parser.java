@@ -241,7 +241,7 @@ public abstract class Parser extends Iced {
     }
 
     @Override
-    public int getChunkDataStart(int cidx) {return  _off;}
+    public int getChunkDataStart(int cidx) {return -1;}
 
     @Override
     public void setChunkDataStart(int cidx, int offset) {
