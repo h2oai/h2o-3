@@ -51,7 +51,7 @@ public class GlrmMojoModel extends MojoModel {
   private static final double DOWN_FACTOR = 0.5;
   private static final double UP_FACTOR = Math.pow(1.0/DOWN_FACTOR, 1.0/4);
   public long _rcnt = 0;  // increment per row and can be changed to different values to ensure reproducibility
-  public int _numAlphaFactors = 20;
+  public int _numAlphaFactors = 10;
   public double[] _allAlphas;
 
   static {
