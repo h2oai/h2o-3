@@ -100,7 +100,8 @@ MAIN_LOOP:
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
         case STRING:
-          if (c == quotes) {
+          final byte nextByte = offset + 1 < bits.length ? bits[offset + 1] : -1;
+          if (c == quotes && (isEOL(nextByte) || _setup._separator == nextByte || offset == bits.length - 1)) {
             if (quoteCount>1) {
               str.addChar();
               quoteCount--;
