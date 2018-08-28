@@ -425,24 +425,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         tmp[i] = chks[i].atd(row_in_chunk);
       }
 
-
-      //float[] floats = new float[_di._catOffsets[_di._cats] + _di._nums];
-      //GenModel.setInput(tmp, floats, _di._nums, _di._cats, _di._catOffsets, null, null,
-      //        _di._useAllFactorLevels, _output._sparse /*replace NA with 0*/);
-      //FVec row_slow = FVec.Transformer.fromArray(floats, _output._sparse);
-
       _row.setInput(tmp);
 
-      /*
-      for (int i = 0; i < floats.length; i++) {
-        if ((_row.fvalue(i) == row_slow.fvalue(i)) || (Float.isNaN(_row.fvalue(i))) &&  Float.isNaN(row_slow.fvalue(i))) {
-          // yay
-        } else {
-          System.out.println(i); // nay :(
-        }
-      }*/
-
-      double[] out = _predictor.predict(_row);
+      float[] out = _predictor.predict(_row);
 
       return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
     }

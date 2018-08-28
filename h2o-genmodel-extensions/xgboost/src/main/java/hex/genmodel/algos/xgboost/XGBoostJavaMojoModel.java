@@ -56,7 +56,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
 
     FVec row = FVec.Transformer.fromArray(floats, _sparse);
-    double[] out = predictor.predict(row);
+    float[] out = predictor.predict(row);
 
     return toPreds(doubles, out, preds, nclasses, _priorClassDistrib, _defaultThreshold);
   }
