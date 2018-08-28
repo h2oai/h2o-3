@@ -62,6 +62,6 @@ activate_R_${R_VERSION}
 
 # Install dependencies
 echo "Installing dependencies for R ${R_VERSION}"
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=19);install.packages(c("dplyr", "text2vec", "R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR", "slam", "optparse", "uuid", "survival", "usethis"))'
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=19);library(devtools);install_version("glmnet", version = "2.0-2");install_github("hadley/pkgdown")'
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("dplyr", "text2vec", "R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR", "slam", "optparse", "uuid", "survival", "usethis", "MLmetrics"))'
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);library(devtools);install_version("glmnet", version = "2.0-2");install_github("hadley/pkgdown")'
 /usr/local/R/current/bin/R CMD INSTALL /LiblineaR_1.94-2.tar.gz
