@@ -1,17 +1,13 @@
 package hex.tree.xgboost;
 
 import hex.*;
-import hex.genmodel.GenModel;
-import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
-import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
+import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.Log;
 import hex.ModelMetrics;
 
@@ -155,7 +151,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
-    model_info = new XGBoostModelInfo(parms,output.nclasses());
+    model_info = new XGBoostModelInfo(parms);
     model_info._dataInfoKey = dinfo._key;
   }
 
@@ -310,11 +306,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return Integer.getInteger(H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
 
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 0.0);
-  }
-
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(model_info._dataInfoKey);
     return super.writeAll_impl(ab);
@@ -333,38 +324,33 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // Fast scoring using the C++ data structures
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Booster booster, Frame data, Frame originalData, String description) throws XGBoostError {
-    return makeMetrics(booster, data, originalData, description, null);
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description) throws XGBoostError {
+    return makeMetrics(data, originalData, description, null);
   }
 
-  private ModelMetrics makeMetrics(Booster booster, Frame data, Frame originalData, String description, Key<Frame> predFrameKey) throws XGBoostError {
-    Futures fs = new Futures();
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description, Key<Frame> predFrameKey) {
     ModelMetrics[] mms = new ModelMetrics[1];
-    Frame predictions = makePreds(booster,originalData, data, mms, true, predFrameKey, fs);
+    Frame predictions = makePreds(originalData, data, mms, true, predFrameKey);
     if (predFrameKey == null) {
-        predictions.remove(fs);
+        predictions.remove();
     } else {
-      DKV.put(predictions, fs);
+      DKV.put(predictions);
     }
-    fs.blockForPending();
-    ModelMetrics mm = mms[0];
-    return mm;
+    return mms[0];
   }
 
-  private Frame makePredsOnly(Booster booster, Frame data, Key<Frame> destinationKey) throws XGBoostError {
-    Futures fs = new Futures();
-    Frame preds = makePreds(booster,null, data, null, false, destinationKey, fs);
-    DKV.put(preds, fs);
-    fs.blockForPending();
+  private Frame makePredsOnly(Frame data, Key<Frame> destinationKey) {
+    Frame preds = makePreds(null, data, null, false, destinationKey);
+    DKV.put(preds);
     return preds;
   }
 
-  private Frame makePreds(Booster booster,Frame originalData, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey, Futures fs) throws XGBoostError {
+  private Frame makePreds(Frame originalData, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey) {
       assert (! computeMetrics) || (mms != null && mms.length == 1);
 
       XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
               model_info(), _output, _parms,
-              booster, destinationKey, data,
+              destinationKey, data,
               originalData,
               computeMetrics,
               this
@@ -378,28 +364,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   /**
    * Score an XGBoost model on training and validation data (optional)
    * Note: every row is scored, all observation weights are assumed to be equal
-   * @param booster xgboost model
    * @param _train training data in the form of matrix
    * @param _valid validation data (optional, can be null)
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, _train, _trainOrig, "Metrics reported on training frame");
+  public void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(_train, _trainOrig, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
     addModelMetrics(mm);
     // Optional validation part
     if (_valid!=null) {
-      assert _valid != null : "Validation frame (source of validation matrix) has to be not null!";
-      mm = makeMetrics(booster, _valid, _validOrig, "Metrics reported on validation frame");
+      mm = makeMetrics(_valid, _validOrig, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);
     }
   }
 
-  void computeVarImp(Map<String, Integer> varimp) {
-    if (varimp.isEmpty()) return;
+  VarImp computeVarImp(Map<String, Integer> varimp) {
+    if (varimp.isEmpty())
+      return null;
     // compute variable importance
     float[] viFloat = new float[varimp.size()];
     String[] names = new String[varimp.size()];
@@ -409,46 +394,35 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       names[j] = it.getKey();
       j++;
     }
-    _output._varimp = new VarImp(viFloat, names);
+    return new VarImp(viFloat, names);
   }
 
   @Override
-  public double[] score0(double[] data, double[] preds, double offset) {
-    DataInfo di = model_info._dataInfoKey.get();
-    return XGBoostNativeMojoModel.score0(data, offset, preds,
-            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-            _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
+  protected boolean needsPostProcess() {
+    return false; // scoring functions return final predictions
   }
 
   @Override
-  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
-    for( int row=0; row < rowsInChunk.length; row++ ) {
-      for( int i=0; i< tmp[row].length; i++ ) {
-        tmp[row][i] = chks[i].atd(rowsInChunk[row]);
-      }
+  protected double[] score0(double[] data, double[] preds) {
+    return score0(data, preds, 0.0);
+  }
+
+  @Override // per row scoring will be slow and should be avoided!
+  public double[] score0(final double[] data, final double[] preds, final double offset) {
+    final DataInfo di = model_info._dataInfoKey.get();
+    assert di != null;
+    final double threshold = defaultThreshold();
+    Booster booster = null;
+    try {
+      booster = model_info.deserializeBooster();
+      return XGBoostNativeMojoModel.score0(data, offset, preds,
+              model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse);
+    } finally {
+      if (booster != null)
+        BoosterHelper.dispose(booster);
     }
-    DataInfo di = model_info._dataInfoKey.get();
-    double[][] scored = XGBoostNativeMojoModel.bulkScore0(tmp, offset, preds,
-            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-            _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
-
-    if(isSupervised()) {
-      // Correct probabilities obtained from training on oversampled data back to original distribution
-      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-      if( _output.isClassifier()) {
-        for( int row=0; row < rowsInChunk.length; row++ ) {
-          if (_parms._balance_classes)
-            GenModel.correctProbabilities(scored[row], _output._priorClassDist, _output._modelClassDist);
-          //assign label at the very end (after potentially correcting probabilities)
-          scored[row][0] = hex.genmodel.GenModel.getPrediction(scored[row], _output._priorClassDist, tmp[row], defaultThreshold());
-        }
-      }
-    }
-    return scored;
   }
-
-  @Override
-  protected boolean bulkBigScorePredict() { return false; }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
     _output._names = dinfo._adaptedFrame.names();
@@ -463,33 +437,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    model_info().nukeBackend();
     if (model_info()._dataInfoKey !=null)
       model_info()._dataInfoKey.get().remove(fs);
     return super.remove_impl(fs);
   }
 
   @Override
-  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
-    Frame adaptFr = new Frame(fr);
-    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    if (msg.length > 0) {
-      for (String s : msg)
-        Log.warn(s);
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+    if (CFuncRef.NOP != customMetricFunc) {
+      throw new IllegalArgumentException("XGBoost doesn't support custom evaluation functions!");
     }
-    try {
-      Key<Frame> destFrameKey = Key.make(destination_key);
-      if (computeMetrics){
-        ModelMetrics mm = makeMetrics(model_info().booster(), adaptFr, fr, "Prediction on frame " + fr._key, destFrameKey);
-        // Update model with newly computed model metrics
-        this.addModelMetrics(mm);
-        DKV.put(this);
-      } else
-        makePredsOnly(model_info().booster(), adaptFr, destFrameKey);
-      return destFrameKey.get();
-    } catch (XGBoostError xgBoostError) {
-      throw new IllegalStateException("Failed scoring.", xgBoostError);
+    Key<Frame> destFrameKey = Key.make(destination_key);
+    if (computeMetrics) {
+      ModelMetrics mm = makeMetrics(adaptFrm, fr, "Prediction on frame " + fr._key, destFrameKey);
+      // Update model with newly computed model metrics
+      this.addModelMetrics(mm);
+      DKV.put(this);
+    } else {
+      Frame preds = makePredsOnly(adaptFrm, destFrameKey);
+      assert destFrameKey.equals(preds._key);
     }
+    return destFrameKey.get();
   }
+
 }
