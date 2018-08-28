@@ -502,7 +502,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     @Override
-    public float fvalue(int index) {
+    public final float fvalue(int index) {
       if (index >= _catMap.length)
         return _numValues[index - _catMap.length];
 
