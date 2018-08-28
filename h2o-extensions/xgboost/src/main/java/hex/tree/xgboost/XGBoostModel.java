@@ -15,6 +15,7 @@ import water.fvec.Frame;
 import water.util.Log;
 import hex.ModelMetrics;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -405,30 +406,42 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     private final DataInfo _di;
     private final Predictor _predictor;
 
-    private final int _cats;
     private final double _threshold;
-    private final float[] _floats;
-    private final FVec _row;
+    private final H2OFVec _row;
 
     private XGBoostBigScoreChunkPredict(DataInfo di, Predictor predictor) {
       _di = di;
       _predictor = predictor;
-      _cats = _di._catOffsets == null ? 0 : _di._catOffsets[_di._cats];
       _threshold = defaultThreshold();
-      _floats = new float[_di._nums + _cats];
-      _row = FVec.Transformer.fromArray(_floats, _output._sparse);
+      _row = new H2OFVec(_di, _output._sparse);
     }
 
     @Override
     public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
       if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
 
-      assert(_output.nfeatures() == tmp.length);
-      for( int i=0; i< tmp.length; i++ )
+      assert _output.nfeatures() == tmp.length;
+      for (int i = 0; i < tmp.length; i++) {
         tmp[i] = chks[i].atd(row_in_chunk);
+      }
 
-      GenModel.setInput(tmp, _floats, _di._nums, _di._cats, _di._catOffsets, null, null,
-              _di._useAllFactorLevels, _output._sparse /*replace NA with 0*/);
+
+      //float[] floats = new float[_di._catOffsets[_di._cats] + _di._nums];
+      //GenModel.setInput(tmp, floats, _di._nums, _di._cats, _di._catOffsets, null, null,
+      //        _di._useAllFactorLevels, _output._sparse /*replace NA with 0*/);
+      //FVec row_slow = FVec.Transformer.fromArray(floats, _output._sparse);
+
+      _row.setInput(tmp);
+
+      /*
+      for (int i = 0; i < floats.length; i++) {
+        if ((_row.fvalue(i) == row_slow.fvalue(i)) || (Float.isNaN(_row.fvalue(i))) &&  Float.isNaN(row_slow.fvalue(i))) {
+          // yay
+        } else {
+          System.out.println(i); // nay :(
+        }
+      }*/
+
       double[] out = _predictor.predict(_row);
 
       return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
@@ -437,6 +450,64 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     @Override
     public void close() {
       // nothing to do
+    }
+  }
+
+  private static class H2OFVec implements FVec {
+    private final DataInfo _di;
+    private final boolean _treatsZeroAsNA;
+
+    private final int[] _catMap;
+    private final int[] _catValues;
+    private final float[] _numValues;
+
+    private final float _notHot;
+
+    H2OFVec(DataInfo di, boolean treatsZeroAsNA) {
+      _di = di;
+      _catValues = new int[_di._cats];
+      _treatsZeroAsNA = treatsZeroAsNA;
+      _notHot = _treatsZeroAsNA ? Float.NaN : 0;
+      if (_di._catOffsets == null) {
+        _catMap = new int[0];
+      } else {
+        _catMap = new int[_di._catOffsets[_di._cats]];
+        for (int c = 0; c < _di._cats; c++) {
+          for (int j = _di._catOffsets[c]; j < _di._catOffsets[c+1]; j++)
+          _catMap[j] = c;
+        }
+      }
+      _numValues = new float[_di._nums];
+    }
+
+    void setInput(double[] input) {
+      for (int i = 0; i < _catValues.length; i++) {
+        if (Double.isNaN(input[i])) {
+          _catValues[i] = (_di._catOffsets[i + 1] - 1); //use the extra level for NAs made during training
+        } else {
+          int c = (int) input[i];
+          if (_di._useAllFactorLevels)
+            _catValues[i] = c + _di._catOffsets[i];
+          else if (c != 0)
+            _catValues[i] = c + _di._catOffsets[i] - 1;
+          if (_catValues[i] >= _di._catOffsets[i + 1])
+            _catValues[i] = (_di._catOffsets[i + 1] - 1);
+        }
+      }
+
+      for (int i = 0; i < _numValues.length; i++) {
+        float val = (float) input[_di._cats + i];
+        _numValues[i] = _treatsZeroAsNA && (val == 0) ? Float.NaN : val; // how about "H2O-sparse"?;
+      }
+    }
+
+    @Override
+    public float fvalue(int index) {
+      if (index >= _catMap.length)
+        return _numValues[index - _catMap.length];
+
+      final boolean isHot = _catValues[_catMap[index]] == index;
+      return isHot ? 1 : _notHot;
     }
   }
 

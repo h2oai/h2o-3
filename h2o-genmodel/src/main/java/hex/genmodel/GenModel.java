@@ -598,7 +598,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
   }
 
-
   public static float[] convertDouble2Float(double[] input) {
     int arraySize = input.length;
     float[] output = new float[arraySize];
