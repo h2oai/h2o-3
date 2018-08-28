@@ -188,14 +188,18 @@ try {
                         insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
-
                                 # Publish the output to S3.
                                 aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
-
-                                # FIXME
-                                # aws s3 cp target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
-                                # aws s3 cp target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
-
+                            """
+                            if (!params.TEST_RELEASE) {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}
+                                    aws s3 cp target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
+                                    aws s3 cp target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
+                                """
+                            }
+                            sh """
+                                cd ${env.BUILD_NUMBER_DIR}
                                 echo UPDATE LATEST POINTER
                                 tmpdir=./buildh2odev.tmp
                                 mkdir -p \${tmpdir}
@@ -326,13 +330,13 @@ EOF
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
                                                 # Convert conda package for all other platforms
                                                 conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
-                                                
+
                                                 s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
                                                 s3cmd --acl-public put linux-32/\${PKG_NAME} ${condaS3Dir}/linux-32/\${PKG_NAME}
                                                 s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
                                                 s3cmd --acl-public put win-32/\${PKG_NAME} ${condaS3Dir}/win-32/\${PKG_NAME}
                                                 s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
-                                                
+
                                                 if [ "\$TEST_RELEASE" = true ]; then
                                                     echo '****** WARNING! Upload to Conda suppressed ******'
                                                 else
@@ -345,7 +349,7 @@ EOF
                                                     anaconda upload linux-64/\${PKG_NAME}
                                                     anaconda upload win-32/\${PKG_NAME}
                                                     anaconda upload win-64/\${PKG_NAME}
-                                                fi 
+                                                fi
                                             """
                                         }
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
@@ -372,7 +376,7 @@ EOF
                                         sh """
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
-        
+
                                                     conda install ${pkgName} --offline
                                                     python --version
                                                     python h2o_test.py
@@ -402,7 +406,7 @@ EOF
                                                 bash -c \"\"\"
                                                     source activate py${pyVersion}
                                                     conda config --append channels conda-forge
-        
+
                                                     conda install -y -c h2oai h2o
                                                     python --version
                                                     python h2o_test.py
@@ -433,12 +437,12 @@ EOF
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
                                             . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-                                
+
                                             cd ${env.BUILD_NUMBER_DIR}/h2o-py
                                             python setup.py sdist
-                                            
+
                                             s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
-                                            
+
                                             if [ "\$TEST_RELEASE" = true ]; then
                                                 echo '****** WARNING! Upload to PyPI suppressed ******'
                                             else
@@ -517,7 +521,7 @@ private setReleaseJobProperties(final pipelineContext) {
     if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
     } else {
-        env.S3_ROOT = "${TEST_RELEASE_BUCKET}/${env.BRANCH_NAME}"
+        env.S3_ROOT = "${TEST_RELEASE_BUCKET}"
     }
     echo "Release will be pushed to ${env.S3_ROOT}"
 
