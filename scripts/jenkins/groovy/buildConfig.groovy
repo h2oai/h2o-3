@@ -267,11 +267,7 @@ class BuildConfig {
   }
 
   String getExpectedImageVersion(final String image) {
-    final def version = EXPECTED_IMAGE_VERSIONS[image]
-    if (version == null) {
-      throw new IllegalArgumentException(String.format('Cannot find expected image version for %s', image))
-    }
-    return version
+    return EXPECTED_IMAGE_VERSIONS[image]
   }
 
   String getStashNameForTestPackage(final String platform) {
