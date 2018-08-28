@@ -22,7 +22,7 @@ automl.multiple_runs.test <- function() {
         seed = 1234,
         training_frame = train,
         validation_frame = test,
-        max_models = 10,
+        max_models = 3,
         project_name = "run_1.hex"
     )
 
@@ -30,10 +30,10 @@ automl.multiple_runs.test <- function() {
     test$Sepal.Length <- 1
     automl_2 <- h2o.automl(
         x = x, y = y,
-        seed = 1234,
+        seed = 4321,
         training_frame = train,
         validation_frame = test,
-        max_models = 10,
+        max_models = 3,
         project_name = "run_2.hex"
     )
 
