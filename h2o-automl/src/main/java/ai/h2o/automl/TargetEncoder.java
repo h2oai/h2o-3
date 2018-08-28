@@ -225,7 +225,7 @@ public class TargetEncoder {
     }
 
     Frame imputeWithMean(Frame a, int columnIndex) {
-        long numberOfNAs = a.naCount();
+        long numberOfNAs = a.vec(columnIndex).naCnt();
         if (numberOfNAs > 0) {
             String astTree = String.format("(h2o.impute %s %d 'mean' 'interpolate' [] _ _)", a._key, columnIndex);
             Rapids.exec(astTree);
@@ -612,7 +612,7 @@ public class TargetEncoder {
     }
     private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
 
-        TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
+        TwoDimTable twoDimTable = fr.toTwoDimTable(0, 1000000, rollups);
         System.out.println(twoDimTable.toString(2, full));
     }
     private void printOutColumnsMeta(Frame fr) {
