@@ -1,11 +1,9 @@
 package ml.dmlc.xgboost4j.java;
 
+import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel;
 import water.*;
 import water.util.Log;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
 
@@ -24,17 +22,17 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
     }
 
     // This is called from driver
-    public Booster getBooster() {
+    public byte[] getBoosterBytes() {
         final H2ONode boosterNode = getBoosterNode();
-        final Booster booster;
+        final byte[] boosterBytes;
         if (H2O.SELF.equals(boosterNode)) {
-            booster = XGBoostUpdater.getUpdater(_modelKey).getBooster();
+            boosterBytes = XGBoost.getRawArray(XGBoostUpdater.getUpdater(_modelKey).getBooster());
         } else {
             Log.debug("Booster will be retrieved from a remote node, node=" + boosterNode);
             FetchBoosterTask t = new FetchBoosterTask(_modelKey);
-            booster = new RPC<>(boosterNode, t).call().get().rawBooster();
+            boosterBytes = new RPC<>(boosterNode, t).call().get()._boosterBytes;
         }
-        return booster;
+        return boosterBytes;
     }
 
     private static class FetchBoosterTask extends DTask<FetchBoosterTask> {
@@ -43,18 +41,8 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
         // OUT
         private byte[] _boosterBytes;
 
-        public FetchBoosterTask(Key<XGBoostModel> modelKey) {
+        private FetchBoosterTask(Key<XGBoostModel> modelKey) {
             _modelKey = modelKey;
-        }
-
-        private Booster rawBooster() {
-            try {
-                Booster booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
-                Log.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
-                return booster;
-            } catch (XGBoostError | IOException xgBoostError) {
-                throw new IllegalStateException("Failed to load the booster.", xgBoostError);
-            }
         }
 
         @Override

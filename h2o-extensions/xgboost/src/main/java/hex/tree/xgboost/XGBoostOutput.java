@@ -14,7 +14,6 @@ public class XGBoostOutput extends Model.Output {
     _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
   }
 
-  byte[] _boosterBytes;
   int _nums;
   int _cats;
   int[] _catOffsets;

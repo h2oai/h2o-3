@@ -2,7 +2,6 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.*;
 import hex.tree.xgboost.*;
-import hex.tree.xgboost.XGBoost;
 import water.*;
 import water.fvec.*;
 
@@ -27,7 +26,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final double _threshold;
 
     private ModelMetrics.MetricBuilder _metricBuilder;
-    private byte[] rawBooster;
+    private byte[] _boosterBytes;
 
     public static class XGBoostScoreTaskResult {
         public Frame preds;
@@ -37,7 +36,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     public static XGBoostScoreTaskResult runScoreTask(XGBoostModelInfo sharedmodel,
                                                       XGBoostOutput output,
                                                       XGBoostModel.XGBoostParameters parms,
-                                                      Booster booster,
                                                       Key<Frame> destinationKey,
                                                       Frame data,
                                                       Frame originalData,
@@ -47,7 +45,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
                 output,
                 parms,
-                booster,
                 boosterParms,
                 computeMetrics,
                 data.find(parms._weights_column),
@@ -57,7 +54,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         final Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
 
         XGBoostScoreTaskResult res = new XGBoostScoreTaskResult();
-
         if (output.nclasses() == 1) {
             Vec pred = preds.vec(0);
             if (computeMetrics) {
@@ -100,11 +96,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private static String[][] makeDomains(XGBoostOutput output, String[] names) {
         if(output.nclasses() == 1) {
             return null;
-        } else if(output.nclasses() == 2) {
-            String[][] domains = new String[3][];
-            domains[0] = new String[]{"N", "Y"};
-            return domains;
-        } else{
+        } else {
             String[][] domains = new String[names.length][];
             domains[0] = output.classNames();
             return domains;
@@ -114,7 +106,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private XGBoostScoreTask(final XGBoostModelInfo sharedmodel,
                              final XGBoostOutput output,
                              final XGBoostModel.XGBoostParameters parms,
-                             final Booster booster,
                              final BoosterParms boosterParms,
                              final boolean computeMetrics,
                              final int weightsChunkId,
@@ -123,7 +114,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _output = output;
         _parms = parms;
         _boosterParms = boosterParms;
-        this.rawBooster = XGBoost.getRawArray(booster);
+        _boosterBytes = sharedmodel._boosterBytes;
         _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
@@ -174,7 +165,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             }
 
             try {
-                booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
                 booster.setParams(_boosterParms.get());
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to load the booster.", e);
