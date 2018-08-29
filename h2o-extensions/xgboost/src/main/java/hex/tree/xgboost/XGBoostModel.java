@@ -289,11 +289,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("objective", "multi:softprob");
       params.put("num_class", nClasses);
     }
-    Log.info("XGBoost Parameters:");
-    for (Map.Entry<String,Object> s : params.entrySet()) {
-      Log.info(" " + s.getKey() + " = " + s.getValue());
-    }
-    Log.info("");
 
     final int nthreadMax = getMaxNThread();
     final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
@@ -302,6 +297,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
               "Training will use nthread=" + nthreadMax + " instead of the user specified value.");
     }
     params.put("nthread", nthread);
+
+    Log.info("XGBoost Parameters:");
+    for (Map.Entry<String,Object> s : params.entrySet()) {
+      Log.info(" " + s.getKey() + " = " + s.getValue());
+    }
+    Log.info("");
 
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
   }
