@@ -513,32 +513,46 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   private int backendCount = 0;
 
-  @Override
-  protected void setupBigScorePredict() {
-    synchronized (model_info()) {
-      backendCount++;
-      // Initial init of backend + model, backend is shared across threads
-      if (null == model_info()._backend) {
-        model_info().javaToNative();
+  private class DeepWaterBigScorePredict implements BigScorePredict, BigScoreChunkPredict {
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      return DeepWaterModel.this.score0(chks, offset, row_in_chunk, tmp, preds);
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(final Frame fr, final Chunk[] chks) {
+      synchronized (model_info()) {
+        backendCount++;
+        // Initial init of backend + model, backend is shared across threads
+        if (null == model_info()._backend) {
+          model_info().javaToNative();
+        }
+        // Backend already initialized, initialize model per thread
+        if (null == model_info().getModel().get()) {
+          model_info().initModel();
+        }
       }
-      // Backend already initialized, initialize model per thread
-      if (null == model_info().getModel().get()) {
-        model_info().initModel();
+      return this;
+    }
+
+    @Override
+    public void close() {
+      synchronized (model_info()) {
+        if (0 == --backendCount) {
+          // No more threads using the backend, nuke backend + model
+          model_info().nukeBackend();
+        } else if (null != model_info().getModel().get()) {
+          // Backend still used by other threads, nuke only model
+          model_info().nukeModel();
+        }
       }
     }
   }
 
   @Override
-  protected void closeBigScorePredict() {
-    synchronized (model_info()) {
-      if (0 == --backendCount) {
-        // No more threads using the backend, nuke backend + model
-        model_info().nukeBackend();
-      } else if (null != model_info().getModel().get()) {
-        // Backend still used by other threads, nuke only model
-        model_info().nukeModel();
-      }
-    }
+  protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    return new DeepWaterBigScorePredict();
   }
 
   /**
