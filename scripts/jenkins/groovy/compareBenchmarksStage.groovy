@@ -14,7 +14,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'homesite': [
                 50: [
-                    'train_time_min': 11.4,
+                    'train_time_min': 10,
                     'train_time_max': 13.3
                 ],
                 200: [
@@ -45,7 +45,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'higgs': [
                 50: [
                     'train_time_min': 88.0,
-                    'train_time_max': 95.0
+                    'train_time_max': 97.0
                 ],
                 200: [
                     'train_time_min': 502.0,
@@ -89,7 +89,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'higgs': [
                 100: [
                     'train_time_min': 140,
-                    'train_time_max': 220
+                    'train_time_max': 240
                 ]
             ]
         ],
@@ -102,13 +102,13 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'airlines-10m': [
                 100: [
-                    'train_time_min': 127,
+                    'train_time_min': 120,
                     'train_time_max': 190
                 ]
             ],
             'higgs': [
                 100: [
-                    'train_time_min': 225,
+                    'train_time_min': 210,
                     'train_time_max': 300
                 ]
             ]
