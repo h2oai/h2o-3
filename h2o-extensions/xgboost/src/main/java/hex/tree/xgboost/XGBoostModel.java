@@ -1,6 +1,7 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.*;
@@ -407,7 +408,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return score0(data, preds, 0.0);
   }
 
-  @Override // per row scoring will be slow and should be avoided!
+  @Override // per row scoring is slow and should be avoided!
   public double[] score0(final double[] data, final double[] preds, final double offset) {
     final DataInfo di = model_info._dataInfoKey.get();
     assert di != null;
@@ -422,6 +423,53 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       if (booster != null)
         BoosterHelper.dispose(booster);
     }
+  }
+
+  @Override
+  protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses());
+    return new XGBoostBigScorePredict(boosterParms);
+  }
+
+  private class XGBoostBigScorePredict implements BigScorePredict {
+    private final BoosterParms _boosterParms;
+
+    private XGBoostBigScorePredict(BoosterParms boosterParms) {
+      _boosterParms = boosterParms;
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
+      float[][] preds = scoreChunk(fr, chks);
+      return new XGBoostBigScoreChunkPredict(_output.nclasses(), preds, defaultThreshold());
+    }
+
+    private float[][] scoreChunk(Frame fr, Chunk[] chks) {
+      return XGBoostScoreTask.scoreChunk(model_info(), _parms, _boosterParms, _output, fr, chks);
+    }
+  }
+
+  private static class XGBoostBigScoreChunkPredict implements BigScoreChunkPredict {
+    private final int _nclasses;
+    private final float[][] _preds;
+    private final double _threshold;
+
+    private XGBoostBigScoreChunkPredict(int nclasses, float[][] preds, double threshold) {
+      _nclasses = nclasses;
+      _preds = preds;
+      _threshold = threshold;
+    }
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      for (int i = 0; i < tmp.length; i++) {
+        tmp[i] = chks[i].atd(row_in_chunk);
+      }
+      return XGBoostMojoModel.toPreds(tmp, _preds[row_in_chunk], preds, _nclasses, null, _threshold);
+    }
+
+    @Override
+    public void close() {}
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
