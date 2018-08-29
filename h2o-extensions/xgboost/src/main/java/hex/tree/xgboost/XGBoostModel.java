@@ -8,7 +8,6 @@ import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.udf.CFuncRef;
 import water.util.Log;
 import hex.ModelMetrics;
 
@@ -322,44 +321,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
-  // Fast scoring using the C++ data structures
-  // However, we need to bring the data back to Java to compute the metrics
-  // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description) throws XGBoostError {
-    return makeMetrics(data, originalData, description, null);
-  }
-
-  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description, Key<Frame> predFrameKey) {
-    ModelMetrics[] mms = new ModelMetrics[1];
-    Frame predictions = makePreds(originalData, data, mms, true, predFrameKey);
-    if (predFrameKey == null) {
-        predictions.remove();
-    } else {
-      DKV.put(predictions);
-    }
-    return mms[0];
-  }
-
-  private Frame makePredsOnly(Frame data, Key<Frame> destinationKey) {
-    Frame preds = makePreds(null, data, null, false, destinationKey);
-    DKV.put(preds);
-    return preds;
-  }
-
-  private Frame makePreds(Frame originalData, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey) {
-      assert (! computeMetrics) || (mms != null && mms.length == 1);
-
-      XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
-              model_info(), _output, _parms,
-              destinationKey, data,
-              originalData,
-              computeMetrics,
-              this
-      );
-      if(computeMetrics) {
-        mms[0] = score.mm;
-      }
-      return score.preds;
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, String description) {
+    Log.debug("Making metrics: " + description);
+    XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
+            model_info(), _output, _parms, null, data, originalData, true, this);
+    score.preds.remove();
+    return score.mm;
   }
 
   /**
@@ -367,9 +334,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * Note: every row is scored, all observation weights are assumed to be equal
    * @param _train training data in the form of matrix
    * @param _valid validation data (optional, can be null)
-   * @throws XGBoostError
    */
-  public void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) throws XGBoostError {
+  final void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) {
     ModelMetrics mm = makeMetrics(_train, _trainOrig, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
@@ -488,24 +454,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (model_info()._dataInfoKey !=null)
       model_info()._dataInfoKey.get().remove(fs);
     return super.remove_impl(fs);
-  }
-
-  @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    if (CFuncRef.NOP != customMetricFunc) {
-      throw new IllegalArgumentException("XGBoost doesn't support custom evaluation functions!");
-    }
-    Key<Frame> destFrameKey = Key.make(destination_key);
-    if (computeMetrics) {
-      ModelMetrics mm = makeMetrics(adaptFrm, fr, "Prediction on frame " + fr._key, destFrameKey);
-      // Update model with newly computed model metrics
-      this.addModelMetrics(mm);
-      DKV.put(this);
-    } else {
-      Frame preds = makePredsOnly(adaptFrm, destFrameKey);
-      assert destFrameKey.equals(preds._key);
-    }
-    return destFrameKey.get();
   }
 
 }
