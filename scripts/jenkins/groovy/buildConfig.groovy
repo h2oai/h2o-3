@@ -12,6 +12,7 @@ class BuildConfig {
   private static final String DEFAULT_IMAGE_VERSION_TAG = '111'
   // This is the default image used for tests, build, etc.
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
+  public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
 
   private static final String BENCHMARK_IMAGE_NAME = 'h2o-3-benchmark'
   private static final String BENCHMARK_IMAGE_VERSION_TAG = 'latest'
@@ -266,11 +267,7 @@ class BuildConfig {
   }
 
   String getExpectedImageVersion(final String image) {
-    final def version = EXPECTED_IMAGE_VERSIONS[image]
-    if (version == null) {
-      throw new IllegalArgumentException(String.format('Cannot find expected image version for %s', image))
-    }
-    return version
+    return EXPECTED_IMAGE_VERSIONS[image]
   }
 
   String getStashNameForTestPackage(final String platform) {

@@ -14,10 +14,15 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     echo "${image} present on host, checking versions..."
     // check that the image has expected SHA
     def expectedVersion = buildConfig.getExpectedImageVersion(image)
-    def currentVersion = sh(script: "docker inspect --format=\'{{index .RepoDigests 0}}\' ${image}", returnStdout: true).trim()
-    echo "current image version: ${currentVersion}"
-    echo "expected image version: ${expectedVersion}"
-    pullImage = currentVersion != expectedVersion
+    if (expectedVersion == null) {
+        echo "Cannot find expected version for ${image}. Pull."
+        pullImage = true
+    } else {
+        def currentVersion = sh(script: "docker inspect --format=\'{{index .RepoDigests 0}}\' ${image}", returnStdout: true).trim()
+        echo "current image version: ${currentVersion}"
+        echo "expected image version: ${expectedVersion}"
+        pullImage = currentVersion != expectedVersion
+    }
   }
 
   if (pullImage) {
