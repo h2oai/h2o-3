@@ -47,7 +47,7 @@ def glrm_mojo():
     test = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
     get_glrm_xmatrix(train, test, K=5, compare_predict=False, tol=1.5)
 
-def get_glrm_xmatrix(train, test, K = 3, compare_predict=True, tol=1e-3):
+def get_glrm_xmatrix(train, test, K = 3, compare_predict=True, tol=1e-1):
     x = train.names
     transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
     transformN = transform_types[randint(0, len(transform_types)-1)]
