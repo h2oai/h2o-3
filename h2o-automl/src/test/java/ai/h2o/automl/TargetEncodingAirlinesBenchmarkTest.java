@@ -233,7 +233,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
 
       GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
       parms2._train = airlinesTrainWithTEHDefault._key;
-      parms2._response_column = "IsDepDelayed";
+      parms2._response_column = targetColumnName;
       parms2._score_tree_interval = 10;
       parms2._ntrees = 1000;
       parms2._max_depth = 5;
