@@ -94,7 +94,7 @@ public class XGBoostUtils {
         }
 
         if (sparse) {
-            Log.info("Treating matrix as sparse.");
+            Log.debug("Treating matrix as sparse.");
             // 1 0 2 0
             // 4 0 0 3
             // 3 1 2 0
@@ -108,7 +108,7 @@ public class XGBoostUtils {
                 trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), nRows, di, resp, weights);
             }
         } else {
-            Log.info("Treating matrix as dense.");
+            Log.debug("Treating matrix as dense.");
 
             int cols = di.fullN();
             float[][] data = allocateDenseMatrix(nRows, di);
@@ -271,7 +271,7 @@ public class XGBoostUtils {
         }
         try {
             if (sparse) {
-                Log.info("Treating matrix as sparse.");
+                Log.debug("Treating matrix as sparse.");
                 // 1 0 2 0
                 // 4 0 0 3
                 // 3 1 2 0
@@ -309,7 +309,7 @@ public class XGBoostUtils {
 
     private static DMatrix dense(Chunk[] chunks, int weight, DataInfo di, int respIdx, float[] resp, float[] weights) throws XGBoostError {
         DMatrix trainMat;
-        Log.info("Treating matrix as dense.");
+        Log.debug("Treating matrix as dense.");
 
         // extract predictors
         int cols = di.fullN();

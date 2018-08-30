@@ -2,12 +2,9 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.*;
 import hex.tree.xgboost.*;
-import hex.tree.xgboost.XGBoost;
 import water.*;
 import water.fvec.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +24,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private final double _threshold;
 
     private ModelMetrics.MetricBuilder _metricBuilder;
-    private byte[] rawBooster;
 
     public static class XGBoostScoreTaskResult {
         public Frame preds;
@@ -37,7 +33,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     public static XGBoostScoreTaskResult runScoreTask(XGBoostModelInfo sharedmodel,
                                                       XGBoostOutput output,
                                                       XGBoostModel.XGBoostParameters parms,
-                                                      Booster booster,
                                                       Key<Frame> destinationKey,
                                                       Frame data,
                                                       Frame originalData,
@@ -47,7 +42,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
                 output,
                 parms,
-                booster,
                 boosterParms,
                 computeMetrics,
                 data.find(parms._weights_column),
@@ -57,7 +51,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         final Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
 
         XGBoostScoreTaskResult res = new XGBoostScoreTaskResult();
-
         if (output.nclasses() == 1) {
             Vec pred = preds.vec(0);
             if (computeMetrics) {
@@ -100,11 +93,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private static String[][] makeDomains(XGBoostOutput output, String[] names) {
         if(output.nclasses() == 1) {
             return null;
-        } else if(output.nclasses() == 2) {
-            String[][] domains = new String[3][];
-            domains[0] = new String[]{"N", "Y"};
-            return domains;
-        } else{
+        } else {
             String[][] domains = new String[names.length][];
             domains[0] = output.classNames();
             return domains;
@@ -114,7 +103,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     private XGBoostScoreTask(final XGBoostModelInfo sharedmodel,
                              final XGBoostOutput output,
                              final XGBoostModel.XGBoostParameters parms,
-                             final Booster booster,
                              final BoosterParms boosterParms,
                              final boolean computeMetrics,
                              final int weightsChunkId,
@@ -123,7 +111,6 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _output = output;
         _parms = parms;
         _boosterParms = boosterParms;
-        this.rawBooster = XGBoost.getRawArray(booster);
         _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
@@ -148,12 +135,16 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
+    private static class ScoreResult {
+        float[][] _preds;
+        float[] _labels;
+    }
 
-    @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
+    private static ScoreResult scoreChunkExt(final XGBoostModelInfo sharedmodel, final XGBoostModel.XGBoostParameters parms,
+                                             final BoosterParms boosterParms, final XGBoostOutput output,
+                                             final Frame fr, final Chunk[] cs) {
         DMatrix data = null;
         Booster booster = null;
-        _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
         try {
             Map<String, String> rabitEnv = new HashMap<>();
             // Rabit has to be initialized as parts of booster.predict() are using Rabit
@@ -161,80 +152,27 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             Rabit.init(rabitEnv);
 
             data = XGBoostUtils.convertChunksToDMatrix(
-                    _sharedmodel._dataInfoKey,
+                    sharedmodel._dataInfoKey,
                     cs,
-                    _fr.find(_parms._response_column),
+                    fr.find(parms._response_column),
                     -1, // not used for preds
-                    _fr.find(_parms._fold_column),
-                    _output._sparse);
+                    fr.find(parms._fold_column),
+                    output._sparse);
 
             // No local chunks for this frame
             if (data.rowNum() == 0) {
-                return;
+                return null;
             }
 
-            try {
-                booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
-                booster.setParams(_boosterParms.get());
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to load the booster.", e);
-            }
-            final float[][] preds = booster.predict(data);
+            // Initialize Booster
+            booster = sharedmodel.deserializeBooster();
+            booster.setParams(boosterParms.get());
 
-            float[] labels = data.getLabel();
-
-
-            if (_output.nclasses() == 1) {
-                double[] currentPred = new double[1];
-                float[] yact = new float[1];
-                for (int j = 0; j < preds.length; ++j) {
-                    currentPred[0] = preds[j][0];
-                    if (_computeMetrics) {
-                        yact[0] = labels[j];
-                        double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(currentPred, yact, weight, 0, _model);
-                    }
-                }
-                for (int i = 0; i < cs[0]._len; ++i) {
-                    ncs[0].addNum(preds[i][0]);
-                }
-            } else if (_output.nclasses() == 2) {
-                double[] row = new double[3];
-                float[] yact = new float[1];
-                for (int i = 0; i < cs[0]._len; ++i) {
-                    final double p = preds[i][0];
-                    row[1] = 1 - p;
-                    row[2] = p;
-                    row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
-
-                    ncs[0].addNum(row[0]);
-                    ncs[1].addNum(row[1]);
-                    ncs[2].addNum(row[2]);
-
-                    if (_computeMetrics) {
-                        double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        yact[0] = labels[i];
-                        _metricBuilder.perRow(row, yact, weight, 0, _model);
-                    }
-                }
-            } else {
-                float[] yact = new float[1];
-                double[] row = MemoryManager.malloc8d(ncs.length);
-                for (int i = 0; i < cs[0]._len; ++i) {
-                    for (int j = 1; j < row.length; ++j) {
-                        double val = preds[i][j - 1];
-                        ncs[j].addNum(val);
-                        row[j] = val;
-                    }
-                    row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
-                    ncs[0].addNum(row[0]);
-                    if (_computeMetrics) {
-                        yact[0] = labels[i];
-                        double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                        _metricBuilder.perRow(row, yact, weight, 0, _model);
-                    }
-                }
-            }
+            // Predict
+            ScoreResult result = new ScoreResult();
+            result._preds = booster.predict(data);
+            result._labels = data.getLabel();
+            return result;
         } catch (XGBoostError xgBoostError) {
             throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
@@ -247,6 +185,75 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
+    public static float[][] scoreChunk(final XGBoostModelInfo sharedmodel, final XGBoostModel.XGBoostParameters parms,
+                                       final BoosterParms boosterParms, final XGBoostOutput output,
+                                       final Frame fr, final Chunk[] cs) {
+        ScoreResult r = scoreChunkExt(sharedmodel, parms, boosterParms, output, fr, cs);
+        return r == null ? new float[0][] : r._preds;
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+        _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
+
+        final ScoreResult r = scoreChunkExt(_sharedmodel, _parms, _boosterParms, _output, _fr, cs);
+
+        if (r == null)
+            return;
+
+        if (_output.nclasses() == 1) {
+            double[] currentPred = new double[1];
+            float[] yact = new float[1];
+            for (int j = 0; j < r._preds.length; ++j) {
+                currentPred[0] = r._preds[j][0];
+                if (_computeMetrics) {
+                    yact[0] = r._labels[j];
+                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                    _metricBuilder.perRow(currentPred, yact, weight, 0, _model);
+                }
+            }
+            for (int i = 0; i < cs[0]._len; ++i) {
+                ncs[0].addNum(r._preds[i][0]);
+            }
+        } else if (_output.nclasses() == 2) {
+            double[] row = new double[3];
+            float[] yact = new float[1];
+            for (int i = 0; i < cs[0]._len; ++i) {
+                final double p = r._preds[i][0];
+                row[1] = 1 - p;
+                row[2] = p;
+                row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
+
+                ncs[0].addNum(row[0]);
+                ncs[1].addNum(row[1]);
+                ncs[2].addNum(row[2]);
+
+                if (_computeMetrics) {
+                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                    yact[0] = r._labels[i];
+                    _metricBuilder.perRow(row, yact, weight, 0, _model);
+                }
+            }
+        } else {
+            float[] yact = new float[1];
+            double[] row = MemoryManager.malloc8d(ncs.length);
+            for (int i = 0; i < cs[0]._len; ++i) {
+                for (int j = 1; j < row.length; ++j) {
+                    double val = r._preds[i][j - 1];
+                    ncs[j].addNum(val);
+                    row[j] = val;
+                }
+                row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
+                ncs[0].addNum(row[0]);
+                if (_computeMetrics) {
+                    yact[0] = r._labels[i];
+                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                    _metricBuilder.perRow(row, yact, weight, 0, _model);
+                }
+            }
+        }
+    }
+
     @Override
     public void reduce(XGBoostScoreTask mrt) {
         super.reduce(mrt);
@@ -254,6 +261,5 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
             _metricBuilder.reduce(mrt._metricBuilder);
         }
     }
-
 
 }
