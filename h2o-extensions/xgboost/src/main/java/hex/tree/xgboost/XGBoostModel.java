@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
+import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
@@ -267,24 +268,25 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("alpha", p._reg_alpha);
 
     if (nClasses==2) {
-      params.put("objective", "binary:logistic");
+      params.put("objective", ObjectiveType.BINARY_LOGISTIC.getId());
     } else if (nClasses==1) {
       if (p._distribution == DistributionFamily.gamma) {
-        params.put("objective", "reg:gamma");
+        params.put("objective", ObjectiveType.REG_GAMMA.getId());
       } else if (p._distribution == DistributionFamily.tweedie) {
-        params.put("objective", "reg:tweedie");
+        params.put("objective", ObjectiveType.REG_TWEEDIE.getId());
         params.put("tweedie_variance_power", p._tweedie_power);
       } else if (p._distribution == DistributionFamily.poisson) {
-        params.put("objective", "count:poisson");
+        params.put("objective", ObjectiveType.COUNT_POISSON.getId());
       } else if (p._distribution == DistributionFamily.gaussian || p._distribution==DistributionFamily.AUTO) {
-        params.put("objective", "reg:linear");
+        params.put("objective", ObjectiveType.REG_LINEAR.getId());
       } else {
         throw new UnsupportedOperationException("No support for distribution=" + p._distribution.toString());
       }
     } else {
-      params.put("objective", "multi:softprob");
+      params.put("objective", ObjectiveType.MULTI_SOFTPROB.getId());
       params.put("num_class", nClasses);
     }
+    assert ObjectiveType.fromXGBoost((String) params.get("objective")) != null;
 
     final int nthreadMax = getMaxNThread();
     final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
