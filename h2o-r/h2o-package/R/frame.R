@@ -3227,6 +3227,10 @@ as.h2o <- function(x, destination_frame="", ...) {
 #' @method as.h2o default
 #' @export
 as.h2o.default <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" ) {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else paste0(class(x), "_"))
+  }
   x <- if( length(x)==1L )
     data.frame(C1=x)
   else
@@ -3240,7 +3244,7 @@ as.h2o.default <- function(x, destination_frame="", ...) {
 as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
-    destination_frame <- .key.make(if(nzchar(subx)) subx else "h2oframe_copy")
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "H2OFrame_copy")
   }
   h2o.assign(x, key=destination_frame)
 }
@@ -3255,7 +3259,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 as.h2o.data.frame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
-    destination_frame <- .key.make(if(nzchar(subx)) subx else "df_copy")
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "data.frame")
   }
 
   destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
