@@ -249,7 +249,7 @@ h2o.automl <- function(x, y, training_frame,
   is_progress <- isTRUE(as.logical(.h2o.is_progress()))
   h2o.no_progress()
   leaderboard <- tryCatch(
-    as.h2o(leaderboard),
+    as.h2o(leaderboard, paste(build_control$project_name, "leaderboard", sep=".")),
     error = identity,
     finally = if (is_progress) h2o.show_progress()
   )
@@ -325,7 +325,7 @@ h2o.getAutoML <- function(project_name) {
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  leaderboard <- as.h2o(leaderboard)
+  leaderboard <- as.h2o(leaderboard, paste(project_name, "leaderboard", sep="."))
   leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
   leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
   project <- automl_job$project
