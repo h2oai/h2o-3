@@ -1,8 +1,10 @@
 package hex.genmodel.algos.xgboost;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.learner.ObjFunction;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
+import hex.genmodel.utils.DistributionFamily;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,12 +18,18 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   Predictor _predictor;
 
+  static {
+    ObjFunction.register("reg:gamma", new RegObjFunction());
+    ObjFunction.register("reg:tweedie", new RegObjFunction());
+    ObjFunction.register("count:poisson", new RegObjFunction());
+  }
+
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
     _predictor = makePredictor(boosterBytes);
   }
 
-  private static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
       return new Predictor(is);
     } catch (IOException e) {
@@ -35,7 +43,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
             _nclasses, _priorClassDistrib, _defaultThreshold, _sparse);
   }
 
-  private static double[] score0(double[] doubles, double offset, double[] preds,
+  public static double[] score0(double[] doubles, double offset, double[] preds,
                                 Predictor predictor, int _nums, int _cats,
                                 int[] _catOffsets, boolean _useAllFactorLevels,
                                 int nclasses, double[] _priorClassDistrib,
@@ -48,7 +56,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
 
     FVec row = FVec.Transformer.fromArray(floats, _sparse);
-    double[] out = predictor.predict(row);
+    float[] out = predictor.predict(row);
 
     return toPreds(doubles, out, preds, nclasses, _priorClassDistrib, _defaultThreshold);
   }
@@ -56,6 +64,22 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   @Override
   public void close() {
     _predictor = null;
+  }
+
+  private static class RegObjFunction extends ObjFunction {
+    @Override
+    public float[] predTransform(float[] preds) {
+      if (preds.length != 1)
+        throw new IllegalStateException("Regression problem is supposed to have just a single predicted value, got " +
+                preds.length + " instead.");
+      preds[0] = (float) Math.exp(preds[0]);
+      return preds;
+    }
+
+    @Override
+    public float predTransform(float pred) {
+      return (float) Math.exp(pred);
+    }
   }
 
 }

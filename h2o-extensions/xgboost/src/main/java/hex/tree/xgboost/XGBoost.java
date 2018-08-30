@@ -3,7 +3,6 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
-import hex.tree.SharedTreeModel;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -303,12 +302,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
 
+        BoosterProvider boosterProvider = null;
         try {
           // initial iteration
-          model.model_info().setBooster(new XGBoostUpdateTask(setupTask, 0).run().getBooster());
+          XGBoostUpdateTask initUpdate = new XGBoostUpdateTask(setupTask, 0).run();
+          boosterProvider = new BoosterProvider(initUpdate, model.model_info());
 
           // train the model
-          scoreAndBuildTrees(setupTask, model);
+          scoreAndBuildTrees(setupTask, boosterProvider, model);
 
           // shutdown rabit & XGB native resources
           XGBoostCleanupTask.cleanUp(setupTask);
@@ -316,12 +317,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
           waitOnRabitWorkers(rt);
         } finally {
+          if (boosterProvider != null) {
+            boosterProvider.dispose();
+          }
           rt.stop();
         }
-
-        // save the model to DKV
-        model.model_info().nativeToJava();
-        model._output._boosterBytes = model.model_info()._boosterBytes;
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
@@ -388,9 +388,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final XGBoostModel model) throws XGBoostError {
-      BoosterProvider boosterProvider = new BoosterProvider(model.model_info()); // initial model always has a Booster
-
+    private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final BoosterProvider boosterProvider,
+                                    final XGBoostModel model) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
@@ -401,7 +400,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         Timer kb_timer = new Timer();
         XGBoostUpdateTask t = new XGBoostUpdateTask(setupTask, tid).run();
-        boosterProvider = new OnDemandBoosterProvider(model.model_info(), t);
+        boosterProvider.reset(t);
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
 
@@ -473,7 +472,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               manualInterval) {
         _timeLastScoreStart = now;
         Booster booster = boosterProvider.getBooster();
-        model.doScoring(booster, _train, _parms.train(), _valid, _parms.valid());
+        model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore(featureMapFile.getAbsolutePath()));
         XGBoostOutput out = model._output;
@@ -490,35 +489,37 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static class BoosterProvider {
-    final XGBoostModelInfo _modelInfo;
+    private final XGBoostModelInfo _modelInfo;
 
-    BoosterProvider(XGBoostModelInfo modelInfo) {
-      _modelInfo = modelInfo;
-    }
-
-    Booster getBooster() {
-      return _modelInfo.getBooster();
-    }
-  }
-
-  private static class OnDemandBoosterProvider extends BoosterProvider {
     XGBoostUpdateTask _updateTask;
+    Booster _booster;
     boolean _boosterRetrieved;
 
-    OnDemandBoosterProvider(XGBoostModelInfo modelInfo, XGBoostUpdateTask updateTask) {
-      super(modelInfo);
-      _updateTask = updateTask;
-      _boosterRetrieved = false;
+    BoosterProvider(XGBoostUpdateTask updateTask, XGBoostModelInfo modelInfo) {
+      _modelInfo = modelInfo;
+      reset(updateTask);
     }
 
     Booster getBooster() {
       if (! _boosterRetrieved) {
-        Booster booster = _updateTask.getBooster();
-        _modelInfo.setBooster(booster);
+        _booster = _updateTask.getBooster();
         _boosterRetrieved = true;
         _updateTask = null;
+        _modelInfo.updateBooster(_booster);
       }
-      return super.getBooster();
+      return _booster;
+    }
+
+    final void reset(XGBoostUpdateTask updateTask) {
+      _updateTask = updateTask;
+      _boosterRetrieved = false;
+      _booster = null;
+    }
+
+    void dispose() {
+      if (_booster != null) {
+        BoosterHelper.dispose(_booster);
+      }
     }
 
   }

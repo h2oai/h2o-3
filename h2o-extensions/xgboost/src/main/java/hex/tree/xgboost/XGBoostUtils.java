@@ -245,88 +245,9 @@ public class XGBoostUtils {
         return nzCount;
     }
 
-    /**
-     * convert a set of H2O chunks (representing a part of a vector) to a sparse DMatrix
-     * @param response name of the response column
-     * @param weight name of the weight column
-     * @param fold name of the fold assignment column
-     * @return DMatrix
-     * @throws XGBoostError
-     */
-    public static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
-                                                 Chunk[] chunks,
-                                                 int response,
-                                                 int weight,
-                                                 int fold,
-                                                 boolean sparse) throws XGBoostError {
-        int nRows = chunks[0]._len;
-
-        DMatrix trainMat;
-        DataInfo di = dataInfoKey.get();
-
-        float[] resp = malloc4f(nRows);
-        float[] weights = null;
-        if(-1 != weight) {
-            weights = malloc4f(nRows);
-        }
-        try {
-            if (sparse) {
-                Log.info("Treating matrix as sparse.");
-                // 1 0 2 0
-                // 4 0 0 3
-                // 3 1 2 0
-                boolean csc = false; //di._cats == 0;
-
-                // truly sparse matrix - no categoricals
-                // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-                if (csc) {
-                    trainMat = csc(chunks, weight, nRows, di, resp, weights);
-                } else {
-                    trainMat = csr(chunks, weight, response, nRows, di, resp, weights);
-                }
-            } else {
-                trainMat = dense(chunks, weight, di, response, resp, weights);
-            }
-        } catch (NegativeArraySizeException e) {
-            throw new IllegalArgumentException(technote(11,
-                "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-        }
-
-        int len = (int) trainMat.rowNum();
-        resp = Arrays.copyOf(resp, len);
-        trainMat.setLabel(resp);
-        if (weight!=-1){
-            weights = Arrays.copyOf(weights, len);
-            trainMat.setWeight(weights);
-        }
-//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
-        return trainMat;
-    }
-
     /****************************************************************************************************************
      ************************************** DMatrix creation for dense matrices *************************************
      ****************************************************************************************************************/
-
-    private static DMatrix dense(Chunk[] chunks, int weight, DataInfo di, int respIdx, float[] resp, float[] weights) throws XGBoostError {
-        DMatrix trainMat;
-        Log.info("Treating matrix as dense.");
-
-        // extract predictors
-        int cols = di.fullN();
-        float[][] data = allocateDenseMatrix(chunks[0].len(), di);
-
-        long actualRows = denseChunk(data, chunks, weight, respIdx, di, cols, resp, weights);
-        assert actualRows == chunks[0].len();
-
-        int lastRowSize = (int)((double)actualRows * cols % ARRAY_MAX);
-        if(data[data.length - 1].length > lastRowSize) {
-            data[data.length - 1] = Arrays.copyOf(data[data.length - 1], lastRowSize);
-        }
-
-        trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
-        assert trainMat.rowNum() == actualRows;
-        return trainMat;
-    }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
     private static final BigInteger MAX_DMATRIX_SIZE = BigInteger.valueOf((long) ARRAY_MAX * ARRAY_MAX);
@@ -400,61 +321,6 @@ public class XGBoostUtils {
         return actualRows;
     }
 
-    private static long denseChunk(float[][] data, Chunk[] chunks, int weight, int respIdx, DataInfo di, int cols, float[] resp, float[] weights) {
-        int currentRow = 0;
-        int currentCol = 0;
-        long actualRows = 0;
-        int rwRow = 0;
-
-        for (int i = 0; i < chunks[0].len(); i++) {
-            if (weight != -1 && chunks[weight].atd(i) == 0) continue;
-
-            for (int j = 0; j < di._cats; ++j) {
-                int offset = di._catOffsets[j+1] - di._catOffsets[j];
-                int pos;
-                if (chunks[j].isNA(i)) {
-                    pos = di.getCategoricalId(j, Double.NaN);
-                } else {
-                    pos = di.getCategoricalId(j, chunks[j].at8(i));
-                }
-                // Relative position, not absolute
-                pos -= di._catOffsets[j];
-
-                if (currentCol + pos < data[currentRow].length) {
-                    data[currentRow][currentCol + pos] = 1;
-                }
-                if (currentCol + offset >= data[currentRow].length) { // did we advance to next row?
-                    pos = currentCol + pos - data[currentRow].length;
-                    offset = currentCol + offset - data[currentRow].length;
-                    currentRow++;
-                    currentCol = 0;
-                    if (pos >= 0) { // was not written in previous row, need to write here
-                        data[currentRow][currentCol + pos] = 1;
-                    }
-                }
-                currentCol += offset;
-            }
-
-            for (int j = 0; j < di._nums; ++j) {
-                if(currentCol == ARRAY_MAX) {
-                    currentCol = 0;
-                    currentRow++;
-                }
-                if (chunks[di._cats + j].isNA(i)) {
-                    data[currentRow][currentCol++] = Float.NaN;
-                }
-                else {
-                    data[currentRow][currentCol++] = (float) chunks[di._cats + j].atd(i);
-                }
-            }
-            assert di._catOffsets[di._catOffsets.length - 1] + di._nums == cols;
-            actualRows++;
-
-            rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
-        }
-        return actualRows;
-    }
-
     /****************************************************************************************************************
      *********************************** DMatrix creation for sparse (CSR) matrices *********************************
      ****************************************************************************************************************/
@@ -463,11 +329,6 @@ public class XGBoostUtils {
                                int nRows, DataInfo di, float[] resp, float[] weights)
         throws XGBoostError {
         return csr(null, -1, -1, f, chunksIds, vecs, w, respReader, nRows, di, resp, weights);
-    }
-
-    private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
-                               int nRows, DataInfo di, float[] resp, float[] weights) throws XGBoostError {
-        return csr(chunks, weight, respIdx, null, null, null, null, null, nRows, di, resp, weights);
     }
 
     private static DMatrix csr(Chunk[] chunks, int weight, int respIdx, // for MR task
@@ -608,12 +469,6 @@ public class XGBoostUtils {
     /****************************************************************************************************************
      *********************************** DMatrix creation for sparse (CSC) matrices *********************************
      ****************************************************************************************************************/
-
-    private static DMatrix csc(Chunk[] chunks, int weight,
-                               long nRows, DataInfo di,
-                               float[] resp, float[] weights) throws XGBoostError {
-        return csc(chunks, weight, null, null, null, null, nRows, di, resp, weights);
-    }
 
     private static DMatrix csc(Frame f, int[] chunksIds, Vec.Reader w, Vec.Reader respReader,
                                long nRows, DataInfo di,
