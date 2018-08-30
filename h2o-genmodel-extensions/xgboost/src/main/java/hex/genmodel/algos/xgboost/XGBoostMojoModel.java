@@ -28,7 +28,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements Closeable {
   }
 
   // for float output
-  static double[] toPreds(double in[], float[] out, double[] preds,
+  public static double[] toPreds(double in[], float[] out, double[] preds,
                           int nclasses, double[] priorClassDistrib, double defaultThreshold) {
     if (nclasses > 2) {
       for (int i = 0; i < out.length; ++i)
