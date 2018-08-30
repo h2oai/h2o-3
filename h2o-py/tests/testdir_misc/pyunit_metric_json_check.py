@@ -84,7 +84,8 @@ def metric_json_check():
     bin_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     bin_met = bin_mod.model_performance()
     bin_metric_json_keys_have = list(bin_met._metric_json.keys())
-    bin_metric_json_keys_desired = [u'AUC',
+    bin_metric_json_keys_desired = [u'cm',
+                                    u'AUC',
                                     u'Gini',
                                     u'model_category',
                                     u'description',
@@ -120,7 +121,8 @@ def metric_json_check():
     bin_mod = H2OGeneralizedLinearEstimator(family="binomial")
     bin_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     bin_metric_json_keys_have = list(bin_met._metric_json.keys())
-    bin_metric_json_keys_desired = [u'frame',
+    bin_metric_json_keys_desired = [u'cm',
+                                    u'frame',
                                     u'residual_deviance',
                                     u'max_criteria_and_metric_scores',
                                     u'MSE',
