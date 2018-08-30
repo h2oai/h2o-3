@@ -581,6 +581,7 @@ h2o.clusterStatus <- function() {
   args <- c(args, "-cp", class_path, "water.H2OApp")
   args <- c(args, "-name", name)
   args <- c(args, "-ip", ip)
+  args <- c(args, "-web_ip", ip)
   args <- c(args, "-port", port)
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
