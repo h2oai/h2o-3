@@ -137,6 +137,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumnsWithFold;
+      parms._seed = 1234L;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -214,6 +215,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumns;
+      parms._seed = 1234L;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -298,6 +300,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumns;
+      parms._seed = 1234L;
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
 
