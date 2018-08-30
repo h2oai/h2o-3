@@ -3229,7 +3229,7 @@ as.h2o <- function(x, destination_frame="", ...) {
 as.h2o.default <- function(x, destination_frame="", ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
-    destination_frame <- .key.make(if(nzchar(subx)) subx else paste0(class(x), "_"))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else paste0(class(x), "_", collapse = ""))
   }
   x <- if( length(x)==1L )
     data.frame(C1=x)
@@ -3260,9 +3260,10 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "data.frame")
+  } else {
+    destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
   }
 
-  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
   .key.validate(destination_frame) # h2o.uploadFile already handle ""
   
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
