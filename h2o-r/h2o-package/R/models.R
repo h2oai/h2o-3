@@ -3115,7 +3115,9 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
-
+#'
+#' The H2ONode class empty definition to make setClassUnion possible, as H2ONode has circular dependency.
+#'
 setClass("H2ONode") # Avoid warning about undefined class, H2ONode has circular dependency
 setClassUnion("H2ONodeOrNULL",members=c("H2ONode", "NULL"))
 
@@ -3193,6 +3195,9 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 })
 
 
+#' @rdname H2ONode-class
+#' @param object an \code{H2ONode} object.
+#' @export
 setMethod('show', 'H2ONode', 
           function(object){
             print.H2ONode(object)
