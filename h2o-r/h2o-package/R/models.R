@@ -3147,6 +3147,36 @@ setClass(
   )
 )
 
+#' @rdname H2ONode-class
+#' @param object an \code{H2ONode} object.
+#' @export
+setMethod('show', 'H2ONode', 
+          function(object){
+            print.H2ONode(object)
+          })
+
+print.H2ONode <- function(node){
+  cat("Node ID", node@id, "\n\n")
+  if(!is.na(node@split_feature))
+  {
+    if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
+    if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
+    cat("\n")
+    cat("Splits on column", node@split_feature, "\n")
+  }else{
+    cat("This is a terminal node")
+  }
+  
+  if(is.na(node@threshold)){
+    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@levels, "\n")
+    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@levels, "\n")
+  } else {
+    cat("Split threshold", node@threshold, "\n")
+  }
+  cat("\n")
+  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
+}
+
 #'
 #' The H2OTree class.
 #'
@@ -3186,6 +3216,27 @@ setClass(
   )
 )
 
+#' @rdname H2ONode-class
+#' @param object an \code{H2OTree} object.
+#' @export
+setMethod('show', 'H2OTree', 
+          function(tree){
+            print.H2OTree(tree)
+          })
+
+#' @rdname H2ONode-class
+#' @param object an \code{H2OTree} object.
+#' @export
+setMethod('show', 'H2OTree', 
+          function(object){
+            print.H2OTree(object)
+          })
+
+print.H2OTree <- function(tree){
+  cat(paste0("Tree related to model'", tree@model_id,"'. Tree number is"), tree@tree_number,paste0(", tree class is '",tree@tree_class), "'\n")
+  cat("The tree has", length(tree), "nodes")
+}
+
 #'
 #' Overrides the behavior of length() function on H2OTree class. Returns number of nodes in an \code{H2OTree}
 #' @param x An \code{H2OTree} to count nodes for.
@@ -3194,36 +3245,6 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
   length(x@left_children)
 })
 
-
-#' @rdname H2ONode-class
-#' @param object an \code{H2ONode} object.
-#' @export
-setMethod('show', 'H2ONode', 
-          function(object){
-            print.H2ONode(object)
-          })
-
-print.H2ONode <- function(node){
-  cat("Node ID", node@id, "\n\n")
-  if(!is.na(node@split_feature))
-  {
-    if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
-    if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
-    cat("\n")
-    cat("Splits on column", node@split_feature, "\n")
-  }else{
-    cat("This is a terminal node")
-  }
-  
-  if(is.na(node@threshold)){
-    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@levels, "\n")
-    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@levels, "\n")
-  } else {
-    cat("Split threshold", node@threshold, "\n")
-  }
-  cat("\n")
-  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
-}
 
 
 .h2o.assemble_tree <- function(tree){
