@@ -3233,7 +3233,7 @@ setMethod('show', 'H2OTree',
           })
 
 print.H2OTree <- function(tree){
-  cat(paste0("Tree related to model'", tree@model_id,"'. Tree number is"), tree@tree_number,paste0(", tree class is '",tree@tree_class), "'\n")
+  cat(paste0("Tree related to model '", tree@model_id,"'. Tree number is"), tree@tree_number,paste0(",tree class is '",tree@tree_class), "'\n")
   cat("The tree has", length(tree), "nodes")
 }
 
