@@ -3115,6 +3115,21 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
+setClass(
+  "H2ONode",
+  representation(
+    id = "integer",
+    threshold = "numeric",
+    left_child = "H2ONodeOrNULL",
+    right_child = "H2ONodeOrNULL",
+    split_feature = "character",
+    na_direction = "character",
+    domain = "character",
+    description = "character"
+  )
+)
+setClassUnion("H2ONodeOrNULL",members=c("H2ONode", "NULL"))
+
 #'
 #' The H2OTree class.
 #'
@@ -3138,8 +3153,10 @@ h2o.deepfeatures <- function(object, data, layer) {
 setClass(
   "H2OTree",
   representation(
+    root_node = "H2ONode",
     left_children = "integer",
     right_children = "integer",
+    node_ids = "integer",
     descriptions = "character",
     model_id = "character",
     tree_number = "integer",
@@ -3150,8 +3167,70 @@ setClass(
     levels = "list",
     nas = "character"
   )
-  
 )
+
+
+setMethod('show', 'H2ONode', 
+          function(object){
+            print.H2ONode(object)
+          })
+
+print.H2ONode <- function(node){
+  cat("Node ID", node@id, "\n\n")
+  if(!is.na(node@split_feature))
+  {
+    if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
+    if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
+    cat("\n")
+    cat("Splits on column", node@split_feature, "\n")
+  }else{
+    cat("This is a terminal node")
+  }
+  
+  if(is.na(node@threshold)){
+    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@domain, "\n")
+    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@domain, "\n")
+  } else {
+    cat("Split threshold", node@threshold, "\n")
+  }
+  cat("\n")
+  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
+}
+
+
+.h2o.assemble_tree <- function(tree){
+  
+  rootNode  <- new ("H2ONode",
+                    id = tree@root_node_id,
+                    left_child = .h2o.walk_tree(tree@left_children[1], tree),
+                    right_child = .h2o.walk_tree(tree@right_children[1], tree),
+                    threshold = tree@thresholds[1],
+                    split_feature = tree@features[1],
+                    na_direction = tree@nas[1],
+                    domain = NA_character_,
+                    description = tree@descriptions[1])
+  
+  
+  rootNode
+}
+
+.h2o.walk_tree <- function(node, tree){
+  if(node == -1) {return(NULL)}
+  left <- tree@left_children[node + 1]
+  right <- tree@right_children[node + 1]
+  
+  node_domain <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
+  
+  new ("H2ONode",
+       id = tree@node_ids[node + 1],
+       left_child = .h2o.walk_tree(left, tree),
+       right_child = .h2o.walk_tree(right, tree),
+       threshold = tree@thresholds[node + 1],
+       split_feature = tree@features[node + 1],
+       na_direction = tree@nas[node + 1],
+       domain = node_domain,
+       description = tree@descriptions[node + 1])
+}
 
 #' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
 #'
@@ -3172,8 +3251,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   if(is.na(tree_class)){
     tree_class_request <- "";
   }
-  res <-
-    .h2o.__remoteSend(
+  res <- .h2o.__remoteSend(
       url,
       method = "GET",
       h2oRestApiVersion = 3,
@@ -3196,6 +3274,33 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     features = res$features,
     nas = res$nas
   )
+  
+  node_index <- 0
+  left_ordered <- c()
+  right_ordered <- c()
+  node_ids <- c()
+  
+  for(i in 1:length(tree@left_children)){
+    if(tree@left_children[i] != -1){
+      node_index <- node_index + 1
+      left_ordered[i] <- node_index
+      node_ids[node_index] <- tree@left_children[i]
+    } else {
+      left_ordered[i] <- -1
+    }
+    
+    if(tree@right_children[i] != -1){
+      node_index <- node_index + 1
+      right_ordered[i] <- node_index
+      node_ids[node_index] <- tree@right_children[i]
+    } else {
+      right_ordered[i] <- -1
+    }
+  }
+  
+  tree@node_ids <- node_ids
+  tree@left_children <- as.integer(left_ordered)
+  tree@right_children <- as.integer(right_ordered)
   
   if(!is.null(res$tree_class)){
     tree@tree_class <- res$tree_class
@@ -3253,107 +3358,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       }
     }
   }
-  
+  tree@root_node <- .h2o.assemble_tree(tree)
   tree
 }
-
-setClassUnion("H2ONodeOrEmpty",members=c("H2ONode", "NULL"))
-setClass(
-  "H2ONode",
-  representation(
-    id = "integer",
-    threshold = "numeric",
-    left_child = "H2ONodeOrEmpty",
-    right_child = "H2ONodeOrEmpty",
-    split_feature = "character",
-    na_direction = "character",
-    domain = "character",
-    description = "character"
-  )
-)
-
-setMethod('show', 'H2ONode', 
-          function(object){
-            print.H2ONode(object)
-          })
-
-print.H2ONode <- function(node){
-  cat("Node ID", node@id, "\n\n")
-  if(!is.na(node@split_feature))
-    {
-    if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
-    if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
-    cat("\n")
-    cat("Splits on column", node@split_feature, "\n")
-  }else{
-      cat("This is a terminal node")
-    }
-  
-  if(is.na(node@threshold)){
-    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@domain, "\n")
-    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@domain, "\n")
-  } else {
-    cat("Split threshold", node@threshold, "\n")
-  }
-  cat("\n")
-  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
-}
-
-
-h2o.getVisitor <- function(tree){
-
-  node_index <- 0
-  left_ordered <- c()
-  right_ordered <- c()
-  
-  for(i in 1:length(tree@left_children)){
-    if(tree@left_children[i] != -1){
-      node_index <- node_index + 1
-      left_ordered[i] <- node_index
-    } else {
-      left_ordered[i] <- -1
-    }
-    
-    if(tree@right_children[i] != -1){
-      node_index <- node_index + 1
-      right_ordered[i] <- node_index
-    } else {
-      right_ordered[i] <- -1
-    }
-  }
-  
-  rootNode  <- new ("H2ONode",
-                    id = tree@root_node_id,
-                    left_child = .h2o.walk_tree(left_ordered[1], left_ordered, right_ordered, tree),
-                    right_child = .h2o.walk_tree(right_ordered[1], left_ordered, right_ordered, tree),
-                    threshold = tree@thresholds[1],
-                    split_feature = tree@features[1],
-                    na_direction = tree@nas[1],
-                    domain = NA_character_,
-                    description = tree@descriptions[1])
-  
-  
-  rootNode
-}
-
-.h2o.walk_tree <- function(node, left_ordered, right_ordered, tree){
-  if(node == -1) {return(NULL)}
-  left <- left_ordered[node + 1]
-  right <- right_ordered[node + 1]
-  
-  node_domain <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
-  
-  new ("H2ONode",
-       id = as.integer(node + 1),
-       left_child = .h2o.walk_tree(left, left_ordered, right_ordered, tree),
-       right_child = .h2o.walk_tree(right, left_ordered, right_ordered, tree),
-       threshold = tree@thresholds[node + 1],
-       split_feature = tree@features[node + 1],
-       na_direction = tree@nas[node + 1],
-       domain = node_domain,
-       description = tree@descriptions[node + 1])
-}
-
 
 #' @export
 print.h2o.stackedEnsemble.summary <- function(x, ...) cat(x, sep = "\n")
