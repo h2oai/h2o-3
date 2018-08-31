@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static water.util.FrameUtils.getColumnIndexByName;
 
-// TODO probably should call this logic from FrameUtils
+// TODO probably should call this logic from FrameUtils if we are going to expose TE for the Java API users.
 public class TargetEncoder {
 
     public static class HoldoutType {
@@ -26,7 +26,6 @@ public class TargetEncoder {
     }
 
     /**
-     *
      * @param columnNamesToEncode names of columns to apply target encoding to
      * @param targetColumnName target column index
      * @param foldColumnName should contain index of column as String. TODO Change later into suitable type.
@@ -35,7 +34,8 @@ public class TargetEncoder {
     //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
     public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName) {
 
-        //Validate input data. Not sure whether we should check some of these.
+        // Validate input data. Not sure whether we should check some of these.
+        // It will become clear when we decide if TE is going to be exposed to user or only integrated into AutoML's pipeline
 
         if(data == null) throw new IllegalStateException("Argument 'data' is missing, with no default");
 
@@ -160,6 +160,7 @@ public class TargetEncoder {
         return res;
     }
 
+    // We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
     Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
         return data.filterOutNAsInColumn(targetColumnIndex);
     }
@@ -199,7 +200,8 @@ public class TargetEncoder {
     Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
         int numeratorColumnIndex = getColumnIndexByName(data, "numerator");
         int denominatorColumnIndex = getColumnIndexByName(data, "denominator");
-        String astTree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")", data._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
+        String astTree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")",
+                data._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
         return execRapidsAndGetFrame(astTree);
     }
 
@@ -215,7 +217,8 @@ public class TargetEncoder {
 
     Frame mergeByTEColumnAndFold(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex ) {
         int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
-        String astTree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )", a._key, holdoutEncodeMap._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndexInEncodingMap);
+        String astTree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )",
+                a._key, holdoutEncodeMap._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndexInEncodingMap);
         return execRapidsAndGetFrame(astTree);
     }
 
@@ -270,19 +273,20 @@ public class TargetEncoder {
     }
 
     Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
-        // TODO int valueForSingleItemGroups = ??? ;
+        // For a Leave-One-Out case:
         // These groups have this singleness in common and we probably want to represent it somehow.
         // If we choose just global average then we just lose difference between single-row-groups that have different target values.
-        // We can:  1) calculate averages per target value.   ( num. / denom. where target = [0,1] ).
-        //              Group is so small that we even don't want to care about te_column's values.... just averages per target column's values.
-        //         2) use  #single-item-groups_target0 / #of_targets_with_target0
+        // We can: 1)(Selected) Calculate averages per target value.   ( num. / denom. where target = [0,1] ).
+        //         2) Group is so small that we even don't want to care about te_column's values.... just averages per target column's values.
         //         3) Count single-row-groups and calculate    #of_single_rows_with_target0 / #all_single_rows  ;  (and the same for target1)
-        //TODO Introduce parameter for algorithm that will choose the way of calculating new value.
+        //TODO Introduce parameter for algorithm that will choose the way of calculating of the value that is being imputed.
         int targetColumnIndex = getColumnIndexByName(fr, targetColumnName);
         int numeratorIndex = getColumnIndexByName(fr,"numerator");
         int denominatorIndex = getColumnIndexByName(fr,"denominator");
         double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
         double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;
+        // For the case when `denominator` column equals `0` we substitute it globalMean or (1 - globalMean) depending on the target value of the row.
+        // TODO for the case of Numerical target we need to compute all the globalMeans per target value and impute with properly. Now it is only correct for binary case.
         String astTree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) ( ifelse ( == (cols %s [%d]) 1) %f  %f) ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
                 fr._key , fr._key, denominatorIndex, fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass,  fr._key, numeratorIndex, fr._key, denominatorIndex, appendedColumnName);
         return execRapidsAndGetFrame(astTree);
@@ -311,6 +315,22 @@ public class TargetEncoder {
         return result;
     }
 
+    /**
+     * Core method for applying pre-calculated encodings to the dataset. There are multiple overloaded methods that we will
+     * probably be able to get rid off if we are not going to expose Java API for TE.
+     * We can just stick to one signature that will suit internal representations  of the AutoML's pipeline.
+     *
+     * @param data dataset that will be used as a base for creation of encodings .
+     * @param columnsToEncode set of columns names that we want to encode.
+     * @param targetColumnName name of the column with respect to which we were computing encodings.
+     * @param columnToEncodingMap map of the prepared encodings with the keys being the names of the columns.
+     * @param holdoutType see TargetEncoding.HoldoutType //TODO use common interface for stronger type safety.
+     * @param foldColumnName numerical column that contains fold number the row is belong to.
+     * @param withBlendedAvg whether to apply blending or not.
+     * @param noiseLevel amount of noise to add to the final encodings.
+     * @param seed we might want to specify particular values for reproducibility in tests.
+     * @return
+     */
     public Frame applyTargetEncoding(Frame data,
                                      String[] columnsToEncode,
                                      String targetColumnName,
@@ -329,7 +349,7 @@ public class TargetEncoder {
         Frame dataCopy = data.deepCopy(Key.make().toString());
         DKV.put(dataCopy);
 
-        Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataCopy, targetColumnName); // TODO target value could be NA... it is fine. Check this.
+        Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataCopy, targetColumnName);
 
         Frame dataWithAllEncodings = dataWithEncodedTarget.deepCopy(Key.make().toString());
         DKV.put(dataWithAllEncodings);
@@ -359,8 +379,10 @@ public class TargetEncoder {
                     long[] foldValues = getUniqueValuesOfTheFoldColumn(targetEncodingMap, 1);
 
                     Scope.enter();
+
+                    // Following part is actually a preparation phase for KFold case. Maybe we should move it to prepareEncodingMap method.
                     try {
-                        for (long foldValue : foldValues) { // TODO what if our te column is not represented in every foldValue? Then when merging with original dataset we will get NA'a on the right side
+                        for (long foldValue : foldValues) {
                             Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnName, foldValue);
 
                             Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
@@ -384,6 +406,7 @@ public class TargetEncoder {
                     } finally {
                         Scope.exit();
                     }
+                    // End of the preparation phase
 
                     dataWithMergedAggregations = mergeByTEColumnAndFold(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
 
@@ -391,12 +414,11 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
+                    // if column is represented only in one fold then during computation of out-of-fold subsets we will get empty aggregations.
+                    // When merging with the original dataset we will get NA'a on the right side
                     imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
 
-                    Vec removedNumK = dataWithEncodingsAndNoise.remove("numerator");
-                    removedNumK.remove();
-                    Vec removedDenK = dataWithEncodingsAndNoise.remove("denominator");
-                    removedDenK.remove();
+                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
 
                     dataWithAllEncodings.delete();
                     dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
@@ -422,10 +444,7 @@ public class TargetEncoder {
 
                     imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
 
-                    Vec removedNumLoo = dataWithEncodingsAndNoise.remove("numerator");
-                    removedNumLoo.remove();
-                    Vec removedDenLoo = dataWithEncodingsAndNoise.remove("denominator");
-                    removedDenLoo.remove();
+                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
 
                     dataWithAllEncodings.delete();
                     dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
@@ -450,10 +469,7 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
-                    Vec removedNumeratorNone = dataWithEncodingsAndNoise.remove("numerator");
-                    removedNumeratorNone.remove();
-                    Vec removedDenominatorNone = dataWithEncodingsAndNoise.remove("denominator");
-                    removedDenominatorNone.remove();
+                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
 
                     dataWithAllEncodings.delete();
                     dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
@@ -478,7 +494,6 @@ public class TargetEncoder {
             return calculateAndAppendBlendedTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
 
         } else {
-
             return calculateAndAppendTEEncoding(preparedFrame, encodingMap, targetColumnName, newEncodedColumnName);
         }
     }
@@ -491,12 +506,11 @@ public class TargetEncoder {
         }
     }
 
-    //TODO remove
-    public void checkNumRows(Frame before, Frame after) {
-        long droppedCount = before.numRows()- after.numRows();
-        if(droppedCount != 0) {
-            Log.warn(String.format("Number of rows has dropped by %d after manipulations with frame ( %s , %s ).", droppedCount, before._key, after._key));
-        }
+    void removeNumeratorAndDenominatorColumns(Frame fr) {
+        Vec removedNumeratorNone = fr.remove("numerator");
+        removedNumeratorNone.remove();
+        Vec removedDenominatorNone = fr.remove("denominator");
+        removedDenominatorNone.remove();
     }
 
     private void foldColumnIsInEncodingMapCheck(String foldColumnName, Frame targetEncodingMap) {
@@ -506,14 +520,13 @@ public class TargetEncoder {
     }
 
     Frame groupingIgnoringFordColumn(String foldColumnName, Frame targetEncodingMap, String teColumnName) {
-        if(foldColumnName != null) { // TODO we can't rely only on absence of the column name passed. User is able not to provide foldColumn name to apply method.
-          System.out.println(" #### Grouping (back) targetEncodingMap without folds");
-          int teColumnIndex = getColumnIndexByName(targetEncodingMap, teColumnName);
+        if (foldColumnName != null) {
+            int teColumnIndex = getColumnIndexByName(targetEncodingMap, teColumnName);
 
-          Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
-          renameColumn(newTargetEncodingMap, "sum_numerator", "numerator");
-          renameColumn(newTargetEncodingMap, "sum_denominator", "denominator");
-          return newTargetEncodingMap;
+            Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
+            renameColumn(newTargetEncodingMap, "sum_numerator", "numerator");
+            renameColumn(newTargetEncodingMap, "sum_denominator", "denominator");
+            return newTargetEncodingMap;
         } else {
             Frame targetEncodingMapCopy = targetEncodingMap.deepCopy(Key.make().toString());
             DKV.put(targetEncodingMapCopy);
@@ -527,7 +540,8 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      byte holdoutType,
                                      String foldColumn,
-                                     boolean withBlendedAvg) {
+                                     boolean withBlendedAvg,
+                                     double seed) {
         double defaultNoiseLevel = 0.01;
         double noiseLevel = 0.0;
         int targetIndex = getColumnIndexByName(data, targetColumnName);
@@ -537,7 +551,7 @@ public class TargetEncoder {
         } else {
             noiseLevel = defaultNoiseLevel;
         }
-        return this.applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, holdoutType, foldColumn, withBlendedAvg, noiseLevel, 1234.0); // TODO hardcoded seed
+        return this.applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, holdoutType, foldColumn, withBlendedAvg, noiseLevel, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -545,8 +559,9 @@ public class TargetEncoder {
                                      String targetColumnName,
                                      Map<String, Frame> targetEncodingMap,
                                      byte holdoutType,
-                                     boolean withBlendedAvg) {
-        return applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, holdoutType, null, withBlendedAvg);
+                                     boolean withBlendedAvg,
+                                     double seed) {
+        return applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, holdoutType, null, withBlendedAvg, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -555,12 +570,12 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      byte holdoutType,
                                      int foldColumnIndex,
-                                     boolean withBlendedAvg) {
+                                     boolean withBlendedAvg,
+                                     double seed) {
         String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String targetColumnName = getColumnNameBy(data, targetIndex);
         String foldColumnName = getColumnNameBy(data, foldColumnIndex);
-        return this.applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, holdoutType, foldColumnName, withBlendedAvg);
-
+        return this.applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, holdoutType, foldColumnName, withBlendedAvg, seed);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -576,7 +591,6 @@ public class TargetEncoder {
         String targetColumnName = getColumnNameBy(data, targetIndex);
         String foldColumnName = getColumnNameBy(data, foldColumnIndex);
         return this.applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, holdoutType, foldColumnName, withBlendedAvg, noiseLevel, seed);
-
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -604,23 +618,32 @@ public class TargetEncoder {
         return applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, holdoutType, null, withBlendedAvg, noiseLevel, seed);
     }
 
-    // TODO remove.
-    private void printOutFrameAsTable(Frame fr) {
+    //TODO usefull during development remove
+    public void checkNumRows(Frame before, Frame after) {
+        long droppedCount = before.numRows()- after.numRows();
+        if(droppedCount != 0) {
+            Log.warn(String.format("Number of rows has dropped by %d after manipulations with frame ( %s , %s ).", droppedCount, before._key, after._key));
+        }
+    }
 
+    // TODO usefull for development. remove.
+    private void printOutFrameAsTable(Frame fr) {
         TwoDimTable twoDimTable = fr.toTwoDimTable();
         System.out.println(twoDimTable.toString());
     }
-    private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
 
+    // TODO usefull for development. remove.
+    private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
         TwoDimTable twoDimTable = fr.toTwoDimTable(0, 1000000, rollups);
         System.out.println(twoDimTable.toString(2, full));
     }
+
+    // TODO usefull for development. remove.
     private void printOutColumnsMeta(Frame fr) {
         for (String header : fr.toTwoDimTable().getColHeaders()) {
             String type = fr.vec(header).get_type_str();
             int cardinality = fr.vec(header).cardinality();
             System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
         }
     }
 }

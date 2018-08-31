@@ -112,7 +112,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, true);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, true, 1234.0);
 
       // Preparing valid frame
       Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, foldColumnName, true, 0.0, 1234.0);
@@ -189,9 +189,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
 
-      //TODO does prepareEncodingMap change trainFrame somehow?
-
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, true);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.LeaveOneOut, true, 1234.0);
 
       // Preparing valid frame
       Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 0, 1234.0);
@@ -275,15 +273,15 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil{
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, teColumns, targetColumnName, null);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
+      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 1234.0);
       Scope.track(trainEncoded);
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 1234.0);
       Scope.track(validEncoded);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.None, true, 1234.0);
       Scope.track(testEncoded);
 
       // With target encoded Origin column

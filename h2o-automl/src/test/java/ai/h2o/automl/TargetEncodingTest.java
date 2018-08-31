@@ -354,7 +354,7 @@ public class TargetEncodingTest extends TestUtil{
 
       printOutFrameAsTable(targetEncodingMap.get("ColA"), true, true);
       //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 1234.0);
 
       // We expect that for `c` level we will get mean of encoded column i.e. 0.75 +- noise
       Vec expected = vec(0.75, 1.0, 0.0, 1, 1);
@@ -396,8 +396,30 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
-    public void targetEncoderKFoldHoldoutApplyingWithCustomNoiseForNumericColumnTest() {
-        //TODO
+    public void targetEncoderKFoldHoldoutApplyingWithMulticlassTargetColumnTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "fold_column")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ar(1,2,3,4,5))
+              .withDataForCol(2, ar(1, 2, 2, 3, 2))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
+
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1, 2);
+
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 2, false, 0, 1234.0);
+
+      printOutFrameAsTable(resultWithEncoding);
+      Vec expected = vec(5.0, 1.0, 4.0, 4.0, 2.5);
+      assertVecEquals(expected, resultWithEncoding.vec("ColA_te"), 1e-5);
+
+      expected.remove();
+      encodingMapCleanUp(targetEncodingMap);
+      resultWithEncoding.delete();
     }
 
     @Test
@@ -682,7 +704,7 @@ public class TargetEncodingTest extends TestUtil{
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3, false);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3, false, 1234.0);
 
     Vec expected = vec(1, 0, 1, 1, 1);
     double expectedDifferenceDueToNoise = 1e-2;
@@ -744,7 +766,7 @@ public class TargetEncodingTest extends TestUtil{
 
     printOutFrameAsTable(targetEncodingMap.get("ColA"));
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3, false);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3, false, 1234.0);
 
     printOutFrameAsTable(resultWithEncoding);
     double expectedDifferenceDueToNoise = 1e-2;
@@ -1067,8 +1089,9 @@ public class TargetEncodingTest extends TestUtil{
 
         // Check that binary categorical is ok (transformation is checked in another test)
         Frame tmp4 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 3);
-        printOutFrameAsTable(tmp4, true, true);
         Scope.track(tmp4);
+
+        assertTrue(tmp4.vec(3).isNA(3));
       } finally {
         Scope.exit();
       }
