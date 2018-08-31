@@ -23,6 +23,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     if (exists("feature_map")) {
       _model._featureMap = new String(readblob("feature_map"), "UTF-8");
     }
+    _model.postReadInit();
   }
 
   @Override
