@@ -3169,6 +3169,14 @@ setClass(
   )
 )
 
+#'
+#' Overrides the behavior of length() function on H2OTree class. Returns number of nodes in an \code{H2OTree}
+#' @param x An \code{H2OTree} to count nodes for.
+#'
+setMethod("length", signature(x = "H2OTree"), function(x) {
+  length(x@left_children)
+})
+
 
 setMethod('show', 'H2ONode', 
           function(object){
