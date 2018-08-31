@@ -54,7 +54,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       // Apply encoding to the training set
       Frame trainEncoded;
       if (withNoise) {
-        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, withBlendedAvg);
+        trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, withBlendedAvg, 1234.0);
       } else {
         trainEncoded = tec.applyTargetEncoding(airlinesTrainWithTEH, teColumns, targetColumnName, encodingMap, TargetEncoder.HoldoutType.KFold, foldColumnName, withBlendedAvg, 0, 1234.0);
       }
