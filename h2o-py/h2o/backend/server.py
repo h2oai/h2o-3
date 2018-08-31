@@ -272,6 +272,7 @@ class H2OLocalServer(object):
 
         # ...add H2O options
         cmd += ["-ip", self._ip]
+        cmd += ["-web_ip", self._ip]
         cmd += ["-port", str(port)] if port else []
         cmd += ["-baseport", str(baseport)] if baseport else []
         cmd += ["-ice_root", self._ice_root]
