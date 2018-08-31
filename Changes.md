@@ -2,6 +2,28 @@
 
 ## H2O
 
+### Wright (3.20.0.7) - 8/31/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5826'>PUBDEV-5826</a>] - Fixed an issue that caused a mismatch between GLRM MOJO predict and GLRM predict.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5841'>PUBDEV-5841</a>] - Fixed an issue that caused H2O XGBoost grid search to fail even when sizing the sessions 4xs the data size and using extramempercent of 150.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5848'>PUBDEV-5848</a>] - When performing multiple AutoML runs using the H2O R client, viewing the first AutoML leaderboard no longer results in an error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5864'>PUBDEV-5864</a>] - H2O now only binds to the local interface when started from R/Python.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5871'>PUBDEV-5871</a>] - Fixed an issue that caused DeepLearning and XGBoost MOJOs to get a corrupted input row. This occurred when GenModel's helper functions that perform 1-hot encoding failed to take correctly into considerations cases where useAllFactorLevels = false and corrupted the first categorical value in the input row.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5872'>PUBDEV-5872</a>] - Added gamma, tweedie, and poisson objective functions to the XGBoost Java Predictor.
+</li>
+</ul>
+
+
 ### Wright (3.20.0.6) - 8/24/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html</a>
