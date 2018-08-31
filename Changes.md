@@ -21,6 +21,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5872'>PUBDEV-5872</a>] - Added gamma, tweedie, and poisson objective functions to the XGBoost Java Predictor.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5877'>PUBDEV-5877</a>] - Fixed an issue in HDFS file import. In rare cases the import could fail due to temporarily inconsistent state of H2O distributed memory.
+</li>
 </ul>
 
 
