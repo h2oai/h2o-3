@@ -3143,7 +3143,6 @@ setClassUnion("H2ONodeOrNULL",members=c("H2ONode", "NULL"))
 #' @slot tree_class A \code{character} representing name of tree's class. Number of tree classes equals to the number of levels in categorical response column.
 #'                  As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
 #'                  In case of regression and binomial, the name of the categorical level is ignored can be omitted, as there is exactly one tree built in both cases.
-#' @slot root_node_id An \code{integer} representing number of the root node (may differ from 0).
 #' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
 #' @slot features A \code{character} with names of the feature/column used for the split.
 #' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
@@ -3161,7 +3160,6 @@ setClass(
     model_id = "character",
     tree_number = "integer",
     tree_class = "character",
-    root_node_id = "integer",
     thresholds = "numeric",
     features = "character",
     levels = "list",
@@ -3209,7 +3207,7 @@ print.H2ONode <- function(node){
 .h2o.assemble_tree <- function(tree){
   
   rootNode  <- new ("H2ONode",
-                    id = tree@root_node_id,
+                    id = tree@node_ids[1],
                     left_child = .h2o.walk_tree(tree@left_children[1], tree),
                     right_child = .h2o.walk_tree(tree@right_children[1], tree),
                     threshold = tree@thresholds[1],
@@ -3218,8 +3216,7 @@ print.H2ONode <- function(node){
                     domain = NA_character_,
                     description = tree@descriptions[1])
   
-  
-  rootNode
+    rootNode
 }
 
 .h2o.walk_tree <- function(node, tree){
@@ -3277,7 +3274,6 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     descriptions = res$descriptions,
     model_id = model@model_id,
     tree_number = as.integer(res$tree_number + 1),
-    root_node_id = res$root_node_id,
     thresholds = res$thresholds,
     features = res$features,
     nas = res$nas
@@ -3286,13 +3282,13 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   node_index <- 0
   left_ordered <- c()
   right_ordered <- c()
-  node_ids <- c()
+  node_ids <- c(res$root_node_id)
   
   for(i in 1:length(tree@left_children)){
     if(tree@left_children[i] != -1){
       node_index <- node_index + 1
       left_ordered[i] <- node_index
-      node_ids[node_index] <- tree@left_children[i]
+      node_ids[node_index + 1] <- tree@left_children[i]
     } else {
       left_ordered[i] <- -1
     }
@@ -3300,7 +3296,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     if(tree@right_children[i] != -1){
       node_index <- node_index + 1
       right_ordered[i] <- node_index
-      node_ids[node_index] <- tree@right_children[i]
+      node_ids[node_index + 1] <- tree@right_children[i]
     } else {
       right_ordered[i] <- -1
     }
