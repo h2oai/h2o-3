@@ -3233,7 +3233,7 @@ setMethod('show', 'H2OTree',
           })
 
 print.H2OTree <- function(tree){
-  cat(paste0("Tree related to model '", tree@model_id,"'. Tree number is"), tree@tree_number,paste0(",tree class is '",tree@tree_class), "'\n")
+  cat(paste0("Tree related to model '", tree@model_id,"'. Tree number is"), paste0(tree@tree_number,", tree class is '",tree@tree_class, "'\n"))
   cat("The tree has", length(tree), "nodes")
 }
 
@@ -3263,18 +3263,19 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 
 .h2o.walk_tree <- function(node, tree){
   if(node == -1) {return(NULL)}
-  left <- tree@left_children[node + 1]
-  right <- tree@right_children[node + 1]
+  child_node_index <- node + 1
+  left <- tree@left_children[child_node_index]
+  right <- tree@right_children[child_node_index]
   
   node_levels <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
   
   new ("H2ONode",
-       id = tree@node_ids[node + 1],
+       id = tree@node_ids[child_node_index],
        left_child = .h2o.walk_tree(left, tree),
        right_child = .h2o.walk_tree(right, tree),
-       threshold = tree@thresholds[node + 1],
-       split_feature = tree@features[node + 1],
-       na_direction = tree@nas[node + 1],
+       threshold = tree@thresholds[child_node_index],
+       split_feature = tree@features[child_node_index],
+       na_direction = tree@nas[child_node_index],
        levels = node_levels)
 }
 
