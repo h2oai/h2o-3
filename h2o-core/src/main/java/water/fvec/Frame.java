@@ -7,6 +7,7 @@ import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.task.AsQuasiBinomialTask;
+import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
 import water.parser.BufferedString;
@@ -1217,19 +1218,40 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**
-   *
-   * @param columnIndex
    * @return frame without rows with NAs in `columnIndex` column
    */
   public Frame filterOutNAsInColumn(int columnIndex) {
     Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
+    return selectByPredicate(noNaPredicateFrame);
+  }
+
+  /**
+   * @return frame with all the rows except for those whose value in the `columnIndex' column equals to `value`
+   */
+  public Frame filterNotByValue(int columnIndex, double value) {
+    return filterByValueBase(columnIndex, value, true);
+  }
+
+  /**
+   * @return frame with all the rows whose value in the `columnIndex' column equals to `value`
+   */
+  public Frame filterByValue(int columnIndex, double value) {
+    return filterByValueBase(columnIndex, value,false);
+  }
+
+  private Frame filterByValueBase(int columnIndex, double value, boolean isInverted) {
+    Frame predicateFrame = new FilterByValueTask(value, isInverted).doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
+    return selectByPredicate(predicateFrame);
+  }
+
+  private Frame selectByPredicate(Frame predicateFrame) {
     String[] names = names().clone();
     byte[] types = types().clone();
     String[][] domains = domains().clone();
 
-    add("predicate", noNaPredicateFrame.anyVec());
-    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains); // TODO here we do a copy of the Frame. probably can do better.
-    noNaPredicateFrame.delete();
+    add("predicate", predicateFrame.anyVec());
+    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains); // TODO here we do a copy of the Frame because of the outputFrame. probably can do better.
+    predicateFrame.delete();
     remove("predicate");
     return filtered;
   }
