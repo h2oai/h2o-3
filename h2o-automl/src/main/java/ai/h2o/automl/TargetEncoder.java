@@ -171,8 +171,7 @@ public class TargetEncoder {
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
         int foldColumnIndexInEncodingMap = getColumnIndexByName(encodingMap, foldColumnName);
-        String astTree = String.format("(rows %s (!= (cols %s [%d] ) %d ) )", encodingMap._key, encodingMap._key, foldColumnIndexInEncodingMap, currentFoldValue);
-        return execRapidsAndGetFrame(astTree);
+        return encodingMap.filterNotByValue(foldColumnIndexInEncodingMap, currentFoldValue);
     }
 
     long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {

@@ -168,7 +168,7 @@ public class FrameTest extends TestUtil {
   }
 
   @Test
-  public void targetEncoderFilterOutNAsTest() {
+  public void filterOutNAsTest() {
     Scope.enter();
     try {
       Frame fr = new TestFrameBuilder()
@@ -185,6 +185,49 @@ public class FrameTest extends TestUtil {
       assertEquals(1L, result.numRows());
       assertEquals(42, result.vec(0).at(0), 1e-5);
 
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void filterByValueTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_NUM, Vec.T_STR)
+              .withDataForCol(0, ard(1, 42, 33))
+              .withDataForCol(1, ar(null, "6", null))
+              .build();
+
+      Frame result = fr.filterByValue(0, 42);
+      Scope.track(result);
+
+      assertEquals(1L, result.numRows());
+      assertEquals("6", result.vec(1).stringAt(0));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void filterNotByValueTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_NUM, Vec.T_STR)
+              .withDataForCol(0, ard(1, 42, 33))
+              .withDataForCol(1, ar(null, "6", null))
+              .build();
+      Frame result = fr.filterNotByValue(0, 42);
+      Scope.track(result);
+
+      assertEquals(2L, result.numRows());
+      assertVecEquals(vec(1, 33), result.vec(0), 1e-5);
     } finally {
       Scope.exit();
     }
