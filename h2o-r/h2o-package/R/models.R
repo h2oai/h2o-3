@@ -3115,6 +3115,10 @@ h2o.deepfeatures <- function(object, data, layer) {
   h2o.getFrame(dest_key)
 }
 
+
+setClass("H2ONode") # Avoid warning about undefined class, H2ONode has circular dependency
+setClassUnion("H2ONodeOrNULL",members=c("H2ONode", "NULL"))
+
 #'
 #' The H2ONode class.
 #'
@@ -3140,7 +3144,6 @@ setClass(
     levels = "character"
   )
 )
-setClassUnion("H2ONodeOrNULL",members=c("H2ONode", "NULL"))
 
 #'
 #' The H2OTree class.
