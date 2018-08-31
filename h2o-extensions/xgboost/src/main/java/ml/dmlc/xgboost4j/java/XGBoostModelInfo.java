@@ -46,7 +46,7 @@ final public class XGBoostModelInfo extends Iced {
 
   public final Predictor getPredictor() {
     if (_predictor == null) {
-      _predictor = XGBoostJavaMojoModel.makePredictor(_boosterBytes);
+      _predictor = PredictorFactory.makePredictor(_boosterBytes);
     }
     return _predictor;
   }
