@@ -295,10 +295,9 @@ public final class PersistHdfs extends Persist {
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
+    if (fs == null) return;
     Futures futures = new Futures();
     try {
-      if( fs == null ) return;
-
       for( FileStatus file : fs.listStatus(p, HIDDEN_FILE_FILTER) ) {
         Path pfs = file.getPath();
         if(file.isDirectory()) {
