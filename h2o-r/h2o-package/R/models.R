@@ -3171,7 +3171,7 @@ print.H2ONode <- function(node){
     if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@levels, "\n")
     if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@levels, "\n")
   } else {
-    cat("Split threshold", node@threshold, "\n")
+    cat("Split threshold <", node@threshold,"to the left node, >=",node@threshold ,"to the right node\n")
   }
   cat("\n")
   if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
