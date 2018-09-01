@@ -1,9 +1,12 @@
 package hex.tree;
 
+import hex.example.ExampleModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
+import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.apache.commons.lang.ArrayUtils;
@@ -147,6 +150,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Frame tfr = null;
         GBMModel model = null;
+        GLMModel nonTreeBasedModel = null;
 
         Scope.enter();
         try {
@@ -171,6 +175,19 @@ public class TreeHandlerTest extends TestUtil {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e) {
                 assertTrue(e.getMessage().contains("Given model does not exist"));
+                exceptionThrown = true;
+            }
+            assertTrue(exceptionThrown);
+            exceptionThrown = false;
+
+            nonTreeBasedModel = new GLMModel(Key.make(), new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial),
+                    null, null, 1, 1,1);
+            DKV.put(nonTreeBasedModel);
+            args.model = new KeyV3.ModelKeyV3(nonTreeBasedModel._key);
+            try {
+                treeHandler.getTree(3, args);
+            } catch (IllegalArgumentException e) {
+                assertTrue(e.getMessage().contains("Given model is not tree-based."));
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
@@ -216,6 +233,7 @@ public class TreeHandlerTest extends TestUtil {
             Scope.exit();
             if (tfr != null) tfr.remove();
             if (model != null) model.remove();
+            if(nonTreeBasedModel != null) nonTreeBasedModel.remove();
         }
     }
 
@@ -327,7 +345,6 @@ public class TreeHandlerTest extends TestUtil {
             parms._response_column = "IsDepDelayed";
 
             // Test incorrect tree request
-            final TreeV3 args = new TreeV3();
             model = new GBM(parms).trainModel().get();
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
             final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
