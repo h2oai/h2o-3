@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
+import water.Keyed;
 import water.MemoryManager;
 import water.api.Handler;
 
@@ -16,8 +17,14 @@ public class TreeHandler extends Handler {
     private static final int NO_CHILD = -1;
 
     public TreeV3 getTree(final int version, final TreeV3 args) {
-        final SharedTreeModel model = (SharedTreeModel) args.model.key().get();
-        if (model == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
+
+        final Keyed possibleModel = args.model.key().get();
+        if (possibleModel == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
+        if(! (possibleModel instanceof SharedTreeModel)){
+            throw new IllegalArgumentException("Given model is not tree-based.");
+        }
+
+        final SharedTreeModel model = (SharedTreeModel) possibleModel;
         final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
         final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
         validateArgs(args, sharedTreeOutput, treeClass);
