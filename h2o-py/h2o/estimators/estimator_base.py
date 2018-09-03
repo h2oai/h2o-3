@@ -185,7 +185,8 @@ class H2OEstimator(ModelBase):
             parms["offset_column"] = offset_column
             parms["fold_column"] = fold_column
             parms["weights_column"] = weights_column
-            parms["max_runtime_secs"] = max_runtime_secs
+
+        if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
 
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
