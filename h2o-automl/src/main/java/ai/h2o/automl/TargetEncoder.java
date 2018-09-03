@@ -240,13 +240,10 @@ public class TargetEncoder {
         return a.addCon(appendedColumnName, columnValue);
     }
 
-    // Maybe it's better to calculate mean before any aggregations?
     double calculateGlobalMean(Frame fr) {
-        int numeratorIndex = getColumnIndexByName(fr,"numerator");
-        int denominatorIndex = getColumnIndexByName(fr,"denominator");
-        String tree = String.format("( / (sum (cols %s [%d] )) (sum (cols %s [%d] )) )", fr._key, numeratorIndex, fr._key, denominatorIndex);
-        Val val = Rapids.exec(tree);
-        return val.getNum();
+        Vec numeratorVec = fr.vec("numerator");
+        Vec denominatorVec = fr.vec("denominator");
+        return numeratorVec.mean() / denominatorVec.mean();
     }
 
     Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
