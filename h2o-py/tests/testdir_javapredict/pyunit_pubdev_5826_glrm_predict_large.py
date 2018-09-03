@@ -70,7 +70,7 @@ def get_glrm_xmatrix(train, test, K = 3, compare_predict=True, tol=1e-1):
     if transformN=="NONE" or not(compare_predict):  # bad performance with no transformation on dataset
         pyunit_utils.check_data_rows(mojoXFactor, glrmTrainFactor, num_rows=mojoXFactor.nrow)
     else:
-        pyunit_utils.compare_data_rows(mojoXFactor, glrmTrainFactor, num_rows=mojoXFactor.nrow, tol=tol)
+        pyunit_utils.compare_data_rows(mojoXFactor, glrmTrainFactor, index_list=range(2,mojoXFactor.nrows-1), tol=tol)
 
     if compare_predict: # only compare reconstructed data frames with numerical data
         pred2 = glrmModel.predict(test) # predict using mojo
