@@ -53,7 +53,7 @@ public class TreeHandler extends Handler {
 
     private static int getResponseLevelIndex(final String categorical, final SharedTreeModel.SharedTreeOutput sharedTreeOutput) {
         final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
-        final String trimmedCategorical = categorical.trim(); // Trim the categorical once - input from the user
+        final String trimmedCategorical = categorical != null ? categorical.trim() : ""; // Trim the categorical once - input from the user
 
         switch (sharedTreeOutput.getModelCategory()) {
             case Binomial:
