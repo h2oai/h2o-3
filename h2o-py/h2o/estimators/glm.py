@@ -30,6 +30,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     algo = "glm"
 
+
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
