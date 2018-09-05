@@ -18,6 +18,7 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(gbm.tree@tree_number)[1])
   expect_equal("character", class(gbm.tree@tree_class)[1])
   expect_equal("list", class(gbm.tree@levels)[1])
+  expect_equal("numeric", class(gbm.tree@predictions)[1])
   
   expect_equal(length(gbm.tree@left_children)[1], length(gbm.tree@right_children)[1])
   expect_true(is.na(match(0, gbm.tree@left_children)[1])) # There are no zeros in the list of nodes
@@ -52,6 +53,7 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(drf.tree@tree_number)[1])
   expect_equal("character", class(drf.tree@tree_class)[1]) # The value must be properly filled by the backend, even if unspecified
   expect_equal("list", class(drf.tree@levels)[1])
+  expect_equal("numeric", class(drf.tree@predictions)[1])
   
   expect_equal(length(drf.tree@left_children)[1], length(drf.tree@right_children)[1])
   expect_true(is.na(match(0, drf.tree@left_children)[1])) # There are no zeros in the list of nodes
@@ -91,6 +93,7 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(multinomial.tree@tree_number)[1])
   expect_equal("character", class(multinomial.tree@tree_class)[1]) # The value must be properly filled by the backend, even if unspecified
   expect_equal("list", class(multinomial.tree@levels)[1])
+  expect_equal("numeric", class(multinomial.tree@predictions)[1])
   
   expect_equal(length(multinomial.tree@left_children)[1], length(multinomial.tree@right_children)[1])
   expect_true(is.na(match(0, multinomial.tree@left_children)[1])) # There are no zeros in the list of nodes
@@ -130,6 +133,7 @@ test.gbm.trees <- function() {
   expect_equal("integer", class(regression.tree@tree_number)[1])
   expect_equal("character", class(regression.tree@tree_class)[1])
   expect_equal("list", class(regression.tree@levels)[1])
+  expect_equal("numeric", class(regression.tree@predictions)[1])
   
   expect_equal(length(regression.tree@left_children)[1], length(regression.tree@right_children)[1])
   expect_true(is.na(match(0, regression.tree@left_children)[1])) # There are no zeros in the list of nodes
