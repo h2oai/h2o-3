@@ -3234,14 +3234,6 @@ setClass(
   )
 )
 
-#' @rdname H2ONode-class
-#' @param object an \code{H2OTree} object.
-#' @export
-setMethod('show', 'H2OTree', 
-          function(tree){
-            print.H2OTree(tree)
-          })
-
 #' @rdname H2OTree-class
 #' @param object an \code{H2OTree} object.
 #' @export
