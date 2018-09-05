@@ -792,7 +792,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
--  **checkpoint**: (DL, DRF, GBM) Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+-  **checkpoint**: (DL, DRF, GBM) Enter a model key associated with a previously trained model. Use this option to build a new model as a continuation of a previously generated model.
 
 -  **use_all_factor_levels**: (DL, PCA) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected.
 
@@ -1084,12 +1084,12 @@ The following additional functions are available when viewing a model:
 
 - **Refresh**: Refreshes the model.
 - **Predict**: Use this model to make predictions.  
-- **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``). Note that POJOs are are not supported for XGBoost models.
-- **Download Model Deployment Package (MOJO)**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models. 
+- **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button, from the **Admin** menu, or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``). Note that POJOs are are not supported for XGBoost models.
+- **Download Model Deployment Package (MOJO)**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are available for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models. 
 - **Export**: Exports a built model.
 - **Inspect**: Inspect the model. Clicking this button displays a data table of the model parameters and output information.
 - **Delete**: Deletes the model.
-- **Download Gen Model**: Downloads the Generated Model (h2o-genmodel.jar) file for this model.
+- **Download Gen Model**: Downloads the Generated Model (h2o-genmodel.jar) file for this model. Note that this is also available from the **Admin** dropdown menu.
 
 --------------
 
