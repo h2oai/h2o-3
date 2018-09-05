@@ -189,6 +189,38 @@ public class TargetEncodingTest extends TestUtil{
     }
   }
 
+  @Test
+  public void ifStatementsWithFramesTest() {
+    Scope.enter();
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ar("yes", "no"))
+              .build();
+
+      boolean flag = false;
+      TargetEncoder tec = new TargetEncoder();
+      Frame dataWithAllEncodings = null ;
+      if(flag) {
+        Frame dataWithEncodedTarget = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, "ColB");
+        dataWithAllEncodings = dataWithEncodedTarget.deepCopy(Key.make().toString());
+        DKV.put(dataWithAllEncodings);
+
+        assertVecEquals(dataWithAllEncodings.vec("ColB"), vec(1, 0), 1E-5);
+      }
+      else {
+        dataWithAllEncodings = fr;
+      }
+
+      dataWithAllEncodings.delete();
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
     @Test
     public void prepareEncodingMapForKFoldCaseWithSomeOfTheTEValuesRepresentedOnlyInOneFold_Test() {
@@ -210,10 +242,11 @@ public class TargetEncodingTest extends TestUtil{
 
         TargetEncoder tec = new TargetEncoder();
         int[] teColumns = {0};
+        int targetColumnIndex = 2;
+        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, targetColumnIndex, 3);
 
-        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
-
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, targetColumnIndex, targetEncodingMap,
+                TargetEncoder.DataLeakageHandlingStrategy.KFold, 3, false, 0, 1234.0, true);
 
       Vec expected = vec(1, 0, 1, 1, 1);
       assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
@@ -305,7 +338,8 @@ public class TargetEncodingTest extends TestUtil{
 
       Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 3, 4);
 
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 3, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 4, false, 0, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 3, targetEncodingMap,
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, 4, false, 0, 1234.0, true);
 
       Vec expected = vec(1, 0, 1, 1, 1);
       assertVecEquals(expected, resultWithEncoding.vec(5), 1e-5);
@@ -354,7 +388,7 @@ public class TargetEncodingTest extends TestUtil{
 
       printOutFrameAsTable(targetEncodingMap.get("ColA"), true, true);
       //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3, false, 1234.0, true);
 
       // We expect that for `c` level we will get mean of encoded column i.e. 0.75 +- noise
       Vec expected = vec(0.75, 1.0, 0.0, 1, 1);
@@ -383,7 +417,7 @@ public class TargetEncodingTest extends TestUtil{
 
       Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, false, 0.02, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3, false, 0.02, 1234.0, true);
 
       TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
       System.out.println("Result table" + resultTable.toString());
@@ -411,7 +445,7 @@ public class TargetEncodingTest extends TestUtil{
 
       Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1, 2);
 
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 2, false, 0, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 2, false, 0, 1234.0, true);
 
       printOutFrameAsTable(resultWithEncoding);
       Vec expected = vec(5.0, 1.0, 4.0, 4.0, 2.5);
@@ -544,7 +578,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3, true, 0.0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3, true, 0.0, 1234.0, true);
 
         Vec encodedVec = resultWithEncoding.vec(4);
 
@@ -582,7 +616,7 @@ public class TargetEncodingTest extends TestUtil{
 
       Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
 
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, false, 0.0, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234.0, true);
 
       // For level `c` and `d` we got only one row... so after leave one out subtraction we get `0` for denominator. We need to use different formula(value) for the result.
       assertEquals(0.666667, resultWithEncoding.vec("ColA_te").at(4) , 1e-5);
@@ -649,7 +683,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut,false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut,false, 0, 1234.0, true);
 
       Vec expected = vec(1, 0, 1, 1, 1);
       assertVecEquals(expected, resultWithEncoding.vec(3), 1e-5);
@@ -676,7 +710,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3,false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 3,false, 0, 1234.0, true);
 
       Vec expected = vec(1, 0, 1, 1, 1);
       assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
@@ -704,7 +738,7 @@ public class TargetEncodingTest extends TestUtil{
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3, false, 1234.0);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 3, false, 1234.0, true);
 
     Vec expected = vec(1, 0, 1, 1, 1);
     double expectedDifferenceDueToNoise = 1e-2;
@@ -734,7 +768,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3,false, 0, 1234.0, true);
 
         Vec vec = resultWithEncoding.vec(4);
         assertEquals(0.5, vec.at(0), 1e-5);
@@ -766,7 +800,7 @@ public class TargetEncodingTest extends TestUtil{
 
     printOutFrameAsTable(targetEncodingMap.get("ColA"));
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3, false, 1234.0);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3, false, 1234.0, true);
 
     printOutFrameAsTable(resultWithEncoding);
     double expectedDifferenceDueToNoise = 1e-2;
@@ -800,7 +834,7 @@ public class TargetEncodingTest extends TestUtil{
     printOutFrameAsTable(targetEncodingMap.get("ColA"))
     ;
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 2, false, 0.0, 1234);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 2, false, 0.0, 1234, true);
 
     printOutFrameAsTable(resultWithEncoding, true, true);
     double expectedDifferenceDueToNoise = 1e-5;
@@ -846,7 +880,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3,false, 0, 1234.0, true);
         Frame sortedBy2 = resultWithEncoding.sort(new int[]{2});
         Vec encodingForColumnA_Multiple = sortedBy2.vec(4);
         Frame sortedBy0 = resultWithEncoding.sort(new int[]{0});
@@ -858,7 +892,7 @@ public class TargetEncodingTest extends TestUtil{
 
         int[] indexForColumnA = Arrays.copyOfRange(teColumns, 0, 1);
         Map<String, Frame> targetEncodingMapForColumnA = tec.prepareEncodingMap(frA, indexForColumnA, 2, 3);
-        Frame resultWithEncodingForColumnA = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumnA, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Frame resultWithEncodingForColumnA = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumnA, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3,false, 0, 1234.0, true);
         Vec encodingForColumnA_Single = resultWithEncodingForColumnA.vec(4);
 
         assertVecEquals(encodingForColumnA_Single, encodingForColumnA_Multiple, 1e-5);
@@ -868,7 +902,7 @@ public class TargetEncodingTest extends TestUtil{
 
         int[] indexForColumnB = Arrays.copyOfRange(teColumns, 1, 2);
         Map<String, Frame> targetEncodingMapForColumnB = tec.prepareEncodingMap(frB, indexForColumnB, 2, 3);
-        Frame resultWithEncodingForColumnB = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumnB, TargetEncoder.HoldoutType.KFold, 3,false, 0, 1234.0);
+        Frame resultWithEncodingForColumnB = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumnB, TargetEncoder.DataLeakageHandlingStrategy.KFold, 3,false, 0, 1234.0, true);
         Frame sortedByColA = resultWithEncodingForColumnB.sort(new int[]{0});
         Vec encodingForColumnB_Single = sortedByColA.vec(4);
         assertVecEquals(encodingForColumnB_Single, encodingForColumnB_Multiple, 1e-5);
@@ -905,7 +939,7 @@ public class TargetEncodingTest extends TestUtil{
 
       Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.LeaveOneOut, 3, false, 0, 1234.0);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 3, false, 0, 1234.0, true);
       Frame sortedBy1 = resultWithEncoding.sort(new int[]{1});
       Vec encodingForColumnA_Multiple = sortedBy1.vec(4);
       Frame sortedBy0 = resultWithEncoding.sort(new int[]{0});
@@ -917,7 +951,7 @@ public class TargetEncodingTest extends TestUtil{
 
       int[] indexForColumnA = Arrays.copyOfRange(teColumns, 0, 1);
       Map<String, Frame> targetEncodingMapForColumn1 = tec.prepareEncodingMap(frA, indexForColumnA, 2, 3);
-      Frame resultWithEncodingForColumn1 = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumn1, TargetEncoder.HoldoutType.LeaveOneOut, 3, false, 0, 1234.0);
+      Frame resultWithEncodingForColumn1 = tec.applyTargetEncoding(frA, indexForColumnA, 2, targetEncodingMapForColumn1, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 3, false, 0, 1234.0, true);
       Frame sortedSingleColumn1ByColA = resultWithEncodingForColumn1.sort(new int[]{0});
       Vec encodingForColumnA_Single = sortedSingleColumn1ByColA.vec(4);
 
@@ -928,7 +962,7 @@ public class TargetEncodingTest extends TestUtil{
 
       int[] indexForColumnB = Arrays.copyOfRange(teColumns, 1, 2);
       Map<String, Frame> targetEncodingMapForColumn2 = tec.prepareEncodingMap(frB, indexForColumnB, 2, 3);
-      Frame resultWithEncodingForColumn2 = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumn2, TargetEncoder.HoldoutType.LeaveOneOut, 3, false, 0, 1234.0);
+      Frame resultWithEncodingForColumn2 = tec.applyTargetEncoding(frB, indexForColumnB, 2, targetEncodingMapForColumn2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 3, false, 0, 1234.0, true);
       Frame sortedSingleColumn2ByColA = resultWithEncodingForColumn2.sort(new int[]{0});
       Vec encodingForColumnB_Single = sortedSingleColumn2ByColA.vec(4);
 
@@ -965,7 +999,7 @@ public class TargetEncodingTest extends TestUtil{
 
         Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.HoldoutType.None, 3,false, 0, 1234.0);
+        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3,false, 0, 1234.0, true);
 
         printOutFrameAsTable(resultWithEncoding);
         // TODO We need vec(..) for doubles to make it easier.
