@@ -1,8 +1,7 @@
 package water;
 
 import org.junit.*;
-import water.fvec.Vec;
-import water.fvec.Chunk;
+import water.fvec.*;
 import water.util.PrettyPrint;
 
 import java.util.concurrent.atomic.AtomicInteger;
