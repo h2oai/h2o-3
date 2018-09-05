@@ -1,8 +1,6 @@
 package ai.h2o.automl;
 
-import water.DKV;
-import water.Key;
-import water.Scope;
+import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -23,6 +21,16 @@ public class TargetEncoder {
         public static final byte LeaveOneOut  =  0;
         public static final byte KFold  =  1;
         public static final byte None  =  2;
+    }
+
+    public static class BlendingParams extends Iced<BlendingParams> {
+      private long k;
+      private long f;
+
+      BlendingParams(long k, long f) {
+        this.k = k;
+        this.f = f;
+      }
     }
 
     /**
@@ -246,58 +254,106 @@ public class TargetEncoder {
         return numeratorVec.mean() / denominatorVec.mean();
     }
 
-    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
-        int numeratorIndex = getColumnIndexByName(fr,"numerator");
-        int denominatorIndex = getColumnIndexByName(fr,"denominator");
+    Frame calculateAndAppendBlendedTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName) {
+      int numeratorIndex = getColumnIndexByName(fr, "numerator");
+      int denominatorIndex = getColumnIndexByName(fr, "denominator");
 
-        double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
+      double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
+      BlendingParams blendingParams = new BlendingParams(20, 10);
 
-        String denominatorIsZeroSubstitutionTerm = getDenominatorIsZeroSubstitutionTerm(fr, targetColumnName, globalMeanForTargetClass);
-
-        int k = 20;
-        int f = 10;
-        String expTerm = String.format("(exp ( / ( - %d (cols %s [%s] )) %d ))", k, fr._key, denominatorIndex, f);
-        String lambdaTerm = String.format("(  / 1     ( + 1 %s  )  ) ", expTerm);
-
-        String oneMinusLambdaMultGlobalTerm = String.format(" ( * ( - 1 %s ) %f)", lambdaTerm, globalMeanForTargetClass);
-
-        String localTerm = String.format("( ifelse ( == (cols %s [%d]) 0 ) ( %s ) ( / (cols %s [%d]) (cols %s [%d])) )",
-                fr._key, denominatorIndex, denominatorIsZeroSubstitutionTerm, fr._key,  numeratorIndex, fr._key, denominatorIndex);
-        String lambdaMultLocalTerm = String.format("( * %s  %s  )", lambdaTerm, localTerm);
-        String treeForLambda = String.format("( append %s ( + %s  %s )  '%s' )", fr._key, oneMinusLambdaMultGlobalTerm, lambdaMultLocalTerm, appendedColumnName);
-        return execRapidsAndGetFrame(treeForLambda);
+      Frame frameWithBlendedEncodings = new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
+      fr.add(appendedColumnName, frameWithBlendedEncodings.anyVec());
+      return fr;
     }
 
-    Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName ) {
-        // For a Leave-One-Out case:
-        // These groups have this singleness in common and we probably want to represent it somehow.
-        // If we choose just global average then we just lose difference between single-row-groups that have different target values.
-        // We can: 1)(Selected) Calculate averages per target value.   ( num. / denom. where target = [0,1] ).
-        //         2) Group is so small that we even don't want to care about te_column's values.... just averages per target column's values.
-        //         3) Count single-row-groups and calculate    #of_single_rows_with_target0 / #all_single_rows  ;  (and the same for target1)
-        //TODO Introduce parameter for algorithm that will choose the way of calculating of the value that is being imputed.
-        int numeratorIndex = getColumnIndexByName(fr,"numerator");
-        int denominatorIndex = getColumnIndexByName(fr,"denominator");
+    static class CalcEncodingsWithBlending extends MRTask<CalcEncodingsWithBlending> {
+      private double globalMean;
+      private int numeratorIdx;
+      private int denominatorIdx;
+      private BlendingParams blendingParams;
 
-        double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
+      CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double globalMean, BlendingParams blendingParams) {
+        this.numeratorIdx = numeratorIdx;
+        this.denominatorIdx = denominatorIdx;
+        this.globalMean = globalMean;
+        this.blendingParams = blendingParams;
+      }
 
-        String denominatorIsZeroSubstitutionTerm = getDenominatorIsZeroSubstitutionTerm(fr, targetColumnName, globalMeanForTargetClass);
-
-        // For the case when `denominator` column equals `0` we substitute it globalMean or (1 - globalMean) depending on the target value of the row.
-        // TODO for the case of Numerical target we need to compute all the globalMeans per target value and impute with properly. Now it is only correct for binary case.
-        String astTree = String.format("( append %s ( ifelse ( == (cols %s [%d]) 0 ) ( %s) ( / (cols %s [%d]) (cols %s [%d])) ) '%s' )",
-                fr._key , fr._key, denominatorIndex, denominatorIsZeroSubstitutionTerm,  fr._key, numeratorIndex, fr._key, denominatorIndex, appendedColumnName);
-        return execRapidsAndGetFrame(astTree);
+      @Override
+      public void map(Chunk cs[], NewChunk ncs[]) {
+        Chunk num = cs[numeratorIdx];
+        Chunk den = cs[denominatorIdx];
+        NewChunk nc = ncs[0];
+        for (int i = 0; i < num._len; i++) {
+          if (num.isNA(i) || den.isNA(i))
+            nc.addNA();
+          else if (den.at8(i) == 0) {
+            nc.addNum(globalMean);
+          } else {
+            double lambda = 1.0 / (1 + Math.exp((blendingParams.k - den.atd(i)) / blendingParams.f));
+            double blendedValue = lambda * (num.atd(i) / den.atd(i)) + (1 - lambda) * globalMean;
+            nc.addNum(blendedValue);
+          }
+        }
+      }
     }
 
+    Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String targetColumnName, String appendedColumnName) {
+      int numeratorIndex = getColumnIndexByName(fr, "numerator");
+      int denominatorIndex = getColumnIndexByName(fr, "denominator");
+
+      double globalMeanForTargetClass = calculateGlobalMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
+
+      //I can do a trick with appending a zero column and then we can map there an encodings.
+      Frame frameWithEncodings = new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass).doAll(Vec.T_NUM, fr).outputFrame();
+      fr.add(appendedColumnName, frameWithEncodings.anyVec()); // Can we just add(append)? Would the order be preserved?
+      return fr;
+    }
+
+
+    static class CalcEncodings extends MRTask<CalcEncodings> {
+      private double globalMean;
+      private int numeratorIdx;
+      private int denominatorIdx;
+
+      CalcEncodings(int numeratorIdx, int denominatorIdx, double globalMean) {
+        this.numeratorIdx = numeratorIdx;
+        this.denominatorIdx = denominatorIdx;
+        this.globalMean = globalMean;
+      }
+
+      @Override
+      public void map(Chunk cs[], NewChunk ncs[]) {
+        Chunk num = cs[numeratorIdx];
+        Chunk den = cs[denominatorIdx];
+        NewChunk nc = ncs[0];
+        for (int i = 0; i < num._len; i++) {
+          if (num.isNA(i) || den.isNA(i))
+            nc.addNA();
+          else if (den.at8(i) == 0) {
+            nc.addNum(globalMean);
+          } else {
+            nc.addNum(num.atd(i) / den.atd(i));
+          }
+        }
+      }
+    }
+
+    //TODO think about what value could be used for substitution ( maybe even taking into account target's value)
     private String getDenominatorIsZeroSubstitutionTerm(Frame fr, String targetColumnName, double globalMeanForTargetClass) {
+      // This should happen only for Leave-One-Out case:
+      // These groups have this singleness in common and we probably want to represent it somehow.
+      // If we choose just global average then we just lose difference between single-row-groups that have different target values.
+      // We can: 1) Group is so small that we even don't want to care about te_column's values.... just use Prior average.
+      //         2) Count single-row-groups and calculate    #of_single_rows_with_target0 / #all_single_rows  ;  (and the same for target1)
+      //TODO Introduce parameter for algorithm that will choose the way of calculating of the value that is being imputed.
       String denominatorIsZeroSubstitutionTerm;
 
       if(targetColumnName == null) { // When we calculating encodings for instances without target values.
         denominatorIsZeroSubstitutionTerm = String.format("%s", globalMeanForTargetClass);
       } else {
         int targetColumnIndex = getColumnIndexByName(fr, targetColumnName);
-        double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;
+        double globalMeanForNonTargetClass = 1 - globalMeanForTargetClass;  // This is probably a bad idea to use frequencies for `0` class when we use frequencies for `1` class elsewhere
         denominatorIsZeroSubstitutionTerm = String.format("ifelse ( == (cols %s [%d]) 1) %f  %f", fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass);
       }
       return denominatorIsZeroSubstitutionTerm;
@@ -309,22 +365,39 @@ public class TargetEncoder {
         return execRapidsAndGetFrame(tree);
     }
 
-    Frame subtractTargetValueForLOO(Frame data, String targetColumnName)  {
-        int numeratorIndex = getColumnIndexByName(data,"numerator");
-        int denominatorIndex = getColumnIndexByName(data,"denominator");
-        int targetIndex = getColumnIndexByName(data, targetColumnName);
+    Frame subtractTargetValueForLOO(Frame data, String targetColumnName) {
+      int numeratorIndex = getColumnIndexByName(data, "numerator");
+      int denominatorIndex = getColumnIndexByName(data, "denominator");
+      int targetIndex = getColumnIndexByName(data, targetColumnName);
 
-        String treeNumerator = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) )   (cols %s [%d] )   (- (cols %s [%d] )  (cols %s [%d] )  ) )  [%d] [] )",
-                data._key, data._key, targetIndex, data._key, numeratorIndex, data._key, numeratorIndex, data._key, targetIndex,  numeratorIndex);
-        Frame withNumeratorSubtracted = execRapidsAndGetFrame(treeNumerator);
-
-        Key<Frame> tmpNumeratorFrame = withNumeratorSubtracted._key;
-        String treeDenominator = String.format("(:= %s (ifelse (is.na (cols %s [%d] ) )   (cols %s [%d] )   (- (cols %s [%d] )  1  ) )  [%d] [] )",
-                tmpNumeratorFrame, tmpNumeratorFrame, targetIndex, tmpNumeratorFrame, denominatorIndex, tmpNumeratorFrame, denominatorIndex, denominatorIndex);
-        Frame result = execRapidsAndGetFrame(treeDenominator);
-        withNumeratorSubtracted.delete();
-        return result;
+      new SubtractCurrentRowForLeaveOneOutTask(numeratorIndex, denominatorIndex, targetIndex).doAll(data);
+      return data;
     }
+
+    public static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
+      int numeratorIdx;
+      int denominatorIdx;
+      int targetIdx;
+
+    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
+      this.numeratorIdx = numeratorIdx;
+      this.denominatorIdx = denominatorIdx;
+      this.targetIdx = targetIdx;
+    }
+
+    @Override
+    public void map(Chunk cs[]) {
+      Chunk num = cs[numeratorIdx];
+      Chunk den = cs[denominatorIdx];
+      Chunk target = cs[targetIdx];
+      for (int i = 0; i < num._len; i++) {
+        if (! target.isNA(i)) {
+          num.set(i, num.atd(i) - target.atd(i));
+          den.set(i, den.atd(i) - 1);
+        }
+      }
+    }
+  }
 
     /**
      * Core method for applying pre-calculated encodings to the dataset. There are multiple overloaded methods that we will

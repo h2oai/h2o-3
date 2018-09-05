@@ -5,9 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.TwoDimTable;
@@ -484,6 +482,94 @@ public class TargetEncodingTest extends TestUtil{
         assertEquals(result, 0.5, 1e-5);
     }
 
+
+    @Test
+    public void mapOverTheFrameWithImmutableApproachTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c"))
+              .withDataForCol(1, ar(1,2,3))
+              .withDataForCol(2, ar(4,5,6))
+              .build();
+
+      Frame oneColumnMultipliedOnly = new CalculatedColumnTask(1).doAll(Vec.T_NUM, fr).outputFrame();
+
+      printOutFrameAsTable(oneColumnMultipliedOnly);
+      assertEquals(1, oneColumnMultipliedOnly.numCols());
+
+      Vec expectedVec = vec(2, 4, 6);
+      Vec outcomeVec = oneColumnMultipliedOnly.vec(0);
+      assertVecEquals(expectedVec, outcomeVec, 1e-5);
+
+      expectedVec.remove();
+      outcomeVec.remove();
+      oneColumnMultipliedOnly.delete();
+    }
+
+    public static class CalculatedColumnTask extends MRTask<CalculatedColumnTask> {
+      long columnIndex;
+
+      public CalculatedColumnTask(long columnIndex) {
+        this.columnIndex = columnIndex;
+      }
+
+      @Override
+      public void map(Chunk cs[], NewChunk ncs[]) {
+        for (int col = 0; col < cs.length; col++) {
+          if (col == columnIndex) {
+            Chunk c = cs[col];
+            NewChunk nc = ncs[0];
+            for (int i = 0; i < c._len; i++)
+              nc.addNum(c.at8(i) * 2);
+          }
+
+
+        }
+      }
+    }
+
+  @Test
+  public void mutateOnlyParticularColumnsOfTheFrameTest() {
+      fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA", "ColB", "ColC")
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "c"))
+            .withDataForCol(1, ar(1,2,3))
+            .withDataForCol(2, ar(4,5,6))
+            .build();
+
+    new TestMutableTask(1).doAll(fr);
+
+    printOutFrameAsTable(fr);
+    assertEquals(3, fr.numCols());
+
+    Vec expected = vec(2, 4, 6);
+    assertVecEquals(expected, fr.vec(1), 1e-5);
+
+    expected.remove();
+  }
+
+
+  public static class TestMutableTask extends MRTask<TestMutableTask> {
+    long columnIndex;
+    public TestMutableTask(long columnIndex) {
+      this.columnIndex = columnIndex;
+    }
+    @Override
+    public void map(Chunk cs[]) {
+      for (int col = 0; col < cs.length; col++) {
+        if(col == columnIndex) {
+          for (int i = 0; i < cs[col]._len; i++) {
+            long value = cs[col].at8(i);
+            cs[col].set(i, value * 2);
+          }
+        }
+      }
+    }
+  }
     // ----------------------------- blended average -----------------------------------------------------------------//
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
@@ -550,14 +636,39 @@ public class TargetEncodingTest extends TestUtil{
       Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
 
       double globalMean = 2.0 / 3;
-      double lambda2 = 1.0 / (1 + Math.exp((20.0 - 0) / 10));
-      double te2 = (1.0 - lambda2) * globalMean + (lambda2 * (1 - globalMean)); //because target value for row b is 0 we use (1 - globalMean) substitution.
-
-      assertEquals(te2, result.vec(4).at(1), 1e-5);
+      assertEquals(globalMean, result.vec(4).at(1), 1e-5);
       assertFalse(result.vec(2).isNA(1));
 
       encodingMapCleanUp(targetEncodingMap);
       result.delete();
+    }
+
+    @Test
+    public void calculateAndAppendBlendedTEEncodingPerformanceTest() {
+      long startTimeEncoding = System.currentTimeMillis();
+
+      int numberOfRuns = 50;
+      for(int i = 0; i < numberOfRuns; i ++) {
+        Frame fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("numerator", "denominator", "target")
+                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+                .withRandomDoubleDataForCol(0, 1000000, 0, 50)
+                .withRandomDoubleDataForCol(1, 1000000, 1, 100)
+                .withRandomBinaryDataForCol(2, 1000000)
+                .build();
+
+        TargetEncoder.BlendingParams blendingParams = new TargetEncoder.BlendingParams(20, 10);
+
+
+        Frame frameWithBlendedEncodings = new TargetEncoder.CalcEncodingsWithBlending(0, 1, 42, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
+        fr.add("encoded", frameWithBlendedEncodings.anyVec());
+        fr.delete();
+      }
+      long finishTimeEncoding = System.currentTimeMillis();
+      System.out.println("Calculation of encodings took(ms): " + (finishTimeEncoding - startTimeEncoding));
+      System.out.println("Avg calculation of encodings took(ms): " + (double)(finishTimeEncoding - startTimeEncoding) / numberOfRuns);
+
     }
 
     @Ignore
@@ -619,8 +730,8 @@ public class TargetEncodingTest extends TestUtil{
       Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234.0, true);
 
       // For level `c` and `d` we got only one row... so after leave one out subtraction we get `0` for denominator. We need to use different formula(value) for the result.
-      assertEquals(0.666667, resultWithEncoding.vec("ColA_te").at(4) , 1e-5);
-      assertEquals(0.33333, resultWithEncoding.vec("ColA_te").at(5) ,  1e-5);
+      assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(4) , 1e-5);
+      assertEquals(0.66666, resultWithEncoding.vec("ColA_te").at(5) ,  1e-5);
 
       encodingMapCleanUp(targetEncodingMap);
       resultWithEncoding.delete();
