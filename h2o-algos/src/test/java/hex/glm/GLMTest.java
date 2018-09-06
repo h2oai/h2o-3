@@ -1733,6 +1733,7 @@ public class GLMTest  extends TestUtil {
       params._lambda_search = true;
       params._nfolds = 3;
       params._standardize = false;
+      params._keep_cross_validation_models = true;
       GLM glm = new GLM(params);
       model = glm.trainModel().get();
     } finally {

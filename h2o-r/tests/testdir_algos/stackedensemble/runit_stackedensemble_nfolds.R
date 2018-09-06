@@ -119,7 +119,8 @@ stackedensemble.nfolds.test <- function() {
                                 y = y,
                                 training_frame = train,
                                 base_models = list(my_gbm, my_rf),
-                                metalearner_fold_column = fold_column)
+                                metalearner_fold_column = fold_column,
+                                metalearner_params = list(keep_cross_validation_models=T))
   # Check that metalearner_fold_column is correctly stored in model output
   expect_equal(stack4@parameters$metalearner_fold_column$column_name, fold_column)
   expect_equal(stack4@allparameters$metalearner_fold_column$column_name, fold_column)

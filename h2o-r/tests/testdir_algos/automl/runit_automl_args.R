@@ -107,6 +107,7 @@ automl.args.test <- function() {
                      training_frame = train,
                      fold_column = fold_column,
                      max_models = max_models,
+                     keep_cross_validation_models = TRUE,
                      project_name = "aml9")
   model_ids <- as.character(as.data.frame(aml9@leaderboard[,"model_id"])[,1])
   amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))

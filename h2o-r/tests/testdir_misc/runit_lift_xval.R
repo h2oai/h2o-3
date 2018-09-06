@@ -36,7 +36,8 @@ test.xval.lift <- function(conn){
 	dim(a)
 	
 	#Build gbm by specifying the fold column
-	gg = h2o.gbm(x = myX,y = myY,training_frame = a,ntrees = 5,fold_column = "x",keep_cross_validation_predictions = T,model_id = "cv_gbm")
+	gg = h2o.gbm(x = myX,y = myY,training_frame = a,ntrees = 5,fold_column = "x",model_id = "cv_gbm",
+				 keep_cross_validation_models = T, keep_cross_validation_predictions = T)
 
 	#Collect the cross-validation models
 	cv1 = h2o.getModel("cv_gbm_cv_1")

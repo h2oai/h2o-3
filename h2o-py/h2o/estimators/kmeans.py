@@ -24,10 +24,11 @@ class H2OKMeansEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
-                      "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "ignored_columns",
-                      "ignore_const_cols", "score_each_iteration", "k", "estimate_k", "user_points", "max_iterations",
-                      "standardize", "seed", "init", "max_runtime_secs", "categorical_encoding"}
+        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
+                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
+                      "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
+                      "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
+                      "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -82,6 +83,21 @@ class H2OKMeansEstimator(H2OEstimator):
     def nfolds(self, nfolds):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
+
+
+    @property
+    def keep_cross_validation_models(self):
+        """
+        Whether to keep the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("keep_cross_validation_models")
+
+    @keep_cross_validation_models.setter
+    def keep_cross_validation_models(self, keep_cross_validation_models):
+        assert_is_type(keep_cross_validation_models, None, bool)
+        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
 
     @property

@@ -1407,6 +1407,7 @@ public class GBMTest extends TestUtil {
       DKV.put(tfr);
       parms._ntrees = 10;
       parms._keep_cross_validation_fold_assignment = true;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1450,6 +1451,7 @@ public class GBMTest extends TestUtil {
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
       parms._ntrees = 10;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1483,6 +1485,7 @@ public class GBMTest extends TestUtil {
       parms._response_column = "economy_20mpg";
       parms._fold_column = "folds";
       parms._ntrees = 10;
+      parms._keep_cross_validation_models = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();

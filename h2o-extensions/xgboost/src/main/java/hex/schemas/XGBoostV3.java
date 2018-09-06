@@ -14,6 +14,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "training_frame",
         "validation_frame",
         "nfolds",
+        "keep_cross_validation_models",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "score_each_iteration",

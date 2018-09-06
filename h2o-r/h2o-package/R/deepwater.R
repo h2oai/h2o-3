@@ -23,6 +23,7 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -110,6 +111,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           balance_classes = FALSE,
                           max_after_balance_size = 5.0,
                           class_sampling_factors = NULL,
+                          keep_cross_validation_models = FALSE,
                           keep_cross_validation_predictions = FALSE,
                           keep_cross_validation_fold_assignment = FALSE,
                           fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -214,6 +216,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))

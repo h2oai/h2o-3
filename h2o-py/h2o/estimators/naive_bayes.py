@@ -29,7 +29,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "nfolds", "seed", "fold_assignment", "fold_column",
+        names_list = {"model_id", "nfolds", "seed", "fold_assignment", "fold_column", "keep_cross_validation_models",
                       "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "training_frame",
                       "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                       "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
@@ -105,6 +105,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def fold_column(self, fold_column):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
+
+
+    @property
+    def keep_cross_validation_models(self):
+        """
+        Whether to keep the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("keep_cross_validation_models")
+
+    @keep_cross_validation_models.setter
+    def keep_cross_validation_models(self, keep_cross_validation_models):
+        assert_is_type(keep_cross_validation_models, None, bool)
+        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
 
     @property

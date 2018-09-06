@@ -590,16 +590,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing "+N+"-fold cross-validation metrics.");
-    mainModel._output._cross_validation_models = new Key[N];
+    Key<M>[] cvModKeys = new Key[N];
+    mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
 
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
       Key<M> cvModelKey = cvModelBuilders[i]._result;
-      mainModel._output._cross_validation_models[i] = cvModelKey;
+      cvModKeys[i] = cvModelKey;
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
+
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -614,13 +616,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.untrack(xvalidation_fold_assignment_frame.keysList());
     }
     // Keep or toss predictions
-    for (Key<Frame> k : predKeys) {
-      Frame fr = DKV.getGet(k);
-      if( fr != null ) {
-        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keysList());
-        else fr.remove();
+    if (_parms._keep_cross_validation_predictions) {
+      for (Key<Frame> k : predKeys) {
+        Frame fr = DKV.getGet(k);
+        if (fr != null) Scope.untrack(fr.keysList());
       }
+    } else {
+      int count = Model.deleteAll(predKeys);
+      Log.info(count+" CV predictions were removed");
     }
+
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -628,8 +633,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
+    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
-    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(mainModel._output._cross_validation_models);
+    if (!_parms._keep_cross_validation_models) {
+      int count = Model.deleteAll(cvModKeys);
+      Log.info(count+" CV models were removed");
+    }
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
@@ -971,6 +980,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // hide cross-validation parameters unless cross-val is enabled
     if (!nFoldCV()) {
+      hide("_keep_cross_validation_models", "Only for cross-validation.");
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");

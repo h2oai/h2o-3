@@ -24,6 +24,7 @@
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param training_frame Id of the training data frame.
@@ -70,6 +71,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            seed = -1,
                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                            fold_column = NULL,
+                           keep_cross_validation_models = FALSE,
                            keep_cross_validation_predictions = FALSE,
                            keep_cross_validation_fold_assignment = FALSE,
                            validation_frame = NULL,
@@ -135,6 +137,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))

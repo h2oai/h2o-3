@@ -51,6 +51,10 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public int nfolds;
 
   @API(level = API.Level.expert, direction = API.Direction.INOUT,
+      help = "Whether to keep the cross-validation models.")
+  public boolean keep_cross_validation_models;
+
+  @API(level = API.Level.expert, direction = API.Direction.INOUT,
       help = "Whether to keep the predictions of the cross-validation models.")
   public boolean keep_cross_validation_predictions;
 

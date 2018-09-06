@@ -1,10 +1,12 @@
 package hex;
 
+import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleMojoWriter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBMModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -74,9 +76,39 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       deeplearning
     }
     public MetalearnerAlgorithm _metalearner_algorithm = MetalearnerAlgorithm.AUTO;
-    public String _metalearner_params = new String();
+    public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
+
+    /**
+     * initialize {@link #_metalearner_parameters} with default parameters for the current {@link #_metalearner_algorithm}.
+     */
+    public void initMetalearnerParams() {
+      initMetalearnerParams(_metalearner_algorithm);
+    }
+
+    /**
+     * initialize {@link #_metalearner_parameters} with default parameters for the given algorithm
+     * @param algo the metalearner algorithm we want to use and for which parameters are initialized.
+     */
+    public void initMetalearnerParams(MetalearnerAlgorithm algo) {
+      _metalearner_algorithm = algo;
+      switch (algo) {
+        case AUTO:
+        case glm:
+          _metalearner_parameters = new GLMModel.GLMParameters();
+          break;
+        case gbm:
+          _metalearner_parameters = new GBMModel.GBMParameters();
+          break;
+        case drf:
+          _metalearner_parameters = new DRFModel.DRFParameters();
+          break;
+        case deeplearning:
+          _metalearner_parameters = new DeepLearningModel.DeepLearningParameters();
+          break;
+      }
+    }
 
   }
 
@@ -427,25 +459,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   @Override
   public void deleteCrossValidationModels() {
-    if (_output._metalearner._output._cross_validation_models != null) {
-      for (Key k : _output._metalearner._output._cross_validation_models) {
-        Model m = DKV.getGet(k);
-        if (m!=null) m.delete(); //delete all subparts
-      }
-    }
+    _output._metalearner.deleteCrossValidationModels();
   }
 
   @Override
   public void deleteCrossValidationPreds() {
-    if (_output._metalearner._output._cross_validation_predictions != null) {
-      for (Key k : _output._metalearner._output._cross_validation_predictions) {
-        Frame f = DKV.getGet(k);
-        if (f!=null) f.delete();
-      }
-    }
-    if (_output._metalearner._output._cross_validation_holdout_predictions_frame_id != null) {
-      _output._metalearner._output._cross_validation_holdout_predictions_frame_id.remove();
-    }
+    _output._metalearner.deleteCrossValidationPreds();
   }
 
 }

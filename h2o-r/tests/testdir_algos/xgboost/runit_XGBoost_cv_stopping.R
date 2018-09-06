@@ -9,7 +9,7 @@ test.xgboost.cv_stopping <- function() {
     iris.hex <- h2o.importFile(locate("smalldata/iris/iris_wheader.csv"))
 
     xgb.model <- h2o.xgboost(y = "class", training_frame = iris.hex, ntrees = 100, nfold = 5, seed = 123,
-                             stopping_rounds = 5, score_tree_interval = 5)
+                             stopping_rounds = 5, score_tree_interval = 5, keep_cross_validation_models=T)
 
     ntrees <- sapply(1:5, function(i) {
         cv.name <- xgb.model@model$cross_validation_models[[i]]$name
