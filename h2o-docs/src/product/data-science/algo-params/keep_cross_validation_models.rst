@@ -1,23 +1,21 @@
-``keep_cross_validation_fold_assignment``
------------------------------------------
+``keep_cross_validation_models``
+-------------------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-When performing cross-validation, data is split into subsets using either the ``fold_column`` or ``fold_assignment`` parameter. You can then specify to save each of the outputted fold assignments by enabling the ``keep_cross_validation_fold_assignment`` option. Note that this option is disabled by default.
+N-fold cross-validation is used to validate a model internally, i.e., to estimate the model performance without having to sacrifice a validation split. When building cross-validated models, H2O builds ``nfolds+1`` models: ``nfolds`` cross-validated models and 1 overarching model over all of the training data. For example, if you specify ``nfolds=5``, then 6 models are built. The first 5 models are the cross-validation models and are built on 80% of the training data. You can save each of these models for further inspection by enabling the ``keep_cross_validation_models`` option. Note that this option is disabled by default.
 
-More information about cross-validation is available in the `Cross-Validation <../../cross-validation.html>`__ section. 
+More information is available in the `Cross-Validation <../../cross-validation.html>`__ section. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `fold_assignment <fold_assignment.html>`__
-- `fold_column <fold_column.html>`__
-- `keep_cross_validation_models <keep_cross_validation_models.html>`__
 - `keep_cross_validation_predictions <keep_cross_validation_predictions.html>`__
+- `keep_cross_validation_fold_assignment <keep_cross_validation_fold_assignment.html>`__
 - `nfolds <nfolds.html>`__
 
 
@@ -47,14 +45,13 @@ Example
 	train <- cars.split[[1]]
 	valid <- cars.split[[2]]
 
-	# try using the ` keep_cross_validation_fold_assignment` (boolean parameter):
+	# try using the `keep_cross_validation_models` (boolean parameter):
 	# train your model, set nfolds parameter
 	cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                    nfolds = 5,  keep_cross_validation_fold_assignment= TRUE, seed = 1234)
+	                    nfolds = 5, keep_cross_validation_models = TRUE, seed = 1234)
 
-	# retrieve the cross-validation fold assignment
-	h2o.cross_validation_fold_assignment(cars_gbm)
-
+	# retrieve the list of cross-validation models
+	cars_gbm_cv_models <- h2o.cross_validation_models(cars_gbm)
 
    .. code-block:: python
 
@@ -77,12 +74,12 @@ Example
 	# split into train and validation sets
 	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the ` keep_cross_validation_fold_assignment` (boolean parameter):
+	# try using the `keep_cross_validation_models` (boolean parameter):
 	# first initialize your estimator, set nfolds parameter
-	cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_fold_assignment = True, nfolds = 5, seed = 1234)
+	cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_models = True, nfolds = 5, seed = 1234)
 
 	# then train your model
 	cars_gbm.train(x = predictors, y = response, training_frame = train)
 
-	# retrieve the cross-validation fold assignment
-	cars_gbm.cross_validation_fold_assignment()
+	# retrieve the cross-validation models
+	cars_gbm_cv_models = cars_gbm.cross_validation_models()
