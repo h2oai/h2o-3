@@ -3216,6 +3216,7 @@ print.H2ONode <- function(node){
 #' @slot features A \code{character} with names of the feature/column used for the split.
 #' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
 #' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
+#' @slot predictions A \code{numeric} representing predictions for each node in the graph.
 #' @aliases H2OTree
 #' @export
 setClass(
