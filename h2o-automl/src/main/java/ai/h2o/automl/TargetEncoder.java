@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import water.*;
 import water.fvec.*;
+import water.fvec.task.FillNAWithValueTask;
 import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -176,7 +177,7 @@ public class TargetEncoder {
     }
 
     Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
-        return data.asQuasiBinomial(targetIndex);
+        return data.vectorAsQuasiBinomial(targetIndex);
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
@@ -266,13 +267,15 @@ public class TargetEncoder {
     }
 
     Frame imputeWithMean(Frame a, int columnIndex) {
-        long numberOfNAs = a.vec(columnIndex).naCnt();
-        if (numberOfNAs > 0) {
-            String astTree = String.format("(h2o.impute %s %d 'mean' 'interpolate' [] _ _)", a._key, columnIndex);
-            Rapids.exec(astTree);
-            Log.warn(String.format("Frame with id = %s was imputed with mean ( %d rows were affected)", a._key, numberOfNAs));
-        }
-        return a;
+      Vec vec = a.vec(columnIndex);
+      assert vec.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
+      double mean = vec.mean();
+      long numberOfNAs = vec.naCnt();
+      if (numberOfNAs > 0) {
+        new FillNAWithValueTask(columnIndex, mean).doAll(a);
+        Log.warn(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", a._key, mean, numberOfNAs));
+      }
+      return a;
     }
 
     Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {

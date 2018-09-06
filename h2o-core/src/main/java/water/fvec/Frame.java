@@ -1261,7 +1261,7 @@ public class Frame extends Lockable<Frame> {
    * @param columnIndex
    * @return frame with specified column encoded into binary enumeration column
    */
-  public Frame asQuasiBinomial(int columnIndex) {
+  public Frame vectorAsQuasiBinomial(int columnIndex) {
 
     Vec columnToEncode = vec(columnIndex);
     String[] domains = columnToEncode.domain().clone();
