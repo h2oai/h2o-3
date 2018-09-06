@@ -84,7 +84,7 @@ public class TreeHandler extends Handler {
         if (args.tree_number < 0) throw new IllegalArgumentException("Tree number must be greater than 0.");
 
         if (args.tree_number > output._treeKeys.length - 1)
-            throw new IllegalArgumentException("There is no such tree.");
+            throw new IllegalArgumentException("There is no such tree number.");
 
         if (responseLevelIndex < 0)
             throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + args.tree_class.trim());

@@ -9,7 +9,7 @@ def tree_test():
 
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees = 1)
-    gbm.train(x = ["Origin", "Dest", "Distance"], y = "IsDepDelayed", training_frame=airlines)
+    gbm.train(x = ["Origin", "Dest"], y = "IsDepDelayed", training_frame=airlines)
 
     tree = H2OTree(gbm, 0, "NO") # Indexing from 0 in Python. There is exactly one tree built
     assert tree is not None
@@ -35,6 +35,8 @@ def tree_test():
 
     assert tree.root_node.na_direction is not None
     assert tree.root_node.id is not None
+    assert tree.root_node.left_levels is not None#Only categoricals in the model, guaranteed to have categorical split
+    assert tree.root_node.right_levels is not None #Only categoricals in the model, guaranteed to have categorical split
 
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_nice_header.csv"))
     drf = H2ORandomForestEstimator(ntrees = 1)
