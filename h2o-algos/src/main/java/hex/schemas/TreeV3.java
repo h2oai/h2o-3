@@ -39,4 +39,7 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.OUTPUT, help = "Categorical levels on the edge from the parent node")
     public int[][] levels;
 
+    @API(direction = API.Direction.OUTPUT, help = "Prediction values on terminal nodes")
+    public float[] predictions;
+
 }

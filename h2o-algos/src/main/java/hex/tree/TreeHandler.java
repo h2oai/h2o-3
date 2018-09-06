@@ -40,6 +40,7 @@ public class TreeHandler extends Handler {
         args.features = treeProperties._features;
         args.nas = treeProperties._nas;
         args.levels = treeProperties.levels;
+        args.predictions = treeProperties._predictions;
         // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
         if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
             args.tree_class = null;
@@ -108,6 +109,7 @@ public class TreeHandler extends Handler {
         treeprops._thresholds = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
         treeprops._features = new String[sharedTreeSubgraph.nodesArray.size()];
         treeprops._nas = new String[sharedTreeSubgraph.nodesArray.size()];
+        treeprops._predictions = MemoryManager.malloc4f(sharedTreeSubgraph.nodesArray.size());
 
         // Set root node's children, there is no guarantee the root node will be number 0
         treeprops._rightChildren[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
@@ -121,14 +123,14 @@ public class TreeHandler extends Handler {
         nodesToTraverse.add(sharedTreeSubgraph.rootNode);
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
-                treeprops.levels, nodesToTraverse, -1, false);
+                treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false);
 
         return treeprops;
     }
 
     private static void append(final int[] rightChildren, final int[] leftChildren, final String[] nodesDescriptions,
                                final float[] thresholds, final String[] splitColumns, final String[] naHandlings,
-                               final int[][] levels,
+                               final int[][] levels, final float[] predictions,
                                final List<SharedTreeNode> nodesToTraverse, int pointer, boolean visitedRoot) {
         if(nodesToTraverse.isEmpty()) return;
 
@@ -139,7 +141,8 @@ public class TreeHandler extends Handler {
             final SharedTreeNode leftChild = node.getLeftChild();
             final SharedTreeNode rightChild = node.getRightChild();
             if(visitedRoot){
-                fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, levels, naHandlings, pointer);
+                fillnodeDescriptions(node, nodesDescriptions, thresholds, splitColumns, levels, predictions,
+                        naHandlings, pointer);
             } else {
                 StringBuilder rootDescriptionBuilder = new StringBuilder();
                 rootDescriptionBuilder.append("Root node has id ");
@@ -165,13 +168,13 @@ public class TreeHandler extends Handler {
             }
         }
 
-        append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings, levels,
+        append(rightChildren, leftChildren, nodesDescriptions, thresholds, splitColumns, naHandlings, levels, predictions,
                 discoveredNodes, pointer, true);
     }
 
     private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,
                                              final float[] thresholds, final String[] splitColumns, final int[][] levels,
-                                             final String[] naHandlings, final int pointer) {
+                                             final float[] predictions, final String[] naHandlings, final int pointer) {
         final StringBuilder nodeDescriptionBuilder = new StringBuilder();
         int[] nodeLevels = node.getParent().isBitset() ? extractNodeLevels(node) : null;
         nodeDescriptionBuilder.append("Node has id ");
@@ -208,6 +211,7 @@ public class TreeHandler extends Handler {
         splitColumns[pointer] = node.getColName();
         naHandlings[pointer] = getNaDirection(node);
         levels[pointer] = nodeLevels;
+        predictions[pointer] = node.getPredValue();
         thresholds[pointer] = node.getSplitValue();
     }
 
@@ -305,6 +309,7 @@ public class TreeHandler extends Handler {
         public String[] _features;
         public int[][] levels; // Categorical levels, points to a list of categoricals that is already existing within the model on the client.
         public String[] _nas;
+        public float[] _predictions; // Prediction values on terminal nodes
 
     }
 }
