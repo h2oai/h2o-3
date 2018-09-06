@@ -53,7 +53,7 @@ public class TreeHandler extends Handler {
 
     private static int getResponseLevelIndex(final String categorical, final SharedTreeModel.SharedTreeOutput sharedTreeOutput) {
         final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
-        final String trimmedCategorical = categorical.trim(); // Trim the categorical once - input from the user
+        final String trimmedCategorical = categorical != null ? categorical.trim() : ""; // Trim the categorical once - input from the user
 
         switch (sharedTreeOutput.getModelCategory()) {
             case Binomial:
@@ -84,7 +84,7 @@ public class TreeHandler extends Handler {
         if (args.tree_number < 0) throw new IllegalArgumentException("Tree number must be greater than 0.");
 
         if (args.tree_number > output._treeKeys.length - 1)
-            throw new IllegalArgumentException("There is no such tree.");
+            throw new IllegalArgumentException("There is no such tree number.");
 
         if (responseLevelIndex < 0)
             throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + args.tree_class.trim());
