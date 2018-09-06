@@ -1,6 +1,9 @@
 package hex.tree.xgboost;
 
+import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.util.FVec;
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
@@ -394,10 +397,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
+  private boolean useJavaScoring() {
+    return Boolean.getBoolean("sys.ai.h2o.xgboost.predict.java.enable");
+  }
+
   @Override
   protected BigScorePredict setupBigScorePredict(BigScore bs) {
+    return useJavaScoring() ? setupBigScorePredictJava() : setupBigScorePredictNative();
+  }
+
+  private BigScorePredict setupBigScorePredictNative() {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses());
     return new XGBoostBigScorePredict(boosterParms);
+  }
+
+  private BigScorePredict setupBigScorePredictJava() {
+    final DataInfo di = model_info._dataInfoKey.get();
+    assert di != null;
+    return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
   }
 
   private class XGBoostBigScorePredict implements BigScorePredict {
@@ -439,6 +456,102 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     @Override
     public void close() {}
+  }
+
+  private class XGBoostJavaBigScorePredict implements BigScorePredict {
+    private final DataInfo _di;
+    private final XGBoostOutput _output;
+    private final double _threshold;
+    private final Predictor _predictor;
+
+    XGBoostJavaBigScorePredict(DataInfo di, XGBoostOutput output, double threshold, byte[] boosterBytes) {
+      _di = di;
+      _output = output;
+      _threshold = threshold;
+      _predictor = PredictorFactory.makePredictor(boosterBytes);
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(Frame fr, Chunk[] chks) {
+      return new XGboostJavaBigScoreChunkPredict(_di, _output, _threshold, _predictor);
+    }
+
+  }
+
+  private static class XGboostJavaBigScoreChunkPredict implements BigScoreChunkPredict {
+    private final XGBoostOutput _output;
+    private final double _threshold;
+    private final Predictor _predictor;
+    private final MutableOneHotEncoderFVec _row;
+
+    public XGboostJavaBigScoreChunkPredict(DataInfo di, XGBoostOutput output, double threshold, Predictor predictor) {
+      _output = output;
+      _threshold = threshold;
+      _predictor = predictor;
+      _row = new MutableOneHotEncoderFVec(di, _output._sparse);
+    }
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
+
+      assert _output.nfeatures() == tmp.length;
+      for (int i = 0; i < tmp.length; i++) {
+        tmp[i] = chks[i].atd(row_in_chunk);
+      }
+
+      _row.setInput(tmp);
+
+      float[] out = _predictor.predict(_row);
+
+      return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
+    }
+
+    @Override
+    public void close() {}
+  }
+
+  private static class MutableOneHotEncoderFVec implements FVec {
+    private final DataInfo _di;
+    private final boolean _treatsZeroAsNA;
+    private final int[] _catMap;
+    private final int[] _catValues;
+    private final float[] _numValues;
+    private final float _notHot;
+
+    MutableOneHotEncoderFVec(DataInfo di, boolean treatsZeroAsNA) {
+      _di = di;
+      _catValues = new int[_di._cats];
+      _treatsZeroAsNA = treatsZeroAsNA;
+      _notHot = _treatsZeroAsNA ? Float.NaN : 0;
+      if (_di._catOffsets == null) {
+        _catMap = new int[0];
+      } else {
+        _catMap = new int[_di._catOffsets[_di._cats]];
+        for (int c = 0; c < _di._cats; c++) {
+          for (int j = _di._catOffsets[c]; j < _di._catOffsets[c+1]; j++)
+            _catMap[j] = c;
+        }
+      }
+      _numValues = new float[_di._nums];
+    }
+
+    void setInput(double[] input) {
+      GenModel.setCats(input, _catValues, _di._cats, _di._catOffsets, _di._useAllFactorLevels);
+      for (int i = 0; i < _numValues.length; i++) {
+        float val = (float) input[_di._cats + i];
+        _numValues[i] = _treatsZeroAsNA && (val == 0) ? Float.NaN : val;
+      }
+    }
+
+    @Override
+    public final float fvalue(int index) {
+      if (index >= _catMap.length)
+        return _numValues[index - _catMap.length];
+
+      final boolean isHot = _catValues[_catMap[index]] == index;
+      return isHot ? 1 : _notHot;
+    }
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {

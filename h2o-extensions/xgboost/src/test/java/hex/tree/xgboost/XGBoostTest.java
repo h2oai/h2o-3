@@ -20,7 +20,6 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
-import water.rapids.Val;
 import water.util.Log;
 
 import java.io.*;
@@ -32,17 +31,23 @@ import static water.util.FileUtils.locateFile;
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
 
-  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0}")
-  public static Iterable<? extends Object> data() {
-    return Arrays.asList("true", "false");
+  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0},javaPredict={1}")
+  public static Collection<Object[]> data() {
+    return Arrays.asList(new Object[][]{
+            {"false", "false"}, {"true", "true"}, {"true", "false"}, {"false", "true"}
+    });
   }
 
   @Parameterized.Parameter
-  public String confJavaScoring;
+  public String confMojoJavaScoring;
+
+  @Parameterized.Parameter(1)
+  public String confJavaPredict;
 
   @Before
   public void setupMojoJavaScoring() {
-    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confJavaScoring);
+    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
+    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confMojoJavaScoring); // in-h2o predict
   }
 
   public static final class FrameMetadata {
