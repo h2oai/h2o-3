@@ -12,6 +12,7 @@ import org.junit.Test;
 import water.H2O;
 import water.Key;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;

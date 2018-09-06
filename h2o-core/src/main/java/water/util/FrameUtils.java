@@ -999,6 +999,15 @@ public class FrameUtils {
   }
 
   /**
+   * @return Frame that is registered in DKV
+   */
+  static public Frame register(Frame frame) {
+    frame._key = Key.make();
+    DKV.put(frame);
+    return frame;
+  }
+
+  /**
    * This class will calculate the weighted mean and standard deviatioin of a target column of a data frame
    * with the weights specified in another column.
    *

@@ -94,6 +94,23 @@ public class TestFrameBuilder {
    * @param min minimal value to generate
    * @param max maximum value to generate
    */
+  public TestFrameBuilder withRandomIntDataForCol(int column, int size, int min, int max) {
+    assert max > min;
+    double[] arr = new double[size];
+    for(int i = 0; i < size; i++) {
+      arr[i] = min + new Random().nextInt(max - min);
+    }
+    numericData.put(column, arr);
+    return this;
+  }
+
+  /**
+   *  Genarate random double data for a particular column
+   * @param column for which to set data
+   * @param size size of randomly generated column
+   * @param min minimal value to generate
+   * @param max maximum value to generate
+   */
   public TestFrameBuilder withRandomDoubleDataForCol(int column, int size, int min, int max) {
     assert max > min;
     double[] arr = new double[size];
