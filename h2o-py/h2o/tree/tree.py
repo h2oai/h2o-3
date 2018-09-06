@@ -242,7 +242,7 @@ class H2OSplitNode(H2ONode):
         self._right_child = right_child
         self._split_feature = split_feature
         self._na_direction = na_direction
-        self._left_levels = left_levels,
+        self._left_levels = left_levels
         self._right_levels = right_levels
 
     @property
