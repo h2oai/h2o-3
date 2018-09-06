@@ -1,7 +1,6 @@
 import h2o
 import math
 
-
 class H2OTree():
     """
     Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
@@ -112,7 +111,7 @@ class H2OTree():
 
     def __convert_threshold_nans(self, thresholds):
         for i in range(0, len(thresholds)):
-            if thresholds[i] == "NaN": thresholds[i] = math.nan
+            if thresholds[i] == "NaN": thresholds[i] = float('nan')
         return thresholds
 
     def __assemble_tree(self, node):
@@ -231,7 +230,7 @@ class H2OLeafNode(H2ONode):
         return "Leaf node ID {}. Predicted value at leaf node is {} \n".format(self._id, self._prediction)
 
 
-class H2OSplitNode():
+class H2OSplitNode(H2ONode):
     """
     Represents a single node with either numerical or categorical split in an H2OTree with all its attributes.
     """
