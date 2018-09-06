@@ -17,6 +17,9 @@ test.tree.visitor <- function() {
   expect_equal(gbm.tree@node_ids[1],gbm.tree@root_node@id)
   expect_equal(gbm.tree@node_ids[2],gbm.tree@root_node@left_child@id)
   expect_equal(gbm.tree@node_ids[3],gbm.tree@root_node@right_child@id)
+  
+  expect_equal(gbm.tree@root_node@left_levels, gbm.tree@levels[[2]])
+  expect_equal(gbm.tree@root_node@right_levels, gbm.tree@levels[[3]])
 
   
 }

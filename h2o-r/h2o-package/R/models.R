@@ -3124,8 +3124,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' #' @aliases H2ONode 
 #'
 setClass("H2ONode", representation(
-  id = "integer",
-  levels = "character"
+  id = "integer"
 ))
 
 #'
@@ -3148,6 +3147,8 @@ contains = "H2ONode")
 #' @slot left_child A \code{H2ONodeOrNULL} representing the left child node, if a node has one.
 #' @slot right_child A \code{H2ONodeOrNULL} representing the right child node, if a node has one.
 #' @slot split_feature A \code{character} representing the name of the column this node splits on.
+#' @slot left_levels A \code{character} representing the levels of a categorical feature heading to the left child of this node. NA for non-categorical split.
+#' @slot right_levels A \code{character} representing the levels of a categorical feature heading to the right child of this node. NA for non-categorical split.
 #' @slot na_direction A \code{character} representing the direction of NA values. LEFT means NA values go to the left child node, RIGH means NA values go to the right child node.
 #' @aliases H2OSplitNode 
 #' @export
@@ -3158,6 +3159,8 @@ setClass(
     left_child = "H2ONode",
     right_child = "H2ONode",
     split_feature = "character",
+    left_levels = "character",
+    right_levels = "character",
     na_direction = "character"
   ),
   contains = "H2ONode"
@@ -3185,8 +3188,8 @@ print.H2ONode <- function(node){
   cat("Splits on column", node@split_feature, "\n")
   
   if(is.na(node@threshold)){
-    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_child@levels, "\n")
-    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_child@levels, "\n")
+    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_levels, "\n")
+    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_levels, "\n")
   } else {
     cat("Split threshold <", node@threshold,"to the left node, >=",node@threshold ,"to the right node\n")
   }
@@ -3270,6 +3273,9 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
                       levels = NA_character_,
                       prediction = tree@predictions[1])
   } else {
+    left_node_levels <- if(is.null(tree@levels[[tree@left_children[1] + 1]])) NA_character_ else tree@levels[[tree@left_children[1] + 1]]
+    right_node_levels <- if(is.null(tree@levels[[tree@right_children[1] + 1]])) NA_character_ else tree@levels[[tree@right_children[1] + 1]]
+    
     rootNode  <- new ("H2OSplitNode",
                       id = tree@node_ids[1],
                       left_child = left_child,
@@ -3277,7 +3283,8 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
                       threshold = tree@thresholds[1],
                       split_feature = tree@features[1],
                       na_direction = tree@nas[1],
-                      levels = NA_character_)
+                      left_levels = left_node_levels,
+                      right_levels = right_node_levels)
   }
   
     rootNode
@@ -3298,10 +3305,11 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
   if(is.null(left_child) && is.null(right_child)){
     node <- new("H2OLeafNode",
         id = tree@node_ids[child_node_index],
-        levels = node_levels,
         prediction = tree@predictions[child_node_index]
         )
   } else {
+      left_node_levels <- if(is.null(tree@levels[[left + 1]])) NA_character_ else tree@levels[[left + 1]]
+      right_node_levels <- if(is.null(tree@levels[[right + 1]])) NA_character_ else tree@levels[[right + 1]]
       node <- new ("H2OSplitNode",
        id = tree@node_ids[child_node_index],
        left_child = left_child,
@@ -3309,7 +3317,8 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
        threshold = tree@thresholds[child_node_index],
        split_feature = tree@features[child_node_index],
        na_direction = tree@nas[child_node_index],
-       levels = node_levels)
+       left_levels = left_node_levels,
+       right_levels = right_node_levels)
   }
   
   node
