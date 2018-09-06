@@ -61,6 +61,29 @@ public class AstMergeTest extends TestUtil {
 
   }
 
+  @Test(timeout = 10000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
+  public void AutoMergeAllLeftStressTest() {
+
+    fr = new TestFrameBuilder()
+            .withName("leftFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_NUM, Vec.T_STR)
+            .withRandomIntDataForCol(0, 1000000, 0, 100)
+            .withRandomBinaryDataForCol(1, 1000000)
+            .build();
+
+    Frame frRight = new TestFrameBuilder()
+            .withName("rightFrame")
+            .withColNames("ColA_R", "ColB_R")
+            .withVecTypes(Vec.T_NUM, Vec.T_STR)
+            .withRandomIntDataForCol(0, 1000000, 0, 100)
+            .withRandomBinaryDataForCol(1, 1000000)
+            .build();
+
+    String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
+    Rapids.exec(tree);
+  }
+
   @Test
   public void AutoMergeAllLeftWithDuplicatesOnTheRightTest() {
 

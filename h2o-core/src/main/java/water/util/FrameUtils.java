@@ -997,4 +997,13 @@ public class FrameUtils {
     DKV.put(res);
     return res;
   }
+
+  /**
+   * @return Frame that is registered in DKV
+   */
+  static public Frame register(Frame frame) {
+    frame._key = Key.make();
+    DKV.put(frame);
+    return frame;
+  }
 }

@@ -16,6 +16,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static water.TestUtil.assertStringVecEquals;
 import static water.TestUtil.cvec;
+import static water.TestUtil.svec;
 
 public class TargetEncodingTest extends TestUtil{
 
@@ -530,46 +531,47 @@ public class TargetEncodingTest extends TestUtil{
       }
     }
 
-  @Test
-  public void mutateOnlyParticularColumnsOfTheFrameTest() {
-      fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames("ColA", "ColB", "ColC")
-            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "c"))
-            .withDataForCol(1, ar(1,2,3))
-            .withDataForCol(2, ar(4,5,6))
-            .build();
+    @Test
+    public void mutateOnlyParticularColumnsOfTheFrameTest() {
+        fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c"))
+              .withDataForCol(1, ar(1,2,3))
+              .withDataForCol(2, ar(4,5,6))
+              .build();
 
-    new TestMutableTask(1).doAll(fr);
+      new TestMutableTask(1).doAll(fr);
 
-    printOutFrameAsTable(fr);
-    assertEquals(3, fr.numCols());
+      printOutFrameAsTable(fr);
+      assertEquals(3, fr.numCols());
 
-    Vec expected = vec(2, 4, 6);
-    assertVecEquals(expected, fr.vec(1), 1e-5);
+      Vec expected = vec(2, 4, 6);
+      assertVecEquals(expected, fr.vec(1), 1e-5);
 
-    expected.remove();
-  }
-
-
-  public static class TestMutableTask extends MRTask<TestMutableTask> {
-    long columnIndex;
-    public TestMutableTask(long columnIndex) {
-      this.columnIndex = columnIndex;
+      expected.remove();
     }
-    @Override
-    public void map(Chunk cs[]) {
-      for (int col = 0; col < cs.length; col++) {
-        if(col == columnIndex) {
-          for (int i = 0; i < cs[col]._len; i++) {
-            long value = cs[col].at8(i);
-            cs[col].set(i, value * 2);
+
+
+    public static class TestMutableTask extends MRTask<TestMutableTask> {
+      long columnIndex;
+      public TestMutableTask(long columnIndex) {
+        this.columnIndex = columnIndex;
+      }
+      @Override
+      public void map(Chunk cs[]) {
+        for (int col = 0; col < cs.length; col++) {
+          if(col == columnIndex) {
+            for (int i = 0; i < cs[col]._len; i++) {
+              long value = cs[col].at8(i);
+              cs[col].set(i, value * 2);
+            }
           }
         }
       }
     }
-  }
+
     // ----------------------------- blended average -----------------------------------------------------------------//
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
@@ -647,7 +649,7 @@ public class TargetEncodingTest extends TestUtil{
     public void calculateAndAppendBlendedTEEncodingPerformanceTest() {
       long startTimeEncoding = System.currentTimeMillis();
 
-      int numberOfRuns = 50;
+      int numberOfRuns = 10;
       for(int i = 0; i < numberOfRuns; i ++) {
         Frame fr = new TestFrameBuilder()
                 .withName("testFrame")
@@ -864,30 +866,28 @@ public class TargetEncodingTest extends TestUtil{
 
     @Test
     public void targetEncoderNoneHoldoutApplyingTest() {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA", "ColB", "ColC", "fold_column")
-                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-                .withDataForCol(1, ard(1, 1, 4, 7, 4))
-                .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-                .withDataForCol(3, ar(1, 2, 2, 3, 2))
-                .build();
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "ColC", "fold_column")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+              .withDataForCol(1, ard(1, 1, 4, 7, 4))
+              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
+              .withDataForCol(3, ar(1, 2, 2, 3, 2))
+              .build();
 
-        TargetEncoder tec = new TargetEncoder();
-        int[] teColumns = {0};
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
 
-        Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2, 3);
 
-        Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3,false, 0, 1234.0, true);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3, false, 0, 1234.0, true);
 
-        Vec vec = resultWithEncoding.vec(4);
-        assertEquals(0.5, vec.at(0), 1e-5);
-        assertEquals(0.5, vec.at(1), 1e-5);
-        assertEquals(1, vec.at(2), 1e-5);
-        assertEquals(1, vec.at(3), 1e-5);
-        assertEquals(1, vec.at(4), 1e-5);
+      Vec vec = resultWithEncoding.vec(4);
+      Vec expected = vec(0.5, 0.5, 1, 1, 1);
+      assertVecEquals(expected, vec, 1e-5);
 
+      expected.remove();
       encodingMapCleanUp(targetEncodingMap);
       resultWithEncoding.delete();
     }
@@ -916,12 +916,11 @@ public class TargetEncodingTest extends TestUtil{
     printOutFrameAsTable(resultWithEncoding);
     double expectedDifferenceDueToNoise = 1e-2;
     Vec vec = resultWithEncoding.vec(4);
-    assertEquals(0.5, vec.at(0), expectedDifferenceDueToNoise);
-    assertEquals(0.5, vec.at(1), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(2), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(3), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(4), expectedDifferenceDueToNoise);
 
+    Vec expected = vec(0.5, 0.5, 1, 1, 1);
+    assertVecEquals(expected, vec, expectedDifferenceDueToNoise);
+
+    expected.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
   }
@@ -950,26 +949,47 @@ public class TargetEncodingTest extends TestUtil{
     printOutFrameAsTable(resultWithEncoding, true, true);
     double expectedDifferenceDueToNoise = 1e-5;
     Vec vec = resultWithEncoding.vec(3);
-    assertEquals(0.5, vec.at(0), expectedDifferenceDueToNoise);
-    assertEquals(0, vec.at(1), expectedDifferenceDueToNoise);
-    assertEquals(0, vec.at(2), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(3), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(4), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(5), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(6), expectedDifferenceDueToNoise);
-    assertEquals(0.66666, vec.at(7), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(8), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(9), expectedDifferenceDueToNoise);
-    assertEquals(0.66666, vec.at(10), expectedDifferenceDueToNoise);
-    assertEquals(0, vec.at(11), expectedDifferenceDueToNoise);
-    assertEquals(1, vec.at(12), expectedDifferenceDueToNoise);
-    assertEquals(0, vec.at(13), expectedDifferenceDueToNoise);
-    assertEquals(0, vec.at(14), expectedDifferenceDueToNoise);
+    Vec expected = vec(0.5, 0, 0, 1, 1, 1, 1, 0.66666, 1, 1, 0.66666, 0, 1, 0, 0);
+    assertVecEquals(expected, vec, expectedDifferenceDueToNoise);
 
-
+    expected.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
   }
+
+  // --------------------------- Merging tests -----------------------------------------------------------------------//
+
+    @Test
+    public void mergingByTEAndFoldTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar(1,1,2))
+              .build();
+
+      Frame holdoutEncodingMap = new TestFrameBuilder()
+              .withName("holdoutEncodingMap")
+              .withColNames("ColA", "ColC", "foldValueForMerge")
+              .withVecTypes(Vec.T_CAT, Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar("yes", "no", "yes"))
+              .withDataForCol(2, ar(1, 2, 2))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+
+      Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
+      printOutFrameAsTable(merged);
+      Vec expecteds = svec("yes", "yes", null);
+      assertStringVecEquals(expecteds, merged.vec("ColC"));
+
+      expecteds.remove();
+      merged.delete();
+      holdoutEncodingMap.delete();
+    }
 
     // ------------------------ Multiple columns for target encoding -------------------------------------------------//
 
@@ -1112,22 +1132,14 @@ public class TargetEncodingTest extends TestUtil{
 
         Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 2, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, 3,false, 0, 1234.0, true);
 
-        printOutFrameAsTable(resultWithEncoding);
-        // TODO We need vec(..) for doubles to make it easier.
-        // For the first encoded column
-        assertEquals(0.5, resultWithEncoding.vec(4).at(0), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(4).at(1), 1e-5);
-        assertEquals(0.5, resultWithEncoding.vec(4).at(2), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(4).at(3), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(4).at(4), 1e-5);
+        Vec expected = vec(0.5, 1, 0.5, 1, 1);
+        assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
 
-        // For the second encoded column
-        assertEquals(0.5, resultWithEncoding.vec(5).at(0), 1e-5);
-        assertEquals(0.5, resultWithEncoding.vec(5).at(1), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(5).at(2), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(5).at(3), 1e-5);
-        assertEquals(1, resultWithEncoding.vec(5).at(4), 1e-5);
+        Vec expected2 = vec(0.5, 0.5, 1, 1, 1);
+        assertVecEquals(expected2, resultWithEncoding.vec(5), 1e-5);
 
+        expected.remove();
+        expected2.remove();
         encodingMapCleanUp(targetEncodingMap);
         resultWithEncoding.delete();
     }

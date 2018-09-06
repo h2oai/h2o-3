@@ -6,6 +6,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -228,6 +229,26 @@ public class FrameUtilsTest extends TestUtil {
 
       assertTrue(res.vec(0).isCategorical());
       Scope.track(res);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void register() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .build();
+      Scope.track(fr);
+
+      Key<Frame> keyBefore = fr._key;
+      DKV.remove(keyBefore);
+      Frame res = FrameUtils.register(fr);
+      Scope.track(res);
+
+      assertNotSame(res._key, keyBefore);
     } finally {
       Scope.exit();
     }

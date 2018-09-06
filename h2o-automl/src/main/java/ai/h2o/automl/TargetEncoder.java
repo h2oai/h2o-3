@@ -2,8 +2,10 @@ package ai.h2o.automl;
 
 import water.*;
 import water.fvec.*;
+import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -222,16 +224,45 @@ public class TargetEncoder {
         }
     }
 
-    Frame mergeByTEColumnAndFold(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex ) {
-        int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
-        String astTree = String.format("(merge %s %s TRUE FALSE [%d, %d] [%d, %d] 'auto' )",
-                a._key, holdoutEncodeMap._key, teColumnIndexOriginal, foldColumnIndexOriginal, teColumnIndex, foldColumnIndexInEncodingMap);
-        return execRapidsAndGetFrame(astTree);
+    Frame mergeByTEAndFoldColumns(Frame a, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex) {
+      int foldColumnIndexInEncodingMap = getColumnIndexByName(holdoutEncodeMap, "foldValueForMerge");
+      return merge(a, holdoutEncodeMap, new int[]{teColumnIndexOriginal, foldColumnIndexOriginal}, new int[]{teColumnIndex, foldColumnIndexInEncodingMap});
+    }
+
+    static class GCForceTask extends MRTask<GCForceTask> {
+      @Override
+      protected void setupLocal() {
+        System.gc();
+      }
+    }
+
+    // Custom extract from AstMerge's implementation for a particular case `(merge l r TRUE FALSE [] [] 'auto' )`
+    Frame merge(Frame l, Frame r, int[] byLeft, int[] byRite) {
+      boolean allLeft = true;
+      // See comments in the original implementation in AstMerge.java
+      new GCForceTask().doAllNodes();
+
+      int ncols = byLeft.length;
+      l.moveFirst(byLeft);
+      r.moveFirst(byRite);
+
+      int[][] id_maps = new int[ncols][];
+      for (int i = 0; i < ncols; i++) {
+        Vec lv = l.vec(i);
+        Vec rv = r.vec(i);
+
+        if (lv.isCategorical()) {
+          assert rv.isCategorical();
+          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(), rv.domain());
+        }
+      }
+      int cols[] = new int[ncols];
+      for (int i = 0; i < ncols; i++) cols[i] = i;
+      return FrameUtils.register(Merge.merge(l, r, cols, cols, allLeft, id_maps));
     }
 
     Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {
-        String astTree = String.format("(merge %s %s TRUE FALSE [%d] [%d] 'auto' )", a._key, b._key, teColumnIndexOriginal, teColumnIndex);
-        return execRapidsAndGetFrame(astTree);
+      return merge(a, b, new int[]{teColumnIndexOriginal}, new int[]{teColumnIndex});
     }
 
     Frame imputeWithMean(Frame a, int columnIndex) {
@@ -500,7 +531,7 @@ public class TargetEncoder {
                     }
                     // End of the preparation phase
 
-                    dataWithMergedAggregations = mergeByTEColumnAndFold(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
+                    dataWithMergedAggregations = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
 
                     dataWithEncodings = calculateEncoding(dataWithMergedAggregations, targetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
