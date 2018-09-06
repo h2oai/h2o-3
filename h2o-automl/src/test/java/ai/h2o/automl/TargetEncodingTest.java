@@ -290,6 +290,34 @@ public class TargetEncodingTest extends TestUtil{
     }
 
     @Test
+    public void imputeWithMeanTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, ar("1", "2", null))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+
+      // We have to do this trick because we cant initialize array with `null` values.
+      Vec strVec = fr.vec("ColA");
+      Vec numericVec = strVec.toNumericVec();
+      fr.replace(0, numericVec);
+
+      Frame withImputed = tec.imputeWithMean(fr, 0);
+      Vec expected = vec(1, 2, 1.5);
+      Vec resultVec = withImputed.vec(0);
+      assertVecEquals(expected, resultVec, 1e-5);
+
+      expected.remove();
+      strVec.remove();
+      resultVec.remove();
+      withImputed.delete();
+      numericVec.remove();
+    }
+
+    @Test
     public void rbindTest() {
       fr = new TestFrameBuilder()
               .withName("testFrame")
