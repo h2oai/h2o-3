@@ -200,7 +200,7 @@ public class TreeHandlerTest extends TestUtil {
             try {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e) {
-                assertTrue(e.getMessage().contains("There is no such tree."));
+                assertTrue(e.getMessage().contains("There is no such tree number."));
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
