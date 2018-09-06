@@ -3260,37 +3260,6 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 })
 
 
-
-.h2o.assemble_tree <- function(tree){
-  
-  left_child = .h2o.walk_tree(tree@left_children[1], tree)
-  right_child = .h2o.walk_tree(tree@right_children[1], tree)
-  
-  rootNode <- NULL
-  
-  if(is.null(left_child) && is.null(right_child)){
-    rootNode  <- new ("H2OLeafNode",
-                      id = tree@node_ids[1],
-                      levels = NA_character_,
-                      prediction = tree@predictions[1])
-  } else {
-    left_node_levels <- if(is.null(tree@levels[[tree@left_children[1] + 1]])) NA_character_ else tree@levels[[tree@left_children[1] + 1]]
-    right_node_levels <- if(is.null(tree@levels[[tree@right_children[1] + 1]])) NA_character_ else tree@levels[[tree@right_children[1] + 1]]
-    
-    rootNode  <- new ("H2OSplitNode",
-                      id = tree@node_ids[1],
-                      left_child = left_child,
-                      right_child = right_child,
-                      threshold = tree@thresholds[1],
-                      split_feature = tree@features[1],
-                      na_direction = tree@nas[1],
-                      left_levels = left_node_levels,
-                      right_levels = right_node_levels)
-  }
-  
-    rootNode
-}
-
 .h2o.walk_tree <- function(node, tree){
   if(node == -1) {return(NULL)}
   child_node_index <- node + 1
@@ -3451,7 +3420,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       }
     }
   }
-  tree@root_node <- .h2o.assemble_tree(tree)
+  tree@root_node <- .h2o.walk_tree(0, tree)
   tree
 }
 
