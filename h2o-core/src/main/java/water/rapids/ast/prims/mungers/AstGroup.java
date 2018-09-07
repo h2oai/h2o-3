@@ -274,14 +274,18 @@ public class AstGroup extends AstPrimitive {
 
     final AGG[] aggs = constructAggregates(fr, validAggregatesCount, env, asts);
 
-    IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, _numberOfMedianActionsNeeded);
+    return performGroupingWithAggregations(fr, gbCols, aggs, _numberOfMedianActionsNeeded);
+  }
+
+  public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs, int medianCount) {
+    IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, medianCount);
     final G[] grps = gss.keySet().toArray(new G[gss.size()]);
 
     applyOrdering(gbCols, grps);
 
     calculateMediansForGRPS(fr, gbCols, aggs, gss, grps);
 
-    MRTask mrFill = prepareMRFillTask(grps, aggs, _numberOfMedianActionsNeeded);
+    MRTask mrFill = prepareMRFillTask(grps, aggs, medianCount);
 
     String[] fcNames = prepareFCNames(fr, aggs);
 
