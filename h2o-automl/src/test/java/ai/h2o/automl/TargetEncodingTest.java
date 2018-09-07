@@ -511,6 +511,30 @@ public class TargetEncodingTest extends TestUtil{
         assertEquals(result, 0.5, 1e-5);
     }
 
+    @Test
+    public void groupByTEColumnAndAggregateTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("teColumn", "numerator", "denominator")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "a", "b"))
+              .withDataForCol(1, ard(1, 2, 3))
+              .withDataForCol(2, ard(3, 4, 5))
+              .build();
+      TargetEncoder tec = new TargetEncoder();
+      Frame result = tec.groupByTEColumnAndAggregate(fr, 0);
+      printOutFrameAsTable(result);
+
+      Vec expectedNum = vec(3, 3);
+      assertVecEquals(expectedNum, result.vec("sum_numerator"), 1e-5);
+      Vec expectedDen = vec(7, 5);
+      assertVecEquals(expectedDen, result.vec("sum_denominator"), 1e-5);
+
+      result.delete();
+      expectedNum.remove();
+      expectedDen.remove();
+    }
+
 
     @Test
     public void mapOverTheFrameWithImmutableApproachTest() {

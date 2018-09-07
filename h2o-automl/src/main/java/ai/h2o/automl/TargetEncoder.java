@@ -6,6 +6,7 @@ import water.fvec.task.FillNAWithValueTask;
 import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -74,19 +75,12 @@ public class TargetEncoder {
         for ( String teColumnName: columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
             int colIndex = getColumnIndexByName(dataWithEncodedTarget, teColumnName);
-            String tree = null;
             if (foldColumnName == null) {
-                tree = String.format("(GB %s [%d] sum %s \"all\" nrow %s \"all\")", dataWithEncodedTarget._key, colIndex, targetIndex, targetIndex);
+              teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, new int[]{colIndex}, targetIndex);
             } else {
-                int foldColumnIndex = getColumnIndexByName(dataWithEncodedTarget, foldColumnName);
-
-                tree = String.format("(GB %s [%d, %d] sum %s \"all\" nrow %s \"all\")", dataWithEncodedTarget._key, colIndex, foldColumnIndex, targetIndex, targetIndex);
+              int foldColumnIndex = getColumnIndexByName(dataWithEncodedTarget, foldColumnName);
+              teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, new int[]{colIndex, foldColumnIndex}, targetIndex);
             }
-            Val val = Rapids.exec(tree);
-            teColumnFrame = val.getFrame();
-            teColumnFrame._key = Key.make(dataWithEncodedTarget._key.toString() + "_" + teColumnName + "_encodingMap");
-            DKV.put(teColumnFrame._key, teColumnFrame);
-
             renameColumn(teColumnFrame, "sum_"+ targetColumnName, "numerator");
             renameColumn(teColumnFrame, "nrow", "denominator");
 
@@ -97,6 +91,17 @@ public class TargetEncoder {
         dataWithoutNAsForTarget.delete();
 
         return columnToEncodingMap;
+    }
+
+    Frame groupThenAggregateForNumeratorAndDenominator(Frame fr, int[] groupByColumns, int targetIndex) {
+      AstGroup.AGG[] aggs = new AstGroup.AGG[2];
+
+      AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
+
+      Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs, -1).getFrame();
+      return FrameUtils.register(result);
     }
 
     Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, String targetColumnName) {
@@ -208,11 +213,16 @@ public class TargetEncoder {
     }
 
     Frame groupByTEColumnAndAggregate(Frame data, int teColumnIndex) {
-        int numeratorColumnIndex = getColumnIndexByName(data, "numerator");
-        int denominatorColumnIndex = getColumnIndexByName(data, "denominator");
-        String astTree = String.format("(GB %s [%d] sum %d \"all\" sum %d \"all\")",
-                data._key, teColumnIndex, numeratorColumnIndex, denominatorColumnIndex);
-        return execRapidsAndGetFrame(astTree);
+      int numeratorColumnIndex = getColumnIndexByName(data, "numerator");
+      int denominatorColumnIndex = getColumnIndexByName(data, "denominator");
+      AstGroup.AGG[] aggs = new AstGroup.AGG[2];
+
+      AstGroup.NAHandling na = AstGroup.NAHandling.ALL;
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, numeratorColumnIndex, na, (int) data.vec(numeratorColumnIndex).max() + 1);
+      aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, (int) data.vec(denominatorColumnIndex).max() + 1);
+
+      Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
+      return FrameUtils.register(result);
     }
 
     Frame rBind(Frame a, Frame b) {
