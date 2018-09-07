@@ -11,10 +11,7 @@ import water.util.FrameUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static water.util.FrameUtils.getColumnIndexByName;
 
@@ -403,10 +400,43 @@ public class TargetEncoder {
       return denominatorIsZeroSubstitutionTerm;
     }
 
-    Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, double seed) {
-        int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
-        String tree = String.format("(:= %s (+ (cols %s [%d] ) (- (* (* (h2o.runif %s %f ) 2.0 ) %f ) %f ) ) [%d] [] )", fr._key, fr._key, appyToColumnIndex, fr._key, seed, noiseLevel, noiseLevel, appyToColumnIndex);
-        return execRapidsAndGetFrame(tree);
+    Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, long seed) {
+      int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
+      if (seed == -1) seed = new Random().nextLong();
+      Vec zeroVec = Vec.makeZero(fr.numRows());
+      Vec randomVec = zeroVec.makeRand(seed);
+      Vec runif = fr.add("runif", randomVec);
+      int runifIdx = getColumnIndexByName(fr, "runif");
+      new AddNoiseTask(appyToColumnIndex, runifIdx, noiseLevel).doAll(fr);
+
+      fr.remove("runif");
+      randomVec.remove();
+      zeroVec.remove();
+      runif.remove();
+      return fr;
+    }
+
+    public static class AddNoiseTask extends MRTask<AddNoiseTask> {
+      int applyToColumnIdx;
+      int runifIdx;
+      double noiseLevel;
+
+      public AddNoiseTask(int applyToColumnIdx, int runifIdx, double noiseLevel) {
+        this.applyToColumnIdx = applyToColumnIdx;
+        this.runifIdx = runifIdx;
+        this.noiseLevel = noiseLevel;
+      }
+
+      @Override
+      public void map(Chunk cs[]) {
+        Chunk column = cs[applyToColumnIdx];
+        Chunk runifCol = cs[runifIdx];
+        for (int i = 0; i < column._len; i++) {
+          if (!column.isNA(i)) {
+            column.set(i, column.atd(i) + (runifCol.atd(i) * 2 * noiseLevel - noiseLevel));
+          }
+        }
+      }
     }
 
     Frame subtractTargetValueForLOO(Frame data, String targetColumnName) {
@@ -423,25 +453,25 @@ public class TargetEncoder {
       int denominatorIdx;
       int targetIdx;
 
-    public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
-      this.numeratorIdx = numeratorIdx;
-      this.denominatorIdx = denominatorIdx;
-      this.targetIdx = targetIdx;
-    }
+      public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
+        this.numeratorIdx = numeratorIdx;
+        this.denominatorIdx = denominatorIdx;
+        this.targetIdx = targetIdx;
+      }
 
-    @Override
-    public void map(Chunk cs[]) {
-      Chunk num = cs[numeratorIdx];
-      Chunk den = cs[denominatorIdx];
-      Chunk target = cs[targetIdx];
-      for (int i = 0; i < num._len; i++) {
-        if (! target.isNA(i)) {
-          num.set(i, num.atd(i) - target.atd(i));
-          den.set(i, den.atd(i) - 1);
+      @Override
+      public void map(Chunk cs[]) {
+        Chunk num = cs[numeratorIdx];
+        Chunk den = cs[denominatorIdx];
+        Chunk target = cs[targetIdx];
+        for (int i = 0; i < num._len; i++) {
+          if (!target.isNA(i)) {
+            num.set(i, num.atd(i) - target.atd(i));
+            den.set(i, den.atd(i) - 1);
+          }
         }
       }
     }
-  }
 
     /**
      * Core method for applying pre-calculated encodings to the dataset. There are multiple overloaded methods that we will
@@ -467,7 +497,7 @@ public class TargetEncoder {
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
 
         if(noiseLevel < 0 )
@@ -637,7 +667,7 @@ public class TargetEncoder {
         }
     }
 
-    private Frame applyNoise(Frame frameWithEncodings, String newEncodedColumnName, double noiseLevel, double seed) {
+    private Frame applyNoise(Frame frameWithEncodings, String newEncodedColumnName, double noiseLevel, long seed) {
         if(noiseLevel > 0) {
             return addNoise(frameWithEncodings, newEncodedColumnName, noiseLevel, seed);
         } else {
@@ -680,7 +710,7 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      String foldColumn,
                                      boolean withBlendedAvg,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         double defaultNoiseLevel = 0.01;
         double noiseLevel = 0.0;
@@ -700,7 +730,7 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         return applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, seed, isTrainOrValidSet);
     }
@@ -712,7 +742,7 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      int foldColumnIndex,
                                      boolean withBlendedAvg,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String targetColumnName = getColumnNameBy(data, targetIndex);
@@ -728,7 +758,7 @@ public class TargetEncoder {
                                      int foldColumnIndex,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String targetColumnName = getColumnNameBy(data, targetIndex);
@@ -743,7 +773,7 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String targetColumnName = getColumnNameBy(data, targetColumnIndex);
@@ -757,7 +787,7 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     double seed,
+                                     long seed,
                                      boolean isTrainOrValidSet) {
         assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
         return applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, seed, isTrainOrValidSet);
