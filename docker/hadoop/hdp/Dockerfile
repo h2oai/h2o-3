@@ -8,7 +8,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
-ARG JAVA_VERSIONS='8'
+ARG JAVA_VERSIONS='7,8'
 ARG HIVE_VERSION='2.2.0'
 ARG AWS_ACCESS_KEY
 ARG AWS_SECRET_ACCESS_KEY
@@ -25,6 +25,7 @@ ENV DISTRIBUTION='hdp' \
     HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Copy bin and sbin scripts
+COPY jdk1.7.0_80.zip /usr/opt/java-7-80/
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
 
 # Add HDP repository and install packages

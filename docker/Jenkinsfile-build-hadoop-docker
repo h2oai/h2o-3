@@ -23,6 +23,7 @@ properties(
 node (NODE_LABEL) {
     final String stageName = 'Checkout and Prepare'
     stage (stageName) {
+        cleanWs()
         def scmEnv = git credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea',
                 poll: false,
                 url: 'https://github.com/h2oai/h2o-3',
@@ -77,7 +78,16 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                 [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
                                 usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             dir("${imageName}.${version}") {
+                                cleanWs()
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                    docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                                        sh """
+                                            cd docker
+                                            s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip
+                                        """
+                                    }
+                                }
                                 sh """
                                     cd docker
                                     rm -f hadoop/common/ldap/jenkins.ldif

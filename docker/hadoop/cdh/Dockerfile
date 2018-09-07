@@ -8,7 +8,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
-ARG JAVA_VERSIONS='8'
+ARG JAVA_VERSIONS='7,8'
 ARG HIVE_VERSION='2.2.0'
 ARG AWS_ACCESS_KEY
 ARG AWS_SECRET_ACCESS_KEY
@@ -36,6 +36,7 @@ RUN apt-get update && \
 ENV H2O_BRANCH='master'
 
 # Set required env vars and install Java 8 and Pythons
+COPY jdk1.7.0_80.zip /usr/opt/java-7-80/
 COPY ${PATH_PREFIX}/../common/sbin/ scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
 RUN \
   chmod 700 /usr/sbin/install_java_version && \

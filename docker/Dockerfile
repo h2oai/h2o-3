@@ -19,7 +19,7 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG R_VERSIONS='3.4.1,3.3.3'
 ARG PYTHON_VERSIONS='3.6,3.5,2.7'
-ARG JAVA_VERSIONS='8,10'
+ARG JAVA_VERSIONS='7,8,10'
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='master'
@@ -50,6 +50,7 @@ RUN \
   apt-get update -q -y
 
 # Set required env vars and install Java 8
+COPY jdk1.7.0_80.zip /usr/opt/java-7-80/
 COPY scripts/install_java_versions scripts/install_java_version /usr/sbin/
 RUN \
   chmod 700 /usr/sbin/install_java_versions && \

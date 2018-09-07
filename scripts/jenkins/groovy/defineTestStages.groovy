@@ -36,11 +36,15 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
+      stageName: 'Java 7 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 7, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10,timeoutValue: 20,
+      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
@@ -162,6 +166,21 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 10 JUnit', target: 'test-junit-10-jenkins', pythonVersion: '2.7', javaVersion: 10,
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'Java 7 JAR', target: 'test-jar', pythonVersion: '2.7', javaVersion: 7,
+      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      archiveAdditionalFiles: ['h2o-jar-startup.log']
+    ],
+    [
+      stageName: 'Java 8 JAR', target: 'test-jar', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      archiveAdditionalFiles: ['h2o-jar-startup.log']
+    ],
+    [
+      stageName: 'Java 10 JAR', target: 'test-jar', pythonVersion: '2.7', javaVersion: 10,
+      timeoutValue: 5, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      archiveAdditionalFiles: ['h2o-jar-startup.log']
     ],
     [
       stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
