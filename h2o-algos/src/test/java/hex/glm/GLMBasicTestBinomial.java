@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.CreateFrame;
+import hex.DataInfo;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
@@ -451,6 +452,76 @@ public class GLMBasicTestBinomial extends TestUtil {
         fTest.remove("offset").remove();
         DKV.remove(fTest._key);
       }
+    }
+  }
+
+
+  /*
+  I have separated fitCOD from fitIRLSM and here is to test and made sure my changes are correct and they should
+  generate the same coefficients as the old method.
+   */
+  @Test
+  public void testCODGradients(){
+    Scope.enter();
+    Frame train;
+    GLMParameters params = new GLMParameters(Family.binomial);
+    GLMModel model = null;
+    double[] oldGLMCoeffs = new double[] {0.05678541136677343, 0.015581227420081886, -0.008747349162468797,
+            0.006234658978682047, 0.06721349208535071, -1.002393430927568, -0.04074965076077554, -0.018741232347244927,
+            0.07265522387831154, -0.023517223608079073, 0.0027798404887125873, -1.1394736168236541,
+            0.020136464248028344, 0.011974921001436488, -0.040596709771666184, 0.011425445923790278,
+            -0.001950642765868215,-1.1597092645710745};
+    try {
+   //   train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
+      train = parse_test_file("/Users/wendycwong/temp/GLMData/binomial_1000Rows.csv");
+      Scope.track(train);
+      params._response_column = "C79";
+      params._train = train._key;
+      params._lambda = new double[]{4.881e-05};
+      params._alpha = new double[]{0.5};
+      params._objective_epsilon = 1e-6;
+      params._beta_epsilon = 1e-4;
+      params._max_iterations = 10; // one iteration
+      params._seed = 12345; // don't think this one matters but set it anyway
+      Solver s = Solver.COORDINATE_DESCENT;
+      System.out.println("solver = " + s);
+      params._solver = s;
+      model = new GLM(params).trainModel().get();
+      Scope.track_generic(model);
+      DataInfo tinfo = new DataInfo(train.clone(), null, 0, true, DataInfo.TransformType.STANDARDIZE,
+              DataInfo.TransformType.NONE, false, false, false,
+              /* weights */ false, /* offset */ false, /* fold */ false);
+      double[] goldenCoeffs = new double[] { -1.9445707868393265, 1.5754986825920594, 0.42749834001872106,
+              1.2315882017015274, -2.078434352545025, 0.3730440332880549, -0.42453268553221735, -3.42876757854897,
+              -3.539436240206733, -2.8331964037350486, 5.411490287978089, -3.0685349593635944, -3.73523368575777,
+              -3.400355561680468, 2.0713488799780704, -1.4334416839272663, -0.36609870180564313, -4.787917047671509,
+              3.1615380825750052, 4.698743616695638, -5.478281335249413, 0.8234587992455293, -1.7245983114068932,
+              -1.47620583123115, -4.519901543307623, -0.5920998027634634, -3.91640238010849, 4.2238373988192475,
+              -4.744040724303898, -5.00506721462551, -1.6287674566334185, 4.761210343276263, -0.6285489500809044,
+              -2.083352969688414, 3.5016199455594474, 3.8483838508639097, 0.9897972412541881, 4.383938079795492,
+              -4.367853383276281, 3.377934769489047, 1.988183465519566, -5.0440485541742985, 3.2292352148211956,
+              -4.1732159139494245, -2.4610029766114097, -0.3028614586439368, 3.025515818151115, 1.656806043185686,
+              -2.4320869675700156, 5.551278352585299, 4.019174698300116, 3.5987782240717894, -4.1866118740411,
+              0.1371783505019848, 0.25148658936348456, 0.6932563491604521, -3.461034212663198, 1.908093009668366,
+              -1.2609410099735738, 4.496160283781557, -1.1419581851427654, -3.6932978184813936, -0.874594126178333,
+              2.54559579264585, 1.2681886359267616, -0.2714985924754451, 4.741505388498099, 3.7349045736828663,
+              -5.368721621342773, -3.8273079244806505, 0.2274273317286767, 0.882883214886241, 4.537965288565492,
+              -2.016922333800727, -0.05063097544912695, 1.465478299479744, -0.6838407843299107, -1.7403528433814341,
+              -11.933294532773434};
+
+      compareGLMCoeffs(model._output._submodels[0].beta, oldGLMCoeffs, 1e-10);  // compare to original GLM
+
+    } finally{
+      Scope.exit();
+    }
+  }
+
+  public void compareGLMCoeffs(double[] coeff1, double[] coeff2, double tol) {
+
+    assertTrue(coeff1.length==coeff2.length); // assert coefficients having the same length first
+    for (int index=0; index < coeff1.length; index++) {
+      assert Math.abs(coeff1[index]-coeff2[index]) < tol :
+              "coefficient difference "+Math.abs(coeff1[index]-coeff2[index])+" exceeded tolerance of "+tol;
     }
   }
 
