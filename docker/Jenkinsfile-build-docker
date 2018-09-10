@@ -1,6 +1,6 @@
 #! /usr/bin/groovy
 
-final String AGENT_LABEL = 'docker && !mr-0xc8'
+final String AGENT_LABEL = 'mr-0xc6'
 final String IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime"
 def pipelineContext = null
 
