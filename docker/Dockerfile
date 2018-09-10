@@ -1,15 +1,15 @@
-########################################################################
-# Dockerfile for Oracle JDK 8 on Ubuntu 14.04
-# contains following R versions:
-#   - 3.4.1
-#   - 3.3.3
-#   - installed R versions can be overriden by setting the R_VERSIONS build arg
-# contains following Python versions:
-#   - 2.7
-#   - 3.5
-#   - 3.6
-#   - installed Python versions can be overriden by setting the PYTHON_VERSIONS build arg
-########################################################################
+#####################################################################################################################
+# Dockerfile for Oracle JDK 8 on Ubuntu 16.04                                                                       #
+# contains following R versions:                                                                                    #
+#   - 3.4.1                                                                                                         #
+#   - 3.3.3                                                                                                         #
+#   - installed R versions can be overriden by setting the R_VERSIONS build arg contains following Python versions: #
+# contains following Python versions:                                                                               #
+#   - 2.7                                                                                                           #
+#   - 3.5                                                                                                           #
+#   - 3.6                                                                                                           #
+#   - installed Python versions can be overriden by setting the PYTHON_VERSIONS build arg                           #
+#####################################################################################################################
 
 # pull base image
 FROM ubuntu:16.04
@@ -138,6 +138,18 @@ RUN \
   conda update conda && \
   conda clean --all --yes
 ENV PATH /opt/conda/bin:$PATH
+
+# Install CMake
+RUN \
+    wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz && \
+    tar -xvzf cmake-3.5.2.tar.gz && \
+    cd cmake-3.5.2/ && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf cmake-3.5.2 && \
+    if [ "$(cmake --version | head -1)" != 'cmake version 3.5.2' ]; then exit 1; fi
 
 # Remove unnecessary files
 RUN \
