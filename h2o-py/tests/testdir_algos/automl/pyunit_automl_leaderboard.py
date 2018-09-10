@@ -17,7 +17,7 @@ else: # Python 3
     automl_seed = random.randint(0, sys.maxsize)
 print("Random Seed for pyunit_automl_leaderboard.py = " + str(automl_seed))
 
-all_algos = ["DeepLearning", "DRF", "GBM", "GLM", "StackedEnsemble"] #add XGBoost when available
+all_algos = ["DeepLearning", "DRF", "GBM", "GLM", "XGBoost", "StackedEnsemble"]
 
 
 class Obj(object):

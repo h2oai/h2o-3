@@ -33,7 +33,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
 
 /**
  * H2O AutoML
@@ -45,67 +44,82 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activati
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
-  private static class WorkAllocations extends Iced<WorkAllocations> {
+  static class WorkAllocations extends Iced<WorkAllocations> {
 
-    private static class WorkEstimation extends Iced<WorkEstimation> {
-      private algo algo;
-      private int singleModelCost;
-      private int hyperParamSearchCost;
-
-      public WorkEstimation(algo algo, int singleModelCost, int hyperParamSearchCost) {
-        this.algo = algo;
-        this.singleModelCost = singleModelCost;
-        this.hyperParamSearchCost = hyperParamSearchCost;
-      }
-    }
-
-    private static class WorkAllocation extends Iced<WorkAllocation> {
-      private algo algo;
+    private static class Work extends Iced<Work> {
+      private Algo algo;
       private int count;
-      private JobType workType;
+      private JobType type;
+      private int share;
 
-      public WorkAllocation(algo algo, int count, JobType workType) {
+      Work(Algo algo, int count, JobType type, int share) {
         this.algo = algo;
         this.count = count;
-        this.workType = workType;
+        this.type = type;
+        this.share = share;
+      }
+
+      int consume() {
+        return consume(1);
+      }
+
+      int consume(int amount) {
+        int c = Math.min(this.count, amount);
+        this.count -= c;
+        return c * this.share;
+      }
+
+      int consumeAll() {
+        return consume(Integer.MAX_VALUE);
       }
     }
 
-    private final HashMap<algo, WorkEstimation> estimations = new HashMap<>();
-    private final LinkedList<WorkAllocation> allocations = new LinkedList<>();
+    private boolean canAllocate = true;
+    private final LinkedList<Work> allocations = new LinkedList<>();
 
-    WorkAllocations estimate(algo algo, int singleModelCost, int hyperParamSearchCost) {
-      estimations.put(algo, new WorkEstimation(algo, singleModelCost, hyperParamSearchCost));
+    WorkAllocations allocate(Algo algo, int count, JobType type, int workShare) {
+      if (!canAllocate) throw new IllegalStateException("can't allocate new work");
+
+      allocations.add(new Work(algo, count, type, workShare));
       return this;
     }
 
-    WorkAllocations allocate(algo algo, int count, JobType type) {
-      allocations.add(new WorkAllocation(algo, count, type));
-      return this;
+    void end() {
+      canAllocate = false;
     }
 
-    void remove(algo algo) {
-      final Iterator<WorkAllocation> iter = allocations.iterator();
-      while(iter.hasNext()) {
+    void remove(Algo algo) {
+      final Iterator<Work> iter = allocations.iterator();
+      while (iter.hasNext()) {
         if (algo.equals(iter.next().algo)) iter.remove();
       }
     }
 
-    int getCost(algo algo, JobType workType) {
-      WorkEstimation estimate = estimations.get(algo);
-      switch (workType) {
-        case ModelBuild: return estimate.singleModelCost;
-        case HyperparamSearch: return estimate.hyperParamSearchCost;
-        default: return 0;
+    Work getAllocation(Algo algo, JobType workType) {
+      for (Work alloc : allocations) {
+        if (alloc.algo == algo && alloc.type == workType) return alloc;
       }
+      return null;
     }
 
-    int totalWork() {
+    private int sum(List<Work> workItems) {
       int tot = 0;
-      for (WorkAllocation alloc : allocations) {
-          tot += (alloc.count * getCost(alloc.algo, alloc.workType));
+      for (Work item : workItems) {
+        tot += (item.count * item.share);
       }
       return tot;
+    }
+
+    int remainingWork() {
+      return sum(allocations);
+    }
+
+    int remainingWork(JobType type) {
+      List<Work> selected = new ArrayList<>(allocations.size());
+      for (Work item : allocations) {
+        if (item.type == type) selected.add(item);
+      }
+      return sum(selected);
     }
 
   }
@@ -114,22 +128,35 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
-  // TODO: UGH: this should be dynamic, and it's easy to make it so
-  //   just turn this enum into a class...
+  // if we need to make the Algo list dynamic, we should just turn this enum into a class...
   // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
-  public enum algo {
+  public enum Algo implements algo {
     GLM,
     DRF,
     GBM,
     DeepLearning,
     StackedEnsemble,
     XGBoost,
-    LightGBM { @Override String urlName() { return XGBoost.urlName(); } }
     ;
 
     String urlName() {
       return this.name().toLowerCase();
     }
+  }
+
+  /**
+   * for external use only.
+   * Keeping this mapping for customers consuming the Java API directly
+   * @deprecated use {@link Algo} instead
+   */
+  @Deprecated
+  public interface algo {
+    @Deprecated public static final Algo GLM = Algo.GLM;
+    @Deprecated public static final Algo DRF = Algo.DRF;
+    @Deprecated public static final Algo GBM = Algo.GBM;
+    @Deprecated public static final Algo DeepLearning = Algo.DeepLearning;
+    @Deprecated public static final Algo StackedEnsemble = Algo.StackedEnsemble;
+    @Deprecated public static final Algo XGBoost = Algo.XGBoost;
   }
 
   private enum JobType {
@@ -191,9 +218,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
 
-  private WorkAllocations workAllocations = new WorkAllocations();
+  private WorkAllocations workAllocations;
 
-  private algo[] skipAlgosList = new algo[]{};
+  private Algo[] skipAlgosList = new Algo[]{};
 
   public AutoML() {
     super(null);
@@ -240,43 +267,32 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
     leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
 
-    planWork();
-
     this.jobs = new ArrayList<>();
     this.tempFrames = new ArrayList<>();
   }
 
 
-  private void planWork() {
-    workAllocations.estimate(algo.DeepLearning, 10, 100)
-            .estimate(algo.DRF, 10, 100)
-            .estimate(algo.GBM, 10, 100)
-            .estimate(algo.GLM, 10, 100)
-            .estimate(algo.LightGBM, 10, 100)
-            .estimate(algo.XGBoost, 10, 100)
-            .estimate(algo.StackedEnsemble, 10, 100)
-            ;
-    workAllocations.allocate(algo.DeepLearning, 1, JobType.ModelBuild)
-            .allocate(algo.DeepLearning, 3, JobType.HyperparamSearch)
-            .allocate(algo.DRF, 2, JobType.ModelBuild)
-            .allocate(algo.GBM, 5, JobType.ModelBuild)
-            .allocate(algo.GBM, 1, JobType.HyperparamSearch)
-            .allocate(algo.GLM, 1, JobType.HyperparamSearch)
-//            .allocate(algo.LightGBM, 3, JobType.ModelBuild)
-//            .allocate(algo.LightGBM, 1, JobType.HyperparamSearch)
-            .allocate(algo.XGBoost, 3, JobType.ModelBuild)
-            .allocate(algo.XGBoost, 1, JobType.HyperparamSearch)
-            .allocate(algo.StackedEnsemble, 2, JobType.ModelBuild)
-            ;
+  WorkAllocations planWork() {
+    workAllocations = new WorkAllocations();
+    workAllocations.allocate(Algo.DeepLearning, 1, JobType.ModelBuild, 10)
+            .allocate(Algo.DeepLearning, 3, JobType.HyperparamSearch, 20)
+            .allocate(Algo.DRF, 2, JobType.ModelBuild, 10)
+            .allocate(Algo.GBM, 5, JobType.ModelBuild, 10)
+            .allocate(Algo.GBM, 1, JobType.HyperparamSearch, 60)
+            .allocate(Algo.GLM, 1, JobType.HyperparamSearch, 20)
+            .allocate(Algo.XGBoost, 3, JobType.ModelBuild, 10)
+            .allocate(Algo.XGBoost, 1, JobType.HyperparamSearch, 100)
+            .allocate(Algo.StackedEnsemble, 2, JobType.ModelBuild, 15)
+            .end();
 
     if (buildSpec.build_models.exclude_algos != null) {
-      for (algo algo : buildSpec.build_models.exclude_algos) {
+      for (Algo algo : (Algo[])buildSpec.build_models.exclude_algos) {
         skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
       }
     }
     if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")) {
       userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
-      skipAlgosList = ArrayUtils.append(skipAlgosList, algo.XGBoost, algo.LightGBM);
+      skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.XGBoost);
     }
 
     // This is useful during debugging.
@@ -284,11 +300,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // Inform the user about skipped algos.
     // Note: to make the keys short we use "DL" for the "DeepLearning" searches:
-    for (algo skippedAlgo : skipAlgosList) {
+    for (Algo skippedAlgo : skipAlgosList) {
       userFeedback.info(Stage.ModelTraining, "Disabling Algo: " + skippedAlgo + " as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
 
+    return workAllocations;
   }
 
   /**
@@ -510,14 +527,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return timeRemainingMs() > 0 && remainingModels() > 0;
   }
 
-  private void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
-    pollAndUpdateProgress(stage, name, workContribution, parentJob, subJob, subJobType, false);
+  private void pollAndUpdateProgress(Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob) {
+    pollAndUpdateProgress(stage, name, work, parentJob, subJob, false);
   }
 
-  private void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType, boolean ignoreTimeout) {
+  private void pollAndUpdateProgress(Stage stage, String name, WorkAllocations.Work work, Job parentJob, Job subJob, boolean ignoreTimeout) {
     if (null == subJob) {
       if (null != parentJob) {
-        parentJob.update(workContribution, "SKIPPED: " + name);
+        parentJob.update(work.consume(), "SKIPPED: " + name);
         Log.info("AutoML skipping " + name);
       }
       return;
@@ -540,14 +557,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           subJob.stop();
         }
       }
-      long workedSoFar = Math.round(subJob.progress() * workContribution);
+      long workedSoFar = Math.round(subJob.progress() * work.share);
       cumulative += workedSoFar;
 
       if (null != parentJob) {
         parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
       }
 
-      if (JobType.HyperparamSearch == subJobType) {
+      if (JobType.HyperparamSearch == work.type) {
         Grid grid = (Grid)subJob._result.get();
         int gridCount = grid.getModelCount();
         if (gridCount > gridLastCount) {
@@ -567,7 +584,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     // pick up any stragglers:
-    if (JobType.HyperparamSearch == subJobType) {
+    if (JobType.HyperparamSearch == work.type) {
       if (subJob.isCrashed()) {
         userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
@@ -581,7 +598,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         }
         userFeedback.info(stage, name + " complete");
       }
-    } else if (JobType.ModelBuild == subJobType) {
+    } else if (JobType.ModelBuild == work.type) {
       if (subJob.isCrashed()) {
         userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
@@ -594,8 +611,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // add remaining work
     if (null != parentJob) {
-      parentJob.update(workContribution - lastWorkedSoFar);
+      parentJob.update(work.share - lastWorkedSoFar);
     }
+    work.consume();
 
     jobs.remove(subJob);
   }
@@ -616,24 +634,26 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return instanceNum;
     }
   }
+
   private Key<Model> modelKey(String algoName) {
     return Key.make(algoName + "_" + nextInstanceCounter(algoName, algoInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
-  Job<Model> trainModel(Key<Model> key, algo algo, Model.Parameters parms) {
-    return trainModel(key, algo, parms, false);
+  Job<Model> trainModel(Key<Model> key, WorkAllocations.Work work, Model.Parameters parms) {
+    return trainModel(key, work, parms, false);
   }
 
   /**
    * @param key (optional) model key
-   * @param algo the algo, e.g. {@link algo#GBM}; used for validation, messages and for building the key if missing
+   * @param work  the allocated work item: used to check various executions limits and to distribute remaining work (time + models)
    * @param parms the model builder params
    * @param ignoreLimits (defaults to false) whether or not to ignore the max_models/max_runtime constraints
    * @return a started training model
    */
-  Job<Model> trainModel(Key<Model> key, algo algo, Model.Parameters parms, boolean ignoreLimits) {
-    if (exceededSearchLimits(algo, key == null ? null : key.toString(), JobType.ModelBuild, ignoreLimits)) return null;
+  Job<Model> trainModel(Key<Model> key, WorkAllocations.Work work, Model.Parameters parms, boolean ignoreLimits) {
+    if (exceededSearchLimits(work, key == null ? null : key.toString(), ignoreLimits)) return null;
 
+    Algo algo = work.algo;
     String algoName = ModelBuilder.algoName(algo.urlName());
 
     if (null == key) key = modelKey(algoName);
@@ -666,7 +686,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: handle error_count and messages
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
-    return builder.trainModelOnH2ONode();
+    try {
+      return builder.trainModelOnH2ONode();
+    } catch (H2OIllegalArgumentException exception) {
+      userFeedback.warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
+      return null;
+    }
   }
 
   private Key<Grid> gridKey(String algoName) {
@@ -681,39 +706,33 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   /**
    * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
    * on the returned Job to ensure that it's complete.
-   * @param algo the algo, e.g. {@link algo#GBM}; used for validation, messages and for building the grid key
-   * @param baseParms ModelBuilder parameter values that are common across all models in the search
-   * @param searchParms hyperparameter search space
-   * @return the started hyperparameter search job
-   */
-  Job<Grid> hyperparameterSearch(algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
-    return hyperparameterSearch(null, algo, baseParms, searchParms);
-  }
-
-  /**
-   * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
-   * on the returned Job to ensure that it's complete.
    * @param gridKey optional grid key
-   * @param algo  the algo, e.g. "GBM"; used for messages and for building the grid key if it's not specified
+   * @param work  the allocated work item: used to check various executions limits and to distribute remaining work (time + models)
    * @param baseParms ModelBuilder parameter values that are common across all models in the search
    * @param searchParms hyperparameter search space
    * @return the started hyperparameter search job
    */
-  Job<Grid> hyperparameterSearch(Key<Grid> gridKey, algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
-    if (exceededSearchLimits(algo, JobType.HyperparamSearch)) return null;
+  Job<Grid> hyperparameterSearch(Key<Grid> gridKey, WorkAllocations.Work work, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+    if (exceededSearchLimits(work)) return null;
 
+    Algo algo = work.algo;
     setCommonModelBuilderParams(baseParms);
 
     RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
+    float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
+//    float remainingWorkRatio = (float) work.workShare / workAllocations.remainingWork(work.jobType);
+    long maxAssignedTime = (long) Math.round(remainingWorkRatio * timeRemainingMs() / 1000);
+    int maxAssignedModels = (int) Math.ceil(remainingWorkRatio * remainingModels());
+
     if (searchCriteria.max_runtime_secs() == 0)
-      searchCriteria.set_max_runtime_secs(Math.round(timeRemainingMs() / 1000.0));
+      searchCriteria.set_max_runtime_secs(maxAssignedTime);
     else
-      searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), Math.round(timeRemainingMs() / 1000.0)));
+      searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), maxAssignedTime));
 
     if (searchCriteria.max_models() == 0)
-      searchCriteria.set_max_models(remainingModels());
+      searchCriteria.set_max_models(maxAssignedModels);
     else
-      searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), remainingModels()));
+      searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
 
     userFeedback.info(Stage.ModelTraining, "AutoML: starting " + algo + " hyperparameter search");
 
@@ -737,13 +756,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == gridKey) gridKey = gridKey(algo.name());
     addGridKey(gridKey);
     Log.debug("Hyperparameter search: " + algo.name() + ", time remaining (ms): " + timeRemainingMs());
-    Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
+    return GridSearch.startGridSearch(gridKey,
             baseParms,
             searchParms,
             new GridSearch.SimpleParametersBuilderFactory(),
             searchCriteria);
-
-    return gridJob;
   }
 
 
@@ -808,44 +825,39 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       parms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
   }
 
-  private boolean exceededSearchLimits(algo algo, JobType job_type) {
-    return exceededSearchLimits(algo, null, job_type, false);
+  private boolean exceededSearchLimits(WorkAllocations.Work work) {
+    return exceededSearchLimits(work, null, false);
   }
 
-  private boolean exceededSearchLimits(algo algo, String algo_desc, JobType job_type, boolean ignoreLimits) {
-    String fullName = algo_desc == null ? algo.toString() : algo+" ("+algo_desc+")";
-
-    if (ArrayUtils.contains(skipAlgosList, algo)) {
-      userFeedback.info(Stage.ModelTraining,"AutoML: skipping algo "+fullName+" in "+job_type);
-      return true;
-    }
-
+  private boolean exceededSearchLimits(WorkAllocations.Work work, String algo_desc, boolean ignoreLimits) {
+    String fullName = algo_desc == null ? work.algo.toString() : work.algo+" ("+algo_desc+")";
     if (!ignoreLimits && timingOut()) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+job_type);
+      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+work.type);
       return true;
     }
 
     if (!ignoreLimits && remainingModels() <= 0) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+job_type);
+      userFeedback.info(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+work.type);
       return true;
     }
     return false;
   }
 
   void defaultXGBoosts(boolean emulateLightGBM) {
+    Algo algo = Algo.XGBoost;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
+    if (work == null) return;
+
     XGBoostParameters xgBoostParameters = new XGBoostParameters();
     setCommonModelBuilderParams(xgBoostParameters);
 
     Job xgBoostJob;
     Key<Model> key;
 
-    algo algo = algo.XGBoost;
     if (emulateLightGBM) {
-      algo = algo.LightGBM;
       xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
       xgBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
     }
-    int workContribution = workAllocations.getCost(algo, JobType.ModelBuild);
 
     // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
     xgBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
@@ -870,13 +882,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (emulateLightGBM) {
       xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
       xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float)xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float)xgBoostParameters._min_rows;
+//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
+      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
     }
 
     key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, algo, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), workContribution, this.job(), xgBoostJob, JobType.ModelBuild);
+    xgBoostJob = trainModel(key, work, xgBoostParameters);
+    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 2
     xgBoostParameters._max_depth = 10;
@@ -888,13 +900,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (emulateLightGBM) {
       xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
       xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float)xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float)xgBoostParameters._min_rows;
+//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
+      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
     }
 
     key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, algo, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), workContribution, this.job(), xgBoostJob, JobType.ModelBuild);
+    xgBoostJob = trainModel(key, work, xgBoostParameters);
+    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
 
     //XGB 3
     xgBoostParameters._max_depth = 20;
@@ -906,26 +918,30 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (emulateLightGBM) {
       xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
       xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//      xgBoostParameters._min_data_in_leaf = (float)xgBoostParameters._min_rows;
-      xgBoostParameters._min_sum_hessian_in_leaf = (float)xgBoostParameters._min_rows;
+//      xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
+      xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
     }
 
     key = modelKey(algo.name());
-    xgBoostJob = trainModel(key, algo, xgBoostParameters);
-    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), workContribution, this.job(), xgBoostJob, JobType.ModelBuild);
+    xgBoostJob = trainModel(key, work, xgBoostParameters);
+    pollAndUpdateProgress(Stage.ModelTraining,  key.toString(), work, this.job(), xgBoostJob);
   }
 
 
-   void defaultSearchXGBoost(Key<Grid> gridKey, boolean emulateLightGBM) {
+  void defaultSearchXGBoost(Key<Grid> gridKey, boolean emulateLightGBM) {
+    Algo algo = Algo.XGBoost;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
+
     XGBoostParameters xgBoostParameters = new XGBoostParameters();
     setCommonModelBuilderParams(xgBoostParameters);
 
-    algo algo = algo.XGBoost;
+
     if (emulateLightGBM) {
-      algo = algo.LightGBM;
-      xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
+       xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
       xgBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
     }
+
     xgBoostParameters._distribution = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
             : getResponseColumn().isCategorical() ? DistributionFamily.multinomial
             : DistributionFamily.AUTO;
@@ -965,36 +981,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
     searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
-    Job<Grid> xgBoostSearchJob = hyperparameterSearch(gridKey, algo, xgBoostParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, algo.name()+" hyperparameter search", workContribution, this.job(), xgBoostSearchJob, JobType.HyperparamSearch);
+    Job<Grid> xgBoostSearchJob = hyperparameterSearch(gridKey, work, xgBoostParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, algo.name()+" hyperparameter search", work, this.job(), xgBoostSearchJob);
   }
 
 
   void defaultRandomForest() {
-    algo algo = algo.DRF;
-    int workContribution = workAllocations.getCost(algo, JobType.ModelBuild);
+    Algo algo = Algo.DRF;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
+    if (work == null) return;
 
     DRFParameters drfParameters = new DRFParameters();
     setCommonModelBuilderParams(drfParameters);
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
-    Job randomForestJob = trainModel(null, algo, drfParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", workContribution, this.job(), randomForestJob, JobType.ModelBuild);
+    Job randomForestJob = trainModel(null, work, drfParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", work, this.job(), randomForestJob);
   }
 
 
   void defaultExtremelyRandomTrees() {
-    algo algo = algo.DRF;
-    int workContribution = workAllocations.getCost(algo, JobType.ModelBuild);
+    Algo algo = Algo.DRF;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
+    if (work == null) return;
 
     DRFParameters drfParameters = new DRFParameters();
     setCommonModelBuilderParams(drfParameters);
     drfParameters._histogram_type = SharedTreeParameters.HistogramType.Random;
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
-    Job randomForestJob = trainModel(modelKey("XRT"), algo, drfParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", workContribution, this.job(), randomForestJob, JobType.ModelBuild);
+    Job randomForestJob = trainModel(modelKey("XRT"), work, drfParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "Extremely Randomized Trees (XRT) Random Forest build", work, this.job(), randomForestJob);
   }
 
 
@@ -1002,79 +1019,78 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Build Arno's magical 5 default GBMs.
    */
   void defaultGBMs() {
-    algo algo = algo.GBM;
-    int workContribution = workAllocations.getCost(algo, JobType.ModelBuild);
-    Key<Grid> gridKey = gridKey(algo.name());
+    Algo algo = Algo.GBM;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
+    if (work == null) return;
+
+    Job gbmJob;
 
     GBMParameters gbmParameters = new GBMParameters();
     setCommonModelBuilderParams(gbmParameters);
     gbmParameters._score_tree_interval = 5;
     gbmParameters._histogram_type = SharedTreeParameters.HistogramType.AUTO;
 
-    Map<String, Object[]> searchParams = new HashMap<>();
-    searchParams.put("_ntrees", new Integer[]{10000});
-    searchParams.put("_sample_rate", new Double[]{ 0.8 });
-    searchParams.put("_col_sample_rate", new Double[]{ 0.8 });
-    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.8 });
+    gbmParameters._ntrees = 1000;
+    gbmParameters._sample_rate = 0.8;
+    gbmParameters._col_sample_rate = 0.8;
+    gbmParameters._col_sample_rate_per_tree = 0.8;
 
-    //    searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
-    //    searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
-
-    Job<Grid> gbmJob = null;
     // Default 1:
-    searchParams.put("_max_depth", new Integer[]{ 6 });
-    searchParams.put("_min_rows", new Integer[]{ 1 });
+    gbmParameters._max_depth = 6;
+    gbmParameters._min_rows = 1;
 
-    gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 1", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    gbmJob = trainModel(null, work, gbmParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 1", work, this.job(), gbmJob);
 
     // Default 2:
-    searchParams.put("_max_depth", new Integer[]{ 7 });
-    searchParams.put("_min_rows", new Integer[]{ 10 });
+    gbmParameters._max_depth = 7;
+    gbmParameters._min_rows = 10;
 
-    gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 2", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    gbmJob = trainModel(null, work, gbmParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 2", work, this.job(), gbmJob);
 
     // Default 3:
-    searchParams.put("_max_depth", new Integer[]{ 8 });
-    searchParams.put("_min_rows", new Integer[]{ 10 });
+    gbmParameters._max_depth = 8;
+    gbmParameters._min_rows = 10;
 
-    gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 3", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    gbmJob = trainModel(null, work, gbmParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 3", work, this.job(), gbmJob);
 
     // Default 4:
-    searchParams.put("_max_depth", new Integer[]{ 10 });
-    searchParams.put("_min_rows", new Integer[]{ 10 });
+    gbmParameters._max_depth = 10;
+    gbmParameters._min_rows = 10;
 
-    gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 4", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    gbmJob = trainModel(null, work, gbmParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 4", work, this.job(), gbmJob);
 
     // Default 5:
-    searchParams.put("_max_depth", new Integer[]{ 15 });
-    searchParams.put("_min_rows", new Integer[]{ 100 });
+    gbmParameters._max_depth = 15;
+    gbmParameters._min_rows = 100;
 
-    gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM 5", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    gbmJob = trainModel(null, work, gbmParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 5", work, this.job(), gbmJob);
   }
 
 
   void defaultDeepLearning() {
-    algo algo = algo.DeepLearning;
-    int workContribution = workAllocations.getCost(algo, JobType.ModelBuild);
+    Algo algo = Algo.DeepLearning;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.ModelBuild);
+    if (work == null) return;
 
     DeepLearningParameters deepLearningParameters = new DeepLearningParameters();
     setCommonModelBuilderParams(deepLearningParameters);
     deepLearningParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
     deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
 
-    Job deepLearningJob = trainModel(null, algo, deepLearningParameters);
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Deep Learning build", workContribution, this.job(), deepLearningJob, JobType.ModelBuild);
+    Job deepLearningJob = trainModel(null, work, deepLearningParameters);
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Deep Learning build", work, this.job(), deepLearningJob);
   }
 
 
   void defaultSearchGLM(Key<Grid> gridKey) {
-    algo algo = algo.GLM;
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
+    Algo algo = Algo.GLM;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
 
     GLMParameters glmParameters = new GLMParameters();
     setCommonModelBuilderParams(glmParameters);
@@ -1089,13 +1105,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
     searchParams.put("_missing_values_handling", new DeepLearningParameters.MissingValuesHandling[] {DeepLearningParameters.MissingValuesHandling.MeanImputation /* , DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip */});
 
-    Job<Grid>glmJob = hyperparameterSearch(gridKey, algo, glmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", workContribution, this.job(), glmJob, JobType.HyperparamSearch);
+    Job<Grid>glmJob = hyperparameterSearch(gridKey, work, glmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", work, this.job(), glmJob);
   }
 
   void defaultSearchGBM(Key<Grid> gridKey) {
-    algo algo = algo.GBM;
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
+    Algo algo = Algo.GBM;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
 
     GBMParameters gbmParameters = new GBMParameters();
     setCommonModelBuilderParams(gbmParameters);
@@ -1112,19 +1129,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
     searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
-    Job<Grid>gbmJob = hyperparameterSearch(gridKey, algo, gbmParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", workContribution, this.job(), gbmJob, JobType.HyperparamSearch);
+    Job<Grid>gbmJob = hyperparameterSearch(gridKey, work, gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", work, this.job(), gbmJob);
   }
 
   void defaultSearchDL1(Key<Grid> gridKey) {
-    algo algo = algo.DeepLearning;
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
+    Algo algo = Algo.DeepLearning;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
     setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
-    dlParameters._activation = RectifierWithDropout;
+    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
 
     Map<String, Object[]> searchParams = new HashMap<>();
     // common:
@@ -1135,19 +1153,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50}, {200}, {500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, algo, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", workContribution, this.job(), dlJob, JobType.HyperparamSearch);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", work, this.job(), dlJob);
   }
 
   void defaultSearchDL2(Key<Grid> gridKey) {
-    algo algo = algo.DeepLearning;
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
+    Algo algo = Algo.DeepLearning;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
     setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
-    dlParameters._activation = RectifierWithDropout;
+    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
 
     Map<String, Object[]> searchParams = new HashMap<>();
     // common:
@@ -1158,19 +1177,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50}, {200, 200}, {500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0 }, { 0.1, 0.1 }, { 0.2, 0.2 }, { 0.3, 0.3 }, { 0.4, 0.4 }, { 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, algo, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", workContribution, this.job(), dlJob, JobType.HyperparamSearch);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", work, this.job(), dlJob);
   }
 
   void defaultSearchDL3(Key<Grid> gridKey) {
-    algo algo = algo.DeepLearning;
-    int workContribution = workAllocations.getCost(algo, JobType.HyperparamSearch);
+    Algo algo = Algo.DeepLearning;
+    WorkAllocations.Work work = workAllocations.getAllocation(algo, JobType.HyperparamSearch);
+    if (work == null) return;
 
     DeepLearningParameters dlParameters = new DeepLearningParameters();
     setCommonModelBuilderParams(dlParameters);
     dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
     dlParameters._adaptive_rate = true;
-    dlParameters._activation = RectifierWithDropout;
+    dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
 
     Map<String, Object[]> searchParams = new HashMap<>();
     // common:
@@ -1181,11 +1201,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50, 50}, {200, 200, 200}, {500, 500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0, 0.0 }, { 0.1, 0.1, 0.1 }, { 0.2, 0.2, 0.2 }, { 0.3, 0.3, 0.3 }, { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch(gridKey, algo, dlParameters, searchParams);
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", workContribution, this.job(), dlJob, JobType.HyperparamSearch);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, work, dlParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", work, this.job(), dlJob);
   }
 
   Job<StackedEnsembleModel> stack(String modelName, Key<Model>[]... modelKeyArrays) {
+    WorkAllocations.Work work = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
+    if (work == null) return null;
+
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
@@ -1206,7 +1229,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
 
     Key modelKey = modelKey(modelName);
-    Job ensembleJob = trainModel(modelKey, algo.StackedEnsemble, stackedEnsembleParameters, true);
+    Job ensembleJob = trainModel(modelKey, work, stackedEnsembleParameters, true);
     return ensembleJob;
   }
 
@@ -1284,7 +1307,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     //
     // Build DL models
     //
-    Key<Grid> dlGridKey = gridKey(algo.DeepLearning.name());
+    Key<Grid> dlGridKey = gridKey(Algo.DeepLearning.name());
     ///////////////////////////////////////////////////////////
     // build DL models with default search parameter set 1
     ///////////////////////////////////////////////////////////
@@ -1305,20 +1328,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     Model[] allModels = leaderboard().getModels();
 
-    int se_workContribution = workAllocations.getCost(algo.StackedEnsemble, JobType.ModelBuild);
-    int tot_se_workContribution = 2 * se_workContribution;
-
+    WorkAllocations.Work seWork = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
     if (allModels.length == 0) {
-      this.job.update(tot_se_workContribution, "No models built; StackedEnsemble builds skipped");
+      this.job.update(seWork.consumeAll(), "No models built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
     } else if (allModels.length == 1) {
-      this.job.update(tot_se_workContribution, "One model built; StackedEnsemble builds skipped");
+      this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (ArrayUtils.contains(skipAlgosList, algo.StackedEnsemble)) { //TODO: can be removed, check is done later before starting model
-      this.job.update(tot_se_workContribution, "StackedEnsemble builds skipped");
+    } else if (ArrayUtils.contains(skipAlgosList, Algo.StackedEnsemble)) { //TODO: can be removed, check is done later before starting model
+      this.job.update(seWork.consumeAll(), "StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
     } else if (buildSpec.build_control.nfolds == 0) {
-        this.job.update(tot_se_workContribution, "Cross-validation disabled by the user; StackedEnsemble build skipped");
+        this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user; StackedEnsemble build skipped");
         userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
     } else {
       ///////////////////////////////////////////////////////////
@@ -1338,7 +1359,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           notEnsembles[notEnsembleIndex++] = aModel._key;
 
       Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", se_workContribution, this.job(), ensembleJob, JobType.ModelBuild, true);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", seWork, this.job(), ensembleJob, true);
 
       // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
       // This will give another ensemble that is smaller than the original which takes all models into consideration.
@@ -1357,7 +1378,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
       Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", se_workContribution, this.job(), bestEnsembleJob, JobType.ModelBuild, true);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", seWork, this.job(), bestEnsembleJob, true);
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
@@ -1441,7 +1462,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (aml.job == null || !aml.job.isRunning()) {
       H2OJob j = new H2OJob(aml, aml._key, aml.timeRemainingMs());
       aml.job = j._job;
-      j.start(aml.workAllocations.totalWork());
+      aml.planWork();
+      j.start(aml.workAllocations.remainingWork());
       DKV.put(aml);
     }
   }

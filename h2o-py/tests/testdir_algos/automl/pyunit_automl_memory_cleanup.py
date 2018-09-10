@@ -153,8 +153,8 @@ def test_clean_cv_predictions():
         assert len(se) == len(se_all_models) + len(se_best_of_family)
         assert len(se_all_models) == 1, "expecting only the first StackedEnsemble_AllModels, but got {}".format(len(se_all_models))
         assert se_all_models[0] in first_se, "first StackedEnsemble_AllModels got replaced by new one"
-        assert len(se_best_of_family) == 1, "expecting only the first StackedEnsemble_BestOfFamily, but got {}".format(len(se_all_models))
-        assert se_best_of_family[0] in first_se, "first StackedEnsemble_AllModels got replaced by new one"
+        assert len(se_best_of_family) == 1, "expecting only the first StackedEnsemble_BestOfFamily, but got {}".format(len(se_best_of_family))
+        assert se_best_of_family[0] in first_se, "first StackedEnsemble_Best_of_Family got replaced by new one"
 
 
     def test_SE_retraining_works_when_param_enabled():
