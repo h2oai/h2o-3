@@ -506,13 +506,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param key (optional) model key
    * @param algo the Algo, e.g. {@link Algo#GBM}; used for validation, messages and for building the key if missing
    * @param parms the model builder params
-   * @param ignoreMaxModel (defaults to false) whether or not to skip the max_models validation
-   * @todo ignoreMaxModel param is a temp workaround to handle "exceptional" handling of SE,
+   * @param ignoreLimits (defaults to false) whether or not to skip the max_models validation
+   * @todo ignoreLimits param is a temp workaround to handle "exceptional" handling of SE,
    *       it can be removed completely when we decide to consider SE as just another model
    * @return a started training model
    */
-  public Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms, boolean ignoreMaxModel) {
-    if (exceededSearchLimits(algo, key == null ? null : key.toString(), JobType.ModelBuild, ignoreMaxModel)) return null;
+  public Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms, boolean ignoreLimits) {
+    if (exceededSearchLimits(algo, key == null ? null : key.toString(), JobType.ModelBuild, ignoreLimits)) return null;
 
     String algoName = ModelBuilder.algoName(algo.urlName());
 
@@ -525,7 +525,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     setCommonModelBuilderParams(builder._parms);
 
-    if (builder._parms._max_runtime_secs == 0)
+    if (ignoreLimits)
+      builder._parms._max_runtime_secs = 0;
+    else if (builder._parms._max_runtime_secs == 0)
       builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
     else
       builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs,
@@ -682,7 +684,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return exceededSearchLimits(algo, null, job_type, false);
   }
 
-  private boolean exceededSearchLimits(Algo algo, String algo_desc, JobType job_type, boolean ignoreMaxModels) {
+  private boolean exceededSearchLimits(Algo algo, String algo_desc, JobType job_type, boolean ignoreLimits) {
     String fullName = algo_desc == null ? algo.toString() : algo+" ("+algo_desc+")";
 
     if (ArrayUtils.contains(skipAlgosList, algo)) {
@@ -690,12 +692,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return true;
     }
 
-    if (timingOut()) {
+    if (!ignoreLimits && timingOut()) {
       userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping "+fullName+" in "+job_type);
       return true;
     }
 
-    if (!ignoreMaxModels && remainingModels() <= 0) {
+    if (!ignoreLimits && remainingModels() <= 0) {
       userFeedback.info(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+fullName+" in "+job_type);
       return true;
     }
