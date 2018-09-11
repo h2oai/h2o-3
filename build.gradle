@@ -208,6 +208,9 @@ subprojects {
     version = rootProject.version
 
     repositories {
+        if (project.hasProperty("enableMavenLocal")) { // useful for development
+            mavenLocal()
+        }
         mavenCentral()
         jcenter()
         maven {
@@ -222,7 +225,6 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        // mavenLocal()
     }
 
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
