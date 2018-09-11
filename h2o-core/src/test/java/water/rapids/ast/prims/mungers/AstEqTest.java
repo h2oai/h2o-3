@@ -23,10 +23,6 @@ public class AstEqTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-  }
-
   @Test
   public void IsNaTest() {
     fr = new TestFrameBuilder()
@@ -40,18 +36,16 @@ public class AstEqTest extends TestUtil {
     Val val = Rapids.exec(tree);
     Frame results = val.getFrame();
 
-    TwoDimTable twoDimTable = results.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
-
     assertTrue(results.numRows() == 2);
     assertEquals(1, results.vec(0).at(0), 1e-5);
     assertEquals(0, results.vec(0).at(1), 1e-5);
 
+    results.delete();
   }
 
   @After
   public void afterEach() {
-    H2O.STORE.clear();
+    fr.delete();
   }
 
 

@@ -21,11 +21,6 @@ public class AstMergeTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void AutoMergeAllLeftTest() {
 
@@ -47,41 +42,50 @@ public class AstMergeTest extends TestUtil {
 
     String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    assertEquals(2, fr.numRows());
+    assertEquals(2, res.numRows());
 
-    assertVecEquals(vec(1, 2), val.getFrame().vec(0), 1e-6);
-    assertEquals(fr.vec(1).stringAt(0L), "a");
-    assertEquals(fr.vec(1).stringAt(0L),"a");
-    assertEquals(fr.vec(1).stringAt(1L),"b");
-    assertEquals(fr.vec(2).stringAt(0L),"c");
-    assertEquals(fr.vec(2).stringAt(1L),"null");
+    printOutFrameAsTable(res, true, false, res.numRows());
 
+    Vec expected = vec(1, 2);
+    assertVecEquals(expected, res.vec(0), 1e-6);
+    assertEquals(res.vec(1).stringAt(0L),"a");
+    assertEquals(res.vec(1).stringAt(1L),"b");
+    assertEquals(res.vec(2).stringAt(0L),"c");
+    assertEquals(res.vec(2).stringAt(1L),"null");
+
+    expected.remove();
+    frRight.delete();
+    res.delete();
   }
 
-  @Test(timeout = 10000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
+  @Ignore
+  @Test(timeout = 1000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
   public void AutoMergeAllLeftStressTest() {
 
+    int numberOfRows = 1000000;
     fr = new TestFrameBuilder()
             .withName("leftFrame")
             .withColNames("ColA", "ColB")
             .withVecTypes(Vec.T_NUM, Vec.T_STR)
-            .withRandomIntDataForCol(0, 1000000, 0, 100)
-            .withRandomBinaryDataForCol(1, 1000000)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 100)
+            .withRandomBinaryDataForCol(1, numberOfRows)
             .build();
 
     Frame frRight = new TestFrameBuilder()
             .withName("rightFrame")
             .withColNames("ColA_R", "ColB_R")
             .withVecTypes(Vec.T_NUM, Vec.T_STR)
-            .withRandomIntDataForCol(0, 1000000, 0, 100)
-            .withRandomBinaryDataForCol(1, 1000000)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 100)
+            .withRandomBinaryDataForCol(1, numberOfRows)
             .build();
 
     String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
-    Rapids.exec(tree);
+    Frame res = Rapids.exec(tree).getFrame();
+
+    res.delete();
+    frRight.delete();
   }
 
   @Test
@@ -105,23 +109,22 @@ public class AstMergeTest extends TestUtil {
 
     String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
+    assertEquals(3, res.numRows());
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
+    Vec expected = vec(1, 1, 2);
+    assertVecEquals(expected, res.vec(0), 1e-6);
+    assertEquals("a", res.vec(1).stringAt(0L) );
+    assertEquals("a", res.vec(1).stringAt(1L));
+    assertEquals("b", res.vec(1).stringAt(2L));
+    assertEquals("c", res.vec(2).stringAt(0L));
+    assertEquals("d", res.vec(2).stringAt(1L));
+    assertEquals("null", res.vec(2).stringAt(2L));
 
-    assertEquals(3, fr.numRows());
-
-    assertVecEquals(vec(1, 1, 2), val.getFrame().vec(0), 1e-6);
-    assertEquals(fr.vec(1).stringAt(0L), "a");
-    assertEquals(fr.vec(1).stringAt(1L),"a");
-    assertEquals(fr.vec(1).stringAt(2L),"b");
-    assertEquals(fr.vec(2).stringAt(0L),"c");
-    assertEquals(fr.vec(2).stringAt(1L),"d");
-    assertEquals(fr.vec(2).stringAt(2L),"null");
-
+    expected.remove();
+    res.delete();
+    frRight.delete();
   }
 
   @Test
@@ -146,17 +149,14 @@ public class AstMergeTest extends TestUtil {
 
     String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0, 1.0] [0.0, 1.0] 'auto' )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
+    assertEquals(2, res.numRows());
+    assertEquals(Double.NaN, res.vec(2).at(0), 1e-6);
+    assertEquals(42.0, res.vec(2).at(1), 1e-6);
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
-
-    assertEquals(2, fr.numRows());
-    assertEquals(Double.NaN, fr.vec(2).at(0), 1e-6);
-    assertEquals(42.0, fr.vec(2).at(1), 1e-6);
-
+    frRight.delete();
+    res.delete();
   }
 
   @Test
@@ -182,16 +182,15 @@ public class AstMergeTest extends TestUtil {
     Val val = Rapids.exec(tree);
     Frame result = val.getFrame();
 
-
-    TwoDimTable twoDimTable = result.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
-
     assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
+
+    frRight.delete();
+    result.delete();
   }
 
   @Ignore
   @Test
-  public void mergeByOnlyEmptyStringsTest() {
+  public void mergeByOnlyNAStringsTest() {
 
     fr = new TestFrameBuilder()
             .withName("leftFrame")
@@ -213,18 +212,16 @@ public class AstMergeTest extends TestUtil {
     Val val = Rapids.exec(tree);
     Frame result = val.getFrame();
 
-
-    TwoDimTable twoDimTable = result.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
-
     //TODO add asserts
 //    assertEquals(result.vec("ColB_R").at(2), 11, 1e-5);
+
+    frRight.delete();
+    result.delete();
   }
 
   @After
   public void afterEach() {
-    H2O.STORE.clear();
+    fr.delete();
   }
-
 
 }

@@ -37,19 +37,18 @@ public class AstKFoldTest extends TestUtil {
         Frame results = val.getFrame();
 
         fr = fr.add(results);
-        TwoDimTable twoDimTable = fr.toTwoDimTable();
-        System.out.println(twoDimTable.toString());
 
         assertTrue(fr.vec(1).at(0) < 5);
         assertTrue(fr.vec(1).at(1) < 5);
         assertTrue(fr.vec(1).at(2) < 5);
         assertTrue(fr.vec(1).at(3) < 5);
         assertTrue(fr.vec(1).at(4) < 5);
+
+        results.delete();
     }
 
     @After
     public void afterEach() {
-        Vec.ESPC.clear();
-        H2O.STORE.clear();
+        fr.delete();
     }
 }

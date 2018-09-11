@@ -1,11 +1,9 @@
 package water.fvec;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
-import water.H2O;
 import water.TestUtil;
 
 import static org.junit.Assert.assertTrue;
@@ -25,10 +23,11 @@ public class VecTest extends TestUtil {
 
   @Test public void testCalculatingDomainOnNumericalVecReturnsNull() {
     Vec vec = vec(0, 1, 0, 1);
-    boolean equals = vec.get_type_str().equals(Vec.TYPE_STR[Vec.T_NUM]);
-    assertTrue("Should be numerical vector", equals);
+    assertTrue("Should be numerical vector", vec.get_type_str().equals(Vec.TYPE_STR[Vec.T_NUM]));
     String[] domains = vec.domain();
     Assert.assertArrayEquals(null, domains);
+
+    vec.remove();
   }
 
   private void testToCategoricalDomainMatch(Vec f, String[] expectedDomain) {
@@ -103,10 +102,5 @@ public class VecTest extends TestUtil {
                     v.espc()[2] == FileVec.DFLT_CHUNK_SIZE * 2
     );
     v.remove(new Futures()).blockForPending();
-  }
-
-  @After
-  public void afterEach() {
-    H2O.STORE.clear();
   }
 }

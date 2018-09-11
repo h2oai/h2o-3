@@ -26,11 +26,6 @@ public class AstGroupTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-    System.out.println("Before each setup");
-  }
-
   @Test
   public void TestGroup() {
 
@@ -45,24 +40,19 @@ public class AstGroupTest extends TestUtil {
             .build();
     String tree = "(GB testFrame [0, 1] sum 2 \"all\" nrow 1 \"all\")";
     Val val = Rapids.exec(tree);
-    System.out.println(val.toString());
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    assertEquals(9L, twoDimTable.get(5, 2));
-    assertEquals(6L, twoDimTable.get(6, 2));
-    assertEquals(7L, twoDimTable.get(7, 2));
-    assertEquals(8L, twoDimTable.get(8, 2));
-    System.out.println(twoDimTable.toString());
+    Vec resVec = res.vec(2);
+    Vec expected = vec(9, 6, 7, 8);
+    assertVecEquals(expected, resVec, 1e-5);
 
+    resVec.remove();
+    expected.remove();
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    System.out.println("After each setup");
-    H2O.STORE.clear();
+    fr.delete();
   }
-
-
 }

@@ -21,11 +21,6 @@ public class AstIsNaTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void IsNaTest() {
     fr = new TestFrameBuilder()
@@ -49,12 +44,13 @@ public class AstIsNaTest extends TestUtil {
     assertEquals(0.0, results2.vec(0).at(0), 1e-5);
     assertEquals(1.0, results2.vec(0).at(1), 1e-5);
 
+    results.delete();
+    results2.delete();
   }
 
   @After
   public void afterEach() {
-    System.out.println("After each setup");
-    H2O.STORE.clear();
+    fr.delete();
   }
 
 

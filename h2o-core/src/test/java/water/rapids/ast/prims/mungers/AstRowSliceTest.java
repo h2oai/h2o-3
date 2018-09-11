@@ -41,16 +41,13 @@ public class AstRowSliceTest extends TestUtil {
             .build();
     String tree = "(!! (is.na (cols testFrame [2.0] ) ) )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
+    Frame res = val.getFrame();
 
     // Check that row with NA in target column will be mapped into 0, otherwise 1
-    assertEquals(0L, twoDimTable.get(5, 0));
-    assertEquals(1L, twoDimTable.get(6, 0));
+    assertEquals(0, res.vec(0).at(0), 1e-5);
+    assertEquals(1, res.vec(0).at(1), 1e-5);
 
-
+    res.delete();
   }
 
   @Test
@@ -66,16 +63,12 @@ public class AstRowSliceTest extends TestUtil {
             .build();
     String tree = "(rows testFrame (!! (is.na (cols testFrame [2.0] ) ) ) )";
     Val val = Rapids.exec(tree);
-    System.out.println(val.toString());
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
+    assertEquals(1, res.numRows());
+    assertEquals("6", res.vec(2).stringAt(0));
 
-    System.out.println(twoDimTable.toString());
-
-    assertEquals(1, fr.numRows());
-    assertEquals("6", twoDimTable.get(5, 2));
+    res.delete();
   }
 
   @Test
@@ -91,23 +84,18 @@ public class AstRowSliceTest extends TestUtil {
             .build();
     String tree = "(rows testFrame [1:2] )";
     Val val = Rapids.exec(tree);
-    System.out.println(val.toString());
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
+    printOutFrameAsTable(res, true, false, 100);
+    assertEquals(1, res.numRows());
+    assertEquals("6", res.vec(2).stringAt(0));
 
-    System.out.println(twoDimTable.toString());
-
-    assertEquals(1, fr.numRows());
-    assertEquals("6", twoDimTable.get(5, 2));
-
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    System.out.println("After each setup");
-    H2O.STORE.clear();
+    fr.delete();
   }
 
 

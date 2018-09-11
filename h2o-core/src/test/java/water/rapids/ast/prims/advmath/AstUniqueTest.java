@@ -28,7 +28,6 @@ public class AstUniqueTest extends TestUtil {
     System.out.println("Before each setup");
   }
 
-
   @Test
   public void UniqueCategoricalTest() {
 
@@ -42,16 +41,13 @@ public class AstUniqueTest extends TestUtil {
             .build();
     String tree = "(unique (cols testFrame [2]))";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
+    assertEquals(2, res.numRows());
+    assertEquals("3", res.vec(0).stringAt(0));
+    assertEquals("6", res.vec(0).stringAt(1));
 
-    System.out.println(twoDimTable.toString());
-
-    assertEquals(2, fr.numRows());
-    assertEquals("3", twoDimTable.get(5, 0));
-    assertEquals("6", twoDimTable.get(6, 0));
+    res.delete();
   }
 
   @Test
@@ -67,16 +63,17 @@ public class AstUniqueTest extends TestUtil {
             .build();
     String tree = "(unique (cols testFrame [2]))";
     Val val = Rapids.exec(tree);
+    Frame res = val.getFrame();
 
-    assertVecEquals(vec(6,3), val.getFrame().vec(0), 1e-6); // TODO Why order of 6 and 3 is as if it is desc. sorted ?
+    Vec expected = vec(6, 3);
+    assertVecEquals(expected, res.vec(0), 1e-6); // TODO Why order of 6 and 3 is as if it is desc. sorted ?
 
+    expected.remove();
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    System.out.println("After each setup");
-    H2O.STORE.clear();
+    fr.delete();
   }
-
-
 }

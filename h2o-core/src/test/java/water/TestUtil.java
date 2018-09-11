@@ -882,4 +882,10 @@ public class TestUtil extends Iced {
     ParseSetup transformSetup(ParseSetup guessedSetup);
   }
 
+  public void printOutFrameAsTable(Frame fr, boolean full, boolean rollups, long limit) {
+    assert limit <= Integer.MAX_VALUE;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+    System.out.println(twoDimTable.toString(2, full));
+  }
+
 }

@@ -24,11 +24,6 @@ public class AstFactorTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void asFactorForDataSetTest() {
 
@@ -43,10 +38,11 @@ public class AstFactorTest extends TestUtil {
 
     String tree = "(as.factor testFrame)";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    assertTrue(fr.vec(0).isCategorical());
+    assertTrue(res.vec(0).isCategorical());
+
+    res.delete();
   }
 
   @Test
@@ -66,17 +62,16 @@ public class AstFactorTest extends TestUtil {
 
     String tree = "(:= testFrame (as.factor (cols testFrame [0])) [0] [])";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    assertTrue(fr.vec(0).isCategorical());
-    assertTrue(fr.vec(1).isNumeric());
+    assertTrue(res.vec(0).isCategorical());
+    assertTrue(res.vec(1).isNumeric());
+
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    H2O.STORE.clear();
+    fr.delete();
   }
-
-
 }
