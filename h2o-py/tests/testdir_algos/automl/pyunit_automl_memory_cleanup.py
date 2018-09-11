@@ -170,8 +170,7 @@ def test_clean_cv_predictions():
         se_best_of_family = [m for m in se if re.search(r'_BestOfFamily_', m)]
         assert len(se) == len(se_all_models) + len(se_best_of_family)
         assert len(se_all_models) == total_runs, "some StackedEnsemble_AllModels are missing"
-        # assert len(se_best_of_family) == total_runs, "some StackedEnsemble_BestOfFamily are missing"
-        assert len(se_best_of_family) == 1, "BUG! should be fixed by PUBDEV-5824"
+        assert len(se_best_of_family) == total_runs, "some StackedEnsemble_BestOfFamily are missing"
 
 
     test_default_behaviour()
