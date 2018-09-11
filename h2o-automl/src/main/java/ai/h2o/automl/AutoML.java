@@ -393,6 +393,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
+    pollAndUpdateProgress(stage, name, workContribution, parentJob, subJob, subJobType, false);
+  }
+
+  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType, boolean ignoreTimeout) {
     if (null == subJob) {
       if (null != parentJob) {
         parentJob.update(workContribution, "SKIPPED: " + name);
@@ -413,7 +417,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
-        if (timingOut()) {
+        if (!ignoreTimeout && timingOut()) {
           userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
           subJob.stop();
         }
@@ -1082,7 +1086,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           notEnsembles[notEnsembleIndex++] = aModel._key;
 
       Job<StackedEnsembleModel> ensembleJob = stack("StackedEnsemble_AllModels", notEnsembles);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using all AutoML models", 50, this.job(), ensembleJob, JobType.ModelBuild, true);
 
       // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
       // This will give another ensemble that is smaller than the original which takes all models into consideration.
@@ -1101,7 +1105,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           bestModelKeys[i] = bestModelsOfEachType.get(i)._key;
 
       Job<StackedEnsembleModel> bestEnsembleJob = stack("StackedEnsemble_BestOfFamily", bestModelKeys);
-      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild);
+      pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build using top model from each algorithm type", 50, this.job(), bestEnsembleJob, JobType.ModelBuild, true);
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key + ":"));
