@@ -506,9 +506,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param key (optional) model key
    * @param algo the Algo, e.g. {@link Algo#GBM}; used for validation, messages and for building the key if missing
    * @param parms the model builder params
-   * @param ignoreLimits (defaults to false) whether or not to skip the max_models validation
-   * @todo ignoreLimits param is a temp workaround to handle "exceptional" handling of SE,
-   *       it can be removed completely when we decide to consider SE as just another model
+   * @param ignoreLimits (defaults to false) whether or not to skip the max_models/max_runtime constraints
    * @return a started training model
    */
   public Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms, boolean ignoreLimits) {
