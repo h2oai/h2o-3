@@ -89,7 +89,8 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         --build-arg AWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
                                         --build-arg AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
-                                        --build-arg VERSION=${distribution.version} .
+                                        --build-arg VERSION=${distribution.version} \
+                                        --build-arg HIVE_VERSION=${distribution.hiveVersion} .
 
                                     docker build \
                                         -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
