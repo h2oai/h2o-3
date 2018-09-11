@@ -87,7 +87,8 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         -f hadoop/${distribution.name}/Dockerfile \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
                                         --build-arg H2O_BRANCH=${params.gitBranch} \
-                                        --build-arg VERSION=${distribution.version} .
+                                        --build-arg VERSION=${distribution.version} \
+                                        --build-arg HIVE_VERSION=${distribution.hiveVersion} .
 
                                     docker build \
                                         -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
