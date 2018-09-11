@@ -1557,7 +1557,6 @@ public class TargetEncodingTest extends TestUtil{
 
     @After
     public void afterEach() {
-        System.out.println("After each test we do H2O.STORE.clear() and Vec.ESPC.clear()");
         if( fr!= null) fr.delete();
     }
 

@@ -23,11 +23,6 @@ public class AstRunifTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void RunifTest() {
 
@@ -35,23 +30,23 @@ public class AstRunifTest extends TestUtil {
             .withName("testFrame")
             .withColNames("ColA")
             .withVecTypes(Vec.T_NUM)
-            .withDataForCol(0, ard(1, 2, 3))
+            .withDataForCol(0, ard(0, 0, 0))
             .build();
     String tree = "(h2o.runif testFrame 1234.0 )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
+    Vec expected = dvec(0.73257, 0.27102, 0.63133);
+    assertVecEquals(expected, res.vec(0), 1e-5);
 
-    System.out.println(twoDimTable.toString());
-
-    // TODO pass more values into the column and check whether distribution is normal
+    // TODO pass more values into the column and check whether distribution of randomly generated values is correct
+    expected.remove();
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    H2O.STORE.clear();
+    fr.delete();
   }
 
 

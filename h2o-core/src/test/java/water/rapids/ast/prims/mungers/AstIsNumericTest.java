@@ -24,11 +24,6 @@ public class AstIsNumericTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void IsNumericTest() {
 
@@ -54,8 +49,7 @@ public class AstIsNumericTest extends TestUtil {
 
   @After
   public void afterEach() {
-    System.out.println("After each setup");
-    H2O.STORE.clear();
+    fr.delete();
   }
 
 

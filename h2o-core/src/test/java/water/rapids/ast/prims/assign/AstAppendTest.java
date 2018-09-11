@@ -23,11 +23,6 @@ public class AstAppendTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void AppendColumnTest() {
 
@@ -41,23 +36,18 @@ public class AstAppendTest extends TestUtil {
 
     String tree = "( append testFrame ( / (cols testFrame [0]) (cols testFrame [1])) 'appended' )";
     Val val = Rapids.exec(tree);
-    if (val instanceof ValFrame)
-      fr = val.getFrame();
+    Frame res = val.getFrame();
 
-    assertEquals(2, fr.numRows());
+    assertEquals(2, res.numRows());
 
-    TwoDimTable twoDimTable = fr.toTwoDimTable();
-    System.out.println(twoDimTable.toString());
+    assertEquals(0.5, res.vec(2).at(0L), 1e-6);
+    assertEquals(0.4, res.vec(2).at(1L), 1e-6);
 
-    assertEquals(fr.vec(2).at(0L), 0.5, 1e-6);
-    assertEquals(fr.vec(2).at(1L), 0.4, 1e-6);
-
+    res.delete();
   }
 
   @After
   public void afterEach() {
-    H2O.STORE.clear();
+    fr.delete();
   }
-
-
 }

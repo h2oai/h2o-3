@@ -23,11 +23,6 @@ public class AstRBindTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Before
-  public void beforeEach() {
-
-  }
-
   @Test
   public void TestRBind() {
 
@@ -49,21 +44,20 @@ public class AstRBindTest extends TestUtil {
             .build();
     String tree = "(rbind testFrame testFrame2)";
     Val val = Rapids.exec(tree);
-    Frame unionFrame = null;
-    if (val instanceof ValFrame)
-      unionFrame = val.getFrame();
+    Frame unionFrame = val.getFrame();
 
-    TwoDimTable twoDimTable = unionFrame.toTwoDimTable();
+    Vec resVec = unionFrame.vec(2);
+
+    printOutFrameAsTable(fr, true, false, 10);
 
     assertEquals(2, unionFrame.numRows());
-    assertEquals(5L, twoDimTable.get(5, 2));
-    assertEquals(6L, twoDimTable.get(6, 2));
-  }
+    assertEquals(5L, resVec.at(0), 1e-5);
+    assertEquals(6L, resVec.at(1), 1e-5);
 
-  @After
-  public void afterEach() {
-    H2O.STORE.clear();
+    resVec.remove();
+    fr.delete();
+    fr2.delete();
+    unionFrame.delete();
   }
-
 
 }

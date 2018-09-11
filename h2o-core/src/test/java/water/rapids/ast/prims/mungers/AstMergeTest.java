@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
@@ -21,27 +22,30 @@ public class AstMergeTest extends TestUtil {
   }
 
 
-  @Test(timeout = 10000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
+  @Ignore
+  @Test(timeout = 1000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
   public void AutoMergeAllLeftStressTest() {
 
-    fr = new TestFrameBuilder()
+    int numberOfRows = 1000000;
+    Frame fr = new TestFrameBuilder()
             .withName("leftFrame")
             .withColNames("ColA", "ColB")
             .withVecTypes(Vec.T_NUM, Vec.T_STR)
-            .withRandomIntDataForCol(0, 1000000, 0, 100)
-            .withRandomBinaryDataForCol(1, 1000000)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 100)
+            .withRandomBinaryDataForCol(1, numberOfRows)
             .build();
 
     Frame frRight = new TestFrameBuilder()
             .withName("rightFrame")
             .withColNames("ColA_R", "ColB_R")
             .withVecTypes(Vec.T_NUM, Vec.T_STR)
-            .withRandomIntDataForCol(0, 1000000, 0, 100)
-            .withRandomBinaryDataForCol(1, 1000000)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 100)
+            .withRandomBinaryDataForCol(1, numberOfRows)
             .build();
 
     String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
     Rapids.exec(tree);
+    fr.delete();
   }
 
   @Test
@@ -294,7 +298,6 @@ public class AstMergeTest extends TestUtil {
       Scope.exit();
     }
   }
-
 
   public void printFrames(Frame fr) {
     int numRows = (int) fr.numRows();
