@@ -76,6 +76,7 @@ To set up your Python environment to run these examples, download and install H2
 - [Balance Classes](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/rf_balance_classes.ipynb) - Imports the airlines dataset, parses it, displays a summary, and runs GLM with a binomial link function. 
 - [Clustering with KMeans](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/kmeans_aic_bic_diagnostics.ipynb) - Demonstrates kmeans clusters and different diagnostics for selecting the number of clusters.  Link to data is provided in the notebook.
 - [EEG Eye State](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb) - Uses EEG data collected from an Emotiv Neuroheadset and classifies eye state (open vs closed) with a GBM.  
+- [Tree fetch demo](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb) - Trains a basic GBM model based on Airlines dataset & fetches the tree behind the model. Exploration of the tree fetched is explained.
 
 
 

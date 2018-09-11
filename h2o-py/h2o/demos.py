@@ -68,6 +68,15 @@ def gbm(interactive=True, echo=True, testing=False):
         predictions.show()
 
         go()
+        # Fetch a tree, print number of tree nodes, show root node description
+        from h2o.tree import H2OTree, H2ONode
+        tree = H2OTree(prostate_gbm, 0, "0")
+        len(tree)
+        tree.left_children
+        tree.right_children
+        tree.root_node.show()
+
+        go()
         # Show default performance metrics
         performance = prostate_gbm.model_performance(test)
         performance.show()
