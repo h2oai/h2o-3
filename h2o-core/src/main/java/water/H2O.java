@@ -1844,8 +1844,9 @@ final public class H2O {
    * @return true if not supported
    */
   public static boolean checkUnsupportedJava() {
-    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck"))
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
+    }
     String version = System.getProperty("java.version");
     // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see file connection.R near line 536
     if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
