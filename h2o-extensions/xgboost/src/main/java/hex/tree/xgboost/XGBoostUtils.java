@@ -4,7 +4,10 @@ import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.util.BigDenseMatrix;
+import water.H2O;
 import water.Key;
+import water.LocalMR;
+import water.MrFun;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -75,21 +78,24 @@ public class XGBoostUtils {
             chunks = VecUtils.getLocalChunkIds(f.anyVec());
         }
         final Vec weightVector = f.vec(weight);
-        int nRows = sumChunksLength(chunks, vec, weightVector);
+        final int[] nRowsByChunk = new int[chunks.length];
+        final long nRowsL = sumChunksLength(chunks, vec, weightVector, nRowsByChunk);
+        if (nRowsL > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
+                    Integer.MAX_VALUE + " per node. " +
+                    "To train a XGBoost model on this dataset add more nodes to your H2O cluster and use distributed training.");
+        }
+        final int nRows = (int) nRowsL;
 
         final DataInfo di = dataInfoKey.get();
+        assert di != null;
         final DMatrix trainMat;
-        Vec.Reader w = weight == null ? null : weightVector.new Reader();
-        Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-        for (int i = 0; i < vecs.length; ++i) {
-            vecs[i] = f.vec(i).new Reader();
-        }
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
         float[] resp = malloc4f(nRows);
         float[] weights = null;
-        if (w != null) {
+        if (weightVector != null) {
             weights = malloc4f(nRows);
         }
 
@@ -102,31 +108,34 @@ public class XGBoostUtils {
 
             // truly sparse matrix - no categoricals
             // collect all nonzeros column by column (in parallel), then stitch together into final data structures
+            Vec.Reader w = weight == null ? null : weightVector.new Reader();
             if (csc) {
                 trainMat = csc(f, chunks, w, f.vec(response).new Reader(), nRows, di, resp, weights);
             } else {
+                Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
+                for (int i = 0; i < vecs.length; ++i) {
+                    vecs[i] = f.vec(i).new Reader();
+                }
                 trainMat = csr(f, chunks, vecs, w, f.vec(response).new Reader(), nRows, di, resp, weights);
             }
         } else {
             Log.debug("Treating matrix as dense.");
             BigDenseMatrix data = null;
-            DMatrix tm = null;
             try {
                 data = allocateDenseMatrix(nRows, di);
-                long actualRows = denseChunk(data, chunks, f, w, di, resp, weights, f.vec(response).new Reader());
+                long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVector, f.vec(response), di, resp, weights);
                 assert data.nrow == actualRows;
-                tm = new DMatrix(data, Float.NaN);
+                trainMat = new DMatrix(data, Float.NaN);
             } finally {
-                if ((tm == null) && (data != null)) { // we failed to create the DMatrix => we need to free the memory
+                if (data != null) {
                     data.dispose();
                 }
             }
-            trainMat = tm;
         }
 
         assert trainMat.rowNum() == nRows;
         trainMat.setLabel(resp);
-        if (w != null) {
+        if (weights != null) {
             trainMat.setWeight(weights);
         }
 
@@ -157,21 +166,26 @@ public class XGBoostUtils {
      * @param weightsVector Vector with row weights, possibly null
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    private static int sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector) {
-        int totalChunkLength = 0;
+    private static long sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector, int[] chunkLengths) {
+        for (int i = 0; i < chunkIds.length; i++) {
+            final int chunk = chunkIds[i];
+            chunkLengths[i] = vec.chunkLen(chunk);
+            if (weightsVector == null)
+                continue;
 
-        for (int chunk : chunkIds) {
-            totalChunkLength += vec.chunkLen(chunk);
-
-            if(weightsVector == null) continue;
             Chunk weightVecChunk = weightsVector.chunkForChunkIdx(chunk);
-            if (weightVecChunk.atd(0) == 0) totalChunkLength--;
+            if (weightVecChunk.atd(0) == 0) chunkLengths[i]--;
             int nzIndex = 0;
             do {
                 nzIndex = weightVecChunk.nextNZ(nzIndex, true);
                 if (nzIndex < 0 || nzIndex >= weightVecChunk._len) break;
-                if (weightVecChunk.atd(nzIndex) == 0) totalChunkLength--;
+                if (weightVecChunk.atd(nzIndex) == 0) chunkLengths[i]--;
             } while (true);
+        }
+
+        long totalChunkLength = 0;
+        for (int cl : chunkLengths) {
+            totalChunkLength += cl;
         }
         return totalChunkLength;
     }
@@ -314,40 +328,95 @@ public class XGBoostUtils {
 
     private static DMatrix dense(Chunk[] chunks, int weight, DataInfo di, int respIdx, float[] resp, float[] weights) throws XGBoostError {
         Log.debug("Treating matrix as dense.");
-
-        BigDenseMatrix data = allocateDenseMatrix(chunks[0].len(), di);
-        long actualRows = denseChunk(data, chunks, weight, respIdx, di, resp, weights);
-        assert actualRows == data.nrow;
-
-        return new DMatrix(data, Float.NaN);
+        BigDenseMatrix data = null;
+        try {
+            data = allocateDenseMatrix(chunks[0].len(), di);
+            long actualRows = denseChunk(data, chunks, weight, respIdx, di, resp, weights);
+            assert actualRows == data.nrow;
+            return new DMatrix(data, Float.NaN);
+        } finally {
+            if (data != null) {
+                data.dispose();
+            }
+        }
     }
 
     private static final int ARRAY_MAX = Integer.MAX_VALUE - 10;
 
     private static long denseChunk(BigDenseMatrix data,
-                                   int[] chunks, Frame f, // for MR task
-                                   Vec.Reader w, // for setupLocal
-                                   DataInfo di,
-                                   float[] resp, float[] weights, Vec.Reader respVec) {
-        long idx = 0;
-        long actualRows = 0;
-        int rwRow = 0;
-        Chunk[] chks = new Chunk[f.numCols()];
-        for (int chunkIdx : chunks) {
-            for (int c = 0; c < chks.length; c++) {
-                chks[c] = f.vec(c).chunkForChunkIdx(chunkIdx);
-            }
-            for (int i = 0; i < chks[0]._len; i++) {
-                if (w != null && w.at(i + chks[0].start()) == 0) continue;
-
-                idx = writeDenseRow(di, chks, i, data, idx);
-                actualRows++;
-
-                rwRow = setResponseAndWeight(w, resp, weights, respVec, rwRow, i + chks[0].start());
-            }
+                                   int[] chunks, int[] nRowsByChunk, Frame f, Vec weightsVec, Vec respVec, DataInfo di,
+                                   float[] resp, float[] weights) {
+        int[] offsets = new int[nRowsByChunk.length + 1];
+        for (int i = 0; i < chunks.length; i++) {
+            offsets[i + 1] = nRowsByChunk[i] + offsets[i];
         }
-        assert data.nrow * data.ncol == idx;
-        return actualRows;
+        WriteDenseChunkFun writeFun = new WriteDenseChunkFun(f, chunks, offsets, weightsVec, respVec, di, data, resp, weights);
+        H2O.submitTask(new LocalMR(writeFun, chunks.length)).join();
+        return writeFun.getTotalRows();
+    }
+
+    private static class WriteDenseChunkFun extends MrFun<WriteDenseChunkFun> {
+        private final Frame _f;
+        private final int[] _chunks;
+        private final int[] _offsets;
+        private final Vec _weightsVec;
+        private final Vec _respVec;
+        private final DataInfo _di;
+        private final BigDenseMatrix _data;
+        private final float[] _resp;
+        private final float[] _weights;
+
+        // OUT
+        private int[] _nRowsByChunk;
+
+        private WriteDenseChunkFun(Frame f, int[] chunks, int[] offsets, Vec weightsVec, Vec respVec, DataInfo di,
+                                   BigDenseMatrix data, float[] resp, float[] weights) {
+            _f = f;
+            _chunks = chunks;
+            _offsets = offsets;
+            _weightsVec = weightsVec;
+            _respVec = respVec;
+            _di = di;
+            _data = data;
+            _resp = resp;
+            _weights = weights;
+            _nRowsByChunk = new int[chunks.length];
+        }
+
+        @Override
+        protected void map(int id) {
+            final int chunkIdx = _chunks[id];
+            Chunk[] chks = new Chunk[_f.numCols()];
+            for (int c = 0; c < chks.length; c++) {
+                chks[c] = _f.vec(c).chunkForChunkIdx(chunkIdx);
+            }
+            Chunk weightsChk = _weightsVec != null ? _weightsVec.chunkForChunkIdx(chunkIdx) : null;
+            Chunk respChk = _respVec.chunkForChunkIdx(chunkIdx);
+            long idx = _offsets[id] * _data.ncol;
+            int actualRows = 0;
+            for (int i = 0; i < chks[0]._len; i++) {
+                if (weightsChk != null && weightsChk.atd(i) == 0) continue;
+
+                idx = writeDenseRow(_di, chks, i, _data, idx);
+                _resp[_offsets[id] + actualRows] = (float) respChk.atd(i);
+                if (weightsChk != null) {
+                    _weights[_offsets[id] + actualRows] = (float) weightsChk.atd(i);
+                }
+
+                actualRows++;
+            }
+            assert idx == (long) _offsets[id + 1] * _data.ncol;
+            _nRowsByChunk[id] = actualRows;
+        }
+
+        private long getTotalRows() {
+            long totalRows = 0;
+            for (int r : _nRowsByChunk) {
+                totalRows += r;
+            }
+            return totalRows;
+        }
+
     }
 
     private static long denseChunk(BigDenseMatrix data, Chunk[] chunks, int weight, int respIdx, DataInfo di, float[] resp, float[] weights) {
@@ -362,7 +431,7 @@ public class XGBoostUtils {
 
             rwRow = setResponseAndWeight(chunks, respIdx, weight, resp, weights, rwRow, i);
         }
-        assert data.nrow * data.ncol == idx;
+        assert (long) data.nrow * data.ncol == idx;
         return actualRows;
     }
 
@@ -806,13 +875,8 @@ public class XGBoostUtils {
      * @param dataInfo An instance of {@link DataInfo}
      * @return An exactly-sized Float[] backing array for XGBoost's {@link DMatrix} to be filled with data.
      */
-    private static BigDenseMatrix allocateDenseMatrix(final long rowCount, final DataInfo dataInfo) {
-        if (rowCount > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("XGBoost currently doesn't support datasets with more than " +
-                    Integer.MAX_VALUE + " per node. " +
-                    "To train a XGBoost model on this dataset add more nodes to your H2O cluster and use distributed training.");
-        }
-        return new BigDenseMatrix((int) rowCount, dataInfo.fullN());
+    private static BigDenseMatrix allocateDenseMatrix(final int rowCount, final DataInfo dataInfo) {
+        return new BigDenseMatrix(rowCount, dataInfo.fullN());
     }
 
 }
