@@ -6,6 +6,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
+import hex.ensemble.StackedEnsemble;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -1090,7 +1091,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       for (Model aModel : allModels) {
         String type = getModelType(aModel);
-        if (typesOfGatheredModels.contains(type)) continue;
+        if (aModel instanceof StackedEnsembleModel || typesOfGatheredModels.contains(type)) continue;
         typesOfGatheredModels.add(type);
         bestModelsOfEachType.add(aModel);
       }
