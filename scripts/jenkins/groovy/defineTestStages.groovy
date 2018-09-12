@@ -174,7 +174,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'MOJO Compatibility', target: 'test-mojo-compatibility',
-      archiveFiles: false, timeoutValue: 20, , pythonVersion: '3.6', hasJUnit: false,
+      archiveFiles: false, timeoutValue: 20, pythonVersion: '3.6', hasJUnit: false,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ]
   ]
