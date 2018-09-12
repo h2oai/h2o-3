@@ -48,14 +48,15 @@ public class h2odriver extends Configured implements Tool {
 
   static {
     String javaVersionString = System.getProperty("java.version");
-    Pattern p = Pattern.compile("1\\.([0-9]*)(.*)");
+    Pattern p = Pattern.compile("1\\.([0-9]*).*|([0-9]*)\\..*");
     Matcher m = p.matcher(javaVersionString);
     boolean b = m.matches();
-    if (! b) {
-      System.out.println("Could not parse java version: " + javaVersionString);
-      System.exit(1);
+    if(b) {
+	    javaMajorVersion = Integer.parseInt(m.group(m.group(1)!=null?1:2));
+    } else {
+	    System.err.println("Couldn't parse Java version: " + javaVersionString);
+	    System.exit(1);
     }
-    javaMajorVersion = Integer.parseInt(m.group(1));
   }
 
   final static int DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS = 120;
