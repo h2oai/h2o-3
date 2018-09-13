@@ -8,10 +8,10 @@ What is a MOJO?
 
 A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Notes**:
+**Notes**: 
 
 - MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
-- MOJOs are only supported for encodings that are either default or ``enum``.
+- MOJOs are only supported for encodings that are either default or ``enum``. 
 
 Benefits of MOJOs over POJOs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
