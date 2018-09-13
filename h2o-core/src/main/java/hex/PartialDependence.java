@@ -21,6 +21,11 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public boolean _add_missing_na = false; // set to be false for default
   public int _nbins = 20;
   public TwoDimTable[] _partial_dependence_data; //OUTPUT
+  public double[] _user_splits = null;    // store all user splits for all column
+  public double[][] _user_split_per_col = null; // point to correct location of user splits per column
+  public int[] _num_user_splits = null;   // record number of user split values per column
+  public String[] _user_cols = null;
+  public boolean _user_splits_present = false;
 
   public PartialDependence(Key<PartialDependence> dest, Job j) {
     super(dest);
@@ -73,6 +78,21 @@ public class PartialDependence extends Lockable<PartialDependence> {
     if (_nbins < 2) {
       throw new IllegalArgumentException("_nbins must be >=2.");
     }
+
+    if ((_user_splits != null) && (_user_splits.length > 0)) {
+      _user_splits_present = true;
+      int numUserSplits = _user_cols.length;
+      // convert one dimension info into two dimensionl
+      _user_split_per_col = new double[numUserSplits][];
+      int[] user_splits_start = new int[numUserSplits];
+      System.arraycopy(_num_user_splits, 0, user_splits_start, 1, numUserSplits-1);
+      for (int cindex=0; cindex < numUserSplits; cindex++) {
+        int splitNum = _num_user_splits[cindex];
+        _user_split_per_col[cindex] = new double[splitNum];
+        System.arraycopy(_user_splits, user_splits_start[cindex], _user_split_per_col[cindex], 0, splitNum);
+      }
+    }
+
     final Frame fr = _frame_id.get();
 
     if (_weight_column_index >= 0) { // grab and make weight column as a separate frame
@@ -101,18 +121,30 @@ public class PartialDependence extends Lockable<PartialDependence> {
         Log.debug("Computing partial dependence of model on '" + col + "'.");
         Vec v = fr.vec(col);
         int actualbins = _nbins;
-        if (v.isInt() && (v.max() - v.min() + 1) < _nbins) {
-          actualbins = (int) (v.max() - v.min() + 1);
-        }
 
         if (_add_missing_na && v.naCnt() > 0) {
           enableNAs = true;
         }
-        double[] colVals = enableNAs?new double[actualbins+1]:new double[actualbins];
-        double delta = (v.max() - v.min()) / (actualbins - 1);
-        if (actualbins == 1) delta = 0;
-        for (int j = 0; j < actualbins; ++j) {
-          colVals[j] = v.min() + j * delta;
+
+        double[] colVals;
+        // use user defined value here if requested by user
+        if (_user_splits_present && Arrays.asList(_user_cols).contains(col)) {
+          int user_col_index = Arrays.asList(_user_cols).indexOf(col);
+          actualbins = _num_user_splits[user_col_index];
+          colVals = enableNAs?new double[_num_user_splits[user_col_index]+1]:new double[_num_user_splits[user_col_index]];
+          for (int rindex = 0; rindex < _num_user_splits[user_col_index]; rindex++) {
+            colVals[rindex] = _user_split_per_col[user_col_index][rindex];
+          }
+        } else {
+          if (v.isInt() && (v.max() - v.min() + 1) < _nbins) {
+            actualbins = (int) (v.max() - v.min() + 1);
+          }
+          colVals = enableNAs?new double[actualbins+1]:new double[actualbins];
+          double delta = (v.max() - v.min()) / (actualbins - 1);
+          if (actualbins == 1) delta = 0;
+          for (int j = 0; j < colVals.length; ++j) {
+            colVals[j] = v.min() + j * delta;
+          }
         }
 
         if (enableNAs)

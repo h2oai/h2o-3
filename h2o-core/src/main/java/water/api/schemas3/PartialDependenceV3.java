@@ -33,6 +33,18 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   public int nbins;
 
   @SuppressWarnings("unused")
+  @API(help="User define split points", direction=API.Direction.INOUT)
+  public double[] user_splits; // all user split columns by value
+
+  @SuppressWarnings("unused")
+  @API(help="Column(s) of user defined splits", direction=API.Direction.INOUT)
+  public String[] user_cols; // list column indices to use user defined split values
+
+  @SuppressWarnings("unused")
+  @API(help="Number of user defined splits per column", direction=API.Direction.INOUT)
+  public int[] num_user_splits; // list of number of user defined split values per column
+
+  @SuppressWarnings("unused")
   @API(help="Partial Dependence Data", direction=API.Direction.OUTPUT)
   public TwoDimTableV3[] partial_dependence_data;
 

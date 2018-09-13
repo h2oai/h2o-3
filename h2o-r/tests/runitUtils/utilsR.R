@@ -1000,3 +1000,9 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
     return(list("frameId"=h2o.getId(newTest), "mojoPredict"=predictions2))
   }
 }
+
+assert_partialPlots_twoDTable_equal <- function(table1, table2) {
+  checkEqualsNumeric(table1[, "mean_response"], table2[, "mean_response"][1:length(table1[, "mean_response"])])
+  checkEqualsNumeric(table1[, "stddev_response"], table2[, "stddev_response"][1:length(table1[, "mean_response"])])
+  checkEqualsNumeric(table1[, "std_error_mean_response"], table2[, "std_error_mean_response"][1:length(table1[, "mean_response"])])
+}
