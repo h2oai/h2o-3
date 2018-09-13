@@ -177,7 +177,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
 }
 
 def parseCsvFile(final String filePath, final String separator=',') {
-    final String text = readFile(sh(script: "ls ${filePath}", returnStdout: true).trim())
+    final String text = readFile(filePath)
     if (text == null) {
         return null
     }
