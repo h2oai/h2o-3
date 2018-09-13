@@ -69,7 +69,7 @@ fi
 
 
 # Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp ${JVM_CLASSPATH}"
+JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner

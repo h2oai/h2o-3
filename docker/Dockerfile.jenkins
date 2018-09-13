@@ -1,5 +1,9 @@
 #####################################################################################################################
-# Dockerfile for Oracle JDK 8 on Ubuntu 16.04                                                                       #
+# Based on Ubuntu 16.04.                                                                                            #
+# contains following JDK versions:                                                                                  #
+#   - JDK 8                                                                                                         #
+#   - JDK 10                                                                                                        #
+#   - JDK 11                                                                                                        #
 # contains following R versions:                                                                                    #
 #   - 3.4.1                                                                                                         #
 #   - 3.3.3                                                                                                         #
@@ -19,7 +23,7 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG R_VERSIONS='3.4.1,3.3.3'
 ARG PYTHON_VERSIONS='3.6,3.5,2.7'
-ARG JAVA_VERSIONS='8,10'
+ARG JAVA_VERSIONS='8,10,11'
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='master'

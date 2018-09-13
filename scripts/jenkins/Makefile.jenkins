@@ -261,6 +261,13 @@ test-junit-10-smoke-jenkins:
 test-junit-10-smoke:
 	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
+test-junit-11-smoke:
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.noJavaVersionCheck=true" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-11-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-11-smoke
+
 test-xgb-smoke-minimal-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-xgb-smoke-minimal

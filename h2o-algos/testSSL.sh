@@ -88,7 +88,7 @@ else
   fi
 fi
 
-JVM="nice $JAVA_CMD -ea -Xmx3g -Xms3g -cp ${JVM_CLASSPATH}"
+JVM="nice $JAVA_CMD -ea -Xmx3g -Xms3g -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 SSL=""
