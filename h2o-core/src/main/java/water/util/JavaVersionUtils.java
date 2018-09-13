@@ -19,6 +19,10 @@ public enum JavaVersionUtils {
         return majorVersion;
     }
 
+    public boolean isKnown() {
+        return majorVersion!=UNKNOWN;
+    }
+
     public int parseMajor(String version) {
         if(version!=null) {
             Pattern p = Pattern.compile("1\\.([0-9]*).*|([0-9][0-9]*).*");
