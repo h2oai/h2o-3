@@ -101,7 +101,7 @@ pipeline {
                         if (params.noCache) {
                             dockerBuildCMD += ' --no-cache'
                         }
-                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} ."
+                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} -f Dockerfile.jenkins ."
                         sh """
                             printenv
                             cd docker
