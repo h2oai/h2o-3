@@ -1847,7 +1847,7 @@ final public class H2O {
     String version = System.getProperty("java.version");
     // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see file connection.R near line 536
     if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
-      System.err.println("Only Java 1.7-1.8, 9 and 10 is supported, system version is " + version);
+      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + version);
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
