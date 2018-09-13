@@ -905,7 +905,7 @@ public class DeepLearningTest extends TestUtil {
 //        model.score(third1kSVM).delete();
 //
 //        Log.info("POJO SVM Train Check");
-      Frame pred;
+      Frame pred = null;
 //        assertTrue(model.testJavaScoring(first1kSVM, pred = model.score(first1kSVM), 1e-5));
 //        pred.remove();
 //

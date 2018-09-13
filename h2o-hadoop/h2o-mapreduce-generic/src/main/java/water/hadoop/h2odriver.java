@@ -17,7 +17,10 @@ import water.JettyProxy;
 import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
+import water.util.JavaVersionUtils;
 import water.util.StringUtils;
+
+import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 import java.io.*;
 import java.net.*;
@@ -45,16 +48,10 @@ public class h2odriver extends Configured implements Tool {
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
 
   static {
-    String javaVersionString = System.getProperty("java.version");
-    Pattern p = Pattern.compile("1\\.([0-9]*).*|([0-9]*)\\..*");
-    Matcher m = p.matcher(javaVersionString);
-    boolean b = m.matches();
-    if(b) {
-	    javaMajorVersion = Integer.parseInt(m.group(m.group(1)!=null?1:2));
-    } else {
-	    System.err.println("Couldn't parse Java version: " + javaVersionString);
-	    System.exit(1);
-    }
+      if(JAVA_VERSION.getMajor() == JavaVersionUtils.UNKNOWN) {
+          System.err.println("Couldn't parse Java version: " + System.getProperty("java.version"));
+          System.exit(1);
+      }
   }
 
   final static int DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS = 120;
@@ -62,7 +59,6 @@ public class h2odriver extends Configured implements Tool {
   final static int DEFAULT_EXTRA_MEM_PERCENT = 10;
 
   // Options that are parsed by the main thread before other threads are created.
-  static final int javaMajorVersion;
   static String jobtrackerName = null;
   static int numNodes = -1;
   static String outputPath = null;
@@ -231,23 +227,33 @@ public class h2odriver extends Configured implements Tool {
     H2ORecordReader() {
     }
 
+    @Override
     public void initialize(InputSplit split, TaskAttemptContext context) {
     }
 
+    @Override
     public boolean nextKeyValue() throws IOException {
       return false;
     }
 
+    @Override
     public Text getCurrentKey() { return null; }
+    @Override
     public Text getCurrentValue() { return null; }
+    @Override
     public void close() throws IOException { }
+    @Override
     public float getProgress() throws IOException { return 0; }
   }
 
   public static class EmptySplit extends InputSplit implements Writable {
+    @Override
     public void write(DataOutput out) throws IOException { }
+    @Override
     public void readFields(DataInput in) throws IOException { }
+    @Override
     public long getLength() { return 0L; }
+    @Override
     public String[] getLocations() { return new String[0]; }
   }
 
@@ -255,6 +261,7 @@ public class h2odriver extends Configured implements Tool {
     H2OInputFormat() {
     }
 
+    @Override
     public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
       List<InputSplit> ret = new ArrayList<InputSplit>();
       int numSplits = numNodes;
@@ -264,6 +271,7 @@ public class h2odriver extends Configured implements Tool {
       return ret;
     }
 
+    @Override
     public RecordReader<Text, Text> createRecordReader(
             InputSplit ignored, TaskAttemptContext taskContext)
             throws IOException {
@@ -1314,7 +1322,7 @@ public class h2odriver extends Configured implements Tool {
     // PermSize
     // Java 7 and below need a larger PermSize for H2O.
     // Java 8 no longer has PermSize, but rather MetaSpace, which does not need to be set at all.
-    if (javaMajorVersion <= 7) {
+    if (JAVA_VERSION.getMajor() <= 7) {
       mapperPermSize = "256m";
     }
 
