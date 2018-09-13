@@ -44,7 +44,7 @@ else
     COVERAGE=""
 fi
 
-JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp ${JVM_CLASSPATH}"
+JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
