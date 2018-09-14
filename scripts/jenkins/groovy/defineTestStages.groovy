@@ -459,45 +459,54 @@ private void invokeStage(final pipelineContext, final body) {
   }
 
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
-    pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
-    stage(config.stageName) {
-      if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
-        echo "###### Stage was successful in previous build ######"
-        pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
-        pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
-      } else {
-        boolean healthCheckPassed = false
-        int attempt = 0
-        String nodeLabel = config.nodeLabel
-        try {
-          while (!healthCheckPassed) {
-            attempt += 1
-            if (attempt > HEALTH_CHECK_RETRIES) {
-              error "Too many attempts to pass initial health check"
-            }
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
-            echo "######### NodeLabel: ${nodeLabel} #########"
-            node(nodeLabel) {
-              echo "###### Unstash scripts. ######"
-              pipelineContext.getUtils().unstashScripts(this)
+    def stageClosure = {
+      pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
+      stage(config.stageName) {
+        if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
+          echo "###### Stage was successful in previous build ######"
+          pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
+          pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+        } else {
+          boolean healthCheckPassed = false
+          int attempt = 0
+          String nodeLabel = config.nodeLabel
+          try {
+            while (!healthCheckPassed) {
+              attempt += 1
+              if (attempt > HEALTH_CHECK_RETRIES) {
+                error "Too many attempts to pass initial health check"
+              }
+              nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
+              echo "######### NodeLabel: ${nodeLabel} #########"
+              node(nodeLabel) {
+                echo "###### Unstash scripts. ######"
+                pipelineContext.getUtils().unstashScripts(this)
 
-              healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
-              if (healthCheckPassed) {
-                pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
+                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+                if (healthCheckPassed) {
+                  pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
-                sh "rm -rf ${config.stageDir}"
+                  sh "rm -rf ${config.stageDir}"
 
-                def script = load(config.executionScript)
-                script(pipelineContext, config)
-                pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+                  def script = load(config.executionScript)
+                  script(pipelineContext, config)
+                  pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+                }
               }
             }
+          } catch (Exception e) {
+            pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
+            throw e
           }
-        } catch (Exception e) {
-          pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
-          throw e
         }
       }
+    }
+    if (env.BUILDING_FORK) {
+      withCustomCommitStates(scm, pipelineContext.getBuildConfig().H2O_OPS_TOKEN, config.stageName) {
+        stageClosure()
+      }
+    } else {
+      stageClosure()
     }
   } else {
     echo "###### Changes for ${config.component} NOT detected, skipping ${config.stageName}. ######"
