@@ -8,7 +8,7 @@ Data collection is easy. Decision making is hard. H2O makes it fast and easy to 
 
 H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
 
-## Table of Contents
+### Table of Contents
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
@@ -145,7 +145,8 @@ Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/te
 
 ### 4.1. Before building
 
-Building `h2o` requires a properly set up Python environment and the following packages:
+Building `h2o` requires a properly set up R environment with [required packages](#InstallRPackagesInUnix) and Python environment with the following packages:
+
 ```
 grip
 colorama
@@ -154,6 +155,7 @@ tabulate
 requests
 wheel
 ```
+
 To install these packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
 If you have troubles installing these packages on *Windows*, please follow section [Setup on Windows](#SetupWin) of this guide.
 > (Note: It is recommended to use some virtual environment such as [VirtualEnv](https://virtualenv.pypa.io/), to install all packages. )
