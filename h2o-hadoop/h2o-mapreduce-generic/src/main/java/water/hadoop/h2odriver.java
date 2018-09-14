@@ -48,7 +48,7 @@ public class h2odriver extends Configured implements Tool {
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
 
   static {
-      if(JAVA_VERSION.getMajor() == JavaVersionUtils.UNKNOWN) {
+      if(!JAVA_VERSION.isKnown()) {
           System.err.println("Couldn't parse Java version: " + System.getProperty("java.version"));
           System.exit(1);
       }

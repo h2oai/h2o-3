@@ -2,26 +2,20 @@ package water.util;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import water.TestUtil;
-
 import static water.util.JavaVersionUtils.JAVA_VERSION;
+
+import org.junit.Test;
 
 /**
  * Java version string parser test.
  */
-public class JavaVersionUtilsTest extends TestUtil {
-
-    @BeforeClass
-    static public void setup() {  stall_till_cloudsize(1); }
+public class JavaVersionUtilsTest {
 
     @Test
     public void testPreJava10Parsing() {
         // OpenJDK 7
         assertEquals(7, JAVA_VERSION.parseMajor("1.7.0_75"));
-        // Oracle JDK 10
+        // Oracle JDK 8
         assertEquals(8, JAVA_VERSION.parseMajor("1.8.0_151"));
     }
 
