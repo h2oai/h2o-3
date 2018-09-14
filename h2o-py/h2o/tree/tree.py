@@ -189,6 +189,9 @@ class H2OTree():
                                                                                             self._tree_number,
                                                                                             self._tree_class)
 
+    def show(self):
+        print(self.__str__())
+
 
 class H2ONode():
     """
@@ -228,6 +231,9 @@ class H2OLeafNode(H2ONode):
 
     def __str__(self):
         return "Leaf node ID {}. Predicted value at leaf node is {} \n".format(self._id, self._prediction)
+
+    def show(self):
+        print(self.__str__())
 
 
 class H2OSplitNode(H2ONode):
@@ -324,3 +330,6 @@ class H2OSplitNode(H2ONode):
         if self._na_direction is not None: out += "\nNA values go to the {}".format(self._na_direction)
 
         return out
+
+    def show(self):
+        print(self.__str__())
