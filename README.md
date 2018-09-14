@@ -156,7 +156,7 @@ requests
 wheel
 ```
 
-To install these packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
+To install these Python packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
 If you have troubles installing these packages on *Windows*, please follow section [Setup on Windows](#SetupWin) of this guide.
 > (Note: It is recommended to use some virtual environment such as [VirtualEnv](https://virtualenv.pypa.io/), to install all packages. )
 
