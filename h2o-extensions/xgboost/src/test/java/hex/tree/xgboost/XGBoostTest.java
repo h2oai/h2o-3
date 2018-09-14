@@ -1218,13 +1218,23 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel sparseModel = null;
     XGBoostModel denseModel = null;
     try {
-      Frame sparseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 10, 0));
-      Frame denseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 2, 0));
+
+      // Fill ratio 0.2 (response not counted)
+      Frame sparseFrame = Scope.track(new TestFrameBuilder()
+              .withName("sparse_frame")
+              .withColNames("C1", "C2", "C3")
+              .withVecTypes(Vec.T_NUM,Vec.T_NUM,Vec.T_NUM)
+              .withDataForCol(0, ard( 1,0, 0, 0, 0))
+              .withDataForCol(1, ard( 0, 1, 0, 0, 0))
+              .withDataForCol(2, ard( 2, 1,1, 4, 3))
+              .build());
+
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = sparseFrame._key;
-      parms._response_column = "C1";
+      parms._response_column = "C3";
       parms._seed = 42;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._ntrees = 1;
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
 
@@ -1232,9 +1242,20 @@ public class XGBoostTest extends TestUtil {
       assertNotNull(sparseModel);
       assertTrue(sparseModel._output._sparse);
 
+      // Fill ratio 0.3 (response not counted) - the threshold for sprase is >= 0.3
+      Frame denseFrame = Scope.track(new TestFrameBuilder()
+              .withName("sparse_frame")
+              .withColNames("C1", "C2", "C3")
+              .withVecTypes(Vec.T_NUM,Vec.T_NUM,Vec.T_NUM)
+              .withDataForCol(0, ard( 1,0, 0, 0, 0))
+              .withDataForCol(1, ard( 1, 1, 0, 0, 0))
+              .withDataForCol(2, ard( 2, 1,1, 4, 3))
+              .build());
+
       parms._train = denseFrame._key;
-      parms._response_column = "C1";
+      parms._response_column = "C3";
       parms._seed = 42;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._ntrees = 1;
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
 
