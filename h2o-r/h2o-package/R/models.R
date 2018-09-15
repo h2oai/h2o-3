@@ -3043,9 +3043,11 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
-#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.  If you enable add_missing_NA, the returned length will be nbin+1.
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
+#' @param weight_column A string denoting which column of data should be used as the weight column.
+#' @param include_na A logical specifying whether missing value should be included in the Features.  This is only enabled if there are missing values in the features.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -3065,7 +3067,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE, weight_column=-1, include_na=FALSE) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
@@ -3073,17 +3075,29 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
+  if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
   if(missing(cols)) cols =  object@parameters$x
 
   y = object@parameters$y
   x = cols
   args <- .verify_dataxy(data, x, y)
+  
+  if (is.numeric(weight_column) && (weight_column != -1)) {
+      stop("weight_column should be a column name of your data frame.")
+  } else if (is.character(weight_column)) { # weight_column_index is column name
+    if (!weight_column %in% h2o.names(data))
+      stop("weight_column_index should be one of your columns in your data frame.")
+    else
+      weight_column = match(weight_column, h2o.names(data))-1
+  }
 
   parms = list()
   parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
   parms$model_id  <- attr(object, "model_id")
   parms$frame_id <- attr(data, "id")
   parms$nbins <- nbins
+  parms$weight_column_index <- weight_column
+  parms$add_missing_na <- include_na
   if(!missing(destination_key)) parms$destination_key = destination_key
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)

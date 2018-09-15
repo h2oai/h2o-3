@@ -21,6 +21,14 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   public String[] cols;
 
   @SuppressWarnings("unused")
+  @API(help="weight_column_index", direction=API.Direction.INOUT)
+  public int weight_column_index; // choose which column containing the weight
+
+  @SuppressWarnings("unused")
+  @API(help="add_missing_na", direction=API.Direction.INOUT)
+  public boolean add_missing_na; // add missing values if data column contains NAs
+
+  @SuppressWarnings("unused")
   @API(help="Number of bins", direction=API.Direction.INOUT)
   public int nbins;
 
