@@ -1483,6 +1483,35 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         print(pass_string)
         return 0
 
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
+
 
 def extract_col_value_H2OTwoDimTable(table, col_name):
     '''

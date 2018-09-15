@@ -3001,7 +3001,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE, weight_column=-1, include_na=FALSE) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE, weight_column=-1, include_na=FALSE, user_splits=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
@@ -3032,6 +3032,56 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   parms$nbins <- nbins
   parms$weight_column_index <- weight_column
   parms$add_missing_na <- include_na
+  
+  if (length(user_splits) == 0) {
+    parms$user_cols <- NULL
+    parms$user_splits <- NULL
+    parms$num_user_splits <- NULL
+  } else {
+    user_cols <- c()
+    user_values <- c()
+    user_num_splits <- c()
+    column_names = h2o.names(data)
+    for (ind in c(1:length(user_splits))) {
+      aList = user_splits[[ind]]
+      csname = aList[1]
+      if (csname %in% column_names) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
+          nVal <- length(aList)-1
+          if (h2o.isfactor(data[csname])) {
+            domains <- h2o.levels(data[csname]) # enum values
+            tempVal <- aList[2:length(aList)]
+            intVals <- c(1:length(tempVal))
+            for (eleind in c(1:nVal)) {
+              eleIndex = which(domains == tempVal[eleind])
+              if (eleIndex>0) {
+                intVals[eleind] = which(domains == tempVal[eleind]) - 1
+              } else {
+                stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
+              }
+            }
+            user_values <- c(user_values, intVals)
+          } else {
+            vals <- as.numeric(unlist(strsplit(aList[2:length(aList)], ",")))
+            user_values <- c(user_values, vals)
+          }
+
+          user_num_splits <- c(user_num_splits, nVal)
+          user_cols <- c(user_cols, csname)          
+        } else {
+          stop ("Partial dependency plots are generated for numerical and categorical columns only.")
+        }
+      } else {
+        stop(
+          "column names used in user_splits are not valid.  They should be chosen from the columns of your data set"
+        )
+      }
+    }
+    parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
+    parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
+    parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+  }
+
   if(!missing(destination_key)) parms$destination_key = destination_key
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)
