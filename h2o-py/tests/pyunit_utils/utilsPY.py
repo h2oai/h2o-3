@@ -1484,6 +1484,56 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         return 0
 
 
+def extract_col_value_H2OTwoDimTable(table, col_name):
+    '''
+    This function given the column name will extract a list containing the value used for the column name from the
+    H2OTwoDimTable.
+
+    :param table:
+    :param col_name:
+    :return:
+    '''
+
+    tableList = []
+    col_header = table.col_header
+    colIndex = col_header.index(col_name)
+    for ind in range(len(table.cell_values)):
+        temp = table.cell_values[ind]
+        tableList.append(temp[colIndex])
+
+    return tableList
+
+
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
+
 def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
                                 num_per_dim=10):
     """
@@ -1496,7 +1546,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
 
     :param table1: H2OTwoDimTable to be compared
     :param table2: the other H2OTwoDimTable to be compared
-    :param col_header_list: list of strings denote names that we can the comparison to be performed
+    :param col_header_list: list of strings denote names that we want the comparison to be performed
     :param tolerance: default to 1e-6
     :param check_sign: bool, determine if the sign of values are important or not.  For eigenvectors, they are not.
     :param check_all: bool, determine if we need to compare every single element
