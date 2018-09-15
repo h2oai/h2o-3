@@ -22,6 +22,7 @@ def testStoppingMethod(model_index, training_data, x_indices, y_index, validatio
     1. Check to make sure stopping_method is checked and errors be thrown when
         a. setting it to valid when a validation set if not provided;
         b. setting it to xval when no cross validation is enabled;
+        c. setting it to train when cross-validation is enabled and validation dataset is provided
     2. when stopping_method is set to xval, the scoring history of auto is calculated based on the final main model.
       If a validation dataset is provided, early stop will use the validation dataset metrics.  If no validation
       dataset is provided, the early stop will use the training dataset metrics.
@@ -58,6 +59,13 @@ def testStoppingMethod(model_index, training_data, x_indices, y_index, validatio
     models_auto_noCV = [
         "H2ODeepLearningEstimator(distribution='gaussian', seed=12345, hidden=[3], stopping_rounds=3,"
         " stopping_tolerance=0.01)"]
+
+
+# play with it first
+    # everything, training dataset, cv and validation dataset
+#    model = eval(models_sm_xval[0])
+    model = eval(models_auto_CV[0])
+    model.train(x=x_indices, y=y_index, training_frame=training_data)
 
     # test 1, set stopping method to valid without a validation set
     try:

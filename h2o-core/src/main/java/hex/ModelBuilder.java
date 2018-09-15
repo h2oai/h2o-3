@@ -12,6 +12,8 @@ import water.util.*;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static hex.ScoreKeeper.*;
+
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
@@ -238,8 +240,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
-    if( !nFoldCV() || _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.train) ||
-            _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
+    if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
@@ -902,14 +903,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
-    // need to check at the beginning.  _parms._valid is assigned with cross-validation hold out set later.
-    if (_parms._valid == null & _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
+    // check and make sure _stopping_method is set correctly
+    if (_parms._valid == null & _parms._stopping_method.equals(StoppingMethods.valid))
       error("_stopping_method", " valid can only be used if provided a validation frame.  Either " +
-              "provide a validation frame, or set stopping_method to AUTO, train or xval.");
-    if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.xval) && !(_parms._nfolds > 1 || _parms._is_cv_model))
+              "provide a validation frame, or set stopping_method to AUTO, or other valid options.");
+    if (_parms._stopping_method.equals(StoppingMethods.xval) && !(_parms._nfolds > 1 || _parms._is_cv_model))
       error("_stopping_method", " xval can only be used if cross-validation is enabled." +
               "To enable cross-validation, set nfolds > 1.");
-
+    if (_parms._stopping_method.equals(StoppingMethods.train) && (_parms._nfolds > 1 && _parms._is_cv_model))
+      error("_stopping_method", " train cannot be used when cross-validation is enabled and a" +
+              " validation set is provided.  Only xval and valid can be used. ");
     if (expensive) {
       _parms.getOrMakeRealSeed();
     }
@@ -1124,7 +1127,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_stopping_tolerance", "Stopping tolerance must be < 1.");
     }
     if (_parms._stopping_rounds == 0) {
-      if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
+      if (_parms._stopping_metric != StoppingMetric.AUTO)
         warn("_stopping_metric", "Stopping metric is ignored for _stopping_rounds=0.");
       if (_parms._stopping_tolerance != _parms.defaultStoppingTolerance())
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
@@ -1132,16 +1135,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
     } else {
       if (isClassifier()) {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
+        if (_parms._stopping_metric == StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
         }
-        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
+        if (nclasses()!=2 && _parms._stopping_metric == StoppingMetric.AUC) {
           error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
         }
       } else {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+        if (_parms._stopping_metric == StoppingMetric.misclassification ||
+                _parms._stopping_metric == StoppingMetric.AUC ||
+                _parms._stopping_metric == StoppingMetric.logloss)
         {
           error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
         }

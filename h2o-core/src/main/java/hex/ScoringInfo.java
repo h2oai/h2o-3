@@ -64,7 +64,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
    */
   public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history, ScoreKeeper.StoppingMethods stopM) {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history.length];
-    if (stopM.equals(ScoreKeeper.StoppingMethods.AUTO)) {
+    if (stopM.equals(ScoreKeeper.StoppingMethods.AUTO)) { // use original method
       for (int i = 0; i < sk.length; ++i) {
         sk[i] = scoring_history[i].cross_validation ? scoring_history[i].scored_xval
                 : scoring_history[i].validation ? scoring_history[i].scored_valid
@@ -72,9 +72,17 @@ public class ScoringInfo extends Iced<ScoringInfo> {
       }
     } else {
       for (int i = 0; i < sk.length; ++i) {
-        sk[i] = stopM.equals(ScoreKeeper.StoppingMethods.train) ? scoring_history[i].scored_train : (
-                stopM.equals(ScoreKeeper.StoppingMethods.valid) ?
-                        scoring_history[i].scored_valid : scoring_history[i].scored_xval);
+        // if user only provides training dataset without cv, only method train is allowed.
+        // if user only provides training dataset with cv, methods train and xval are allowed.
+        // if user provides training dataset and validation dataset with cv off, methods train and valid are allowed.
+        // if user provides training dataset and validation dataset with cv on, methods xval and valid are allowed only.
+        if (scoring_history[i].validation) { // validation set provided
+          sk[i] = stopM.equals(ScoreKeeper.StoppingMethods.valid) ?
+                          scoring_history[i].scored_valid : scoring_history[i].scored_train;
+        } else { // no validation set, only trainingg and cv
+          sk[i] = stopM.equals(ScoreKeeper.StoppingMethods.train) ?
+                  scoring_history[i].scored_train : scoring_history[i].scored_valid;
+        }
       }
     }
     return sk;

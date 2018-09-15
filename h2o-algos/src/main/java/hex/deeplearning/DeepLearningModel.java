@@ -202,13 +202,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = IcedUtils.deepCopy(cp.scoringInfo[i]);
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = get_params()._stopping_method.equals(ScoreKeeper.StoppingMethods.AUTO)?
-            DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
-                    false, _output.getModelCategory(), _output.isAutoencoder()):
-            DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
-                    get_params()._is_cv_model, _output.getModelCategory(),
-                    _output.isAutoencoder());
-    //DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output.setNames(dataInfo._adaptedFrame.names());
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -245,13 +239,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = get_params()._stopping_method.equals(ScoreKeeper.StoppingMethods.AUTO)?
-              DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
-                      false, _output.getModelCategory(), _output.isAutoencoder()):
-              DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid),
-                      get_params()._is_cv_model, _output.getModelCategory(),
-                      _output.isAutoencoder());
-      //DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -374,8 +362,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           ModelMetrics mtest = ModelMetrics.getFromDKV(this, fValid); //updated by model.score
           _output._validation_metrics = mtest;
           scoringInfo.scored_valid = new ScoreKeeper(mtest);
-          if (get_params()._stopping_method.equals(ScoreKeeper.StoppingMethods.xval))
-            scoringInfo.scored_xval = new ScoreKeeper(mtest);
         }
       } else {
         if (printme) Log.info("Scoring the model.");
@@ -422,7 +408,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           _output._training_metrics._description = "Metrics reported on full training frame";
         }
 
-        // Scoring on cross-validation data
+        // Scoring on validation data
         hex.ModelMetrics mvalid;
         if (fValid != null) {
           preds = null;
@@ -438,9 +424,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           if (preds!=null) preds.remove();
           _output._validation_metrics = mvalid;
           scoringInfo.scored_valid = new ScoreKeeper(mvalid);
-          if (get_params()._stopping_method.equals(ScoreKeeper.StoppingMethods.xval))
-            scoringInfo.scored_xval = new ScoreKeeper(mvalid);
-
           if (mvalid != null) {
             if (mvalid instanceof ModelMetricsBinomial) {
               ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
@@ -841,7 +824,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
-        if (isCancelled() || job !=null && job.stop_requested()) return;
+        if (isCancelled() || job !=null && job.stop_requested()) throw new Job.JobCancelledException();
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
