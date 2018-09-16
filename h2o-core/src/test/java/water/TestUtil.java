@@ -674,6 +674,35 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
+  public static boolean equalTwoDimTables(TwoDimTable tab1, TwoDimTable tab2, double tol) {
+    boolean same = true;
+    //compare colHeaders
+    same = Arrays.equals(tab1.getColHeaders(), tab2.getColHeaders()) &&
+            Arrays.equals(tab1.getColTypes(), tab2.getColTypes());
+    String[] colTypes = tab2.getColTypes();
+    IcedWrapper[][] cellValues1 = tab1.getCellValues();
+    IcedWrapper[][] cellValues2 = tab2.getCellValues();
+
+    same = same && cellValues1.length==cellValues2.length;
+    if (!same)
+      return false;
+
+    // compare cell values
+    for (int cindex = 0; cindex < cellValues1.length; cindex++) {
+      same = same && cellValues1[cindex].length==cellValues2[cindex].length;
+      if (!same)
+        return false;
+      for (int index=0; index < cellValues1[cindex].length; index++) {
+        if (colTypes[index].equals("double")) {
+          same = same && Math.abs(Double.parseDouble(cellValues1[cindex][index].toString())-Double.parseDouble(cellValues2[cindex][index].toString()))<tol;
+        } else {
+          same = same && cellValues1[cindex][index].toString().equals(cellValues2[cindex][index].toString());
+        }
+      }
+    }
+    return same;
+  }
+
   public static boolean[] checkEigvec(TwoDimTable expected, TwoDimTable actual, double threshold) {
     int nfeat = actual.getRowDim();
     int ncomp = actual.getColDim();

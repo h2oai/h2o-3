@@ -949,4 +949,77 @@ public class FrameUtils {
       if (l != null) l.delete();
     }
   }
+
+  /**
+   * This class will calculate the weighted mean and standard deviatioin of a target column of a data frame
+   * with the weights specified in another column.
+   *
+   * For the weighted mean, it is calculated as (sum from i=1 to N wi*xi)/(sum from i=1 to N wi)
+   * For the weigthed std, it is calculated as
+   *    (sum from i=1 to N wi*(xi-weightedMean)*(xi-weightedMean))/(C *sum from i=1 to N wi)
+   * where C = (M-1)/M and M is the number of nonzero weights.
+   *
+   */
+  public static class CalculateWeightMeanSTD extends MRTask {
+    public double _weightedEleSum;
+    public double _weightedEleSqSum;
+    public double _weightedCount;
+    public double _weightedMean;
+    public double _weightedSigma;
+    public long _nonZeroWeightsNum;
+    public Frame _dataFrame;
+    public Frame _pred;
+
+    public CalculateWeightMeanSTD(Frame dataFrame, Frame pred) {
+      _dataFrame = dataFrame;
+      _pred = pred;
+    }
+
+    public void map(Chunk pcs, Chunk wcs) {
+      _weightedEleSum = 0;
+      _weightedEleSqSum = 0;
+      _weightedCount = 0;
+      _nonZeroWeightsNum = 0;
+      assert pcs._len==wcs._len:"Prediction and weight chunk should have the same length.";
+      // 0 contains prediction, 1 columns weight
+      for (int rindex = 0; rindex < pcs._len; rindex++) {
+        double weight = wcs.atd(rindex);
+        double pvalue = pcs.atd(rindex);
+        if ((Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
+          double v1 = pvalue * wcs.atd(rindex);
+          _weightedEleSum += v1;
+          _weightedEleSqSum += v1 * pvalue;
+
+          _weightedCount += wcs.atd(rindex);
+          _nonZeroWeightsNum++;
+        }
+      }
+    }
+
+    public void reduce(CalculateWeightMeanSTD other) {
+      _weightedEleSum += other._weightedEleSum;
+      _weightedEleSqSum += other._weightedEleSqSum;
+      _weightedCount += other._weightedCount;
+    }
+
+    public void postGlobal() {
+      _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
+      long scale = _nonZeroWeightsNum-1;
+      scale = scale==0?1:scale; // avoid division by zero
+      _weightedSigma = _weightedCount==0?Double.NaN:
+              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*_nonZeroWeightsNum/scale);  // return NaN for bad input
+    }
+
+    public double getWeightedMean() {
+      return _weightedMean;
+    }
+
+    public double getWeightedSigma() {
+      return _weightedSigma;
+    }
+
+    public double getWeightedCount() {
+      return _weightedCount;
+    }
+  }
 }
