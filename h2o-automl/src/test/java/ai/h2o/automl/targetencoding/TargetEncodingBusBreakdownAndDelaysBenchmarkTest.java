@@ -1,5 +1,6 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding;
 
+import ai.h2o.automl.TestUtil;
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;

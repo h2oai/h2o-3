@@ -1,4 +1,4 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding;
 
 import ai.h2o.automl.targetencoding.BlendingParams;
 import water.*;
@@ -78,8 +78,8 @@ public class TargetEncoder {
               int foldColumnIndex = getColumnIndexByName(dataWithEncodedTarget, foldColumnName);
               teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, new int[]{colIndex, foldColumnIndex}, targetIndex);
             }
-            renameColumn(teColumnFrame, "sum_"+ targetColumnName, "numerator");
-            renameColumn(teColumnFrame, "nrow", "denominator");
+            teColumnFrame.renameColumn( "sum_"+ targetColumnName, "numerator");
+            teColumnFrame.renameColumn( "nrow", "denominator");
 
             columnToEncodingMap.put(teColumnName, teColumnFrame);
         }
@@ -152,17 +152,6 @@ public class TargetEncoder {
     String getColumnNameBy(Frame data, int columnIndex) {
         String [] allColumnNames = data._names.clone();
         return allColumnNames[columnIndex];
-    }
-
-    Frame renameColumn(Frame fr, int indexOfColumnToRename, String newName) {
-        String[] names = fr.names();
-        names[indexOfColumnToRename] = newName;
-        fr.setNames(names);
-        return fr;
-    }
-
-    Frame renameColumn(Frame fr, String oldName, String newName) {
-        return renameColumn(fr, getColumnIndexByName(fr, oldName), newName);
     }
 
     private Frame execRapidsAndGetFrame(String astTree) {
@@ -283,10 +272,6 @@ public class TargetEncoder {
         Log.warn(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", a._key, mean, numberOfNAs));
       }
       return a;
-    }
-
-    Frame appendColumn(Frame a, long columnValue, String appendedColumnName ) {
-        return a.addCon(appendedColumnName, columnValue);
     }
 
     double calculateGlobalMean(Frame fr) {
@@ -552,8 +537,8 @@ public class TargetEncoder {
 
                             Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
-                            renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
-                            renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
+                            groupedByTEColumnAndAggregate.renameColumn( "sum_numerator", "numerator");
+                            groupedByTEColumnAndAggregate.renameColumn( "sum_denominator", "denominator");
 
                             Frame groupedWithAppendedFoldColumn = groupedByTEColumnAndAggregate.addCon("foldValueForMerge", foldValue);
 
@@ -699,8 +684,8 @@ public class TargetEncoder {
             int teColumnIndex = getColumnIndexByName(targetEncodingMap, teColumnName);
 
             Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
-            renameColumn(newTargetEncodingMap, "sum_numerator", "numerator");
-            renameColumn(newTargetEncodingMap, "sum_denominator", "denominator");
+            newTargetEncodingMap.renameColumn( "sum_numerator", "numerator");
+            newTargetEncodingMap.renameColumn( "sum_denominator", "denominator");
             return newTargetEncodingMap;
         } else {
             Frame targetEncodingMapCopy = targetEncodingMap.deepCopy(Key.make().toString());

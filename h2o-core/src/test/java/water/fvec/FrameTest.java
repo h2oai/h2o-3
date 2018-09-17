@@ -359,4 +359,56 @@ public class FrameTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void deepCopyFrameTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ar("c", "d"))
+              .build();
+
+      Frame newFrame = fr.deepCopy(Key.make().toString());
+
+      fr.delete();
+      assertStringVecEquals(newFrame.vec("ColB"), cvec("c", "d"));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void renameColumnTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB", "ColC", "fold_column")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ard(1, 1))
+              .withDataForCol(2, ar("2", "6"))
+              .withDataForCol(3, ar(1, 2))
+              .build();
+
+      // Case1: Renaming by index
+      int indexOfColumnToRename = 0;
+      String newName = "NewColA";
+      fr.renameColumn(indexOfColumnToRename, newName);
+
+      assertEquals(fr.names()[indexOfColumnToRename], newName);
+
+      // Case2: Renaming by name
+      String newName2 = "NewColA-2";
+      fr.renameColumn("NewColA", newName2);
+      assertEquals(fr.names()[indexOfColumnToRename], newName2);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

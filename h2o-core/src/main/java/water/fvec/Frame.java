@@ -1296,6 +1296,17 @@ public class Frame extends Lockable<Frame> {
     return new Frame(v);
   }
 
+  public Frame renameColumn(int indexOfColumnToRename, String newName) {
+    String[] updatedtNames = this.names();
+    updatedtNames[indexOfColumnToRename] = newName;
+    setNames(updatedtNames);
+    return this;
+  }
+
+  public Frame renameColumn(String oldName, String newName) {
+    return renameColumn(find(oldName), newName);
+  }
+
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {
     return ("Frame key: " + _key + "\n") +
