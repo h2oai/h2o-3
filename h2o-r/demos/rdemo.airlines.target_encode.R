@@ -2,7 +2,7 @@ library(h2o)
 h2o.init()
 
 dataPath <- h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip")
-print("Importing titanic data into H2O")
+print("Importing airlines data into H2O")
 data <- h2o.importFile(path = dataPath, destination_frame = "data")
 # data$isDepDelayed <- as.factor(data$isDepDelayed)
 

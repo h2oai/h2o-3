@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.BlendingParams;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -712,7 +713,7 @@ public class TargetEncodingTest extends TestUtil{
                 .withRandomBinaryDataForCol(2, 1000000)
                 .build();
 
-        TargetEncoder.BlendingParams blendingParams = new TargetEncoder.BlendingParams(20, 10);
+        BlendingParams blendingParams = new BlendingParams(20, 10);
 
 
         Frame frameWithBlendedEncodings = new TargetEncoder.CalcEncodingsWithBlending(0, 1, 42, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
@@ -789,6 +790,146 @@ public class TargetEncodingTest extends TestUtil{
 
       encodingMapCleanUp(targetEncodingMap);
       resultWithEncoding.delete();
+    }
+
+    @Test
+    public void naValuesWithLOOStrategyTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
+
+      printOutColumnsMeta(fr);
+
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+
+      Frame resultWithEncodings = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234, true);
+
+      printOutFrameAsTable(resultWithEncodings);
+      Vec expected = vec(0.5, 1, 0.5, 0.6, 0.6);
+      assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
+
+      expected.remove();
+      encodingMapCleanUp(targetEncodingMap);
+      resultWithEncodings.delete();
+    }
+
+    @Test
+    public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
+
+      printOutColumnsMeta(fr);
+
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234, true);
+
+      printOutFrameAsTable(resultWithEncoding);
+
+      encodingMapCleanUp(targetEncodingMap);
+      resultWithEncoding.delete();
+    }
+
+    // Test that NA and empty strings create same encoding. Imputed average is slightly different for some reason
+    @Test
+    public void comparisonBetweenNAsAndNonEmptyStringForLOOStrategyTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
+
+      Frame fr2 = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "na", "na", "na"))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+      int[] teColumns = {0};
+
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234, true);
+
+      Map<String, Frame> targetEncodingMap2 = tec.prepareEncodingMap(fr2, teColumns, 1);
+
+      Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, teColumns, 1, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, 1234, true);
+
+      Frame sortedResult = resultWithEncoding.sort(new int[]{2}, new int[]{2});
+      Frame sortedResult2 = resultWithEncoding2.sort(new int[]{2}, new int[]{2});
+
+      assertVecEquals(sortedResult.vec("ColA_te"), sortedResult2.vec("ColA_te"), 1e-5);
+
+      encodingMapCleanUp(targetEncodingMap);
+      encodingMapCleanUp(targetEncodingMap2);
+      fr2.delete();
+      sortedResult.delete();
+      sortedResult2.delete();
+      resultWithEncoding.delete();
+      resultWithEncoding2.delete();
+    }
+
+    // Test that empty strings create same encodings as nonempty strings
+    @Test
+    public void comparisonBetweenEmptyStringAndNonEmptyStringForLOOStrategyTest() {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "", "", ""))
+              .withDataForCol(1, ar("2", "6", "2", "2", "6"))
+              .build();
+
+      Frame fr2 = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "na", "na", "na"))
+              .withDataForCol(1, ar("2", "6", "2", "2", "6"))
+              .build();
+
+      BlendingParams params = new BlendingParams(20, 10);
+      TargetEncoder tec = new TargetEncoder(params);
+      int[] teColumns = {0};
+
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, teColumns, 1, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, true, 0.0, 1234, true);
+
+      Map<String, Frame> targetEncodingMap2 = tec.prepareEncodingMap(fr2, teColumns, 1);
+
+      Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, teColumns, 1, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, true, 0.0, 1234, true);
+
+      printOutFrameAsTable(resultWithEncoding);
+      printOutFrameAsTable(resultWithEncoding2);
+
+      assertVecEquals(resultWithEncoding.vec("ColA_te"), resultWithEncoding2.vec("ColA_te"), 1e-5);
+
+      encodingMapCleanUp(targetEncodingMap);
+      encodingMapCleanUp(targetEncodingMap2);
+      fr2.delete();
+      resultWithEncoding.delete();
+      resultWithEncoding2.delete();
     }
 
     @Test

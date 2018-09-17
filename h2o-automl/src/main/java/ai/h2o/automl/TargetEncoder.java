@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoding.BlendingParams;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithValueTask;
@@ -15,23 +16,22 @@ import java.util.*;
 
 import static water.util.FrameUtils.getColumnIndexByName;
 
-// TODO probably should call this logic from FrameUtils if we are going to expose TE for the Java API users.
 public class TargetEncoder {
+
+    BlendingParams blendingParams;
+
+    public TargetEncoder (BlendingParams blendingParams) {
+      this.blendingParams = blendingParams;
+    }
+
+    public TargetEncoder () {
+      this.blendingParams = new BlendingParams(20, 10);
+    }
 
     public static class DataLeakageHandlingStrategy {
         public static final byte LeaveOneOut  =  0;
         public static final byte KFold  =  1;
         public static final byte None  =  2;
-    }
-
-    public static class BlendingParams extends Iced<BlendingParams> {
-      private long k;
-      private long f;
-
-      BlendingParams(long k, long f) {
-        this.k = k;
-        this.f = f;
-      }
     }
 
     /**
@@ -300,7 +300,6 @@ public class TargetEncoder {
       int denominatorIndex = getColumnIndexByName(fr, "denominator");
 
       double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
-      BlendingParams blendingParams = new BlendingParams(20, 10);
 
       Frame frameWithBlendedEncodings = new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
       fr.add(appendedColumnName, frameWithBlendedEncodings.anyVec());
@@ -331,7 +330,7 @@ public class TargetEncoder {
           else if (den.at8(i) == 0) {
             nc.addNum(globalMean);
           } else {
-            double lambda = 1.0 / (1 + Math.exp((blendingParams.k - den.atd(i)) / blendingParams.f));
+            double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - den.atd(i)) / blendingParams.getF()));
             double blendedValue = lambda * (num.atd(i) / den.atd(i)) + (1 - lambda) * globalMean;
             nc.addNum(blendedValue);
           }
@@ -345,7 +344,7 @@ public class TargetEncoder {
 
       double globalMeanForTargetClass = calculateGlobalMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
 
-      //I can do a trick with appending a zero column and then we can map there an encodings.
+      //I can do a trick with appending a column of zeroes and then we can map encodings into it.
       Frame frameWithEncodings = new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass).doAll(Vec.T_NUM, fr).outputFrame();
       fr.add(appendedColumnName, frameWithEncodings.anyVec()); // Can we just add(append)? Would the order be preserved?
       return fr;
@@ -580,8 +579,11 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
-                    // if column is represented only in one fold then during computation of out-of-fold subsets we will get empty aggregations.
-                    // When merging with the original dataset we will get NA'a on the right side
+                    // Cases when we can introduce NA's:
+                    // 1) if column is represented only in one fold then during computation of out-of-fold subsets we will get empty aggregations.
+                    //   When merging with the original dataset we will get NA'a on the right side
+                    // Note: since we create encoding based on training dataset and use KFold mainly when we apply encoding to the training set,
+                    // there is zero probability that we haven't seen some category.
                     imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
 
                     removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
@@ -609,6 +611,8 @@ public class TargetEncoder {
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
+                    // Cases when we can introduce NA's:
+                    // 1) Only in case when our encoding map has not seen some category.
                     imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
 
                     removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
@@ -633,8 +637,10 @@ public class TargetEncoder {
                     else
                       dataWithEncodings = calculateEncoding(dataWithMergedAggregations, groupedTargetEncodingMapForNone, null, newEncodedColumnName, withBlendedAvg);
 
-                  // In cases when encoding has not seen some levels we will impute NAs with mean. Mean is a dataleakage btw.
-                    // we'd better use stratified sampling for te_Holdout. Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
+                    // In cases when encoding has not seen some levels we will impute NAs with mean computed from training set. Mean is a dataleakage btw.
+                    // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
+                    // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
+                    // Otherwise there are higher chances to get NA's for unseen categories.
                     imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName));
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
