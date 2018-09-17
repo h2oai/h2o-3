@@ -33,6 +33,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  we can return built Model. */
   public final M get() { assert _job._result == _result; return _job.get(); }
   public final boolean isStopped() { return _job.isStopped(); }
+  public boolean _validation_set_present=false;
+  public boolean _cv_enabled=false;
 
   // Key of the model being built; note that this is DIFFERENT from
   // _job._result if the Job is being shared by many sub-models
@@ -239,6 +241,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
+    _cv_enabled = _parms._nfolds > 1;
+    _validation_set_present = _parms.valid() != null;
+
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
@@ -280,6 +285,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
+    _cv_enabled = _parms._nfolds > 1;
+    _validation_set_present = _parms.valid() != null;
     if( !nFoldCV() ) trainModelImpl().compute2();
     else computeCrossValidation();
     return _result.get();
@@ -988,6 +995,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
+
+    if (!(nFoldCV() || _cv_enabled)) {      // cross-validation is disabled
+      if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.xval))
+        error("_stopping_method", "Stopping method xval cannot be used when cross-validation is" +
+                " not enabled.");
+    }
+
+    if (_parms.valid() == null) { // no validation frame
+      if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
+        error("_stopping_method", "Stopping method valid cannot be used without providing a " +
+                "validation dataset.");
+    }
+
     if (_parms._distribution == DistributionFamily.modified_huber) {
       error("_distribution", "Modified Huber distribution is not supported yet.");
     }

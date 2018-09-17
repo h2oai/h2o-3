@@ -82,4 +82,14 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
 
     return (S) this;
   }
+
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+          values = {"AUTO", "train", "valid", "xval"},
+          help = "Parameter used to control what dataset to use to control early stopping.  If set to AUTO: " +
+                  "cross-validation data is used for early stopping if cv is enabled.  Otherwise, validation data " +
+                  "set is used if it is available.  Otherwise, training dataset is used to determine early stopping." +
+                  "  If set to train: training data frame is used to determine early stopping.  If set to valid:" +
+                  " validation dataset is used to determine early stopping.  If set to xval: hold out dataset" +
+                  "in each fold of cross-validation is used to calculate early stopping conditions.")
+  public ScoreKeeper.StoppingMethods stopping_method;
 }

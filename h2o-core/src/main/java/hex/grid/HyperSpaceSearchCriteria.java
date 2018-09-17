@@ -48,6 +48,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
     public double _stopping_tolerance = 0.001;
+    private ScoreKeeper.StoppingMethods _stopping_method = ScoreKeeper.StoppingMethods.AUTO;
 
 
     /** Seed for the random choices of hyperparameter values.  Set to a value other than -1 to get a repeatable pseudorandom sequence. */
@@ -74,6 +75,8 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     /** Metric to use for convergence checking; only for _stopping_rounds > 0 */
     public ScoreKeeper.StoppingMetric stopping_metric() { return _stopping_metric; }
+
+    public ScoreKeeper.StoppingMethods stopping_method() { return _stopping_method; }
 
     /** Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much. */
     public double stopping_tolerance() { return _stopping_tolerance; }
@@ -111,6 +114,10 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     public void set_stopping_rounds(int _stopping_rounds) {
       this._stopping_rounds = _stopping_rounds;
+    }
+
+    public void set_stopping_method(ScoreKeeper.StoppingMethods _stopping_method) {
+      this._stopping_method = _stopping_method;
     }
 
     public void set_stopping_metric(ScoreKeeper.StoppingMetric _stopping_metric) {

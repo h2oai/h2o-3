@@ -248,12 +248,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // costs to less than 10% of the build time.  This flag forces scoring for
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
-
+    public ScoreKeeper.StoppingMethods _stopping_method = ScoreKeeper.StoppingMethods.AUTO;
     /**
      * Maximum allowed runtime in seconds for model training. Use 0 to disable.
      */
     public double _max_runtime_secs = 0;
-
     /**
      * Early stopping based on convergence of stopping_metric.
      * Stop if simple moving average of the stopping_metric does not improve by stopping_tolerance for

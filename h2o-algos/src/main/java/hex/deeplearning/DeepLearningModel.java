@@ -43,6 +43,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * 3) variable importances (TwoDimTable)
    */
   public static class DeepLearningModelOutput extends Model.Output {
+    public boolean _validation_set_present = false;
+    public boolean _cv_enabled = false;
+
     public DeepLearningModelOutput(DeepLearning b) {
       super(b);
       autoencoder = b._parms._autoencoder;
@@ -278,6 +281,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     checkTimingConsistency();
   }
 
+  boolean doScoring(Frame fTrain, Frame fValid, Key<Job> jobKey, int iteration, boolean finalScoring) {
+    return doScoring(fTrain, fValid, jobKey, iteration, finalScoring, false, false);
+  }
+
   /**
    * Score this DeepLearning model
    * @param fTrain potentially downsampled training data for scoring
@@ -286,7 +293,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame fTrain, Frame fValid, Key<Job> jobKey, int iteration, boolean finalScoring) {
+  boolean doScoring(Frame fTrain, Frame fValid, Key<Job> jobKey, int iteration, boolean finalScoring, boolean hasCV, boolean containsValidSet) {
     final long now = System.currentTimeMillis();
     final double time_since_last_iter = now - _timeLastIterationEnter;
     updateTiming(jobKey);
@@ -507,7 +514,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
           stopped_early = true;
         }
-        if (ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(scoring_history()),
+        if (ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(scoring_history(), get_params()._stopping_method, hasCV, containsValidSet),
                 get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");

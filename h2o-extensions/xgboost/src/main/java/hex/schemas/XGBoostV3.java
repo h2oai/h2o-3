@@ -28,6 +28,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",
+        "stopping_method",
         "max_runtime_secs",
         "seed",
         "distribution",

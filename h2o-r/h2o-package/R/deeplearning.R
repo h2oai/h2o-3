@@ -101,6 +101,12 @@
 #'        "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
+#' @param stopping_method Parameter used to control what dataset is used to control early stopping.  If set to AUTO: cross-validation
+#'        data is used for early stopping if cv is enabled.  Otherwise, validation data set is used if it is available.
+#'        Otherwise, training dataset is used to determine early stopping.  If set to train: training data frame is used
+#'        to determine early stopping.  If set to valid: validation dataset is used to determine early stopping.  If set
+#'        to xval: hold out datasetin each fold of cross-validation is used to calculate early stopping conditions. Must
+#'        be one of: "AUTO", "train", "valid", "xval". Defaults to AUTO.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param score_validation_sampling Method used to sample validation dataset for scoring. Must be one of: "Uniform", "Stratified". Defaults to
 #'        Uniform.
@@ -208,6 +214,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              stopping_rounds = 5,
                              stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                              stopping_tolerance = 0,
+                             stopping_method = c("AUTO", "train", "valid", "xval"),
                              max_runtime_secs = 0,
                              score_validation_sampling = c("Uniform", "Stratified"),
                              diagnostics = TRUE,
@@ -395,6 +402,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(stopping_method))
+    parms$stopping_method <- stopping_method
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(score_validation_sampling))

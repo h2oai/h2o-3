@@ -39,6 +39,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "stopping_rounds",
                 "stopping_metric",
                 "stopping_tolerance",
+                "stopping_method",
                 "max_runtime_secs",
                 "seed",
                 "build_tree_one_node",
