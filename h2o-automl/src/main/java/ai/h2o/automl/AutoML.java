@@ -392,11 +392,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     HyperparamSearch
   }
 
-  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
+  private void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
     pollAndUpdateProgress(stage, name, workContribution, parentJob, subJob, subJobType, false);
   }
 
-  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType, boolean ignoreTimeout) {
+  private void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType, boolean ignoreTimeout) {
     if (null == subJob) {
       if (null != parentJob) {
         parentJob.update(workContribution, "SKIPPED: " + name);
@@ -502,7 +502,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return Key.make(algoName + "_" + nextInstanceCounter(algoName, algoInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
-  public Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms) {
+  Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms) {
     return trainModel(key, algo, parms, false);
   }
 
@@ -513,7 +513,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param ignoreLimits (defaults to false) whether or not to ignore the max_models/max_runtime constraints
    * @return a started training model
    */
-  public Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms, boolean ignoreLimits) {
+  Job<Model> trainModel(Key<Model> key, Algo algo, Model.Parameters parms, boolean ignoreLimits) {
     if (exceededSearchLimits(algo, key == null ? null : key.toString(), JobType.ModelBuild, ignoreLimits)) return null;
 
     String algoName = ModelBuilder.algoName(algo.urlName());
@@ -578,7 +578,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param searchParms hyperparameter search space
    * @return the started hyperparameter search job
    */
-  public Job<Grid> hyperparameterSearch(Algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+  Job<Grid> hyperparameterSearch(Algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     return hyperparameterSearch(null, algo, baseParms, searchParms);
   }
 
@@ -591,7 +591,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @param searchParms hyperparameter search space
    * @return the started hyperparameter search job
    */
-  public Job<Grid> hyperparameterSearch(Key<Grid> gridKey, Algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+  Job<Grid> hyperparameterSearch(Key<Grid> gridKey, Algo algo, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     if (exceededSearchLimits(algo, JobType.HyperparamSearch)) return null;
 
     setCommonModelBuilderParams(baseParms);
@@ -796,7 +796,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  public Job<Grid> defaultSearchGLM() {
+  Job<Grid> defaultSearchGLM() {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GLM
     ///////////////////////////////////////////////////////////
@@ -819,7 +819,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return glmJob;
   }
 
-  public Job<Grid> defaultSearchGBM(Key<Grid> gridKey) {
+  Job<Grid> defaultSearchGBM(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GBM
     ///////////////////////////////////////////////////////////
@@ -844,7 +844,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return gbmJob;
   }
 
-  public Job<Grid> defaultSearchDL1(Key<Grid> gridKey) {
+  Job<Grid> defaultSearchDL1(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -869,7 +869,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL2(Key<Grid> gridKey) {
+  Job<Grid> defaultSearchDL2(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -894,7 +894,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL3(Key<Grid> gridKey) {
+  Job<Grid> defaultSearchDL3(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
@@ -1216,7 +1216,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   /**
    * Same as delete() but also deletes all Objects made from this instance.
    */
-  public void deleteWithChildren() {
+  void deleteWithChildren() {
     leaderboard.deleteWithChildren();
     // implicit: feedback.delete();
     delete(); // is it safe to do leaderboard.delete() now?
@@ -1254,21 +1254,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //
   // Also, the leaderboard will reject duplicate models, so use
   // the difference in Leaderboard length here:
-  public void addModels(final Key<Model>[] newModels) {
+  private void addModels(final Key<Model>[] newModels) {
     int before = leaderboard().getModelCount();
     leaderboard().addModels(newModels);
     int after = leaderboard().getModelCount();
     modelCount.addAndGet(after - before);
   }
 
-  public void addModel(final Key<Model> newModel) {
+  private void addModel(final Key<Model> newModel) {
     int before = leaderboard().getModelCount();
     leaderboard().addModel(newModel);
     int after = leaderboard().getModelCount();
     modelCount.addAndGet(after - before);
   }
 
-  public void addModel(final Model newModel) {
+  private void addModel(final Model newModel) {
     int before = leaderboard().getModelCount();
     leaderboard().addModel(newModel);
     int after = leaderboard().getModelCount();
@@ -1299,7 +1299,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  public boolean possiblyVerifyImmutability() {
+  private boolean possiblyVerifyImmutability() {
     boolean warning = false;
 
     if (verifyImmutability) {
