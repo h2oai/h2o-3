@@ -3,11 +3,7 @@ H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 H2O_HADOOP_STARTUP_MODE_WITH_KRB='WITH_KRB'
 
 def call(final pipelineContext, final stageConfig) {
-
-    def useKRB = stageConfig.customData.mode == H2O_HADOOP_STARTUP_MODE_WITH_KRB
-    stageConfig.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(stageConfig.customData.distribution, stageConfig.customData.version, useKRB)
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
-
         stageConfig.customBuildAction = """
             if [ -n "\$HADOOP_CONF_DIR" ]; then
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})

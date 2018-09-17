@@ -1,0 +1,16 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-base${GPU_SUFFIX}:${FROM_VERSION}
+
+ENV JAVA_VERSION=8
+COPY scripts/install_java_version scripts/java-${JAVA_VERSION}-vars.sh /tmp/
+RUN \
+    chmod +x /tmp/install_java_version /tmp/java-${JAVA_VERSION}-vars.sh && \
+    sync && \
+    /tmp/install_java_version ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh && \
+    rm /tmp/install_java_version /tmp/java-${JAVA_VERSION}-vars.sh && \
+    chmod a+w /usr/lib/jvm/
+
+ENV \
+  JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle \
+  PATH=/usr/lib/jvm/java-${JAVA_VERSION}-oracle/bin:${PATH}

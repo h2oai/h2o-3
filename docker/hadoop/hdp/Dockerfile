@@ -25,7 +25,7 @@ ENV DISTRIBUTION='hdp' \
     HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Copy bin and sbin scripts
-COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
+COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/java-*-vars.sh scripts/install_python_version /usr/sbin/
 
 # Add HDP repository and install packages
 RUN apt-get update && \
@@ -44,9 +44,10 @@ ENV H2O_BRANCH='master'
 RUN \
   chmod 700 /usr/sbin/install_java_version && \
   chmod 700 /usr/sbin/install_java_versions && \
-  chmod 700 /usr/sbin/install_python_versions && \
+  chmod 700 /usr/sbin/java-*-vars.sh && \
+  chmod 700 /usr/sbin/install_python_version && \
   sync && \
-  /usr/sbin/install_python_versions && \
+  /usr/sbin/install_python_version && \
   /usr/sbin/install_java_versions && \
   /usr/bin/activate_java_8
 ENV \

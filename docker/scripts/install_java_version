@@ -2,45 +2,20 @@
 
 set -ex
 
-case $1 in
-8)
-    JAVA_INSTALL_VERSION_MAJOR='8'
-    JAVA_INSTALL_VERSION=181
-    MAGIC_B_NUM=13
-    JAVA_INSTALL_LINK_HASH=96a7b8442fe848ef90c96a2fad6ed6d1
-    JAVA_INSTALL_PATH=/usr/opt/java-8-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u${JAVA_INSTALL_VERSION}-b${MAGIC_B_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
-    echo "Installing Java 8u${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
-    ;;
-10)
-    JAVA_INSTALL_VERSION_MAJOR='10'
-    JAVA_INSTALL_VERSION='10.0.2'
-    MAGIC_NUM=13
-    JAVA_INSTALL_LINK_HASH=19aef61b38124481863b1413dce1855f
-    JAVA_INSTALL_PATH=/usr/opt/java-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/${JAVA_INSTALL_VERSION}+${MAGIC_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-${JAVA_INSTALL_VERSION}_linux-x64_bin.tar.gz
-    echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
-    ;;
-11)
-    JAVA_INSTALL_VERSION_MAJOR='11'
-    JAVA_INSTALL_VERSION='11'
-    MAGIC_NUM=28
-    JAVA_INSTALL_PATH=/usr/opt/java-${JAVA_INSTALL_VERSION}/
-    DOWNLOAD_URL=https://download.java.net/java/early_access/jdk${JAVA_INSTALL_VERSION}/${MAGIC_NUM}/BCL/jdk-${JAVA_INSTALL_VERSION}+${MAGIC_NUM}_linux-x64_bin.tar.gz
-    echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
-    ;;
-*)
-    echo "Java version '$1' not supported"
+if [ ! -f ${2} ]; then
+    echo "Cannot find ${2}"
     exit 1
-    ;;
-esac
+fi
+source ${2}
+
+echo "Installing Java ${JAVA_INSTALL_VERSION} to ${JAVA_INSTALL_PATH}"
 
 mkdir -p ${JAVA_INSTALL_PATH}
 cd ${JAVA_INSTALL_PATH}
 
 curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" ${DOWNLOAD_URL} > jdk-linux-x64.tar.gz
 
-tar zxvf jdk-linux-x64.tar.gz
+tar zxf jdk-linux-x64.tar.gz
 rm jdk-linux-x64.tar.gz
 
 cd jdk*
@@ -53,5 +28,5 @@ echo "Creating activation script"
 echo """ #! /bin/bash
 
 rm -f /usr/lib/jvm/java-current-oracle
-ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle """ > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+ln -sf ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
 chmod a+x /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}

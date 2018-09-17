@@ -99,6 +99,15 @@ class PipelineUtils {
         return xgbVersion
     }
 
+    def readCurrentGradleVersion(final context, final h2o3Root) {
+        final def gradleVersion = context.sh(script: "cd ${h2o3Root} && cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+        context.echo "Gradle Version: ${gradleVersion}"
+        if (!gradleVersion) {
+            context.error("Gradle version cannot be read")
+        }
+        return gradleVersion
+    }
+
     boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
         context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
             final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} https://${registry}/v2/${imageName}/tags/list".execute().text
