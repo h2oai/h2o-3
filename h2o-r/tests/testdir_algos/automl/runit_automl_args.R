@@ -3,6 +3,13 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 automl.args.test <- function() {
 
+  get_partitioned_models <- function(aml) {
+    model_ids <- as.character(as.data.frame(aml@leaderboard[,"model_id"])[,1])
+    ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = FALSE)
+    non_ensemble_model_ids <- model_ids[!(model_ids %in% ensemble_model_ids)]
+    list(all=model_ids, se=ensemble_model_ids, non_se=non_ensemble_model_ids)
+  }
+
   # This test checks the following (for binomial classification):
   #
   # 1) That h2o.automl executes w/o errors
@@ -109,11 +116,11 @@ automl.args.test <- function() {
                      max_models = max_models,
                      keep_cross_validation_models = TRUE,
                      project_name = "aml9")
-  model_ids <- as.character(as.data.frame(aml9@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  models <- get_partitioned_models(aml9)
+  amodel <- h2o.getModel(grep("DRF", models$non_se, value = TRUE))
   amodel_fold_column <- amodel@parameters$fold_column$column_name
   expect_equal(amodel_fold_column, fold_column)
-  ensemble <- h2o.getModel(grep("StackedEnsemble", model_ids, value = TRUE)[1])
+  ensemble <- h2o.getModel(models$se[1])
   ensemble_fold_column <- ensemble@parameters$metalearner_fold_column$column_name
   expect_equal(ensemble_fold_column, fold_column)
   ensemble_meta <- h2o.getModel(ensemble@model$metalearner$name)
@@ -125,8 +132,7 @@ automl.args.test <- function() {
                       weights_column = weights_column,
                       max_models = max_models,
                       project_name = "aml10")
-  model_ids <- as.character(as.data.frame(aml10@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml10)$non_se, value = TRUE))
   amodel_weights_column <- amodel@parameters$weights_column$column_name
   expect_equal(amodel_weights_column, weights_column)
 
@@ -137,8 +143,7 @@ automl.args.test <- function() {
                       weights_column = weights_column,
                       max_models = max_models,
                       project_name = "aml11")
-  model_ids <- as.character(as.data.frame(aml11@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml11)$non_se, value = TRUE))
   amodel_fold_column <- amodel@parameters$fold_column$column_name
   expect_equal(amodel_fold_column, fold_column)
   amodel_weights_column <- amodel@parameters$weights_column$column_name
@@ -150,8 +155,7 @@ automl.args.test <- function() {
                       nfolds = 3,
                       max_models = max_models,
                       project_name = "aml12")
-  model_ids <- as.character(as.data.frame(aml12@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml12)$non_se, value = TRUE))
   expect_equal(amodel@parameters$nfolds, 3)
 
   print("Check that nfolds = 0 works properly")  #will need to change after xval leaderboard is implemented
@@ -161,8 +165,7 @@ automl.args.test <- function() {
                       max_models = max_models,
                       project_name = "aml13")
   # Check that leaderboard does not contain any SEs
-  model_ids <- as.character(as.data.frame(aml13@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml13)$non_se, value = TRUE))
   expect_equal(amodel@allparameters$nfolds, 0)
 
   print("Check that two Stacked Ensembles are trained")
@@ -172,8 +175,7 @@ automl.args.test <- function() {
                       max_models = max_models,
                       project_name = "aml14")
   # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
-  model_ids <- as.character(as.data.frame(aml14@leaderboard[,"model_id"])[,1])
-  expect_equal(sum(grepl("StackedEnsemble", model_ids)), 2)
+  expect_equal(length(get_partitioned_models(aml14)$se), 2)
   
   print("Check that balance_classes is working")
   aml15 <- h2o.automl(x = x, y = y,
@@ -185,8 +187,7 @@ automl.args.test <- function() {
                       class_sampling_factors = c(0.2, 1.4),
                       project_name = "aml15")
   # Check that a model (DRF) has balance_classes args set properly
-  model_ids <- as.character(as.data.frame(aml15@leaderboard[,"model_id"])[,1])
-  amodel <- h2o.getModel(grep("DRF", model_ids, value = TRUE))
+  amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml15)$non_se, value = TRUE))
   expect_equal(amodel@parameters$balance_classes, TRUE)
   expect_equal(amodel@parameters$max_after_balance_size, 3.0)
   expect_equal(amodel@parameters$class_sampling_factors, c(0.2, 1.4))
@@ -216,9 +217,7 @@ automl.args.test <- function() {
                       nfolds = 3,
                       max_models = max_models,
                       project_name = "aml16")
-  model_ids <- as.character(as.data.frame(aml16@leaderboard[,"model_id"])[,1])
-  non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
-  some_base_model <- h2o.getModel(non_ensemble_model_ids[1])
+  some_base_model <- h2o.getModel(get_partitioned_models(aml16)$non_se[1])
   expect_equal(some_base_model@parameters$keep_cross_validation_fold_assignment, NULL)
   expect_equal(some_base_model@model$cross_validation_fold_assignment_frame_id, NULL)
 
@@ -229,9 +228,7 @@ automl.args.test <- function() {
                       max_models = max_models,
                       project_name = "aml17",
                       keep_cross_validation_fold_assignment = TRUE)
-  model_ids <- as.character(as.data.frame(aml17@leaderboard[,"model_id"])[,1])
-  non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
-  base_model <- h2o.getModel(non_ensemble_model_ids[1])
+  base_model <- h2o.getModel(get_partitioned_models(aml17)$non_se[1])
   expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, TRUE)
   expect_equal(length(base_model@model$cross_validation_fold_assignment_frame_id), 4)
 
@@ -242,20 +239,29 @@ automl.args.test <- function() {
                       max_models = max_models,
                       project_name = "aml18",
                       keep_cross_validation_fold_assignment = TRUE)
-  model_ids <- as.character(as.data.frame(aml18@leaderboard[,"model_id"])[,1])
-  non_ensemble_model_ids <- grep("StackedEnsemble", model_ids, value = TRUE, invert = TRUE)
-  base_model <- h2o.getModel(non_ensemble_model_ids[1])
+  base_model <- h2o.getModel(get_partitioned_models(aml18)$non_se[1])
   expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, NULL)
   expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
 
 
   print("Check that automl gets interrupted after `max_runtime_secs`")
   max_runtime_secs <- 30
-  cancel_tolerance_secs <- 5 # should be enough for most cases given job notification mechanism
+  cancel_tolerance_secs <- 5+3 # should be enough for most cases given job notification mechanism (adding 3=10% for SEs)
   time <- system.time(aml19 <- h2o.automl(x=x, y=y, training_frame=train,
                                          project_name="aml_max_runtime_secs",
                                          max_runtime_secs=max_runtime_secs))[['elapsed']]
   expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
+  expect_equal(length(get_partitioned_models(aml19)$se), 2)
+
+
+  print("Check that automl get interrupted after `max_models`")
+  aml20 <- h2o.automl(x=x, y=y, training_frame=train,
+                      project_name="aml_max_models",
+                      max_models=max_models)
+  models <- get_partitioned_models(aml20)
+  expect_equal(length(models$non_se), max_models)
+  expect_equal(length(models$se), 2)
+
 }
 
 doTest("AutoML Args Test", automl.args.test)
