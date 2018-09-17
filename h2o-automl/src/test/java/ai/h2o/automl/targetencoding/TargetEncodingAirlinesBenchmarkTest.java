@@ -1,4 +1,4 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding;
 
 import hex.AUC2;
 import hex.ModelMetricsBinomial;

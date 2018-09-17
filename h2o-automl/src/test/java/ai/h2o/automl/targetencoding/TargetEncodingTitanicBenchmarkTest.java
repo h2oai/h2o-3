@@ -1,4 +1,4 @@
-package ai.h2o.automl;
+package ai.h2o.automl.targetencoding;
 
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomial;
@@ -168,6 +168,14 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
   }
 
   @Test
+  public void removingColumnsBreaksExportTest() {
+    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+    Frame withRemovedTrain = trainFrame.remove(new String[]{"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
+    Frame.export(withRemovedTrain, "export_after_removing_columns_test.csv", withRemovedTrain._key.toString(), true, 1);
+    Scope.track();
+  }
+
+  @Test
   public void leaveOneOutHoldoutTypeTest() {
     GBMModel gbm = null;
     Scope.enter();
@@ -177,28 +185,64 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_space.csv");
+//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_space.csv");
+//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_space.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
+      printOutColumnsMeta(trainFrame);
 
-      String[] teColumns = {"cabin", "embarked"/*, "home.dest"*/};
+      Frame cabinFrame = new Frame(trainFrame.vec("cabin"));
+      printOutFrameAsTable(cabinFrame ,true, false);
+      long naCount = cabinFrame.naCount();
+
+      System.out.println("NA count:" + naCount);
+
+//      cabinFrame.filterByValue();
+
+      String[] teColumns = {"cabin"/*, "embarked", "home.dest"*/};
+
+      boolean withBlendedAvg = true;
+      boolean withNoise = false;
 
       String targetColumnName = "survived";
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, true, 1234, true);
+      Frame trainEncoded;
+      if (withNoise) {
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg, 1234, true);
+      } else {
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg,  0,1234, true);
+      }
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, 1234, true);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0, 1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, 1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
+
+      /*trainEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
+      validEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
+      testEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
+      trainEncoded.moveFirst(new int[]{0, 2,1,3});
+      validEncoded.moveFirst(new int[]{0, 2,1,3});
+      testEncoded.moveFirst(new int[]{0, 2,1,3});
+      Frame sortedTestEncoded = testEncoded.sort(new int[]{0});
+      sortedTestEncoded._key = Key.make();
+      DKV.put(sortedTestEncoded);
+
+      Frame.export(trainEncoded, "titanic_train_loo_all_nonoise_blend.csv", trainEncoded._key.toString(), true, 1);
+      Frame.export(validEncoded, "titanic_valid_loo_all_nonoise_blend.csv", validEncoded._key.toString(), true, 1);
+      Frame.export(sortedTestEncoded, "titanic_test_loo_all_nonoise_blend.csv", sortedTestEncoded._key.toString(), true, 1);
+*/
+
 
       // With target encoded Origin column
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -228,12 +272,12 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       double auc = mm._auc._auc;
 
       // Without target encoding
-      double auc2 = trainDefaultGBM(targetColumnName);
-
+//      double auc2 = trainDefaultGBM(targetColumnName);
+//
       System.out.println("AUC with encoding:" + auc);
-      System.out.println("AUC without encoding:" + auc2);
+//      System.out.println("AUC without encoding:" + auc2);
 
-      Assert.assertTrue(auc2 < auc);
+//      Assert.assertTrue(auc2 < auc);
 
       encodingMapCleanUp(encodingMap);
     } finally {
@@ -241,7 +285,64 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
         gbm.delete();
         gbm.deleteCrossValidationModels();
       }
-      Scope.exit();
+//      Scope.exit();
+    }
+  }
+
+  @Test
+  public void sklearnLOOTest() {
+    GBMModel gbm = null;
+    Scope.enter();
+    try {
+
+      Frame trainEncoded = parse_test_file(Key.make("titanic_train_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/trainingArrX_with_encodings.csv");
+      Frame validEncoded = parse_test_file(Key.make("titanic_valid_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/validationArrX_with_encodings.csv");
+      Frame testEncoded = parse_test_file(Key.make("titanic_test_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/testArrX_with_encodings.csv");
+
+      printOutFrameAsTable(testEncoded, true, false);
+      Scope.track(trainEncoded, validEncoded, testEncoded);
+
+      // With target encoded Origin column
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainEncoded._key;
+      parms._response_column = "survived";
+      parms._score_tree_interval = 10;
+      parms._ntrees = 1000;
+      parms._max_depth = 5;
+      parms._distribution = DistributionFamily.quasibinomial;
+      parms._valid = validEncoded._key;
+      parms._stopping_tolerance = 0.001;
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
+      parms._stopping_rounds = 5;
+//      parms._ignored_columns = teColumns;
+      parms._seed = 1234L;
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      Assert.assertTrue(job.isStopped());
+
+      System.out.println(gbm._output._variable_importances.toString(2, true));
+
+      Frame preds = gbm.score(testEncoded);
+      Scope.track(preds);
+
+      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
+      double auc = mm._auc._auc;
+
+      // Without target encoding
+//      double auc2 = trainDefaultGBM("survived");
+
+      System.out.println("AUC with encoding:" + auc);
+//      System.out.println("AUC without encoding:" + auc2);
+
+//      Assert.assertTrue(auc2 < auc);
+
+    } finally {
+      if( gbm != null ) {
+        gbm.delete();
+        gbm.deleteCrossValidationModels();
+      }
+//      Scope.exit();
     }
   }
 
