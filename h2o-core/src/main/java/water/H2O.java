@@ -29,6 +29,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static water.util.JavaVersionUtils.JAVA_VERSION;
+
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
@@ -718,7 +720,7 @@ final public class H2O {
   public static int orderlyShutdown() {
     return orderlyShutdown(-1);
   }
-  
+
   public static int orderlyShutdown(int timeout) {
     boolean [] confirmations = new boolean[H2O.CLOUD.size()];
     if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
@@ -1661,7 +1663,7 @@ final public class H2O {
 
   public final int size() { return _memary.length; }
   final H2ONode leader() {
-    return _memary[0]; 
+    return _memary[0];
   }
 
   // Find the node index for this H2ONode, or a negative number on a miss
@@ -1847,10 +1849,9 @@ final public class H2O {
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
     }
-    String version = System.getProperty("java.version");
     // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see file connection.R near line 536
-    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
-      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + version);
+    if (JAVA_VERSION.isKnown() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>10)) {
+      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
