@@ -1003,8 +1003,6 @@ public class FrameUtils {
       _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
       double scale = _nonZeroWeightsNum==1?_nonZeroWeightsNum*1.0:(_nonZeroWeightsNum-1.0);
       double scaling = _nonZeroWeightsNum*1.0/scale;
-      Log.info("weighted count is "+_weightedCount+" weighted sum is "+_weightedEleSum+" nonZero row count is "+_nonZeroWeightsNum);
-
       _weightedSigma = _weightedCount==0?Double.NaN:
               Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*scaling);  // return NaN for bad input
     }
