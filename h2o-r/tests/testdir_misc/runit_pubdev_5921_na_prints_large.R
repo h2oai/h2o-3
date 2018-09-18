@@ -3,8 +3,8 @@ source("../../scripts/h2o-r-test-setup.R")
 
 testPartialPlots <- function() {
   ## Import prostate dataset
-  airlines_hex = h2o.uploadFile(locate("smalldata/airlines/AirlinesTrainWgt.csv", na.strings="NA"))
-  test = h2o.uploadFile(locate("smalldata/airlines/AirlinesTrainWgt.csv", na.strings="NA"))
+  airlines_hex = h2o.importFile(locate("smalldata/airlines/AirlinesTrainWgt.csv"), na.strings="NA")
+  test = h2o.importFile(locate("smalldata/airlines/AirlinesTrainWgt.csv"), na.strings="NA")
   browser()
   weigth_col = "Weight"
   x = c('fYear', 'fMonth', 'fDayofMonth', 'fDayOfWeek', 'DepTime','ArrTime', 'UniqueCarrier', 'Origin', 'Dest', 'Distance', 'Input_miss')

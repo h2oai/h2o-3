@@ -7,8 +7,8 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def partial_plot_test():
     # Import data set that contains NAs
-    data = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv", na_strings=["NA"]))
-    test = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv", na_strings=["NA"]))
+    data = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv"), na_strings=["NA"])
+    test = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv"), na_strings=["NA"])
     x = data.names
     y = "IsDepDelayed"
     data[y] = data[y]
@@ -22,12 +22,12 @@ def partial_plot_test():
     gbm_model.train(x=x, y=y, training_frame=data)
 
     # pdp without weight or NA
-    pdpw = gbm_model.partial_plot(data=test, cols=["Input_miss"], nbins=3, server=True, plot=True,
+    pdpw = gbm_model.partial_plot(data=test, cols=["Input_miss"], nbins=3, server=True, plot=False,
                                   weight_column=WC)
-    pdpOrig = gbm_model.partial_plot(data=test,cols=["Input_miss"], nbins=3,server=True, plot=True)
+    pdpOrig = gbm_model.partial_plot(data=test,cols=["Input_miss"], nbins=3,server=True, plot=False)
     input_miss_list = pyunit_utils.extract_col_value_H2OTwoDimTable(pdpOrig[0], "input_miss")
     # pdp with constant weight and NA
-    pdpwNA = gbm_model.partial_plot(data=test, cols=["Input_miss"], nbins=3, server=True, plot=True,
+    pdpwNA = gbm_model.partial_plot(data=test, cols=["Input_miss"], nbins=3, server=True, plot=False,
                                     weight_column=WC, include_na = True)
 
     # compare results

@@ -960,21 +960,15 @@ public class FrameUtils {
    * where C = (M-1)/M and M is the number of nonzero weights.
    *
    */
-  public static class CalculateWeightMeanSTD extends MRTask {
+  public static class CalculateWeightMeanSTD extends MRTask<CalculateWeightMeanSTD> {
     public double _weightedEleSum;
     public double _weightedEleSqSum;
     public double _weightedCount;
     public double _weightedMean;
     public double _weightedSigma;
     public long _nonZeroWeightsNum;
-    public Frame _dataFrame;
-    public Frame _pred;
 
-    public CalculateWeightMeanSTD(Frame dataFrame, Frame pred) {
-      _dataFrame = dataFrame;
-      _pred = pred;
-    }
-
+    @Override
     public void map(Chunk pcs, Chunk wcs) {
       _weightedEleSum = 0;
       _weightedEleSqSum = 0;
@@ -996,12 +990,15 @@ public class FrameUtils {
       }
     }
 
+    @Override
     public void reduce(CalculateWeightMeanSTD other) {
       _weightedEleSum += other._weightedEleSum;
       _weightedEleSqSum += other._weightedEleSqSum;
       _weightedCount += other._weightedCount;
+      _nonZeroWeightsNum += other._nonZeroWeightsNum;
     }
 
+    @Override
     public void postGlobal() {
       _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
       double scale = _nonZeroWeightsNum==1?_nonZeroWeightsNum*1.0:(_nonZeroWeightsNum-1.0);
@@ -1018,10 +1015,6 @@ public class FrameUtils {
 
     public double getWeightedSigma() {
       return _weightedSigma;
-    }
-
-    public double getWeightedCount() {
-      return _weightedCount;
     }
   }
 }

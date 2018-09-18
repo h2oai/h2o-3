@@ -238,7 +238,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
     }
 
     public CalculateWeightMeanSTD getWeightedStat(Frame dataFrame, Frame pred, int targetIndex) {
-      CalculateWeightMeanSTD calMeansSTD = new CalculateWeightMeanSTD(dataFrame, pred);
+      CalculateWeightMeanSTD calMeansSTD = new CalculateWeightMeanSTD();
       calMeansSTD.doAll(pred.vec(targetIndex), dataFrame.vec(_weight_column_index));
 
       return calMeansSTD;
