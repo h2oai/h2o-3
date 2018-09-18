@@ -194,9 +194,12 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #' @param username Username for SQL server
 #' @param password Password for SQL server
 #' @param columns (Optional) Character vector of column names to import from SQL table. Default is to import all columns. 
-#' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
+#' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true.
+#' @param streaming (Optional) Turn on to disable distributed import. Streaming mode reads the data sequentially
+#'        using a single H2O node and then streams it to the rest of the nodes of the cluster.
+#'        Can be used for databases that do not support OFFSET-like clauses in SQL statements.
 #' @export
-h2o.import_sql_table <- function(connection_url, table, username, password, columns = NULL, optimize = NULL) {
+h2o.import_sql_table <- function(connection_url, table, username, password, columns = NULL, optimize = NULL, streaming = NULL) {
   parms <- list()
   parms$connection_url <- connection_url
   parms$table <- table
@@ -207,6 +210,7 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
     parms$columns <- columns
   }
   if (!is.null(optimize)) parms$optimize <- optimize
+  if (!is.null(streaming)) parms$streaming <- streaming
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name
   dest_key <- res$dest$name
@@ -238,14 +242,18 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
 #' @param username Username for SQL server
 #' @param password Password for SQL server
 #' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
+#' @param streaming (Optional) Turn on to disable distributed import. Streaming mode reads the data sequentially
+#'        using a single H2O node and then streams it to the rest of the nodes of the cluster.
+#'        Can be used for databases that do not support OFFSET-like clauses in SQL statements.
 #' @export
-h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL) {
+h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL, streaming = NULL) {
   parms <- list()
   parms$connection_url <- connection_url
   parms$select_query <- select_query
   parms$username <- username
   parms$password <- password
   if (!is.null(optimize)) parms$optimize <- optimize
+  if (!is.null(streaming)) parms$streaming <- streaming
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name
   dest_key <- res$dest$name

@@ -8,6 +8,7 @@ import water.util.Log;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class SQLManager {
@@ -30,6 +31,12 @@ public class SQLManager {
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
+  public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
+                                          final String username, final String password, final String columns,
+                                          final boolean optimize) {
+    return importSqlTable(connection_url, table, select_query, username, password, columns, optimize, false);
+  }
+
   /**
    * @param connection_url (Input) 
    * @param table (Input)
@@ -37,11 +44,12 @@ public class SQLManager {
    * @param username (Input)
    * @param password (Input)
    * @param columns (Input)
-   * @param optimize (Input)                
+   * @param optimize (Input)
+   * @param streaming (Input)
    */
   public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
                                           final String username, final String password, final String columns,
-                                          boolean optimize) {
+                                          final boolean optimize, final boolean streaming) {
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
@@ -86,7 +94,12 @@ public class SQLManager {
         rs.close();
       }
       //get H2O column names and types
-      rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
+      if (streaming) {
+        stmt.setMaxRows(1);
+        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table);
+      } else {
+        rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
+      }
       ResultSetMetaData rsmd = rs.getMetaData();
       numCol = rsmd.getColumnCount();
 
@@ -179,7 +192,12 @@ public class SQLManager {
     final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
     final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
 
-    if (optimize) {
+    if (streaming && optimize) {
+      Log.warn("Parameter 'optimize' will be ignored in streaming ingest.");
+    }
+    final boolean estimateConcurrentConnections = optimize && (! streaming);
+    if (estimateConcurrentConnections) {
+      assert ! streaming;
       final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
       vec = num_retrieval_chunks >= num_chunks
               ? Vec.makeConN(numRow, num_chunks)
@@ -187,9 +205,9 @@ public class SQLManager {
     } else {
       vec = Vec.makeConN(numRow, num_chunks);
     }
-    Log.info("Number of chunks for data retrieval: " + vec.nChunks());
+    Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows:" + numRow);
     //create frame
-    final Key destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
+    final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
 
     final String finalTable = table;
@@ -197,9 +215,16 @@ public class SQLManager {
       @Override
       public void compute2() {
         final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
-        final Frame fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
-                .doAll(columnH2OTypes, vec)
-                .outputFrame(destination_key, columnNames, null);
+        final Frame fr;
+
+        if (! streaming) {
+          fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+                  .doAll(columnH2OTypes, vec)
+                  .outputFrame(destination_key, columnNames, null);
+        } else {
+          fr = new SqlTableToH2OFrameStreaming(finalTable, databaseType, columns, columnNames, numCol, j, provider)
+                  .readTable(vec, columnH2OTypes, destination_key);
+        }
         vec.remove();
 
         DKV.put(fr);
@@ -312,6 +337,10 @@ public class SQLManager {
       return createConnectionPool(H2O.getCloudSize(), H2O.ARGS.nthreads);
     }
 
+    Connection createConnection() throws SQLException {
+      return DriverManager.getConnection(_url, _user, _password);
+    }
+
     /**
      * Creates a connection pool for given target database, based on current H2O environment
      *
@@ -329,7 +358,7 @@ public class SQLManager {
 
       try {
         for (int i = 0; i < maxConnectionsPerNode; i++) {
-          Connection conn = DriverManager.getConnection(_url, _user, _password);
+          Connection conn = createConnection();
           connectionPool.add(conn);
         }
       } catch (SQLException ex) {
@@ -426,6 +455,107 @@ public class SQLManager {
     }
   }
 
+  static class SqlTableToH2OFrameStreaming {
+    final String _table, _columns, _databaseType;
+    final int _numCol;
+    final Job _job;
+    final ConnectionPoolProvider _poolProvider;
+    final String[] _columnNames;
+
+    SqlTableToH2OFrameStreaming(final String table, final String databaseType,
+                                final String columns, final String[] columnNames, final int numCol,
+                                final Job job, final ConnectionPoolProvider poolProvider) {
+      _table = table;
+      _databaseType = databaseType;
+      _columns = columns;
+      _columnNames = columnNames;
+      _numCol = numCol;
+      _job = job;
+      _poolProvider = poolProvider;
+    }
+
+    Frame readTable(Vec blueprint, byte[] columnTypes, Key<Frame> destinationKey) {
+      Vec.VectorGroup vg = blueprint.group();
+      int vecIdStart = vg.reserveKeys(columnTypes.length);
+
+      AppendableVec[] res = new AppendableVec[columnTypes.length];
+      long[] espc = MemoryManager.malloc8(blueprint.nChunks());
+      for (int i = 0; i < res.length; ++i) {
+        res[i] = new AppendableVec(vg.vecKey(vecIdStart + i), espc, columnTypes[i], 0);
+      }
+
+      String query = "SELECT " + _columns + " FROM " + _table;
+      ResultSet rs = null;
+      Futures fs = new Futures();
+      try (Connection conn = _poolProvider.createConnection();
+           Statement stmt = conn.createStatement()) {
+        final int fetchSize = (int) Math.min(blueprint.chunkLen(0), 1e5);
+        stmt.setFetchSize(fetchSize);
+        rs = stmt.executeQuery(query);
+        chunks: for (int cidx = 0; cidx < blueprint.nChunks(); cidx++) {
+          if (_job.stop_requested()) break;
+          NewChunk[] ncs = new NewChunk[columnTypes.length];
+          for (int i = 0; i < columnTypes.length; i++) {
+            ncs[i] = res[i].chunkForChunkIdx(cidx);
+          }
+          final int len = blueprint.chunkLen(cidx);
+          int r = 0;
+          while (r < len) {
+            if (! rs.next()) {
+              long totalLen = blueprint.espc()[cidx] + r;
+              Log.warn("Query `" + query + "` returned less rows than expected. Actual: " + totalLen + ", expected: " + blueprint.length());
+              break chunks;
+            }
+            SqlTableToH2OFrame.writeRow(rs, ncs);
+            r++;
+          }
+          fs.add(H2O.submitTask(new FinalizeNewChunkTask(cidx, ncs)));
+          _job.update(1);
+        }
+      } catch (SQLException e) {
+        throw new RuntimeException("SQLException: " + e.getMessage() + "\nFailed to read SQL data", e);
+      } finally {
+        //close result set
+        if (rs != null) {
+          try {
+            rs.close();
+          } catch (SQLException sqlEx) {
+            Log.trace(sqlEx);
+          } // ignore
+        }
+      }
+      fs.blockForPending();
+
+      Vec[] vecs = AppendableVec.closeAll(res);
+      return new Frame(destinationKey, _columnNames, vecs);
+    }
+
+  }
+
+  private static class FinalizeNewChunkTask extends H2O.H2OCountedCompleter<FinalizeNewChunkTask> {
+    private final int _cidx;
+    private transient NewChunk[] _ncs;
+
+    FinalizeNewChunkTask(int cidx, NewChunk[] ncs) {
+      _cidx = cidx;
+      _ncs = ncs;
+    }
+
+    @Override
+    public void compute2() {
+      if (_ncs == null)
+        throw new IllegalStateException("There are no chunks to work with!");
+
+      Futures fs = new Futures();
+      for (NewChunk nc : _ncs) {
+        nc.close(_cidx, fs);
+      }
+      fs.blockForPending();
+
+      tryComplete();
+    }
+  }
+
   static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
     final String _table, _columns, _databaseType;
     final int _numCol;
@@ -468,52 +598,7 @@ public class SQLManager {
         stmt.setFetchSize(c0._len);
         rs = stmt.executeQuery(sqlText);
         while (rs.next()) {
-          for (int i = 0; i < _numCol; i++) {
-            Object res = rs.getObject(i + 1);
-            if (res == null) ncs[i].addNA();
-            else {
-              switch (res.getClass().getSimpleName()) {
-                case "Double":
-                  ncs[i].addNum((double) res);
-                  break;
-                case "Integer":
-                  ncs[i].addNum((long) (int) res, 0);
-                  break;
-                case "Long":
-                  ncs[i].addNum((long) res, 0);
-                  break;
-                case "Float":
-                  ncs[i].addNum((double) (float) res);
-                  break;
-                case "Short":
-                  ncs[i].addNum((long) (short) res, 0);
-                  break;
-                case "Byte":
-                  ncs[i].addNum((long) (byte) res, 0);
-                  break;
-                case "BigDecimal":
-                  ncs[i].addNum(((BigDecimal) res).doubleValue());
-                  break;
-                case "Boolean":
-                  ncs[i].addNum(((boolean) res ? 1 : 0), 0);
-                  break;
-                case "String":
-                  ncs[i].addStr(new BufferedString((String) res));
-                  break;
-                case "Date":
-                  ncs[i].addNum(((Date) res).getTime(), 0);
-                  break;
-                case "Time":
-                  ncs[i].addNum(((Time) res).getTime(), 0);
-                  break;
-                case "Timestamp":
-                  ncs[i].addNum(((Timestamp) res).getTime(), 0);
-                  break;
-                default:
-                  ncs[i].addNA();
-              }
-            }
-          }
+          writeRow(rs, ncs);
         }
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
@@ -545,6 +630,55 @@ public class SQLManager {
 
       }
       if (_job != null) _job.update(1);
+    }
+
+    static void writeRow(ResultSet rs, NewChunk[] ncs) throws SQLException {
+      for (int i = 0; i < ncs.length; i++) {
+        Object res = rs.getObject(i + 1);
+        if (res == null) ncs[i].addNA();
+        else {
+          switch (res.getClass().getSimpleName()) {
+            case "Double":
+              ncs[i].addNum((double) res);
+              break;
+            case "Integer":
+              ncs[i].addNum((long) (int) res, 0);
+              break;
+            case "Long":
+              ncs[i].addNum((long) res, 0);
+              break;
+            case "Float":
+              ncs[i].addNum((double) (float) res);
+              break;
+            case "Short":
+              ncs[i].addNum((long) (short) res, 0);
+              break;
+            case "Byte":
+              ncs[i].addNum((long) (byte) res, 0);
+              break;
+            case "BigDecimal":
+              ncs[i].addNum(((BigDecimal) res).doubleValue());
+              break;
+            case "Boolean":
+              ncs[i].addNum(((boolean) res ? 1 : 0), 0);
+              break;
+            case "String":
+              ncs[i].addStr(new BufferedString((String) res));
+              break;
+            case "Date":
+              ncs[i].addNum(((Date) res).getTime(), 0);
+              break;
+            case "Time":
+              ncs[i].addNum(((Time) res).getTime(), 0);
+              break;
+            case "Timestamp":
+              ncs[i].addNum(((Timestamp) res).getTime(), 0);
+              break;
+            default:
+              ncs[i].addNA();
+          }
+        }
+      }
     }
 
     @Override

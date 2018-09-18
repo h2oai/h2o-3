@@ -28,4 +28,7 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "optimize")
   public boolean optimize = true;
 
+  @API(help = "streaming")
+  public boolean streaming = false;
+
 }
