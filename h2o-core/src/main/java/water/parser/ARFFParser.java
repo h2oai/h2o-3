@@ -3,6 +3,7 @@ package water.parser;
 import java.util.ArrayList;
 
 import water.Key;
+import water.fvec.ByteVec;
 import water.fvec.Vec;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
@@ -14,13 +15,12 @@ class ARFFParser extends CsvParser {
   ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
 
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup(byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
+  static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA
     boolean haveData = false;
-    int offset = 0;
-    String[][] data = new String[0][];;
+    String[][] data = new String[0][];
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
@@ -28,12 +28,26 @@ class ARFFParser extends CsvParser {
 
     // header section
     ArrayList<String> header = new ArrayList<>();
-    offset = readArffHeader(offset, header, bits, singleQuotes);
+
+    int offset;
+    int chunk_idx = 0; //relies on the assumption that bits param have been extracted from first chunk: cf. ParseSetup#map
+    String last_line_fragment = null;
+    do {
+      offset = readArffHeader(0, header, bits, singleQuotes, last_line_fragment);
+      if (offset > bits.length) {
+        last_line_fragment = header.remove(header.size() - 1);
+        bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
+      } else {
+        last_line_fragment = null;
+      }
+    } while (last_line_fragment != null);
+
     if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
       haveData = true; //more than just the header
 
     if (header.size() == 0)
       throw new ParseDataset.H2OParseException("No data!");
+
     headerlines = header.toArray(headerlines);
 
     // process header
@@ -101,7 +115,7 @@ class ARFFParser extends CsvParser {
     return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
   }
 
-  private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
+  private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes, String line_fragment) {
     while (offset < bits.length) {
       int lineStart = offset;
       while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
@@ -120,6 +134,10 @@ class ARFFParser extends CsvParser {
           break;
         }
         String str = new String(bits, lineStart, lineEnd - lineStart).trim();
+        if (line_fragment != null) {
+          str = line_fragment + str;
+          line_fragment = null;
+        }
         String[] tok = determineTokens(str, CHAR_SPACE, singleQuotes);
         if (tok.length > 0 && tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
         if (!str.isEmpty()) header.add(str);
