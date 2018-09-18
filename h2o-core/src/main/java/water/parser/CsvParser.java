@@ -24,7 +24,7 @@ class CsvParser extends Parser {
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-    BufferedString str = new BufferedString();
+    CharSkippingBufferedString str = new CharSkippingBufferedString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
     int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
@@ -50,6 +50,7 @@ class CsvParser extends Parser {
     int quotes = 0;
     byte quoteCount = 0;
     long number = 0;
+    int escaped = -1;
     int exp = 0;
     int sgnExp = 1;
     boolean decimal = false;
@@ -80,8 +81,8 @@ class CsvParser extends Parser {
     final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
 MAIN_LOOP:
     while (true) {
-      boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
-      boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
+      final boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
+      final boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
 
       switch (state) {
         // ---------------------------------------------------------------------
@@ -99,22 +100,41 @@ MAIN_LOOP:
             break;
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
+        case POSSIBLE_ESCAPED_QUOTE:
+          if (c == quotes) {
+            quoteCount--;
+            str.skipIndex(offset);
+            state = STRING;
+            break;
+          } else if (quoteCount > 1) {
+            state = STRING_END;
+            str.removeChar();
+            quoteCount = 0;
+            continue MAIN_LOOP;
+          } else {
+            state = STRING;
+          }
+
         case STRING:
-          final byte nextByte = offset + 1 < bits.length ? bits[offset + 1] : -1;
-          if (c == quotes && (isEOL(nextByte) || _setup._separator == nextByte || offset == bits.length - 1)) {
+          if (c == quotes) {
             if (quoteCount>1) {
               str.addChar();
               quoteCount--;
             }
 
             state = COND_QUOTE;
-            break;
+            continue MAIN_LOOP;
           }
-          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
+          if ((!isEOL(c) || quoteCount == 1) && (c != CHAR_SEPARATOR)) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
+            break;
+          }
+
+          if(quoteCount == 1){
+            str.addChar(); //Anything not enclosed properly by second quotes is considered to be part of the string
             break;
           }
           // fallthrough to STRING_END
@@ -140,6 +160,7 @@ MAIN_LOOP:
             isNa = false;
           }
           str.set(null, 0, 0);
+          quotes = 0;
           isAllASCII = true;
           ++colIdx;
           state = SEPARATOR_OR_EOL;
@@ -155,16 +176,15 @@ MAIN_LOOP:
           // fallthrough to EOL
         // ---------------------------------------------------------------------
         case EOL:
-          if (quotes != 0 && quoteCount != 1) {
-            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
+          if (quoteCount == 1) { //There may be a new line character inside quotes
+            state = STRING;
+            continue MAIN_LOOP;
+          } else if (quoteCount > 2) {
             String err = "Unmatched quote char " + ((char) quotes);
             dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
             colIdx = 0;
             quotes = 0;
-          } else if (quoteCount == 1) {
-            state = STRING;
-            continue MAIN_LOOP;
-          }else if (colIdx != 0) {
+          } else if (colIdx != 0) {
             dout.newLine();
             colIdx = 0;
           }
@@ -218,7 +238,6 @@ MAIN_LOOP:
           state = TOKEN;
           if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
               ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
-            assert (quotes == 0);
             quotes = c;
             quoteCount++;
             break;
@@ -412,8 +431,8 @@ MAIN_LOOP:
         case COND_QUOTE:
           if (c == quotes) {
             str.addChar();
-            state = STRING;
             quoteCount++;
+            state = POSSIBLE_ESCAPED_QUOTE;
             break;
           } else {
             quotes = 0;
@@ -460,8 +479,6 @@ MAIN_LOOP:
           break; // MAIN_LOOP; // when the first character we see is a line end
       }
       c = bits[offset];
-      if(isEOL(c) && state != COND_QUOTE && quotes != 0) // quoted string having newline character => fail the line!
-        state = EOL;
 
     } // end MAIN_LOOP
     if (colIdx == 0)

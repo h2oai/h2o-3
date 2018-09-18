@@ -77,6 +77,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      _len++;
    }
 
+   void removeChar(){
+     _len--;
+   }
+
    void addBuff(byte [] bits){
      byte [] buf = new byte[_len];
      int l1 = _buf.length- _off;
@@ -145,7 +149,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return set(buf, 0, buf.length);
   }
 
-  public final BufferedString set(byte[] buf, int off, int len) {
+  public BufferedString set(byte[] buf, int off, int len) {
     _buf = buf;
     _off = off;
     _len = len;
