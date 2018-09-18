@@ -247,6 +247,13 @@ test-junit-10-jenkins:
 test-junit-10:
 	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
 
+test-junit-11-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-11
+
+test-junit-11:
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.noJavaVersionCheck=true" ./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
