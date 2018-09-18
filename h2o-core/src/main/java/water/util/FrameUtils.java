@@ -985,7 +985,7 @@ public class FrameUtils {
       for (int rindex = 0; rindex < pcs._len; rindex++) {
         double weight = wcs.atd(rindex);
         double pvalue = pcs.atd(rindex);
-        if ((Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
+        if ((!Double.isNaN(pvalue)) && (Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
           double v1 = pvalue * wcs.atd(rindex);
           _weightedEleSum += v1;
           _weightedEleSqSum += v1 * pvalue;
@@ -1004,10 +1004,12 @@ public class FrameUtils {
 
     public void postGlobal() {
       _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
-      long scale = _nonZeroWeightsNum-1;
-      scale = scale==0?1:scale; // avoid division by zero
+      double scale = _nonZeroWeightsNum==1?_nonZeroWeightsNum*1.0:(_nonZeroWeightsNum-1.0);
+      double scaling = _nonZeroWeightsNum*1.0/scale;
+      Log.info("weighted count is "+_weightedCount+" weighted sum is "+_weightedEleSum+" nonZero row count is "+_nonZeroWeightsNum);
+
       _weightedSigma = _weightedCount==0?Double.NaN:
-              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*_nonZeroWeightsNum/scale);  // return NaN for bad input
+              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*scaling);  // return NaN for bad input
     }
 
     public double getWeightedMean() {
