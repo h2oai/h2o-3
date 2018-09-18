@@ -1,6 +1,7 @@
 package water.parser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import water.Key;
 import water.fvec.ByteVec;
@@ -34,7 +35,7 @@ class ARFFParser extends CsvParser {
     String last_line_fragment = null;
     do {
       offset = readArffHeader(0, header, bits, singleQuotes, last_line_fragment);
-      if (offset > bits.length) {
+      if (offset > bits.length && isValidHeader(header)) {
         last_line_fragment = header.remove(header.size() - 1);
         bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
       } else {
@@ -113,6 +114,17 @@ class ARFFParser extends CsvParser {
 
     // Return the final setup
     return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+  }
+
+  private static boolean isValidHeader(List<String> header) {
+    for (String line : header) {
+      if (!isValidHeaderLine(line)) return false;
+    }
+    return header.size() > 0;
+  }
+
+  private static boolean isValidHeaderLine(String str) {
+    return str.startsWith("@");
   }
 
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes, String line_fragment) {
