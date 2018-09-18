@@ -7,8 +7,8 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def partial_plot_test():
     # Import data set that contains NAs
-    data = h2o.import_file("/Users/wendycwong/temp/GLMData/AirlinesTrainWgt.csv", na_strings=["NA"])
-    test = h2o.import_file("/Users/wendycwong/temp/GLMData/AirlinesTrainWgt.csv", na_strings=["NA"])
+    data = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv", na_strings=["NA"]))
+    test = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrainWgt.csv", na_strings=["NA"]))
     x = data.names
     y = "IsDepDelayed"
     data[y] = data[y]
