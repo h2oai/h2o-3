@@ -145,7 +145,8 @@ Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/te
 
 ### 4.1. Before building
 
-Building `h2o` requires a properly set up Python environment and the following packages:
+Building `h2o` requires a properly set up R environment with [required packages](#InstallRPackagesInUnix) and Python environment with the following packages:
+
 ```
 grip
 colorama
@@ -154,6 +155,7 @@ tabulate
 requests
 wheel
 ```
+
 To install these packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
 If you have troubles installing these packages on *Windows*, please follow section [Setup on Windows](#SetupWin) of this guide.
 > (Note: It is recommended to use some virtual environment such as [VirtualEnv](https://virtualenv.pypa.io/), to install all packages. )
