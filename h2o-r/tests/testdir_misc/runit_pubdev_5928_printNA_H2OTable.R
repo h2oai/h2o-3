@@ -11,6 +11,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # partial plots from 3 will be compared to correct results generated from python.
 
 testPartialPlots <- function() {
+  # correct weighted stats
   ## Import prostate dataset
   prostate_hex <- h2o.uploadFile(locate("smalldata/prostate/prostate_NA_weights.csv")) # constant weight C0, vary C10
 
@@ -22,18 +23,9 @@ testPartialPlots <- function() {
   
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   # build pdp without weight or NA
-  h2o_pp <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F)
-  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F, weight_column="constWeight", include_na=TRUE)
-  h2o_pp_vweight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F, weight_column="variWeight", include_na=TRUE)
-  
-  assert_twoDTable_equal(h2o_pp[[1]], h2o_pp_weight_NA[[1]]) # compare RACE pdp
-  assert_twoDTable_equal(h2o_pp[[2]], h2o_pp_weight_NA[[2]]) # compare AGE pdp
-  
-  # compare pdp with varying weight with correct answers derived from theoretical formulas
-  manual_weighted_stats_age <- manual_partial_dependency(prostate_gbm, prostate_hex, h2o_pp_vweight_NA[[1]][[1]], "AGE", as.data.frame(prostate_hex["variWeight"]), 1)
-  assert_twoDTable_array_equal(h2o_pp_vweight_NA[[1]], manual_weighted_stats_age[1,], manual_weighted_stats_age[2,], manual_weighted_stats_age[3,])
-  manual_weighted_stats_race <- manual_partial_dependency(prostate_gbm, prostate_hex, h2o_pp_vweight_NA[[2]][[1]], "RACE", as.data.frame(prostate_hex["variWeight"]), 1)
- assert_twoDTable_array_equal(h2o_pp_vweight_NA[[2]], manual_weighted_stats_race[1,], manual_weighted_stats_race[2,], manual_weighted_stats_race[3,])
+  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), nbins=3, plot = F, weight_column="constWeight", include_na=TRUE)
+  h2o2DtablePrintOut <- capture.output(h2o_pp_weight_NA[[1]]) # capture H2OTable print here
+  naNum <- sum(grepl("NA", h2o2DtablePrintOut))  # should be 1
 }
 
 doTest("Test Partial Dependence Plots with weights and NAs in H2O: ", testPartialPlots)

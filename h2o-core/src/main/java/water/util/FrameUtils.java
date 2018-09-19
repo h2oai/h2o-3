@@ -960,21 +960,15 @@ public class FrameUtils {
    * where C = (M-1)/M and M is the number of nonzero weights.
    *
    */
-  public static class CalculateWeightMeanSTD extends MRTask {
+  public static class CalculateWeightMeanSTD extends MRTask<CalculateWeightMeanSTD> {
     public double _weightedEleSum;
     public double _weightedEleSqSum;
     public double _weightedCount;
     public double _weightedMean;
     public double _weightedSigma;
     public long _nonZeroWeightsNum;
-    public Frame _dataFrame;
-    public Frame _pred;
 
-    public CalculateWeightMeanSTD(Frame dataFrame, Frame pred) {
-      _dataFrame = dataFrame;
-      _pred = pred;
-    }
-
+    @Override
     public void map(Chunk pcs, Chunk wcs) {
       _weightedEleSum = 0;
       _weightedEleSqSum = 0;
@@ -985,7 +979,7 @@ public class FrameUtils {
       for (int rindex = 0; rindex < pcs._len; rindex++) {
         double weight = wcs.atd(rindex);
         double pvalue = pcs.atd(rindex);
-        if ((Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
+        if ((!Double.isNaN(pvalue)) && (Math.abs(weight) > 0) && (!Double.isNaN(pvalue))) {
           double v1 = pvalue * wcs.atd(rindex);
           _weightedEleSum += v1;
           _weightedEleSqSum += v1 * pvalue;
@@ -996,18 +990,21 @@ public class FrameUtils {
       }
     }
 
+    @Override
     public void reduce(CalculateWeightMeanSTD other) {
       _weightedEleSum += other._weightedEleSum;
       _weightedEleSqSum += other._weightedEleSqSum;
       _weightedCount += other._weightedCount;
+      _nonZeroWeightsNum += other._nonZeroWeightsNum;
     }
 
+    @Override
     public void postGlobal() {
       _weightedMean = _weightedCount==0?Double.NaN:_weightedEleSum/_weightedCount;  // return NaN for bad input
-      long scale = _nonZeroWeightsNum-1;
-      scale = scale==0?1:scale; // avoid division by zero
+      double scale = _nonZeroWeightsNum==1?_nonZeroWeightsNum*1.0:(_nonZeroWeightsNum-1.0);
+      double scaling = _nonZeroWeightsNum*1.0/scale;
       _weightedSigma = _weightedCount==0?Double.NaN:
-              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*_nonZeroWeightsNum/scale);  // return NaN for bad input
+              Math.sqrt((_weightedEleSqSum/_weightedCount-_weightedMean*_weightedMean)*scaling);  // return NaN for bad input
     }
 
     public double getWeightedMean() {
@@ -1016,10 +1013,6 @@ public class FrameUtils {
 
     public double getWeightedSigma() {
       return _weightedSigma;
-    }
-
-    public double getWeightedCount() {
-      return _weightedCount;
     }
   }
 }
