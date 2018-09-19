@@ -6,6 +6,7 @@ from past.builtins import basestring
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
+from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -1680,7 +1681,7 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
 
                 if compare_val_h2o_Py > tolerance:    # difference is too high, return false
                     if throwError:
-                        assert False, "The two arrays are not equal in value."
+                        assert False, "Array 1 value {0} and array 2 value {1} do not agree.".format(array1[ind], array2[ind])
                     else:
                         return False
 
@@ -3828,3 +3829,66 @@ def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
                 abs(h2oPredictLocalS['c0.l1'][ind]-nativePred[ind])<tolerance, \
             "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
             "different.".format(h2oPredictLocalD['c0.l1'][ind], nativePred[ind])
+
+
+def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, tol=1e-6):
+    '''
+    This method is used to test the partial dependency plots and is not meant for any other functions.
+    
+    :param model:
+    :param dataframe:
+    :param xlist:
+    :param xname:
+    :param weightV:
+    :param pdpTDTable:
+    :param tol:
+    :return:
+    '''
+    weightStat =  manual_partial_dependence(model, dataframe, xlist, xname, weightV) # calculate theoretical weighted sts
+    wMean = extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
+    wStd = extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
+    wStdErr = extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
+    equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+
+
+def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
+    meanV = []
+    stdV = []
+    stderrV = []
+    nRows = dataframe.nrow
+    nCols = dataframe.ncol-1
+
+    for xval in xlist:
+        cons = [xval]*nRows
+        if xname in dataframe.names:
+            dataframe=dataframe.drop(xname)
+        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+            dataframe = dataframe.cbind(h2o.H2OFrame(cons))
+            dataframe.set_name(nCols, xname)
+
+        pred = model.predict(dataframe).as_data_frame(use_pandas=False, header=False)
+        pIndex = len(pred[0])-1
+        sumEle = 0.0
+        sumEleSq = 0.0
+        sumWeight = 0.0
+        numNonZeroWeightCount = 0.0
+        m = 1.0/math.sqrt(dataframe.nrow*1.0)
+        for rindex in range(len(pred)):
+            val = float(pred[rindex][pIndex]);
+            weight = float(weightV[rindex][0])
+            if (abs(weight) > 0) and isinstance(val, float) and not(math.isnan(val)):
+                temp = val*weight
+                sumEle = sumEle+temp
+                sumEleSq = sumEleSq+temp*val
+                sumWeight = sumWeight+weight
+                numNonZeroWeightCount = numNonZeroWeightCount+1
+        wMean = sumEle/sumWeight
+        scale = numNonZeroWeightCount*1.0/(numNonZeroWeightCount-1)
+        wSTD = math.sqrt((sumEleSq/sumWeight-wMean*wMean)*scale)
+        meanV.append(wMean)
+        stdV.append(wSTD)
+        stderrV.append(wSTD*m)
+
+    return meanV, stdV, stderrV

@@ -117,21 +117,16 @@ public class PartialDependence extends Lockable<PartialDependence> {
       _partial_dependence_data = new TwoDimTable[_cols.length];
       for (int i = 0; i < _cols.length; ++i) {
         final String col = _cols[i];
-        boolean enableNAs = false;
         Log.debug("Computing partial dependence of model on '" + col + "'.");
         Vec v = fr.vec(col);
         int actualbins = _nbins;
-
-        if (_add_missing_na && v.naCnt() > 0) {
-          enableNAs = true;
-        }
 
         double[] colVals;
         // use user defined value here if requested by user
         if (_user_splits_present && Arrays.asList(_user_cols).contains(col)) {
           int user_col_index = Arrays.asList(_user_cols).indexOf(col);
           actualbins = _num_user_splits[user_col_index];
-          colVals = enableNAs?new double[_num_user_splits[user_col_index]+1]:new double[_num_user_splits[user_col_index]];
+          colVals = _add_missing_na?new double[_num_user_splits[user_col_index]+1]:new double[_num_user_splits[user_col_index]];
           for (int rindex = 0; rindex < _num_user_splits[user_col_index]; rindex++) {
             colVals[rindex] = _user_split_per_col[user_col_index][rindex];
           }
@@ -139,7 +134,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
           if (v.isInt() && (v.max() - v.min() + 1) < _nbins) {
             actualbins = (int) (v.max() - v.min() + 1);
           }
-          colVals = enableNAs?new double[actualbins+1]:new double[actualbins];
+          colVals = _add_missing_na?new double[actualbins+1]:new double[actualbins];
           double delta = (v.max() - v.min()) / (actualbins - 1);
           if (actualbins == 1) delta = 0;
           for (int j = 0; j < colVals.length; ++j) {
@@ -147,7 +142,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
           }
         }
 
-        if (enableNAs)
+        if (_add_missing_na)
           colVals[actualbins] = Double.NaN; // set last bin to contain nan
 
         Log.debug("Computing PartialDependence for column " + col + " at the following values: ");
@@ -223,7 +218,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
                 new String[]{cat ? "%s" : "%5f", "%5f", "%5f", "%5f"}, null);
         for (int j = 0; j < meanResponse.length; ++j) {
           if (fr.vec(col).isCategorical()) {
-            if (enableNAs && Double.isNaN(colVals[j]))
+            if (_add_missing_na && Double.isNaN(colVals[j]))
               _partial_dependence_data[i].set(j, 0, ".missing(NA)"); // accomodate NA
             else
               _partial_dependence_data[i].set(j, 0, fr.vec(col).domain()[(int) colVals[j]]);
@@ -243,7 +238,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
     }
 
     public CalculateWeightMeanSTD getWeightedStat(Frame dataFrame, Frame pred, int targetIndex) {
-      CalculateWeightMeanSTD calMeansSTD = new CalculateWeightMeanSTD(dataFrame, pred);
+      CalculateWeightMeanSTD calMeansSTD = new CalculateWeightMeanSTD();
       calMeansSTD.doAll(pred.vec(targetIndex), dataFrame.vec(_weight_column_index));
 
       return calMeansSTD;
