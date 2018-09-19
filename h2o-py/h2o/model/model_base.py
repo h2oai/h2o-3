@@ -898,7 +898,7 @@ class ModelBase(backwards_compatible()):
         :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
-        :param include_na: A boolean specifying whether missing value should be included in the Features.  This is only enabled if there are missing values in the features.
+        :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """

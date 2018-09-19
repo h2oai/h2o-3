@@ -3047,7 +3047,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
 #' @param weight_column A string denoting which column of data should be used as the weight column.
-#' @param include_na A logical specifying whether missing value should be included in the Features.  This is only enabled if there are missing values in the features.
+#' @param include_na A logical specifying whether missing value should be included in the Feature values.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -3088,7 +3088,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     if (!weight_column %in% h2o.names(data))
       stop("weight_column_index should be one of your columns in your data frame.")
     else
-      weight_column = match(weight_column, h2o.names(data))-1
+      weight_column <- match(weight_column, h2o.names(data))-1
   }
 
   parms = list()
@@ -3107,9 +3107,9 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     user_cols <- c()
     user_values <- c()
     user_num_splits <- c()
-    column_names = h2o.names(data)
+    column_names <- h2o.names(data)
     for (ind in c(1:length(user_splits))) {
-      aList = user_splits[[ind]]
+      aList <- user_splits[[ind]]
       csname = aList[1]
       if (csname %in% column_names) {
         if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
@@ -3119,9 +3119,9 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
             tempVal <- aList[2:length(aList)]
             intVals <- c(1:length(tempVal))
             for (eleind in c(1:nVal)) {
-              eleIndex = which(domains == tempVal[eleind])
+              eleIndex <- which(domains == tempVal[eleind])
               if (eleIndex>0) {
-                intVals[eleind] = which(domains == tempVal[eleind]) - 1
+                intVals[eleind] <- which(domains == tempVal[eleind]) - 1
               } else {
                 stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
               }

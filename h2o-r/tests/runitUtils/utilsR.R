@@ -1006,3 +1006,62 @@ assert_partialPlots_twoDTable_equal <- function(table1, table2) {
   checkEqualsNumeric(table1[, "stddev_response"], table2[, "stddev_response"][1:length(table1[, "mean_response"])])
   checkEqualsNumeric(table1[, "std_error_mean_response"], table2[, "std_error_mean_response"][1:length(table1[, "mean_response"])])
 }
+
+manual_partial_dependency <- function(model, dataframe, xlist, xname, weight_vector, target_index) {
+  nrow <- h2o.nrow(dataframe)
+  ncol <- h2o.ncol(dataframe)
+  weightedStats <- matrix(0, 3, length(xlist))
+  xnames <- h2o.names(dataframe)
+  temp <- (xnames != xname)
+  xnames_list <- xnames[temp]
+  rowIndex <- 1
+  
+  for (xval in xlist) {
+    sumEle <- 0.0
+    sumEleSq <- 0.0
+    sumWeight <- 0.0
+    nonZero <- 0
+
+    tempFrame <- dataframe[xnames_list]
+    if (!is.nan(xval)) { # only do this for nonNAs
+    tempcol <- as.h2o(matrix(xval, nrow, 1))
+    colnames(tempcol) <- xname
+    tempFrame <- h2o.cbind(tempFrame, tempcol)
+    }
+    pred <- h2o.predict(model, tempFrame)
+    predRow <- h2o.nrow(pred)
+    predF <- as.data.frame(pred)
+    m <- sqrt(1.0/predRow)
+    for (rIndex in c(1:predRow)) {
+      val <- predF[rIndex, target_index]
+      weight <- weight_vector[rIndex, 1]
+      
+      if ((abs(weight) > 0) && !is.nan(val)) {
+        tempV <- val*weight
+        sumEle <- sumEle+tempV
+        sumEleSq <- sumEleSq+tempV*val
+        sumWeight <- sumWeight+weight
+        nonZero <- nonZero+1
+      }
+    }
+    scale <- nonZero/(nonZero-1.0)
+    weightedStats[1, rowIndex] <- sumEle/sumWeight
+    weightedStats[2, rowIndex] <- sqrt((sumEleSq/sumWeight-weightedStats[1, rowIndex]*weightedStats[1, rowIndex])*scale)
+    weightedStats[3, rowIndex] <- weightedStats[2, rowIndex]*m
+    rowIndex <- rowIndex+1
+  }
+  return(weightedStats)
+}
+
+# The following two functions are written for comparing results of h2o.partialplots only.
+assert_twoDTable_array_equal <- function(table1, arraymean, arraystd, arraystderr) {
+  checkEqualsNumeric(table1[, "mean_response"], arraymean)
+  checkEqualsNumeric(table1[, "stddev_response"], arraystd)
+  checkEqualsNumeric(table1[, "std_error_mean_response"], arraystderr)
+  
+}
+assert_twoDTable_equal <- function(table1, table2) {
+  checkEqualsNumeric(table1[, "mean_response"], table2[, "mean_response"][1:length(table1[, "mean_response"])])
+  checkEqualsNumeric(table1[, "stddev_response"], table2[, "stddev_response"][1:length(table1[, "mean_response"])])
+  checkEqualsNumeric(table1[, "std_error_mean_response"], table2[, "std_error_mean_response"][1:length(table1[, "mean_response"])])
+}
