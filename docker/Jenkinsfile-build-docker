@@ -1,6 +1,6 @@
 #! /usr/bin/groovy
 
-final String AGENT_LABEL = 'docker && !mr-0xc8'
+final String AGENT_LABEL = 'mr-0xc6'
 final String IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime"
 def pipelineContext = null
 
@@ -101,7 +101,7 @@ pipeline {
                         if (params.noCache) {
                             dockerBuildCMD += ' --no-cache'
                         }
-                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} ."
+                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} -f Dockerfile.jenkins ."
                         sh """
                             printenv
                             cd docker

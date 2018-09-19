@@ -40,7 +40,11 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10,timeoutValue: 20,
+      stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 11 Smoke', target: 'test-junit-11-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
@@ -164,13 +168,17 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
+      stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '2.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
       stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
       archiveAdditionalFiles: ['r-generated-docs.zip'], installRPackage: false
     ],
     [
       stageName: 'MOJO Compatibility', target: 'test-mojo-compatibility',
-      archiveFiles: false, timeoutValue: 20, , pythonVersion: '3.6', hasJUnit: false,
+      archiveFiles: false, timeoutValue: 20, pythonVersion: '3.6', hasJUnit: false,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ]
   ]
