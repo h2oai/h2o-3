@@ -9,7 +9,7 @@ class BuildConfig {
   public static final String DOCKER_REGISTRY = 'docker.h2o.ai'
 
   private static final String DEFAULT_IMAGE_NAME = 'h2o-3-runtime'
-  private static final String DEFAULT_IMAGE_VERSION_TAG = '113'
+  private static final String DEFAULT_IMAGE_VERSION_TAG = '113-roxygen4'
   // This is the default image used for tests, build, etc.
   public static final String DEFAULT_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + DEFAULT_IMAGE_NAME + ':' + DEFAULT_IMAGE_VERSION_TAG
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
@@ -48,7 +48,7 @@ class BuildConfig {
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
   private static final Map EXPECTED_IMAGE_VERSIONS= [
-          (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:65dc665c83eb564903f662dcb74a1b9429f926c04e850a1e31fa5e5b51f1718a',
+          (DEFAULT_IMAGE): 'docker.h2o.ai/opsh2oai/h2o-3-runtime@sha256:032e9cd5d3637f0d5d449b29c07d3776c54ea67e1689dd8f19056908a3e93f7a',
 
           "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2:48":     "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2@sha256:9e7cd9f4a1a7cf3ee3e98105953c0e834ffa12df6eedcf9f8eee3a1b677bf2f8",
           "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb:48": "docker.h2o.ai/opsh2oai/h2o-3-hadoop-hdp-2.2-krb@sha256:907030f3afd48024d2bfea77804854f5954655e8cc97b9158c365f85814d63f4",
