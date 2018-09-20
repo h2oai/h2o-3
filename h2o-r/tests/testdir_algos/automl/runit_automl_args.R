@@ -355,6 +355,7 @@ automl.args.test <- function() {
                                            project_name="aml_max_runtime_secs",
                                            max_runtime_secs=max_runtime_secs)
                         )[['elapsed']]
+    print(paste("trained", length(get_partitioned_models(aml)$non_se), "models"))
     expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
     expect_equal(length(get_partitioned_models(aml)$se), 2)
   }
