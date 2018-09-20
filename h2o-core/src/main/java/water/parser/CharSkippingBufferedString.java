@@ -35,7 +35,7 @@ class CharSkippingBufferedString {
 
     /**
      *
-     * @return
+     * @return True if offset plus limit exceed the length of the underlying buffer. Otherwise false.
      */
     protected boolean isOverflown(){
        return  _bufferedString.getOffset() + _bufferedString.length() > _bufferedString.getBuffer().length;
