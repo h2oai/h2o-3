@@ -1849,8 +1849,9 @@ final public class H2O {
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
     }
-    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see file connection.R near line 536
-    if (JAVA_VERSION.isKnown() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>10)) {
+
+    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>10)) {
       System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
@@ -1858,6 +1859,20 @@ final public class H2O {
     if (vmName != null && vmName.equals("GNU libgcj")) {
       System.err.println("GNU gcj is not supported");
       return true;
+    }
+    return false;
+  }
+
+  private static boolean isUserEnabledJavaVersion() {
+    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
+    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
+      return false;
+    String[] vs = extraJavaVersionsStr.split(",");
+    for (String v : vs) {
+      int majorVersion = Integer.valueOf(v);
+      if (JAVA_VERSION.getMajor() == majorVersion) {
+        return true;
+      }
     }
     return false;
   }
