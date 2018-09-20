@@ -2977,11 +2977,15 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
-#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.  If you enable add_missing_NA, the returned length will be nbin+1.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceeds the level count.
+#'        If you enable add_missing_NA, the returned length will be nbin+1.
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
 #' @param weight_column A string denoting which column of data should be used as the weight column.
 #' @param include_na A logical specifying whether missing value should be included in the Feature values.
+#' @param user_splits A two-level nested list containing user defined split points for pdp plots for each column.
+#' If there are two columns using user defined split points, there should be two lists in the nested list.
+#' Inside each list, the first element is the column name followed by values defined by the user.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
