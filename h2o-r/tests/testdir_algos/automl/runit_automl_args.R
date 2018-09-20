@@ -25,10 +25,10 @@ automl.args.test <- function() {
       test <- h2o.getFrame("rtest_automl_args_test")
     } else {
       print("uploading dataset")
-      train <- h2o.uploadFile(locate("smalldata/testng/prostate_train.csv"), destination_frame = "prostate_full_train")
+      train <- h2o.importFile(locate("smalldata/testng/prostate_train.csv"), destination_frame = "prostate_full_train")
       train[,y] <- as.factor(train[,y])
       train <- as.h2o(train, "rtest_automl_args_train")
-      test <- h2o.uploadFile(locate("smalldata/testng/prostate_test.csv"), destination_frame = "prostate_full_test")
+      test <- h2o.importFile(locate("smalldata/testng/prostate_test.csv"), destination_frame = "prostate_full_test")
       test[,y] <- as.factor(test[,y])
       ss <- h2o.splitFrame(test, destination_frames=c("rtest_automl_args_valid", "rtest_automl_args_test"), seed = 1)
       valid <- ss[[1]]
