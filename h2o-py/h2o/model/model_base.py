@@ -915,7 +915,7 @@ class ModelBase(backwards_compatible()):
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
-        :param user_splits: a dictionary containing column names as key and user defined split values as value.
+        :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
