@@ -1,5 +1,7 @@
 package water.parser;
 
+import water.MemoryManager;
+
 import java.util.Arrays;
 
 /**
@@ -7,12 +9,43 @@ import java.util.Arrays;
  * This schema enables characters to be skipped inside the string. unlike the basic {@link BufferedString}
  * Skipped characters are not serialized by toString method.
  */
-class CharSkippingBufferedString extends BufferedString {
+class CharSkippingBufferedString {
 
     private int[] _skipped;
     private int _skippedWriteIndex;
+    private BufferedString _bufferedString;
 
-    public CharSkippingBufferedString() {
+    CharSkippingBufferedString() {
+        _skipped = new int[0];
+        _skippedWriteIndex = 0;
+        _bufferedString = new BufferedString();
+    }
+
+    protected void addChar() {
+        _bufferedString.addChar();
+    }
+
+    protected void removeChar() {
+        _bufferedString.removeChar();
+    }
+
+    protected byte[] getBuffer() {
+        return _bufferedString.getBuffer();
+    }
+
+    protected int getOffset() {
+        return _bufferedString.getOffset();
+    }
+
+    /**
+     * @return Length of the underlying chunk limited by offset and limit. Not subtracting skipped characters.
+     */
+    protected int length() {
+        return _bufferedString.length();
+    }
+
+    protected void addBuff(final byte[] bits) {
+        _bufferedString.addBuff(bits);
         _skipped = new int[0];
         _skippedWriteIndex = 0;
     }
@@ -23,8 +56,8 @@ class CharSkippingBufferedString extends BufferedString {
      *
      * @param skippedCharIndex Index of the character in the backing array to skip
      */
-    public final void skipIndex(int skippedCharIndex) {
-        super.addChar();
+    protected final void skipIndex(final int skippedCharIndex) {
+        _bufferedString.addChar();
         if (_skipped.length == 0 || _skipped[_skipped.length - 1] != -1) {
             _skipped = Arrays.copyOf(_skipped, Math.max(_skipped.length + 1, 1));
         }
@@ -33,23 +66,49 @@ class CharSkippingBufferedString extends BufferedString {
         _skippedWriteIndex++;
     }
 
-    @Override
-    public BufferedString set(byte[] buf, int off, int len) {
+    /**
+     * A delegate to the underlying {@link StringBuffer}'s set() method.
+     *
+     * @param buf Buffer to operate with
+     * @param off Beginning of the string (offset in the buffer)
+     * @param len Length of the string from the offset.
+     */
+    protected void set(final byte[] buf, final int off, final int len) {
         _skipped = new int[0];
         _skippedWriteIndex = 0;
-        return super.set(buf, off, len);
+        _bufferedString.set(buf, off, len);
     }
 
+    /**
+     * Converts the current window into byte buffer to a {@link BufferedString}. The resulting new instance of {@link BufferedString}
+     * is backed by a newly allocated byte[] buffer sized exactly to fit the desired string represented by current buffer window,
+     * excluding the skipped characters.
+     *
+     * @return An instance of {@link BufferedString} containing only bytes from the original window, without skipped bytes.
+     */
+    public BufferedString toBufferedString() {
+        byte[] buf = MemoryManager.malloc1(length() - _skipped.length); // Length of the buffer window minus skipped chars
+
+        int nSkipped = 0;
+        for (int i = getOffset(); i < getOffset() + length(); i++) {
+
+            if (Arrays.binarySearch(_skipped, i) >= 0) {
+                nSkipped++;
+                continue;
+            }
+
+            final byte character = getBuffer()[i];
+            buf[i - getOffset() - nSkipped] = character;
+        }
+
+        return new BufferedString(buf, 0, buf.length);
+    }
+
+    /**
+     * @return A string representation of the buffer window, excluding skipped characters
+     */
     @Override
     public String toString() {
-        if(getBuffer() == null) return null;
-        StringBuilder stringBuilder = new StringBuilder(super.toString());
-        int nSkipped = 0;
-        for (int skippedChar : _skipped) {
-            skippedChar = skippedChar - getOffset() - nSkipped - 1;
-            stringBuilder.deleteCharAt(skippedChar);
-            nSkipped++;
-        }
-        return stringBuilder.toString();
+        return toBufferedString().toString();
     }
 }

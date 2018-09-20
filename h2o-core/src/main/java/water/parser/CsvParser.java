@@ -148,11 +148,11 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( !isNa &&
-              _setup.isNA(colIdx, str)) {
+              _setup.isNA(colIdx, str.toBufferedString())) {
             isNa = true;
           }
           if (!isNa) {
-            dout.addStrCol(colIdx, str);
+            dout.addStrCol(colIdx, str.toBufferedString());
             if (!isAllASCII)
               dout.setIsAllASCII(colIdx, isAllASCII);
           } else {
