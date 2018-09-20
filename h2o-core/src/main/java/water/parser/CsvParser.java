@@ -143,7 +143,7 @@ MAIN_LOOP:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
             break;
           // we have parsed the string categorical correctly
-          if((str.getOffset() + str.length()) > str.getBuffer().length){ // crossing chunk boundary
+          if(str.isOverflown()){ // crossing chunk boundary
             assert str.getBuffer() != bits;
             str.addBuff(bits);
           }

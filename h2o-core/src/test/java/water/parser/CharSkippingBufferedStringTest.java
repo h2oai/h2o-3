@@ -22,8 +22,6 @@ public class CharSkippingBufferedStringTest {
         charSkippingBufferedString.skipIndex(bytes.length - 1);
 
         assertNotNull(charSkippingBufferedString.getBuffer());
-        assertEquals(4, charSkippingBufferedString.length());
-        assertEquals(0, charSkippingBufferedString.getOffset());
 
         final BufferedString bufferedString = charSkippingBufferedString.toBufferedString();
         assertNotNull(bufferedString.getBuffer());
@@ -34,20 +32,31 @@ public class CharSkippingBufferedStringTest {
     }
 
     @Test
-    public void removeChar() {
-        final byte[] bytes = "abcd".getBytes();
-        charSkippingBufferedString.set(bytes,0, bytes.length);
-        assertEquals(4, charSkippingBufferedString.length());
+    public void toBufferedString_nonZeroOffset() {
+        final byte[] bytes = "abcdefgh".getBytes();
+        charSkippingBufferedString.set(bytes,4, 0);
+        charSkippingBufferedString.skipIndex(4);
+        charSkippingBufferedString.addChar();
+        charSkippingBufferedString.addChar();
+        charSkippingBufferedString.addChar();
 
-        charSkippingBufferedString.removeChar();
-        assertEquals(3, charSkippingBufferedString.length());
+        assertNotNull(charSkippingBufferedString.getBuffer());
+
+        final BufferedString bufferedString = charSkippingBufferedString.toBufferedString();
+        assertNotNull(bufferedString.getBuffer());
+        assertEquals(3, bufferedString.length());
+        assertEquals(0, bufferedString.getOffset());
+
+        assertEquals("fgh", bufferedString.toString());
     }
 
     @Test
-    public void getOffset() {
+    public void removeChar() {
         final byte[] bytes = "abcd".getBytes();
-        charSkippingBufferedString.set(bytes,1, bytes.length);
-        assertEquals(1, charSkippingBufferedString.getOffset());
+        charSkippingBufferedString.set(bytes,0, bytes.length);
+
+        charSkippingBufferedString.removeChar();
+        assertEquals("abc", charSkippingBufferedString.toString());
     }
 
     @Test

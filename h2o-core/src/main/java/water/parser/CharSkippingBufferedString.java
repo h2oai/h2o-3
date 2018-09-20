@@ -13,7 +13,7 @@ class CharSkippingBufferedString {
 
     private int[] _skipped;
     private int _skippedWriteIndex;
-    private BufferedString _bufferedString;
+    private final BufferedString _bufferedString;
 
     CharSkippingBufferedString() {
         _skipped = new int[0];
@@ -33,15 +33,12 @@ class CharSkippingBufferedString {
         return _bufferedString.getBuffer();
     }
 
-    protected int getOffset() {
-        return _bufferedString.getOffset();
-    }
-
     /**
-     * @return Length of the underlying chunk limited by offset and limit. Not subtracting skipped characters.
+     *
+     * @return
      */
-    protected int length() {
-        return _bufferedString.length();
+    protected boolean isOverflown(){
+       return  _bufferedString.getOffset() + _bufferedString.length() > _bufferedString.getBuffer().length;
     }
 
     protected void addBuff(final byte[] bits) {
@@ -87,10 +84,10 @@ class CharSkippingBufferedString {
      * @return An instance of {@link BufferedString} containing only bytes from the original window, without skipped bytes.
      */
     public BufferedString toBufferedString() {
-        byte[] buf = MemoryManager.malloc1(length() - _skipped.length); // Length of the buffer window minus skipped chars
+        byte[] buf = MemoryManager.malloc1(_bufferedString.length() - _skipped.length); // Length of the buffer window minus skipped chars
 
         int nSkipped = 0;
-        for (int i = getOffset(); i < getOffset() + length(); i++) {
+        for (int i = _bufferedString.getOffset(); i < _bufferedString.getOffset() + _bufferedString.length(); i++) {
 
             if (Arrays.binarySearch(_skipped, i) >= 0) {
                 nSkipped++;
@@ -98,7 +95,7 @@ class CharSkippingBufferedString {
             }
 
             final byte character = getBuffer()[i];
-            buf[i - getOffset() - nSkipped] = character;
+            buf[i - _bufferedString.getOffset() - nSkipped] = character;
         }
 
         return new BufferedString(buf, 0, buf.length);
