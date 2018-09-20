@@ -28,13 +28,13 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 
 While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If you are a Python or R user, the easiest way to install H2O is via [PyPI](https://pypi.python.org/pypi/h2o) or [Anaconda](https://anaconda.org/h2oai/h2o) (for Python) or [CRAN](https://CRAN.R-project.org/package=h2o) (for R):  
 
-#### Python
+### Python
 
 ```bash
 pip install h2o
 ```
 
-#### R
+### R
 
 ```r
 install.packages("h2o")
@@ -145,7 +145,8 @@ Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/te
 
 ### 4.1. Before building
 
-Building `h2o` requires a properly set up Python environment and the following packages:
+Building `h2o` requires a properly set up R environment with [required packages](#InstallRPackagesInUnix) and Python environment with the following packages:
+
 ```
 grip
 colorama
@@ -154,6 +155,7 @@ tabulate
 requests
 wheel
 ```
+
 To install these packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
 If you have troubles installing these packages on *Windows*, please follow section [Setup on Windows](#SetupWin) of this guide.
 > (Note: It is recommended to use some virtual environment such as [VirtualEnv](https://virtualenv.pypa.io/), to install all packages. )
@@ -239,7 +241,7 @@ open target/docs-website/h2o-docs/index.html
 ##### Step 1: Download and install [WinPython](https://winpython.github.io).
   From the command line, validate `python` is using the newly installed package by using `which python` (or `sudo which python`). [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
 
-###### Step 2: Install required Python packages:
+##### Step 2: Install required Python packages:
 
     pip install grip
     pip install tabulate
@@ -380,7 +382,7 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-#### Step 3. Install R and the required packages:
+##### Step 3. Install R and the required packages:
 
 Installation instructions can be found here [R installation](http://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
 
@@ -423,19 +425,7 @@ Download and update h2o-3 source codes:
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
 
-### 4.7. Setting up your preferred IDE environment
-
-For users of Intellij's IDEA, generate project files with:
-
-    ./gradlew idea
-
-For users of Eclipse, generate project files with:
-
-    ./gradlew eclipse
-
-
-
-### 4.7 Setup on CentOS 7
+### 4.7. Setup on CentOS 7
 
 ```
 cd /opt
@@ -485,6 +475,18 @@ cd h2o-3
 
 
 <a name="Launching"></a>
+### 4.8. Setting up your preferred IDE environment
+
+For users of Intellij's IDEA, generate project files with:
+
+    ./gradlew idea
+
+For users of Eclipse, generate project files with:
+
+    ./gradlew eclipse
+
+
+
 ## 5. Launching H2O after Building
 
 To start the H2O cluster locally, execute the following on the command line:
