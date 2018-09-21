@@ -116,7 +116,7 @@ public class ParserTest2 extends TestUtil {
      Vec[] vecs = fr.vecs();
      Assert.assertEquals(fr.numCols(),4);
      Assert.assertEquals(fr.numRows(), 3);
-     Assert.assertEquals("Feline says \"\"meh\"\".", vecs[2].atStr(str, 0).toString());
+     Assert.assertEquals("Feline says \"meh\".", vecs[2].atStr(str, 0).toString());
      fr.delete();
    }
    finally {
