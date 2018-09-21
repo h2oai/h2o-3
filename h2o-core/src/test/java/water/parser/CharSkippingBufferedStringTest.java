@@ -35,7 +35,26 @@ public class CharSkippingBufferedStringTest {
     public void toBufferedString_nonZeroOffset() {
         final byte[] bytes = "abcdefgh".getBytes();
         charSkippingBufferedString.set(bytes,4, 0);
-        charSkippingBufferedString.skipIndex(5);
+        charSkippingBufferedString.skipIndex(4);
+        charSkippingBufferedString.addChar();
+        charSkippingBufferedString.addChar();
+        charSkippingBufferedString.addChar();
+
+        assertNotNull(charSkippingBufferedString.getBuffer());
+
+        final BufferedString bufferedString = charSkippingBufferedString.toBufferedString();
+        assertNotNull(bufferedString.getBuffer());
+        assertEquals(3, bufferedString.length());
+        assertEquals(0, bufferedString.getOffset());
+
+        assertEquals("fgh", bufferedString.toString());
+    }
+
+    @Test
+    public void toBufferedString_skipFirst() {
+        final byte[] bytes = "efgh".getBytes();
+        charSkippingBufferedString.set(bytes,0, 0);
+        charSkippingBufferedString.skipIndex(0);
         charSkippingBufferedString.addChar();
         charSkippingBufferedString.addChar();
         charSkippingBufferedString.addChar();
