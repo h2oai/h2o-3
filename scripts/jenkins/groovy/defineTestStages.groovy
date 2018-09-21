@@ -56,15 +56,7 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -76,27 +68,11 @@ def call(final pipelineContext) {
       timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -217,14 +193,6 @@ def call(final pipelineContext) {
   // Stages executed in addition to PR_STAGES after merge to master.
   def MASTER_STAGES = [
     [
-      stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -241,6 +209,38 @@ def call(final pipelineContext) {
 
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
+    [
+      stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
       timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
