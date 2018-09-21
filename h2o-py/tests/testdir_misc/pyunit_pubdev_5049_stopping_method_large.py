@@ -72,6 +72,7 @@ def test_stopping_methods():
 
 def testStoppingMethod(testString, training_data, x_indices, y_index, validation_data, use_valid_set, test_index,
                        equivalent_auto_tests, use_auto_valid_set):
+    print("testing....{0}".format(testString[test_index]))
     model = eval(testString[test_index])
     model_auto = eval(equivalent_auto_tests[test_index])
 
