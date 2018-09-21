@@ -10,6 +10,8 @@ import water.fvec.Vec;
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
 class ARFFParser extends CsvParser {
+  private static final String INCOMPLETE_HEADER = "@H20_INCOMPLETE_HEADER@";
+  private static final String SKIP_NEXT_HEADER = "@H20_SKIP_NEXT_HEADER@";
   private static final String TAG_ATTRIBUTE = "@ATTRIBUTE";
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
 
@@ -32,16 +34,18 @@ class ARFFParser extends CsvParser {
 
     int offset;
     int chunk_idx = 0; //relies on the assumption that bits param have been extracted from first chunk: cf. ParseSetup#map
-    String last_line_fragment = null;
+    boolean readNextChunk;
     do {
-      offset = readArffHeader(0, header, bits, singleQuotes, last_line_fragment);
-      if (offset > bits.length && isValidHeader(header)) {
-        last_line_fragment = header.remove(header.size() - 1);
-        bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
-      } else {
-        last_line_fragment = null;
+      offset = readArffHeader(0, header, bits, singleQuotes);
+      readNextChunk = false;
+      if (isValidHeader(header)) {
+        String lastHeader = header.get(header.size() - 1);
+        if (INCOMPLETE_HEADER.equals(lastHeader) || SKIP_NEXT_HEADER.equals(lastHeader)) {
+          bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
+          readNextChunk = true;
+        }
       }
-    } while (last_line_fragment != null);
+    } while (readNextChunk);
 
     if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
       haveData = true; //more than just the header
@@ -127,32 +131,49 @@ class ARFFParser extends CsvParser {
     return str.startsWith("@");
   }
 
-  private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes, String line_fragment) {
+  private static int readArffHeader(int offset, List<String> header, byte[] bits, boolean singleQuotes) {
+    String lastHeader = header.size() > 0 ? header.get(header.size() - 1) : null;
+    boolean lastHeaderIncomplete = INCOMPLETE_HEADER.equals(lastHeader);
+    boolean skipFirstLine = SKIP_NEXT_HEADER.equals(lastHeader);
+    if (lastHeaderIncomplete || skipFirstLine) header.remove(header.size() - 1);  //remove fake header
+    lastHeader = lastHeaderIncomplete ? header.remove(header.size() - 1) : null; //remove incomplete header for future concatenation
+
     while (offset < bits.length) {
       int lineStart = offset;
       while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
       int lineEnd = offset;
+
       ++offset;
       // For Windoze, skip a trailing LF after CR
       if ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-      if (bits[lineStart] == '#') continue; // Ignore      comment lines
-      if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
-      if (lineEnd > lineStart) {
-        if (bits[lineStart] == '@' &&
-                (bits[lineStart+1] == 'D' || bits[lineStart+1] =='d' ) &&
-                (bits[lineStart+2] == 'A' || bits[lineStart+2] =='a' ) &&
-                (bits[lineStart+3] == 'T' || bits[lineStart+3] =='t' ) &&
-                (bits[lineStart+4] == 'A' || bits[lineStart+4] =='a' )){
-          break;
+
+      boolean lastLineIncomplete = lineEnd == bits.length && !CsvParser.isEOL(bits[lineEnd-1]);
+
+      if (skipFirstLine) {
+        skipFirstLine = false;
+        if (lastLineIncomplete) header.add(SKIP_NEXT_HEADER);
+        continue;
+      }
+
+      if (bits[lineStart] == '#' || bits[lineStart] == '%') { //skip comment lines
+        if (!lastHeaderIncomplete) {
+          if (lastLineIncomplete) header.add(SKIP_NEXT_HEADER);
+          continue;
         }
-        String str = new String(bits, lineStart, lineEnd - lineStart).trim();
-        if (line_fragment != null) {
-          str = line_fragment + str;
-          line_fragment = null;
-        }
-        String[] tok = determineTokens(str, CHAR_SPACE, singleQuotes);
-        if (tok.length > 0 && tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
-        if (!str.isEmpty()) header.add(str);
+      }
+
+      String str = new String(bits, lineStart, lineEnd - lineStart).trim();
+      if (lastHeaderIncomplete) {
+          str = lastHeader + str;  //add current line portion to last header portion from previous chunk
+          lastHeaderIncomplete = false;
+      } else if (str.matches("(?i)^@relation\\s?.*$")) { //ignore dataset name
+        continue;
+      } else if (str.matches("(?i)^@data\\s?.*$")) {  //stop header parsing as soon as we encounter data
+        break;
+      }
+      if (!str.isEmpty()) {
+        header.add(str);
+        if (lastLineIncomplete) header.add(INCOMPLETE_HEADER);
       }
     }
     return offset;
