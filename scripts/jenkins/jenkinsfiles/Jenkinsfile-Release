@@ -194,8 +194,8 @@ try {
                             if (!params.TEST_RELEASE) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
-                                    aws s3 cp target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
-                                    aws s3 cp target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
+                                    aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
+                                    aws s3 sync target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
                                 """
                             }
                             sh """
