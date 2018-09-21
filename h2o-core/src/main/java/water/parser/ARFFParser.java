@@ -32,20 +32,20 @@ class ARFFParser extends CsvParser {
     // header section
     ArrayList<String> header = new ArrayList<>();
 
-    int offset;
+    int offset = 0;
     int chunk_idx = 0; //relies on the assumption that bits param have been extracted from first chunk: cf. ParseSetup#map
-    boolean readNextChunk;
-    do {
+    boolean readHeader = true;
+    while (readHeader) {
       offset = readArffHeader(0, header, bits, singleQuotes);
-      readNextChunk = false;
       if (isValidHeader(header)) {
         String lastHeader = header.get(header.size() - 1);
         if (INCOMPLETE_HEADER.equals(lastHeader) || SKIP_NEXT_HEADER.equals(lastHeader)) {
           bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
-          readNextChunk = true;
+          continue;
         }
       }
-    } while (readNextChunk);
+      readHeader = false;
+    }
 
     if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
       haveData = true; //more than just the header
