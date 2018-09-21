@@ -91,21 +91,19 @@ class CharSkippingBufferedString {
         byte[] buf = MemoryManager.malloc1(_bufferedString._len - _skipped.length); // Length of the buffer window minus skipped chars
 
         int copyStart = _bufferedString._off;
-        int nSkipped = 0;
+        int target = 0;
         for (int skippedIndex : _skipped) {
             for (int i = copyStart; i < skippedIndex; i++) {
-                buf[i - _bufferedString._off - nSkipped] = _bufferedString._buf[i];
+                buf[target++] = _bufferedString._buf[i];
             }
-            nSkipped++;
-
-            copyStart = skippedIndex;
+            copyStart = skippedIndex + 1;
         }
 
-        int windowEnd = _bufferedString._off + _bufferedString._len - 1;
+        int windowEnd = _bufferedString._off + _bufferedString._len;
         for (int i = copyStart; i < windowEnd; i++) {
-            buf[i - _bufferedString._off - _skipped.length] = _bufferedString._buf[i];
+            buf[target++] = _bufferedString._buf[i];
         }
-
+        assert target == buf.length;
         return new BufferedString(buf, 0, buf.length);
     }
 
