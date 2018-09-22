@@ -33,42 +33,46 @@ from h2o.exceptions import H2OResponseError
 '''
 def test_stopping_methods():
     assert H2OXGBoostEstimator.available() is True
-    training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training1_set.csv"))
-    validation_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training2_set.csv"))
-    y_index = training1_data.ncol - 1
-    x_indices = list(range(y_index))
+    ret = h2o.cluster()
+    if len(ret.nodes) == 1:
+        training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training1_set.csv"))
+        validation_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training2_set.csv"))
+        y_index = training1_data.ncol - 1
+        x_indices = list(range(y_index))
 
-    # Test set 1, negative tests
-    negativeTests = [
-        'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, stopping_method="valid")', # training set only but stopping_method=valid
-        "H2ODeepLearningEstimator(hidden=[3], stopping_method='xval', stopping_rounds=3, stopping_tolerance=0.01)", # training set only but stopping_method=xval
-        'H2OXGBoostEstimator(nfolds=3, stopping_method="valid")', # training set with cross-validation enabled but stopping_method=valid
-        'H2ORandomForestEstimator(ntrees=10, stopping_method="xval")']
-    validation_data_set = [False, False, False, True, True]
+        # Test set 1, negative tests
+        negativeTests = [
+            'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, stopping_method="valid")', # training set only but stopping_method=valid
+            "H2ODeepLearningEstimator(hidden=[3], stopping_method='xval', stopping_rounds=3, stopping_tolerance=0.01)", # training set only but stopping_method=xval
+            'H2OXGBoostEstimator(nfolds=3, stopping_method="valid")', # training set with cross-validation enabled but stopping_method=valid
+            'H2ORandomForestEstimator(ntrees=10, stopping_method="xval")']
+        validation_data_set = [False, False, False, True, True]
 
 
-    for index in range(len(negativeTests)):
-        negativeTestStoppingMethod(negativeTests, training1_data, x_indices, y_index, validation_data,
-                                   validation_data_set, index)
+        for index in range(len(negativeTests)):
+            negativeTestStoppingMethod(negativeTests, training1_data, x_indices, y_index, validation_data,
+                                       validation_data_set, index)
 
-    # Test set 2, test stopping methods
-    stopping_method_tests = [
-        'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, stopping_method="train", seed=12345)', # stopping method train
-        "H2ODeepLearningEstimator(hidden=[3], stopping_method='xval', stopping_rounds=3, stopping_tolerance=0.01, nfolds=3, seed=12345, reproducible=True)", # stopping method xval
-        'H2OXGBoostEstimator(nfolds=3, stopping_method="valid", seed=12345)', # stopping method valid
-        'H2ORandomForestEstimator(ntrees=10, stopping_method="xval", nfolds=3, seed=12345)'] # training set with validation set only but stopping_method=xval
-    equivalent_auto_tests = [
-        'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, seed=12345)', # stopping method train
-        "H2ODeepLearningEstimator(hidden=[3],  stopping_rounds=3, stopping_tolerance=0.01, nfolds=3, seed=12345, reproducible=True)", # stopping method xval
-        'H2OXGBoostEstimator(stopping_method="valid", seed=12345)', # stopping method valid
-        'H2ORandomForestEstimator(ntrees=10, nfolds=3, seed=12345)'] # training set with validation set only but stopping_method=xval
+        # Test set 2, test stopping methods
+        stopping_method_tests = [
+            'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, stopping_method="train", seed=12345)', # stopping method train
+            "H2ODeepLearningEstimator(hidden=[3], stopping_method='xval', stopping_rounds=3, stopping_tolerance=0.01, nfolds=3, seed=12345, reproducible=True)", # stopping method xval
+            'H2OXGBoostEstimator(nfolds=3, stopping_method="valid", seed=12345)', # stopping method valid
+            'H2ORandomForestEstimator(ntrees=10, stopping_method="xval", nfolds=3, seed=12345)'] # training set with validation set only but stopping_method=xval
+        equivalent_auto_tests = [
+            'H2OGradientBoostingEstimator(stopping_rounds=3, stopping_tolerance=0.01, seed=12345)', # stopping method train
+            "H2ODeepLearningEstimator(hidden=[3],  stopping_rounds=3, stopping_tolerance=0.01, nfolds=3, seed=12345, reproducible=True)", # stopping method xval
+            'H2OXGBoostEstimator(stopping_method="valid", seed=12345)', # stopping method valid
+            'H2ORandomForestEstimator(ntrees=10, nfolds=3, seed=12345)'] # training set with validation set only but stopping_method=xval
 
-    validation_data_set = [False, False, True, True]
-    validation_data_auto = [False, False, True, False]
+        validation_data_set = [False, False, True, True]
+        validation_data_auto = [False, False, True, False]
 
-    for index in range(len(stopping_method_tests)):
-        testStoppingMethod(stopping_method_tests, training1_data, x_indices, y_index, validation_data,
-                           validation_data_set, index, equivalent_auto_tests, validation_data_auto)
+        for index in range(len(stopping_method_tests)):
+            testStoppingMethod(stopping_method_tests, training1_data, x_indices, y_index, validation_data,
+                               validation_data_set, index, equivalent_auto_tests, validation_data_auto)
+    else:
+        print("Test skipped.  This test can only be run in single node mode.")
 
 def testStoppingMethod(testString, training_data, x_indices, y_index, validation_data, use_valid_set, test_index,
                        equivalent_auto_tests, use_auto_valid_set):
