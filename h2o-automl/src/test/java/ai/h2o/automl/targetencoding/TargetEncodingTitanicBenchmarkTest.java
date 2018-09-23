@@ -90,11 +90,15 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     GBMModel gbm = null;
     try {
 
-      TargetEncoder tec = new TargetEncoder();
+      BlendingParams params = new BlendingParams(20, 10);
+      TargetEncoder tec = new TargetEncoder(params);
 
-      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -110,16 +114,24 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       String[] teColumns = {"cabin", "home.dest", "embarked"};
       String[] teColumnsWithFold = {"cabin", "home.dest", "embarked", foldColumnName};
 
+      boolean withBlendedAvg = true;
+      boolean withNoiseOnlyForTraining = true;
+
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName);
 
-      Frame trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, true, 1234, true);
+      Frame trainEncoded;
+      if (withNoiseOnlyForTraining) {
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 1234, true);
+      } else {
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0,1234, true);
+      }
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, true, 0.0, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0.0, 1234, true);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,true, 0.0, 1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, 1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       printOutColumnsMeta(trainEncoded);
@@ -168,80 +180,53 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
   }
 
   @Test
-  public void removingColumnsBreaksExportTest() {
-    Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-    Frame withRemovedTrain = trainFrame.remove(new String[]{"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
-    Frame.export(withRemovedTrain, "export_after_removing_columns_test.csv", withRemovedTrain._key.toString(), true, 1);
-    Scope.track();
-  }
-
-  @Test
   public void leaveOneOutHoldoutTypeTest() {
     GBMModel gbm = null;
     Scope.enter();
     try {
-      TargetEncoder tec = new TargetEncoder();
+      BlendingParams params = new BlendingParams(3, 1);
+//      BlendingParams params = new BlendingParams(20, 10);
+      TargetEncoder tec = new TargetEncoder(params);
 
-      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_space.csv");
-//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_space.csv");
-//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_space.csv");
+//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
+//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
+//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-      printOutColumnsMeta(trainFrame);
 
-      Frame cabinFrame = new Frame(trainFrame.vec("cabin"));
-      printOutFrameAsTable(cabinFrame ,true, false);
-      long naCount = cabinFrame.naCount();
-
-      System.out.println("NA count:" + naCount);
-
-//      cabinFrame.filterByValue();
-
-      String[] teColumns = {"cabin"/*, "embarked", "home.dest"*/};
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
 
       boolean withBlendedAvg = true;
-      boolean withNoise = false;
+      boolean withBlendedAvgOnlyForTraining = false;
+      boolean withNoiseOnlyForTraining = true;
 
       String targetColumnName = "survived";
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null);
 
       Frame trainEncoded;
-      if (withNoise) {
+      if (withNoiseOnlyForTraining) {
         trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg, 1234, true);
       } else {
         trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg,  0,1234, true);
       }
 
-      // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, 1234, true);
 
-      // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, 1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, 1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
 
-      /*trainEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
-      validEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
-      testEncoded.remove(new String[]{*//*"home.dest",*//*"embarked","cabin","pclass","survived","sex","age","sibsp","parch","fare"});
-      trainEncoded.moveFirst(new int[]{0, 2,1,3});
-      validEncoded.moveFirst(new int[]{0, 2,1,3});
-      testEncoded.moveFirst(new int[]{0, 2,1,3});
-      Frame sortedTestEncoded = testEncoded.sort(new int[]{0});
-      sortedTestEncoded._key = Key.make();
-      DKV.put(sortedTestEncoded);
-
-      Frame.export(trainEncoded, "titanic_train_loo_all_nonoise_blend.csv", trainEncoded._key.toString(), true, 1);
-      Frame.export(validEncoded, "titanic_valid_loo_all_nonoise_blend.csv", validEncoded._key.toString(), true, 1);
-      Frame.export(sortedTestEncoded, "titanic_test_loo_all_nonoise_blend.csv", sortedTestEncoded._key.toString(), true, 1);
-*/
+      // NOTE: when we impute NA with some value before calculation of encoding map... we will end up with good category that has this NA-ness in common.
+      // On the other hand for high cardinality domains we will get NAs after merging of original data with encoding map.
+      // And those NAs we could only impute with prior average. In this particular dataset it hurts maybe because encodings from NA-category are closer by meaning( if we have not seen some levels on training set then they could be considered rather as unknown/NA than average)
 
 
       // With target encoded Origin column
@@ -272,12 +257,12 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       double auc = mm._auc._auc;
 
       // Without target encoding
-//      double auc2 = trainDefaultGBM(targetColumnName);
+      double auc2 = trainDefaultGBM(targetColumnName);
 //
       System.out.println("AUC with encoding:" + auc);
-//      System.out.println("AUC without encoding:" + auc2);
+      System.out.println("AUC without encoding:" + auc2);
 
-//      Assert.assertTrue(auc2 < auc);
+      Assert.assertTrue(auc2 < auc);
 
       encodingMapCleanUp(encodingMap);
     } finally {
@@ -285,64 +270,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
         gbm.delete();
         gbm.deleteCrossValidationModels();
       }
-//      Scope.exit();
-    }
-  }
-
-  @Test
-  public void sklearnLOOTest() {
-    GBMModel gbm = null;
-    Scope.enter();
-    try {
-
-      Frame trainEncoded = parse_test_file(Key.make("titanic_train_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/trainingArrX_with_encodings.csv");
-      Frame validEncoded = parse_test_file(Key.make("titanic_valid_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/validationArrX_with_encodings.csv");
-      Frame testEncoded = parse_test_file(Key.make("titanic_test_parsed"), "/Users/deil/Development/h2o-3/h2o-py/demos/testArrX_with_encodings.csv");
-
-      printOutFrameAsTable(testEncoded, true, false);
-      Scope.track(trainEncoded, validEncoded, testEncoded);
-
-      // With target encoded Origin column
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = trainEncoded._key;
-      parms._response_column = "survived";
-      parms._score_tree_interval = 10;
-      parms._ntrees = 1000;
-      parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
-      parms._valid = validEncoded._key;
-      parms._stopping_tolerance = 0.001;
-      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
-      parms._stopping_rounds = 5;
-//      parms._ignored_columns = teColumns;
-      parms._seed = 1234L;
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-
-      Assert.assertTrue(job.isStopped());
-
-      System.out.println(gbm._output._variable_importances.toString(2, true));
-
-      Frame preds = gbm.score(testEncoded);
-      Scope.track(preds);
-
-      hex.ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), testEncoded.vec(parms._response_column));
-      double auc = mm._auc._auc;
-
-      // Without target encoding
-//      double auc2 = trainDefaultGBM("survived");
-
-      System.out.println("AUC with encoding:" + auc);
-//      System.out.println("AUC without encoding:" + auc2);
-
-//      Assert.assertTrue(auc2 < auc);
-
-    } finally {
-      if( gbm != null ) {
-        gbm.delete();
-        gbm.deleteCrossValidationModels();
-      }
-//      Scope.exit();
+      Scope.exit();
     }
   }
 

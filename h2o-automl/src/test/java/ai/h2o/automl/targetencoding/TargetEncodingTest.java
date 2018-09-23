@@ -252,7 +252,7 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(3, 4, 5))
                 .build();
         TargetEncoder tec = new TargetEncoder();
-        double result = tec.calculateGlobalMean(fr);
+        double result = tec.calculatePriorMean(fr);
 
         assertEquals(result, 0.5, 1e-5);
     }
@@ -493,6 +493,78 @@ public class TargetEncodingTest extends TestUtil {
 
       expecteds.remove();
       merged.delete();
+      holdoutEncodingMap.delete();
+    }
+
+    //TODO enable it after PUBDEV-5924 is fixed
+    @Ignore
+    @Test
+    public void mergingWithNaOnTheRightMapsToEverythingTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar( "a", "b", "c", "e"))
+              .withDataForCol(1, ar(1,2,3, 4))
+              .build();
+
+      Frame holdoutEncodingMap = new TestFrameBuilder()
+              .withName("holdoutEncodingMap")
+              .withColNames("ColA", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_STR)
+              // When we do not fill NAs for our categorical variable we get NA category in our encoding map`.
+              // The problem is that null/NA on the right maps to everything on the left.
+              .withDataForCol(0, ar(null, "a", "b"))
+              .withDataForCol(1, ar("NULL", "no", "yes")) // String `null` is printed as NA but it is different from null/NA
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+
+      // "(merge leftFrame holdoutEncodingMap TRUE FALSE [0.0] [0.0] 'auto' )"
+      Frame merged = tec.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0});
+
+      printOutFrameAsTable(merged);
+
+      assertEquals(2, merged.numRows());
+
+      merged.delete();
+      holdoutEncodingMap.delete();
+    }
+
+    //TODO enable it after PUBDEV-5924 is fixed
+    @Ignore
+    @Test // Even though we do left outer join order is determined by the right side. Is it ok?
+    public void orderAfterMergeDeterminedByTheRightSideTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar( "a", "b", "c"))
+              .withDataForCol(1, ar(1,2,3))
+              .build();
+
+      Frame holdoutEncodingMap = new TestFrameBuilder()
+              .withName("holdoutEncodingMap")
+              .withColNames("ColA", "ColC")
+              .withVecTypes(Vec.T_CAT, Vec.T_STR)
+              .withDataForCol(0, ar("c", "a", "b")) // When we do not fill NAs for our categorical variable we got `NA category in our encoding map`. The problem is that null on the right maps to everything on the left.
+              .withDataForCol(1, ar("yes", "no", "yes"))
+              .build();
+
+      TargetEncoder tec = new TargetEncoder();
+
+      Frame merged = tec.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0});
+      printOutFrameAsTable(merged);
+
+      Vec expectedChangedOrder = svec("c", "a", "b");
+      Vec teColumnAfterMerge = merged.vec("ColA").toStringVec();
+      assertStringVecEquals(expectedChangedOrder, teColumnAfterMerge);
+
+      merged.delete();
+      expectedChangedOrder.remove();
+      teColumnAfterMerge.remove();
       holdoutEncodingMap.delete();
     }
 

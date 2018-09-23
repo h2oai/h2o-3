@@ -1,6 +1,5 @@
 package ai.h2o.automl.targetencoding;
 
-import ai.h2o.automl.targetencoding.BlendingParams;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithValueTask;
@@ -274,7 +273,7 @@ public class TargetEncoder {
       return a;
     }
 
-    double calculateGlobalMean(Frame fr) {
+    double calculatePriorMean(Frame fr) {
         Vec numeratorVec = fr.vec("numerator");
         Vec denominatorVec = fr.vec("denominator");
         return numeratorVec.mean() / denominatorVec.mean();
@@ -284,7 +283,8 @@ public class TargetEncoder {
       int numeratorIndex = getColumnIndexByName(fr, "numerator");
       int denominatorIndex = getColumnIndexByName(fr, "denominator");
 
-      double globalMeanForTargetClass = calculateGlobalMean(encodingMap);
+      double globalMeanForTargetClass = calculatePriorMean(encodingMap); // TODO since target column is the same for all categorical columns we are trying to encode we can compute global mean only once.
+      System.out.print("Global mean for blending = " + globalMeanForTargetClass);
 
       Frame frameWithBlendedEncodings = new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
       fr.add(appendedColumnName, frameWithBlendedEncodings.anyVec());
@@ -292,15 +292,15 @@ public class TargetEncoder {
     }
 
     static class CalcEncodingsWithBlending extends MRTask<CalcEncodingsWithBlending> {
-      private double globalMean;
+      private double priorMean;
       private int numeratorIdx;
       private int denominatorIdx;
       private BlendingParams blendingParams;
 
-      CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double globalMean, BlendingParams blendingParams) {
+      CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double priorMean, BlendingParams blendingParams) {
         this.numeratorIdx = numeratorIdx;
         this.denominatorIdx = denominatorIdx;
-        this.globalMean = globalMean;
+        this.priorMean = priorMean;
         this.blendingParams = blendingParams;
       }
 
@@ -313,10 +313,13 @@ public class TargetEncoder {
           if (num.isNA(i) || den.isNA(i))
             nc.addNA();
           else if (den.at8(i) == 0) {
-            nc.addNum(globalMean);
+            System.out.println("Denominator is zero. Imputing with priorMean = " + priorMean);
+            nc.addNum(priorMean);
           } else {
-            double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - den.atd(i)) / blendingParams.getF()));
-            double blendedValue = lambda * (num.atd(i) / den.atd(i)) + (1 - lambda) * globalMean;
+            double numberOfRowsInCurrentCategory = den.atd(i);
+            double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - numberOfRowsInCurrentCategory) / blendingParams.getF()));
+            double posteriorMean = num.atd(i) / den.atd(i);
+            double blendedValue = lambda * posteriorMean + (1 - lambda) * priorMean;
             nc.addNum(blendedValue);
           }
         }
@@ -327,7 +330,7 @@ public class TargetEncoder {
       int numeratorIndex = getColumnIndexByName(fr, "numerator");
       int denominatorIndex = getColumnIndexByName(fr, "denominator");
 
-      double globalMeanForTargetClass = calculateGlobalMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
+      double globalMeanForTargetClass = calculatePriorMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
 
       //I can do a trick with appending a column of zeroes and then we can map encodings into it.
       Frame frameWithEncodings = new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass).doAll(Vec.T_NUM, fr).outputFrame();
@@ -358,7 +361,8 @@ public class TargetEncoder {
           else if (den.at8(i) == 0) {
             nc.addNum(globalMean);
           } else {
-            nc.addNum(num.atd(i) / den.atd(i));
+            double posteriorMean = num.atd(i) / den.atd(i);
+            nc.addNum(posteriorMean);
           }
         }
       }
