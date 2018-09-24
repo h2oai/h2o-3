@@ -75,8 +75,13 @@ shadowJar {
   }
 }
 
+configurations {
+    dummy
+}
+
 artifacts {
   archives shadowJar
+  dummy shadowJar
 }
 
 //

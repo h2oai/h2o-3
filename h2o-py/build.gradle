@@ -1,7 +1,7 @@
 description = "H2O Python Package"
 
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(":h2o-assemblies:main", configuration: 'dummy')
 }
 
 def buildVersion = new H2OBuildVersion(rootDir, version)
