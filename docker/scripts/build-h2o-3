@@ -1,7 +1,6 @@
 #! /bin/bash
 
-set -x
-set -e
+set -ex
 
 if [[ ! ${H2O_BRANCH} ]]; then
  echo "H2O_BRANCH must be set"
@@ -17,12 +16,6 @@ cd
 
 echo "###### Activate Python ${PYTHON_VERSION} ######"
 . /envs/h2o_env_python${PYTHON_VERSION}/bin/activate
-
-echo "###### Activate R 3.4.1 ######"
-activate_R_${R_VERSION}
-
-echo "###### Activate Java 8 ######"
-/usr/bin/activate_java_8
 
 echo '###### Clone H2O-3 ######'
 git clone https://github.com/h2oai/h2o-3

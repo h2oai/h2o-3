@@ -1,3 +1,5 @@
+@Library('test-shared-library') _
+
 def NODE_LABEL = 'master'
 
 def pipelineContext = null
@@ -15,7 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '2.7'
+                env.PYTHON_VERSION = '3.5'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv'
@@ -73,7 +75,7 @@ try {
                         pipelineContext.getBuildSummary().addStageSummary(this, BUILD_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, BUILD_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                         withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
-                            insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
                                 printReleaseConfiguration(pipelineContext)
                                 sh """
                                 # Log commands.
@@ -85,8 +87,6 @@ try {
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-                                echo "Activating R ${env.R_VERSION}"
-                                activate_R_${env.R_VERSION}
 
                                 mkdir -p ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
@@ -319,7 +319,7 @@ EOF
                                     pipelineContext.getBuildSummary().addStageSummary(this, uploadToCondaStageName, env.BUILD_NUMBER_DIR)
                                     pipelineContext.getBuildSummary().setStageDetails(this, uploadToCondaStageName, env.NODE_NAME, env.WORKSPACE)
                                     try {
-                                        insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                        insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             sh """
                                                 cd ${env.BUILD_NUMBER_DIR}/h2o-py/conda
                                                 # Create conda package for current platform
@@ -369,7 +369,7 @@ EOF
                                 pipelineContext.getBuildSummary().addStageSummary(this, checkCondaOfflineStageName, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, checkCondaOfflineStageName, env.NODE_NAME, env.WORKSPACE)
                                 try {
-                                    insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         echo "Check Conda package for Python ${pyVersion}"
                                         sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests colorama"
                                         sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
@@ -399,7 +399,7 @@ EOF
                                     pipelineContext.getBuildSummary().addStageSummary(this, checkCondaStageName, env.BUILD_NUMBER_DIR)
                                     pipelineContext.getBuildSummary().setStageDetails(this, checkCondaStageName, env.NODE_NAME, env.WORKSPACE)
                                     try {
-                                        insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                        insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             echo "Check Conda package for Python ${pyVersion}"
                                             sh "conda create -y -n py${pyVersion} python=${pyVersion}"
                                             sh """
@@ -433,7 +433,7 @@ EOF
                                 pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
                                 pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                                 withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
-                                    insideDocker([], pipelineContext.getBuildConfig().DEFAULT_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                    insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
                                             echo "Activating Python ${env.PYTHON_VERSION}"
                                             . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -544,7 +544,7 @@ Configuration:
 ---------------------------------------
     SHA:                | ${env.GIT_SHA}
     Branch:             | ${env.BRANCH_NAME}
-    Docker Image:       | ${pipelineContext.getBuildConfig().DEFAULT_IMAGE}
+    Docker Image:       | ${pipelineContext.getBuildConfig().getReleaseImage()}
     Test Release:       | ${params.TEST_RELEASE}
     S3 Bucket:          | ${env.S3_ROOT}
     Publish to Nexus:   | ${params.UPLOAD_NEXUS}

@@ -36,14 +36,15 @@ RUN apt-get update && \
 ENV H2O_BRANCH='master'
 
 # Set required env vars and install Java 8 and Pythons
-COPY ${PATH_PREFIX}/../common/sbin/ scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
+COPY ${PATH_PREFIX}/../common/sbin/ scripts/install_java_version scripts/java-*-vars.sh scripts/install_java_versions scripts/install_python_version /usr/sbin/
 RUN \
   chmod 700 /usr/sbin/install_java_version && \
   chmod 700 /usr/sbin/install_java_versions && \
-  chmod 700 /usr/sbin/install_python_versions && \
+  chmod 700 /usr/sbin/java-*-vars.sh && \
+  chmod 700 /usr/sbin/install_python_version && \
   sync && \
   /usr/sbin/install_java_versions && \
-  /usr/sbin/install_python_versions && \
+  /usr/sbin/install_python_version && \
   /usr/bin/activate_java_8
 ENV \
   JAVA_HOME=/usr/lib/jvm/java-current-oracle \

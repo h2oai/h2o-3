@@ -18,13 +18,6 @@ def call(final pipelineContext, final Closure body) {
     config.hasJUnit = true
   }
 
-  if (config.activatePythonEnv == null) {
-    config.activatePythonEnv = true
-  }
-  if (config.activateR == null) {
-    config.activateR = true
-  }
-
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
   if (config.customBuildAction == null) {
@@ -35,19 +28,23 @@ def call(final pipelineContext, final Closure body) {
     }
 
     config.customBuildAction = """
-      echo "Activating Java ${env.JAVA_VERSION}"
-      . /usr/bin/activate_java_${env.JAVA_VERSION}
-      java -version 
-      javac -version
-
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
       fi
-
-      if [ "${config.activateR}" = 'true' ]; then
-        echo "Activating R ${env.R_VERSION}"
-        activate_R_${env.R_VERSION}
+      
+      echo '########################'
+      echo '# USING THESE VERSIONS #'
+      echo '########################'
+      if [ \$(command -v java) ]; then
+        java -version
+        javac -version
+      fi
+      if [ \$(command -v python) ]; then
+        python --version
+      fi
+      if [ \$(command -v R) ]; then
+        R --version
       fi
 
       echo "Running Make"
@@ -92,7 +89,7 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=/usr/lib/jvm/java-current-oracle
+    export JAVA_HOME=/usr/lib/jvm/java-${env.JAVA_VERSION}-oracle
     export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}

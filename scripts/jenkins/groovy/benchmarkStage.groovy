@@ -40,7 +40,7 @@ def call(final pipelineContext, final stageConfig) {
       defaultStage(pipelineContext, stageConfig)
     }
   } finally {
-    insideDocker(benchmarkEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 5, 'MINUTES') {
+    insideDocker(benchmarkEnv, pipelineContext.getBuildConfig().S3CMD_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 5, 'MINUTES') {
       def persistBenchmarkResults = load("${ML_BENCHMARK_ROOT}/jenkins/groovy/persistBenchmarkResults.groovy")
       persistBenchmarkResults(benchmarkFolderConfig, pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName))
     }

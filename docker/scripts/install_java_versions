@@ -20,5 +20,5 @@ chmod a+w /usr/lib/jvm/
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for java_version in "${array[@]}"; do
-  install_java_version ${java_version}
+  install_java_version ${java_version} `dirname $(which install_java_version)`/java-${java_version}-vars.sh
 done
