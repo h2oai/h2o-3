@@ -1,12 +1,6 @@
 description = "H2O Documentation"
 
-apply plugin: 'java'
-
-dependencies {
-    compile project(":h2o-assemblies:main")
-}
-
-
+apply plugin: 'base'
 
 // Latex Booklets
 // --------------
@@ -46,7 +40,7 @@ bookletList.eachWithIndex {
         // Define 0. stage - compilation
         task "compile_${counter}_0"(type: Exec, dependsOn: createBuildInfoTex) {
             workingDir bookletPath
-            commandLine 'pdflatex', '-halt-on-error', name 
+            commandLine 'pdflatex', '-halt-on-error', name
             doFirst {
               standardOutput = new FileOutputStream("$bookletOutputPath/gradle_" + name + "_" + counter + "_0.out")
             }
