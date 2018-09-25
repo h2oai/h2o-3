@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import water.Key;
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.fvec.ByteVec;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -51,6 +52,10 @@ class ARFFParser extends CsvParser {
           bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
           continue;
         }
+      } else if (chunk_idx > 0) { //first chunk parsed correctly, but not the next => formatting issue
+        throw new H2OUnsupportedDataFileException(
+            "Arff parsing: Invalid header. If compressed file, please try without compression",
+            "First chunk was parsed correctly, but a following one failed, common with archives as only first chunk in decompressed");
       }
       readHeader = false;
     }
