@@ -100,10 +100,6 @@ task cleanBuild(type: Delete) {
     doFirst {
         println "Cleaning..."
     }
-    delete file("h2o/version.txt")
-    delete file("h2o/buildinfo.txt")
-    delete file("dist/")
-    delete file("h2o.egg-info/")
     delete file("build/")
     delete fileTree(dir: "$projectDir/h2o" , include: '**/*.pyc')
 }
