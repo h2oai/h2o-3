@@ -27,7 +27,7 @@ warmup-caches:
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -q -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
-	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
+	h2o-docs/src/booklets/v2_2015/source h2o-py/build/dist/*.whl \
 	h2o-genmodel/build/libs/h2o-genmodel.jar h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 	$(JENKINS_MAKEFILE_PATH) tests/pyunitSmokeTestList tests/pyunitAutoMLList tests/pyunitSingleNodeList h2o-py/scripts/h2o-py-test-setup.py
 
@@ -183,7 +183,7 @@ test-info:
 	fi
 
 test-demos:
-	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
+	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-package-java:
 	zip -q -r test-package-java \

@@ -22,10 +22,10 @@ ext {
 //
 task createVersionFiles() {
     doLast {
-        File version_file = new File("${projectDir.toString()}/h2o", "version.txt")
+        File version_file = new File("${buildDir}/h2o", "version.txt")
         version_file.write(PROJECT_VERSION)
 
-        File build_file = new File("${projectDir.toString()}/h2o", "buildinfo.txt")
+        File build_file = new File("${buildDir}/h2o", "buildinfo.txt")
         build_file.write(buildVersion.toString())
     }
 }
@@ -37,13 +37,37 @@ task verifyDependencies(type: Exec) {
                                           "--metayaml", "conda/h2o/meta.yaml"])
 }
 
+task copyH2OJar(type: Copy) {
+    from "${rootDir}/build/h2o.jar"
+    into "${buildDir}/h2o/backend/bin/"
+}
 
-task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles]) {
+task copySrcFiles(type: Copy, dependsOn: [copyH2OJar]) {
+    from ("${projectDir}") {
+        include "setup.py"
+        include "setup.cfg"
+        include "h2o/**"
+        include "DESCRIPTION.rst"
+        include "MANIFEST.in"
+        include "README.md"
+        include "requirements.txt"
+    }
+    into "${buildDir}"
+}
+
+task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copySrcFiles]) {
+    workingDir buildDir
     doFirst {
         file("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
     }
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+
+    file("${projectDir}/dist/").mkdirs()
+    copy {
+        from "${buildDir}/dist/*.whl"
+        into "${projectDir}/dist/"
+    }
 }
 
 task smokeTest(type: Exec, dependsOn: build) {

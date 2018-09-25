@@ -131,7 +131,7 @@ echo "*********************************************"
 echo ""
 cd ${WORKSPACE}
 /usr/bin/yes | pip uninstall h2o || true
-pip install --force h2o-py/dist/*.whl
+pip install --force h2o-py/build/dist/*.whl
 
 cd h2o-py/tests/testdir_jira
 python h2o.init_test_HOQE-16.py
