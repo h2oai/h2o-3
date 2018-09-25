@@ -3462,6 +3462,22 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6):
                     assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
 
+# frame compare with NAs in column
+def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5):
+    temp1 = f1.as_data_frame(use_pandas=False)
+    temp2 = f2.as_data_frame(use_pandas=False)
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    for colInd in range(f1.ncol):
+        for rowInd in range(1,f2.nrow):
+            if (random.uniform(0,1) < prob):
+                if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
+                    assert len(temp1[rowInd]) == len(temp2[rowInd]), "Failed frame values check at row {2} ! " \
+                                                                     "frame1 value: {0}, frame2 value: " \
+                                                                     "{1}".format(temp1[rowInd], temp2[rowInd], rowInd)
+                else:
+                    assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                                                         "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+
 
 def build_save_model_GLM(params, x, train, respName):
     # build a model
@@ -3532,7 +3548,7 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200):
     return df
 
 # generate random dataset of ncolumns of Strings, copied from Pasha
-def random_dataset_strings_only(nrow, ncol):
+def random_dataset_strings_only(nrow, ncol, seed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
@@ -3541,10 +3557,7 @@ def random_dataset_strings_only(nrow, ncol):
     fractions["time_fraction"] = 0
     fractions["string_fraction"] = 1  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
-
-
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0, has_response=False, **fractions)
-    return df
+    return h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=0, has_response=False, seed=seed, **fractions)
 
 # generate random dataset of ncolumns of enums only, copied from Pasha
 def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01, randSeed=None):
@@ -3873,3 +3886,25 @@ def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
         stderrV.append(wSTD*m)
 
     return meanV, stdV, stderrV
+
+def compare_frames_equal_names(frame1, frame2):
+    '''
+    This method will compare two frames with same column names and column types.  The current accepted column
+    types are enum, int and string.
+
+    :param frame1:
+    :param frame2:
+    :return:
+    '''
+    cnames = frame1.names
+    ctypes = frame1.types
+    for cind in range(0, frame1.ncol):
+        name1 = cnames[cind]
+        type = str(ctypes[name1])
+
+        if (type=="enum"):
+            compare_frames_local_onecolumn_NA_enum(frame1[name1], frame2[name1], prob=1, tol=0)
+        elif (type=='string'):
+            compare_frames_local_onecolumn_NA_string(frame1[name1], frame2[name1], prob=1)
+        else:
+            compare_frames_local_onecolumn_NA(frame1[name1], frame2[name1], prob=1, tol=1e-10)

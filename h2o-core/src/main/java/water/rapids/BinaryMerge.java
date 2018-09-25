@@ -83,7 +83,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   // In X[Y], 'left'=i and 'right'=x
-  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft) {   
+  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft) {
     assert riteSB._msb!=-1 || allLeft;
     _leftSB = leftSB;
     _riteSB = riteSB;
@@ -197,7 +197,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // occur, they only happen for leftMSB 0 and 255, and will quickly resolve
     // to no match in the right bucket via bmerge
     t0 = System.nanoTime();
-    bmerge_r(_leftFrom, leftTo, -1, rightN);   
+    bmerge_r(_leftFrom, leftTo, -1, rightN);
     _timings[1] += (System.nanoTime() - t0) / 1e9;
 
     if (_allLeft) {
@@ -412,7 +412,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     assert lUpp - lLow >= 2;
 
     // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
-    long len = rUpp - rLow - 1;  
+    long len = rUpp-rLow-1;
     // TODO - we don't need loop here :)  Why does perNodeNumRightRowsToFetch increase so much?
     if (len > 0 || _allLeft) {
       long t0 = System.nanoTime();
@@ -730,21 +730,43 @@ class BinaryMerge extends DTask<BinaryMerge> {
           ni = _riteSB._chunkNode[chkIdx];
           pnl = perNodeRightLoc[ni]++;   // pnl = per node location.   // TODO Split to an if() and batch and offset separately
           chks = grrrsRite[ni][(int)(pnl / batchSizeUUID)]._chk;
+          boolean leftChkExist = (grrrsLeft!=null) && (grrrsLeft.length > ni) && (grrrsLeft[ni]!=null) &&
+                  (grrrsLeft[ni].length > (int)(pnl / batchSizeUUID)) &&
+                  (grrrsLeft[ni][(int)(pnl / batchSizeUUID)]!=null);
+          double[][] leftchks = leftChkExist?grrrsLeft[ni][(int)(pnl / batchSizeUUID)]._chk:null;
           chksString = grrrsRite[ni][(int)(pnl / batchSizeUUID)]._chkString;
           o = (int)(pnl % batchSizeUUID);
           for (int col=0; col<numColsInResult-numLeftCols; col++) {
             // TODO: this only works for numeric columns (not for UUID, strings, etc.)
             int colIndex = numLeftCols + col;
             if (this._stringCols[colIndex]) {
-              if (chksString[_numJoinCols + col][o]!=null)
-                frameLikeChunks4String[colIndex][whichChunk][offset] = chksString[_numJoinCols + col][o];  // colForBatch.atd(row);
-            } else
-              frameLikeChunks[colIndex][whichChunk][offset] = chks[_numJoinCols + col][o];  // colForBatch.atd(row);
+              if (chksString[_numJoinCols + col][o]!=null) {
+                frameLikeChunks4String[colIndex][whichChunk][offset] = validateKeys(chks, leftchks, _numJoinCols, o) ?
+                        chksString[_numJoinCols + col][o] : null;  // colForBatch.atd(row);
+              }
+            } else {
+              frameLikeChunks[colIndex][whichChunk][offset] = validateKeys(chks, leftchks, _numJoinCols, o) ?
+                      chks[_numJoinCols + col][o] : Double.NaN;  // colForBatch.atd(row);
+            }
           }
           resultLoc++;
         }
       }
     }
+  }
+
+  private boolean validateKeys(double[][] chks, double[][] leftChks, int numJointCols, int row) {
+    if ((leftChks == null))
+      return true;
+    for (int cindex=0; cindex < numJointCols; cindex++) {
+      if (row >= leftChks[cindex].length) // dealing with duplicates on the right
+        return true;
+      if (Double.isNaN(chks[cindex][row]) && !(Double.isNaN(leftChks[cindex][row])))
+        return false;
+      if (Double.isNaN(leftChks[cindex][row]))
+        return false; // will not attempt to merge left nan keys to anything on the right
+    }
+    return true;
   }
 
   // compress all chunks and store them
