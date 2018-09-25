@@ -6,6 +6,7 @@ import java.util.List;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
@@ -13,9 +14,16 @@ class ARFFParser extends CsvParser {
   private static final String INCOMPLETE_HEADER = "@H20_INCOMPLETE_HEADER@";
   private static final String SKIP_NEXT_HEADER = "@H20_SKIP_NEXT_HEADER@";
   private static final String TAG_ATTRIBUTE = "@ATTRIBUTE";
+  private static final String NA = "?"; //standard NA in Arff format
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
+  private static final byte[] NON_DATA_LINE_MARKERS = {'%', '@'};
 
   ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
+
+  @Override
+  protected byte[] nonDataLineMarkers() {
+    return NON_DATA_LINE_MARKERS;
+  }
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
@@ -56,8 +64,7 @@ class ARFFParser extends CsvParser {
     headerlines = header.toArray(headerlines);
 
     // process header
-    final int nlines = headerlines.length;
-    int ncols = nlines;
+    int ncols = headerlines.length;
     labels = new String[ncols];
     domains = new String[ncols][];
     ctypes = new byte[ncols];
@@ -65,17 +72,17 @@ class ARFFParser extends CsvParser {
 
     // data section (for preview)
     if (haveData) {
-      String[] datalines = new String[0];
+      final int preview_max_length = 10;
       ArrayList<String> datablock = new ArrayList<>();
-      while (offset < bits.length) {
+      //Careful! the last data line could be incomplete too (cf. readArffHeader)
+      while (offset < bits.length && datablock.size() < preview_max_length) {
         int lineStart = offset;
         while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
         int lineEnd = offset;
         ++offset;
         // For Windoze, skip a trailing LF after CR
         if ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-        if (bits[lineStart] == '#') continue; // Ignore      comment lines
-        if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
+        if (ArrayUtils.contains(NON_DATA_LINE_MARKERS, bits[lineStart])) continue;
         if (lineEnd > lineStart) {
           String str = new String(bits, lineStart, lineEnd - lineStart).trim();
           if (!str.isEmpty()) datablock.add(str);
@@ -83,41 +90,54 @@ class ARFFParser extends CsvParser {
       }
       if (datablock.size() == 0)
         throw new ParseDataset.H2OParseException("Unexpected line.");
-      datalines = datablock.toArray(datalines);
 
       // process data section
-      int nlines2 = Math.min(10, datalines.length);
-      data = new String[nlines2][];
+      String[] datalines = datablock.toArray(new String[datablock.size()]);
+      data = new String[datalines.length][];
 
       // First guess the field separator by counting occurrences in first few lines
-      if (nlines2 == 1) {
+      if (datalines.length == 1) {
         if (sep == GUESS_SEP) {
-          if (datalines[0].split(",").length > 2) sep = (byte) ',';
+          //could be a bit more robust than just counting commas?
+          if (datalines[0].split(",").length > 2) sep = ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
-          else
-            throw new ParseDataset.H2OParseException("Failed to detect separator.");
+          else throw new ParseDataset.H2OParseException("Failed to detect separator.");
         }
         data[0] = determineTokens(datalines[0], sep, singleQuotes);
         ncols = (ncols > 0) ? ncols : data[0].length;
         labels = null;
       } else {                    // 2 or more lines
         if (sep == GUESS_SEP) {   // first guess the separator
+          //FIXME if last line is incomplete, this logic fails
           sep = guessSeparator(datalines[0], datalines[1], singleQuotes);
-          if (sep == GUESS_SEP && nlines2 > 2) {
+          if (sep == GUESS_SEP && datalines.length > 2) {
             sep = guessSeparator(datalines[1], datalines[2], singleQuotes);
             if (sep == GUESS_SEP) sep = guessSeparator(datalines[0], datalines[2], singleQuotes);
           }
           if (sep == GUESS_SEP) sep = (byte) ' '; // Bail out, go for space
         }
 
-        for (int i = 0; i < nlines2; ++i) {
+        for (int i = 0; i < datalines.length; ++i) {
           data[i] = determineTokens(datalines[i], sep, singleQuotes);
         }
       }
     }
 
+    naStrings = addDefaultNAs(naStrings, ncols);
+
     // Return the final setup
     return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+  }
+
+  private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {
+    final String[][] nas = naStrings == null ? new String[nCols][] : naStrings;
+    for (int i = 0; i < nas.length; i++) {
+      String [] colNas = nas[i];
+      if (!ArrayUtils.contains(colNas, NA)) {
+        nas[i] = colNas = ArrayUtils.append(colNas, NA);
+      }
+    }
+    return nas;
   }
 
   private static boolean isValidHeader(List<String> header) {
@@ -128,7 +148,7 @@ class ARFFParser extends CsvParser {
   }
 
   private static boolean isValidHeaderLine(String str) {
-    return str.startsWith("@");
+    return str != null && str.startsWith("@");
   }
 
   private static int readArffHeader(int offset, List<String> header, byte[] bits, boolean singleQuotes) {
@@ -155,7 +175,7 @@ class ARFFParser extends CsvParser {
         continue;
       }
 
-      if (bits[lineStart] == '#' || bits[lineStart] == '%') { //skip comment lines
+      if (bits[lineStart] == '%') { //skip comment lines
         if (!lastHeaderIncomplete) {
           if (lastLineIncomplete) header.add(SKIP_NEXT_HEADER);
           continue;
