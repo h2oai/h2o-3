@@ -54,19 +54,26 @@ public class AstFillNA extends AstPrimitive {
     final String method = asts[2].exec(env).getStr();
     if (!(Arrays.asList("forward","backward")).contains(method.toLowerCase()))
       throw new IllegalArgumentException("Method must be forward or backward");
-    // Not impl yet
-    if (METHOD_BACKWARD.equalsIgnoreCase(method.trim()))
-      throw H2O.unimpl("Backward fillNA method is not yet implemented.");
 
     final int axis = (int) asts[3].exec(env).getNum();
     if (!(Arrays.asList(0,1)).contains(axis))
       throw new IllegalArgumentException("Axis must be 0 for columnar 1 for row");
     final int limit = (int) asts[4].exec(env).getNum();
+
+    assert limit >= 0:"The maxlen/limit parameter should be >= 0.";
+    if (limit == 0) // fast short cut to do nothing if user set zero limit
+      return new ValFrame(fr.deepCopy(Key.make().toString()));
+
     Frame res;
+
     if (axis == 0) {
-      res = new FillForwardTaskCol(limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
+      res = (METHOD_BACKWARD.equalsIgnoreCase(method.trim()))?
+              new FillBackwardTaskCol(limit, fr.anyVec().nChunks()).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame():
+              new FillForwardTaskCol(limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
     } else {
-      res = new FillForwardTaskRow(limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
+      res = (METHOD_BACKWARD.equalsIgnoreCase(method.trim()))?
+              new FillBackwardTaskRow(limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame():
+              new FillForwardTaskRow(limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
     }
     res._key = Key.<Frame>make();
     return new ValFrame(res);
@@ -81,6 +88,7 @@ public class AstFillNA extends AstPrimitive {
     public void map(Chunk cs[], NewChunk nc[]) {
       for (int i = 0; i < cs[0]._len; i++) {
         int fillCount = 0;
+
         nc[0].addNum(cs[0].atd(i));
         for (int j = 1; j < cs.length; j++) {
           if (cs[j].isNA(i)) {
@@ -98,6 +106,37 @@ public class AstFillNA extends AstPrimitive {
       }
     }
   }
+  
+  private static class FillBackwardTaskRow extends MRTask<FillBackwardTaskRow> {
+    private final int _maxLen;
+
+    FillBackwardTaskRow(int maxLen) { _maxLen = maxLen;}
+
+    @Override
+    public void map(Chunk cs[], NewChunk nc[]) {
+      int lastCol = cs.length-1;  // index of last column in the chunk
+      for (int i = 0; i < cs[0]._len; i++) {  // go through each row
+        int fillCount = 0;
+        nc[lastCol].addNum(cs[lastCol].atd(i)); // copy over last row element regardless
+        for (int j = lastCol-1; j >= 0; j--) {  // going backwards
+          if (cs[j].isNA(i)) {
+            int lastNonNACol = j+1;
+            if (!nc[lastNonNACol].isNA(i) && fillCount < _maxLen) {
+              nc[j].addNum(nc[lastNonNACol].atd(i));
+              fillCount++;
+            } else {
+              nc[j].addNA(); // keep the NaNs, run out ot maxLen
+            }
+          } else {
+            if (fillCount > 0) fillCount = 0; // reset fillCount after encountering a non NaN.
+            nc[j].addNum(cs[j].atd(i)); // no NA filling needed, element is not NaN
+          }
+        }
+      }
+    }
+  }
+
+
   private static class FillForwardTaskCol extends MRTask<FillForwardTaskCol> {
     private final int _maxLen;
 
@@ -185,6 +224,99 @@ public class AstFillNA extends AstPrimitive {
         }
       }
     }
+  }
 
+  private static class FillBackwardTaskCol extends MRTask<FillBackwardTaskCol> {
+    private final int _maxLen;
+    private final int _lastChunkIndex;
+
+    FillBackwardTaskCol(int maxLen, int chunksNum) {
+      _maxLen = maxLen;
+      _lastChunkIndex= chunksNum-1;
+    }
+
+    @Override
+    public void map(Chunk cs[], NewChunk nc[]) {
+      int lastRowIndex = cs[0]._len-1;
+      int currentCidx = cs[0].cidx();
+      double[] newChunkInfo = new double[cs[0].len()];  // allocate once per column chunk
+      int chkLen = cs[0].len();
+
+      for (int i = 0; i < cs.length; i++) {
+        int naBlockRowStart = -1; // row where we see our first NA
+        int lastNonNaNRow = -1; // indicate row where the element is not NaN
+        int rowIndex = lastRowIndex;
+        int naBlockLength = 0;
+        double fillVal=Double.NaN;
+        int fillLen = 0;  // number of values to be filled for NAs
+
+        while (rowIndex > -1) { // search backwards from end of chunk
+          if (cs[i].isNA(rowIndex)) { // found an NA in a row
+            naBlockRowStart= rowIndex;
+            rowIndex--; // drop the row index
+            naBlockLength++;
+            while ((rowIndex > -1) && cs[i].isNA(rowIndex)) {  // want to find all NA blocks in this chunk
+              naBlockLength++;
+              rowIndex--;
+            }
+
+            // done finding a NA block in the chunk column
+            if (lastNonNaNRow < 0) {  // has not found an non NaN element in this chunk, from next chunk then
+              if (currentCidx == _lastChunkIndex) { // this is the last chunk, nothing to look back to
+                fillLen = 0;
+              } else {
+                fillLen = _maxLen;
+                boolean foundFillVal = false;
+                for (int cIndex = currentCidx+1; cIndex <= _lastChunkIndex; cIndex++) {
+                  if (foundFillVal) // found fill value in next chunk
+                    break;
+                  // search the next chunk for nonNAs
+                  Chunk nextChunk = cs[i].vec().chunkForChunkIdx(cIndex); // grab the next chunk
+                  int nChunkLen = nextChunk.len();
+                  for (int rIndex=0; rIndex < nChunkLen; rIndex++) {
+                    if (nextChunk.isNA(rIndex)) {
+                      fillLen--;  // reduce fillLen here
+                    } else {  // found a No NA row
+                      fillVal = nextChunk.atd(rIndex);
+                      foundFillVal = true;
+                      break;
+                    }
+                    if (fillLen < 1) {  // no fill values is found in this chunk
+                      break;
+                    }
+                  }
+                }
+              }
+            } else {  // found non NaN element in this chunk, can copy over values if valid
+              fillVal = cs[i].atd(lastNonNaNRow);
+              fillLen = _maxLen;  // can fill as many as the maxLen here
+            }
+
+            // fill the chunk then with fillVal is fillLen > 0, otherwise, fill it with NaNs
+            int naRowEnd = naBlockRowStart-naBlockLength;
+            for (int naRow = naBlockRowStart; naRow > naRowEnd; naRow--) {
+              if (fillLen > 0) {
+                newChunkInfo[naRow] = fillVal; // nc[i].addNum(fillVal);
+                fillLen--;
+              } else {
+                newChunkInfo[naRow] = Double.NaN; // nc[i].addNA();
+              }
+            }
+            // finished filling in the NAs, need to reset counts
+            naBlockLength=0;
+            lastNonNaNRow = -1;
+          } else {
+            newChunkInfo[rowIndex] =  cs[i].atd(rowIndex); // nc[i].addNum(cs[i].atd(rowIndex));
+            lastNonNaNRow = rowIndex;
+            rowIndex--;
+            naBlockLength=0;
+          }
+        }
+        // copy info from newChunkInfo to NewChunk
+        for (int rindex=0; rindex < chkLen; rindex++) {
+          nc[i].addNum(newChunkInfo[rindex]);
+        }
+      }
+    }
   }
 }
