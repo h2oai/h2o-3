@@ -4,6 +4,8 @@ import ai.h2o.automl.UserFeedbackEvent.Stage;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsemble;
@@ -25,6 +27,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -118,8 +121,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private Algo[] skipAlgosList = new Algo[]{};
 
-  private String sort_metric;
-
   public AutoML() {
     super(null);
   }
@@ -160,8 +161,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     userFeedback.info(Stage.Workflow, "Project: " + projectName());
+
+    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
     // TODO: does this need to be updated?  I think its okay to pass a null leaderboardFrame
-    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, this.sort_metric);
+    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
 
     this.jobs = new ArrayList<>();
     this.tempFrames = new ArrayList<>();
@@ -268,7 +271,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
     this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
-    this.sort_metric = buildSpec.input_spec.sort_metric;
 
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column '" + buildSpec.input_spec.response_column + "' is not in " +
@@ -532,8 +534,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else if (builder._parms._max_runtime_secs == 0)
       builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
     else
-      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs,
-                                         Math.round(timeRemainingMs() / 1000.0));
+      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, Math.round(timeRemainingMs() / 1000.0));
+
+    setStoppingCriteria(parms, defaults);
 
     // If we have set a seed for the search and not for the individual model params
     // then use a sequence starting with the same seed given for the model build.
@@ -541,17 +544,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // do the same row and column sampling.
     if (builder._parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
       builder._parms._seed = buildSpec.build_control.stopping_criteria.seed() + individualModelsTrained++;
-
-    // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
-    //FIXME: code below looks like a conceptual bug:
-    //  if caller wants to override globals with a value that appears to be the default, then it is ignored
-    //  same concern with hyperparameterSearch(...) below
-    if (builder._parms._stopping_metric == defaults._stopping_metric)
-      builder._parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
-    if (builder._parms._stopping_rounds == defaults._stopping_rounds)
-      builder._parms._stopping_rounds = buildSpec.build_control.stopping_criteria.stopping_rounds();
-    if (builder._parms._stopping_tolerance == defaults._stopping_tolerance)
-      builder._parms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     builder.init(false);          // validate parameters
 
@@ -613,19 +605,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model.Parameters defaults;
     try {
       defaults = baseParms.getClass().newInstance();
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       userFeedback.warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
       throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
     }
 
-    if (baseParms._stopping_metric == defaults._stopping_metric)
-      baseParms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
-    if (baseParms._stopping_rounds == defaults._stopping_rounds)
-      baseParms._stopping_rounds = buildSpec.build_control.stopping_criteria.stopping_rounds();
-    if (baseParms._stopping_tolerance == defaults._stopping_tolerance)
-      baseParms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
-
+    setStoppingCriteria(baseParms, defaults);
 
     // NOTE:
     // RandomDiscrete Hyperparameter Search matches the logic used in #trainModel():
@@ -680,6 +665,31 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
     params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
+  }
+
+  private void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults) {
+    // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
+
+    //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
+    // This can create subtle bugs: e.g. if dev wanted to enforce a stopping criteria for a specific algo/model,
+    // he wouldn't be able to enforce the default value, that would always be overridden by buildSpec.
+    // We should instead provide hooks and ensure that properties are always set in the following order:
+    //  1. defaults, 2. user defined, 3. internal logic/algo specific based on the previous state (esp. handling of AUTO properties).
+    if (parms._stopping_metric == defaults._stopping_metric)
+      parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
+
+    if (parms._stopping_metric == StoppingMetric.AUTO) {
+      String sort_metric = getSortMetric();
+      parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
+                              : sort_metric.equals("auc") ? StoppingMetric.logloss
+                              : metricValueOf(sort_metric);
+    }
+
+    if (parms._stopping_rounds == defaults._stopping_rounds)
+      parms._stopping_rounds = buildSpec.build_control.stopping_criteria.stopping_rounds();
+
+    if (parms._stopping_tolerance == defaults._stopping_tolerance)
+      parms._stopping_tolerance = buildSpec.build_control.stopping_criteria.stopping_tolerance();
   }
 
   private boolean exceededSearchLimits(Algo algo, JobType job_type) {
@@ -1273,6 +1283,27 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     leaderboard().addModel(newModel);
     int after = leaderboard().getModelCount();
     modelCount.addAndGet(after - before);
+  }
+
+  private String getSortMetric() {
+    //ensures that the sort metric is always updated according to the defaults set by leaderboard
+    Leaderboard leaderboard = leaderboard();
+    return leaderboard == null ? null : leaderboard.sort_metric;
+  }
+
+  private static StoppingMetric metricValueOf(String name) {
+    if (name == null) return StoppingMetric.AUTO;
+    switch (name) {
+      case "mean_residual_deviance": return StoppingMetric.deviance;
+      default:
+        String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
+        for (String attempt : attempts) {
+          try {
+            return StoppingMetric.valueOf(attempt);
+          } catch (IllegalArgumentException ignored) { }
+        }
+        return StoppingMetric.AUTO;
+    }
   }
 
   // satisfy typing for job return type...
