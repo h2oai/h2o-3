@@ -28,6 +28,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -76,6 +80,14 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
       timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -120,6 +132,10 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
       timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -133,6 +149,10 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Test Demos', target: 'test-demos', pythonVersion: '3.7',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [

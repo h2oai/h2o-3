@@ -23,7 +23,7 @@ UBUNTU_BASE_IMAGE = 'ubuntu:16.04'
 GPU_BASE_IMAGE = 'nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04'
 
 JDK_VERSIONS = ['8', '10', '11']
-PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
+PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7']
 R_VERSION = ['3.4.1', '3.3.3']
 
 def pipelineContext
