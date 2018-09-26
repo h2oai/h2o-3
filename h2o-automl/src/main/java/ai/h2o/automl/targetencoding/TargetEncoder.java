@@ -2,6 +2,7 @@ package ai.h2o.automl.targetencoding;
 
 import water.*;
 import water.fvec.*;
+import water.fvec.task.FillNAWithStringValueTask;
 import water.fvec.task.FillNAWithValueTask;
 import water.rapids.Merge;
 import water.rapids.Rapids;
@@ -40,7 +41,7 @@ public class TargetEncoder {
      */
     //TODO do we need to do this preparation before as a separate phase? because we are grouping twice.
     //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
-    public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName) {
+    public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName, boolean inputeNAs) {
 
         // Validate input data. Not sure whether we should check some of these.
         // It will become clear when we decide if TE is going to be exposed to user or only integrated into AutoML's pipeline
@@ -62,6 +63,7 @@ public class TargetEncoder {
 
         int targetIndex = getColumnIndexByName(data, targetColumnName);
 
+        //TODO Losing data here, we should use clustering to assign instances with some reasonable target values.
         Frame  dataWithoutNAsForTarget = filterOutNAsFromTargetColumn(data, targetIndex);
 
         Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataWithoutNAsForTarget, targetIndex);
@@ -71,13 +73,18 @@ public class TargetEncoder {
         for ( String teColumnName: columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
             int colIndex = getColumnIndexByName(dataWithEncodedTarget, teColumnName);
+
+            if(inputeNAs) {
+              imputeNAsForColumn(dataWithEncodedTarget, colIndex, teColumnName + "_NA");
+            }
+
             if (foldColumnName == null) {
               teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, new int[]{colIndex}, targetIndex);
             } else {
               int foldColumnIndex = getColumnIndexByName(dataWithEncodedTarget, foldColumnName);
               teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, new int[]{colIndex, foldColumnIndex}, targetIndex);
             }
-            teColumnFrame.renameColumn( "sum_"+ targetColumnName, "numerator");
+            teColumnFrame.renameColumn( "sum_" + targetColumnName, "numerator");
             teColumnFrame.renameColumn( "nrow", "denominator");
 
             columnToEncodingMap.put(teColumnName, teColumnFrame);
@@ -124,19 +131,23 @@ public class TargetEncoder {
 
     Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
-        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), null);
+        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), null, true);
     }
 
     Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, String foldColumnName) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
-        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName);
+        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName, true);
     }
 
     Map<String, Frame> prepareEncodingMap(Frame data, int[] columnIndexesToEncode, int targetIndex, int foldColumnIndex) {
         String [] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
         String foldColumnName = getColumnNameBy(data, foldColumnIndex);
-        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName);
+        return prepareEncodingMap(data, columnNamesToEncode, getColumnNameBy(data, targetIndex), foldColumnName, false);
     }
+
+  public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName) {
+      return prepareEncodingMap( data,  columnNamesToEncode, targetColumnName, foldColumnName, false);
+  }
 
     String[] getColumnNamesBy(Frame data, int[] columnIndexes) {
         String [] allColumnNames = data._names.clone();
@@ -161,9 +172,21 @@ public class TargetEncoder {
         return res;
     }
 
-    // We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
+    //TODO We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
     Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
         return data.filterOutNAsInColumn(targetColumnIndex);
+    }
+
+    Frame imputeNAsForColumn(Frame data, int columnIndex, String strToImpute) {
+      Vec currentVec = data.vec(columnIndex);
+      int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
+      new FillNAWithStringValueTask(columnIndex, indexForNACategory).doAll(data);
+      String[] oldDomain = currentVec.domain();
+      String[] newDomain = new String[indexForNACategory + 1];
+      System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
+      newDomain[indexForNACategory] = strToImpute;
+      currentVec.setDomain(newDomain);
+      return data;
     }
 
     Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
@@ -268,7 +291,7 @@ public class TargetEncoder {
       long numberOfNAs = vec.naCnt();
       if (numberOfNAs > 0) {
         new FillNAWithValueTask(columnIndex, mean).doAll(a);
-        Log.warn(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", a._key, mean, numberOfNAs));
+        Log.info(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", a._key, mean, numberOfNAs));
       }
       return a;
     }
@@ -485,6 +508,7 @@ public class TargetEncoder {
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
+                                     boolean inputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
 
@@ -509,6 +533,12 @@ public class TargetEncoder {
 
 
         for ( String teColumnName: columnsToEncode) {
+
+            // Impute NA's for each column we are going to encode
+            int colIndex = getColumnIndexByName(dataWithAllEncodings, teColumnName);
+            if(inputeNAs) {
+              imputeNAsForColumn(dataWithAllEncodings, colIndex, teColumnName + "_NA");
+            }
 
             String newEncodedColumnName = teColumnName + "_te";
 
@@ -705,6 +735,7 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      String foldColumn,
                                      boolean withBlendedAvg,
+                                     boolean inputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
         double defaultNoiseLevel = 0.01;
@@ -716,7 +747,7 @@ public class TargetEncoder {
         } else {
             noiseLevel = defaultNoiseLevel;
         }
-        return this.applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, seed, isTrainOrValidSet);
+        return this.applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -725,54 +756,10 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
+                                     boolean inputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
-        return applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, seed, isTrainOrValidSet);
-    }
-
-    public Frame applyTargetEncoding(Frame data,
-                                     int[] columnIndexesToEncode,
-                                     int targetIndex,
-                                     Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
-                                     int foldColumnIndex,
-                                     boolean withBlendedAvg,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
-        String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
-        String targetColumnName = getColumnNameBy(data, targetIndex);
-        String foldColumnName = getColumnNameBy(data, foldColumnIndex);
-        return this.applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlendedAvg, seed, isTrainOrValidSet);
-    }
-
-    public Frame applyTargetEncoding(Frame data,
-                                     int[] columnIndexesToEncode,
-                                     int targetIndex,
-                                     Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
-                                     int foldColumnIndex,
-                                     boolean withBlendedAvg,
-                                     double noiseLevel,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
-        String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
-        String targetColumnName = getColumnNameBy(data, targetIndex);
-        String foldColumnName = getColumnNameBy(data, foldColumnIndex);
-        return this.applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlendedAvg, noiseLevel, seed, isTrainOrValidSet);
-    }
-
-    public Frame applyTargetEncoding(Frame data,
-                                     int[] columnIndexesToEncode,
-                                     int targetColumnIndex,
-                                     Map<String, Frame> targetEncodingMap,
-                                     byte dataLeakageHandlingStrategy,
-                                     boolean withBlendedAvg,
-                                     double noiseLevel,
-                                     long seed,
-                                     boolean isTrainOrValidSet) {
-        String[] columnNamesToEncode = getColumnNamesBy(data, columnIndexesToEncode);
-        String targetColumnName = getColumnNameBy(data, targetColumnIndex);
-        return applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, withBlendedAvg, noiseLevel, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, columnsToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, inputeNAs, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -782,10 +769,11 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
+                                     boolean inputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
         assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, columnNamesToEncode, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
     }
 
     //TODO usefull during development remove

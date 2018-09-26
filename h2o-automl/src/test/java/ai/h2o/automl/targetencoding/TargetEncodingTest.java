@@ -36,7 +36,7 @@ public class TargetEncodingTest extends TestUtil {
         TargetEncoder tec = new TargetEncoder();
         String[] teColumns = {"0"};
 
-        tec.prepareEncodingMap(null, teColumns, "2", null);
+        tec.prepareEncodingMap(null, teColumns, "2", null, true);
     }
 
 
@@ -46,7 +46,7 @@ public class TargetEncodingTest extends TestUtil {
         TargetEncoder tec = new TargetEncoder();
         String[] teColumns = {};
 
-        tec.prepareEncodingMap(null, teColumns, "2", null);
+        tec.prepareEncodingMap(null, teColumns, "2", null, true);
 
     }
 
@@ -69,6 +69,86 @@ public class TargetEncodingTest extends TestUtil {
       } finally {
         res.delete();
       }
+    }
+
+    @Ignore // TODO ask someone if it is a bug
+    @Test
+    public void categoricalColumnsCouldBeCreatedOnlyFromStringsTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_CAT)
+                .withDataForCol(0, ard(1, 2))
+                .build();
+
+        assertTrue(fr.vec("ColA").isCategorical());
+        assertEquals(2, fr.vec("ColA").cardinality());
+    }
+
+    @Test
+    public void imputationWorksForBinaryCategoricalColumnsTest() {
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA")
+                .withVecTypes(Vec.T_CAT)
+                .withRandomBinaryDataForCol(0, 1000)
+                .withChunkLayout(500, 500) // that way our task could be executed with 2 threads
+                .build();
+
+        String nullStr = null;
+        fr.vec(0).set(2, nullStr);
+
+        TargetEncoder tec = new TargetEncoder();
+
+        assertTrue(fr.vec("ColA").isCategorical());
+        assertEquals(2, fr.vec("ColA").cardinality());
+
+        Frame res = tec.imputeNAsForColumn(fr, 0, "ColA_NA");
+
+        Vec colA = res.vec("ColA");
+
+        assertTrue(colA.isCategorical());
+        assertEquals(3, colA.cardinality());
+
+        //Checking here that we have replaced NA with index of the new category
+        assertEquals(2, colA.at(2), 1e-5);
+        assertEquals("ColA_NA", colA.domain()[2]);
+
+        res.delete();
+    }
+
+  @Test
+  public void imputationWorksForMultiCategoricalColumnsTest() {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "c", "d", null, null, null))
+            .withChunkLayout(2,2,2,1)
+            .build();
+
+    TargetEncoder tec = new TargetEncoder();
+
+    assertTrue(fr.vec("ColA").isCategorical());
+    assertEquals(4, fr.vec("ColA").cardinality());
+
+    Frame res = tec.imputeNAsForColumn(fr, 0, "ColA_NA");
+
+    Vec colA = res.vec("ColA");
+
+    assertTrue(colA.isCategorical());
+    assertEquals(5, colA.cardinality());
+
+    //Checking here that we have replaced NA with index of the new category
+    assertEquals(4, colA.at(4), 1e-5);
+    assertEquals("ColA_NA", colA.domain()[4]);
+
+    res.delete();
+  }
+
+    @Test
+    public void testThatNATargetsAreSkippedTest() {
+      //TODO
     }
 
     @Test

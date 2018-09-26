@@ -36,9 +36,9 @@ public class TestUtil extends Iced {
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
-  public static void stall_till_cloudsize(int x) {
+  public static void stall_till_cloudsize(int x, String ... args) {
     if( !_stall_called_before ) {
-      H2O.main(new String[]{});
+      H2O.main(args);
       String relativeResourcePath = System.getProperty("user.dir");
       H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
       H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
