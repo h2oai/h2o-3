@@ -7,8 +7,10 @@ import water.H2O;
 import water.persist.PersistManager;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -339,7 +341,16 @@ abstract public class Log {
     String h2oLog4jConfiguration = System.getProperty ("h2o.log4j.configuration");
 
     if (h2oLog4jConfiguration != null) {
-      PropertyConfigurator.configure(h2oLog4jConfiguration);
+      // Try to configure via a file on local filesystem
+      if (new File(h2oLog4jConfiguration).exists()) {
+        PropertyConfigurator.configure(h2oLog4jConfiguration);
+      } else {
+        // Try to load file via classloader resource (e.g., from classpath)
+        URL confUrl = Log.class.getClassLoader().getResource(h2oLog4jConfiguration);
+        if (confUrl != null) {
+          PropertyConfigurator.configure(confUrl);
+        }
+      }
     } else {
       // Create some default properties on the fly if we aren't using a provided configuration.
       // H2O creates the log setup itself on the fly in code.
