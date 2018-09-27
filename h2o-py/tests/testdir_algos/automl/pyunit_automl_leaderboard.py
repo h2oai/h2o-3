@@ -50,8 +50,6 @@ def get_partitioned_model_names(leaderboard):
 def check_model_property(model_names, prop_name, present=True, actual_value=None, default_value=None):
     for mn in model_names:
         model = h2o.get_model(mn)
-        print(model.parms)
-        print(model._parms)
         if present:
             assert prop_name in model.params.keys(), \
                 "missing {prop} in model {model}".format(prop=prop_name, model=mn)
@@ -88,11 +86,6 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
     assert sorted_desc == expected_sorted_desc, \
         "expected leaderboard sorted {expected} but was sorted {actual}".format(expected="desc" if expected_sorted_desc else "asc",
                                                                                 actual="desc" if sorted_desc else "asc")
-
-
-def check_stopping_metric(leaderboard, expected_stopping_metric):
-    non_se = get_partitioned_model_names(leaderboard).non_se
-    check_model_property(non_se, 'stopping_metric', True, expected_stopping_metric)
 
 
 def test_leaderboard_for_binomial():
@@ -205,7 +198,7 @@ def test_leaderboard_for_regression_with_custom_sorting():
 def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     print("Check leaderboard with AUTO stopping metric and no sorting metric for binomial")
     ds = prepare_data('binomial')
-    exclude_algos = ["DeepLearning", "StackedEnsemble"]
+    exclude_algos = ["DeepLearning", "GLM", "StackedEnsemble"]
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting",
                     seed=automl_seed,
                     max_models=10,
@@ -213,13 +206,17 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     aml.train(y=ds.target, training_frame=ds.train)
 
     check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "auc", True)
-    check_stopping_metric(aml.leaderboard, "logloss")
+    non_se = get_partitioned_model_names(aml.leaderboard).non_se
+    first = [m for m in non_se if 'DRF' in m]
+    others = [m for m in non_se if m not in first]
+    check_model_property(first, 'stopping_metric', True, "AUTO")
+    check_model_property(others, 'stopping_metric', True, "logloss")
 
 
 def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     print("Check leaderboard with AUTO stopping metric and no sorting metric for regression")
     ds = prepare_data('regression')
-    exclude_algos = ["GBM", "DeepLearning"]
+    exclude_algos = ["DeepLearning", "GLM"]
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_sort",
                     exclude_algos=exclude_algos,
                     max_models=10,
@@ -227,13 +224,17 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     aml.train(y=ds.target, training_frame=ds.train)
 
     check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "mean_residual_deviance")
-    check_stopping_metric(aml.leaderboard, "mean_residual_deviance")
+    non_se = get_partitioned_model_names(aml.leaderboard).non_se
+    first = [m for m in non_se if 'DRF' in m]
+    others = [m for m in non_se if m not in first]
+    check_model_property(first, 'stopping_metric', True, "AUTO")
+    check_model_property(others, 'stopping_metric', True, "deviance")
 
 
 def test_AUTO_stopping_metric_with_auc_sorting_metric():
     print("Check leaderboard with AUTO stopping metric and auc sorting metric")
     ds = prepare_data('binomial')
-    exclude_algos = ["DeepLearning", "StackedEnsemble"]
+    exclude_algos = ["DeepLearning", "GLM", "StackedEnsemble"]
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_auc_sorting",
                     seed=automl_seed,
                     max_models=10,
@@ -242,22 +243,24 @@ def test_AUTO_stopping_metric_with_auc_sorting_metric():
     aml.train(y=ds.target, training_frame=ds.train)
 
     check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "auc", True)
-    check_stopping_metric(aml.leaderboard, "logloss")
+    non_se = get_partitioned_model_names(aml.leaderboard).non_se
+    check_model_property(non_se, 'stopping_metric', True, "logloss")
 
 
 def test_AUTO_stopping_metric_with_custom_sorting_metric():
-    print("Check leaderboard for Regression sort by rmse")
+    print("Check leaderboard with AUTO stopping metric and rmse sorting metric")
     ds = prepare_data('regression')
-    exclude_algos = ["GBM", "DeepLearning"]
+    exclude_algos = ["DeepLearning", "GLM"]
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_sort",
                     exclude_algos=exclude_algos,
                     max_models=10,
                     seed=automl_seed,
-                    sort_metric="RMSE")
+                    sort_metric="rmse")
     aml.train(y=ds.target, training_frame=ds.train)
 
     check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "rmse")
-    check_stopping_metric(aml.leaderboard, "rmse")
+    non_se = get_partitioned_model_names(aml.leaderboard).non_se
+    check_model_property(non_se, 'stopping_metric', True, "RMSE")
 
 
 tests = [
@@ -269,10 +272,10 @@ tests = [
     test_leaderboard_for_binomial_with_custom_sorting,
     test_leaderboard_for_multinomial_with_custom_sorting,
     test_leaderboard_for_regression_with_custom_sorting,
-    # test_AUTO_stopping_metric_with_no_sorting_metric_binomial,
-    # test_AUTO_stopping_metric_with_no_sorting_metric_regression,
-    # test_AUTO_stopping_metric_with_auc_sorting_metric,
-    # test_AUTO_stopping_metric_with_custom_sorting_metric
+    test_AUTO_stopping_metric_with_no_sorting_metric_binomial,
+    test_AUTO_stopping_metric_with_no_sorting_metric_regression,
+    test_AUTO_stopping_metric_with_auc_sorting_metric,
+    test_AUTO_stopping_metric_with_custom_sorting_metric
 ]
 
 if __name__ == "__main__":
