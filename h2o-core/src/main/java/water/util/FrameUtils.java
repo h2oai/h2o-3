@@ -970,7 +970,7 @@ public class FrameUtils {
   /**
    *
    * @param fr
-   * @param name name of the column we wan't to know index of
+   * @param name name of the column we want to know index of
    * @return
    */
   static public int getColumnIndexByName(Frame fr, String name) {
