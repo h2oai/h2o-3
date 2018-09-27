@@ -14,7 +14,9 @@ import water.rapids.Val;
 import water.util.TwoDimTable;
 import ai.h2o.automl.TestUtil;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.assertStringVecEquals;
@@ -460,6 +462,7 @@ public class TargetEncodingTest extends TestUtil {
               .withVecTypes(Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "a"))
               .withDataForCol(1, ar("yes", "no", "yes"))
+              .withChunkLayout(1,1,1)
               .build();
       TargetEncoder tec = new TargetEncoder();
       int[] teColumns = {0};
@@ -485,6 +488,8 @@ public class TargetEncodingTest extends TestUtil {
       double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
       double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
+      printOutFrameAsTable(resultWithEncoding, true, false);
+
       assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
       assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
       assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
@@ -495,33 +500,101 @@ public class TargetEncodingTest extends TestUtil {
 
     }
 
+  @Test
+  public void calculateAndAppendEncodingsOrderIsPreservedWhenWeUseAddMethodTest() {
+
+    int sizeOfDataset = 1000000;
+    double[] arr = new double[sizeOfDataset];
+      Arrays.fill(arr, 0.5);
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("numerator", "denominator", "target", "encodings_to_compare_with")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withRandomDoubleDataForCol(0, sizeOfDataset, 1, 1)
+              .withRandomDoubleDataForCol(1, sizeOfDataset, 2, 2)
+              .withRandomBinaryDataForCol(2, sizeOfDataset)
+              .withDataForCol(3,  arr) // vec that is used for comparing with encodings
+              .withChunkLayout(100, 200, 300, sizeOfDataset - 600)
+              .build();
+      Vec zeroVec = Vec.makeZero(sizeOfDataset);
+      fr.add( "placeholder_for_encodings", zeroVec); // should get 4th index
+
+      int changedIndex = new Random().nextInt(sizeOfDataset);
+      fr.vec(0).set(changedIndex, 0);
+      fr.vec(3).set(changedIndex, 0);
+
+
+      new TargetEncoder.CalcEncodings(0, 1, 42, 4).doAll(fr);
+
+      printOutFrameAsTable(fr, true, false);
+
+      zeroVec.remove();
+      assertEquals(0, fr.vec("placeholder_for_encodings").at(changedIndex), 1e-5);
+      assertVecEquals(fr.vec(3), fr.vec("placeholder_for_encodings"), 1e-5);
+
+
+      fr.delete();
+  }
+
     @Test
     public void calculateAndAppendBlendedTEEncodingPerformanceTest() {
       long startTimeEncoding = System.currentTimeMillis();
 
       int numberOfRuns = 10;
       for(int i = 0; i < numberOfRuns; i ++) {
+        int dataframeSize = 1000000;
         Frame fr = new TestFrameBuilder()
                 .withName("testFrame")
                 .withColNames("numerator", "denominator", "target")
                 .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
-                .withRandomDoubleDataForCol(0, 1000000, 0, 50)
-                .withRandomDoubleDataForCol(1, 1000000, 1, 100)
-                .withRandomBinaryDataForCol(2, 1000000)
+                .withRandomDoubleDataForCol(0, dataframeSize, 0, 50)
+                .withRandomDoubleDataForCol(1, dataframeSize, 1, 100)
+                .withRandomBinaryDataForCol(2, dataframeSize)
                 .build();
 
         BlendingParams blendingParams = new BlendingParams(20, 10);
 
+        Vec zeroVec = Vec.makeZero(dataframeSize);
+        fr.add( "placeholder_for_encodings", zeroVec);
+        int indexOfEncodingsColumn = 3;
 
-        Frame frameWithBlendedEncodings = new TargetEncoder.CalcEncodingsWithBlending(0, 1, 42, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
-        fr.add("encoded", frameWithBlendedEncodings.anyVec());
+        new TargetEncoder.CalcEncodingsWithBlending(0, 1, 42, blendingParams, indexOfEncodingsColumn).doAll(fr);
         fr.delete();
+        zeroVec.remove();
       }
       long finishTimeEncoding = System.currentTimeMillis();
       System.out.println("Calculation of encodings took(ms): " + (finishTimeEncoding - startTimeEncoding));
       System.out.println("Avg calculation of encodings took(ms): " + (double)(finishTimeEncoding - startTimeEncoding) / numberOfRuns);
-
     }
+
+  @Test
+  public void calculateAndAppendTEEncodingPerformanceTest() {
+    long startTimeEncoding = System.currentTimeMillis();
+
+    int numberOfRuns = 10;
+    for(int i = 0; i < numberOfRuns; i ++) {
+      int dataframeSize = 1000000;
+
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("numerator", "denominator", "target")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+              .withRandomDoubleDataForCol(0, dataframeSize, 0, 50)
+              .withRandomDoubleDataForCol(1, dataframeSize, 1, 100)
+              .withRandomBinaryDataForCol(2, dataframeSize)
+              .build();
+
+      Vec zeroVec = Vec.makeZero(dataframeSize);
+      fr.add( "placeholder_for_encodings", zeroVec);
+
+      new TargetEncoder.CalcEncodings(0, 1, 42, 3).doAll( fr);
+      zeroVec.remove();
+      fr.delete();
+    }
+    long finishTimeEncoding = System.currentTimeMillis();
+    System.out.println("Calculation of encodings took(ms): " + (finishTimeEncoding - startTimeEncoding));
+    System.out.println("Avg calculation of encodings took(ms): " + (double)(finishTimeEncoding - startTimeEncoding) / numberOfRuns);
+  }
 
     @Test
     public void blendingTest() {

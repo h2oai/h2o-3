@@ -184,8 +184,8 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, false, 1234, true);
 
     // We expect that for `c` level we will get mean of encoded column i.e. 0.75 +- noise
-    Vec expected = vec(0.75, 1.0, 0.0, 1, 1);
-    assertVecEquals(expected, resultWithEncoding.vec(4), 1e-2); // TODO is it ok that encoding contains negative values?
+    Vec expected = vec(0.8, 1.0, 0.0, 1, 1);
+    assertVecEquals(expected, resultWithEncoding.vec(4), 1e-2); // TODO is it ok that encodings could contain negative values ( 0 +- noise )?
 
     expected.remove();
     encodingMapCleanUp(targetEncodingMap);

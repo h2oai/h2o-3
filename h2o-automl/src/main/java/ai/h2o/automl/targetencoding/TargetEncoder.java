@@ -306,10 +306,13 @@ public class TargetEncoder {
       int denominatorIndex = getColumnIndexByName(fr, "denominator");
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // TODO since target column is the same for all categorical columns we are trying to encode we can compute global mean only once.
-      System.out.print("Global mean for blending = " + globalMeanForTargetClass);
+      Log.info("Global mean for blending = " + globalMeanForTargetClass);
 
-      Frame frameWithBlendedEncodings = new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams).doAll(Vec.T_NUM, fr).outputFrame();
-      fr.add(appendedColumnName, frameWithBlendedEncodings.anyVec());
+      Vec zeroVec = Vec.makeZero(fr.numRows());
+      fr.add(appendedColumnName, zeroVec);
+      int encodingsColumnIdx = getColumnIndexByName(fr, appendedColumnName);
+      new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams, encodingsColumnIdx).doAll(fr);
+      zeroVec.remove();
       return fr;
     }
 
@@ -317,32 +320,34 @@ public class TargetEncoder {
       private double priorMean;
       private int numeratorIdx;
       private int denominatorIdx;
+      private int encodingsIdx;
       private BlendingParams blendingParams;
 
-      CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double priorMean, BlendingParams blendingParams) {
+      CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double priorMean, BlendingParams blendingParams, int encodingsIdx) {
         this.numeratorIdx = numeratorIdx;
         this.denominatorIdx = denominatorIdx;
         this.priorMean = priorMean;
         this.blendingParams = blendingParams;
+        this.encodingsIdx = encodingsIdx;
       }
 
       @Override
-      public void map(Chunk cs[], NewChunk ncs[]) {
+      public void map(Chunk cs[]) {
         Chunk num = cs[numeratorIdx];
         Chunk den = cs[denominatorIdx];
-        NewChunk nc = ncs[0];
+        Chunk encodings = cs[encodingsIdx];
         for (int i = 0; i < num._len; i++) {
           if (num.isNA(i) || den.isNA(i))
-            nc.addNA();
+            encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            System.out.println("Denominator is zero. Imputing with priorMean = " + priorMean);
-            nc.addNum(priorMean);
+            Log.info("Denominator is zero. Imputing with priorMean = " + priorMean);
+            encodings.set(i, priorMean);
           } else {
             double numberOfRowsInCurrentCategory = den.atd(i);
             double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - numberOfRowsInCurrentCategory) / blendingParams.getF()));
             double posteriorMean = num.atd(i) / den.atd(i);
             double blendedValue = lambda * posteriorMean + (1 - lambda) * priorMean;
-            nc.addNum(blendedValue);
+            encodings.set(i, blendedValue);
           }
         }
       }
@@ -354,37 +359,41 @@ public class TargetEncoder {
 
       double globalMeanForTargetClass = calculatePriorMean(encodingMap); // we can only operate on encodingsMap because `fr` could not have target column at all
 
-      //I can do a trick with appending a column of zeroes and then we can map encodings into it.
-      Frame frameWithEncodings = new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass).doAll(Vec.T_NUM, fr).outputFrame();
-      fr.add(appendedColumnName, frameWithEncodings.anyVec()); // Can we just add(append)? Would the order be preserved?
+      Vec zeroVec = Vec.makeZero(fr.numRows());
+      fr.add(appendedColumnName, zeroVec);
+      int encodingsColumnIdx = getColumnIndexByName(fr, appendedColumnName);
+      new CalcEncodings(numeratorIndex, denominatorIndex, globalMeanForTargetClass, encodingsColumnIdx).doAll( fr);
+      zeroVec.remove();
       return fr;
     }
 
 
     static class CalcEncodings extends MRTask<CalcEncodings> {
-      private double globalMean;
+      private double priorMean;
       private int numeratorIdx;
       private int denominatorIdx;
+      private int encodingsIdx;
 
-      CalcEncodings(int numeratorIdx, int denominatorIdx, double globalMean) {
+      CalcEncodings(int numeratorIdx, int denominatorIdx, double priorMean, int encodingsIdx) {
         this.numeratorIdx = numeratorIdx;
         this.denominatorIdx = denominatorIdx;
-        this.globalMean = globalMean;
+        this.priorMean = priorMean;
+        this.encodingsIdx = encodingsIdx;
       }
 
       @Override
-      public void map(Chunk cs[], NewChunk ncs[]) {
+      public void map(Chunk cs[]) {
         Chunk num = cs[numeratorIdx];
         Chunk den = cs[denominatorIdx];
-        NewChunk nc = ncs[0];
+        Chunk encodings = cs[encodingsIdx];
         for (int i = 0; i < num._len; i++) {
           if (num.isNA(i) || den.isNA(i))
-            nc.addNA();
+            encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            nc.addNum(globalMean);
+            encodings.set(i, priorMean);
           } else {
             double posteriorMean = num.atd(i) / den.atd(i);
-            nc.addNum(posteriorMean);
+            encodings.set(i, posteriorMean);
           }
         }
       }

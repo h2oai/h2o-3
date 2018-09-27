@@ -41,6 +41,7 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
             .withDataForCol(1, ar("yes", "no", "yes"))
             .withDataForCol(2, ar(2, 0, 2))
             .withDataForCol(3, ar(2, 0, 2))  // For b row we set denominator to 0
+            .withChunkLayout(1,2) // TODO see PUBDEV-5941 regarding chunk layout
             .build();
     TargetEncoder tec = new TargetEncoder();
     String[] teColumns = {teColumnName};
@@ -49,11 +50,34 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
     Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
 
     double globalMean = 2.0 / 3;
+
+    printOutFrameAsTable(result);
     assertEquals(globalMean, result.vec(4).at(1), 1e-5);
     assertFalse(result.vec(2).isNA(1));
 
     encodingMapCleanUp(targetEncodingMap);
     result.delete();
+  }
+
+  @Test // TODO see PUBDEV-5941 regarding chunk layout
+  public void deletionDependsOnTheChunkLayoutTest() {
+
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "a"))
+            .withChunkLayout(1,2)  // fails if we set one single chunk `.withChunkLayout(3)`
+            .build();
+
+    Vec zeroVec = Vec.makeZero(fr.numRows());
+    String nameOfAddedColumn = "someName";
+
+    fr.add(nameOfAddedColumn, zeroVec);
+
+    zeroVec.remove();
+
+    fr.vec(nameOfAddedColumn).at(1);
   }
 
   @Test
