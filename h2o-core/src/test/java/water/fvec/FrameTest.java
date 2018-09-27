@@ -177,4 +177,27 @@ public class FrameTest extends TestUtil {
     }
   }
 
+  @Test
+  public void deletionDependsOnTheChunkLayoutTest() {
+
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "a"))
+            .withChunkLayout(3)  // works fine if we set layout to multiple chunks `.withChunkLayout(1,2)`
+            .build();
+
+    Vec zeroVec = Vec.makeZero(fr.numRows());
+    String nameOfAddedColumn = "someName";
+
+    fr.add(nameOfAddedColumn, zeroVec);
+
+    zeroVec.remove();
+
+    fr.vec(nameOfAddedColumn).at(1);
+
+    fr.delete();
+  }
+
 }
