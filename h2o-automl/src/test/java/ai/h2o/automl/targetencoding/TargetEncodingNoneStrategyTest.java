@@ -88,6 +88,46 @@ public class TargetEncodingNoneStrategyTest extends TestUtil {
     resultWithEncoding.delete();
   }
 
+  @Test
+  public void endToEndTest() {
+    String teColumnName = "ColA";
+    String targetColumnName = "ColC";
+    Frame training = new TestFrameBuilder()
+            .withName("trainingFrame")
+            .withColNames(teColumnName, targetColumnName)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
+            .withDataForCol(1, ar("2", "6", "6", "6", "6", "2", "2"))
+            .build();
+
+    Frame holdout = new TestFrameBuilder()
+            .withName("holdoutFrame")
+            .withColNames(teColumnName, targetColumnName)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+            .withDataForCol(1, ar("2", "6", "6", "6", "6"))
+            .build();
+
+    TargetEncoder tec = new TargetEncoder();
+    String[] teColumns = {teColumnName};
+
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(holdout, teColumns, targetColumnName, null);
+
+    Frame resultWithEncoding = tec.applyTargetEncoding(training, teColumns, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false, 1234, true);
+
+    printOutFrameAsTable(resultWithEncoding);
+
+    Vec vec = resultWithEncoding.vec(2);
+    Vec expected = dvec(0.8, 0.8, 0.8, 0.5, 1, 1, 1);
+    assertVecEquals(expected, vec, 1e-5);
+
+    training.delete();
+    holdout.delete();
+    expected.remove();
+    encodingMapCleanUp(targetEncodingMap);
+    resultWithEncoding.delete();
+  }
+
 
   // ------------------------ Multiple columns for target encoding -------------------------------------------------//
 

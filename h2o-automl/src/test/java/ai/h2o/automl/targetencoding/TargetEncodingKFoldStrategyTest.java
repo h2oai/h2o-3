@@ -184,7 +184,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr2, teColumns, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, false, 1234, true);
 
     // We expect that for `c` level we will get mean of encoded column i.e. 0.75 +- noise
-    Vec expected = dvec(0.75, 1.0, 0.0, 1, 1);
+    Vec expected = dvec(0.8, 1.0, 0.0, 1, 1);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-2); // TODO is it ok that encoding contains negative values?
 
     expected.remove();
@@ -322,6 +322,52 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Vec expected = dvec(0.5, 0, 0, 1, 1, 1, 1, 0.66666, 1, 1, 0.66666, 0, 1, 0, 0);
     assertVecEquals(expected, vec, expectedDifferenceDueToNoise);
 
+    expected.remove();
+    encodingMapCleanUp(targetEncodingMap);
+    resultWithEncoding.delete();
+  }
+
+  @Test
+  public void endToEndTest() {
+    String teColumnName = "ColA";
+    String targetColumnName = "ColC";
+    String foldColumn = "fold_column";
+    Frame training = new TestFrameBuilder()
+            .withName("trainingFrame")
+            .withColNames(teColumnName, targetColumnName, foldColumn)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "c", "d", "e", "b", "b"))
+            .withDataForCol(1, ar("2", "6", "6", "6", "6", "2", "2"))
+            .withDataForCol(2, ar(1, 2, 2, 3, 1, 2, 1))
+            .build();
+
+    Frame valid = new TestFrameBuilder()
+            .withName("validFrame")
+            .withColNames(teColumnName, targetColumnName, foldColumn)
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
+            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
+            .withDataForCol(1, ar("2", "6", "6", "6", "6"))
+            .withDataForCol(2, ar(1, 2, 1, 2, 1))
+            .build();
+
+    TargetEncoder tec = new TargetEncoder();
+    String[] teColumns = {teColumnName};
+
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(training, teColumns, targetColumnName, foldColumn);
+
+    printOutFrameAsTable(targetEncodingMap.get(teColumnName));
+
+    //In reality we do not use KFold for validation set since we are not usin it for creation of the encoding map
+    Frame resultWithEncoding = tec.applyTargetEncoding(valid, teColumns, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false, 1234, true);
+
+    printOutFrameAsTable(resultWithEncoding);
+
+    Vec vec = resultWithEncoding.vec(3);
+    Vec expected = dvec(0.5714285, 0.5714285, 0.5, 0.0, 0.0);
+    assertVecEquals(expected, vec, 1e-5);
+
+    training.delete();
+    valid.delete();
     expected.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();

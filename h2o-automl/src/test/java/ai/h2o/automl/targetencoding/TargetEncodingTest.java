@@ -261,7 +261,7 @@ public class TargetEncodingTest extends TestUtil {
       Vec numericVec = strVec.toNumericVec();
       fr.replace(0, numericVec);
 
-      Frame withImputed = tec.imputeWithMean(fr, 0);
+      Frame withImputed = tec.imputeWithMean(fr, 0, 1.5);
       Vec expected = dvec(1, 2, 1.5);
       Vec resultVec = withImputed.vec(0);
       assertVecEquals(expected, resultVec, 1e-5);

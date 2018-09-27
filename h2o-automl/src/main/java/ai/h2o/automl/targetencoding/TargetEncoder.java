@@ -284,16 +284,15 @@ public class TargetEncoder {
       return merge(a, b, new int[]{teColumnIndexOriginal}, new int[]{teColumnIndex});
     }
 
-    Frame imputeWithMean(Frame a, int columnIndex) {
-      Vec vec = a.vec(columnIndex);
-      assert vec.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
-      double mean = vec.mean();
-      long numberOfNAs = vec.naCnt();
+    Frame imputeWithMean(Frame fr, int columnIndex, double mean) {
+      Vec vecWithEncodings = fr.vec(columnIndex);
+      assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
+      long numberOfNAs = vecWithEncodings.naCnt();
       if (numberOfNAs > 0) {
-        new FillNAWithValueTask(columnIndex, mean).doAll(a);
-        Log.info(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", a._key, mean, numberOfNAs));
+        new FillNAWithValueTask(columnIndex, mean).doAll(fr);
+        Log.info(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", fr._key, mean, numberOfNAs));
       }
-      return a;
+      return fr;
     }
 
     double calculatePriorMean(Frame fr) {
@@ -546,7 +545,8 @@ public class TargetEncoder {
             Frame dataWithEncodings = null;
             Frame dataWithEncodingsAndNoise = null;
 
-            Frame targetEncodingMap = columnToEncodingMap.get(teColumnName);
+            Frame encodingMapForCurrentTEColumn = columnToEncodingMap.get(teColumnName);
+            double priorMeanFromTrainingDataset = calculatePriorMean(encodingMapForCurrentTEColumn);
 
             int teColumnIndex = getColumnIndexByName(dataWithAllEncodings, teColumnName);
             Frame holdoutEncodeMap = null;
@@ -557,17 +557,17 @@ public class TargetEncoder {
                     if(foldColumnName == null)
                         throw new IllegalStateException("`foldColumn` must be provided for dataLeakageHandlingStrategy = KFold");
 
-                    int teColumnIndexInEncodingMap = getColumnIndexByName(targetEncodingMap, teColumnName);
+                    int teColumnIndexInEncodingMap = getColumnIndexByName(encodingMapForCurrentTEColumn, teColumnName);
 
                     int foldColumnIndex = getColumnIndexByName(dataWithAllEncodings, foldColumnName);
-                    long[] foldValues = getUniqueValuesOfTheFoldColumn(targetEncodingMap, 1);
+                    long[] foldValues = getUniqueValuesOfTheFoldColumn(encodingMapForCurrentTEColumn, 1);
 
                     Scope.enter();
 
                     // Following part is actually a preparation phase for KFold case. Maybe we should move it to prepareEncodingMap method.
                     try {
                         for (long foldValue : foldValues) {
-                            Frame outOfFoldData = getOutOfFoldData(targetEncodingMap, foldColumnName, foldValue);
+                            Frame outOfFoldData = getOutOfFoldData(encodingMapForCurrentTEColumn, foldColumnName, foldValue);
 
                             Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
@@ -594,7 +594,7 @@ public class TargetEncoder {
 
                     dataWithMergedAggregations = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap);
 
-                    dataWithEncodings = calculateEncoding(dataWithMergedAggregations, targetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg);
+                    dataWithEncodings = calculateEncoding(dataWithMergedAggregations, encodingMapForCurrentTEColumn, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
@@ -603,7 +603,7 @@ public class TargetEncoder {
                     //   When merging with the original dataset we will get NA'a on the right side
                     // Note: since we create encoding based on training dataset and use KFold mainly when we apply encoding to the training set,
                     // there is zero probability that we haven't seen some category.
-                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
+                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName), priorMeanFromTrainingDataset);
 
                     removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
 
@@ -617,9 +617,9 @@ public class TargetEncoder {
                     break;
                 case DataLeakageHandlingStrategy.LeaveOneOut:
                     assert isTrainOrValidSet : "Following calculations assume we can access target column but we can do this only on training and validation sets.";
-                    foldColumnIsInEncodingMapCheck(foldColumnName, targetEncodingMap);
+                    foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
 
-                    Frame groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, teColumnName);
+                    Frame groupedTargetEncodingMap = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
 
                     int teColumnIndexInGroupedEncodingMap = getColumnIndexByName(groupedTargetEncodingMap, teColumnName);
                     dataWithMergedAggregations = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMap, teColumnIndex, teColumnIndexInGroupedEncodingMap);
@@ -632,7 +632,7 @@ public class TargetEncoder {
 
                     // Cases when we can introduce NA's:
                     // 1) Only in case when our encoding map has not seen some category.
-                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName));
+                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName), priorMeanFromTrainingDataset);
 
                     removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
 
@@ -646,8 +646,8 @@ public class TargetEncoder {
 
                     break;
                 case DataLeakageHandlingStrategy.None:
-                    foldColumnIsInEncodingMapCheck(foldColumnName, targetEncodingMap);
-                    Frame groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, targetEncodingMap, teColumnName);
+                    foldColumnIsInEncodingMapCheck(foldColumnName, encodingMapForCurrentTEColumn);
+                    Frame groupedTargetEncodingMapForNone = groupingIgnoringFordColumn(foldColumnName, encodingMapForCurrentTEColumn, teColumnName);
                     int teColumnIndexInGroupedEncodingMapNone = getColumnIndexByName(groupedTargetEncodingMapForNone, teColumnName);
                     dataWithMergedAggregations = mergeByTEColumn(dataWithAllEncodings, groupedTargetEncodingMapForNone, teColumnIndex, teColumnIndexInGroupedEncodingMapNone);
 
@@ -660,7 +660,7 @@ public class TargetEncoder {
                     // Note: In case of creating encoding map based on the holdout set we'd better use stratified sampling.
                     // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
                     // Otherwise there are higher chances to get NA's for unseen categories.
-                    imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName));
+                    imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName), priorMeanFromTrainingDataset);
 
                     dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
