@@ -406,7 +406,7 @@ Variable Importances
 
 Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm.
 
-The method of computing each variable's importance depends on the algorithm.
+The method of computing each variable's importance depends on the algorithm. 
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
@@ -448,7 +448,15 @@ This chart represents the relationship of a specific feature to the response var
 Partial Dependence Plots
 ''''''''''''''''''''''''
 
-This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). Note that this is only available for models that include only numerical values. 
+This plot provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). Note that this is only available for models that include only numerical values. 
+
+The partial dependence of a given feature :math:`X_j` is the average of the response function :math:`g`, where all the components of :math:`X_j` are set to :math:`x_j (X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)`
+
+Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j` is the marginal expectation:
+
+.. math:: 
+
+  {PD}(X_j, g) = {E}_{X_(-j)} \big{[}g(X_j, X_{(-j)})\big{]} = \frac{1}{N}\sum_{i = 0}^{N-1}g(x_j, \mathbf{x}_{(-j)}^{(i)})
 
 .. figure:: images/pdp_summary.png
     :alt: Partial Dependence Summary
