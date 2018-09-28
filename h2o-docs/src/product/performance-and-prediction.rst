@@ -406,6 +406,8 @@ Variable Importances
 
 Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm.
 
+The method of computing each variable's importance depends on the algorithm.
+
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
 
