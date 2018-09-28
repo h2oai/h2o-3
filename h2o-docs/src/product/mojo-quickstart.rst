@@ -12,6 +12,15 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs,
 
 **Note**: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
 
+Benefits of MOJOs over POJOs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While POJOs continue to be supported, some customers encountered issues with large POJOs not compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not have a size restriction and address the size issue by taking the tree out of the POJO and using generic tree-walker code to navigate the model. The resulting executable is much smaller and faster than a POJO.
+
+At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster during “hot” scoring (after JVM is able to optimize the typical execution paths), and 10-40 times faster in “cold” scoring (when JVM doesn’t know yet know the execution paths) compared to POJOs. The efficiency gains are larger the bigger the size of the model.
+
+H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale (50 trees / 5 depth), POJOs were found to perform ≈10% faster than MOJOs for binomial and regression models, but 50% slower than MOJOs for multinomial models.
+
 Building a MOJO
 ~~~~~~~~~~~~~~~
 
@@ -82,11 +91,11 @@ Step 1: Build and Extract a Model
 
    .. code-block:: Java
 
-    # Compile the source: 
+    // Compile the source: 
     javac -classpath ~/h2o/h2o-3.20.0.1/h2o.jar src/h2oDirect/h2oDirect.java
 
-    # Execute as a classfile. This also downloads the LoanStats4 demo,
-    # which trains a GBM model.
+    // Execute as a classfile. This also downloads the LoanStats4 demo,
+    // which trains a GBM model.
     Erics-MBP-2:h2oDirect ericgudgion$ java -cp /Users/ericgudgion/NetBeansProjects/h2oDirect/src/:/Users/ericgudgion/h2o/h2o-3.20.0.1/h2o.jar h2oDirect.h2oDirect /Demos/Lending-Club/LoanStats4.csv 
     ...
     06-14 20:40:29.420 192.168.1.160:54321   55005  main      INFO: Found XGBoost backend with library: xgboost4j_minimal
@@ -118,7 +127,7 @@ Step 1: Build and Extract a Model
     Model AUC 0.8289237508508612
     Model written out as a mojo to file /Demos/Lending-Club/LoanStats4.csv.zip
 
-    # Save as h2oDirect.java
+    // Save as h2oDirect.java
     package h2oDirect;
 
     import hex.tree.gbm.GBM;
@@ -195,7 +204,6 @@ Step 1: Build and Extract a Model
         }
         
     }
-
 
    .. code-block:: scala
 
@@ -594,14 +602,6 @@ The following code snippet shows how to download a MOJO from R and run the Print
 
 FAQ
 ~~~
-
--  **What are the benefits of MOJOs vs POJOs?**
-
-  While POJOs continue to be supported, some customers encountered issues with large POJOs not compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not have a size restriction and address the size issue by taking the tree out of the POJO and using generic tree-walker code to navigate the model. The resulting executable is much smaller and faster than a POJO.
-
-  At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs. The efficiency gains are larger the bigger the size of the model.
-
-  H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale (50 trees / 5 depth), POJOs were found to perform ≈10% faster than MOJOs for binomial and regression models, but 50% slower than MOJOs for multinomial models.
 
 -  **How can I use an XGBoost MOJO with Maven?**
 

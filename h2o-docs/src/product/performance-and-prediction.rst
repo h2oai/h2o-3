@@ -4,75 +4,103 @@ Performance and Prediction
 Model Performance
 -----------------
 
-
-
+This section describes how H2O-3 can be used to evaluate model performance through model metrics, stopping metrics, and performance graphs. 
 
 Evaluation Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+H2O-3 provides a variety of metrics that can be used for evaluating models. These metrics vary based on the model type (classification or regression).
 
 Classification or Regression
 ''''''''''''''''''''''''''''
 
-- **GINI** (Gini Coefficient): The Gini index is a well-established method to quantify the inequality among values of a frequency distribution, and can be used to measure the quality of a binary classifier. A Gini index of zero expresses perfect equality (or a totally useless classifier), while a Gini index of one expresses maximal inequality (or a perfect classifier).
+- A `Gini Coefficient`_ is available for both classification and regression models. 
 
- The Gini index is based on the Lorenz curve. The Lorenz curve plots the true positive rate (y-axis) as a function of percentiles of the population (x-axis).  
+Gini Coefficient
+################
 
- The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (i.e., Lower probability thresholds for classification typically lead to more true positives, but also to more false positives.)
+The Gini index is a well-established method to quantify the inequality among values of a frequency distribution, and can be used to measure the quality of a binary classifier. A Gini index of zero expresses perfect equality (or a totally useless classifier), while a Gini index of one expresses maximal inequality (or a perfect classifier).
 
- The Gini index itself is independent of the model and only depends on the Lorenz curve determined by the distribution of the scores (or probabilities) obtained from the classifier.
+The Gini index is based on the Lorenz curve. The Lorenz curve plots the true positive rate (y-axis) as a function of percentiles of the population (x-axis).  
 
- .. figure:: images/lorenz_curve.png
-    :alt: Lorenz curve
+The Lorenz curve represents a collective of models represented by the classifier. The location on the curve is given by the probability threshold of a particular model. (i.e., Lower probability thresholds for classification typically lead to more true positives, but also to more false positives.)
+
+The Gini index itself is independent of the model and only depends on the Lorenz curve determined by the distribution of the scores (or probabilities) obtained from the classifier.
+
+.. figure:: images/lorenz_curve.png
+  :alt: Lorenz curve
 
 Regression
 ''''''''''
 
-- **R2** (R Squared): The R2 value represents the degree that the predicted value and the actual value move in unison. The R2 value varies between 0 and 1 where 0 represents no correlation between the predicted and actual value and 1 represents complete correlation.
+The following evaluation metrics are available for regression models:
 
-- **MSE** (Mean Squared Error): The MSE metric measures the average of the squares of the errors or deviations. MSE takes the distances from the points to the regression line (these distances are the “errors”) and squaring them to remove any negative signs. MSE incorporates both the variance and the bias of the predictor. 
+- `R2 (R Squared)`_
+- `MSE (Mean Squared Error)`_
+- `RMSE (Root Mean Squared Error)`_
+- `RMSLE (Root Mean Squared Logarithmic Error)`_
+- `MAE (Mean Absolute Error)`_
 
- MSE also gives more weight to larger differences. The bigger the error, the more it is penalized. For example, if your correct answers are 2,3,4 and the algorithm guesses 1,4,3, then the absolute error on each one is exactly 1, so squared error is also 1, and the MSE is 1. But if the algorithm guesses 2,3,6, then the errors are 0,0,2, the squared errors are 0,0,4, and the MSE is a higher 1.333. The smaller the MSE, the better the model's performance. (**Tip**: MSE is sensitive to outliers. If you want a more robust metric, try mean absolute error (MAE).)
+R2 (R Squared)
+##############
 
- MSE equation:
+The R2 value represents the degree that the predicted value and the actual value move in unison. The R2 value varies between 0 and 1 where 0 represents no correlation between the predicted and actual value and 1 represents complete correlation.
+
+MSE (Mean Squared Error)
+########################
+
+The MSE metric measures the average of the squares of the errors or deviations. MSE takes the distances from the points to the regression line (these distances are the “errors”) and squaring them to remove any negative signs. MSE incorporates both the variance and the bias of the predictor. 
+
+MSE also gives more weight to larger differences. The bigger the error, the more it is penalized. For example, if your correct answers are 2,3,4 and the algorithm guesses 1,4,3, then the absolute error on each one is exactly 1, so squared error is also 1, and the MSE is 1. But if the algorithm guesses 2,3,6, then the errors are 0,0,2, the squared errors are 0,0,4, and the MSE is a higher 1.333. The smaller the MSE, the better the model's performance. (**Tip**: MSE is sensitive to outliers. If you want a more robust metric, try mean absolute error (MAE).)
+
+MSE equation:
 
   .. math::
     MSE = \frac{1}{N} \sum_{i=1}^{N}(y_i -\hat{y}_i)^2
 
-- **RMSE** (Root Mean Squared Error): The RMSE metric evaluates how well a model can predict a continuous value. The RMSE units are the same as the predicted target, which is useful for understanding if the size of the error is of concern or not. The smaller the RMSE, the better the model's performance. (**Tip**: RMSE is sensitive to outliers. If you want a more robust metric, try mean absolute error (MAE).)
+RMSE (Root Mean Squared Error)
+##############################
 
-  RMSE equation:
+The RMSE metric evaluates how well a model can predict a continuous value. The RMSE units are the same as the predicted target, which is useful for understanding if the size of the error is of concern or not. The smaller the RMSE, the better the model's performance. (**Tip**: RMSE is sensitive to outliers. If you want a more robust metric, try mean absolute error (MAE).)
+
+RMSE equation:
 
   .. math::
      RMSE = \sqrt{\frac{1}{N} \sum_{i=1}^{N}(y_i -\hat{y}_i)^2 }
 
- Where:
+Where:
 
  - *N* is the total number of rows (observations) of your corresponding dataframe.
  - *y* is the actual target value.
  - :math:`\hat{y}` is the predicted target value.
 
-- **RMSLE** (Root Mean Squared Logarithmic Error): This metric measures the ratio between actual values and predicted values and takes the log of the predictions and actual values. Use this instead of RMSE if an under-prediction is worse than an over-prediction. You can also use this when you don't want to penalize large differences when both of the values are large numbers. 
+RMSLE (Root Mean Squared Logarithmic Error)
+###########################################
 
-  RMSLE equation:
+This metric measures the ratio between actual values and predicted values and takes the log of the predictions and actual values. Use this instead of RMSE if an under-prediction is worse than an over-prediction. You can also use this when you don't want to penalize large differences when both of the values are large numbers. 
+
+RMSLE equation:
 
   .. math::
      RMSLE = \sqrt{\frac{1}{N} \sum_{i=1}^{N} \big(ln \big(\frac{y_i +1} {\hat{y}_i +1}\big)\big)^2 }
 
- Where:
+Where:
 
  - *N* is the total number of rows (observations) of your corresponding dataframe.
  - *y* is the actual target value.
  - :math:`\hat{y}` is the predicted target value.
 
-- **MAE** (Mean Absolute Error): The mean absolute error is an average of the absolute errors. The MAE units are the same as the predicted target, which is useful for understanding whether the size of the error is of concern or not. The smaller the MAE the better the model's performance. (**Tip**: MAE is robust to outliers. If you want a metric that is sensitive to outliers, try root mean squared error (RMSE).) 
+MAE (Mean Absolute Error)
+#########################
 
-  MAE equation:
+The mean absolute error is an average of the absolute errors. The MAE units are the same as the predicted target, which is useful for understanding whether the size of the error is of concern or not. The smaller the MAE the better the model's performance. (**Tip**: MAE is robust to outliers. If you want a metric that is sensitive to outliers, try root mean squared error (RMSE).) 
+
+MAE equation:
 
   .. math::
      MAE = \frac{1}{N} \sum_{i=1}^{N} | x_i - x |
 
-  Where:
+Where:
 
   - *N* is the total number of errors
   - :math:`| x_i - x |` equals the absolute errors.
@@ -80,62 +108,89 @@ Regression
 Classification
 ''''''''''''''
 
-**Absolute MCC** (Matthews Correlation Coefficient): selecting the `absolute_mcc` parameter sets the threshold for the model's confusion matrix to a value that generates the highest Matthews Correlation Coefficient.
-The MCC score provides a measure of how well a binary classifier detects true and false positives, and true and false negatives. The MCC is called a correlation coefficient because it indicates how correlated the actual and predicted values are; 1 indicates a perfect classifier, -1 indicates a classifier that predicts the opposite class from the actual value, and 0 means the classifier does no better than random guessing. 
+The following evaluation metrics are available for classification models:
+
+- `Absolute MCC (Matthews Correlation Coefficient)`_
+- `F1`_
+- `F0`_
+- `F2`_
+- `Accuracy`_
+- `Logloss`_
+- `AUC (Area Under the ROC Curve)`_
+
+
+Absolute MCC (Matthews Correlation Coefficient)
+###############################################
+
+Setting the `absolute_mcc` parameter sets the threshold for the model's confusion matrix to a value that generates the highest Matthews Correlation Coefficient. The MCC score provides a measure of how well a binary classifier detects true and false positives, and true and false negatives. The MCC is called a correlation coefficient because it indicates how correlated the actual and predicted values are; 1 indicates a perfect classifier, -1 indicates a classifier that predicts the opposite class from the actual value, and 0 means the classifier does no better than random guessing. 
 
 .. math::
 	MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
 
-**F1**: the F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
+F1
+##
+
+The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
 
 .. math::
 	F1 = 2 \;\Big(\; \frac{(precision) \; (recall)}{precision + recall}\; \Big)
 
 Where:
 
-*precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
+ - *precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
+ - *recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
 
-*recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
+F0
+##
 
-**F0**: The F0 (F0.5) score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be very precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
+The F0 (F0.5) score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be very precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
 
- F05 equation:
+F05 equation:
 
  .. math::
    F0.5 = 1.25 \;\Big(\; \frac{(precision) \; (recall)}{0.25 \; precision + recall}\; \Big)
 
- Where:
+Where:
 
  - *precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
  - *recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
 
 
-**F2**: The F2 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F2 score gives more weight to recall (penalizing the model more for false negatives then false positives). An F2 score ranges from 0 to 1, with 1 being a perfect model.
+F2
+##
+
+The F2 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F2 score gives more weight to recall (penalizing the model more for false negatives then false positives). An F2 score ranges from 0 to 1, with 1 being a perfect model.
 
 .. math::
 	F2 = 5 \;\Big(\; \frac{(precision) \; (recall)}{4\;precision + recall}\; \Big)
 
-- **Accuracy**: In binary classification, Accuracy is the number of correct predictions made as a ratio of all predictions made. In multiclass classification, the set of labels predicted for a sample must exactly match the corresponding set of labels in y_true. 
+Accuracy
+########
 
- Accuracy equation:
+In binary classification, Accuracy is the number of correct predictions made as a ratio of all predictions made. In multiclass classification, the set of labels predicted for a sample must exactly match the corresponding set of labels in y_true. 
+
+Accuracy equation:
 
   .. math::
     Accuracy = \Big(\; \frac{\text{number correctly predicted}}{\text{number of observations}}\; \Big)
 
-- **Logloss**: The logarithmic loss metric can be used to evaluate the performance of a binomial or multinomial classifier. Unlike AUC which looks at how well a model can classify a binary target, logloss evaluates how close a model's predicted values (uncalibrated probability estimates) are to the actual target value. For example, does a model tend to assign a high predicted value like .80 for the positive class, or does it show a poor ability to recognize the positive class and assign a lower predicted value like .50? Logloss ranges between 0 and 1, with 0 meaning that the model correctly assigns a probability of 0% or 100%. 
+Logloss
+#######
 
- Binary classification equation:
+The logarithmic loss metric can be used to evaluate the performance of a binomial or multinomial classifier. Unlike AUC which looks at how well a model can classify a binary target, logloss evaluates how close a model's predicted values (uncalibrated probability estimates) are to the actual target value. For example, does a model tend to assign a high predicted value like .80 for the positive class, or does it show a poor ability to recognize the positive class and assign a lower predicted value like .50? Logloss ranges between 0 and 1, with 0 meaning that the model correctly assigns a probability of 0% or 100%. 
+
+Binary classification equation:
 
     .. math::
       Logloss = - \;\frac{1}{N} \sum_{i=1}^{N}w_i(\;y_i \ln(p_i)+(1-y_i)\ln(1-p_i)\;)
 
 
- Multiclass classification equation:
+Multiclass classification equation:
 
     .. math::
       Logloss = - \;\frac{1}{N} \sum_{i=1}^{N}\sum_{j=1}^{C}w_i(\;y_i,_j \; \ln(p_i,_j)\;)
 
- Where:
+Where:
 
  - *N* is the total number of rows (observations) of your corresponding dataframe.
  - *w* is the per row user-defined weight (defaults is 1).
@@ -143,9 +198,12 @@ Where:
  - *p* is the predicted value (uncalibrated probability) assigned to a given row (observation).
  - *y* is the actual target value.
 
-- ***AUC** (Area Under the ROC Curve): this model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. (*Tip: AUC is usually the best stopping metric for an imbalanced binary target*). 
+AUC (Area Under the ROC Curve)
+##############################
 
- H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
+This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. (*Tip: AUC is usually the best stopping metric for an imbalanced binary target*.)
+
+H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
 
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''
@@ -261,8 +319,8 @@ When deciding which metric to use in a classification problem some main question
 -  Do you want the metric to evaluate the predicted probabilities or the classes that those probabilities can be converted to?
 -  Is your data imbalanced?
 
-Metric Evaluates Probabilities or Classes
-#########################################
+Does the Metric Evaluate Probabilities or Classes?
+##################################################
 
 The final output of a model is a predicted probability that a record is in a particular class. The metric you choose will either evaluate how accurate the probability is or how accurate the assigned class is from that probability.
 
@@ -270,15 +328,15 @@ Choosing this depends on the use of the model. Do you want to use the probabilit
 
 If your use case requires a class assigned to each record, you will want to select a metric that evaluates the model's performance based on how well it classifies the records. If your use case will use the probabilities, you will want to select a metric that evaluates the model's performance based on the predicted probability.
 
-Robust to Imbalanced Data
-#########################
+Is the Metric Robust to Imbalanced Data?
+########################################
 
 For certain use cases, positive classes may be very rare. In these instances, some metrics can be misleading. For example, if you have a use case where 99% of the records have ``Class = No``, then a model that always predicts ``No`` will have 99% accuracy.
 
 For these use cases, it is best to select a metric that does not include True Negatives or considers relative size of the True Negatives like AUCPR or MCC.
 
-Comparison
-##########
+Metric Comparison
+#################
 
 +------------+-----------------------+-------------------------------------------------------+
 | Metric     | Evaluation Based On   | Tip                                                   |
@@ -328,7 +386,7 @@ The model will stop building if the deviance fails to continue to improve. Devia
 Mean-Per-Class-Error
 ''''''''''''''''''''
 
-The model will stop building after the mean per-class error rate fails to improve. 
+The model will stop building after the mean-per-class error rate fails to improve. 
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
@@ -343,11 +401,13 @@ A confusion matrix is a table depicting performance of algorithm in terms of fal
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
 
-
 Variable Importances
 ''''''''''''''''''''
 
 Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm.
+
+.. figure:: images/Flow_VariableImportances.png
+   :alt: Variable Importances example
 
 ROC Curve
 '''''''''
@@ -396,7 +456,7 @@ This provides a graphical representation of the marginal effect of a variable on
 Prediction
 ----------
 
-
+With H2O-3, you can generate predictions for a model based on samples in a test set. This can be accomplished in memory or using MOJOs/POJOs.  
 
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
@@ -499,8 +559,6 @@ This section provides examples of performing predictions in Python and R. Refer 
             0  0.642381  0.357619
 
     [10 rows x 3 columns]
-
-
 
 
 Predict using MOJOs
