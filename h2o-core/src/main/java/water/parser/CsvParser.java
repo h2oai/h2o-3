@@ -50,8 +50,8 @@ class CsvParser extends Parser {
     int quotes = 0;
     byte quoteCount = 0;
     long number = 0;
-    int escaped = -1;
     int exp = 0;
+    int rolledOffset = -1;
     int sgnExp = 1;
     boolean decimal = false;
     int fractionDigits = 0;
@@ -309,6 +309,9 @@ MAIN_LOOP:
           // forced
           if (forcedString || forcedCategorical ) {
             state = STRING;
+            if (!firstChunk && tokenStart > offset) { // Check if rollback to previous chunk is required
+              bits = din.getChunkData(cidx);
+            }
             offset = tokenStart - 1;
             str.set(bits, tokenStart, 0);
             break; // parse as String token now
@@ -340,6 +343,9 @@ MAIN_LOOP:
             break;
           } else {
             state = STRING;
+            if (!firstChunk && tokenStart > offset) { // Check if rollback to previous chunk is required
+              bits = din.getChunkData(cidx);
+            }
             offset = tokenStart-1;
             str.set(bits, tokenStart, 0);
             break; // parse as String token now
@@ -412,6 +418,9 @@ MAIN_LOOP:
           }
           if ((c < '0') || (c > '9')){
             state = STRING;
+            if (!firstChunk && tokenStart > offset) { // Check if rollback to previous chunk is required
+              bits = din.getChunkData(cidx);
+            }
             offset = tokenStart-1;
             str.set(bits, tokenStart, 0);
             break; // parse as String token now
@@ -473,7 +482,6 @@ MAIN_LOOP:
         if (state == NUMBER_FRACTION)
           fractionDigits -= bits.length;
         offset -= bits.length;
-        tokenStart -= bits.length;
         bits = bits1;           // Set main parsing loop bits
         if( bits[0] == CHAR_LF && state == EXPECT_COND_LF )
           break; // MAIN_LOOP; // when the first character we see is a line end
