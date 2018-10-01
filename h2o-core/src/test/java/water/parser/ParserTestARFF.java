@@ -8,20 +8,12 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.TestUtil;
-import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.util.FileUtils;
-import water.util.RandomUtils;
 
 import static water.parser.ParserTest.makeByteVec;
 
-import java.io.*;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
