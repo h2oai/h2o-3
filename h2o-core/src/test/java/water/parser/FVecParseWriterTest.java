@@ -6,7 +6,6 @@ import org.junit.Test;
 import water.Key;
 import water.fvec.AppendableVec;
 import water.fvec.Chunk;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.Random;
@@ -79,7 +78,8 @@ public class FVecParseWriterTest {
             new Categorical[1],
             new byte[]{Vec.T_NUM},
             1,
-            new AppendableVec[]{vec}
+            new AppendableVec[]{vec},
+            null
     );
   }
 

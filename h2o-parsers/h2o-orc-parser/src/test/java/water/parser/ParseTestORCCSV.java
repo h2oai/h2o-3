@@ -38,9 +38,22 @@ public class ParseTestORCCSV extends TestUtil {
 
 		@BeforeClass
 		static public void setup() {
-				TestUtil.stall_till_cloudsize(5);
+				TestUtil.stall_till_cloudsize(1);
 		}
 
+		@Test
+		public void testSkippedAllColumns() {
+			Scope.enter();
+			try {
+				int[] skipped_columns = new int[]{0,1};
+				 Frame f1 = parse_test_file(orcFiles[0], skipped_columns);
+				 assert 1==2:"orc skipped all columns test failed...";
+			} catch(Exception ex) {
+				System.out.println("Skipped all columns test passed!");
+			} finally {
+				Scope.exit();
+			}
+		}
 		@Test
 		public void testParseOrcCsvFiles() {
 				Scope.enter();

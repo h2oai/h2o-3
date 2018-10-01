@@ -66,10 +66,23 @@ public abstract class Parser extends Iced {
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
+  public boolean[] _keepColumns;
 
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
-  protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected Parser( ParseSetup setup, Key<Job> jobKey ) {
+    _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;
+    if (_setup!=null && _setup._number_columns > 0) {
+      _keepColumns = new boolean[_setup._number_columns];
+      for (int colIdx = 0; colIdx < _setup._number_columns; colIdx++)
+        _keepColumns[colIdx] = true;
+      if (_setup._skipped_columns!=null) {
+        for (int colIdx : _setup._skipped_columns)
+          if (colIdx < _setup._number_columns)
+            _keepColumns[colIdx] = false;
+      }
+    }
+  }
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
@@ -179,11 +192,11 @@ public abstract class Parser extends Iced {
     int cidx = 0;
     StreamData din = new StreamData(is);
     // only check header for 2nd file onward since guess setup is already done on first file.
-    if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx)))
+    if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx))) // cidx should be the actual column index
       return new StreamInfo(zidx, nextChunk);  // header is bad, quit now
     int streamAvailable = is.available();
     while (streamAvailable > 0) {
-      parseChunk(cidx++, din, nextChunk);
+      parseChunk(cidx++, din, nextChunk); // cidx here actually goes and get the right column chunk.
       streamAvailable = is.available(); // Can (also!) rollover to the next input chunk
       int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
       if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?

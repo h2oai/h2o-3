@@ -2,14 +2,12 @@ package water.parser;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
-import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
-import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -19,6 +17,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+import static org.junit.Assert.assertEquals;
 
 public class ParserTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -1064,11 +1064,11 @@ public class ParserTest extends TestUtil {
     final List<Integer> _nchks;
 
     MockStreamParseWriter(int chunkSize) {
-      super(null, 0, null, null, chunkSize, new AppendableVec[0]);
+      super(null, 0, null, null, chunkSize, new AppendableVec[0], null);
       _nchks = new LinkedList<>();
     }
     MockStreamParseWriter(MockStreamParseWriter prev) {
-      super(null, prev._cidx + 1, null, null, prev._chunkSize, new AppendableVec[0]);
+      super(null, prev._cidx + 1, null, null, prev._chunkSize, new AppendableVec[0], null);
       _nchks = prev._nchks;
     }
     @Override public FVecParseWriter nextChunk() {
