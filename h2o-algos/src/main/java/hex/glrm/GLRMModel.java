@@ -228,19 +228,20 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     Frame fullFrm = new Frame(adaptedFr);
     Frame loadingFrm = null;  // get this from DKV or generate it from scratch
     // call resconstruct only if test frame key and training frame key matches plus frame dimensions match as well
-    if ((_parms.train() == null) || orig.checksum()!=(_parms.train().checksum()) ||
-            !(orig._key.equals(_parms.train()._key))) { // compare with checksum instead of frame keys.
+    if (DKV.get(_output._x_factor_key) != null) { // try to use the old X frame if possible
+      loadingFrm = DKV.get(_output._x_factor_key).get();
+    } else {
       // need to generate the X matrix and put it in as a frame ID.  Mojo predict will return one row of x as a double[]
       GLRMGenX gs = new GLRMGenX(this, _parms._k);
       gs.doAll(gs._k, Vec.T_NUM, adaptedFr);
       String[] loadingFrmNames = new String[gs._k];
-      for (int index=1; index <= gs._k; index++)
-        loadingFrmNames[index-1] = "Arch"+index;
+      for (int index = 1; index <= gs._k; index++)
+        loadingFrmNames[index - 1] = "Arch" + index;
       String[][] loadingFrmDomains = new String[gs._k][];
-      DKV.put(gs.outputFrame(_output._x_factor_key,loadingFrmNames, loadingFrmDomains));
+      DKV.put(gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains));
+      loadingFrm = DKV.get(_output._x_factor_key).get();
     }
-  //  Key newXKey = gen_representation_key(orig);
-    loadingFrm = DKV.get(_output._x_factor_key).get();
+
     fullFrm.add(loadingFrm);
     String[][] adaptedDomme = adaptedFr.domains();
     Vec anyVec = fullFrm.anyVec();
