@@ -107,7 +107,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
 
-  private transient List<Job> jobs;
+  private transient List<Job> jobs; // subjobs
   private transient List<Frame> tempFrames;
 
   private AtomicInteger modelCount = new AtomicInteger();  // prepare for concurrency
@@ -1197,9 +1197,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      Job job = new /* Timed */ H2OJob(aml, aml._key, aml.timeRemainingMs()).start();
-      aml.job = job;
-      job._work = 1000;
+      H2OJob j = new H2OJob(aml, aml._key, aml.timeRemainingMs());
+      aml.job = j._job;
+      j.start(1000);
       DKV.put(aml);
     }
   }

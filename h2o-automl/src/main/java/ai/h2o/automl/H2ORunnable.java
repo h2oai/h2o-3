@@ -9,7 +9,7 @@ package ai.h2o.automl;
  *
  */
 public interface H2ORunnable {
-  public void run();
-  public void stop();
+  void run();
+  void stop();
 }
 
