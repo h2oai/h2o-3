@@ -199,7 +199,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     print("Check leaderboard with AUTO stopping metric and no sorting metric for binomial")
     ds = prepare_data('binomial')
     exclude_algos = ["DeepLearning", "GLM", "StackedEnsemble"]
-    aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting",
+    aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting_binomial",
                     seed=automl_seed,
                     max_models=10,
                     exclude_algos=exclude_algos)
@@ -217,7 +217,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     print("Check leaderboard with AUTO stopping metric and no sorting metric for regression")
     ds = prepare_data('regression')
     exclude_algos = ["DeepLearning", "GLM"]
-    aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_sort",
+    aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting_regression",
                     exclude_algos=exclude_algos,
                     max_models=10,
                     seed=automl_seed)
@@ -251,7 +251,7 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
     print("Check leaderboard with AUTO stopping metric and rmse sorting metric")
     ds = prepare_data('regression')
     exclude_algos = ["DeepLearning", "GLM"]
-    aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_sort",
+    aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_custom_sorting",
                     exclude_algos=exclude_algos,
                     max_models=10,
                     seed=automl_seed,
