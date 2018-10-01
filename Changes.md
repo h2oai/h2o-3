@@ -2,6 +2,27 @@
 
 ## H2O
 
+### Wright (3.20.0.9) - 10/1/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5930'>PUBDEV-5930</a>] - Fixed an issue that caused H2O to fail when loading a GLRM model. 
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5938'>PUBDEV-5938</a>] - log4j.properties can be loaded from classpath.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5939'>PUBDEV-5939</a>] - Buffer configuration is now available for http/https connections.
+</li>
+</ul>
+
+
 ### Wright (3.20.0.8) - 9/21/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html</a>
