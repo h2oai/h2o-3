@@ -65,8 +65,9 @@ class CsvParser extends Parser {
     int colIdx = 0;
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
+    byte[] nonDataLineMarkers = nonDataLineMarkers();
     if( cidx == 0 ) {
-      while (ArrayUtils.contains(nonDataLineMarkers(), c) || isEOL(c)) {
+      while (ArrayUtils.contains(nonDataLineMarkers, c) || isEOL(c)) {
         while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
@@ -220,7 +221,7 @@ MAIN_LOOP:
               state = EXPECT_COND_LF;
             break;
           }
-          if (ArrayUtils.contains(nonDataLineMarkers(), c)) {
+          if (ArrayUtils.contains(nonDataLineMarkers, c)) {
             state = SKIP_LINE;
             break;
           }

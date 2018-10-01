@@ -560,7 +560,7 @@ public class ArrayUtils {
   }
 
   static public boolean contains(byte[] a, byte d) {
-    for (int anA : a) if (anA == d) return true;
+    for (byte anA : a) if (anA == d) return true;
     return false;
   }
 
