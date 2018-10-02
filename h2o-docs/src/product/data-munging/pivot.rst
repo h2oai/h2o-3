@@ -68,7 +68,7 @@ Use this function to pivot tables. This is performed by designating three column
     [6 rows x 3 columns]
 
     # Pivot the table on the colorID column and aligned on the amount column
-    df2 = df.pivot(index="amount",column="color",value="value")
+    df2 = df.pivot(index="amount",column="colorID",value="value")
     df2
       amount    1    2    3    4
     --------  ---  ---  ---  ---

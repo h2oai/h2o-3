@@ -14,12 +14,12 @@ Assuming two columns, X (first column) and Y (second column):
    .. code-block:: r
    
 	# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
-	> library(h2o)
-	> h2o.init()
+	library(h2o)
+	h2o.init()
 	
 	# Import the smallIntFloats dataset
-	> X <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/synthetic/smallIntFloats.csv.zip")
-	> X
+	X <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/synthetic/smallIntFloats.csv.zip")
+	X
 	         C1           C10
 	1     68379 -1.618668e+07
 	2  67108864  3.276800e+04
@@ -31,8 +31,8 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns]
 
 	# Sort on the first column only in ascending order (default)
-	> X_sorted1 <- h2o.arrange(X,C1)
-	> X_sorted1
+	X_sorted1 <- h2o.arrange(X,C1)
+	X_sorted1
 	           C1           C10
 	1 -1073593184  7.474380e+05
 	2 -1073563127 -2.097152e+06
@@ -44,8 +44,8 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns] 
 
 	# Sort on both columns in descending order, specifying to sort on C1 first
-	> X_sorted2 <- h2o.arrange(X, desc(C1),desc(C10))
-	> X_sorted2
+	X_sorted2 <- h2o.arrange(X, desc(C1),desc(C10))
+	X_sorted2
 	          C1         C10
 	1 1073593184  256.000000
 	2 1073521109 -128.000000
@@ -57,8 +57,8 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns] 
 
 	# Sort on the second column in descending order
-	> X_sorted3 <- h2o.arrange(X, desc(C10))
-	> X_sorted3
+	X_sorted3 <- h2o.arrange(X, desc(C10))
+	X_sorted3
 	         C1        C10
 	1 321417689 1073662860
 	2       448 1073574390
@@ -71,12 +71,12 @@ Assuming two columns, X (first column) and Y (second column):
    
    .. code-block:: python
    
-	>>> import h2o
-	>>> h2o.init()
+	import h2o
+	h2o.init()
 	
 	# Import the smallIntFloats dataset
-	>>> df1 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/synthetic/smallIntFloats.csv.zip")
-	>>> df1
+	df1 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/synthetic/smallIntFloats.csv.zip")
+	df1
 	              C1               C10
 	----------------  ----------------
 	 68379                -1.61867e+07
@@ -93,9 +93,9 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns]
 
 	# Sort on the first column only in ascending order (default)
-	>>> sorted_column_indices=[0]
-	>>> df2 = df1.sort(0)
-	>>> df2
+	sorted_column_indices=[0]
+	df2 = df1.sort(0)
+	df2
 	          C1               C10
 	------------  ----------------
 	-1.07359e+09  747438
@@ -112,8 +112,8 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns]
 
 	# Sort on both columns in descending order, specifying to sort on C1 first
-	>>> df3 = df1.sort([0,1], ascending=[False, False])
-	>>> df3
+	df3 = df1.sort([0,1], ascending=[False, False])
+	df3
 	         C1                C10
 	-----------  -----------------
 	1.07359e+09      256
@@ -130,8 +130,8 @@ Assuming two columns, X (first column) and Y (second column):
 	[180000 rows x 2 columns]
 
 	# Sort on the second column in descending order
-	>>> df4 = df1.sort(1, ascending=False)
-	>>> df4
+	df4 = df1.sort(1, ascending=False)
+	df4
 	               C1          C10
 	-----------------  -----------
 	      3.21418e+08  1.07366e+09
@@ -146,12 +146,3 @@ Assuming two columns, X (first column) and Y (second column):
 	     55            1.07175e+09
 
 	[180000 rows x 2 columns]
-
-
-
-
-
-
-
-
-
