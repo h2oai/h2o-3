@@ -104,12 +104,15 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     @Override public boolean logVerbose() { return false; }
 
     private void rebalanceChunk(int i, Chunk c, NewChunk nc){
-      int N = c._len;
+      final Vec srcVec = _srcVecs[i];
+      final int N = c._len;
       int len = 0;
       int lastId = -1;
       while(N > len) {
-        Chunk srcRaw = _srcVecs[i].chunkForRow(c._start+len);
-        assert lastId == -1 || lastId == srcRaw.cidx()-1;
+        Chunk srcRaw = srcVec.chunkForRow(c._start+len);
+        assert lastId == -1 ||
+                lastId == srcRaw.cidx()-1 || // proceeded to the next chunk
+                srcVec.chunk2StartElem(lastId+1) == srcVec.chunk2StartElem(srcRaw.cidx()); // skipped bunch of empty chunks
         lastId = srcRaw.cidx();
         int off = (int)((c._start+len) - srcRaw._start);
         assert off >=0 && off < srcRaw._len;
