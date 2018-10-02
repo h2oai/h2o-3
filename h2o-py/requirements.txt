@@ -1,5 +1,5 @@
 pip
-colorama>=0.3.9
+colorama>=0.3.888888888
 future
 requests
 tabulate
