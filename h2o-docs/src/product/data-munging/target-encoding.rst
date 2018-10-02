@@ -41,7 +41,7 @@ Start by training a model using the original data. Below we import our data into
 
 .. code:: r
 
-    library('h2o')
+    library(h2o)
     h2o.init()
     h2o.no_progress()
 
@@ -88,17 +88,15 @@ The AUC on the training and testing data is shown below:
     auc_comparison <- data.frame('Data' = c("Training", "Validation"),
                                  'AUC' = c(train_auc, valid_auc))
 
-+--------------+----------+
-| Data         | AUC      |
-+==============+==========+
-| Training     | 0.7493   |
-+--------------+----------+
-| Validation   | 0.7070   |
-+--------------+----------+
+    auc_comparison
+            Data       AUC
+    1   Training 0.8571747
+    2 Validation 0.7198658
+
 
 Our training data has much higher AUC than our validation data.
 
-The variables with the greatest importance are the ``int_rate`` and the ``addr_state``. It makes sense that the ``int_rate`` has such high variable importance since this is related to loan default but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
+The variables with the greatest importance are ``addr_state``, ``term``, and ``int_rate``. It makes sense that the ``int_rate`` has such high variable importance since this is related to loan default but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
 
 .. code:: r
 
@@ -134,15 +132,12 @@ The AUC for the baseline model and the model without ``addr_state`` are shown be
     auc_comparison <- data.frame('Model' = c("Baseline", "No addr_state"),
                                  'AUC' = c(auc_baseline, auc_nostate))
 
-We see a slight improvement in our test AUC if we do not include the ``addr_state`` predictor. This is a good indication that the GBM model may be overfitting with this column.
+    auc_comparison
+              Model       AUC
+    1      Baseline 0.7198658
+    2 No addr_state 0.7270537
 
-+------------------+----------+
-| Model            | AUC      |
-+==================+==========+
-| Baseline         | 0.7070   |
-+------------------+----------+
-| No addr\_state   | 0.7076   |
-+------------------+----------+
+We see a slight improvement in our test AUC if we do not include the ``addr_state`` predictor. This is a good indication that the GBM model may be overfitting with this column.
 
 Target Encoding in H2O-3
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,12 +196,12 @@ Start by creating the target encoding map. This has the number of bad loans per 
 ::
 
     ##   addr_state fold numerator denominator
-    ## 1         AK    0         7          52
-    ## 2         AK    1         8          55
-    ## 3         AK    2         7          56
-    ## 4         AK    3        13          68
-    ## 5         AK    4         8          70
-    ## 6         AL    0        57         297
+    ## 1         AK    0         3          11
+    ## 2         AK    1         0           5
+    ## 3         AK    2         1          10
+    ## 4         AK    3         2          13
+    ## 5         AK    4         1           7
+    ## 6         AL    0         7          52
 
 Apply the target encoding to our training and testing data. For our training data, we will use the parameters:
 
@@ -226,12 +221,12 @@ Apply the target encoding to our training and testing data. For our training dat
 ::
 
     ##   addr_state fold TargetEncode_addr_state
-    ## 1         AK    0               0.1445783
-    ## 2         AK    0               0.1445783
-    ## 3         AK    0               0.1445783
-    ## 4         AK    0               0.1445783
-    ## 5         AK    0               0.1445783
-    ## 6         AK    0               0.1445783
+    ## 1         AK    0               0.1212239
+    ## 2         AK    0               0.1212239
+    ## 3         AK    0               0.1212239
+    ## 4         AK    0               0.1212239
+    ## 5         AK    0               0.1212239
+    ## 6         AK    0               0.1212239
 
 For our testing data, we will use the parameters:
 
@@ -253,12 +248,12 @@ We do not need to apply any of the overfitting prevention techniques since our t
 ::
 
     ##   addr_state TargetEncode_addr_state
-    ## 1         AK               0.1428571
-    ## 2         AK               0.1428571
-    ## 3         AK               0.1428571
-    ## 4         AK               0.1428571
-    ## 5         AK               0.1428571
-    ## 6         AK               0.1428571
+    ## 1         AK               0.1521739
+    ## 2         AK               0.1521739
+    ## 3         AK               0.1521739
+    ## 4         AK               0.1521739
+    ## 5         AK               0.1521739
+    ## 6         AK               0.1521739
 
 Train Model with KFold Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,13 +262,30 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
 
 .. code:: r
 
-    predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", "delinq_2yrs", "revol_util", "total_acc", 
-                    "longest_credit_length", "verification_status", "term", "purpose", "home_ownership", "TargetEncode_addr_state")
+    predictors <- c("loan_amnt", 
+                    "int_rate", 
+                    "emp_length", 
+                    "annual_inc", 
+                    "dti", 
+                    "delinq_2yrs", 
+                    "revol_util", 
+                    "total_acc", 
+                    "longest_credit_length",
+                    "verification_status", 
+                    "term", 
+                    "purpose", 
+                    "home_ownership", 
+                    "TargetEncode_addr_state")
 
-    gbm_state_te <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = ext_train, validation_frame = ext_test, 
-                            score_tree_interval = 10, ntrees = 500,
-                            stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+    gbm_state_te <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = ext_train, 
+                            validation_frame = ext_test, 
+                            score_tree_interval = 10, 
+                            ntrees = 500,
+                            stopping_rounds = 5, 
+                            stopping_metric = "AUC", 
+                            stopping_tolerance = 0.001,
                             model_id = "gbm_state_te.hex")
 
 The AUC of the first and second model is shown below:
@@ -288,17 +300,14 @@ The AUC of the first and second model is shown below:
                                              "addr_state Target Encoding"),
                                  'AUC' = c(auc_baseline, auc_nostate, auc_state_te))
 
-+-------------------------------+----------+
-| Model                         | AUC      |
-+===============================+==========+
-| No Target Encoding            | 0.7070   |
-+-------------------------------+----------+
-| No addr\_state                | 0.7076   |
-+-------------------------------+----------+
-| addr\_state Target Encoding   | 0.7088   |
-+-------------------------------+----------+
+    auc_comparison
+                           Model       AUC
+    1         No Target Encoding 0.7198658
+    2              No addr_state 0.7270537
+    3 addr_state Target Encoding 0.7254448
 
-We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the 2nd most important feature but the 7th.
+
+We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the most important feature but the 8th.
 
 .. code:: r
 
