@@ -307,7 +307,7 @@ The AUC of the first and second model is shown below:
     3 addr_state Target Encoding 0.7254448
 
 
-We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. 
+We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the most important feature but the 8th.
 
 .. code:: r
 
