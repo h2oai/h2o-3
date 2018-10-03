@@ -10,7 +10,7 @@ class PipelineUtils {
 
     String stageNameToDirName(stageName) {
         if (stageName != null) {
-            return stageName.toLowerCase().replace(' ', '-')
+            return stageName.toLowerCase().replaceAll(' |\\(|\\)', '-')
         }
         return null
     }
