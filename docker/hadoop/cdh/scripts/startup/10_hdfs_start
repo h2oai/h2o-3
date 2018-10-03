@@ -2,6 +2,13 @@
 
 set -e -x
 
+if [ -n "${AWS_ACCESS_KEY_ID}" ]; then
+    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY_ID}@g" ${HADOOP_CONF_DIR}/core-site.xml
+fi
+if [ -n "${AWS_SECRET_ACCESS_KEY}" ]; then
+    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml
+fi
+
 service hadoop-hdfs-namenode start
 service hadoop-hdfs-secondarynamenode start
 set +e

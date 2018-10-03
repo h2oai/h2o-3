@@ -2,6 +2,10 @@
 
 set -e -x
 
+sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY_ID}@g" ${HADOOP_CONF_DIR}/core-site.xml
+sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml
+cat ${HADOOP_CONF_DIR}/core-site.xml
+
 sudo -E -u hdfs /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
 sudo -E -u hdfs /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start secondarynamenode
 sudo -E ${STARTUP_DATANODE_USER_OVERRIDE} /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
