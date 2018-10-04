@@ -12,8 +12,8 @@ H2O currently supports the following file types:
 - ORC
 - SVMLight
 - ARFF
-- XLS
-- XLSX
+- XLS (BIFF 8 only)
+- XLSX (BIFF 8 only)
 - Avro version 1.8.0 (without multifile parsing or column type modification)
 - Parquet
 
@@ -21,6 +21,7 @@ H2O currently supports the following file types:
  
  - ORC is available only if H2O is running as a Hadoop job. 
  - Users can also import Hive files that are saved in ORC format (experimental).
+ - If you encounter issues importing XLS or XLSX files, you may be using an unsupported version. In this case, re-save the file in BIFF 8 format. Also note that XLS and XLSX support will eventually be deprecated. 
  - When doing a parallel data import into a cluster: 
 
    - If the data is an unzipped csv file, H2O can do offset reads, so each node in your cluster can be directly reading its part of the csv file in parallel. 
@@ -285,8 +286,9 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
 
 **Notes**: 
 
-- H2O can only load data from Hive v2 due to a limited implementation of the JDBC interface by Hive in earlier versions.
-- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets. 
+- H2O can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
+
+- This feature is still experimental. In addition, Hive2 support in H2O is not yet suitable for large datasets.
 
 A demo showing how to ingest data from Hive through the Hive v2 JDBC driver is available `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
 

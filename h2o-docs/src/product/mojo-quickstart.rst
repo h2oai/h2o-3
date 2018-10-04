@@ -10,7 +10,19 @@ What is a MOJO?
 
 A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
+**Notes**: 
+
+- MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
+- MOJOs are only supported for encodings that are either default or ``enum``. 
+
+Benefits of MOJOs over POJOs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While POJOs continue to be supported, some customers encountered issues with large POJOs not compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not have a size restriction and address the size issue by taking the tree out of the POJO and using generic tree-walker code to navigate the model. The resulting executable is much smaller and faster than a POJO.
+
+At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs. The efficiency gains are larger the bigger the size of the model.
+
+H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale (50 trees / 5 depth), POJOs were found to perform ≈10% faster than MOJOs for binomial and regression models, but 50% slower than MOJOs for multinomial models.
 
 Benefits of MOJOs over POJOs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,8 +66,8 @@ Step 1: Build and Extract a Model
     # to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file 
     # is a library that supports scoring and contains the required readers 
     # and interpreters. This file is required when MOJO models are deployed 
-    # to production.
-    modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
+    # to production. Be sure to specify the entire path, not just the relative path.
+    modelfile <- h2o.download_mojo(model, path="~/experiments/", get_genmodel_jar=TRUE)
     print("Model saved to " + modelfile)
     Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
 
@@ -83,7 +95,7 @@ Step 1: Build and Extract a Model
     # to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file 
     # is a library that supports scoring and contains the required readers 
     # and interpreters. This file is required when MOJO models are deployed 
-    # to production.
+    # to production. Be sure to specify the entire path, not just the relative path.
     modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
     print("Model saved to " + modelfile)
     Model saved to /Users/user/GBM_model_python_1475248925871_888.zip           
@@ -571,13 +583,15 @@ Viewing a MOJO Model
 
 A java tool for converting binary mojo files into human viewable graphs is packaged with H2O. This tool produces output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
 
-Here is example output for a GBM model:
+Here is an example output for a GBM model:
 
 .. figure:: images/gbm_mojo_graph.png
    :alt: GBM MOJO model
 
+The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. To better control the look and feel of your tree, we provide two options for PrintMojo:
 
-The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. 
+- ``--decimalplaces`` (or ``-d``) allows you to control the  number of decimal points shown for numbers. 
+- ``--fontsize`` (or ``-f``) controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than  20.
 
 ::
 
@@ -596,9 +610,9 @@ The following code snippet shows how to download a MOJO from R and run the Print
   # and run the PrintMojo tool from the command line.
   #
   # (For MacOS: brew install graphviz)
-  # java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
-  # dot -Tpng model.gv -o model.png
-  # open model.png
+  java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+  dot -Tpng model.gv -o model.png
+  open model.png
 
 FAQ
 ~~~

@@ -8,6 +8,7 @@ import hex.genmodel.utils.GenmodelBitSet;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
@@ -18,7 +19,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
-    protected Number _mojo_version;
+    protected double _mojo_version;
+    private ScoreTree _scoreTree;
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -51,6 +53,23 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     protected double[] _calib_glm_beta;
 
 
+    protected void postInit() {
+      if (_mojo_version == 1.0) {
+        _scoreTree = new ScoreTree0(); // First version
+      } else if (_mojo_version == 1.1) {
+        _scoreTree = new ScoreTree1(); // Second version
+      } else
+        _scoreTree = new ScoreTree2(); // Current version
+    }
+
+    public final int getNTreeGroups() {
+      return _ntree_groups;
+    }
+
+    public final int getNTreesPerGroup() {
+      return _ntrees_per_group;
+    }
+
   /**
    * Highly efficient (critical path) tree scoring
    *
@@ -69,7 +88,14 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         while (true) {
             int nodeType = ab.get1U();
             int colId = ab.get2();
-            if (colId == 65535) return ab.get4f();
+            if (colId == 65535) {
+              if (computeLeafAssignment) {
+                bitsRight |= 1 << level;  // mark the end of the tree
+                return Double.longBitsToDouble(bitsRight);
+              } else {
+                return ab.get4f();
+              }
+            }
             int naSplitDir = ab.get1U();
             boolean naVsRest = naSplitDir == NsdNaVsRest;
             boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
@@ -167,23 +193,98 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    public static String getDecisionPath(double leafAssignment) {
+    public interface DecisionPathTracker<T> {
+        boolean go(int depth, boolean right);
+        T terminate();
+    }
+
+    public static class StringDecisionPathTracker implements DecisionPathTracker<String> {
+        private final char[] _sb = new char[64];
+        private int _pos = 0;
+        @Override
+        public boolean go(int depth, boolean right) {
+            _sb[depth] = right ? 'R' : 'L';
+            if (right) _pos = depth;
+            return true;
+        }
+        @Override
+        public String terminate() {
+            String path = new String(_sb, 0, _pos);
+            _pos = 0;
+            return path;
+        }
+    }
+
+    public static class LeafDecisionPathTracker implements DecisionPathTracker<LeafDecisionPathTracker> {
+        private final AuxInfoLightReader _auxInfo;
+        private boolean _wentRight = false; // Was the last step _right_?
+
+        // OUT
+        private int _nodeId = 0; // Returned when the tree is empty (consistent with SharedTreeNode of an empty tree)
+
+        private LeafDecisionPathTracker(byte[] auxTree) {
+          _auxInfo = new AuxInfoLightReader(new ByteBufferWrapper(auxTree));
+        }
+
+        @Override
+        public boolean go(int depth, boolean right) {
+          if (!_auxInfo.hasNext()) {
+            assert _wentRight || depth == 0; // this can only happen if previous step was _right_ or the tree has no nodes
+            return false;
+          }
+          _auxInfo.readNext();
+          if (right) {
+            if (_wentRight && _nodeId != _auxInfo._nid)
+              return false;
+            _nodeId = _auxInfo.getRightNodeIdAndSkipNode();
+            _auxInfo.skipNodes(_auxInfo._numLeftChildren);
+            _wentRight = true;
+          } else { // left
+            _wentRight = false;
+            if (_auxInfo._numLeftChildren == 0) {
+              _nodeId = _auxInfo.getLeftNodeIdAndSkipNode();
+              return false;
+            } else {
+              _auxInfo.skipNode(); // proceed to next _left_ node
+            }
+          }
+          return true;
+        }
+
+        @Override
+        public LeafDecisionPathTracker terminate() {
+          return this;
+        }
+
+        final int getLeafNodeId() {
+          return _nodeId;
+        }
+    }
+
+    public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
         long l = Double.doubleToRawLongBits(leafAssignment);
-        StringBuilder sb = new StringBuilder();
-        int pos = 0;
         for (int i = 0; i < 64; ++i) {
             boolean right = ((l>>i) & 0x1L) == 1;
-            sb.append(right? "R" : "L");
-            if (right) pos = i;
+            if (! tr.go(i, right)) break;
         }
-        return sb.substring(0, pos);
+        return tr.terminate();
+    }
+
+    public static String getDecisionPath(double leafAssignment) {
+        return getDecisionPath(leafAssignment, new StringDecisionPathTracker());
+    }
+
+    public static int getLeafNodeId(double leafAssignment, byte[] auxTree) {
+        LeafDecisionPathTracker tr = new LeafDecisionPathTracker(auxTree);
+        return getDecisionPath(leafAssignment, tr).getLeafNodeId();
     }
 
     //------------------------------------------------------------------------------------------------------------------
     // Computing a Tree Graph
     //------------------------------------------------------------------------------------------------------------------
 
-    private void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap, int nclasses) {
+    private static void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap,
+                                         int nclasses, String names[], String[][] domains) {
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -191,7 +292,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             node.setPredValue(leafValue);
             return;
         }
-        String colName = getNames()[colId];
+        String colName = names[colId];
         node.setCol(colId, colName);
 
         int naSplitDir = ab.get1U();
@@ -217,7 +318,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                     bs.fill2(tree, ab);
                 else
                     bs.fill3(tree, ab);
-                node.setBitset(getDomainValues(colId), bs);
+                node.setBitset(domains[colId], bs);
             }
         }
 
@@ -263,7 +364,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 auxInfo.predR = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses, names, domains);
             }
         }
 
@@ -286,7 +387,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 auxInfo.predL = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses, names, domains);
             }
         }
         if (node.getNodeNumber() == 0) {
@@ -321,28 +422,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
 
         for (; j < _ntree_groups; j++) {
             for (int i = 0; i < _ntrees_per_group; i++) {
-                String className = "";
-                {
-                    String[] domainValues = getDomainValues(getResponseIdx());
-                    if (domainValues != null) {
-                        className = ", Class " + domainValues[i];
-                    }
-                }
                 int itree = treeIndex(j, i);
-
-                SharedTreeSubgraph sg = g.makeSubgraph("Tree " + j + className);
-                SharedTreeNode node = sg.makeRootNode();
-                node.setSquaredError(Float.NaN);
-                node.setPredValue(Float.NaN);
-                byte[] tree = _compressed_trees[itree];
-                ByteBufferWrapper ab = new ByteBufferWrapper(tree);
-                ByteBufferWrapper abAux = new ByteBufferWrapper(_compressed_trees_aux[itree]);
-                HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
-                while (abAux.hasRemaining()) {
-                  AuxInfo auxInfo = new AuxInfo(abAux);
-                  auxMap.put(auxInfo.nid, auxInfo);
-                }
-                computeTreeGraph(sg, node, tree, ab, auxMap, _nclasses);
+                String treeName = treeName(j, i, getDomainValues(getResponseIdx()));
+                SharedTreeSubgraph sg = g.makeSubgraph(treeName);
+                computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
+                        _nclasses, getNames(), getDomainValues());
             }
 
             if (treeToPrint >= 0) {
@@ -353,13 +437,113 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         return g;
     }
 
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      int nclasses, String names[], String[][] domains) {
+      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
+      computeTreeGraph(sg, tree, auxTreeInfo, nclasses, names, domains);
+      return sg;
+    }
+
+    private static void computeTreeGraph(SharedTreeSubgraph sg, byte[] tree, byte[] auxTreeInfo,
+                                         int nclasses, String names[], String[][] domains) {
+      SharedTreeNode node = sg.makeRootNode();
+      node.setSquaredError(Float.NaN);
+      node.setPredValue(Float.NaN);
+      ByteBufferWrapper ab = new ByteBufferWrapper(tree);
+      ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
+      HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
+      computeTreeGraph(sg, node, tree, ab, auxMap, nclasses, names, domains);
+    }
+
+    private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
+      HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
+      Map<Integer, AuxInfo> nodeIdToParent = new HashMap<>();
+      nodeIdToParent.put(0, new AuxInfo());
+      boolean reservedFieldIsParentId = false; // In older H2O versions `reserved` field was used for parent id
+      while (abAux.hasRemaining()) {
+        AuxInfo auxInfo = new AuxInfo(abAux);
+        if (auxMap.size() == 0) {
+          reservedFieldIsParentId = auxInfo.reserved < 0; // `-1` indicates No Parent, reserved >= 0 indicates reserved is not used for parent ids!
+        }
+        AuxInfo parent = nodeIdToParent.get(auxInfo.nid);
+        if (parent == null)
+          throw new IllegalStateException("Parent for nodeId=" + auxInfo.nid + " not found.");
+        assert !reservedFieldIsParentId || parent.nid == auxInfo.reserved : "Corrupted Tree Info: parent nodes do not correspond (pid: " +
+                parent.nid + ", reserved: " + auxInfo.reserved + ")";
+        auxInfo.setPid(parent.nid);
+        nodeIdToParent.put(auxInfo.nidL, auxInfo);
+        nodeIdToParent.put(auxInfo.nidR, auxInfo);
+        auxMap.put(auxInfo.nid, auxInfo);
+      }
+      return auxMap;
+    }
+
+    public static String treeName(int groupIndex, int classIndex, String[] domainValues) {
+      String className = "";
+      {
+        if (domainValues != null) {
+          className = ", Class " + domainValues[classIndex];
+        }
+      }
+      return "Tree " + groupIndex + className;
+    }
+
+    // Please see AuxInfo for details of the serialized format
+    private static class AuxInfoLightReader {
+      private final ByteBufferWrapper _abAux;
+      int _nid;
+      int _numLeftChildren;
+
+      private AuxInfoLightReader(ByteBufferWrapper abAux) {
+        _abAux = abAux;
+      }
+
+      private void readNext() {
+        _nid = _abAux.get4();
+        _numLeftChildren = _abAux.get4();
+      }
+
+      private boolean hasNext() {
+        return _abAux.hasRemaining();
+      }
+
+      private int getLeftNodeIdAndSkipNode() {
+        _abAux.skip(4 * 6);
+        int n = _abAux.get4();
+        _abAux.skip(4);
+        return n;
+      }
+
+      private int getRightNodeIdAndSkipNode() {
+        _abAux.skip(4 * 7);
+        return _abAux.get4();
+      }
+
+      private void skipNode() {
+        _abAux.skip(AuxInfo.SIZE - 8);
+      }
+
+      private void skipNodes(int num) {
+        _abAux.skip(AuxInfo.SIZE * num);
+      }
+
+    }
+
     static class AuxInfo {
+      private static int SIZE = 10 * 4;
+
+      private AuxInfo() {
+        nid = -1;
+        reserved = -1;
+      }
+
+      // Warning: any changes in this structure need to be reflected also in AuxInfoLightReader!!!
       AuxInfo(ByteBufferWrapper abAux) {
         // node ID
         nid = abAux.get4();
 
-        // parent node ID
-        pid = abAux.get4();
+        // ignored - can contain either parent id or number of children (depending on a MOJO version)
+        reserved = abAux.get4();
 
         //sum of observation weights (typically, that's just the count of observations)
         weightL = abAux.get4f();
@@ -378,6 +562,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         nidR = abAux.get4();
       }
 
+      final void setPid(int parentId) {
+        pid = parentId;
+      }
+
       @Override public String toString() {
         return  "nid: " + nid + "\n" +
                 "pid: " + pid + "\n" +
@@ -388,14 +576,16 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 "predL: " + predL + "\n" +
                 "predR: " + predR + "\n" +
                 "sqErrL: " + sqErrL + "\n" +
-                "sqErrR: " + sqErrR + "\n";
+                "sqErrR: " + sqErrR + "\n" +
+                "reserved: " + reserved + "\n";
       }
 
       public int nid, pid, nidL, nidR;
+      private final int reserved;
       public float weightL, weightR, predL, predR, sqErrL, sqErrR;
     }
 
-    void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
+    static void checkConsistency(AuxInfo auxInfo, SharedTreeNode node) {
       boolean ok = true;
       ok &= (auxInfo.nid == node.getNodeNumber());
       double sum = 0;
@@ -472,19 +662,15 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      *              To get final predictions pass the result to {@link SharedTreeMojoModel#unifyPreds}.
      */
     public final void scoreTreeRange(double[] row, int fromIndex, int toIndex, double[] preds) {
+        final int clOffset = _nclasses == 1 ? 0 : 1;
         for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
-            int k = _nclasses == 1 ? 0 : classIndex + 1;
+            int k = clOffset + classIndex;
+            int itree = treeIndex(fromIndex, classIndex);
             for (int groupIndex = fromIndex; groupIndex < toIndex; groupIndex++) {
-                int itree = treeIndex(groupIndex, classIndex);
-                // Skip all empty trees
-                if (_compressed_trees[itree] == null) continue;
-                if (_mojo_version.equals(1.0)) { //First version
-                    preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.1)) { //Second version
-                    preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                if (_compressed_trees[itree] != null) { // Skip all empty trees
+                  preds[k] += _scoreTree.scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
                 }
+                itree++;
             }
         }
     }
@@ -510,20 +696,42 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       return names;
     }
 
-    public String[] getDecisionPath(final double row[]) {
-      if ((double) _mojo_version < 1.2) {
-        throw new IllegalArgumentException("You can only obtain decision tree path with mojo verions 1.2 or higher");
-      } else {
-        String[] output = new String[_compressed_trees.length];
-        for (int j = 0; j < _ntree_groups; j++) {
-          for (int i = 0; i < _ntrees_per_group; i++) {
+    public static class LeafNodeAssignments {
+      public String[] _paths;
+      public int[] _nodeIds;
+    }
 
-            int itree = treeIndex(j, i);
-            double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
-            output[itree] = SharedTreeMojoModel.getDecisionPath(d);
+    public LeafNodeAssignments getLeafNodeAssignments(final double[] row) {
+      LeafNodeAssignments assignments = new LeafNodeAssignments();
+      assignments._paths = new String[_compressed_trees.length];
+      if (_mojo_version >= 1.3 && _compressed_trees_aux != null) { // enable only for compatible MOJOs
+        assignments._nodeIds = new int[_compressed_trees_aux.length];
+      }
+      traceDecisions(row, assignments._paths, assignments._nodeIds);
+      return assignments;
+    }
+
+    public String[] getDecisionPath(final double[] row) {
+      String[] paths = new String[_compressed_trees.length];
+      traceDecisions(row, paths, null);
+      return paths;
+    }
+
+    private void traceDecisions(final double[] row, String[] paths, int[] nodeIds) {
+      if (_mojo_version < 1.2) {
+        throw new IllegalArgumentException("You can only obtain decision tree path with mojo versions 1.2 or higher");
+      }
+      for (int j = 0; j < _ntree_groups; j++) {
+        for (int i = 0; i < _ntrees_per_group; i++) {
+          int itree = treeIndex(j, i);
+          double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
+          if (paths != null)
+            paths[itree] = SharedTreeMojoModel.getDecisionPath(d);
+          if (nodeIds != null) {
+            assert _mojo_version >= 1.3;
+            nodeIds[itree] = SharedTreeMojoModel.getLeafNodeId(d, _compressed_trees_aux[itree]);
           }
         }
-        return output;
       }
     }
 

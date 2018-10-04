@@ -27,15 +27,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
-                      "keep_cross_validation_fold_assignment", "score_each_iteration", "score_tree_interval",
-                      "fold_assignment", "fold_column", "response_column", "ignored_columns", "ignore_const_cols",
-                      "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
-                      "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth",
-                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
-                      "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
-                      "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
+        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
+                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment",
+                      "score_each_iteration", "score_tree_interval", "fold_assignment", "fold_column",
+                      "response_column", "ignored_columns", "ignore_const_cols", "offset_column", "weights_column",
+                      "balance_classes", "class_sampling_factors", "max_after_balance_size",
+                      "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth", "min_rows", "nbins",
+                      "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds", "stopping_metric",
+                      "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "learn_rate",
+                      "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha",
+                      "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                       "calibrate_model", "calibration_frame", "custom_metric_func"}
@@ -93,6 +94,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def nfolds(self, nfolds):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
+
+
+    @property
+    def keep_cross_validation_models(self):
+        """
+        Whether to keep the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("keep_cross_validation_models")
+
+    @keep_cross_validation_models.setter
+    def keep_cross_validation_models(self, keep_cross_validation_models):
+        assert_is_type(keep_cross_validation_models, None, bool)
+        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
 
     @property

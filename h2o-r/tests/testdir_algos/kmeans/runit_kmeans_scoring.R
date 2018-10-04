@@ -54,7 +54,8 @@ test.km.scoring <- function() {
   iris3[,"fold_column"] = iris.hex[,"response"]
   
   Log.info("Run K-means with nfolds but for now run without NA in the xval...\n")
-  km_iris = h2o.kmeans(iris3, k = 2, standardize = F, seed = seed, fold_column = "fold_column")
+  km_iris = h2o.kmeans(iris3, k = 2, standardize = F, seed = seed, fold_column = "fold_column",
+                       keep_cross_validation_models=T)
 
   Log.info("Create each train/valid fold and run kmeans 3x...\n")
   cv_models = lapply( km_iris@model$cross_validation_models, function(x) h2o.getModel(x$name))

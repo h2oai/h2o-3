@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -248,6 +249,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                           computeCrossValidation();
                           tryComplete();
                         }
+                        @Override
+                        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+                          Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
+                          if (_job._result != null) {
+                            try {
+                              _job._result.remove(); //ensure there's no incomplete model left for manipulation after crash or cancellation
+                            } catch (Exception logged) {
+                              Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+                            }
+                          }
+                          return true;
+                        }
                       },
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
@@ -332,13 +345,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
 
-      // Step 7: Clean up potentially created temp frames
+      // Step 8: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
         mb.cleanUp();
 
       _job.setReadyForView(true);
       DKV.put(_job);
-
     } finally {
       cleanUp();
       Scope.exit();
@@ -488,7 +500,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     int nRunning=0;
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      if (job.stop_requested() ) {
+        Log.info("Skipping last "+(N-i)+" out of "+N+" "+modelType+" models");
+        throw new Job.JobCancelledException();
+      }
       Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
       modelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
@@ -504,37 +519,39 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       try {
-        submodel_tasks[i].join();
+        final H2O.H2OCountedCompleter task = submodel_tasks[i];
+        assert task != null;
+        task.join();
       } catch(RuntimeException t){
-        if(rt == null) rt = t;
+        if (rt == null) rt = t;
       }
     if(rt != null) throw rt;
   }
 
-  private void buildMainModel() {
-    if (_job.stop_requested()) return;
-    assert _job.isRunning();
-    Log.info("Building main model.");
-    _start_time = System.currentTimeMillis();
-    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
-    mm.join();  // wait for completion
-  }
-
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
-    if( _job.stop_requested() ) return null;
+    if (_job.stop_requested()) {
+      Log.info("Skipping scoring of CV models");
+      throw new Job.JobCancelledException();
+    }
+    assert weights.length == 2*N;
+    assert cvModelBuilders.length == N;
+
+    Log.info("Scoring the "+N+" CV models");
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
-      if( _job.stop_requested() ) return null; //don't waste time scoring if the CV run is stopped
+      if (_job.stop_requested()) {
+        throw new Job.JobCancelledException();
+      }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
-              _parms._keep_cross_validation_predictions ||
-              (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+              || _parms._keep_cross_validation_predictions
+              || (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         DKV.put(cvModel);
@@ -553,25 +570,38 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mbs;
   }
 
-  // Step 6: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
-  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
-    if( _job.stop_requested() ) return;
+  // Step 6: build the main model
+  private void buildMainModel() {
+    if (_job.stop_requested()) {
+      Log.info("Skipping main model");
+      throw new Job.JobCancelledException();
+    }
     assert _job.isRunning();
+    Log.info("Building main model.");
+    _start_time = System.currentTimeMillis();
+    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
+    mm.join();  // wait for completion
+  }
 
+  // Step 7: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
+  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
+    //never skipping CV main scores: we managed to reach last step and this should not be an expensive one, so let's offer this model
     M mainModel = _result.get();
 
     // Compute and put the cross-validation metrics into the main model
-    Log.info("Computing " + N + "-fold cross-validation metrics.");
-    mainModel._output._cross_validation_models = new Key[N];
+    Log.info("Computing "+N+"-fold cross-validation metrics.");
+    Key<M>[] cvModKeys = new Key[N];
+    mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
 
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
       Key<M> cvModelKey = cvModelBuilders[i]._result;
-      mainModel._output._cross_validation_models[i] = cvModelKey;
+      cvModKeys[i] = cvModelKey;
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
+
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -586,13 +616,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.untrack(xvalidation_fold_assignment_frame.keysList());
     }
     // Keep or toss predictions
-    for (Key<Frame> k : predKeys) {
-      Frame fr = DKV.getGet(k);
-      if( fr != null ) {
-        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keysList());
-        else fr.remove();
+    if (_parms._keep_cross_validation_predictions) {
+      for (Key<Frame> k : predKeys) {
+        Frame fr = DKV.getGet(k);
+        if (fr != null) Scope.untrack(fr.keysList());
       }
+    } else {
+      int count = Model.deleteAll(predKeys);
+      Log.info(count+" CV predictions were removed");
     }
+
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -600,8 +633,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
+    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
-    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(mainModel._output._cross_validation_models);
+    if (!_parms._keep_cross_validation_models) {
+      int count = Model.deleteAll(cvModKeys);
+      Log.info(count+" CV models were removed");
+    }
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
@@ -943,6 +980,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // hide cross-validation parameters unless cross-val is enabled
     if (!nFoldCV()) {
+      hide("_keep_cross_validation_models", "Only for cross-validation.");
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");

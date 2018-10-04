@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Script for installing all R versions specified as comma separated list
+# in ${1} or in ${R_VERSIONS}.
+
+# exit on error
+set -e
+
+if [[ ! ${H2O_BRANCH} ]]; then
+ echo "H2O_BRANCH must be set"
+ exit 1
+fi
+
+VERSIONS_TO_INSTALL=${1}
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  VERSIONS_TO_INSTALL=${PYTHON_VERSIONS}
+fi
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  echo "Either PYTHON_VERSIONS must be set or provide and argument containing required versions"
+  exit 1
+fi
+
+# Download test-requirements.txt file from GitHub
+wget -q https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
+
+IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
+for python_version in "${array[@]}"; do
+  echo "###### Installing Python ${python_version} ######"
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev
+  apt-get clean
+  rm -rf /var/cache/apt/*
+
+  echo "###### Creating Virtualenv for Python ${python_version} ######"
+  mkdir -p /envs/h2o_env_python${python_version}
+  chmod a+w -R /envs/h2o_env_python${python_version}
+  su jenkins -c "virtualenv -p python${python_version} /envs/h2o_env_python${python_version}"
+
+  echo "###### Installing dependencies for Python ${python_version} ######"
+  su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip install -r test-requirements.txt"
+done
+
+rm test-requirements.txt

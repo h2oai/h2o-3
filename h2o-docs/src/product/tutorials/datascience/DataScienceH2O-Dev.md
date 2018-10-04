@@ -1234,6 +1234,8 @@ There was some code cleanup and refactoring to support the following features:
 
 - **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
+- **keep\_cross\_validation\_models**: To keep the cross-validation models, check this checkbox. 
+
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
 - **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 

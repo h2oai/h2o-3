@@ -4,6 +4,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import water.Key;
 import water.fvec.FileVec;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -18,13 +19,18 @@ class CsvParser extends Parser {
   private static final int NO_HEADER = ParseSetup.NO_HEADER;
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
+  private static final byte[] NON_DATA_LINE_MARKERS = {'#'};
 
   CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
+
+  protected byte[] nonDataLineMarkers() {
+    return NON_DATA_LINE_MARKERS;
+  }
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
-    BufferedString str = new BufferedString();
+    CharSkippingBufferedString str = new CharSkippingBufferedString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
     int offset  = din.getChunkDataStart(cidx); // General cursor into the giant array of bytes
@@ -50,6 +56,7 @@ class CsvParser extends Parser {
     int quotes = 0;
     byte quoteCount = 0;
     long number = 0;
+    int escaped = -1;
     int exp = 0;
     int sgnExp = 1;
     boolean decimal = false;
@@ -58,11 +65,9 @@ class CsvParser extends Parser {
     int colIdx = 0;
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
+    byte[] nonDataLineMarkers = nonDataLineMarkers();
     if( cidx == 0 ) {
-      while ( c == '#'
-              || isEOL(c)
-              || c == '@' /*also treat as comments leading '@' from ARFF format*/
-              || c == '%' /*also treat as comments leading '%' from ARFF format*/) {
+      while (ArrayUtils.contains(nonDataLineMarkers, c) || isEOL(c)) {
         while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
@@ -80,8 +85,8 @@ class CsvParser extends Parser {
     final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
 MAIN_LOOP:
     while (true) {
-      boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
-      boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
+      final boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
+      final boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
 
       switch (state) {
         // ---------------------------------------------------------------------
@@ -99,6 +104,21 @@ MAIN_LOOP:
             break;
           continue MAIN_LOOP;
         // ---------------------------------------------------------------------
+        case POSSIBLE_ESCAPED_QUOTE:
+          if (c == quotes) {
+            quoteCount--;
+            str.skipIndex(offset);
+            state = STRING;
+            break;
+          } else if (quoteCount > 1) {
+            state = STRING_END;
+            str.removeChar();
+            quoteCount = 0;
+            continue MAIN_LOOP;
+          } else {
+            state = STRING;
+          }
+
         case STRING:
           if (c == quotes) {
             if (quoteCount>1) {
@@ -107,13 +127,18 @@ MAIN_LOOP:
             }
 
             state = COND_QUOTE;
-            break;
+            continue MAIN_LOOP;
           }
-          if ((!isEOL(c) || quoteCount == 1) && ((quotes != 0) || (c != CHAR_SEPARATOR))) {
+          if ((!isEOL(c) || quoteCount == 1) && (c != CHAR_SEPARATOR)) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
             str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
+            break;
+          }
+
+          if(quoteCount == 1){
+            str.addChar(); //Anything not enclosed properly by second quotes is considered to be part of the string
             break;
           }
           // fallthrough to STRING_END
@@ -122,16 +147,16 @@ MAIN_LOOP:
           if ((c != CHAR_SEPARATOR) && (c == CHAR_SPACE))
             break;
           // we have parsed the string categorical correctly
-          if((str.getOffset() + str.length()) > str.getBuffer().length){ // crossing chunk boundary
+          if(str.isOverflown()){ // crossing chunk boundary
             assert str.getBuffer() != bits;
             str.addBuff(bits);
           }
           if( !isNa &&
-              _setup.isNA(colIdx, str)) {
+              _setup.isNA(colIdx, str.toBufferedString())) {
             isNa = true;
           }
           if (!isNa) {
-            dout.addStrCol(colIdx, str);
+            dout.addStrCol(colIdx, str.toBufferedString());
             if (!isAllASCII)
               dout.setIsAllASCII(colIdx, isAllASCII);
           } else {
@@ -139,6 +164,7 @@ MAIN_LOOP:
             isNa = false;
           }
           str.set(null, 0, 0);
+          quotes = 0;
           isAllASCII = true;
           ++colIdx;
           state = SEPARATOR_OR_EOL;
@@ -154,16 +180,15 @@ MAIN_LOOP:
           // fallthrough to EOL
         // ---------------------------------------------------------------------
         case EOL:
-          if (quotes != 0 && quoteCount != 1) {
-            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
+          if (quoteCount == 1) { //There may be a new line character inside quotes
+            state = STRING;
+            continue MAIN_LOOP;
+          } else if (quoteCount > 2) {
             String err = "Unmatched quote char " + ((char) quotes);
             dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
             colIdx = 0;
             quotes = 0;
-          } else if (quoteCount == 1) {
-            state = STRING;
-            continue MAIN_LOOP;
-          }else if (colIdx != 0) {
+          } else if (colIdx != 0) {
             dout.newLine();
             colIdx = 0;
           }
@@ -196,6 +221,10 @@ MAIN_LOOP:
               state = EXPECT_COND_LF;
             break;
           }
+          if (ArrayUtils.contains(nonDataLineMarkers, c)) {
+            state = SKIP_LINE;
+            break;
+          }
           state = WHITESPACE_BEFORE_TOKEN;
           // fallthrough to WHITESPACE_BEFORE_TOKEN
         // ---------------------------------------------------------------------
@@ -217,7 +246,6 @@ MAIN_LOOP:
           state = TOKEN;
           if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
               ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
-            assert (quotes == 0);
             quotes = c;
             quoteCount++;
             break;
@@ -411,8 +439,8 @@ MAIN_LOOP:
         case COND_QUOTE:
           if (c == quotes) {
             str.addChar();
-            state = STRING;
             quoteCount++;
+            state = POSSIBLE_ESCAPED_QUOTE;
             break;
           } else {
             quotes = 0;
@@ -459,8 +487,6 @@ MAIN_LOOP:
           break; // MAIN_LOOP; // when the first character we see is a line end
       }
       c = bits[offset];
-      if(isEOL(c) && state != COND_QUOTE && quotes != 0) // quoted string having newline character => fail the line!
-        state = EOL;
 
     } // end MAIN_LOOP
     if (colIdx == 0)
@@ -476,7 +502,7 @@ MAIN_LOOP:
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
     boolean hasHdr = true;
-    String[] lines = getFirstLines(bits, ps._single_quotes);
+    String[] lines = getFirstLines(bits, ps._single_quotes, nonDataLineMarkers());
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
@@ -638,7 +664,7 @@ MAIN_LOOP:
     int lastNewline = bits.length-1;
     while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
-    String[] lines = getFirstLines(bits, singleQuotes);
+    String[] lines = getFirstLines(bits, singleQuotes, NON_DATA_LINE_MARKERS);
     if(lines.length==0 )
       throw new ParseDataset.H2OParseException("No data!");
 
@@ -754,7 +780,7 @@ MAIN_LOOP:
     return resSetup;
   }
 
-  private static String[] getFirstLines(byte[] bits, boolean singleQuotes) {
+  private static String[] getFirstLines(byte[] bits, boolean singleQuotes, byte[] nonDataLineMarkers) {
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
     int nlines = 0;
@@ -779,9 +805,7 @@ MAIN_LOOP:
       ++offset;
       // For Windoze, skip a trailing LF after CR
       if( (offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-      if( bits[lineStart] == '#') continue; // Ignore      comment lines
-      if( bits[lineStart] == '%') continue; // Ignore ARFF comment lines
-      if( bits[lineStart] == '@') continue; // Ignore ARFF lines
+      if (ArrayUtils.contains(nonDataLineMarkers, bits[lineStart])) continue;
       if( lineEnd > lineStart ) {
         String str = new String(bits, lineStart,lineEnd-lineStart).trim();
         if( !str.isEmpty() ) lines[nlines++] = str;

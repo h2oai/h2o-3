@@ -65,6 +65,7 @@ ext {
       project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
+      project(':h2o-persist-http'),
       project(':h2o-genmodel'),
       project(':h2o-bindings'),
       project(':h2o-avro-parser'),
@@ -87,6 +88,7 @@ ext {
       project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
+      project(':h2o-persist-http'),
       project(':h2o-test-integ'),
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
@@ -206,6 +208,9 @@ subprojects {
     version = rootProject.version
 
     repositories {
+        if (project.hasProperty("enableMavenLocal")) { // useful for development
+            mavenLocal()
+        }
         mavenCentral()
         jcenter()
         maven {
@@ -220,7 +225,6 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        // mavenLocal()
     }
 
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
@@ -289,7 +293,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '4.7'
+  gradleVersion = '4.10'
   distributionType = Wrapper.DistributionType.ALL
 }
 

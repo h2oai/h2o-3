@@ -163,8 +163,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
-    :param max_mem_size: Maximum memory to use for the new h2o server.
-    :param min_mem_size: Minimum memory to use for the new h2o server.
+    :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+    :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
@@ -278,17 +278,15 @@ def lazy_import(path, pattern=None):
     """
     assert_is_type(path, str, [str])
     assert_is_type(pattern, str, None)
-    if is_type(path, str):
-        return _import(path, pattern)
-    else:
-        return [_import(p, pattern)[0] for p in path]
+    paths = [path] if is_type(path, str) else path
+    return _import_multi(paths, pattern)
 
 
-def _import(path, pattern):
-    assert_is_type(path, str)
+def _import_multi(paths, pattern):
+    assert_is_type(paths, [str])
     assert_is_type(pattern, str, None)
-    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
-    if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
+    j = api("POST /3/ImportFilesMulti", {"paths": paths, "pattern": pattern})
+    if j["fails"]: raise ValueError("ImportFiles of '" + ".".join(paths) + "' failed on " + str(j["fails"]))
     return j["destination_frames"]
 
 

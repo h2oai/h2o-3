@@ -26,12 +26,17 @@ def call(final pipelineContext, final stageConfig) {
             installXGBWheel(pipelineContext.getBuildConfig().getCurrentXGBVersion(), h2oFolder)
         }
 
-        if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R)) {
+        if (stageConfig.installRPackage && (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R))) {
             installRPackage(h2oFolder)
         }
 
         makeTarget(pipelineContext) {
+            preBuildAction = stageConfig.preBuildAction
             customBuildAction = stageConfig.customBuildAction
+            postSuccessfulBuildAction = stageConfig.postSuccessfulBuildAction
+            postFailedBuildAction = stageConfig.postFailedBuildAction
+            postSuccessfulBuildAction = stageConfig.postSuccessfulBuildAction
+            postBuildAction = stageConfig.postBuildAction
             target = stageConfig.target
             hasJUnit = stageConfig.hasJUnit
             h2o3dir = h2oFolder
@@ -40,7 +45,7 @@ def call(final pipelineContext, final stageConfig) {
             makefilePath = stageConfig.makefilePath
             archiveFiles = stageConfig.archiveFiles
             activatePythonEnv = stageConfig.activatePythonEnv
-            activateR = stageConfig.activateR
+            javaVersion = stageConfig.javaVersion
         }
     }
 }
@@ -49,14 +54,12 @@ def installPythonPackage(String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-        pip install ${h2o3dir}/h2o-py/dist/*.whl
+        pip install ${h2o3dir}/h2o-py/build/dist/*.whl
     """
 }
 
 def installRPackage(String h2o3dir) {
     sh """
-        echo "Activating R ${env.R_VERSION}"
-        activate_R_${env.R_VERSION}
         R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
     """
 }
@@ -65,7 +68,7 @@ def installXGBWheel(final String xgbVersion, final String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-        
+
         pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-${xgbVersion}-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
     """
 }

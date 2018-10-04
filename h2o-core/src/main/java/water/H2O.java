@@ -29,6 +29,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static water.util.JavaVersionUtils.JAVA_VERSION;
+
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
 *
@@ -82,7 +84,7 @@ final public class H2O {
             "          IP address of this node.\n" +
             "\n" +
             "    -port <port>\n" +
-            "          Port number for this node (note: port+1 is also used).\n" +
+            "          Port number for this node (note: port+1 is also used by default).\n" +
             "          (The default port is " + ARGS.port + ".)\n" +
             "\n" +
             "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
@@ -240,6 +242,9 @@ final public class H2O {
     /** -baseport=####; Port to start upward searching from. */
     public int baseport = 54321;
 
+    /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
+    public int port_offset = 1;
+
     /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
     public String web_ip = null;
 
@@ -336,7 +341,7 @@ final public class H2O {
     public boolean useUDP = false;
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
-    public int clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 2;
+    public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -370,6 +375,10 @@ final public class H2O {
      */
     public boolean launchedWithHadoopJar() {
       return hdfs_skip;
+    }
+
+    public static int getSysPropInt(String suffix, int defaultValue) {
+      return Integer.getInteger(SYSTEM_PROP_PREFIX + suffix, defaultValue);
     }
   }
 
@@ -454,6 +463,10 @@ final public class H2O {
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
         trgt.baseport = s.parsePort(args[i]);
+      }
+      else if (s.matches("port_offset")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.port_offset = s.parsePort(args[i]); // port offset has the same properties as a port, we don't allow negative offsets
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
@@ -711,7 +724,7 @@ final public class H2O {
   public static int orderlyShutdown() {
     return orderlyShutdown(-1);
   }
-  
+
   public static int orderlyShutdown(int timeout) {
     boolean [] confirmations = new boolean[H2O.CLOUD.size()];
     if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
@@ -1654,7 +1667,7 @@ final public class H2O {
 
   public final int size() { return _memary.length; }
   final H2ONode leader() {
-    return _memary[0]; 
+    return _memary[0];
   }
 
   // Find the node index for this H2ONode, or a negative number on a miss
@@ -1837,15 +1850,33 @@ final public class H2O {
    * @return true if not supported
    */
   public static boolean checkUnsupportedJava() {
-    String version = System.getProperty("java.version");
-    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
-      System.err.println("Only Java 1.7-1.8, 9 and 10 is supported, system version is " + version);
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
+      return false;
+    }
+
+    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>10)) {
+      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
     if (vmName != null && vmName.equals("GNU libgcj")) {
       System.err.println("GNU gcj is not supported");
       return true;
+    }
+    return false;
+  }
+
+  private static boolean isUserEnabledJavaVersion() {
+    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
+    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
+      return false;
+    String[] vs = extraJavaVersionsStr.split(",");
+    for (String v : vs) {
+      int majorVersion = Integer.valueOf(v);
+      if (JAVA_VERSION.getMajor() == majorVersion) {
+        return true;
+      }
     }
     return false;
   }

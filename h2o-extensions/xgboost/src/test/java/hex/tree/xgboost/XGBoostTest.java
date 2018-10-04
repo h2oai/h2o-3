@@ -1,9 +1,6 @@
 package hex.tree.xgboost;
 
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsMultinomial;
-import hex.ModelMetricsRegression;
-import hex.SplitFrame;
+import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
@@ -11,11 +8,9 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import ml.dmlc.xgboost4j.java.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -24,13 +19,11 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.rapids.Rapids;
 import water.util.Log;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static water.util.FileUtils.locateFile;
@@ -38,17 +31,23 @@ import static water.util.FileUtils.locateFile;
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
 
-  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0}")
-  public static Iterable<? extends Object> data() {
-    return Arrays.asList("true", "false");
+  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0},javaPredict={1}")
+  public static Collection<Object[]> data() {
+    return Arrays.asList(new Object[][]{
+            {"false", "false"}, {"true", "true"}, {"true", "false"}, {"false", "true"}
+    });
   }
 
   @Parameterized.Parameter
-  public String confJavaScoring;
+  public String confMojoJavaScoring;
+
+  @Parameterized.Parameter(1)
+  public String confJavaPredict;
 
   @Before
   public void setupMojoJavaScoring() {
-    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confJavaScoring);
+    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
+    System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confMojoJavaScoring); // in-h2o predict
   }
 
   public static final class FrameMetadata {
@@ -496,6 +495,49 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testWeatherBinaryCVEarlyStopping() {
+    XGBoostModel model = null;
+    try {
+      Scope.enter();
+      Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
+      final String response = "RainTomorrow";
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
+      // remove columns correlated with the response
+      tfr.remove("RISK_MM").remove();
+      tfr.remove("EvapMM").remove();
+      DKV.put(tfr);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 50;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._nfolds = 5;
+      parms._response_column = response;
+      parms._stopping_rounds = 3;
+      parms._score_tree_interval = 1;
+      parms._seed = 123;
+      parms._keep_cross_validation_models = true;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      final int ntrees = model._output._ntrees;
+
+      int expected = 0;
+      for (Key k : model._output._cross_validation_models) {
+        expected += ((XGBoostModel) k.get())._output._ntrees;
+      }
+      expected = (int) ((double) expected) / model._output._cross_validation_models.length;
+
+      assertEquals(expected, ntrees);
+    } finally {
+      Scope.exit();
+      if (model!=null) {
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
+    }
+  }
+
   @Test(expected = H2OModelBuilderIllegalArgumentException.class)
   public void RegressionCars() {
     Frame tfr = null;
@@ -648,6 +690,171 @@ public class XGBoostTest extends TestUtil {
       }
     }
 
+  }
+
+
+  @Test
+  public void testBinomialTrainingWeights() {
+    XGBoostModel model = null;
+    XGBoostModel noWeightsModel = null;
+    Scope.enter();
+    try {
+      Frame airlinesFrame = Scope.track(parse_test_file("./smalldata/testng/airlines.csv"));
+      airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
+      DKV.put(airlinesFrame);
+
+      final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
+      final String weightsColumnName = "weights";
+      airlinesFrame.add(weightsColumnName, weightsVector);
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "IsDepDelayed";
+      parms._train = airlinesFrame._key;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._weights_column = weightsColumnName;
+      parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Binomial, model._output.getModelCategory());
+      assertEquals(model._output.weightsName(), weightsColumnName);
+
+      Frame trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", airlinesFrame._key, airlinesFrame._key)).getFrame();
+      trainingFrameSubset._key = Key.make();
+      Scope.track(trainingFrameSubset);
+      assertEquals(airlinesFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
+      DKV.put(trainingFrameSubset);
+      parms._weights_column = null;
+      parms._train = trainingFrameSubset._key;
+
+      noWeightsModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+      Vec predicted = Scope.track(noWeightsModel.score(trainingFrameSubset)).vec(2);
+      ModelMetricsBinomial expected = ModelMetricsBinomial.make(predicted, trainingFrameSubset.vec("IsDepDelayed"));
+
+      checkMetrics(expected, (ModelMetricsBinomial) noWeightsModel._output._training_metrics);
+      checkMetrics(expected, (ModelMetricsBinomial) model._output._training_metrics);
+    } finally {
+      Scope.exit();
+      if (model != null) model.delete();
+      if (noWeightsModel != null) noWeightsModel.delete();
+    }
+
+  }
+
+  @Test
+  public void testRegressionTrainingWeights() {
+    XGBoostModel model = null;
+    XGBoostModel noWeightsModel = null;
+    Scope.enter();
+    try {
+      Frame prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
+      prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()).remove();   // Convert GLEASON to categorical
+      Scope.track(prostateFrame);
+      DKV.put(prostateFrame);
+
+      final Vec weightsVector = createRandomBinaryWeightsVec(prostateFrame.numRows(), 10);
+      final String weightsColumnName = "weights";
+      prostateFrame.add(weightsColumnName, weightsVector);
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "AGE";
+      parms._train = prostateFrame._key;
+      parms._weights_column = weightsColumnName;
+      parms._ignored_columns = new String[]{"ID"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Regression, model._output.getModelCategory());
+      assertEquals(weightsColumnName, model._output.weightsName());
+
+      Frame trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [9]) 1))", prostateFrame._key, prostateFrame._key)).getFrame();
+      trainingFrameSubset._key = Key.make();
+      Scope.track(trainingFrameSubset);
+      assertEquals(prostateFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
+      DKV.put(trainingFrameSubset);
+      parms._weights_column = null;
+      parms._train = trainingFrameSubset._key;
+
+      noWeightsModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+      Vec predicted = Scope.track(noWeightsModel.score(trainingFrameSubset)).vec(0);
+      ModelMetricsRegression expected = ModelMetricsRegression.make(predicted, trainingFrameSubset.vec("AGE"), DistributionFamily.gaussian);
+
+      checkMetrics(expected, (ModelMetricsRegression) noWeightsModel._output._training_metrics);
+      checkMetrics(expected, (ModelMetricsRegression) model._output._training_metrics);
+    } finally {
+      Scope.exit();
+      if (model != null) model.delete();
+      if (noWeightsModel != null) noWeightsModel.delete();
+    }
+
+  }
+
+  @Test
+  public void testMultinomialTrainingWeights() {
+    XGBoostModel model = null;
+    XGBoostModel noWeightsModel = null;
+    Scope.enter();
+    try {
+      Frame irisFrame = parse_test_file("./smalldata/extdata/iris.csv");
+      irisFrame.replace(4, irisFrame.vecs()[4].toCategoricalVec()).remove();
+      Scope.track(irisFrame);
+      DKV.put(irisFrame);
+
+      final Vec weightsVector = createRandomBinaryWeightsVec(irisFrame.numRows(), 10);
+      final String weightsColumnName = "weights";
+      irisFrame.add(weightsColumnName, weightsVector);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "C5"; // iris-setosa, iris-versicolor, iris-virginica
+      parms._train = irisFrame._key;
+      parms._weights_column = weightsColumnName;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertEquals(ModelCategory.Multinomial, model._output.getModelCategory());
+      assertEquals(weightsColumnName, model._output.weightsName());
+
+      Frame trainingFrameSubset = Rapids.exec(String.format("(rows %s ( == (cols %s [5]) 1))", irisFrame._key, irisFrame._key)).getFrame();
+      trainingFrameSubset._key = Key.make();
+      Scope.track(trainingFrameSubset);
+      assertEquals(irisFrame.vec(weightsColumnName).nzCnt(), trainingFrameSubset.numRows());
+      DKV.put(trainingFrameSubset);
+      parms._weights_column = null;
+      parms._train = trainingFrameSubset._key;
+
+      noWeightsModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+      Frame predicted = Scope.track(noWeightsModel.score(trainingFrameSubset));
+      predicted.remove(0);
+      ModelMetricsMultinomial expected = ModelMetricsMultinomial.make(predicted, trainingFrameSubset.vec("C5"));
+
+      checkMetrics(expected, (ModelMetricsMultinomial) model._output._training_metrics);
+      checkMetrics(expected, (ModelMetricsMultinomial) noWeightsModel._output._training_metrics);
+    } finally {
+      Scope.exit();
+      if (model != null) model.delete();
+      if (noWeightsModel != null) noWeightsModel.delete();
+    }
+
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with binary weights (either 0.0D or 1.0D, nothing in between).
+   */
+  private Vec createRandomBinaryWeightsVec(final long len, final int randomSeed) {
+    final Vec weightsVec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = new Random(randomSeed);
+    for (int i = 0; i < weightsVec.length(); i++) {
+      weightsVec.set(i, random.nextBoolean() ? 1.0D : 0D);
+    }
+
+    return weightsVec;
   }
 
   @Test
@@ -1017,13 +1224,23 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel sparseModel = null;
     XGBoostModel denseModel = null;
     try {
-      Frame sparseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 10, 0));
-      Frame denseFrame = Scope.track(TestUtil.generate_enum_only(2, 10, 2, 0));
+
+      // Fill ratio 0.2 (response not counted)
+      Frame sparseFrame = Scope.track(new TestFrameBuilder()
+              .withName("sparse_frame")
+              .withColNames("C1", "C2", "C3")
+              .withVecTypes(Vec.T_NUM,Vec.T_NUM,Vec.T_NUM)
+              .withDataForCol(0, ard( 1,0, 0, 0, 0))
+              .withDataForCol(1, ard( 0, 1, 0, 0, 0))
+              .withDataForCol(2, ard( 2, 1,1, 4, 3))
+              .build());
+
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = sparseFrame._key;
-      parms._response_column = "C1";
+      parms._response_column = "C3";
       parms._seed = 42;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._ntrees = 1;
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
 
@@ -1031,9 +1248,20 @@ public class XGBoostTest extends TestUtil {
       assertNotNull(sparseModel);
       assertTrue(sparseModel._output._sparse);
 
+      // Fill ratio 0.3 (response not counted) - the threshold for sprase is >= 0.3
+      Frame denseFrame = Scope.track(new TestFrameBuilder()
+              .withName("sparse_frame")
+              .withColNames("C1", "C2", "C3")
+              .withVecTypes(Vec.T_NUM,Vec.T_NUM,Vec.T_NUM)
+              .withDataForCol(0, ard( 1,0, 0, 0, 0))
+              .withDataForCol(1, ard( 1, 1, 0, 0, 0))
+              .withDataForCol(2, ard( 2, 1,1, 4, 3))
+              .build());
+
       parms._train = denseFrame._key;
-      parms._response_column = "C1";
+      parms._response_column = "C3";
       parms._seed = 42;
+      parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._ntrees = 1;
       parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
 
@@ -1083,6 +1311,41 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  /**
+   * PUBDEV-5816: Tests correctness of training metrics returned for Multinomial XGBoost models
+   */
+  @Test
+  public void testPubDev5816() {
+    Scope.enter();
+    try {
+      final String response = "cylinders";
+
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      f.replace(f.find(response), f.vecs()[f.find(response)].toCategoricalVec()).remove();
+      DKV.put(Scope.track(f));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._ignored_columns = new String[]{"name"};
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      ModelMetricsMultinomial modelMetricsMultinomial = (ModelMetricsMultinomial) model._output._training_metrics;
+
+      Frame predicted = Scope.track(model.score(f));
+      predicted.remove(0);
+      ModelMetricsMultinomial expected = (ModelMetricsMultinomial.make(predicted, f.vec(response), f.vec(response).domain()));
+      Scope.track_generic(expected);
+
+      checkMetrics(expected, modelMetricsMultinomial);
+    } finally {
+      Scope.exit();
+    }
+  }
+
   private static XGBoostMojoModel getMojo(XGBoostModel model) throws IOException {
     ByteArrayOutputStream os = new ByteArrayOutputStream();
     model.getMojo().writeTo(os);
@@ -1090,6 +1353,33 @@ public class XGBoostTest extends TestUtil {
     MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
             new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
     return (XGBoostMojoModel) MojoModel.load(mojoReaderBackend);
+  }
+
+  private static <T extends ModelMetricsSupervised> void checkMetrics(final T expectedMM, final T actualMM) {
+    assertEquals(expectedMM.rmse(), actualMM.rmse(), 1e-20);
+    assertEquals(expectedMM._sigma, actualMM._sigma, 1e-20);
+    assertEquals(expectedMM._nobs, actualMM._nobs, 1e-20);
+    if (expectedMM instanceof ModelMetricsBinomial) {
+      final ModelMetricsBinomial mmbExp = (ModelMetricsBinomial) expectedMM;
+      final ModelMetricsBinomial mmbAct = (ModelMetricsBinomial) actualMM;
+      assertEquals(mmbExp.logloss(), mmbExp.logloss(), 1e-20);
+      assertEquals(mmbExp.auc(), mmbAct.auc(), 1e-20);
+      assertEquals(mmbExp.mean_per_class_error(), mmbAct.mean_per_class_error(), 1e-20);
+      checkConfusionMatrix(mmbExp.cm(), mmbAct.cm());
+    } else if (expectedMM instanceof ModelMetricsMultinomial) {
+      final ModelMetricsMultinomial mmmExp = (ModelMetricsMultinomial) expectedMM;
+      final ModelMetricsMultinomial mmmAct = (ModelMetricsMultinomial) actualMM;
+      assertEquals(mmmExp.logloss(), mmmAct.logloss(), 1e-20);
+      assertEquals(mmmExp.mean_per_class_error(), mmmAct.mean_per_class_error(), 1e-20);
+      checkConfusionMatrix(mmmExp.cm(), mmmAct.cm());
+    }
+    assertArrayEquals(expectedMM.hr(), actualMM.hr(), 1e-20F);
+    assertArrayEquals(expectedMM._domain, actualMM._domain);
+  }
+
+  private static void checkConfusionMatrix(final ConfusionMatrix expectedCM, final ConfusionMatrix actualCM) {
+    assertTrue("Expected: " + Arrays.deepToString(expectedCM._cm) + ", Got: " + Arrays.deepToString(actualCM._cm),
+            Arrays.deepEquals(actualCM._cm, expectedCM._cm));
   }
 
 }

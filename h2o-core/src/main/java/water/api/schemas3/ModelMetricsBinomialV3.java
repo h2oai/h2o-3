@@ -1,8 +1,10 @@
 package water.api.schemas3;
 
 import hex.AUC2;
+import hex.ConfusionMatrix;
 import hex.ModelMetricsBinomial;
 import water.api.API;
+import water.api.SchemaServer;
 import water.util.TwoDimTable;
 
 public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>>
@@ -31,8 +33,8 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The class labels of the response.", direction=API.Direction.OUTPUT)
   public String[] domain;
 
-//  @API(help = "The ConfusionMatrix at the threshold for maximum F1.", direction = API.Direction.OUTPUT)
-//  public ConfusionMatrixV3 cm;
+  @API(help = "The ConfusionMatrix at the threshold for maximum F1.", direction = API.Direction.OUTPUT)
+  public ConfusionMatrixV3 cm;
 
   @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT, level = API.Level.expert)
   public TwoDimTableV3 thresholds_and_metric_scores;
@@ -51,11 +53,18 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
     logloss = modelMetrics._logloss;
     mean_per_class_error = modelMetrics._mean_per_class_error;
 
+
+    if (null != modelMetrics.cm()) {
+      ConfusionMatrix cm = modelMetrics.cm();
+      cm.table(); // Fill in lazy table, for icing
+      this.cm = (ConfusionMatrixV3) SchemaServer.schema(this.getSchemaVersion(), cm).fillFromImpl(cm);
+    }
+
     AUC2 auc = modelMetrics._auc;
     if (null != auc) {
       AUC  = auc._auc;
       Gini = auc._gini;
-      pr_auc = auc.pr_auc();
+      pr_auc = auc._pr_auc;
 
       // Fill TwoDimTable
       String[] thresholds = new String[auc._nBins];

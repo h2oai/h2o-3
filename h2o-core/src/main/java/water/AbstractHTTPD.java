@@ -211,7 +211,8 @@ public abstract class AbstractHTTPD {
     connector.setHost(_ip);
     connector.setPort(_port);
 
-    createServer(connector);
+    createServer(
+        configureConnector("http", connector));
   }
 
   /**
@@ -232,7 +233,19 @@ public abstract class AbstractHTTPD {
     }
     httpsConnector.setPort(getPort());
 
-    createServer(httpsConnector);
+    createServer(
+        configureConnector("https", httpsConnector));
+  }
+
+  // Configure connector via properties which we can modify.
+  // Also increase request header size and buffer size from default values
+  // located in org.eclipse.jetty.http.HttpBuffersImpl
+  private Connector configureConnector(String proto, Connector connector) {
+    connector.setRequestHeaderSize(H2O.OptArgs.getSysPropInt(proto+".requestHeaderSize", 32*1024));
+    connector.setRequestBufferSize(H2O.OptArgs.getSysPropInt(proto+".requestBufferSize", 32*1024));
+    connector.setResponseHeaderSize(H2O.OptArgs.getSysPropInt(proto+".responseHeaderSize", connector.getResponseHeaderSize()));
+    connector.setResponseBufferSize(H2O.OptArgs.getSysPropInt(proto+".responseBufferSize", connector.getResponseBufferSize()));
+    return connector;
   }
 
   /**

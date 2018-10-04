@@ -1,0 +1,24 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base${GPU_SUFFIX}:${FROM_VERSION}
+
+RUN \
+    add-apt-repository -y ppa:deadsnakes && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python-virtualenv && \
+    apt-get clean && \
+    rm -rf /var/cache/apt/*
+
+RUN \
+    wget -q https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    tar xjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
+    rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
+    wget -q https://github.com/jgm/pandoc/releases/download/2.1.1/pandoc-2.1.1-linux.tar.gz && \
+    tar xzf pandoc-2.1.1-linux.tar.gz --strip-components 1 -C /usr/local/ && \
+    rm -rf pandoc-2.1.1-linux.tar.gz
+
+COPY scripts/install_python_version /tmp
+RUN \
+    chmod +x /tmp/install_python_version

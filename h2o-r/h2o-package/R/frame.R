@@ -3227,7 +3227,10 @@ as.h2o <- function(x, destination_frame="", ...) {
 #' @method as.h2o default
 #' @export
 as.h2o.default <- function(x, destination_frame="", ...) {
-  if( destination_frame=="" ) destination_frame <- deparse(substitute(x)) # guessing is done in as.h2o.data.frame
+  if( destination_frame=="" ) {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else paste0(class(x), "_", collapse = ""))
+  }
   x <- if( length(x)==1L )
     data.frame(C1=x)
   else
@@ -3241,7 +3244,7 @@ as.h2o.default <- function(x, destination_frame="", ...) {
 as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
-    destination_frame <- .key.make(if(nzchar(subx)) subx else "copy")
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "H2OFrame_copy")
   }
   h2o.assign(x, key=destination_frame)
 }
@@ -3254,10 +3257,12 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 #' @references \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
 #' @export
 as.h2o.data.frame <- function(x, destination_frame="", ...) {
-  if( destination_frame=="" )
-    destination_frame <- deparse(substitute(x))
-  
-  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  if( destination_frame=="" ) {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "data.frame")
+  } else {
+    destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  }
   .key.validate(destination_frame) # h2o.uploadFile already handle ""
   
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
@@ -3291,14 +3296,13 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
 #' Turn on h2o datatable by options("h2o.use.data.table"=TRUE)
 #' @export
 as.h2o.Matrix <- function(x, destination_frame="", ...) {
-  
-  if( destination_frame=="")
-    destination_frame <- deparse(substitute(x))
-
-  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  if( destination_frame=="") {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "Matrix")
+  } else {
+    destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  }
   .key.validate(destination_frame)
-  if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
-    destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
 
   if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
     drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format

@@ -311,8 +311,11 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's currently available 
 POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed
 for scoring in real time.
 <p></p>
-<b>Note</b>: MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec,
-and XGBoost algorithms.
+<b>Notes</b>: 
+<ul>
+<li>MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost algorithms.</li>
+<li>MOJOs are only supported for encodings that are either default or Enum.</li>
+</ul>
 
 <h3><u>Benefit of MOJOs over POJOs</u></h3>
 <p></p>
@@ -372,9 +375,9 @@ tree built in the model. Note that each tree file is saved as a binary file type
                         learn_rate=0.1)
         </pre>
     </li>
-    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
-        <pre>modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
-		print("Model saved to " + modelfile)
+    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
+        <pre>modelfile <- h2o.download_mojo(model, path="~/experiments/", get_genmodel_jar=TRUE)
+		print("Model saved to " + modelfile) 
 		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
         </pre>
     </li>
@@ -400,7 +403,7 @@ tree built in the model. Note that each tree file is saved as a binary file type
         </pre>
     </li>
     <li>
-        Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        Download the MOJO and the resulting h2o-genmodel.jar file to a new <b>experiment</b> folder. Be sure to specify the entire path for the MOJO, not just the relative path.
         <pre>
         modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
 		print("Model saved to " + modelfile)
@@ -414,13 +417,13 @@ tree built in the model. Note that each tree file is saved as a binary file type
 <p></p>
 
 <ol>
-    <li>Open a *new* terminal window and change directories to the **experiment** folder:
+    <li>Open a *new* terminal window and change directories to the <b>experiment</b> folder:
         <pre>
         $ cd experiment
         </pre>
     </li>
 
-    <li>Create your main program in the **experiment** folder by creating a new file
+    <li>Create your main program in the <b>experiment</b> folder by creating a new file
         called main.java (for example, using "vim main.java"). Include the following contents.
         Note that this file references the GBM model created above using R.
         <pre>
@@ -538,7 +541,13 @@ Here is example output for a GBM model:
 
 <h3>From R:</h3>
 The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on
-the command line to make a .png file.
+the command line to make a .png file. To better control the look and feel of your tree, we
+provide two options for PrintMojo. ``--decimalplaces`` (or ``-d``) allows you to control the 
+number of decimal points shown for numbers. ``--fontsize`` (or ``-f``) controls the font size. 
+The default font size is 14. When using this option, be careful not to choose a font size that 
+is so large that you cannot see your whole tree. We recommend using a font size no larger than 
+20.
+
 <pre>
 library(h2o)
 h2o.init()
@@ -555,9 +564,9 @@ h2o.download_mojo(model, getwd(), FALSE)
 # and run the PrintMojo tool from the command line.
 #
 # (For MacOS: brew install graphviz)
-# java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
-# dot -Tpng model.gv -o model.png
-# open model.png
+java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+dot -Tpng model.gv -o model.png
+open model.png
 </pre>
 
 <h1><u>Using an XGBoost MOJO with Maven</u></h1>
@@ -573,12 +582,12 @@ If you declare a dependency on h2o-genmodel, then you also have to include the h
     <dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel-ext-xgboost</artifactId>
-        <version>3.18.0.8</version>
+        <version>3.20.0.3</version>
     </dependency>
     <dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel</artifactId>
-        <version>3.18.0.8</version>
+        <version>3.20.0.3</version>
     </dependency>
 </dependencies>
 </xmp>

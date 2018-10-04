@@ -78,7 +78,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         _ipLow = ArrayUtils.encodeAsLong(b, 0, 8);
       }
     }
-    public int htm_port() { return getPort()-1; }
+    public int htm_port() { return getPort()-H2O.ARGS.port_offset; }
     public int udp_port() { return getPort()  ; }
     @Override public String toString() { return getAddress()+":"+htm_port(); }
     public String getIpPortString() {

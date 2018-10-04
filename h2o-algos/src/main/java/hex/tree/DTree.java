@@ -120,6 +120,7 @@ public class DTree extends Iced {
     abstract public StringBuilder toString2(StringBuilder sb, int depth);
     abstract protected AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux);
     abstract protected int size();
+    abstract protected int numNodes();
 
     public final int nid() { return _nid; }
     public final int pid() { return _pid; }
@@ -426,6 +427,7 @@ public class DTree extends Iced {
     }
     @Override protected AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux) { throw H2O.fail(); }
     @Override protected int size() { throw H2O.fail(); }
+    @Override protected int numNodes() { throw H2O.fail(); }
   }
 
   // --------------------------------------------------------------------------
@@ -443,6 +445,7 @@ public class DTree extends Iced {
 
     transient byte _nodeType; // Complex encoding: see the compressed struct comments
     transient int _size = 0;  // Compressed byte size of this subtree
+    transient int _nnodes = 0; // Number of nodes in this subtree
 
     // Make a correctly flavored Undecided
     public UndecidedNode makeUndecidedNode(DHistogram hs[]) {
@@ -660,6 +663,14 @@ public class DTree extends Iced {
       return (_size = res);
     }
 
+    @Override
+    protected int numNodes() {
+      if (_nnodes > 0)
+        return _nnodes;
+      _nnodes = 1 + _tree.node(_nids[0]).numNodes() + _tree.node(_nids[1]).numNodes();
+      return _nnodes;
+    }
+
     // Compress this tree into the AutoBuffer
     @Override public AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux) {
       int pos = ab.position();
@@ -678,7 +689,7 @@ public class DTree extends Iced {
       }
       if (abAux != null) {
         abAux.put4(_nid);
-        abAux.put4(_pid);
+        abAux.put4(_tree.node(_nids[0]).numNodes()); // number of nodes in the left subtree; this used to be 'parent node id'
         abAux.put4f((float)_split._n0);
         abAux.put4f((float)_split._n1);
         abAux.put4f((float)_split._p0);
@@ -722,6 +733,7 @@ public class DTree extends Iced {
       assert !Double.isNaN(_pred); return ab.put4f(_pred);
     }
     @Override protected int size() { return 4; }
+    @Override protected int numNodes() { return 0; }
     public final double pred() { return _pred; }
   }
 

@@ -20,6 +20,7 @@ public class ParseUtilsTest {
     int oneValue = _random.nextInt();
     String valStr = Integer.toString(oneValue);
     assertEquals(ParseUtils.tryParse(valStr, null), oneValue);
+    assertEquals(ParseUtils.tryParse(valStr, oneValue), oneValue);
 
     int arraySize = _random.nextInt(10)+1;
     int arrySizeM1 = arraySize-1;
@@ -34,7 +35,9 @@ public class ParseUtilsTest {
     }
     sb.append("]");
     int[] readback = (int[]) ParseUtils.tryParse(sb.toString(), null);
+    int[] readbackdefVal = (int[]) ParseUtils.tryParse(sb.toString(), readback);
     assertArrayEquals(readback, valArray);
+    assertArrayEquals(readbackdefVal, valArray);
   }
 
   @Test
@@ -42,6 +45,7 @@ public class ParseUtilsTest {
     double oneValue = _random.nextDouble();
     String valStr = Double.toString(oneValue);
     assertEquals(ParseUtils.tryParse(valStr, null), oneValue);
+    assertEquals(ParseUtils.tryParse(valStr, oneValue), oneValue);
 
     int arraySize = _random.nextInt(10)+1;
     int arrySizeM1 = arraySize-1;
@@ -56,7 +60,9 @@ public class ParseUtilsTest {
     }
     sb.append("]");
     double[] readback = (double[]) ParseUtils.tryParse(sb.toString(), null);
+    double[] readbackdefVal = (double[]) ParseUtils.tryParse(sb.toString(), readback);
     assertArrayEquals(readback, valArray, 1e-10);
+    assertArrayEquals(readbackdefVal, valArray, 1e-10);
   }
 
   @Test
@@ -64,6 +70,7 @@ public class ParseUtilsTest {
     long oneValue = _random.nextLong();
     String valStr = Long.toString(oneValue);
     assertEquals(ParseUtils.tryParse(valStr, null), oneValue);
+    assertEquals(ParseUtils.tryParse(valStr, oneValue), oneValue);
 
     int arraySize = _random.nextInt(10)+1;
     int arrySizeM1 = arraySize-1;
@@ -78,6 +85,8 @@ public class ParseUtilsTest {
     }
     sb.append("]");
     long[] readback = (long[]) ParseUtils.tryParse(sb.toString(), null);
+    long[] readbackdefVal = (long[]) ParseUtils.tryParse(sb.toString(), readback);
     assertArrayEquals(readback, valArray);
+    assertArrayEquals(readbackdefVal, valArray);
   }
 }

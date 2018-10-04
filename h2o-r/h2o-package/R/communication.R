@@ -205,7 +205,7 @@
     if(!autoML){
       header['Expect'] = ''
     }else{
-      header = "Content-Type: application/json"
+      header["Content-Type"] <- "application/json"
     }
     tmp = tryCatch(curlPerform(url = URLencode(url),
                                postfields = postBody,
@@ -496,7 +496,7 @@
 .format.helper <- function(x, format) {
     tryCatch(
       if( is.list(x) ) lapply(x, .format.helper, format)
-      else             sapply(x, function(i) if( is.na(i) ) "" else sprintf(format, i))
+      else             sapply(x, function(i) if( is.na(i) ) "NA" else sprintf(format, i))
     , error=function(e) {
       print("\n\n Format Error \n\n")
       print("x:"); print(x); print("format: "); print(format); print(e)

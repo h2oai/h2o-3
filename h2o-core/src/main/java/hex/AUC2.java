@@ -1,6 +1,5 @@
 package hex;
 
-import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
@@ -8,6 +7,8 @@ import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.fp.Function;
 import water.util.fp.Functions;
+
+import java.util.Arrays;
 
 import static hex.AUC2.ThresholdCriterion.precision;
 import static hex.AUC2.ThresholdCriterion.recall;
@@ -27,7 +28,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public final double _auc, _gini; // Actual AUC value
+  public final double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -160,6 +161,7 @@ public class AUC2 extends Iced {
     }
     _p = p;  _n = n;
     _auc = compute_auc();
+    _pr_auc = pr_auc();
     _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
   }

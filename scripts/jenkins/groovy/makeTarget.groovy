@@ -18,13 +18,6 @@ def call(final pipelineContext, final Closure body) {
     config.hasJUnit = true
   }
 
-  if (config.activatePythonEnv == null) {
-    config.activatePythonEnv = true
-  }
-  if (config.activateR == null) {
-    config.activateR = true
-  }
-
   config.h2o3dir = config.h2o3dir ?: 'h2o-3'
 
   if (config.customBuildAction == null) {
@@ -35,19 +28,23 @@ def call(final pipelineContext, final Closure body) {
     }
 
     config.customBuildAction = """
-      echo "Activating Java ${env.JAVA_VERSION}"
-      . /usr/bin/activate_java_${env.JAVA_VERSION}
-      java -version 
-      javac -version
-
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
       fi
-
-      if [ "${config.activateR}" = 'true' ]; then
-        echo "Activating R ${env.R_VERSION}"
-        activate_R_${env.R_VERSION}
+      
+      echo '########################'
+      echo '# USING THESE VERSIONS #'
+      echo '########################'
+      if [ \$(command -v java) ]; then
+        java -version
+        javac -version
+      fi
+      if [ \$(command -v python) ]; then
+        python --version
+      fi
+      if [ \$(command -v R) ]; then
+        R --version
       fi
 
       echo "Running Make"
@@ -57,10 +54,22 @@ def call(final pipelineContext, final Closure body) {
   }
 
   boolean success = false
+  if (config.preBuildAction) {
+    execMake(config.preBuildAction, config.h2o3dir)
+  }
   try {
     execMake(config.customBuildAction, config.h2o3dir)
     success = true
   } finally {
+    if (success && config.postSuccessfulBuildAction) {
+      execMake(config.postSuccessfulBuildAction, config.h2o3dir)
+    }
+    if (!success && config.postFailedBuildAction) {
+      execMake(config.postFailedBuildAction, config.h2o3dir)
+    }
+    if (config.postBuildAction) {
+      execMake(config.postBuildAction, config.h2o3dir)
+    }
     if (config.hasJUnit) {
       final GString findCmd = "find ${config.h2o3dir} -type f -name '*.xml'"
       final GString replaceCmd = "${findCmd} -exec sed -i 's/&#[0-9]\\+;//g' {} +"
@@ -80,7 +89,7 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=/usr/lib/jvm/java-current-oracle
+    export JAVA_HOME=/usr/lib/jvm/java-${env.JAVA_VERSION}-oracle
     export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}

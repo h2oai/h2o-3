@@ -2,6 +2,253 @@
 
 ## H2O
 
+### Wright (3.20.0.9) - 10/1/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5930'>PUBDEV-5930</a>] - Fixed an issue that caused H2O to fail when loading a GLRM model. 
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5938'>PUBDEV-5938</a>] - log4j.properties can be loaded from classpath.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5939'>PUBDEV-5939</a>] - Buffer configuration is now available for http/https connections.
+</li>
+</ul>
+
+
+### Wright (3.20.0.8) - 9/21/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5855'>PUBDEV-5855</a>] - Fixed an issue that occurred when parsing columns that include double quotation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5880'>PUBDEV-5880</a>] - The `max_runtime_secs` option is no longer ignored when using the Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5906'>PUBDEV-5906</a>] - Fixed an XGBoost Sparsity detection test to make it deterministic.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5907'>PUBDEV-5907</a>] - Hadoop driver class no longer fails to parse new Java version string.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5861'>PUBDEV-5861</a>] - Added a GBM/DRF Tree walker API in the R client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5862'>PUBDEV-5862</a>] - The R API for obtaining and traversing model trees in GBM/DRF is available in Python.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5706'>PUBDEV-5706</a>] - Added  support for user defined split points in partial dependence plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5748'>PUBDEV-5748</a>] - Confusion matrices can now be generated in Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5900'>PUBDEV-5900</a>] - Java version error messages now reference versions 7 and 8 instead of 1.7 and 1.8. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5902'>PUBDEV-5902</a>] - A Python tree traversal demo is available at <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb">https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb</a>. 
+</li>
+</ul>
+
+
+### Wright (3.20.0.7) - 8/31/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5826'>PUBDEV-5826</a>] - Fixed an issue that caused a mismatch between GLRM MOJO predict and GLRM predict.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5841'>PUBDEV-5841</a>] - Fixed an issue that caused H2O XGBoost grid search to fail even when sizing the sessions 4xs the data size and using extramempercent of 150.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5848'>PUBDEV-5848</a>] - When performing multiple AutoML runs using the H2O R client, viewing the first AutoML leaderboard no longer results in an error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5864'>PUBDEV-5864</a>] - H2O now only binds to the local interface when started from R/Python.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5871'>PUBDEV-5871</a>] - Fixed an issue that caused DeepLearning and XGBoost MOJOs to get a corrupted input row. This occurred when GenModel's helper functions that perform 1-hot encoding failed to take correctly into considerations cases where useAllFactorLevels = false and corrupted the first categorical value in the input row.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5872'>PUBDEV-5872</a>] - Added gamma, tweedie, and poisson objective functions to the XGBoost Java Predictor.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5877'>PUBDEV-5877</a>] - Fixed an issue in HDFS file import. In rare cases the import could fail due to temporarily inconsistent state of H2O distributed memory.
+</li>
+</ul>
+
+
+### Wright (3.20.0.6) - 8/24/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/6/index.html</a>
+
+<h2>Bug</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5724'>PUBDEV-5724</a>] - H2oApi.frameColumn in h2o-bindings.jar now correctly parses responses. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5751'>PUBDEV-5751</a>] - biz.k11i:xgboost-predictor:0.3.0 is now ported to the h2oai repo and released to Maven Central. This allows for easier deployment of H2O and Sparkling Water.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5786'>PUBDEV-5786</a>] - In GLM, the coordinate descent solver is now only disabled for when family=multinomial. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5792'>PUBDEV-5792</a>] - Fixed an issue that caused the H2O parser to hang when reading a Parquet file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5803'>PUBDEV-5803</a>] -  Fixed an issue that resulted in an AutoML "Unauthorized" Error when running through Enterprise Steam via R.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5818'>PUBDEV-5818</a>] - Leaf Node assignment no longer produces the wrong paths for degenerated trees.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5823'>PUBDEV-5823</a>] - Updated the list of Python dependencies on the release download page and in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5826'>PUBDEV-5826</a>] - Fixed an issue that resulted in a mismatch between GLRM predict and GLRM MOJO predict.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5844'>PUBDEV-5844</a>] - Launching H2O on a machine with greater than 2TB no longer results in an integer overflow error.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5847'>PUBDEV-5847</a>] - The HTTP parser no longer reads fewer rows when the data is compressed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5851'>PUBDEV-5851</a>] - AstFillNA Rapids expression now returns H2O.unimp() on backward methods.
+</li>
+</ul>
+        
+<h2>New Feature</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5735'>PUBDEV-5735</a>] - In GBM and DRF, tree traversal and information is now accessible from the R and Python clients. This can be done using the new h2o.getModelTree function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5779'>PUBDEV-5779</a>] - In GBM, added a new staged_predict_proba function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5812'>PUBDEV-5812</a>] - MOJO output now includes terminal node IDs. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5832'>PUBDEV-5832</a>] - GBM/DRF, the H2OTreeClass function now allows you to specify categorical levels. 
+</li>
+</ul>
+        
+<h2>Task</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5845'>PUBDEV-5845</a>] - Updated the XGBoost dependency to ai.h2o:xgboost-predictor:0.3.1. 
+</li>
+</ul>
+    
+<h2>Improvement</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5837'>PUBDEV-5837</a>] - Terminal node IDs can now be retrieved in the predict_leaf_node_assignment function.
+</li>
+</ul>
+    
+<h2>Docs</h2>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5836'>PUBDEV-5836</a>] - The User Guide now indicates that only Hive versions 2.2.0 or greater are supported for JDBC drivers. Hive 2.1 is not currently supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5838'>PUBDEV-5838</a>] - In GLM, the documentation for the Coordinate Descent solver now notes that Coordinate Descent is not available when family=multinomial. 
+</li>
+</ul>
+
+### Wright (3.20.0.5) - 8/8/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5543'>PUBDEV-5543</a>] - Hive smoke tests no longer time out on HDP.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5793'>PUBDEV-5793</a>] - AutoML now correctly ignores columns specified in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5794'>PUBDEV-5794</a>] - In Flow, the Import SQL Table button now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5806'>PUBDEV-5806</a>] - XGBoost cross validation now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5811'>PUBDEV-5811</a>] - Fixed an issue that caused AutoML to fail in Flow due to the keep_cross_validation_fold_assignment option.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5814'>PUBDEV-5814</a>] - Multinomial Stacked Ensemble no longer fails when either XGBoost or Naive Bayes is the base model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5816'>PUBDEV-5816</a>] - Fixed an issue that caused XGBoost to generate the wrong metrics for multinomial cases.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5819'>PUBDEV-5819</a>] - Increased the client_disconnect_timeout value when ClientDisconnectCheckThread searches for connected clients.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5813'>PUBDEV-5813</a>] - Added automated Flow test for AutoML.
+</li>
+</ul>
+
+
+### Wright (3.20.0.4) - 7/31/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5555'>PUBDEV-5555</a>] - In Flow, increased the height of the summary section for the column summary.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5720'>PUBDEV-5720</a>] - Cross-validation now works correctly in XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5739'>PUBDEV-5739</a>] - Documentation for the MOJO predict functions (mojo_predict_pandas and mojo_predict_csv) is now available in the Python User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5744'>PUBDEV-5744</a>] - Regression comparison tests no longer fail between H2OXGBoost and native XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5760'>PUBDEV-5760</a>] - GBM/DRF MOJO scoring no longer allocates unnecessary objects for each scored row.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5736'>PUBDEV-5736</a>] - In GBM, added point estimation as a metric.
+</li>
+</ul>
+        
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5730'>PUBDEV-5730</a>] - Reduced the size of the h2o.jar.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5429'>PUBDEV-5429</a>] - The h2o.importFile([List of Directory Paths]) function will now import all the files located in the specified folders.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5637'>PUBDEV-5637</a>] - Added Standard Error of Mean (SEM) to Partial Dependence Plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5718'>PUBDEV-5718</a>] - Added two new formatting options to hex.genmodel.tools.PrintMojo. The --decimalplaces (or -d) option allows you to set the number of places after the decimal point. The --fontsize (or -f) option allows you to set the fontsize. The default fontsize is 14.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5733'>PUBDEV-5733</a>] - Optimized the performance of ingesting large number of small Parquet files by using sequential parse.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5749'>PUBDEV-5749</a>] - Added support for weights in a calibration frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5752'>PUBDEV-5752</a>] - Added a new port_offset command. This parameter lets you specify the relationship of the API port ("web port") and the internal communication port. The previous implementation expected h2o port = api port + 1. Because there are assumptions in the code that the h2o port and API port can be derived from each other, we cannot fully decouple them. Instead, this new option lets the user specify an offset such that h2o port = api port + offset. This enables the user to move the communication port to a specific range, which can be firewalled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5765'>PUBDEV-5765</a>] - Improved speed of ingesting data from HTTP/HTTPS data sources in standalone H2O.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5694'>PUBDEV-5694</a>] - The User Guide now specifies that XLS/XLSX files must be BIFF 8 format. Other formats are not supported.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5731'>PUBDEV-5731</a>] - Added to docs that when downloading MOJOs/POJOs, users must specify the entire path and not just the relative path.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5774'>PUBDEV-5774</a>] - Added documentation for the new port_offset command when starting H2O.
+</ul>
+
 ### Wright (3.20.0.3) - 7/10/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/3/index.html</a>

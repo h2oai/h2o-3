@@ -28,10 +28,12 @@ water.api.schemas3.FrameV3
 water.api.schemas3.FrameV3$ColSpecifierV3
 water.api.schemas3.FrameV3$ColV3
 water.api.schemas3.FramesV3
+water.api.schemas3.FramesListV3
 water.api.schemas3.GarbageCollectV3
 water.api.schemas3.H2OErrorV3
 water.api.schemas3.H2OModelBuilderErrorV3
 water.api.schemas3.ImportFilesV3
+water.api.schemas3.ImportFilesMultiV3
 water.api.schemas3.ImportSQLTableV99
 water.api.schemas3.InitIDV3
 water.api.schemas3.InteractionV3

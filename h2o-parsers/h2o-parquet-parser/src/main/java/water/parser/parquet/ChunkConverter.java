@@ -33,15 +33,13 @@ import static water.H2OConstants.MAX_STR_LEN;
  */
 class ChunkConverter extends GroupConverter {
 
-  private final int _maxStringSize;
   private final WriterDelegate _writer;
   private final Converter[] _converters;
 
-  private int _currentRecordIdx = -1;
+  private long _currentRecordIdx = -1;
 
-  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, ParseWriter writer) {
-    _maxStringSize = getMaxStringSize();
-    _writer = new WriterDelegate(writer, chunkSchema.length);
+  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer) {
+    _writer = writer;
     int colIdx = 0;
     _converters = new Converter[chunkSchema.length];
     for (Type parquetField : parquetSchema.getFields()) {
@@ -49,12 +47,6 @@ class ChunkConverter extends GroupConverter {
       _converters[colIdx] = newConverter(colIdx, chunkSchema[colIdx], parquetField.asPrimitiveType());
       colIdx++;
     }
-  }
-
-  // For unit tests only: allows to set maximum string size in a test for all nodes
-  private int getMaxStringSize() {
-    Iced<?> maxSize = DKV.getGet(Key.make(ChunkConverter.class.getCanonicalName() + "_maxStringSize"));
-    return (maxSize instanceof IcedInt) ? ((IcedInt) maxSize)._val : MAX_STR_LEN;
   }
 
   @Override
@@ -71,10 +63,9 @@ class ChunkConverter extends GroupConverter {
   @Override
   public void end() {
     _writer.endLine();
-    assert _writer.lineNum() - 1 == _currentRecordIdx;
   }
 
-  int getCurrentRecordIdx() {
+  long getCurrentRecordIdx() {
     return _currentRecordIdx;
   }
 
@@ -89,7 +80,7 @@ class ChunkConverter extends GroupConverter {
           return new TimestampConverter(colIdx, _writer);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
-          return new StringConverter(_writer, colIdx, dictSupport, _maxStringSize);
+          return new StringConverter(_writer, colIdx, dictSupport);
         }
       case Vec.T_NUM:
         if (OriginalType.DECIMAL.equals(parquetType.getOriginalType()))
@@ -106,24 +97,16 @@ class ChunkConverter extends GroupConverter {
     private final int _colIdx;
     private final WriterDelegate _writer;
     private final boolean _dictionarySupport;
-    private final int _maxSize;
     private String[] _dict;
-    private long _totalSize; // total size of ingested String values (in bytes)
-    private boolean _sizeLimitReached; // indicates whether the input was too big to fit in a single chunk, see PUBDEV-5330
 
-    StringConverter(WriterDelegate writer, int colIdx, boolean dictionarySupport, int maxSize) {
+    StringConverter(WriterDelegate writer, int colIdx, boolean dictionarySupport) {
       _colIdx = colIdx;
       _writer = writer;
       _dictionarySupport = dictionarySupport;
-      _maxSize = maxSize;
-      _totalSize = 0;
-      _sizeLimitReached = false;
     }
 
     @Override
     public void addBinary(Binary value) {
-      if(_sizeLimitReached)
-        return;
       writeStrCol(StringUtils.bytesOf(value.toStringUsingUTF8()));
     }
 
@@ -142,20 +125,11 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addValueFromDictionary(int dictionaryId) {
-      if(_sizeLimitReached)
-        return;
       writeStrCol(StringUtils.bytesOf(_dict[dictionaryId]));
     }
 
     private void writeStrCol(byte[] data) {
       _bs.set(data);
-      _totalSize += _bs.length();
-      long lenDifference = _totalSize - _maxSize;
-      if (lenDifference > 0) {
-        _sizeLimitReached = true;
-        Log.err("Total String size limit reached: skipping remaining value in column: " + _colIdx + "!");
-        return;
-      }
       _writer.addStrCol(_colIdx, _bs);
     }
 
@@ -270,51 +244,6 @@ class ChunkConverter extends GroupConverter {
 
       _writer.addNumCol(_colIdx, timestampMillis);
     }
-  }
-
-  private static class WriterDelegate {
-
-    private final ParseWriter _writer;
-    private final int _numCols;
-    private int _col;
-
-    WriterDelegate(ParseWriter writer, int numCols) {
-      _writer = writer;
-      _numCols = numCols;
-      _col = Integer.MIN_VALUE;
-    }
-
-    void startLine() {
-      _col = -1;
-    }
-
-    void endLine() {
-      moveToCol(_numCols);
-      _writer.newLine();
-    }
-
-    int moveToCol(int colIdx) {
-      for (int c = _col + 1; c < colIdx; c++) _writer.addInvalidCol(c);
-      _col = colIdx;
-      return _col;
-    }
-
-    void addNumCol(int colIdx, long number, int exp) {
-      _writer.addNumCol(moveToCol(colIdx), number, exp);
-    }
-
-    void addNumCol(int colIdx, double d) {
-      _writer.addNumCol(moveToCol(colIdx), d);
-    }
-
-    void addStrCol(int colIdx, BufferedString str) {
-      _writer.addStrCol(moveToCol(colIdx), str);
-    }
-
-    long lineNum() {
-      return _writer.lineNum();
-    }
-
   }
 
 }

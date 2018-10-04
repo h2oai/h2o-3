@@ -10,6 +10,7 @@ def cv_nfolds_gbm_fold_assignment():
   prostate.summary()
 
   prostate_gbm = H2OGradientBoostingEstimator(nfolds=5, distribution="bernoulli",
+                                              keep_cross_validation_models=True,
                                               keep_cross_validation_predictions=True,
                                               keep_cross_validation_fold_assignment=True)
   prostate_gbm.train(x=list(range(2,9)), y=1, training_frame=prostate)

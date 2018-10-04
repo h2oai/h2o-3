@@ -424,8 +424,8 @@ h2o.predict <- function(object, newdata, ...){
 #'
 #' Obtains leaf node assignment from fitted H2O model objects.
 #'
-#' For every row in the test set, return a set of factors that identify the leaf placements
-#' of the row in all the trees in the model.
+#' For every row in the test set, return the leaf placements of the row in all the trees in the model.
+#' Placements can be represented either by paths to the leaf nodes from the tree root or by H2O's internal identifiers.
 #' The order of the rows in the results is the same as the order in which the
 #' data was loaded
 #'
@@ -433,6 +433,8 @@ h2o.predict <- function(object, newdata, ...){
 #'        desired
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
+#' @param type choice of either "Path" when tree paths are to be returned (default); or "Node_ID" when the output
+#         should be the leaf node IDs.
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame object with categorical leaf assignment identifiers for
 #'         each tree in the model.
@@ -450,13 +452,20 @@ h2o.predict <- function(object, newdata, ...){
 #' h2o.predict_leaf_node_assignment(prostate.gbm, prostate.hex)
 #' }
 #' @export
-predict_leaf_node_assignment.H2OModel <- function(object, newdata, ...) {
+predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Path", "Node_ID"), ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
+  params <- list(leaf_node_assignment = TRUE)
+  if (!missing(type)) {
+    if (!(type %in% c("Path", "Node_ID"))) {
+      stop("type must be one of: Path, Node_ID")
+    }
+    params$leaf_node_assignment_type <- type
+  }
 
   url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST", leaf_node_assignment=TRUE)
+  res <- .h2o.__remoteSend(url, method = "POST", .params = params)
   res <- res$predictions_frame
   h2o.getFrame(res$name)
 }
@@ -504,6 +513,48 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 
   model
 }
+
+#' Predict class probabilities at each stage of an H2O Model
+#'
+#' The output structure is analogous to the output of \link{h2o.predict_leaf_node_assignment}. For each tree t and
+#' class c there will be a column Tt.Cc (eg. T3.C1 for tree 3 and class 1). The value will be the corresponding
+#' predicted probability of this class by combining the raw contributions of trees T1.Cc,..,TtCc. Binomial models build
+#' the trees just for the first class and values in columns Tx.C1 thus correspond to the the probability p0.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with predicted probability for each tree in the model.
+#' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' h2o.predict(prostate.gbm, prostate.hex)
+#' h2o.staged_predict_proba(prostate.gbm, prostate.hex)
+#' }
+#' @export
+staged_predict_proba.H2OModel <- function(object, newdata, ...) {
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", predict_staged_proba=TRUE)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
+}
+
+#' @rdname staged_predict_proba.H2OModel
+#' @export
+h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
 #' Model Performance Metrics in H2O
 #'
@@ -714,6 +765,72 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
     }
   }
   warning(paste0("No AUC for ", class(object)))
+  invisible(NULL)
+}
+
+#' Retrieve the pr_auc
+#'
+#' Retrieves the pr_auc value from an \linkS4class{H2OBinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training pr_auc value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of pr_aucs are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param train Retrieve the training pr_auc
+#' @param valid Retrieve the validation pr_auc
+#' @param xval Retrieve the cross-validation pr_auc
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.pr_auc(perf)
+#' }
+#' @export
+h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$pr_auc
+      if ( !is.null(metric) ) return(metric)
+    }
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$pr_auc)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$pr_auc)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$pr_auc)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No pr_auc for ", class(object)))
   invisible(NULL)
 }
 
@@ -2926,9 +3043,15 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
-#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceeds the level count.
+#'        If you enable add_missing_NA, the returned length will be nbin+1.
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
+#' @param weight_column A string denoting which column of data should be used as the weight column.
+#' @param include_na A logical specifying whether missing value should be included in the Feature values.
+#' @param user_splits A two-level nested list containing user defined split points for pdp plots for each column.
+#' If there are two columns using user defined split points, there should be two lists in the nested list.
+#' Inside each list, the first element is the column name followed by values defined by the user.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -2948,7 +3071,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE, weight_column=-1, include_na=FALSE, user_splits=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
@@ -2956,17 +3079,79 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
+  if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
   if(missing(cols)) cols =  object@parameters$x
 
   y = object@parameters$y
   x = cols
   args <- .verify_dataxy(data, x, y)
+  
+  if (is.numeric(weight_column) && (weight_column != -1)) {
+      stop("weight_column should be a column name of your data frame.")
+  } else if (is.character(weight_column)) { # weight_column_index is column name
+    if (!weight_column %in% h2o.names(data))
+      stop("weight_column_index should be one of your columns in your data frame.")
+    else
+      weight_column <- match(weight_column, h2o.names(data))-1
+  }
 
   parms = list()
   parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
   parms$model_id  <- attr(object, "model_id")
   parms$frame_id <- attr(data, "id")
   parms$nbins <- nbins
+  parms$weight_column_index <- weight_column
+  parms$add_missing_na <- include_na
+  
+  if (length(user_splits) == 0) {
+    parms$user_cols <- NULL
+    parms$user_splits <- NULL
+    parms$num_user_splits <- NULL
+  } else {
+    user_cols <- c()
+    user_values <- c()
+    user_num_splits <- c()
+    column_names <- h2o.names(data)
+    for (ind in c(1:length(user_splits))) {
+      aList <- user_splits[[ind]]
+      csname = aList[1]
+      if (csname %in% column_names) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
+          nVal <- length(aList)-1
+          if (h2o.isfactor(data[csname])) {
+            domains <- h2o.levels(data[csname]) # enum values
+            tempVal <- aList[2:length(aList)]
+            intVals <- c(1:length(tempVal))
+            for (eleind in c(1:nVal)) {
+              eleIndex <- which(domains == tempVal[eleind])
+              if (eleIndex>0) {
+                intVals[eleind] <- which(domains == tempVal[eleind]) - 1
+              } else {
+                stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
+              }
+            }
+            user_values <- c(user_values, intVals)
+          } else {
+            vals <- as.numeric(unlist(strsplit(aList[2:length(aList)], ",")))
+            user_values <- c(user_values, vals)
+          }
+
+          user_num_splits <- c(user_num_splits, nVal)
+          user_cols <- c(user_cols, csname)          
+        } else {
+          stop ("Partial dependency plots are generated for numerical and categorical columns only.")
+        }
+      } else {
+        stop(
+          "column names used in user_splits are not valid.  They should be chosen from the columns of your data set"
+        )
+      }
+    }
+    parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
+    parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
+    parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+  }
+
   if(!missing(destination_key)) parms$destination_key = destination_key
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)
@@ -3062,6 +3247,315 @@ h2o.deepfeatures <- function(object, data, layer) {
   dest_key <- res$dest$name
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
+}
+
+#'
+#' The H2ONode class.
+#' 
+#' @slot id An \code{integer} representing node's unique identifier. Generated by H2O.
+#' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
+#' 
+#' #' @aliases H2ONode 
+#'
+setClass("H2ONode", representation(
+  id = "integer"
+))
+
+#'
+#' The H2OLeafNode class.
+#'
+#' This class represents a single leaf node in an \code{H2OTree}.
+#' 
+#' #' @aliases H2OLeafNode
+#' 
+setClass("H2OLeafNode", representation(
+  prediction = "numeric"
+),
+contains = "H2ONode")
+
+#'
+#' The H2OSplitNode class.
+#'
+#' This class represents a single non-terminal node in an \code{H2OTree}. 
+#' @slot threshold A \code{numeric} split threshold, typically when the split column is numerical.
+#' @slot left_child A \code{H2ONodeOrNULL} representing the left child node, if a node has one.
+#' @slot right_child A \code{H2ONodeOrNULL} representing the right child node, if a node has one.
+#' @slot split_feature A \code{character} representing the name of the column this node splits on.
+#' @slot left_levels A \code{character} representing the levels of a categorical feature heading to the left child of this node. NA for non-categorical split.
+#' @slot right_levels A \code{character} representing the levels of a categorical feature heading to the right child of this node. NA for non-categorical split.
+#' @slot na_direction A \code{character} representing the direction of NA values. LEFT means NA values go to the left child node, RIGH means NA values go to the right child node.
+#' @aliases H2OSplitNode 
+#' @export
+setClass(
+  "H2OSplitNode",
+  representation(
+    threshold = "numeric",
+    left_child = "H2ONode",
+    right_child = "H2ONode",
+    split_feature = "character",
+    left_levels = "character",
+    right_levels = "character",
+    na_direction = "character"
+  ),
+  contains = "H2ONode"
+)
+
+#' @rdname H2ONode-class
+#' @param object an \code{H2ONode} object.
+#' @export
+setMethod('show', 'H2ONode', 
+          function(object){
+            print.H2ONode(object)
+          })
+
+print.H2ONode <- function(node){
+  cat("Node ID", node@id, "\n\n")
+  if(class(node) == "H2OLeafNode"){
+    cat("Terminal node. Prediction is")
+    return()
+  }
+  
+  
+  if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
+  if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
+  cat("\n")
+  cat("Splits on column", node@split_feature, "\n")
+  
+  if(is.na(node@threshold)){
+    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_levels, "\n")
+    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_levels, "\n")
+  } else {
+    cat("Split threshold <", node@threshold,"to the left node, >=",node@threshold ,"to the right node\n")
+  }
+  cat("\n")
+  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
+}
+
+#'
+#' The H2OTree class.
+#'
+#' This class represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
+#' @slot root_node A \code{H2ONode} representing the beginning of the tree behind the model. Allows further tree traversal.
+#' @slot left_children An \code{integer} vector with left child nodes of tree's nodes
+#' @slot right_children An \code{integer} vector with right child nodes of tree's nodes
+#' @slot node_ids An \code{integer} representing identification number of a node. Node IDs are generated by H2O.
+#' @slot descriptions A \code{character} vector with descriptions for each node to be found in the tree. Contains split threshold if the split is based on numerical column.
+#'                    For cactegorical splits, it contains list of categorical levels for transition from the parent node.
+#' @slot model_id A \code{character} with the name of the model this tree is related to.
+#' @slot tree_number An \code{integer} representing the order in which the tree has been built in the model.
+#' @slot tree_class A \code{character} representing name of tree's class. Number of tree classes equals to the number of levels in categorical response column.
+#'                  As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
+#'                  In case of regression and binomial, the name of the categorical level is ignored can be omitted, as there is exactly one tree built in both cases.
+#' @slot thresholds A \code{numeric} split thresholds. Split thresholds are not only related to numerical splits, but might be present in case of categorical split as well.
+#' @slot features A \code{character} with names of the feature/column used for the split.
+#' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
+#' @slot nas A \code{character} representing if NA values go to the left node or right node. May be NA if node is a leaf.
+#' @slot predictions A \code{numeric} representing predictions for each node in the graph.
+#' @aliases H2OTree
+#' @export
+setClass(
+  "H2OTree",
+  representation(
+    root_node = "H2ONode",
+    left_children = "integer",
+    right_children = "integer",
+    node_ids = "integer",
+    descriptions = "character",
+    model_id = "character",
+    tree_number = "integer",
+    tree_class = "character",
+    thresholds = "numeric",
+    features = "character",
+    levels = "list",
+    nas = "character",
+    predictions = "numeric"
+  )
+)
+
+#' @rdname H2OTree-class
+#' @param object an \code{H2OTree} object.
+#' @export
+setMethod('show', 'H2OTree', 
+          function(object){
+            print.H2OTree(object)
+          })
+
+print.H2OTree <- function(tree){
+  cat(paste0("Tree related to model '", tree@model_id,"'. Tree number is"), paste0(tree@tree_number,", tree class is '",tree@tree_class, "'\n"))
+  cat("The tree has", length(tree), "nodes")
+}
+
+#'
+#' Overrides the behavior of length() function on H2OTree class. Returns number of nodes in an \code{H2OTree}
+#' @param x An \code{H2OTree} to count nodes for.
+#'
+setMethod("length", signature(x = "H2OTree"), function(x) {
+  length(x@left_children)
+})
+
+
+.h2o.walk_tree <- function(node, tree){
+  if(node == -1) {return(NULL)}
+  child_node_index <- node + 1
+  left <- tree@left_children[child_node_index]
+  right <- tree@right_children[child_node_index]
+  
+  node_levels <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
+  
+  left_child = .h2o.walk_tree(left, tree)
+  right_child = .h2o.walk_tree(right, tree)
+  
+  node <- NULL
+  if(is.null(left_child) && is.null(right_child)){
+    node <- new("H2OLeafNode",
+        id = tree@node_ids[child_node_index],
+        prediction = tree@predictions[child_node_index]
+        )
+  } else {
+      left_node_levels <- if(is.null(tree@levels[[left + 1]])) NA_character_ else tree@levels[[left + 1]]
+      right_node_levels <- if(is.null(tree@levels[[right + 1]])) NA_character_ else tree@levels[[right + 1]]
+      node <- new ("H2OSplitNode",
+       id = tree@node_ids[child_node_index],
+       left_child = left_child,
+       right_child = right_child,
+       threshold = tree@thresholds[child_node_index],
+       split_feature = tree@features[child_node_index],
+       na_direction = tree@nas[child_node_index],
+       left_levels = left_node_levels,
+       right_levels = right_node_levels)
+  }
+  
+  node
+}
+
+#' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
+#'
+#' Usage example:
+#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
+#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
+#' tree <-h2o.getModelTree(gbm.model, 1, 1);
+#'
+#' @param model Model with trees
+#' @param tree_number Number of the tree in the model to fetch, starting with 1
+#' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
+#'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
+#' @return Returns an H2OTree object with detailed information about a tree.
+#' @export
+h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
+  url <- "Tree"
+  tree_class_request = tree_class;
+  if(is.na(tree_class)){
+    tree_class_request <- "";
+  }
+  res <- .h2o.__remoteSend(
+      url,
+      method = "GET",
+      h2oRestApiVersion = 3,
+      model = model@model_id,
+      tree_number = tree_number - 1,
+      tree_class = tree_class_request
+    )
+  
+  res$thresholds[is.nan(res$thresholds)] <- NA
+  
+  tree <- new(
+    "H2OTree",
+    left_children = res$left_children,
+    right_children = res$right_children,
+    descriptions = res$descriptions,
+    model_id = model@model_id,
+    tree_number = as.integer(res$tree_number + 1),
+    thresholds = res$thresholds,
+    features = res$features,
+    nas = res$nas,
+    predictions = res$predictions
+  )
+  
+  node_index <- 0
+  left_ordered <- c()
+  right_ordered <- c()
+  node_ids <- c(res$root_node_id)
+  
+  for(i in 1:length(tree@left_children)){
+    if(tree@left_children[i] != -1){
+      node_index <- node_index + 1
+      left_ordered[i] <- node_index
+      node_ids[node_index + 1] <- tree@left_children[i]
+    } else {
+      left_ordered[i] <- -1
+    }
+    
+    if(tree@right_children[i] != -1){
+      node_index <- node_index + 1
+      right_ordered[i] <- node_index
+      node_ids[node_index + 1] <- tree@right_children[i]
+    } else {
+      right_ordered[i] <- -1
+    }
+  }
+  
+  tree@node_ids <- node_ids
+  tree@left_children <- as.integer(left_ordered)
+  tree@right_children <- as.integer(right_ordered)
+  
+  if(!is.null(res$tree_class)){
+    tree@tree_class <- res$tree_class
+  }
+  
+  if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
+    tree@levels <- rep(list(NULL), length(res$levels))
+  } else {
+    tree@levels <- res$levels
+  }
+  
+  for (i in 1:length(tree@levels)){
+    if(!is.null(tree@levels[[i]])){
+    tree@levels[[i]] <- tree@levels[[i]] + 1
+    }
+  }
+  
+  # Convert numerical categorical levels to characters
+  pointer <-as.integer(1);
+  for(i in 1:length(tree@left_children)){
+
+    right <- tree@right_children[i];
+    left <- tree@left_children[i]
+    split_column_cat_index <- match(tree@features[i], model@model$names) # Indexof split column on children's parent node
+    if(is.na(split_column_cat_index)){ # If the split is not categorical, just increment & continue
+      if(right != -1) pointer <- pointer + 1;
+      if(left != -1) pointer <- pointer + 1;
+      next
+    }
+    split_column_domain <- model@model$domains[[split_column_cat_index]]
+    
+    # Left child node's levels converted to characters
+    left_char_categoricals <- c()
+    if(left != -1)  {
+      pointer <- pointer + 1;
+      
+      if(!is.null(tree@levels[[pointer]])){
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          left_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
+        }
+        tree@levels[[pointer]] <- left_char_categoricals;
+      }
+    }
+    
+    
+    # Right child node's levels converted to characters, if there is any
+    right_char_categoricals <- c()
+    if(right != -1)  {
+      pointer <- pointer + 1;
+      if(!is.null(tree@levels[[pointer]])){
+        for(level_index in 1:length(tree@levels[[pointer]])){
+          right_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
+        }
+        tree@levels[[pointer]] <- right_char_categoricals
+      }
+    }
+  }
+  tree@root_node <- .h2o.walk_tree(0, tree)
+  tree
 }
 
 #' @export

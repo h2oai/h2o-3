@@ -17,11 +17,15 @@ import water.JettyProxy;
 import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
+import water.util.JavaVersionUtils;
 import water.util.StringUtils;
+
+import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,17 +47,13 @@ public class h2odriver extends Configured implements Tool {
   final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
+  final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
 
   static {
-    String javaVersionString = System.getProperty("java.version");
-    Pattern p = Pattern.compile("1\\.([0-9]*)(.*)");
-    Matcher m = p.matcher(javaVersionString);
-    boolean b = m.matches();
-    if (! b) {
-      System.out.println("Could not parse java version: " + javaVersionString);
-      System.exit(1);
-    }
-    javaMajorVersion = Integer.parseInt(m.group(1));
+      if(!JAVA_VERSION.isKnown()) {
+          System.err.println("Couldn't parse Java version: " + System.getProperty("java.version"));
+          System.exit(1);
+      }
   }
 
   final static int DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS = 120;
@@ -61,7 +61,6 @@ public class h2odriver extends Configured implements Tool {
   final static int DEFAULT_EXTRA_MEM_PERCENT = 10;
 
   // Options that are parsed by the main thread before other threads are created.
-  static final int javaMajorVersion;
   static String jobtrackerName = null;
   static int numNodes = -1;
   static String outputPath = null;
@@ -80,6 +79,7 @@ public class h2odriver extends Configured implements Tool {
   static int nthreads = -1;
   static String contextPath = null;
   static int basePort = -1;
+  static int portOffset = -1;
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
@@ -114,11 +114,12 @@ public class h2odriver extends Configured implements Tool {
   static String principal = null;
   static String keytabPath = null;
   static boolean reportHostname = false;
+  static boolean driverDebug = false;
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
-  volatile Job job = null;
+  volatile JobWrapper job = null;
   volatile CtrlCHandler ctrlc = null;
   volatile boolean clusterIsUp = false;
   volatile boolean clusterFailedToComeUp = false;
@@ -229,23 +230,33 @@ public class h2odriver extends Configured implements Tool {
     H2ORecordReader() {
     }
 
+    @Override
     public void initialize(InputSplit split, TaskAttemptContext context) {
     }
 
+    @Override
     public boolean nextKeyValue() throws IOException {
       return false;
     }
 
+    @Override
     public Text getCurrentKey() { return null; }
+    @Override
     public Text getCurrentValue() { return null; }
+    @Override
     public void close() throws IOException { }
+    @Override
     public float getProgress() throws IOException { return 0; }
   }
 
   public static class EmptySplit extends InputSplit implements Writable {
+    @Override
     public void write(DataOutput out) throws IOException { }
+    @Override
     public void readFields(DataInput in) throws IOException { }
+    @Override
     public long getLength() { return 0L; }
+    @Override
     public String[] getLocations() { return new String[0]; }
   }
 
@@ -253,6 +264,7 @@ public class h2odriver extends Configured implements Tool {
     H2OInputFormat() {
     }
 
+    @Override
     public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
       List<InputSplit> ret = new ArrayList<InputSplit>();
       int numSplits = numNodes;
@@ -262,6 +274,7 @@ public class h2odriver extends Configured implements Tool {
       return ret;
     }
 
+    @Override
     public RecordReader<Text, Text> createRecordReader(
             InputSplit ignored, TaskAttemptContext taskContext)
             throws IOException {
@@ -269,7 +282,7 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
-  public static void killJobAndWait(Job job) {
+  public static void killJobAndWait(JobWrapper job) {
     boolean killed = false;
 
     try {
@@ -834,6 +847,13 @@ public class h2odriver extends Configured implements Tool {
             error("Base port must be between 1 and 65535");
         }
       }
+      else if (s.equals("-port_offset")) {
+        i++; if (i >= args.length) { usage(); }
+        portOffset = Integer.parseInt(args[i]);
+        if ((portOffset <= 0) || (portOffset > 65534)) {
+          error("Port offset must be between 1 and 65534");
+        }
+      }
       else if (s.equals("-beta")) {
         beta = true;
       }
@@ -963,6 +983,8 @@ public class h2odriver extends Configured implements Tool {
         keytabPath = args[i];
       } else if (s.equals("-report_hostname")) {
         reportHostname = true;
+      } else if (s.equals("-driver_debug")) {
+        driverDebug = true;
       } else {
         error("Unrecognized option " + s);
       }
@@ -1109,14 +1131,17 @@ public class h2odriver extends Configured implements Tool {
   private final int CLUSTER_ERROR_TIMEOUT = 3;
 
   private int waitForClusterToComeUp() throws Exception {
-    long startMillis = System.currentTimeMillis();
+    final long startMillis = System.currentTimeMillis();
     while (true) {
+      DBG("clusterFailedToComeUp=", clusterFailedToComeUp, ";clusterIsUp=", clusterIsUp);
+
       if (clusterFailedToComeUp) {
         System.out.println("ERROR: At least one node failed to come up during cluster formation");
         killJobAndWait(job);
         return 4;
       }
 
+      DBG("Checking if the job already completed");
       if (job.isComplete()) {
         return CLUSTER_ERROR_JOB_COMPLETED_TOO_EARLY;
       }
@@ -1127,6 +1152,7 @@ public class h2odriver extends Configured implements Tool {
 
       long nowMillis = System.currentTimeMillis();
       long deltaMillis = nowMillis - startMillis;
+      DBG("Cluster is not yet up, waiting for ", deltaMillis, "ms.");
       if (cloudFormationTimeoutSeconds > 0) {
         if (deltaMillis > (cloudFormationTimeoutSeconds * 1000)) {
           System.out.println("ERROR: Timed out waiting for H2O cluster to come up (" + cloudFormationTimeoutSeconds + " seconds)");
@@ -1305,7 +1331,7 @@ public class h2odriver extends Configured implements Tool {
     // PermSize
     // Java 7 and below need a larger PermSize for H2O.
     // Java 8 no longer has PermSize, but rather MetaSpace, which does not need to be set at all.
-    if (javaMajorVersion <= 7) {
+    if (JAVA_VERSION.getMajor() <= 7) {
       mapperPermSize = "256m";
     }
 
@@ -1449,6 +1475,9 @@ public class h2odriver extends Configured implements Tool {
     if (basePort >= 0) {
       addMapperArg(conf, "-baseport", Integer.toString(basePort));
     }
+    if (portOffset >= 1) {
+      addMapperArg(conf, "-port_offset", Integer.toString(portOffset));
+    }
     if (beta) {
       addMapperArg(conf, "-beta");
     }
@@ -1542,27 +1571,13 @@ public class h2odriver extends Configured implements Tool {
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
 
-    // Set up job stuff.
-    // -----------------
-    job = new Job(conf, jobtrackerName);
-    job.setJarByClass(getClass());
-    job.setInputFormatClass(H2OInputFormat.class);
-    job.setMapperClass(h2omapper.class);
-    job.setNumReduceTasks(0);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(Text.class);
-
-    if (outputPath != null)
-      FileOutputFormat.setOutputPath(job, new Path(outputPath));
-    else
-      job.setOutputFormatClass(NullOutputFormat.class);
-
     // Run job.  We are running a zero combiner and zero reducer configuration.
     // ------------------------------------------------------------------------
-    job.submit();
+    job = submitJob(conf);
+
     System.out.println("Job name '" + jobtrackerName + "' submitted");
     System.out.println("JobTracker job ID is '" + job.getJobID() + "'");
-    hadoopJobId = job.getJobID().toString();
+    hadoopJobId = job.getJobID();
     applicationId = hadoopJobId.replace("job_", "application_");
     maybePrintYarnLogsMessage(false);
 
@@ -1570,7 +1585,7 @@ public class h2odriver extends Configured implements Tool {
     ctrlc = new CtrlCHandler();
     Runtime.getRuntime().addShutdownHook(ctrlc);
 
-    System.out.printf("Waiting for H2O cluster to come up...\n");
+    System.out.println("Waiting for H2O cluster to come up...");
     int rv = waitForClusterToComeUp();
 
     if ((rv == CLUSTER_ERROR_TIMEOUT) ||
@@ -1731,6 +1746,30 @@ public class h2odriver extends Configured implements Tool {
     return args;
   }
 
+  private JobWrapper submitJob(Configuration conf) throws Exception {
+    // Set up job stuff.
+    // -----------------
+    final Job j = new Job(conf, jobtrackerName);
+    j.setJarByClass(getClass());
+    j.setInputFormatClass(H2OInputFormat.class);
+    j.setMapperClass(h2omapper.class);
+    j.setNumReduceTasks(0);
+    j.setOutputKeyClass(Text.class);
+    j.setOutputValueClass(Text.class);
+
+    if (outputPath != null)
+      FileOutputFormat.setOutputPath(j, new Path(outputPath));
+    else
+      j.setOutputFormatClass(NullOutputFormat.class);
+
+    DBG("Submitting job");
+    j.submit();
+    JobWrapper jw = JobWrapper.wrap(j);
+    DBG("Job submitted, id=", jw.getJobID());
+
+    return jw;
+  }
+
   /**
    * The run method called by ToolRunner.
    * @param args Arguments after ToolRunner arguments have been removed.
@@ -1755,6 +1794,117 @@ public class h2odriver extends Configured implements Tool {
     }
 
     return rv;
+  }
+
+  private static abstract class JobWrapper {
+    final String _jobId;
+    final Job _job;
+
+    JobWrapper(Job job) {
+      _job = job;
+      _jobId = _job.getJobID().toString();
+    }
+
+    String getJobID() {
+      return _jobId;
+    }
+
+    abstract boolean isComplete() throws IOException;
+    abstract void killJob() throws IOException;
+    abstract boolean isSuccessful() throws IOException;
+
+    static JobWrapper wrap(Job job) {
+      if (driverDebug) {
+        int timeoutSeconds = job.getConfiguration().getInt(DRIVER_JOB_CALL_TIMEOUT_SEC, 10);
+        DBG("Timeout for Hadoop calls set to ", timeoutSeconds, "s");
+        return new AsyncExecutingJobWrapper(job, timeoutSeconds);
+      } else
+        return new DelegatingJobWrapper(job);
+    }
+  }
+
+  private static class DelegatingJobWrapper extends JobWrapper {
+    DelegatingJobWrapper(Job job) {
+      super(job);
+    }
+
+    @Override
+    boolean isComplete() throws IOException {
+      return _job.isComplete();
+    }
+
+    @Override
+    boolean isSuccessful() throws IOException {
+      return _job.isSuccessful();
+    }
+
+    @Override
+    void killJob() throws IOException {
+      _job.killJob();
+    }
+  }
+
+  private static class AsyncExecutingJobWrapper extends JobWrapper {
+    private final ExecutorService _es;
+    private final int _timeoutSeconds;
+    AsyncExecutingJobWrapper(Job job, int timeoutSeconds) {
+      super(job);
+      _es = Executors.newCachedThreadPool();
+      _timeoutSeconds = timeoutSeconds;
+    }
+
+    @Override
+    boolean isComplete() throws IOException {
+      return runAsync("isComplete", new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          return _job.isComplete();
+        }
+      });
+    }
+
+    @Override
+    boolean isSuccessful() throws IOException {
+      return runAsync("isSuccessful", new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          return _job.isSuccessful();
+        }
+      });
+    }
+
+    @Override
+    void killJob() throws IOException {
+      runAsync("killJob", new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+          _job.killJob();
+          return null;
+        }
+      });
+    }
+
+    private <T> T runAsync(String taskName, Callable<T> task) throws IOException {
+      Future<T> future = _es.submit(task);
+      try {
+        long start = System.currentTimeMillis();
+        DBG("Executing job.", taskName, "(); id=", _jobId);
+        T result = future.get(_timeoutSeconds, TimeUnit.SECONDS);
+        DBG("Operation job.", taskName, "() took ", (System.currentTimeMillis() - start), "ms");
+        return result;
+      } catch (TimeoutException ex) {
+        throw new RuntimeException("Operation " + taskName + " was not able to complete in " + _timeoutSeconds + "s.", ex);
+      } catch (Exception e) {
+        throw new IOException("Operation " + taskName + " failed", e);
+      }
+    }
+  }
+
+  private static void DBG(Object... objs) {
+    if (! driverDebug) return;
+    StringBuilder sb = new StringBuilder("DBG: ");
+    for( Object o : objs ) sb.append(o);
+    System.out.println(sb.toString());
   }
 
   private static void quickTest() throws Exception {

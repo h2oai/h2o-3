@@ -185,7 +185,8 @@ class H2OEstimator(ModelBase):
             parms["offset_column"] = offset_column
             parms["fold_column"] = fold_column
             parms["weights_column"] = weights_column
-            parms["max_runtime_secs"] = max_runtime_secs
+
+        if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
 
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
@@ -304,13 +305,13 @@ class H2OEstimator(ModelBase):
 
 
     #------ Scikit-learn Interface Methods -------
-    def fit(self, x, y=None, **params):
+    def fit(self, X, y=None, **params):
         """
         Fit an H2O model as part of a scikit-learn pipeline or grid search.
 
         A warning will be issued if a caller other than sklearn attempts to use this method.
 
-        :param H2OFrame x: An H2OFrame consisting of the predictor variables.
+        :param H2OFrame X: An H2OFrame consisting of the predictor variables.
         :param H2OFrame y: An H2OFrame consisting of the response variable.
         :param params: Extra arguments.
         :returns: The current instance of H2OEstimator for method chaining.
@@ -325,8 +326,8 @@ class H2OEstimator(ModelBase):
         if warn:
             warnings.warn("\n\n\t`fit` is not recommended outside of the sklearn framework. Use `train` instead.",
                           UserWarning, stacklevel=2)
-        training_frame = x.cbind(y) if y is not None else x
-        x = x.names
+        training_frame = X.cbind(y) if y is not None else X
+        x = X.names
         y = y.names[0] if y is not None else None
         self.train(x, y, training_frame, **params)
         return self

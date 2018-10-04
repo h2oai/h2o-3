@@ -20,10 +20,10 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     _model._ntree_groups = readkv("n_trees");
     _model._ntrees_per_group = tpc;
     _model._compressed_trees = new byte[_model._ntree_groups * tpc][];
-    _model._mojo_version = readkv("mojo_version");
+    _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
 
-    // In mojos v=1.0 this info wasn't saved.
-    if (_model._mojo_version != null && !_model._mojo_version.equals(1.0)) {
+
+    if (_model._mojo_version > 1.0) { // In mojos v=1.0 this info wasn't saved
       _model._compressed_trees_aux = new byte[_model._ntree_groups * tpc][];
     }
 
@@ -44,5 +44,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
         throw new IllegalStateException("Unknown calibration method: " + calibMethod);
       _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
     }
+
+    _model.postInit();
   }
 }

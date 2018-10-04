@@ -76,7 +76,7 @@ else
     COVERAGE=""
 fi
 # Command to invoke test.
-JVM="nice $JAVA_CMD $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea -cp ${JVM_CLASSPATH}"
+JVM="nice $JAVA_CMD $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

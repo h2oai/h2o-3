@@ -37,5 +37,6 @@ public class BinomialModelPrediction extends AbstractPrediction {
    */
   public double[] calibratedClassProbabilities;
   public String[] leafNodeAssignments;  // only valid for GBM or DRF, null for all other mojo models
+  public int[] leafNodeAssignmentIds;   // ditto, available in MOJO 1.3 and newer
 
 }

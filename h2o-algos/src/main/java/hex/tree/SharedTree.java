@@ -733,10 +733,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       try {
         Scope.enter();
         _job.update(0, "Calibrating probabilities");
+        Vec calibWeights = _parms._weights_column != null ? calib().vec(_parms._weights_column) : null;
         Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
 
         Frame calibInput = new Frame(calibInputKey,
                 new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
+        if (calibWeights != null) {
+          calibInput.add("weights", calibWeights);
+        }
         DKV.put(calibInput);
 
         Key<Model> calibModelKey = Key.make();
@@ -747,6 +751,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         calibBuilder._parms._train = calibInput._key;
         calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
         calibBuilder._parms._lambda = new double[] {0.0};
+        if (calibWeights != null) {
+          calibBuilder._parms._weights_column = "weights";
+        }
 
         _model._output._calib_model = calibBuilder.trainModel().get();
         _model.update(_job);
@@ -797,6 +804,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
@@ -817,6 +825,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
@@ -856,6 +865,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, st._AUC);
+        table.set(row, col++, st._pr_auc);
         table.set(row, col++, st._lift);
       }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
@@ -871,6 +881,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, st._AUC);
+          table.set(row, col++, st._pr_auc);
           table.set(row, col++, st._lift);
         }
         if (_output.isClassifier()) table.set(row, col++, st._classError);
@@ -1024,6 +1035,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     for( int i=0; i<cvModelBuilders.length; ++i )
       sum += ((SharedTreeModel.SharedTreeOutput)DKV.<Model>getGet(cvModelBuilders[i].dest())._output)._ntrees;
     _parms._ntrees = (int)((double)sum/cvModelBuilders.length);
+
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
     warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");

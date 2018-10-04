@@ -91,8 +91,8 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``nthreads``: "Number of threads" option when launching a new H2O server.
 - ``ice_root``: The directory for temporary files for the new H2O server.
 - ``enable_assertions``: Enable assertions in Java for the new H2O server.
-- ``max_mem_size``: Maximum memory to use for the new H2O server.
-- ``min_mem_size``: Minimum memory to use for the new H2O server.
+- ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 - ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
 
 Example

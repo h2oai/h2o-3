@@ -42,6 +42,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/ImportFiles", ImportFilesHandler.class, "importFiles",
             "Import raw data files into a single-column H2O Frame.");
 
+    context.registerEndpoint("importFilesMulti",
+            "POST /3/ImportFilesMulti", ImportFilesHandler.class, "importFilesMulti",
+            "Import raw data files from multiple directories (or different data sources) into a single-column H2O Frame.");
+
     context.registerEndpoint("importSqlTable",
             "POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
             "Import SQL table into an H2O Frame.");

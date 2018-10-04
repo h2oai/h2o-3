@@ -375,13 +375,14 @@ h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
+
     :param dataframe: Pandas frame to score.
     :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
     :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
-    folder as the MOJO zip will be used.
+        folder as the MOJO zip will be used.
     :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
-    (default) then the default classpath for this MOJO model will be used.
-    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g' is used.
+        (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :return: Pandas frame with predictions
     """
@@ -405,15 +406,16 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, java_options=None, verbose=False):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
+
     :param input_csv_path: Path to input CSV file.
     :param mojo_zip_path: Path to MOJO zip downloaded from H2O.
     :param output_csv_path: Optional, name of the output CSV file with computed predictions. If None (default), then
-    predictions will be saved as prediction.csv in the same folder as the MOJO zip.
+        predictions will be saved as prediction.csv in the same folder as the MOJO zip.
     :param genmodel_jar_path: Optional, path to genmodel jar file. If None (default) then the h2o-genmodel.jar in the same
-    folder as the MOJO zip will be used.
+        folder as the MOJO zip will be used.
     :param classpath: Optional, specifies custom user defined classpath which will be used when scoring. If None
-    (default) then the default classpath for this MOJO model will be used.
-    :param java_options: Optional, custom user defined options for Java. By default '-Xmx4g -XX:ReservedCodeCacheSize=256m' is used.
+        (default) then the default classpath for this MOJO model will be used.
+    :param java_options: Optional, custom user defined options for Java. By default ``-Xmx4g -XX:ReservedCodeCacheSize=256m`` is used.
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :return: List of computed predictions
     """

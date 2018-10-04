@@ -480,7 +480,6 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test public void testValidationSame() {
     for (boolean categorical : new boolean[]{true,false}) {
       for (boolean missing : new boolean[]{/*true,*/false}) { //FIXME: Enable missing PUBDEV-871

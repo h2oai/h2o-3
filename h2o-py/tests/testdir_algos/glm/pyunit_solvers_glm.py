@@ -24,13 +24,7 @@ def glm_solvers():
       else:                      training_data[response_col] = training_data[response_col].asnumeric()
 
       model = H2OGeneralizedLinearEstimator(family=family, alpha=0, Lambda=1e-5, solver=solver)
-      try:
-        model.train(x=predictors, y=response_col, training_frame=training_data)
-      except H2OResponseError as e:
-        #Coordinate descent (naive version) is not yet fully implemented.
-        # An exception is expected.
-        assert solver == "COORDINATE_DESCENT_NAIVE"
-        assert "unimplemented: Naive coordinate descent is not supported." in str(e)
+      model.train(x=predictors, y=response_col, training_frame=training_data)
       h2o.remove(training_data)
 
 if __name__ == "__main__":

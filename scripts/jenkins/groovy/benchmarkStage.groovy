@@ -1,7 +1,5 @@
 def call(final pipelineContext, final stageConfig) {
 
-  def H2O_OPS_CREDS_ID = 'd57016f6-d172-43ea-bea1-1d6c7c1747a0'
-
   def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
 
@@ -16,7 +14,7 @@ def call(final pipelineContext, final stageConfig) {
   dir (ML_BENCHMARK_ROOT) {
     retry(3) {
       timeout(time: 1, unit: 'MINUTES') {
-        checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
+        checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: pipelineContext.getBuildConfig().H2O_OPS_CREDS_ID, url: 'https://github.com/h2oai/ml-benchmark']]]
       }
     }
   }
@@ -42,7 +40,7 @@ def call(final pipelineContext, final stageConfig) {
       defaultStage(pipelineContext, stageConfig)
     }
   } finally {
-    insideDocker(benchmarkEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 5, 'MINUTES') {
+    insideDocker(benchmarkEnv, pipelineContext.getBuildConfig().S3CMD_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 5, 'MINUTES') {
       def persistBenchmarkResults = load("${ML_BENCHMARK_ROOT}/jenkins/groovy/persistBenchmarkResults.groovy")
       persistBenchmarkResults(benchmarkFolderConfig, pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName))
     }

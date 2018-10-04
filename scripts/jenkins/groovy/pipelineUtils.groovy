@@ -10,7 +10,7 @@ class PipelineUtils {
 
     String stageNameToDirName(stageName) {
         if (stageName != null) {
-            return stageName.toLowerCase().replace(' ', '-')
+            return stageName.toLowerCase().replaceAll(' |\\(|\\)', '-')
         }
         return null
     }
@@ -97,6 +97,15 @@ class PipelineUtils {
             context.error("XGBoost version cannot be read")
         }
         return xgbVersion
+    }
+
+    def readCurrentGradleVersion(final context, final h2o3Root) {
+        final def gradleVersion = context.sh(script: "cd ${h2o3Root} && cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | egrep -o '([0-9]+\\.+)+[0-9]+'", returnStdout: true).trim()
+        context.echo "Gradle Version: ${gradleVersion}"
+        if (!gradleVersion) {
+            context.error("Gradle version cannot be read")
+        }
+        return gradleVersion
     }
 
     boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {

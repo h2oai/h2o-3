@@ -41,6 +41,10 @@ Defining a GLRM Model
 
 -  **loss**: Specify the numeric loss function: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic.
 
+-  **loss_by_col**: Specify the loss function by column override: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic, Categorical, or Ordinal.
+
+-  **loss_by_col_idx**: Specify the loss function by column index override.
+
 -  **multi_loss**: Specify either **Categorical** or **Ordinal** for the categorical loss function.
 
 -  **period**: When ``loss=periodic``, specify the length of the period.

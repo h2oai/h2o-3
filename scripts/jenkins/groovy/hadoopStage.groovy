@@ -3,11 +3,7 @@ H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 H2O_HADOOP_STARTUP_MODE_WITH_KRB='WITH_KRB'
 
 def call(final pipelineContext, final stageConfig) {
-
-    def useKRB = stageConfig.customData.mode == H2O_HADOOP_STARTUP_MODE_WITH_KRB
-    stageConfig.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(stageConfig.customData.distribution, stageConfig.customData.version, useKRB)
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
-
         stageConfig.customBuildAction = """
             if [ -n "\$HADOOP_CONF_DIR" ]; then
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
@@ -41,6 +37,8 @@ def call(final pipelineContext, final stageConfig) {
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke
         """
+        
+        stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         defaultStage(pipelineContext, stageConfig)
@@ -92,6 +90,22 @@ private GString getH2OStartupCmd(final stageConfig) {
             """
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
+    }
+}
+
+private String getPostFailedBuildAction(final mode) {
+    switch (mode) {
+        case H2O_HADOOP_STARTUP_MODE_HADOOP:
+            return """
+                if [ -f h2o_one_node ]; then
+                    export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
+                    echo "YARN Application ID is \${YARN_APPLICATION_ID}"
+                    yarn application -kill \${YARN_APPLICATION_ID}
+                    yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log 
+                fi   
+            """
+        default:
+            return ""
     }
 }
 

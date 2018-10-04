@@ -59,6 +59,12 @@ class Metalearner {
         //GLM Metalearner
         GLM metaGLMBuilder = ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
 
+        //Metalearner parameters
+        if (_hasMetalearnerParams) {
+            GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) _metalearner_parameters;
+            metaGLMBuilder._parms = glmParams;
+        }
+
         metaGLMBuilder._parms._seed = _metalearnerSeed;
         metaGLMBuilder._parms._non_negative = true;
         //metaGLMBuilder._parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};

@@ -107,7 +107,8 @@ def stackedensemble_nfolds_test():
 
 
     # Check that metalearner_fold_column works
-    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_fold_column=fold_column)
+    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_fold_column=fold_column,
+                                         metalearner_params=dict(keep_cross_validation_models=True))
     stack4.train(x=x, y=y, training_frame=train)
     # Check that metalearner_fold_column is correctly stored in model output
     assert(stack4.params['metalearner_fold_column']['actual']['column_name'] == fold_column)

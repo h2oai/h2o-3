@@ -52,7 +52,8 @@ def cv_cars_dl():
   fold_assignments.set_names(["fold_assignments"])
   cars = cars.cbind(fold_assignments)
 
-  dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,hidden=[20,20],epochs=10)
+  dl = H2ODeepLearningEstimator(keep_cross_validation_models=True, keep_cross_validation_predictions=True,
+                                hidden=[20, 20], epochs=10)
   dl.train(x=predictors,y=response_col,training_frame=cars,fold_column="fold_assignments")
 
   num_cv_models = len(dl._model_json['output']['cross_validation_models'])

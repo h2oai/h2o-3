@@ -2,7 +2,12 @@ package hex;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.MojoReaderBackend;
+import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -84,7 +89,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public interface LeafNodeAssignment {
-    Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key);
+    enum LeafNodeAssignmentType {Path, Node_ID}
+    Frame scoreLeafNodeAssignment(Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key);
+  }
+
+  public interface StagedPredictions {
+    Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
   }
 
   public interface ExemplarMembers {
@@ -185,6 +195,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
+    public boolean _keep_cross_validation_models = false;
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
@@ -1505,7 +1516,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  protected class BigScore extends CMetricScoringTask<BigScore> {
+  protected class BigScore extends CMetricScoringTask<BigScore> implements BigScorePredict, BigScoreChunkPredict {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     final double[] _mean;  // Column means of test frame
@@ -1513,6 +1524,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final public boolean _hasWeights;
     final public boolean _makePreds;
     final public Job _j;
+
+    private transient BigScorePredict _localPredict;
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
@@ -1527,7 +1540,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = testHasWeights;
     }
 
-    @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+    @Override
+    protected void setupLocal() {
+      super.setupLocal();
+      _localPredict = setupBigScorePredict(this);
+      assert _localPredict != null;
+    }
+
+    @Override public void map(Chunk chks[], NewChunk cpreds[] ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
@@ -1542,96 +1562,54 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           actual = new float[chks.length];
       }
       int len = chks[0]._len;
-
-      try {
-        setupBigScorePredict();
-
-        if(!bulkBigScorePredict()) {
-          double [] tmp = new double[_output.nfeatures()];
-          double[] preds = _mb._work;  // Sized for the union of test and train classes
-          for (int row = 0; row < len; row++) {
-            double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
-            if (weight == 0) {
-              if (_makePreds) {
-                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                  cpreds[c].addNum(0);
-              }
-              continue;
-            }
-            double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
-            double[] p = score0(chks, offset, row, tmp, preds);
-            if (_computeMetrics) {
-              if (isSupervised()) {
-                actual[0] = (float) responseChunk.atd(row);
-              } else {
-                for (int i = 0; i < actual.length; ++i)
-                  actual[i] = (float) data(chks, row, i);
-              }
-              _mb.perRow(preds, actual, weight, offset, Model.this);
-              // Handle custom metric
-              customMetricPerRow(preds, actual, weight, offset, Model.this);
-            }
+      try (BigScoreChunkPredict predict = _localPredict.initMap(_fr, chks)) {
+        double[] tmp = new double[_output.nfeatures()];
+        for (int row = 0; row < len; row++) {
+          double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
+          if (weight == 0) {
             if (_makePreds) {
               for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                cpreds[c].addNum(p[c]);
+                cpreds[c].addNum(0);
             }
+            continue;
           }
-        } else {
-          int[] indices = new int[len];
-          double[] offsets = offsetChunk != null ? new double[len] : null;
-          int nonZeroW = 0;
-          for (int row = 0; row < len; row++) {
-            double weight = getWeight(weightsChunk, row);
-            if (weight == 0) {
-              if (_makePreds) {
-                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                  cpreds[c].addNum(0);
-              }
-              continue;
+          double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
+          double[] preds = predict.score0(chks, offset, row, tmp, _mb._work);
+          if (_computeMetrics) {
+            if (isSupervised()) {
+              actual[0] = (float) responseChunk.atd(row);
+            } else {
+              for (int i = 0; i < actual.length; ++i)
+                actual[i] = (float) data(chks, row, i);
             }
-            if(offsetChunk != null) {
-              offsets[nonZeroW] = getOffset(offsetChunk, row);
-            }
-            indices[nonZeroW++] = row;
+            _mb.perRow(preds, actual, weight, offset, Model.this);
+            // Handle custom metric
+            customMetricPerRow(preds, actual, weight, offset, Model.this);
           }
-
-          indices = Arrays.copyOf(indices, nonZeroW);
-
-          if(0 == nonZeroW) {
-            return;
-          }
-
-          double[][] bulkPreds = new double[nonZeroW][];
-          for(int i = 0; i < bulkPreds.length; i++) {
-            bulkPreds[i] = new double[_mb._work.length];
-          }
-          double[][] bulkTmp = new double[nonZeroW][];
-          for(int i = 0; i < bulkTmp.length; i++) {
-            bulkTmp[i] = new double[_output.nfeatures()];
-          }
-          double[][] p = score0(chks, offsets, indices, bulkTmp, bulkPreds);
-          for(int rowIdx = 0; rowIdx < indices.length; rowIdx++) {
-            int row = indices[rowIdx];
-            if (_computeMetrics) {
-              if (isSupervised()) {
-                actual[0] = (float) responseChunk.atd(row);
-              } else {
-                for (int i = 0; i < actual.length; ++i)
-                  actual[i] = (float) data(chks, row, i);
-              }
-              _mb.perRow(bulkPreds[rowIdx], actual, getWeight(weightsChunk, row), getOffset(offsetChunk, row), Model.this);
-            }
-            if (_makePreds) {
-              for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                cpreds[c].addNum(p[rowIdx][c]);
-            }
+          if (_makePreds) {
+            for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+              cpreds[c].addNum(preds[c]);
           }
         }
-      } finally {
-        closeBigScorePredict();
       }
     }
-    @Override public void reduce( BigScore bs ) {
+
+    @Override
+    public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
+      return Model.this.score0(chks, offset, row_in_chunk, tmp, preds);
+    }
+
+    @Override
+    public BigScoreChunkPredict initMap(final Frame fr, final Chunk[] chks) {
+      return this;
+    }
+
+    @Override
+    public void close() {
+      // nothing to do - meant to be overridden
+    }
+
+    @Override public void reduce(BigScore bs ) {
       super.reduce(bs);
       if (_mb != null) _mb.reduce(bs._mb);
     }
@@ -1642,20 +1620,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         _mb.postGlobal(getComputedCustomMetric());
       }
     }
-
-    private double getOffset(Chunk offsetChunk, int row) {
-      return offsetChunk != null ? offsetChunk.atd(row) : 0;
-    }
-
-    private double getWeight(Chunk weightsChunk, int row) {
-      return weightsChunk != null ? weightsChunk.atd(row) : 1;
-    }
-
   }
 
-  protected boolean bulkBigScorePredict() { return false; }
-  protected void setupBigScorePredict() {}
-  protected void closeBigScorePredict() {}
+  protected interface BigScorePredict {
+    BigScoreChunkPredict initMap(final Frame fr, final Chunk chks[]);
+  }
+
+  protected interface BigScoreChunkPredict extends AutoCloseable {
+    double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds);
+    @Override
+    void close();
+  }
+
+  protected BigScorePredict setupBigScorePredict(BigScore bs) { return bs; };
 
   // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
   protected double data(Chunk[] chks, int row, int col) {
@@ -1669,11 +1646,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 0, row_in_chunk, tmp, preds);
-  }
-
-  // To be implemented by Models that override bulkBigScorePredict() to return true
-  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
-    throw new IllegalStateException("Not implemented.");
   }
 
   public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
@@ -2114,9 +2086,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         }
 
-        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(
-                config.setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
-        );
+        SharedTreeGraph[] trees = null;
+        if (genmodel instanceof SharedTreeMojoModel) {
+          SharedTreeMojoModel treemodel = (SharedTreeMojoModel) genmodel;
+          final int ntrees = treemodel.getNTreeGroups();
+          trees = new SharedTreeGraph[ntrees];
+          for (int t = 0; t < ntrees; t++)
+            trees[t] = treemodel._computeGraph(t);
+        }
+
+        EasyPredictModelWrapper epmw;
+        try {
+          epmw = new EasyPredictModelWrapper(
+                  config.setModel(genmodel)
+                          .setConvertUnknownCategoricalLevelsToNa(true)
+                          .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+          );
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
@@ -2157,6 +2145,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Convert model predictions and "internal" predictions into the same shape
           double[] expected_preds = new double[pvecs.length];
           double[] actual_preds = new double[pvecs.length];
+          String[] decisionPath = null;
+          int[] nodeIds = null;
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
@@ -2169,11 +2159,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 d2 = ((ClusteringModelPrediction) p).cluster;
                 break;
               case Regression:
-                d2 = ((RegressionModelPrediction) p).value;
+                RegressionModelPrediction rmp = (RegressionModelPrediction) p;
+                d2 = rmp.value;
+                decisionPath = rmp.leafNodeAssignments;
+                nodeIds = rmp.leafNodeAssignmentIds;
                 break;
               case Binomial:
                 BinomialModelPrediction bmp = (BinomialModelPrediction) p;
                 d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                decisionPath = bmp.leafNodeAssignments;
+                nodeIds = bmp.leafNodeAssignmentIds;
                 break;
               case Ordinal:
                 OrdinalModelPrediction orp = (OrdinalModelPrediction) p;
@@ -2182,6 +2177,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               case Multinomial:
                 MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
                 d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
+                decisionPath = mmp.leafNodeAssignments;
+                nodeIds = mmp.leafNodeAssignmentIds;
                 break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
@@ -2190,6 +2187,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
             expected_preds[col] = d;
             actual_preds[col] = d2;
+          }
+
+          if (trees != null) {
+            for (int t = 0; t < trees.length; t++) {
+              SharedTreeGraph tree = trees[t];
+              SharedTreeNode node = tree.walkNodes(0, decisionPath[t]);
+              if (node == null || node.getNodeNumber() != nodeIds[t]) {
+                throw new IllegalStateException("Path to leaf node is inconsistent with predicted node id: path=" + decisionPath[t] + ", nodeId=" + nodeIds[t]);
+              }
+            }
           }
 
           // Verify the correctness of the prediction
@@ -2217,22 +2224,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
+    int c = 0;
+    for (Key k : keys) {
+      T t = DKV.getGet(k);
+      if (t != null) {
+        t.delete(); //delete all subparts
+        c++;
+      }
+    }
+    return c;
+  }
+
+  /**
+   * delete from the output all associated CV models from DKV.
+   */
   public void deleteCrossValidationModels() {
     if (_output._cross_validation_models != null) {
-      for (Key k : _output._cross_validation_models) {
-        Model m = DKV.getGet(k);
-        if (m!=null) m.delete(); //delete all subparts
-      }
+      Log.info("Cleaning up CV Models for " + this._key.toString());
+      int count = deleteAll(_output._cross_validation_models);
+      Log.info(count+" CV models were removed");
     }
   }
 
+  /**
+   * delete from the output all associated CV predictions from DKV.
+   */
   public void deleteCrossValidationPreds() {
     if (_output._cross_validation_predictions != null) {
-      for (Key k : _output._cross_validation_predictions) {
-        Frame f = DKV.getGet(k);
-        if (f!=null) f.delete();
-      }
+      Log.info("Cleaning up CV Predictions for " + this._key.toString());
+      int count = deleteAll(_output._cross_validation_predictions);
+      Log.info(count+" CV predictions were removed");
     }
+
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
     }
@@ -2429,6 +2453,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return targetUri;
     } finally {
       FileUtils.close(os);
+    }
+  }
+
+  /**
+   * Convenience method to convert Model to a MOJO representation. Please be aware that converting models
+   * to MOJOs using this function will require sufficient memory (to hold the mojo representation and interim
+   * serialized representation as well).
+   *
+   * @return instance of MojoModel
+   * @throws IOException when writing MOJO fails
+   */
+  public MojoModel toMojo() throws IOException {
+    if (! haveMojo())
+      throw new IllegalStateException("Model doesn't support MOJOs.");
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+      this.getMojo().writeTo(os);
+      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+              new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+      return MojoModel.load(mojoReaderBackend);
     }
   }
 

@@ -104,7 +104,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
    * @see FrameSynopsisV3
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesV3 list(int version, FramesV3 s) {
+  public FramesListV3 list(int version, FramesListV3 s) {
     Frames f = s.createAndFillImpl();
     f.frames = Frame.fetchAll();
 

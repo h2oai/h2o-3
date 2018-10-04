@@ -10,8 +10,8 @@ function() {
   path <- locate("smalldata/logreg/prostate.csv")
   prostate.hex <- h2o.importFile(path, destination_frame="prostate.hex")
   
-  main_model <- h2o.glm(x = 3:8, y = 2, training_frame = prostate.hex, nfolds = 2, standardize = FALSE, family = "binomial")
-
+  main_model <- h2o.glm(x = 3:8, y = 2, training_frame = prostate.hex, nfolds = 2, standardize = FALSE, family = "binomial",
+                        keep_cross_validation_models=T)
 
   print(main_model@model_id)
   

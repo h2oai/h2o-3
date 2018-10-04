@@ -6,28 +6,11 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     customArgs = ''
   }
 
-  // by default, the image should be loaded
-  def pullImage = true
-  // First check that the image is present
-  def imagePresent = sh(script: "docker inspect ${image} > /dev/null", returnStatus: true) == 0
-  if (imagePresent) {
-    echo "${image} present on host, checking versions..."
-    // check that the image has expected SHA
-    def expectedVersion = buildConfig.getExpectedImageVersion(image)
-    def currentVersion = sh(script: "docker inspect --format=\'{{index .RepoDigests 0}}\' ${image}", returnStdout: true).trim()
-    echo "current image version: ${currentVersion}"
-    echo "expected image version: ${expectedVersion}"
-    pullImage = currentVersion != expectedVersion
-  }
-
-  if (pullImage) {
-    echo "######### Pulling ${image} #########"
+  retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
     withCredentials([usernamePassword(credentialsId: registry, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
       sh "docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${registry}"
       sh "docker pull ${image}"
     }
-  } else {
-    echo "######### Current version of ${image} already loaded #########"
   }
 
   withEnv(customEnv) {

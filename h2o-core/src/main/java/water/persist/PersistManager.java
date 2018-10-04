@@ -1,19 +1,14 @@
 package water.persist;
 
-import water.H2O;
-import water.Key;
-import water.MRTask;
-import water.Value;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.UploadFileVec;
+import water.parser.BufferedString;
 import water.util.FileUtils;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -132,6 +127,17 @@ public class PersistManager {
 
     I[Value.ICE ] = ice;
     I[Value.NFS ] = new PersistNFS();
+
+    try {
+      Class klass = Class.forName("water.persist.PersistHTTP");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.HTTP] = (Persist) constructor.newInstance();
+      Log.info("Subsystem for distributed import from HTTP/HTTPS successfully initialized");
+    }
+    catch (Throwable ignore) {
+      I[Value.HTTP] = new PersistEagerHTTP();
+      Log.info("Distributed HTTP import not available (import from HTTP/HTTPS will be eager)");
+    }
 
     try {
       Class klass = Class.forName("water.persist.PersistHdfs");
@@ -266,6 +272,73 @@ public class PersistManager {
     return I[Value.NFS].calcTypeaheadMatches(filter, limit);
   }
 
+  public void importFiles(String[] paths, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    if (paths.length == 1) {
+      importFiles(paths[0], pattern, files, keys, fails, dels);
+      return;
+    }
+
+    ImportFilesTask importFilesTask = new ImportFilesTask(paths, pattern);
+    H2O.submitTask(new LocalMR(importFilesTask, paths.length)).join();
+
+    ImportFilesTask.addAllTo(importFilesTask._pFiles, files);
+    ImportFilesTask.addAllTo(importFilesTask._pKeys, keys);
+    ImportFilesTask.addAllTo(importFilesTask._pFails, fails);
+    ImportFilesTask.addAllTo(importFilesTask._pDels, dels);
+  }
+
+  private static class ImportFilesTask extends MrFun<ImportFilesTask> {
+
+    private final String[] _paths;
+    private final String _pattern;
+
+    BufferedString[][] _pFiles;
+    BufferedString[][] _pKeys;
+    BufferedString[][] _pFails;
+    BufferedString[][] _pDels;
+
+    public ImportFilesTask(String[] paths, String pattern) {
+      _paths = paths;
+      _pattern = pattern;
+      _pFiles = new BufferedString[paths.length][];
+      _pKeys = new BufferedString[paths.length][];
+      _pFails = new BufferedString[paths.length][];
+      _pDels = new BufferedString[paths.length][];
+    }
+
+    @Override
+    protected void map(int t) {
+      ArrayList<String> pFiles = new ArrayList<>();
+      ArrayList<String> pKeys = new ArrayList<>();
+      ArrayList<String> pFails = new ArrayList<>();
+      ArrayList<String> pDels = new ArrayList<>();
+
+      H2O.getPM().importFiles(_paths[t], _pattern, pFiles, pKeys, pFails, pDels);
+
+      _pFiles[t] = toArray(pFiles);
+      _pKeys[t] = toArray(pKeys);
+      _pFails[t] = toArray(pFails);
+      _pDels[t] = toArray(pDels);
+    }
+
+    private static BufferedString[] toArray(List<String> ls) {
+      BufferedString[] bss = new BufferedString[ls.size()];
+      int i = 0;
+      for (String s : ls) {
+        bss[i++] = new BufferedString(s);
+      }
+      return bss;
+    }
+
+    private static void addAllTo(BufferedString[][] bssAry, ArrayList<String> target) {
+      for (BufferedString[] bss : bssAry) {
+        for (BufferedString bs : bss)
+          target.add(bs.toString());
+      }
+    }
+
+  }
+
   /**
    * From a path produce a list of files and keys for parsing.
    *
@@ -290,13 +363,7 @@ public class PersistManager {
     if (scheme == null || "file".equals(scheme)) {
       I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("http".equals(scheme) || "https".equals(scheme)) {
-      try {
-        Key destination_key = FrameUtils.eagerLoadFromHTTP(path);
-        files.add(path);
-        keys.add(destination_key.toString());
-      } catch( Throwable e) {
-        fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
-      }
+      I[Value.HTTP].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);

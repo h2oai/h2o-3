@@ -25,7 +25,9 @@ public class GainsLift extends Iced {
 
   //OUTPUT
   public double[] response_rates; // p_i = e_i/n_i
+  public double[] avg_scores; // s_i
   public double avg_response_rate; // P
+  public double avg_score; // S
   public long[] events; // e_i
   public long[] observations; // n_i
   TwoDimTable table;
@@ -124,7 +126,9 @@ public class GainsLift extends Iced {
       GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
       gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
       response_rates = gt.response_rates();
+      avg_scores = gt.avg_scores();
       avg_response_rate = gt.avg_response_rate();
+      avg_score = gt.avg_score();
       events = gt.events();
       observations = gt.observations();
     } finally {       // Delete adaptation vectors
@@ -141,14 +145,15 @@ public class GainsLift extends Iced {
     if (response_rates == null || Double.isNaN(avg_response_rate)) return null;
     TwoDimTable table = new TwoDimTable(
             "Gains/Lift Table",
-            "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate),
+            "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate) + ", avg score: " + PrettyPrint.formatPct(avg_score),
             new String[events.length],
-            new String[]{"Group", "Cumulative Data Fraction", "Lower Threshold", "Lift", "Cumulative Lift", "Response Rate", "Cumulative Response Rate", "Capture Rate", "Cumulative Capture Rate", "Gain", "Cumulative Gain"},
-            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
+            new String[]{"Group", "Cumulative Data Fraction", "Lower Threshold", "Lift", "Cumulative Lift", "Response Rate", "Score", "Cumulative Response Rate", "Cumulative Score", "Capture Rate", "Cumulative Capture Rate", "Gain", "Cumulative Gain"},
+            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
+            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
             "");
     long sum_e_i = 0;
     long sum_n_i = 0;
+    double sum_s_i = 0;
     double P = avg_response_rate; // E/N
     long N = ArrayUtils.sum(observations);
     long E = Math.round(N * P);
@@ -156,8 +161,10 @@ public class GainsLift extends Iced {
       long e_i = events[i];
       long n_i = observations[i];
       double p_i = response_rates[i];
+      double s_i = avg_scores[i];
       sum_e_i += e_i;
       sum_n_i += n_i;
+      sum_s_i += n_i * s_i;
       double lift=p_i/P; //can be NaN if P==0
       double sum_lift=(double)sum_e_i/sum_n_i/P; //can be NaN if P==0
       table.set(i,0,i+1); //group
@@ -166,11 +173,13 @@ public class GainsLift extends Iced {
       table.set(i,3,lift); //lift
       table.set(i,4,sum_lift); //cumulative_lift
       table.set(i,5,p_i); //response_rate
-      table.set(i,6,(double)sum_e_i/sum_n_i); //cumulative_response_rate
-      table.set(i,7,(double)e_i/E); //capture_rate
-      table.set(i,8,(double)sum_e_i/E); //cumulative_capture_rate
-      table.set(i,9,100*(lift-1)); //gain
-      table.set(i,10,100*(sum_lift-1)); //cumulative gain
+      table.set(i,6,s_i); //score
+      table.set(i,7,(double)sum_e_i/sum_n_i); //cumulative_response_rate
+      table.set(i,8,(double)sum_s_i/sum_n_i); //cumulative_score
+      table.set(i,9,(double)e_i/E); //capture_rate
+      table.set(i,10,(double)sum_e_i/E); //cumulative_capture_rate
+      table.set(i,11,100*(lift-1)); //gain
+      table.set(i,12,100*(sum_lift-1)); //cumulative gain
       if (i== events.length-1) {
         assert(sum_n_i == N) : "Cumulative data fraction must be 1.0, but is " + (double)sum_n_i/N;
         assert(sum_e_i == E) : "Cumulative capture rate must be 1.0, but is " + (double)sum_e_i/E;
@@ -186,8 +195,10 @@ public class GainsLift extends Iced {
     /* @OUT response_rates */
     public final double[] response_rates() { return _response_rates; }
     public final double avg_response_rate() { return _avg_response_rate; }
+    public final double avg_score() { return _avg_score; }
     public final long[] events(){ return _events; }
     public final long[] observations(){ return _observations; }
+    public final double[] avg_scores() { return _avg_scores; }
 
     /* @IN quantiles/thresholds */
     final private double[] _thresh;
@@ -196,7 +207,9 @@ public class GainsLift extends Iced {
     private long[] _observations;
     private long _avg_response;
     private double _avg_response_rate;
+    private double _avg_score;
     private double[] _response_rates;
+    private double[] _avg_scores;
 
     public GainsLiftBuilder(double[] thresh) {
       _thresh = thresh.clone();
@@ -206,7 +219,9 @@ public class GainsLift extends Iced {
     @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
+      _avg_scores = new double[_thresh.length];
       _avg_response = 0;
+      _avg_score = 0;
       final int len = Math.min(ca._len, cp._len);
       for( int i=0; i < len; i++ ) {
         if (ca.isNA(i)) continue;
@@ -228,24 +243,31 @@ public class GainsLift extends Iced {
       for( int t=0; t < _thresh.length; t++ ) {
         if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
           _observations[t]+=w;
+          _avg_scores[t]+=w*pr;
           if (a == 1) _events[t]+=w;
           break;
         }
       }
       if (a == 1) _avg_response+=w;
+      _avg_score += w*pr;
     }
 
     @Override public void reduce(GainsLiftBuilder other) {
       ArrayUtils.add(_events, other._events);
       ArrayUtils.add(_observations, other._observations);
+      ArrayUtils.add(_avg_scores, other._avg_scores);
       _avg_response += other._avg_response;
+      _avg_score += other._avg_score;
     }
 
     @Override public void postGlobal(){
       _response_rates = new double[_thresh.length];
-      for (int i=0; i<_response_rates.length; ++i)
+      for (int i=0; i<_response_rates.length; ++i) {
         _response_rates[i] = _observations[i] == 0 ? 0 : (double) _events[i] / _observations[i];
+        _avg_scores[i] = _observations[i] == 0 ? 0 : _avg_scores[i] / (double)_observations[i];
+      }
       _avg_response_rate = (double)_avg_response / ArrayUtils.sum(_observations);
+      _avg_score /= ArrayUtils.sum(_observations);
     }
   }
 }

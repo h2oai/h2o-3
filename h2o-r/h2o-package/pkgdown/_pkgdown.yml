@@ -123,6 +123,7 @@ reference:
       - h2o.getGrid
       - h2o.getId
       - h2o.getModel
+      - h2o.getModelTree
       - h2o.getTimezone
       - h2o.getTypes
       - h2o.getVersion
@@ -210,6 +211,7 @@ reference:
       - h2o.print
       - h2o.prod 
       - h2o.proj_archetypes
+      - h2o.pr_auc
       - h2o.quantile
       - h2o.r2
       - h2o.randomForest
@@ -319,6 +321,7 @@ reference:
       - prostate
       - range.H2OFrame
       - show,H2OCoxPHModelSummary-method
+      - staged_predict_proba.H2OModel
       - str.H2OFrame
       - summary,H2OCoxPHModel-method
       - summary,H2OGrid-method

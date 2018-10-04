@@ -59,6 +59,9 @@ public class XGBoostUpdater extends Thread {
     } finally {
       _in = null; // Will throw NPE if used wrong
       _out = null;
+      _trainMat.dispose();
+      if (_booster != null)
+        _booster.dispose();
       updaters.remove(_modelKey);
       try {
         Rabit.shutdown();

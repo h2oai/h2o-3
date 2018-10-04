@@ -16,6 +16,7 @@ Related Parameters
 
 - `fold_assignment <fold_assignment.html>`__
 - `fold_column <fold_column.html>`__
+- `keep_cross_validation_models <keep_cross_validation_models.html>`__
 - `keep_cross_validation_predictions <keep_cross_validation_predictions.html>`__
 - `nfolds <nfolds.html>`__
 

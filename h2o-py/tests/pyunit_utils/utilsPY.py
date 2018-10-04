@@ -6,6 +6,7 @@ from past.builtins import basestring
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
+from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -458,7 +459,8 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    h2o.init(strict_version_check=False)
+    if not h2o.h2o.connection():
+        h2o.init(strict_version_check=False)
 
     h2o.remove_all()
 
@@ -833,10 +835,10 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
 
     # for family_type = 'multinomial' or 'binomial', response_y can be -ve to indicate bad sample data.
     # need to delete this data sample before proceeding
-    if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
-        if 'threshold' in class_method.lower():
-            if np.any(response_y < 0):  # remove negative entries out of data set
-                (x_mat, response_y) = remove_negative_response(x_mat, response_y)
+    # if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
+    #     if 'threshold' in class_method.lower():
+    #         if np.any(response_y < 0):  # remove negative entries out of data set
+    #             (x_mat, response_y) = remove_negative_response(x_mat, response_y)
 
     # write to file in csv format
     np.savetxt(csv_filename, np.concatenate((x_mat, response_y), axis=1), delimiter=",")
@@ -1235,42 +1237,7 @@ def derive_discrete_response(prob_mat, class_method, class_margin, family_type='
     """
 
     (num_sample, num_class) = prob_mat.shape
-    lastCat = num_class-1
-    if 'probability' in class_method.lower():
-        prob_mat = normalize_matrix(prob_mat)
-    discrete_y = np.zeros((num_sample, 1), dtype=np.int)
-
-    if 'probability' in class_method.lower():
-        if 'ordinal' not in family_type.lower():
-            prob_mat = np.cumsum(prob_mat, axis=1)
-        else: # for ordinal
-            for indR in list(range(num_sample)):
-                for indC in list(range(num_class)):
-                    prob_mat[indR, indC] = prob_mat[indR,indC]/prob_mat[indR,lastCat]
-        random_v = np.random.uniform(0, 1, [num_sample, 1])
-
-        # choose the class that final response y belongs to according to the
-        # probability prob(y=k)
-        class_bool = random_v < prob_mat
-
-        for indR in range(num_sample):
-            for indC in range(num_class):
-                if class_bool[indR, indC]:
-                    discrete_y[indR, 0] = indC
-                    break
-
-    elif 'threshold' in class_method.lower():
-        discrete_y = np.argmax(prob_mat, axis=1)
-
-        temp_mat = np.diff(np.sort(prob_mat, axis=1), axis=1)
-
-        # check if max value exceeds second one by at least margin
-        mat_diff = temp_mat[:, num_class-2]
-        mat_bool = mat_diff < class_margin
-
-        discrete_y[mat_bool] = -1
-    else:
-        assert False, 'class_method should be set to "probability" or "threshold" only!'
+    discrete_y =  np.argmax(prob_mat, axis=1)
 
     return discrete_y
 
@@ -1483,6 +1450,85 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         print(pass_string)
         return 0
 
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
+
+
+def extract_col_value_H2OTwoDimTable(table, col_name):
+    '''
+    This function given the column name will extract a list containing the value used for the column name from the
+    H2OTwoDimTable.
+
+    :param table:
+    :param col_name:
+    :return:
+    '''
+
+    tableList = []
+    col_header = table.col_header
+    colIndex = col_header.index(col_name)
+    for ind in range(len(table.cell_values)):
+        temp = table.cell_values[ind]
+        tableList.append(temp[colIndex])
+
+    return tableList
+
+
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
 
 def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
                                 num_per_dim=10):
@@ -1496,7 +1542,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
 
     :param table1: H2OTwoDimTable to be compared
     :param table2: the other H2OTwoDimTable to be compared
-    :param col_header_list: list of strings denote names that we can the comparison to be performed
+    :param col_header_list: list of strings denote names that we want the comparison to be performed
     :param tolerance: default to 1e-6
     :param check_sign: bool, determine if the sign of values are important or not.  For eigenvectors, they are not.
     :param check_all: bool, determine if we need to compare every single element
@@ -1601,7 +1647,7 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
 
                 if compare_val_h2o_Py > tolerance:    # difference is too high, return false
                     if throwError:
-                        assert False, "The two arrays are not equal in value."
+                        assert False, "Array 1 value {0} and array 2 value {1} do not agree.".format(array1[ind], array2[ind])
                     else:
                         return False
 
@@ -3266,7 +3312,96 @@ def compare_string_frames_local(f1, f2, prob=0.5):
                                                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
 
-def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
+def check_data_rows(f1, f2, index_list=[], num_rows=10):
+    '''
+        This method will compare the relationships of the data rows within each frames.  In particular, we are
+        interested in the relative direction of each row vectors and the relative distances. No assertions will
+        be thrown.
+
+    :param f1:
+    :param f2:
+    :param index_list:
+    :param num_rows:
+    :return:
+    '''
+    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
+    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    if len(index_list)==0:
+        index_list = random.sample(range(f1.nrow), num_rows)
+
+    maxInnerProduct = 0
+    maxDistance = 0
+
+    for row_index in range(1, len(index_list)):
+        r1 = np.inner(temp1[index_list[row_index-1]], temp1[index_list[row_index]])
+        r2 = np.inner(temp2[index_list[row_index-1]], temp2[index_list[row_index]])
+        d1 = np.linalg.norm(temp1[index_list[row_index-1]]-temp1[index_list[row_index]])
+        d2 = np.linalg.norm(temp2[index_list[row_index-1]]-temp2[index_list[row_index]])
+
+        diff1 = min(abs(r1-r2), abs(r1-r2)/max(abs(r1), abs(r2)))
+        maxInnerProduct = max(maxInnerProduct, diff1)
+        diff2 = min(abs(d1-d2), abs(d1-d2)/max(abs(d1), abs(d2)))
+        maxDistance = max(maxDistance, diff2)
+
+    print("Maximum inner product different is {0}.  Maximum distance difference is "
+      "{1}".format(maxInnerProduct, maxDistance))
+
+
+def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
+    '''
+        This method will compare the relationships of the data rows within each frames.  In particular, we are
+        interested in the relative direction of each row vectors and the relative distances. An assertion will be
+        thrown if they are different beyond a tolerance.
+
+    :param f1:
+    :param f2:
+    :param index_list:
+    :param num_rows:
+    :return:
+    '''
+    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
+    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    if len(index_list)==0:
+        index_list = random.sample(range(f1.nrow), num_rows)
+
+    maxInnerProduct = 0
+    maxDistance = 0
+    for row_index in range(1, len(index_list)):
+        r1 = np.inner(temp1[index_list[row_index-1]], temp1[index_list[row_index]])
+        r2 = np.inner(temp2[index_list[row_index-1]], temp2[index_list[row_index]])
+        d1 = np.linalg.norm(temp1[index_list[row_index-1]]-temp1[index_list[row_index]])
+        d2 = np.linalg.norm(temp2[index_list[row_index-1]]-temp2[index_list[row_index]])
+
+        diff1 = min(abs(r1-r2), abs(r1-r2)/max(abs(r1), abs(r2)))
+        maxInnerProduct = max(maxInnerProduct, diff1)
+        diff2 = min(abs(d1-d2), abs(d1-d2)/max(abs(d1), abs(d2)))
+        maxDistance = max(maxDistance, diff2)
+
+        assert diff1 < tol, \
+            "relationship between data row {0} and data row {1} are different among the two dataframes.  Inner " \
+            "product from frame 1 is {2}.  Inner product from frame 2 is {3}.  The difference between the two is" \
+            " {4}".format(index_list[row_index-1], index_list[row_index], r1, r2, diff1)
+
+
+        assert diff2 < tol, \
+                "distance betwee data row {0} and data row {1} are different among the two dataframes.  Distance " \
+                "between 2 rows from frame 1 is {2}.  Distance between 2 rows from frame 2 is {3}.  The difference" \
+                " between the two is {4}".format(index_list[row_index-1], index_list[row_index], d1, d2, diff2)
+    print("Maximum inner product different is {0}.  Maximum distance difference is "
+          "{1}".format(maxInnerProduct, maxDistance))
+
+def compute_frame_diff(f1, f2):
+    '''
+    This method will take the absolute difference two frames and sum across all elements
+    :param f1:
+    :param f2:
+    :return:
+    '''
+
+    frameDiff = h2o.H2OFrame.sum(h2o.H2OFrame.sum(h2o.H2OFrame.abs(f1-f2)), axis=1)[0,0]
+    return frameDiff
+
+def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
@@ -3274,6 +3409,9 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
         for rowInd in range(1,f2.nrow):
             if (random.uniform(0,1) < prob):
                 if (math.isnan(float(temp1[rowInd][colInd]))):
+                    if returnResult:
+                        if not(math.isnan(float(temp2[rowInd][colInd]))):
+                            return False
                     assert math.isnan(float(temp2[rowInd][colInd])), "Failed frame values check at row {2} and column {3}! " \
                                                               "frame1 value: {0}, frame2 value: " \
                                                               "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
@@ -3281,8 +3419,14 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6):
                     v1 = float(temp1[rowInd][colInd])
                     v2 = float(temp2[rowInd][colInd])
                     diff = abs(v1-v2)/max(1.0, abs(v1), abs(v2))
+                    if returnResult:
+                        if diff > tol:
+                            return False
                     assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
                                       "{1}".format(v1, v2, rowInd, colInd)
+    if returnResult:
+        return True
+
 
 # frame compare with NAs in column
 def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6):
@@ -3403,7 +3547,7 @@ def random_dataset_strings_only(nrow, ncol):
     return df
 
 # generate random dataset of ncolumns of enums only, copied from Pasha
-def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
+def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
@@ -3414,11 +3558,11 @@ def random_dataset_enums_only(nrow, ncol, factorL=10, misFrac=0.01):
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, factors=factorL,
-                          **fractions)
+                          seed=randSeed, **fractions)
     return df
 
 # generate random dataset of ncolumns of enums only, copied from Pasha
-def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
+def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
@@ -3429,11 +3573,11 @@ def random_dataset_int_only(nrow, ncol, rangeR=10, misFrac=0.01):
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=rangeR,
-                          **fractions)
+                          seed=randSeed, **fractions)
     return df
 
 # generate random dataset of ncolumns of integer and reals, copied from Pasha
-def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
+def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01, randSeed=None):
     """Create and return a random dataset."""
     fractions = dict()
     fractions["real_fraction"] = 0.25  # Right now we are dropping string columns, so no point in having them.
@@ -3443,8 +3587,8 @@ def random_dataset_numeric_only(nrow, ncol, integerR=100, misFrac=0.01):
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
 
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR
-                          , **fractions)
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=integerR,
+                          seed=randSeed, **fractions)
     return df
 
 def getMojoName(modelID):
@@ -3615,13 +3759,13 @@ def summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
                 "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
                 "different.".format(h2oPredictLocalD[colnames[col+1]][ind], nativePred[ind][col])
 
-def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfrac=0):
+def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfrac=0, randseed=None):
     if ncol>0:
-        trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=miscfrac)
+        trainFrameNumerics = random_dataset_numeric_only(nrow, ncol, integerR = 1000000, misFrac=miscfrac, randSeed=randseed)
     if enumCols > 0:
-        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=miscfrac)
+        trainFrameEnums = random_dataset_enums_only(nrow, enumCols, factorL=enumFactors, misFrac=miscfrac, randSeed=randseed)
 
-    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0)
+    yresponse = random_dataset_enums_only(nrow, 1, factorL=responseLevel, misFrac=0, randSeed=randseed)
     yresponse.set_name(0,'response')
     if enumCols > 0:
         if ncol > 0:    # mixed datasets
@@ -3666,3 +3810,66 @@ def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
                 abs(h2oPredictLocalS['c0.l1'][ind]-nativePred[ind])<tolerance, \
             "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
             "different.".format(h2oPredictLocalD['c0.l1'][ind], nativePred[ind])
+
+
+def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, tol=1e-6):
+    '''
+    This method is used to test the partial dependency plots and is not meant for any other functions.
+    
+    :param model:
+    :param dataframe:
+    :param xlist:
+    :param xname:
+    :param weightV:
+    :param pdpTDTable:
+    :param tol:
+    :return:
+    '''
+    weightStat =  manual_partial_dependence(model, dataframe, xlist, xname, weightV) # calculate theoretical weighted sts
+    wMean = extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
+    wStd = extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
+    wStdErr = extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
+    equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+
+
+def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
+    meanV = []
+    stdV = []
+    stderrV = []
+    nRows = dataframe.nrow
+    nCols = dataframe.ncol-1
+
+    for xval in xlist:
+        cons = [xval]*nRows
+        if xname in dataframe.names:
+            dataframe=dataframe.drop(xname)
+        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+            dataframe = dataframe.cbind(h2o.H2OFrame(cons))
+            dataframe.set_name(nCols, xname)
+
+        pred = model.predict(dataframe).as_data_frame(use_pandas=False, header=False)
+        pIndex = len(pred[0])-1
+        sumEle = 0.0
+        sumEleSq = 0.0
+        sumWeight = 0.0
+        numNonZeroWeightCount = 0.0
+        m = 1.0/math.sqrt(dataframe.nrow*1.0)
+        for rindex in range(len(pred)):
+            val = float(pred[rindex][pIndex]);
+            weight = float(weightV[rindex][0])
+            if (abs(weight) > 0) and isinstance(val, float) and not(math.isnan(val)):
+                temp = val*weight
+                sumEle = sumEle+temp
+                sumEleSq = sumEleSq+temp*val
+                sumWeight = sumWeight+weight
+                numNonZeroWeightCount = numNonZeroWeightCount+1
+        wMean = sumEle/sumWeight
+        scale = numNonZeroWeightCount*1.0/(numNonZeroWeightCount-1)
+        wSTD = math.sqrt((sumEleSq/sumWeight-wMean*wMean)*scale)
+        meanV.append(wMean)
+        stdV.append(wSTD)
+        stderrV.append(wSTD*m)
+
+    return meanV, stdV, stderrV

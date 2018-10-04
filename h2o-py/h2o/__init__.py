@@ -23,17 +23,23 @@ from h2o.h2o import (connect, init, api, connection,
 # root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
+from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
 
 import os
 from codecs import open
 here = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
-    __buildinfo__ = f.read()
+try:
+    with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
+        __buildinfo__ = f.read()
+except:
+    __buildinfo__ = "unknown"
 
-__version__ = "0.0.local"
-with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
-    __version__ = f.read()
+try:
+    with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
+        __version__ = f.read()
+except:
+    __version__ = "0.0.local"
 
 if (__version__.endswith("99999")):
     print(__buildinfo__)
@@ -45,4 +51,4 @@ __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import",
            "frames", "download_pojo", "download_csv", "download_all_logs", "save_model", "load_model", "export_file",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
            "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster", "load_dataset","flow",
-           "upload_custom_metric")
+           "upload_custom_metric", "mojo_predict_csv", "mojo_predict_pandas")

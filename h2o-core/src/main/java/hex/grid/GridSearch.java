@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -136,6 +137,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         gridSearch(grid);
         tryComplete();
       }
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
+        return true;
+      }
     }, gridWork, it.max_runtime_secs());
   }
 
@@ -172,7 +178,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       // Number of traversed model parameters
       int counter = grid.getModelCount();
       while (it.hasNext(model)) {
-        if(_job.stop_requested() ) return;  // Handle end-user cancel request
+        if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
         double time_remaining_secs = Double.MAX_VALUE;
@@ -180,7 +186,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           time_remaining_secs = it.time_remaining_secs();
           if (time_remaining_secs < 0) {
             Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
-            return;
+            throw new Job.JobCancelledException();
           }
         }
 

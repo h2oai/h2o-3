@@ -67,17 +67,16 @@ Install in Python
 
 Run the following commands in a Terminal window to install H2O for Python. 
 
-1. Install dependencies (prepending with `sudo` if needed):
+1. Install dependencies (prepending with ``sudo`` if needed):
 
  ::
 
 	pip install requests
 	pip install tabulate
-	pip install scikit-learn
-	pip install colorama
+	pip install "colorama>=0.3.8"
 	pip install future
 
- **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__
+ **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__.
 
 2. Run the following command to remove any existing H2O module for Python.
 

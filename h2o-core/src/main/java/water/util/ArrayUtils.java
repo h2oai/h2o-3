@@ -550,9 +550,17 @@ public class ArrayUtils {
     return result;
   }
 
-  public static boolean contains(String[] names, String name) {
-    if (null == names) return false;
-    for (String n : names) if (n.equals(name)) return true;
+  public static <T> boolean contains(T[] arr, T target) {
+    if (null == arr) return false;
+    for (T t : arr) {
+      if (t == target) return true;
+      if (t != null && t.equals(target))  return true;
+    }
+    return false;
+  }
+
+  static public boolean contains(byte[] a, byte d) {
+    for (byte anA : a) if (anA == d) return true;
     return false;
   }
 

@@ -11,25 +11,45 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.util.FileUtils;
 
 import static water.parser.ParserTest.makeByteVec;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 public class ParserTestARFF extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
-  /**
-   * Helper to check parsed column types
-   */
-  private void testTypes(String[] dataset, byte[] exp, int len, String sep) {
-    StringBuilder sb1 = new StringBuilder();
-    for (String ds : dataset) sb1.append(ds).append(sep);
-    Key k1 = makeByteVec(sb1.toString());
+  private Frame getParsedFrame(String[] dataset, String sep, int chunks_count) {
+    StringBuilder sb = new StringBuilder();
+    for (String ds : dataset) sb.append(ds).append(sep);
+
+    String[] data_chunks = new String[chunks_count];
+    int offset = 0;
+    for (int i = 0; i < chunks_count; i++) {
+      int chunk_length = sb.length() % chunks_count == 0
+          ? sb.length() / chunks_count
+          : Math.min((int)Math.ceil((double)sb.length() / chunks_count), sb.length() - offset);
+      data_chunks[i] = sb.substring(offset, offset + chunk_length);
+      offset += chunk_length;
+    }
+    assert offset == sb.length();
+
+    Key k1 = makeByteVec(data_chunks);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k1);
     Frame fr = DKV.get(r1).get();
+    Assert.assertNotNull(fr);
+    return fr;
+  }
+
+  /**
+   * Helper to check parsed column types
+   */
+  private void testTypes(String[] dataset, byte[] exp, int len, String sep, int chunks_count) {
+    Frame fr = getParsedFrame(dataset, sep, chunks_count);
     try {
       Assert.assertEquals(len, fr.numRows());
       Assert.assertEquals(exp.length, fr.numCols());
@@ -71,13 +91,8 @@ public class ParserTestARFF extends TestUtil {
   /**
    * Helper to check parsed column names
    */
-  private void testColNames(String[] dataset, String[] exp, int len, String sep) {
-    StringBuilder sb1 = new StringBuilder();
-    for (String ds : dataset) sb1.append(ds).append(sep);
-    Key k1 = makeByteVec(sb1.toString());
-    Key r1 = Key.make("r1");
-    ParseDataset.parse(r1, k1);
-    Frame fr = DKV.get(r1).get();
+  private void testColNames(String[] dataset, String[] exp, int len, String sep, int chunks_count) {
+    Frame fr = getParsedFrame(dataset, sep, chunks_count);
     try {
       Assert.assertEquals(len, fr.numRows());
       Assert.assertEquals(exp.length, fr.numCols());
@@ -155,10 +170,10 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // numbers are numbers
@@ -183,10 +198,10 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // force numbers to be categoricals //PUBDEV-17
@@ -215,10 +230,10 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // force numbers to be categoricals
@@ -243,10 +258,10 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // force numbers to be categoricals
@@ -271,10 +286,10 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // force numbers to be strings
@@ -300,11 +315,11 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
 
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // mixed ARFF file with numbers as numbers
@@ -340,11 +355,11 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
 
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // mixed ARFF file with numbers as categoricals
@@ -380,11 +395,11 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
 
-    testColNames(dataset, exp_names, len, "\n");
-    testColNames(dataset, exp_names, len, "\r\n");
+    testColNames(dataset, exp_names, len, "\n", 1);
+    testColNames(dataset, exp_names, len, "\r\n", 1);
   }
 
   // UUID
@@ -420,8 +435,8 @@ public class ParserTestARFF extends TestUtil {
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);
 
-    testTypes(dataset, exp_types, len, "\n");
-    testTypes(dataset, exp_types, len, "\r\n");
+    testTypes(dataset, exp_types, len, "\n", 1);
+    testTypes(dataset, exp_types, len, "\r\n", 1);
   }
 
 
@@ -792,5 +807,117 @@ public class ParserTestARFF extends TestUtil {
     Assert.assertTrue(fr.anyVec().atStr(tmpStr, 7).toString().equals("1.324e-13"));
     Assert.assertTrue(fr.anyVec().atStr(tmpStr, 8).toString().equals("-2"));
     fr.delete();
+  }
+
+  @Test public void testStandardNAs() {
+    String[] arff = new String[] {
+        "@relation test_nas",
+        "@attribute y {'0', '1'}",
+        "@attribute x1 numeric",
+        "@attribute x2 string",
+        "@attribute x3 {y, n}",
+        "@attribute x4 {0, 1}",
+        "@attribute x5 {'1', '10', '100'}",
+        "@data",
+        "'0',42,\"foo\",y,0,'1'",
+        "'1',?,\"bar\",n,1,'10'",
+        "?,42,\"baz\",?,0,'100'",
+        "'0',24,?,y,1,?",
+        "'1',42,\"foo\",n,?,'1'"
+    };
+
+    byte[] expected_types = new byte[]{
+        Vec.T_CAT,
+        Vec.T_NUM,
+        Vec.T_STR,
+        Vec.T_CAT,
+        Vec.T_CAT,
+        Vec.T_CAT,
+    };
+    String[] expected_names = new String[]{"y", "x1", "x2", "x3", "x4", "x5"};
+    int expected_data_length = 5;
+
+    testTypes(arff, expected_types, expected_data_length, "\n", 1);
+    testColNames(arff, expected_names, expected_data_length, "\n", 1);
+
+    Frame parsed = getParsedFrame(arff, "\n", 1);
+    try {
+      Assert.assertTrue(parsed.hasNAs());
+      Assert.assertEquals(6, parsed.naCount());
+
+      Assert.assertFalse(parsed.vec("y").isNA(0));
+      Assert.assertTrue(parsed.vec("y").isNA(2));
+
+      Assert.assertFalse(parsed.vec("x1").isNA(0));
+      Assert.assertTrue(parsed.vec("x1").isNA(1));
+
+      Assert.assertFalse(parsed.vec("x2").isNA(0));
+      Assert.assertTrue(parsed.vec("x2").isNA(3));
+
+      Assert.assertFalse(parsed.vec("x3").isNA(0));
+      Assert.assertTrue(parsed.vec("x3").isNA(2));
+
+      Assert.assertFalse(parsed.vec("x4").isNA(0));
+      Assert.assertTrue(parsed.vec("x4").isNA(4));
+
+      Assert.assertFalse(parsed.vec("x5").isNA(0));
+      Assert.assertTrue(parsed.vec("x5").isNA(3));
+
+    } finally {
+      parsed.delete();
+    }
+  }
+
+
+  @Test public void testMultiChunkHeader() {
+    final int col_count = 51;
+    final int cat_length = 10_000;
+    final int data_count = 10_000;
+
+    byte[] expected_types = new byte[col_count];
+    String[] expected_names = new String[col_count];
+
+    List<String> arff = new ArrayList<>();
+    arff.add("@relation test_large_header");
+    arff.add("@attribute y numeric");
+    expected_types[0] = Vec.T_NUM;
+    expected_names[0] = "y";
+
+    //add 50 categoricals of about 100kB each;
+    for (int i = 1; i < col_count; i++) {
+      final StringBuilder cat = new StringBuilder("@attribute x_").append(i).append(' ').append('{');
+      for (int c = 0; c < cat_length; c++) {
+        if (c != 0) cat.append(',');
+        cat.append("factor_x").append(i).append('_').append(c);
+      }
+      cat.append('}');
+      arff.add(cat.toString());
+      expected_types[i] = Vec.T_CAT;
+      expected_names[i] = "x_"+i;
+    }
+
+    //add a few data rows
+    arff.add("@data");
+    Random rnd = new Random();
+    for (int i = 0; i < data_count; i++) {
+      final StringBuilder row = new StringBuilder();
+      row.append(rnd.nextInt(100));
+      for (int c = 1; c < col_count; c++) {
+        row.append(',')
+            .append("factor_x").append(c).append('_').append(rnd.nextInt(cat_length));
+      }
+      arff.add(row.toString());
+    }
+
+    String[] arffa = arff.toArray(new String[]{});
+    testTypes(arffa, expected_types, data_count, "\n", 10);
+    testColNames(arffa, expected_names, data_count, "\n", 10);
+
+    Frame parsed = getParsedFrame(arffa, "\n", 10);
+    try {
+      Assert.assertFalse(parsed.hasNAs());
+    } finally {
+      parsed.delete();
+    }
   }
 }

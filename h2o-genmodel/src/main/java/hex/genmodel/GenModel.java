@@ -544,7 +544,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater, DeepLearning and XGBoost (models that require explicit one-hot encoding on the fly)
+  // Helper for DeepWater and XGBoost Native (models that require explicit one-hot encoding on the fly)
   static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
@@ -554,7 +554,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     assert(to.length == _nums + _catOffsets[_cats]);
     Arrays.fill(to, 0f);
     for (int i = 0; i < _cats; ++i)
-      to[cats[i]] = 1f; // one-hot encode categoricals
+      if (cats[i] >= 0)
+        to[cats[i]] = 1f; // one-hot encode categoricals
     for (int i = 0; i < _nums; ++i)
       to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Float.NaN) : (float)nums[i];
   }
@@ -565,29 +566,20 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
 
     assert(to.length == _nums + _catOffsets[_cats]);
-    Arrays.fill(to, 0f);
+    Arrays.fill(to, 0d);
     for (int i = 0; i < _cats; ++i)
-      to[cats[i]] = 1f; // one-hot encode categoricals
+      if (cats[i] >= 0)
+        to[cats[i]] = 1d; // one-hot encode categoricals
     for (int i = 0; i < _nums; ++i)
       to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
   }
 
+  // Helper for XGBoost Java
   static public void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
                              double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
-    Arrays.fill(cats, 0);
-    for (int i = 0; i < _cats; ++i) {
-      if (Double.isNaN(from[i])) {
-        cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
-      } else {
-        int c = (int) from[i];
-        if (useAllFactorLevels)
-          cats[i] = c + _catOffsets[i];
-        else if (c != 0)
-          cats[i] = c + _catOffsets[i] - 1;
-        if (cats[i] >= _catOffsets[i + 1])
-          cats[i] = (_catOffsets[i + 1] - 1);
-      }
-    }
+
+    setCats(from, cats, _cats, _catOffsets, useAllFactorLevels);
+
     for (int i = _cats; i < from.length; ++i) {
       double d = from[i];
 
@@ -598,6 +590,25 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
   }
 
+  static public void setCats(final double[] from, int[] to, int cats, int[] catOffsets, boolean useAllFactorLevels) {
+    for (int i = 0; i < cats; ++i) {
+      if (Double.isNaN(from[i])) {
+        to[i] = (catOffsets[i + 1] - 1); //use the extra level for NAs made during training
+      } else {
+        int c = (int) from[i];
+        if (useAllFactorLevels)
+          to[i] = c + catOffsets[i];
+        else {
+          if (c != 0)
+            to[i] = c - 1 + catOffsets[i];
+          else
+            to[i] = -1;
+        }
+        if (to[i] >= catOffsets[i + 1])
+          to[i] = (catOffsets[i + 1] - 1);
+      }
+    }
+  }
 
   public static float[] convertDouble2Float(double[] input) {
     int arraySize = input.length;

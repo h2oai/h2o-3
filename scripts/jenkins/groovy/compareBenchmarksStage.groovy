@@ -76,20 +76,20 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb-vanilla': [
             'airlines-1m': [
                 100: [
-                    'train_time_min': 4,
-                    'train_time_max': 15
+                    'train_time_min': 10,
+                    'train_time_max': 27
                 ]
             ],
             'airlines-10m': [
                 100: [
-                    'train_time_min': 105,
-                    'train_time_max': 140
+                    'train_time_min': 90,
+                    'train_time_max': 133
                 ]
             ],
             'higgs': [
                 100: [
-                    'train_time_min': 145,
-                    'train_time_max': 175
+                    'train_time_min': 140,
+                    'train_time_max': 197
                 ]
             ]
         ],
@@ -97,19 +97,19 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-1m': [
                 100: [
                     'train_time_min': 12,
-                    'train_time_max': 20
+                    'train_time_max': 34
                 ]
             ],
             'airlines-10m': [
                 100: [
-                    'train_time_min': 125,
-                    'train_time_max': 160
+                    'train_time_min': 127,
+                    'train_time_max': 173
                 ]
             ],
             'higgs': [
                 100: [
-                    'train_time_min': 235,
-                    'train_time_max': 255
+                    'train_time_min': 210,
+                    'train_time_max': 300
                 ]
             ]
         ]
