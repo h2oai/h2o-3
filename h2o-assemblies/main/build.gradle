@@ -76,12 +76,12 @@ shadowJar {
 }
 
 configurations {
-    dummy
+    fatH2OJar
 }
 
 artifacts {
   archives shadowJar
-  dummy shadowJar
+  fatH2OJar shadowJar
 }
 
 //
