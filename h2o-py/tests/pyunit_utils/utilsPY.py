@@ -3507,7 +3507,7 @@ def build_save_model_DRF(params, x, train, respName):
 
 
 # generate random dataset, copied from Pasha
-def random_dataset(response_type, verbose=True, NTESTROWS=200):
+def random_dataset(response_type, verbose=True, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
     if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
@@ -3523,9 +3523,9 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200):
     else:
         response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
-                          missing_fraction=0,
+                          missing_fraction=missing_fraction,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
-                          **fractions)
+                          seed=seed, **fractions)
     if verbose:
         print()
         df.show()
