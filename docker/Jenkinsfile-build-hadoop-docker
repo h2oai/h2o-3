@@ -74,7 +74,6 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         }
 
                         withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                                [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
                                 usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             dir("${imageName}.${version}") {
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
@@ -86,8 +85,6 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                     docker build \
                                         -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                                         -f hadoop/${distribution.name}/Dockerfile \
-                                        --build-arg AWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
-                                        --build-arg AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
                                         --build-arg VERSION=${distribution.version} .
 
