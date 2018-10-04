@@ -42,7 +42,7 @@ public final class DefaultParserProviders {
     public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
-      return ARFFParser.guessSetup(bits, sep, singleQuotes, columnNames, naStrings);
+      return ARFFParser.guessSetup(bv, bits, sep, singleQuotes, columnNames, naStrings);
     }
   }
 

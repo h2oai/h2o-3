@@ -4,6 +4,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import water.Key;
 import water.fvec.FileVec;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -18,8 +19,13 @@ class CsvParser extends Parser {
   private static final int NO_HEADER = ParseSetup.NO_HEADER;
   private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
+  private static final byte[] NON_DATA_LINE_MARKERS = {'#'};
 
   CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
+
+  protected byte[] nonDataLineMarkers() {
+    return NON_DATA_LINE_MARKERS;
+  }
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
@@ -59,11 +65,9 @@ class CsvParser extends Parser {
     int colIdx = 0;
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
+    byte[] nonDataLineMarkers = nonDataLineMarkers();
     if( cidx == 0 ) {
-      while ( c == '#'
-              || isEOL(c)
-              || c == '@' /*also treat as comments leading '@' from ARFF format*/
-              || c == '%' /*also treat as comments leading '%' from ARFF format*/) {
+      while (ArrayUtils.contains(nonDataLineMarkers, c) || isEOL(c)) {
         while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
@@ -215,6 +219,10 @@ MAIN_LOOP:
           if (isEOL(c)) {
             if (c == CHAR_CR)
               state = EXPECT_COND_LF;
+            break;
+          }
+          if (ArrayUtils.contains(nonDataLineMarkers, c)) {
+            state = SKIP_LINE;
             break;
           }
           state = WHITESPACE_BEFORE_TOKEN;
@@ -494,7 +502,7 @@ MAIN_LOOP:
 
   @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
     boolean hasHdr = true;
-    String[] lines = getFirstLines(bits, ps._single_quotes);
+    String[] lines = getFirstLines(bits, ps._single_quotes, nonDataLineMarkers());
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
@@ -656,7 +664,7 @@ MAIN_LOOP:
     int lastNewline = bits.length-1;
     while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
     if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
-    String[] lines = getFirstLines(bits, singleQuotes);
+    String[] lines = getFirstLines(bits, singleQuotes, NON_DATA_LINE_MARKERS);
     if(lines.length==0 )
       throw new ParseDataset.H2OParseException("No data!");
 
@@ -772,7 +780,7 @@ MAIN_LOOP:
     return resSetup;
   }
 
-  private static String[] getFirstLines(byte[] bits, boolean singleQuotes) {
+  private static String[] getFirstLines(byte[] bits, boolean singleQuotes, byte[] nonDataLineMarkers) {
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
     int nlines = 0;
@@ -797,9 +805,7 @@ MAIN_LOOP:
       ++offset;
       // For Windoze, skip a trailing LF after CR
       if( (offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-      if( bits[lineStart] == '#') continue; // Ignore      comment lines
-      if( bits[lineStart] == '%') continue; // Ignore ARFF comment lines
-      if( bits[lineStart] == '@') continue; // Ignore ARFF lines
+      if (ArrayUtils.contains(nonDataLineMarkers, bits[lineStart])) continue;
       if( lineEnd > lineStart ) {
         String str = new String(bits, lineStart,lineEnd-lineStart).trim();
         if( !str.isEmpty() ) lines[nlines++] = str;
