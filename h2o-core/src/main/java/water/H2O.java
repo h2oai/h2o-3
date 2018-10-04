@@ -118,7 +118,7 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
-            "    -notify <fileSystemPath>" +
+            "    -notify_local <fileSystemPath>" +
             "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
             "          port of the embedded web server. e.g. 192.168.1.100:54321" +
             "\n" +
@@ -315,7 +315,7 @@ final public class H2O {
     public boolean client;
 
     /** specifies a file to write when the node is up */
-    public String notify;
+    public String notify_local;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -492,9 +492,9 @@ final public class H2O {
       else if (s.matches("client")) {
         trgt.client = true;
       }
-      else if (s.matches("notify")) {
+      else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
-        trgt.notify = args[i];
+        trgt.notify_local = args[i];
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -698,6 +698,24 @@ final public class H2O {
    * @param size Number of H2O instances in the cloud.
    */
   public static void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
+    if (ARGS.notify_local != null && !ARGS.notify_local.trim().isEmpty()) {
+      final File notifyFile = new File(ARGS.notify_local);
+      final File parentDir = notifyFile.getParentFile();
+      if (parentDir != null && !parentDir.isDirectory()) {
+        if (!parentDir.mkdirs()) {
+          Log.err("Cannot make parent dir for notify file.");
+          H2O.exit(-1);
+        }
+      }
+      try(BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile))) {
+        output.write(SELF_ADDRESS.getHostAddress());
+        output.write(':');
+        output.write(Integer.toString(API_PORT));
+        output.flush();
+      } catch ( IOException e ) {
+        e.printStackTrace();
+      }
+    }
     if (embeddedH2OConfig == null) { return; }
     embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
   }
@@ -1976,25 +1994,6 @@ final public class H2O {
     // Start the local node.  Needed before starting logging.
     long time5 = System.currentTimeMillis();
     startLocalNode();
-
-    if (ARGS.notify != null && !ARGS.notify.trim().isEmpty()) {
-      final File notifyFile = new File(ARGS.notify);
-      final File parentDir = notifyFile.getParentFile();
-      if (parentDir != null && !parentDir.isDirectory()) {
-        if (!parentDir.mkdirs()) {
-          Log.err("Cannot make parent dir for notify file.");
-          H2O.exit(-1);
-        }
-      }
-      try(BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile))) {
-        output.write(SELF_ADDRESS.getHostAddress());
-        output.write(':');
-        output.write(Integer.toString(API_PORT));
-        output.flush();
-      } catch ( IOException e ) {
-        e.printStackTrace();
-      }
-    }
 
     // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
