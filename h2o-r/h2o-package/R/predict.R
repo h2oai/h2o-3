@@ -147,11 +147,14 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 	}
 
 	# invoke the command
-	safeSystem(cmd_str)
+	res <- system(cmd_str)
+	if (res != 0) {
+		msg <- sprintf("SYSTEM COMMAND FAILED (exit status %d)", res)
+		stop(msg)
+	}
 
 	# load predictions
 	result <- read.csv(output_csv_path)
-	print(class(result))
 	return(result)
 }
 
@@ -192,21 +195,4 @@ h2o.to_json <- function(object) {
 
 h2o.from_json <- function(object) {
 	return(fromJSON(object))
-}
-
-#----------------------------------------------------------------------
-# "Safe" system.  Error checks process exit status code.  stop() if it failed.
-#
-# Parameters:  x -- String of command to run (passed to system()).
-#
-# Returns:     none
-#----------------------------------------------------------------------
-safeSystem <- function(x) {
-	print(sprintf("+ CMD: %s", x))
-	res <- system(x)
-	print(res)
-	if (res != 0) {
-		msg <- sprintf("SYSTEM COMMAND FAILED (exit status %d)", res)
-		stop(msg)
-	}
 }
