@@ -17,71 +17,11 @@ import water.util.TwoDimTable;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static water.util.FrameUtils.generateNumKeys;
-
 public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
-  }
-
-  @Before
-  public void beforeEach() {
-
-  }
-
-  @Test
-  public void assertionErrorDuringMergeDueToNAsTest() {
-    Scope.enter();
-    try {
-
-      TargetEncoder tec = new TargetEncoder();
-
-      Frame titanicFrame = parse_test_file(Key.make("titanic_parsed"), "smalldata/gbm_test/titanic.csv");
-      Scope.track(titanicFrame);
-
-      titanicFrame.remove("name");
-      titanicFrame.remove("ticket");
-      titanicFrame.remove("boat");
-      titanicFrame.remove("body");
-
-      double[] ratios = ard(0.7f, 0.1f);
-      Frame[] splits = null;
-      FrameSplitter fs = new FrameSplitter(titanicFrame, ratios, generateNumKeys(titanicFrame._key, ratios.length + 1), null);
-      H2O.submitTask(fs).join();
-      splits = fs.getResult();
-      Frame train = splits[0];
-      Frame valid = splits[1];
-      Frame test = splits[2];
-      Scope.track(train, valid, test);
-
-
-      String[] teColumns = {"home.dest"};
-
-      String targetColumnName = "survived";
-
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, null);
-      Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false,1234,true);
-      Scope.track(trainEncoded);
-
-      printOutFrameAsTable(test, true);
-      printOutFrameAsTable(valid, true);
-      printOutColumnsMeta(valid);
-      assertEquals(valid.vec("home.dest").max(), Double.NaN, 1e-5);
-
-      assertTrue(valid.vec("home.dest").isNA(0));
-      assertEquals("null", valid.vec("home.dest").stringAt(0)); // "null" is just a string representation of NA. It could have been easy to merge by this string.
-
-      // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false,1234, true);
-      Scope.track(validEncoded);
-      encodingMapCleanUp(encodingMap);
-    } finally {
-      Scope.exit();
-    }
   }
 
   @Test
@@ -93,17 +33,16 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       BlendingParams params = new BlendingParams(3, 1);
       TargetEncoder tec = new TargetEncoder(params);
 
-      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
-      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
-      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
-//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
-//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
+      //TODO remove following files from repo later.
+      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "h2o-automl/src/test/resources/ai.h2o.automl/targetencoding/titanic_train.csv");
+      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "h2o-automl/src/test/resources/ai.h2o.automl/targetencoding/titanic_valid.csv");
+      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "h2o-automl/src/test/resources/ai.h2o.automl/targetencoding/titanic_test.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
       String foldColumnName = "fold";
-      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
+      long seed = 8765;
+      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, seed);
 
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
@@ -123,19 +62,18 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       Frame trainEncoded;
       if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns,1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns, seed, true);
       } else {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns, seed, true);
       }
 
-      // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, seed, true);
 
-      // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns, seed, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
-      printOutColumnsMeta(trainEncoded);
+
+      printOutFrameAsTable(trainEncoded, true, false);
 
       // With target encoded Origin column
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -150,7 +88,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumnsWithFold;
-      parms._seed = 1234L;
+      parms._seed = seed;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -164,7 +102,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       double auc = mm._auc._auc;
 
       // Without target encoding
-      double auc2 = trainDefaultGBM(targetColumnName);
+      double auc2 = trainDefaultGBM(targetColumnName, seed);
 
       System.out.println("AUC with encoding:" + auc);
       System.out.println("AUC without encoding:" + auc2);
@@ -185,6 +123,8 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     GBMModel gbm = null;
     Scope.enter();
     try {
+      long seed = 1234L;
+
       BlendingParams params = new BlendingParams(3, 1);
 //      BlendingParams params = new BlendingParams(20, 10);
       TargetEncoder tec = new TargetEncoder(params);
@@ -192,9 +132,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
-//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
-//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -244,7 +181,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumns;
-      parms._seed = 1234L;
+      parms._seed = seed;
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
 
@@ -259,7 +196,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       double auc = mm._auc._auc;
 
       // Without target encoding
-      double auc2 = trainDefaultGBM(targetColumnName);
+      double auc2 = trainDefaultGBM(targetColumnName, seed);
 //
       System.out.println("AUC with encoding:" + auc);
       System.out.println("AUC without encoding:" + auc2);
@@ -280,6 +217,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
   public void noneHoldoutTypeTest() {
     Scope.enter();
     try {
+      long seedForGBM = 1234L;
 
       BlendingParams params = new BlendingParams(3, 1); //k = 3, f = 1 AUC=0.8664  instead of for k = 20, f = 10 -> AUC=0.8523
       TargetEncoder tec = new TargetEncoder(params);
@@ -335,7 +273,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 5;
       parms._ignored_columns = teColumns;
-      parms._seed = 1234L;
+      parms._seed = seedForGBM;
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
 
@@ -350,7 +288,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       double auc = mm._auc._auc;
 
       // Without target encoding
-      double auc2 = trainDefaultGBM(targetColumnName);
+      double auc2 = trainDefaultGBM(targetColumnName, seedForGBM);
 
       System.out.println("AUC with encoding:" + auc);
       System.out.println("AUC without encoding:" + auc2);
@@ -366,8 +304,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     }
   }
 
-
-  private double trainDefaultGBM(String targetColumnName) {
+  private double trainDefaultGBM(String targetColumnName, long seed) {
     GBMModel gbm2 = null;
     Scope.enter();
     try {
@@ -391,7 +328,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms2._stopping_tolerance = 0.001;
       parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms2._stopping_rounds = 5;
-      parms2._seed = 1234L;
+      parms2._seed = seed;
 
       GBM job2 = new GBM(parms2);
       gbm2 = job2.trainModel().get();

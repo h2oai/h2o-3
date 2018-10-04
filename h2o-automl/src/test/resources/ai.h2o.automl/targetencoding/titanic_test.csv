@@ -1,0 +1,101 @@
+pclass,survived,name,sex,age,sibsp,parch,ticket,fare,cabin,embarked,boat,body,home.dest
+1,0,Futrelle  Mr. Jacques Heath,male,37.0,1,0,113803,53.1,C123,S,,,Scituate  MA
+3,0,Ford  Mr. Arthur,male,,0,0,A/5 1478,8.05,,S,,,Bridgwater  Somerset  England
+3,0,Gustafsson  Mr. Johan Birger,male,28.0,2,0,3101277,7.925,,S,,,Ruotsinphytaa  Finland New York  NY
+2,0,Lahtinen  Rev. William,male,30.0,1,1,250651,26.0,,S,,,Minneapolis  MN
+3,1,Leeni  Mr. Fahim (Philip Zenni),male,22.0,0,0,2620,7.225,,C,6,,
+1,1,Goldenberg  Mr. Samuel L,male,49.0,1,0,17453,89.1042,C92,C,5,,Paris  France / New York  NY
+2,0,Ashby  Mr. John,male,57.0,0,0,244346,13.0,,S,,,West Hoboken  NJ
+2,1,Quick  Miss. Winifred Vera,female,8.0,1,1,26360,26.0,,S,11,,Plymouth  Devon / Detroit  MI
+3,0,Johansson  Mr. Nils,male,29.0,0,0,347467,7.8542,,S,,,
+1,1,Cardeza  Mrs. James Warburton Martinez (Charlotte Wardle Drake),female,58.0,0,1,PC 17755,512.3292,B51 B53 B55,C,3,,Germantown  Philadelphia  PA
+3,0,Hampe  Mr. Leon,male,20.0,0,0,345769,9.5,,S,,,
+1,1,Hays  Miss. Margaret Bechstein,female,24.0,0,0,11767,83.1583,C54,C,7,,New York  NY
+1,1,Holverson  Mrs. Alexander Oskar (Mary Aline Towner),female,35.0,1,0,113789,52.0,,S,8,,New York  NY
+3,0,Goodwin  Master. William Frederick,male,11.0,5,2,CA 2144,46.9,,S,,,Wiltshire  England Niagara Falls  NY
+3,0,Flynn  Mr. James,male,,0,0,364851,7.75,,Q,,,
+2,0,Hiltunen  Miss. Marta,female,18.0,1,1,250650,13.0,,S,,,Kontiolahti  Finland / Detroit  MI
+2,1,Troutt  Miss. Edwina Celia Winnie,female,27.0,0,0,34218,10.5,E101,S,16,,Bath  England / Massachusetts
+3,1,Karlsson  Mr. Einar Gervasius,male,21.0,0,0,350053,7.7958,,S,13,,
+3,0,Davies  Mr. Evan,male,22.0,0,0,SC/A4 23568,8.05,,S,,,
+3,0,Goodwin  Miss. Jessie Allis,female,10.0,5,2,CA 2144,46.9,,S,,,Wiltshire  England Niagara Falls  NY
+2,0,Fahlstrom  Mr. Arne Jonas,male,18.0,0,0,236171,13.0,,S,,,Oslo  Norway Bayonne  NJ
+1,1,Bjornstrom-Steffansson  Mr. Mauritz Hakan,male,28.0,0,0,110564,26.55,C52,S,D,,Stockholm  Sweden / Washington  DC
+1,0,Stead  Mr. William Thomas,male,62.0,0,0,113514,26.55,C87,S,,,Wimbledon Park  London / Hayling Island  Hants
+1,1,Penasco y Castellana  Mrs. Victor de Satode (Maria Josefa Perez de Soto y Vallejo),female,17.0,1,0,PC 17758,108.9,C65,C,8,,Madrid  Spain
+3,0,Odahl  Mr. Nils Martin,male,23.0,0,0,7267,9.225,,S,,,
+1,1,Barkworth  Mr. Algernon Henry Wilson,male,80.0,0,0,27042,30.0,A23,S,B,,Hessle  Yorks
+3,0,Rekic  Mr. Tido,male,38.0,0,0,349249,7.8958,,S,,,
+3,0,Ford  Mrs. Edward (Margaret Ann Watson),female,48.0,1,3,W./C. 6608,34.375,,S,,,Rotherfield  Sussex  England Essex Co  MA
+3,1,Sandstrom  Mrs. Hjalmar (Agnes Charlotta Bengtsson),female,24.0,0,2,PP 9549,16.7,G6,S,13,,
+3,0,Van Impe  Mr. Jean Baptiste,male,36.0,1,1,345773,24.15,,S,,,
+3,1,Daly  Mr. Eugene Patrick,male,29.0,0,0,382651,7.75,,Q,13 15 B,,Co Athlone  Ireland New York  NY
+2,0,Campbell  Mr. William,male,,0,0,239853,0.0,,S,,,Belfast
+1,1,Wilson  Miss. Helen Alice,female,31.0,0,0,16966,134.5,E39 E41,C,3,,
+1,0,Goldschmidt  Mr. George B,male,71.0,0,0,PC 17754,34.6542,A5,C,,,New York  NY
+2,1,Silven  Miss. Lyyli Karoliina,female,18.0,0,2,250652,13.0,,S,16,,Finland / Minneapolis  MN
+3,0,Buckley  Miss. Katherine,female,18.5,0,0,329944,7.2833,,Q,,299,Co Cork  Ireland Roxbury  MA
+3,0,Bowen  Mr. David John Dai,male,21.0,0,0,54636,16.1,,S,,,Treherbert  Cardiff  Wales
+3,0,Fox  Mr. Patrick,male,,0,0,368573,7.75,,Q,,,Ireland New York  NY
+1,1,Snyder  Mrs. John Pillsbury (Nelle Stevenson),female,23.0,1,0,21228,82.2667,B45,S,7,,Minneapolis  MN
+1,0,Porter  Mr. Walter Chamberlain,male,47.0,0,0,110465,52.0,C110,S,,207,Worcester  MA
+3,0,Van Impe  Mrs. Jean Baptiste (Rosalie Paula Govaert),female,30.0,1,1,345773,24.15,,S,,,
+1,1,Cavendish  Mrs. Tyrell William (Julia Florence Siegel),female,76.0,1,0,19877,78.85,C46,S,6,,Little Onn Hall  Staffs
+3,1,Kink-Heilmann  Mr. Anton,male,29.0,3,1,315153,22.025,,S,2,,
+2,1,Slayter  Miss. Hilda Mary,female,30.0,0,0,234818,12.35,,Q,13,,Halifax  NS
+3,1,de Messemaeker  Mrs. Guillaume Joseph (Emma),female,36.0,1,0,345572,17.4,,S,13,,Tampico  MT
+1,1,Leader  Dr. Alice (Farnham),female,49.0,0,0,17465,25.9292,D17,S,8,,New York  NY
+3,0,Dooley  Mr. Patrick,male,32.0,0,0,370376,7.75,,Q,,,Ireland New York  NY
+3,1,McGovern  Miss. Mary,female,,0,0,330931,7.8792,,Q,13,,
+1,1,Rothes  the Countess. of (Lucy Noel Martha Dyer-Edwards),female,33.0,0,0,110152,86.5,B77,S,8,,London  Vancouver  BC
+1,0,Allison  Miss. Helen Loraine,female,2.0,1,2,113781,151.55,C22 C26,S,,,Montreal  PQ / Chesterville  ON
+3,1,Nakid  Mrs. Said (Waika Mary Mowad),female,19.0,1,1,2653,15.7417,,C,C,,
+3,0,Harknett  Miss. Alice Phoebe,female,,0,0,W./C. 6609,7.55,,S,,,
+2,0,Collander  Mr. Erik Gustaf,male,28.0,0,0,248740,13.0,,S,,,Helsinki  Finland Ashtabula  Ohio
+3,0,Hart  Mr. Henry,male,,0,0,394140,6.8583,,Q,,,
+3,0,Hassan  Mr. Houssein G N,male,11.0,0,0,2699,18.7875,,C,,,
+3,0,Palsson  Miss. Torborg Danira,female,8.0,3,1,349909,21.075,,S,,,
+2,1,Cameron  Miss. Clear Annie,female,35.0,0,0,F.C.C. 13528,21.0,,S,14,,Mamaroneck  NY
+2,1,Richards  Master. George Sibley,male,0.8333,1,1,29106,18.75,,S,4,,Cornwall / Akron  OH
+3,1,Daly  Miss. Margaret Marcella Maggie,female,30.0,0,0,382650,6.95,,Q,15,,Co Athlone  Ireland New York  NY
+3,0,Andersson  Miss. Sigrid Elisabeth,female,11.0,4,2,347082,31.275,,S,,,Sweden Winnipeg  MN
+2,1,Rugg  Miss. Emily,female,21.0,0,0,C.A. 31026,10.5,,S,12,,Guernsey / Wilmington  DE
+2,0,Pernot  Mr. Rene,male,,0,0,SC/PARIS 2131,15.05,,C,,,
+1,1,Greenfield  Mrs. Leo David (Blanche Strouse),female,45.0,0,1,PC 17759,63.3583,D10 D12,C,7,,New York  NY
+3,0,Cacic  Miss. Marija,female,30.0,0,0,315084,8.6625,,S,,,
+3,0,Saade  Mr. Jean Nassr,male,,0,0,2676,7.225,,C,,,
+2,0,Myles  Mr. Thomas Francis,male,62.0,0,0,240276,9.6875,,Q,,,Cambridge  MA
+1,1,Cherry  Miss. Gladys,female,30.0,0,0,110152,86.5,B77,S,8,,London  England
+3,0,Calic  Mr. Jovo,male,17.0,0,0,315093,8.6625,,S,,,
+3,0,Doyle  Miss. Elizabeth,female,24.0,0,0,368702,7.75,,Q,,,Ireland New York  NY
+3,0,Asplund  Master. Clarence Gustaf Hugo,male,9.0,4,2,347077,31.3875,,S,,,Sweden Worcester  MA
+3,0,Toufik  Mr. Nakli,male,,0,0,2641,7.2292,,C,,,
+1,1,Geiger  Miss. Amalie,female,35.0,0,0,113503,211.5,C130,C,4,,
+3,1,Masselmani  Mrs. Fatima,female,,0,0,2649,7.225,,C,C,,
+3,0,Mionoff  Mr. Stoytcho,male,28.0,0,0,349207,7.8958,,S,,,
+2,1,Collett  Mr. Sidney C Stuart,male,24.0,0,0,28034,10.5,,S,9,,London / Fort Byron  NY
+1,0,Graham  Mr. George Edward,male,38.0,0,1,PC 17582,153.4625,C91,S,,147,Winnipeg  MB
+1,1,Longley  Miss. Gretchen Fiske,female,21.0,0,0,13502,77.9583,D9,S,10,,Hudson  NY
+2,0,Renouf  Mr. Peter Henry,male,34.0,1,0,31027,21.0,,S,12,,Elizabeth  NJ
+3,0,Cacic  Mr. Luka,male,38.0,0,0,315089,8.6625,,S,,,Croatia
+3,1,Foo  Mr. Choong,male,,0,0,1601,56.4958,,S,13,,Hong Kong New York  NY
+1,1,Mock  Mr. Philipp Edmund,male,30.0,1,0,13236,57.75,C78,C,11,,New York  NY
+3,1,Goldsmith  Mrs. Frank John (Emily Alice Brown),female,31.0,1,1,363291,20.525,,S,C D,,Strood  Kent  England Detroit  MI
+3,0,Canavan  Mr. Patrick,male,21.0,0,0,364858,7.75,,Q,,,Ireland Philadelphia  PA
+1,1,Shutes  Miss. Elizabeth W,female,40.0,0,0,PC 17582,153.4625,C125,S,3,,New York  NY / Greenwich CT
+3,0,Gilinski  Mr. Eliezer,male,22.0,0,0,14973,8.05,,S,,47,
+2,1,Wells  Miss. Joan,female,4.0,1,1,29103,23.0,,S,14,,Cornwall / Akron  OH
+1,1,Frolicher  Miss. Hedwig Margaritha,female,22.0,0,2,13568,49.5,B39,C,5,,Zurich  Switzerland
+3,0,Dyker  Mr. Adolf Fredrik,male,23.0,1,0,347072,13.9,,S,,,West Haven  CT
+1,1,Appleton  Mrs. Edward Dale (Charlotte Lamson),female,53.0,2,0,11769,51.4792,C101,S,D,,Bayside  Queens  NY
+3,1,Albimona  Mr. Nassef Cassem,male,26.0,0,0,2699,18.7875,,C,15,,Syria Fredericksburg  VA
+2,1,Wilhelms  Mr. Charles,male,31.0,0,0,244270,13.0,,S,9,,London  England
+1,1,Sloper  Mr. William Thompson,male,28.0,0,0,113788,35.5,A6,S,7,,New Britain  CT
+1,1,Goldenberg  Mrs. Samuel L (Edwiga Grabowska),female,,1,0,17453,89.1042,C92,C,5,,Paris  France / New York  NY
+1,1,Frauenthal  Mrs. Henry William (Clara Heinsheimer),female,,1,0,PC 17611,133.65,,S,5,,New York  NY
+3,0,Zimmerman  Mr. Leo,male,29.0,0,0,315082,7.875,,S,,,
+3,0,Carver  Mr. Alfred John,male,28.0,0,0,392095,7.25,,S,,,St Denys  Southampton  Hants
+3,1,Duquemin  Mr. Joseph,male,24.0,0,0,S.O./P.P. 752,7.55,,S,D,,England Albion  NY
+2,1,Phillips  Miss. Alice Frances Louisa,female,21.0,0,1,S.O./P.P. 2,21.0,,S,12,,Ilfracombe  Devon
+3,1,Svensson  Mr. Johan Cervin,male,14.0,0,0,7538,9.225,,S,13,,
+1,1,Spedden  Master. Robert Douglas,male,6.0,0,2,16966,134.5,E34,C,3,,Tuxedo Park  NY

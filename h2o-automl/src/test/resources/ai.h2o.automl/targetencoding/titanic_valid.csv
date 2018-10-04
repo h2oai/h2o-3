@@ -1,0 +1,126 @@
+pclass,survived,name,sex,age,sibsp,parch,ticket,fare,cabin,embarked,boat,body,home.dest
+1,1,Davidson  Mrs. Thornton (Orian Hays),female,27.0,1,2,F.C. 12750,52.0,B71,S,3,,Montreal  PQ
+2,0,Keane  Mr. Daniel,male,35.0,0,0,233734,12.35,,Q,,,
+3,0,Larsson  Mr. Bengt Edvin,male,29.0,0,0,347067,7.775,,S,,,
+2,1,Richards  Mrs. Sidney (Emily Hocking),female,24.0,2,3,29106,18.75,,S,4,,Cornwall / Akron  OH
+3,1,Hee  Mr. Ling,male,,0,0,1601,56.4958,,S,C,,
+3,0,Beavan  Mr. William Thomas,male,19.0,0,0,323951,8.05,,S,,,England
+2,1,Hocking  Miss. Ellen Nellie,female,20.0,2,1,29105,23.0,,S,4,,Cornwall / Akron  OH
+2,0,Mallet  Mr. Albert,male,31.0,1,1,S.C./PARIS 2079,37.0042,,C,,,Paris / Montreal  PQ
+3,0,Smith  Mr. Thomas,male,,0,0,384461,7.75,,Q,,,
+3,0,Johnson  Mr. Alfred,male,49.0,0,0,LINE,0.0,,S,,,
+2,1,West  Miss. Barbara J,female,0.9167,1,2,C.A. 34651,27.75,,S,10,,Bournmouth  England
+3,1,Nicola-Yarred  Miss. Jamila,female,14.0,1,0,2651,11.2417,,C,C,,
+3,0,Wiseman  Mr. Phillippe,male,,0,0,A/4. 34244,7.25,,S,,,
+3,0,Pearce  Mr. Ernest,male,,0,0,343271,7.0,,S,,,
+1,0,Ringhini  Mr. Sante,male,22.0,0,0,PC 17760,135.6333,,C,,232,
+3,1,Vartanian  Mr. David,male,22.0,0,0,2658,7.225,,C,13 15,,
+1,0,Compton  Mr. Alexander Taylor Jr,male,37.0,1,1,PC 17756,83.1583,E52,C,,,Lakewood  NJ
+3,0,Shellard  Mr. Frederick William,male,,0,0,C.A. 6212,15.1,,S,,,
+2,1,Nye  Mrs. (Elizabeth Ramell),female,29.0,0,0,C.A. 29395,10.5,F33,S,11,,Folkstone  Kent / New York  NY
+1,0,Colley  Mr. Edward Pomeroy,male,47.0,0,0,5727,25.5875,E58,S,,,Victoria  BC
+2,0,Harper  Rev. John,male,28.0,0,1,248727,33.0,,S,,,Denmark Hill  Surrey / Chicago
+3,0,Vander Planke  Mr. Leo Edmondus,male,16.0,2,0,345764,18.0,,S,,,
+1,1,Rosenbaum  Miss. Edith Louise,female,33.0,0,0,PC 17613,27.7208,A11,C,11,,Paris  France
+3,0,Franklin  Mr. Charles (Charles Fardon),male,,0,0,SOTON/O.Q. 3101314,7.25,,S,,,
+3,0,Hakkarainen  Mr. Pekka Pietari,male,28.0,1,0,STON/O2. 3101279,15.85,,S,,,
+1,1,Romaine  Mr. Charles Hallace (Mr C Rolmane),male,45.0,0,0,111428,26.55,,S,9,,New York  NY
+3,0,Simmons  Mr. John,male,,0,0,SOTON/OQ 392082,8.05,,S,,,
+2,0,Davies  Mr. Charles Henry,male,18.0,0,0,S.O.C. 14879,73.5,,S,,,Lyndhurst  England
+3,0,Sage  Miss. Stella Anna,female,,8,2,CA. 2343,69.55,,S,,,
+3,0,Culumovic  Mr. Jeso,male,17.0,0,0,315090,8.6625,,S,,,Austria-Hungary
+1,1,Bidois  Miss. Rosalie,female,42.0,0,0,PC 17757,227.525,,C,4,,
+3,0,McNamee  Mrs. Neal (Eileen O'Leary),female,19.0,1,0,376566,16.1,,S,,53,
+2,1,Cook  Mrs. (Selena Rogers),female,22.0,0,0,W./C. 14266,10.5,F33,S,14,,Pennsylvania
+3,0,Caram  Mr. Joseph,male,,1,0,2689,14.4583,,C,,,Ottawa  ON
+3,0,Olsen  Mr. Karl Siegwart Andreas,male,42.0,0,1,4579,8.4042,,S,,,
+2,0,de Brito  Mr. Jose Joaquim,male,32.0,0,0,244360,13.0,,S,,,Portugal / Sau Paulo  Brazil
+3,0,O'Connor  Mr. Maurice,male,,0,0,371060,7.75,,Q,,,
+2,0,Montvila  Rev. Juozas,male,27.0,0,0,211536,13.0,,S,,,Worcester  MA
+1,1,Chibnall  Mrs. (Edith Martha Bowerman),female,,0,1,113505,55.0,E33,S,6,,St Leonards-on-Sea  England Ohio
+3,1,Asplund  Master. Edvin Rojj Felix,male,3.0,4,2,347077,31.3875,,S,15,,Sweden Worcester  MA
+1,1,Warren  Mrs. Frank Manley (Anna Sophia Atkinson),female,60.0,1,0,110813,75.25,D37,C,5,,Portland  OR
+2,0,Wheeler  Mr. Edwin Frederick,male,,0,0,SC/PARIS 2159,12.875,,S,,,
+3,0,Maenpaa  Mr. Matti Alexanteri,male,22.0,0,0,STON/O 2. 3101275,7.125,,S,,,
+2,0,Corbett  Mrs. Walter H (Irene Colvin),female,30.0,0,0,237249,13.0,,S,,,Provo  UT
+3,0,Moran  Mr. Daniel J,male,,1,0,371110,24.15,,Q,,,
+3,0,Chronopoulos  Mr. Apostolos,male,26.0,1,0,2680,14.4542,,C,,,Greece
+3,0,O'Connell  Mr. Patrick D,male,,0,0,334912,7.7333,,Q,,,
+3,1,Peter  Master. Michael J,male,,1,1,2668,22.3583,,C,C,,
+2,1,Brown  Mrs. Thomas William Solomon (Elizabeth Catherine Ford),female,40.0,1,1,29750,39.0,,S,14,,Cape Town  South Africa / Seattle  WA
+1,1,Beckwith  Mr. Richard Leonard,male,37.0,1,1,11751,52.5542,D35,S,5,,New York  NY
+3,1,Whabee  Mrs. George Joseph (Shawneene Abi-Saab),female,38.0,0,0,2688,7.2292,,C,C,,
+1,0,Davidson  Mr. Thornton,male,31.0,1,0,F.C. 12750,52.0,B71,S,,,Montreal  PQ
+2,1,Kantor  Mrs. Sinai (Miriam Sternin),female,24.0,1,0,244367,26.0,,S,12,,Moscow / Bronx  NY
+2,0,Matthews  Mr. William John,male,30.0,0,0,28228,13.0,,S,,,St Austall  Cornwall
+3,0,Augustsson  Mr. Albert,male,23.0,0,0,347468,7.8542,,S,,,Krakoryd  Sweden Bloomington  IL
+3,0,Lindell  Mr. Edvard Bengtsson,male,36.0,1,0,349910,15.55,,S,A,,
+2,0,Hart  Mr. Benjamin,male,43.0,1,1,F.C.C. 13529,26.25,,S,,,Ilford  Essex / Winnipeg  MB
+3,1,Emanuel  Miss. Virginia Ethel,female,5.0,0,0,364516,12.475,,S,13,,New York  NY
+1,0,Evans  Miss. Edith Corse,female,36.0,0,0,PC 17531,31.6792,A29,C,,,New York  NY
+3,0,Staneff  Mr. Ivan,male,,0,0,349208,7.8958,,S,,,
+3,0,Rogers  Mr. William John,male,,0,0,S.C./A.4. 23567,8.05,,S,,,
+3,0,Gronnestad  Mr. Daniel Danielsen,male,32.0,0,0,8471,8.3625,,S,,,Foresvik  Norway Portland  ND
+3,0,Hansen  Mr. Henry Damsgaard,male,21.0,0,0,350029,7.8542,,S,,69,
+1,0,Payne  Mr. Vivian Ponsonby,male,23.0,0,0,12749,93.5,B24,S,,,Montreal  PQ
+2,0,Byles  Rev. Thomas Roussel Davids,male,42.0,0,0,244310,13.0,,S,,,London
+2,1,Harper  Miss. Annie Jessie Nina,female,6.0,0,1,248727,33.0,,S,11,,Denmark Hill  Surrey / Chicago
+3,1,Sap  Mr. Julius,male,25.0,0,0,345768,9.5,,S,11,,
+3,0,Assam  Mr. Ali,male,23.0,0,0,SOTON/O.Q. 3101309,7.05,,S,,,
+1,0,Klaber  Mr. Herman,male,,0,0,113028,26.55,C124,S,,,Portland  OR
+3,0,Radeff  Mr. Alexander,male,,0,0,349223,7.8958,,S,,,
+3,0,Attalah  Miss. Malake,female,17.0,0,0,2627,14.4583,,C,,,
+2,1,Christy  Mrs. (Alice Frances),female,45.0,0,2,237789,30.0,,S,12,,London
+2,0,Moraweck  Dr. Ernest,male,54.0,0,0,29011,14.0,,S,,,Frankfort  KY
+3,0,Elias  Mr. Joseph,male,39.0,0,2,2675,7.2292,,C,,,Syria Ottawa  ON
+1,0,Allison  Mr. Hudson Joshua Creighton,male,30.0,1,2,113781,151.55,C22 C26,S,,135,Montreal  PQ / Chesterville  ON
+2,0,Butler  Mr. Reginald Fenton,male,25.0,0,0,234686,13.0,,S,,97,Southsea  Hants
+3,1,Abelseth  Mr. Olaus Jorgensen,male,25.0,0,0,348122,7.65,F G63,S,A,,Perkins County  SD
+3,0,Abbott  Master. Eugene Joseph,male,13.0,0,2,C.A. 2673,20.25,,S,,,East Providence  RI
+2,1,Hamalainen  Master. Viljo,male,0.6667,1,1,250649,14.5,,S,4,,Detroit  MI
+3,0,Gustafsson  Mr. Karl Gideon,male,19.0,0,0,347069,7.775,,S,,,Myren  Sweden New York  NY
+3,1,Ryan  Mr. Edward,male,,0,0,383162,7.75,,Q,14,,
+3,0,Elsbury  Mr. William James,male,47.0,0,0,A/5 3902,7.25,,S,,,Illinois  USA
+3,0,Somerton  Mr. Francis William,male,30.0,0,0,A.5. 18509,8.05,,S,,,
+3,0,Danbom  Mr. Ernst Gilbert,male,34.0,1,1,347080,14.4,,S,,197,Stanton  IA
+3,0,Karlsson  Mr. Julius Konrad Eugen,male,33.0,0,0,347465,7.8542,,S,,,
+3,0,Jussila  Miss. Mari Aina,female,21.0,1,0,4137,9.825,,S,,,
+2,0,Kantor  Mr. Sinai,male,34.0,1,0,244367,26.0,,S,,283,Moscow / Bronx  NY
+3,1,Moubarek  Master. Gerios,male,,1,1,2661,15.2458,,C,C,,
+3,0,Lester  Mr. James,male,39.0,0,0,A/4 48871,24.15,,S,,,
+3,1,Nakid  Miss. Maria (Mary),female,1.0,0,2,2653,15.7417,,C,C,,
+1,0,Allison  Mrs. Hudson J C (Bessie Waldo Daniels),female,25.0,1,2,113781,151.55,C22 C26,S,,,Montreal  PQ / Chesterville  ON
+3,0,Naughton  Miss. Hannah,female,,0,0,365237,7.75,,Q,,,
+3,1,Johnson  Mrs. Oscar W (Elisabeth Vilhelmina Berg),female,27.0,0,2,347742,11.1333,,S,15,,
+3,0,Salonen  Mr. Johan Werner,male,39.0,0,0,3101296,7.925,,S,,,
+1,0,Ryerson  Mr. Arthur Larned,male,61.0,1,3,PC 17608,262.375,B57 B59 B63 B66,C,,,Haverford  PA / Cooperstown  NY
+2,0,Ware  Mr. William Jeffery,male,23.0,1,0,28666,10.5,,S,,,
+3,0,Rice  Master. Eugene,male,2.0,4,1,382652,29.125,,Q,,,
+2,0,Fynney  Mr. Joseph J,male,35.0,0,0,239865,26.0,,S,,322,Liverpool / Montreal  PQ
+3,0,Charters  Mr. David,male,21.0,0,0,A/5. 13032,7.7333,,Q,,,Ireland New York  NY
+3,1,Stanley  Miss. Amy Zillah Elsie,female,23.0,0,0,CA. 2314,7.55,,S,C,,
+2,1,Watt  Mrs. James (Elizabeth Bessie Inglis Milne),female,40.0,0,0,C.A. 33595,15.75,,S,9,,Aberdeen / Portland  OR
+2,0,Hickman  Mr. Stanley George,male,21.0,2,0,S.O.C. 14879,73.5,,S,,,West Hampstead  London / Neepawa  MB
+3,1,Sundman  Mr. Johan Julian,male,44.0,0,0,STON/O 2. 3101269,7.925,,S,15,,
+3,0,Zabour  Miss. Hileni,female,14.5,1,0,2665,14.4542,,C,,328,
+1,1,Clark  Mrs. Walter Miller (Virginia McDowell),female,26.0,1,0,13508,136.7792,C89,C,4,,Los Angeles  CA
+3,0,Razi  Mr. Raihed,male,,0,0,2629,7.2292,,C,,,
+2,0,Schmidt  Mr. August,male,26.0,0,0,248659,13.0,,S,,,Newark  NJ
+3,0,Coelho  Mr. Domingos Fernandeo,male,20.0,0,0,SOTON/O.Q. 3101307,7.05,,S,,,Portugal
+1,0,Silvey  Mr. William Baird,male,50.0,1,0,13507,55.9,E44,S,,,Duluth  MN
+3,0,Kink  Mr. Vincenz,male,26.0,2,0,315151,8.6625,,S,,,
+3,1,Hellstrom  Miss. Hilda Maria,female,22.0,0,0,7548,8.9625,,S,C,,
+1,1,Cumings  Mrs. John Bradley (Florence Briggs Thayer),female,38.0,1,0,PC 17599,71.2833,C85,C,4,,New York  NY
+3,1,Asplund  Miss. Lillian Gertrud,female,5.0,4,2,347077,31.3875,,S,15,,Sweden Worcester  MA
+3,1,Dean  Miss. Elizabeth Gladys Millvina,female,0.1667,1,2,C.A. 2315,20.575,,S,10,,Devon  England Wichita  KS
+3,0,Andersson  Miss. Ingeborg Constanzia,female,9.0,4,2,347082,31.275,,S,,,Sweden Winnipeg  MN
+3,1,Nysten  Miss. Anna Sofia,female,22.0,0,0,347081,7.75,,S,13,,
+1,0,Brandeis  Mr. Emil,male,48.0,0,0,PC 17591,50.4958,B10,C,,208,Omaha  NE
+3,0,Vendel  Mr. Olof Edvin,male,20.0,0,0,350416,7.8542,,S,,,
+1,0,Nicholson  Mr. Arthur Ernest,male,64.0,0,0,693,26.0,,S,,263,Isle of Wight  England
+3,0,Klasen  Mrs. (Hulda Kristina Eugenia Lofqvist),female,36.0,0,2,350405,12.1833,,S,,,
+2,1,Reynaldo  Ms. Encarnacion,female,28.0,0,0,230434,13.0,,S,9,,Spain
+3,0,Farrell  Mr. James,male,40.5,0,0,367232,7.75,,Q,,68,Aughnacliff  Co Longford  Ireland New York  NY
+2,1,Parrish  Mrs. (Lutie Davis),female,50.0,0,1,230433,26.0,,S,12,,Woodford County  KY
+3,1,McDermott  Miss. Brigdet Delia,female,,0,0,330932,7.7875,,Q,13,,
+3,0,Peduzzi  Mr. Joseph,male,,0,0,A/5 2817,8.05,,S,,,
