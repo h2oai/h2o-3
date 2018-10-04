@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  private static final int DEFAULT_IMAGE_VERSION_TAG = 3
+  private static final int DEFAULT_IMAGE_VERSION_TAG = 4
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
@@ -146,6 +146,10 @@ class BuildConfig {
     return nodeLabels.getBenchmarkNodeLabel()
   }
 
+  String getGPUBenchmarkNodeLabel() {
+      return nodeLabels.getGPUBenchmarkNodeLabel()
+  }
+
   String getGPUNodeLabel() {
     return nodeLabels.getGPUNodeLabel()
   }
@@ -257,6 +261,12 @@ class BuildConfig {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
+  String getGPUBenchmarkImage() {
+    // FIXME set correct version
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-benchmark-gradle-${getCurrentGradleVersion()}-gpu:dev"
+
+  }
+
   String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
     switch (xgbEnv.targetName) {
       case XGB_TARGET_GPU:
@@ -355,17 +365,19 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl5'),
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'mr-dl5')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
     private final String gpuNodeLabel
+    private final String gpuBenchmarkNodeLabel
 
-    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel) {
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel, final String gpuBenchmarkNodeLabel) {
       this.defaultNodeLabel = defaultNodeLabel
       this.benchmarkNodeLabel = benchmarkNodeLabel
       this.gpuNodeLabel = gpuNodeLabel
+      this.gpuBenchmarkNodeLabel = gpuBenchmarkNodeLabel
     }
 
     String getDefaultNodeLabel() {
@@ -374,6 +386,10 @@ class BuildConfig {
 
     String getBenchmarkNodeLabel() {
       return benchmarkNodeLabel
+    }
+
+    String getGPUBenchmarkNodeLabel() {
+      return gpuBenchmarkNodeLabel
     }
 
     String getGPUNodeLabel() {

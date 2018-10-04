@@ -1,0 +1,15 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+ARG GRADLE_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
+
+RUN \
+    wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz && \
+    tar -xzf cmake-3.5.2.tar.gz && \
+    cd cmake-3.5.2/ && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf cmake-3.5.2 cmake-3.5.2.tar.gz && \
+    if [ "$(cmake --version | head -1)" != 'cmake version 3.5.2' ]; then exit 1; fi

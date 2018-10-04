@@ -164,40 +164,64 @@ def call(final pipelineContext) {
   ]
 
   def BENCHMARK_STAGES = [
+    // [
+    //   stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+    //   timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    //   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+    //   customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+    //   nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+    // ],
+    // [
+    //   stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+    //   timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    //  additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+    //   customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+    //   nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+    // ],
+    // [
+    //   stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+    //   timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    //   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+    //   customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+    //   nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+    // ],
+    // [
+    //   stageName: 'Vanilla XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+    //   timeoutValue: 120, target: 'benchmark-xgb-vanilla', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    //   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+    //   customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+    //   nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+    //  ],
+    // [
+    //   stageName: 'DMLC XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+    //   timeoutValue: 120, target: 'build-and-benchmark-latest-dmlc-r-xgboost', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+    //   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+    //   customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+    //   nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+    // ],
     [
-      stageName: 'GBM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      stageName: 'H2O GPU XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+      customData: [algorithm: 'xgb-gpu'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+      gpu: true, customDockerArgs: ['--runtime=nvidia'], image: pipelineContext.getBuildConfig().getGPUBenchmarkImage()
     ],
     [
-      stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
-    ],
-    [
-      stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
-    ],
-    [
-      stageName: 'Vanilla XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      stageName: 'Vanilla GPU XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark-xgb-vanilla', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      customData: [algorithm: 'xgb-vanilla-gpu'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+      gpu: true, customDockerArgs: ['--runtime=nvidia'], image: pipelineContext.getBuildConfig().getGPUBenchmarkImage()
     ],
     [
-      stageName: 'DMLC XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'build-and-benchmark-latest-dmlc-r-xgboost', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      stageName: 'DMLC GPU XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'build-and-benchmark-latest-dmlc-r-xgboost-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      customData: [algorithm: 'xgb-dmlc-gpu'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+      gpu: true, customDockerArgs: ['--runtime=nvidia'], image: pipelineContext.getBuildConfig().getGPUBenchmarkImage()
     ]
   ]
 
@@ -428,7 +452,8 @@ private void executeInParallel(final jobs, final pipelineContext) {
           excludeAdditionalFiles = c['excludeAdditionalFiles']
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
-	      customDockerArgs = c['customDockerArgs']
+          customDockerArgs = c['customDockerArgs']
+          gpu = c['gpu']
         }
       }
     ]
@@ -469,9 +494,11 @@ private void invokeStage(final pipelineContext, final body) {
   if (config.archiveFiles == null) {
     config.archiveFiles = true
   }
-
   if (config.installRPackage == null) {
       config.installRPackage = true
+  }
+  if (config.gpu == null) {
+      config.gpu = false
   }
 
   if (config.activatePythonEnv == null) {

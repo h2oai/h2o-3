@@ -164,6 +164,66 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 300
                 ]
             ]
+        ],
+        'xgb-gpu': [
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 5,
+                    'train_time_max': 20
+                ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 35,
+                    'train_time_max': 65
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 60,
+                    'train_time_max': 80
+                ]
+            ]
+        ],
+        'xgb-vanilla-gpu': [
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 1,
+                    'train_time_max': 5
+                ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 15,
+                    'train_time_max': 20
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 37,
+                    'train_time_max': 50
+                ]
+            ]
+        ],
+        'xgb-dmlc-gpu': [
+            'airlines-1m': [
+                100: [
+                    'train_time_min': 8,
+                    'train_time_max': 13
+                ]
+            ],
+            'airlines-10m': [
+                100: [
+                    'train_time_min': 25,
+                    'train_time_max': 35
+                ]
+            ],
+            'higgs': [
+                100: [
+                    'train_time_min': 43,
+                    'train_time_max': 55
+                ]
+            ]
         ]
     ]
 

@@ -27,14 +27,16 @@ class PipelineUtils {
         context.echo "Preparing to stash whls for XGBoost ${xgbVersion}"
         try {
             context.echo "Trying to pull from Jenkins archives"
-            context.copyArtifacts(
+            ['omp', 'gpu'].each { backend ->
+                context.copyArtifacts(
                     projectName: 'h2o-3-xgboost4j-release-pipeline/h2o3',
                     selector: context.specific(xgbVersion.split('\\.').last()),
-                    filter: 'linux-ompv4/ci-build/*.whl',
+                    filter: "linux-${backend}v4/ci-build/*.whl",
                     flatten: true,
                     fingerprintArtifacts: true,
                     target: 'h2o-3/xgb-whls'
-            )
+                )
+            }
         } catch (ignore) {
             context.echo "Pull from Jenkins archives failed, loading from S3"
             context.sh """
