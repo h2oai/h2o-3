@@ -741,32 +741,16 @@ class BinaryMerge extends DTask<BinaryMerge> {
             int colIndex = numLeftCols + col;
             if (this._stringCols[colIndex]) {
               if (chksString[_numJoinCols + col][o]!=null) {
-                frameLikeChunks4String[colIndex][whichChunk][offset] = validateKeys(chks, leftchks, _numJoinCols, o) ?
-                        chksString[_numJoinCols + col][o] : null;  // colForBatch.atd(row);
+                frameLikeChunks4String[colIndex][whichChunk][offset] = chksString[_numJoinCols + col][o];  // colForBatch.atd(row);
               }
             } else {
-              frameLikeChunks[colIndex][whichChunk][offset] = validateKeys(chks, leftchks, _numJoinCols, o) ?
-                      chks[_numJoinCols + col][o] : Double.NaN;  // colForBatch.atd(row);
+              frameLikeChunks[colIndex][whichChunk][offset] = chks[_numJoinCols + col][o];  // colForBatch.atd(row);
             }
           }
           resultLoc++;
         }
       }
     }
-  }
-
-  private boolean validateKeys(double[][] chks, double[][] leftChks, int numJointCols, int row) {
-    if ((leftChks == null))
-      return true;
-    for (int cindex=0; cindex < numJointCols; cindex++) {
-      if (row >= leftChks[cindex].length) // dealing with duplicates on the right
-        return true;
-      if (Double.isNaN(chks[cindex][row]) && !(Double.isNaN(leftChks[cindex][row])))
-        return false;
-      if (Double.isNaN(leftChks[cindex][row]))
-        return false; // will not attempt to merge left nan keys to anything on the right
-    }
-    return true;
   }
 
   // compress all chunks and store them
