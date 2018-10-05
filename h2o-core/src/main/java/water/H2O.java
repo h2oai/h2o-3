@@ -1535,16 +1535,6 @@ final public class H2O {
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
-
-    if(ARGS.client){
-      reportClient(H2O.SELF); // report myself as the client to myself
-      // This is useful for the consistency and used, for example, in LogsHandler where, in case we couldn't find ip of
-      // regular worker node, we try to obtain the logs from the client.
-      //
-      // In case we wouldn't report the client to the client and the request for the logs would come to the client, we would
-      // need to handle that case differently. But since we handle this consistently like this, we do not need to worry about cases if the request
-      // came to the client node or not since we always report the client.
-    }
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -2159,25 +2149,29 @@ final public class H2O {
     return new HashSet<>(STATIC_H2OS);
   }
 
-  public static H2ONode reportClient(H2ONode client) {
-    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
-    if (oldClient == null) {
-        Log.info("New client discovered: " + client.toDebugString());
-    }
-    return oldClient;
+  //private static Map<H2ONode.H2Okey, Long> m = new ConcurrentHashMap<>();
+  public static void reportClient(H2ONode client) {
+     // Long boot_time = m.get(client._key);
+    //  if (boot_time == null || boot_time != client._heartbeat._jvm_boot_msec){
+     ////     removeClient(client);
+      //    m.put(client._key, client._heartbeat._jvm_boot_msec);
+          Log.info("New client discovered: " + client.toDebugString());
+    //  }
   }
 
-  public static H2ONode removeClient(H2ONode client){
-    client.stopSendThread();
-    return CLIENTS_MAP.remove(client.getIpPortString());
+  /**
+   * Forgets H2O client
+   */
+  public static boolean removeClient(H2ONode client){
+    return H2ONode.removeClient(client);
   }
 
-  public static HashSet<H2ONode> getClients(){
-    return new HashSet<>(CLIENTS_MAP.values());
+  public static H2ONode[] getClients(){
+    return H2ONode.getClients();
   }
 
   public static H2ONode getClientByIPPort(String ipPort){
-    return CLIENTS_MAP.get(ipPort);
+    return H2ONode.getClientByIPPort(ipPort);
   }
 
   public static Key<DecryptionTool> defaultDecryptionTool() {

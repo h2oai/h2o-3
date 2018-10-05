@@ -2,6 +2,7 @@ package water;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
@@ -49,6 +50,17 @@ public class TCPReceiverThread extends Thread {
     this.socketChannelFactory = H2O.SELF.getSocketFactory();
   }
 
+  private H2ONode handleNewNode(InetAddress inetAddress, int port, boolean isClient, int uniqueNum){
+    H2ONode node = H2ONode.getClientByIPPort(inetAddress.getHostAddress() + ":" + port);
+
+    if (isClient && node != null && node.nodeUniqueNum != uniqueNum) {
+      H2ONode.removeClient(node);
+    }
+    H2ONode h2o = H2ONode.intern(inetAddress, port);
+    h2o.nodeUniqueNum = uniqueNum;
+    return h2o;
+  }
+
   // The Run Method.
   // Started by main() on a single thread, this code manages reading TCP requests
   @SuppressWarnings("resource")
@@ -85,7 +97,10 @@ public class TCPReceiverThread extends Thread {
         }
         bb.flip();
         int chanType = bb.get(); // 1 - small , 2 - big
-        int port = bb.getChar();
+        int port = bb.getChar(); // read port
+        char nodeMeta = bb.getChar(); // read note id
+        boolean isClient = AutoBuffer.decodeIsClient(nodeMeta);
+        int uniqueNum = AutoBuffer.decodeUniqueNumber(nodeMeta);
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
           if(H2O.SELF.getSecurityManager().securityEnabled) {
@@ -100,13 +115,15 @@ public class TCPReceiverThread extends Thread {
         // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
         // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
         InetAddress inetAddress = sock.socket().getInetAddress();
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) sock.getRemoteAddress();
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
-          H2ONode h2o = H2ONode.intern(inetAddress, port);
+          H2ONode h2o = handleNewNode(inetAddress, port, isClient, uniqueNum);
           new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
           break;
         case TCP_BIG:
+          handleNewNode(inetAddress, port, isClient, uniqueNum);
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
           break;
         case TCP_EXTERNAL:
@@ -132,7 +149,6 @@ public class TCPReceiverThread extends Thread {
     public ByteChannel _sock;
     public AutoBuffer _ab;
     private final InetAddress address;
-
     public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
       _sock = sock;
@@ -263,6 +279,7 @@ public class TCPReceiverThread extends Thread {
     // Randomly drop 1/10th of the packets, as-if broken network.  Dropped
     // packets are timeline recorded before dropping - and we still will
     // respond to timelines and suicide packets.
+    int pos = ab.position();
     int drop = H2O.ARGS.random_udp_drop &&
             RANDOM_UDP_DROP.nextInt(5) == 0 ? 2 : 0;
 
@@ -274,15 +291,19 @@ public class TCPReceiverThread extends Thread {
     // being handled during the dump.  Also works for packets from outside the
     // Cloud... because we use Timelines to diagnose Paxos failures.
     int ctrl = ab.getCtrl();
-    ab.getPort(); // skip the port bytes
+    // reset the position to the one before calling getCtrl as that method also changes the
+    // current position
+    ab.position(pos);
     if( ctrl == UDP.udp.timeline.ordinal() ) {
       UDP.udp.timeline._udp.call(ab);
       return;
     }
 
     // Suicide packet?  Short-n-sweet...
-    if( ctrl == UDP.udp.rebooted.ordinal())
+    if( ctrl == UDP.udp.rebooted.ordinal()) {
       UDPRebooted.checkForSuicide(ctrl, ab);
+      return; // no more work to do as we already handled the shutdown
+    }
 
     // Drop the packet.
     if( drop != 0 ) return;
@@ -329,7 +350,7 @@ public class TCPReceiverThread extends Thread {
     // DTask gets tossed on a low priority queue to do "the real work".  Since
     // this is coming from a UDP packet the deser work is actually small.
 
-
+    
     H2O.submitTask(new FJPacket(ab,ctrl));
   }
 

@@ -114,28 +114,48 @@ public final class AutoBuffer {
 
   static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
 
+
+  /**
+   * Create AutoBuffer prepared to read multicast messages
+   * @param pack datagram packet
+   * @return AutoBuffer
+   */
+  static AutoBuffer createForMulticastRead(DatagramPacket pack){
+    return new AutoBuffer(pack);
+  }
+
+  /**
+   * Create AutoBuffer prepared to sent multicast message.
+   * @param type type of the request
+   * @return AutoBuffer
+   */
+  static AutoBuffer createForMulticastWrite(UDP.udp type){
+    return new AutoBuffer(H2O.SELF, type._prior).putUdp(type).put2((char)H2O.H2O_PORT);
+  }
+
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
    *  figure the originating H2ONode from the first few bytes read.
    *
    *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
    *  represents the case where the communication is coming from h2o node.
    *  */
-  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
+  public AutoBuffer(ByteChannel sock, InetAddress remoteAddress) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
     _bb.flip();
     _read = true;               // Reading by default
     _firstPage = true;
-    // Read Inet from socket, port from the stream, figure out H2ONode
-    if(remoteAddress!=null) {
-      _h2o = H2ONode.intern(remoteAddress, getPort());
+
+    // Read IP & Port from the socket address. Also figure out H2ONode
+    if(remoteAddress != null){
+      _h2o = H2ONode.intern(remoteAddress.getAddress(), getPort());
     }else{
       // In case the communication originates from non-h2o node, we set _h2o node to null.
       // It is done for 2 reasons:
       //  - H2ONode.intern creates a new thread and if there's a lot of connections
       //    from non-h2o environment, it could end up with too many open files exception.
-      //  - H2OIntern also reads port (getPort()) and additional information which we do not send
+      //  - H2OIntern also reads additional information which we do not send
       //    in communication originating from non-h2o nodes
       _h2o = null;
     }
@@ -973,14 +993,15 @@ public final class AutoBuffer {
   // Get the 1st control byte
   int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
   // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(1+2).getChar(1); }
+  int getPort( ) { return getSz(1+2).getChar(1); }
+  // Get unique ID in next 2 bytes
+  int getUniqueId() { return getSz(1+2+2).getChar(1);}
   // Get the task# in the next 4 bytes
   int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
   // Get the flag in the next 1 byte
   int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
-
   /**
-   * Write UDP into the ByteBuffer with custom sender's port number
+   * Write UDP into the ByteBuffer with custom port number
    *
    * This method sets the ctrl, port, task.
    * Ready to write more bytes afterwards
@@ -990,9 +1011,9 @@ public final class AutoBuffer {
    */
   AutoBuffer putUdp(UDP.udp type, int senderPort){
     assert _bb.position() == 0;
-    putSp(_bb.position()+1+2);
+    putSp(_bb.position() + 1 + 2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putChar((char)senderPort    );
+    _bb.putChar((char)senderPort);
     return this;
   }
 
@@ -1004,17 +1025,29 @@ public final class AutoBuffer {
    *
    * @param type type of the UDP datagram
    */
-  AutoBuffer putUdp (UDP.udp type) {
-    return putUdp(type, H2O.H2O_PORT); // Outgoing port is always the sender's (me) port
+  AutoBuffer putUdp(UDP.udp type) {
+    return putUdp(type, calculateNodeUniqueMeta(H2O.SELF));
+  }
+
+  public static char calculateNodeUniqueMeta(H2ONode node) {
+    return (char)H2O.H2O_PORT;
+  }
+
+  public static boolean decodeIsClient(char nodeMeta){
+    return true;
+  }
+  public static int decodeUniqueNumber(char nodeMeta){
+    return 1;
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
     return putUdp(type).put4(tasknum);
   }
+
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+4);
-    _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    _bb.put((byte)ctrl).putChar(calculateNodeUniqueMeta(H2O.SELF)).putInt(tasknum);
     return this;
   }
 

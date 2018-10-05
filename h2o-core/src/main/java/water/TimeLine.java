@@ -203,7 +203,7 @@ public class TimeLine extends UDP {
         SNAPSHOT = new long[CLOUD.size()][];
         // Broadcast a UDP packet, with the hopes of getting all SnapShots as close
         // as possible to the same point in time.
-        new AutoBuffer(H2O.SELF,udp.timeline._prior).putUdp(udp.timeline).close();
+        AutoBuffer.createForMulticastWrite(udp.timeline).close();
       }
       // Spin until all snapshots appear
       while( true ) {
@@ -234,9 +234,12 @@ public class TimeLine extends UDP {
     return null;
   }
 
-  // Receive a remote timeline
+  // Receive a remote timeline. This method is called only from TCPReceiverThread
+  // and therefore we know that it always handles data from TCP(no multicast)
+  // this allows us to skip to the right location without the need to check for
+  // additional multicast headers
   static void tcp_call( final AutoBuffer ab ) {
-    ab.getPort();
+    ab.position(1+2); //set the ab position after ctrl and nodeId bytes
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
     if (idx >= 0 && idx < SNAPSHOT.length)
