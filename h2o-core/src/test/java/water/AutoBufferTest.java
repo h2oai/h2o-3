@@ -34,6 +34,28 @@ public class AutoBufferTest extends TestUtil {
   }
 
   @Test
+  public void decodeClientInfoNotClient(){
+    long bootTime = 1540375717281L;
+    char uniqueId = AutoBuffer.createUniqueId(bootTime);
+    assertEquals(uniqueId,9633); // manually calculated -> took last 15 bits from bootTime
+    char meta = AutoBuffer.calculateNodeUniqueMeta(uniqueId, false);
+    assertEquals(meta, 9633);
+    assertFalse(AutoBuffer.decodeIsClient(meta));
+    assertEquals(AutoBuffer.decodeUniqueId(meta), uniqueId);
+  }
+
+  @Test
+  public void decodeClientInfoClient(){
+    long bootTime = 1540375717281L;
+    char uniqueId = AutoBuffer.createUniqueId(bootTime);
+    assertEquals(uniqueId,9633); // manually calculated -> took last 15 bits from bootTime
+    char meta = AutoBuffer.calculateNodeUniqueMeta(uniqueId, true);
+    assertEquals(meta, 42401);
+    assertTrue(AutoBuffer.decodeIsClient(meta));
+    assertEquals(AutoBuffer.decodeUniqueId(meta), uniqueId);
+  }
+
+  @Test
   public void testOutputStreamBigDataSmallChunks() {
     final int dataSize = 100 * 1024;
     byte[] data = new byte[dataSize - 1];
