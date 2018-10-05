@@ -5,7 +5,8 @@ def call(final pipelineContext, final stageConfig) {
 
   final String DATASETS_FILE = 'accuracy_datasets_h2o.csv'
   final GString TEST_CASES_FILE = "test_cases_${stageConfig.customData.algorithm}.csv"
-  final GString ML_BENCHMARK_ROOT = "${env.WORKSPACE}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/h2o-3/ml-benchmark"
+  final GString H2O_ROOT = "${env.WORKSPACE}/${pipelineContext.getUtils().stageNameToDirName(stageConfig.stageName)}/h2o-3"
+  final GString ML_BENCHMARK_ROOT = "${H2O_ROOT}/ml-benchmark"
 
   stageConfig.datasetsPath = "${ML_BENCHMARK_ROOT}/jenkins/${DATASETS_FILE}"
   stageConfig.testCasesPath = "${ML_BENCHMARK_ROOT}/jenkins/${TEST_CASES_FILE}"
@@ -33,6 +34,7 @@ def call(final pipelineContext, final stageConfig) {
           "GIT_DATE=${env.GIT_DATE.replaceAll(' ', '-')}",
           "BENCHMARK_ALGORITHM=${stageConfig.customData.algorithm}",
           "BUILD_ID=${env.BUILD_ID}",
+          "H2O_JAR_PATH=${H2O_ROOT}/build/h2o.jar"
   ]
 
   try {

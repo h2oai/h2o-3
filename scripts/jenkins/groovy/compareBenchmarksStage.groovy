@@ -35,7 +35,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'springleaf': [
                 50: [
                     'train_time_min': 55.0,
-                    'train_time_max': 63.5
+                    'train_time_max': 65
                 ],
                 200: [
                     'train_time_min': 463.0,
@@ -53,11 +53,63 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ]
             ]
         ],
+        'gbm-client': [
+            'paribas': [
+                50: [
+                    'train_time_min': 12,
+                    'train_time_max': 16
+                ],
+                200: [
+                    'train_time_min': 60,
+                    'train_time_max': 90
+                ]
+            ],
+            'homesite': [
+                50: [
+                    'train_time_min': 12,
+                    'train_time_max': 16
+                ],
+                200: [
+                    'train_time_min': 49,
+                    'train_time_max': 73
+                ]
+            ],
+            'redhat': [
+                50: [
+                    'train_time_min': 32,
+                    'train_time_max': 40
+                ],
+                200: [
+                    'train_time_min': 175,
+                    'train_time_max': 215
+                ]
+            ],
+            'springleaf': [
+                50: [
+                    'train_time_min': 65,
+                    'train_time_max': 78
+                ],
+                200: [
+                    'train_time_min': 570,
+                    'train_time_max': 615
+                ]
+            ],
+            'higgs': [
+                50: [
+                    'train_time_min': 82,
+                    'train_time_max': 96
+                ],
+                200: [
+                    'train_time_min': 485,
+                    'train_time_max': 530
+                ]
+            ]
+        ],
         'xgb': [
             'airlines-1m': [
                 100: [
                     'train_time_min': 38,
-                    'train_time_max': 75
+                    'train_time_max': 76
                 ]
             ],
             'airlines-10m': [
@@ -68,7 +120,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                 100: [
-                    'train_time_min': 203,
+                    'train_time_min': 200,
                     'train_time_max': 218
                 ]
             ]
@@ -127,7 +179,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         for (column in TESTED_COLUMNS) {
             for (line in csvData) {
                 if (EXPECTED_VALUES[line.algorithm] == null) {
-                    error("Cannot find EXPECTED VALUES for ${line.algorithm}")
+                    error "Cannot find EXPECTED VALUES for this line: ${line}"
                 }
                 def datasetValues = EXPECTED_VALUES[line.algorithm][line.dataset]
                 if (datasetValues) {
