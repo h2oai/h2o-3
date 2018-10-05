@@ -346,21 +346,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
 
-      // Step 8: Clean up potentially created temp frames
-
       _job.setReadyForView(true);
       DKV.put(_job);
     } catch (Exception e) {
       if (cvModelBuilders != null) {
         Futures fs = new Futures();
+        // removing keys added during cv_makeFramesAndBuilders and cv_makeFramesAndBuilders
+        // need a better solution: part of this is done in cv_makeFramesAndBuilders but partially and only for its method scope
         for (ModelBuilder mb : cvModelBuilders) {
-          DKV.remove(mb._parms._train, fs); //use _toDelete in cv_makeFramesAndBuilders
+          DKV.remove(mb._parms._train, fs);
           DKV.remove(mb._parms._valid, fs);
           DKV.remove(Key.make(mb.getPredictionKey()), fs);
-          mb.dest().remove(fs);
+          mb._result.remove(fs);
         }
       }
-      Log.throwErr(e);
+      throw e;
     } finally {
       if (cvModelBuilders != null) {
         for (ModelBuilder mb : cvModelBuilders) {
