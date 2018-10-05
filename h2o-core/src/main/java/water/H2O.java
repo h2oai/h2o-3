@@ -1565,16 +1565,7 @@ final public class H2O {
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
-
-    if(ARGS.client){
-      reportClient(H2O.SELF); // report myself as the client to myself
-      // This is useful for the consistency and used, for example, in LogsHandler where, in case we couldn't find ip of
-      // regular worker node, we try to obtain the logs from the client.
-      //
-      // In case we wouldn't report the client to the client and the request for the logs would come to the client, we would
-      // need to handle that case differently. But since we handle this consistently like this, we do not need to worry about cases if the request
-      // came to the client node or not since we always report the client.
-    }
+    SELF.timestamp = calculateNodeTimestamp();
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1986,6 +1977,7 @@ final public class H2O {
     // Validate arguments
     validateArguments();
 
+    // Create Timestamp for SELF
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
@@ -2190,29 +2182,67 @@ final public class H2O {
     return new HashSet<>(STATIC_H2OS);
   }
 
-  public static H2ONode reportClient(H2ONode client) {
-    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
-    if (oldClient == null) {
-        Log.info("New client discovered: " + client.toDebugString());
-    }
-    return oldClient;
+  /**
+   * Forgets H2O client
+   */
+  static boolean removeClient(H2ONode client){
+    return H2ONode.removeClient(client);
   }
 
-  public static H2ONode removeClient(H2ONode client){
-    client.stopSendThread();
-    return CLIENTS_MAP.remove(client.getIpPortString());
-  }
-
-  public static HashSet<H2ONode> getClients(){
-    return new HashSet<>(CLIENTS_MAP.values());
+  public static H2ONode[] getClients(){
+    return H2ONode.getClients();
   }
 
   public static H2ONode getClientByIPPort(String ipPort){
-    return CLIENTS_MAP.get(ipPort);
+    return H2ONode.getClientByIPPort(ipPort);
   }
 
   public static Key<DecryptionTool> defaultDecryptionTool() {
     return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
+  /**
+   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
+   * 1 to be able to distinguish between client and node as -0 is the same as 0.
+   */
+  private static short createTimestamp(long jvmStartTime){
+    int bitMask = (1 << 15) - 1;
+    // select the lower 15 bits
+    short timestamp = (short) (jvmStartTime & bitMask);
+    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
+    return timestamp == 0 ? 1 : timestamp;
+  }
+
+
+  /**
+   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
+   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   */
+  private static short calculateNodeTimestamp() {
+    return calculateNodeTimestamp(createTimestamp(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
+  }
+
+  /**
+   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
+   * we are client or not.
+   *
+   * The negative timestamp represents a client node, the positive one a regular H2O node
+   *
+   * @param timestamp  timestamp created by createTimestamp.
+   * @param amIClient true if this node is client, otherwise false
+   */
+  private static short calculateNodeTimestamp(short timestamp, boolean amIClient) {
+    //if we are client, return negative timestamp, otherwise positive
+    return amIClient ? (short) -timestamp : timestamp;
+  }
+
+  /**
+   * Decodes whether the node is client or regular node from the timestamp
+   * @param timestamp timestamp
+   * @return true if timestamp is from client node, false otherwise
+   */
+  static boolean decodeIsClient(short timestamp) {
+    return timestamp < 0;
   }
 
 }

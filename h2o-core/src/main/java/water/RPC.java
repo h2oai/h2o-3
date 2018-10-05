@@ -378,7 +378,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
           UDP.udp udp = dt.priority()==H2O.FETCH_ACK_PRIORITY ? UDP.udp.fetchack : UDP.udp.ack;
           ab = new AutoBuffer(_client,udp._prior).putTask(udp,_tsknum).put1(SERVER_UDP_SEND);
-          assert ab.position() == 1+2+4+1;
+          assert ab.position() == 1+2+2+4+1;
           dt.write(ab);         // Write the DTask - could be very large write
           dt._repliedTcp = ab.hasTCP(); // Resends do not need to repeat TCP result
           ab.close();                   // Then close; send final byte
@@ -421,7 +421,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       if( wasTCP )  rab.put1(RPC.SERVER_TCP_SEND) ; // Original reply sent via TCP
       else {
         rab.put1(RPC.SERVER_UDP_SEND); // Original reply sent via UDP
-        assert rab.position() == 1+2+4+1;
+        assert rab.position() == 1+2+2+4+1;
         dt.write(rab);
       }
       assert sz_check(rab) : "Resend of " + _dt.getClass() + " changes size from "+_size+" to "+rab.size();
