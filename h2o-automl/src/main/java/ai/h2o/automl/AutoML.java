@@ -1215,12 +1215,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   /**
    * Delete the AutoML-related objects, but leave the grids and models that it built.
    */
-  public void delete() {
-    //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
+  @Override
+  protected Futures remove_impl(Futures fs) {
+  //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
     AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
     leaderboard.delete();
     userFeedback.delete();
-    remove();
+    return super.remove_impl(fs);
   }
 
   /**

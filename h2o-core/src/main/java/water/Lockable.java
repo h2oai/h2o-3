@@ -86,7 +86,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Write-lock 'this' and delete; blocking.
    *  Throws IAE if the _key is already locked.  
    */
-  public void delete( ) { delete(null,new Futures()).blockForPending(); }
+  public final void delete( ) { delete(null,new Futures()).blockForPending(); }
   /** Write-lock 'this' and delete. 
    *  Throws IAE if the _key is already locked.  
    */
