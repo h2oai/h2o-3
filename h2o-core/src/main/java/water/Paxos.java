@@ -71,23 +71,12 @@ public abstract class Paxos {
         // A new client was reported to this node so we propagate this information to all nodes in the cluster, to this
         // as well
         UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
-      } else if (!H2O.ARGS.client && h2o._heartbeat._client) {
-        // When we put the client ip:port to flatfile as well as the rest of the nodes, this client node is not in the
-        // client hash map. We need to handle this case to properly to handle client disconnects and add the client
-        // there as well for consistency
-        H2O.reportClient(h2o);
-      }
-      else if (H2O.ARGS.client && !H2O.isNodeInFlatfile(h2o)) {
+      } else if (H2O.ARGS.client && !H2O.isNodeInFlatfile(h2o)) {
         // This node is a client and using a flatfile to figure out a topology of the cluster. The flatfile passed to the
         // client is always modified at the start of H2O to contain only a single node. This node is used to propagate
         // information about the client to the cluster. Once the nodes have the information about the client, then propagate
         // themselves via heartbeat to the client
         H2O.addNodeToFlatfile(h2o);
-      }
-    }else{
-      // We are operating in the multicast mode and heard from the client, so we need to report the client on this node
-      if(h2o._heartbeat._client){
-        H2O.reportClient(h2o);
       }
     }
 

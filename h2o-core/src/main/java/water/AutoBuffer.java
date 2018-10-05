@@ -183,7 +183,10 @@ public final class AutoBuffer {
     _read = true;
     _firstPage = true;
     _chan = null;
-    _h2o = H2ONode.intern(pack.getAddress(), getPort());
+    boolean isClient = AutoBuffer.decodeIsClient(getUniqueId());
+    char uniqueId = AutoBuffer.decodeUniqueId(getUniqueId());
+    _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, uniqueId);
+    _h2o.uniqueMetaId = uniqueId;
     _persist = 0;               // No persistance
   }
 
@@ -467,7 +470,7 @@ public final class AutoBuffer {
   // Need a sock for a big read or write operation.
   // See if we got one already, else open a new socket.
   private void tcpOpen() throws IOException {
-    assert _firstPage && _bb.limit() >= 1+2+4; // At least something written
+    assert _firstPage && _bb.limit() >= 1+2+2+4; // At least something written
     assert _chan == null;
 //    assert _bb.position()==0;
     _chan = _h2o.getTCPSocket();
@@ -976,13 +979,14 @@ public final class AutoBuffer {
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
   int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
+  // Get unique ID in next 2 bytes
+  char getUniqueId() { return getSz(1+2).getChar(1);}
   // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(1+2).getChar(1); }
+  int getPort( ) { return getSz(1+2+2).getChar(1+2); }
   // Get the task# in the next 4 bytes
-  int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
+  int  getTask( ) { return getSz(1+2+2+4).getInt(1+2+2); }
   // Get the flag in the next 1 byte
-  int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
-
+  int  getFlag( ) { return getSz(1+2+2+4+1).get(1+2+2+4); }
   /**
    * Write UDP into the ByteBuffer with custom sender's port number
    *
@@ -994,9 +998,10 @@ public final class AutoBuffer {
    */
   AutoBuffer putUdp(UDP.udp type, int senderPort){
     assert _bb.position() == 0;
-    putSp(_bb.position()+1+2);
+    putSp(_bb.position()+1+2+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putChar((char)senderPort    );
+    _bb.putChar(AutoBuffer.calculateNodeUniqueMeta());
+    _bb.putChar((char)senderPort);
     return this;
   }
 
@@ -1008,8 +1013,61 @@ public final class AutoBuffer {
    *
    * @param type type of the UDP datagram
    */
-  AutoBuffer putUdp (UDP.udp type) {
-    return putUdp(type, H2O.H2O_PORT); // Outgoing port is always the sender's (me) port
+  AutoBuffer putUdp(UDP.udp type) {
+    return putUdp(type, H2O.H2O_PORT);
+  }
+
+  /**
+   * Select last 15 bytes from the jvm boot start time and return it as char
+   */
+  public static char createUniqueId(long jvmStartTime){
+    byte availableBits = 15;
+    int bitMask = (1 << availableBits) - 1;
+
+    // we set the lower 15 bits, the 1 bit is currently set to 0 which means we are not a client
+    return (char) (jvmStartTime & bitMask);
+  }
+
+
+  private static char CLIENT_CODE_MASK = (char) (1 << 15);
+  private static char CLIENT_DECODE_MASK = (char) (Math.pow(2, 15) - 1);
+  /**
+   * Calculate node metadata from Current's node information. We use start of jvm boot time and information whether
+   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   */
+  static char calculateNodeUniqueMeta() {
+    return calculateNodeUniqueMeta(createUniqueId(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
+  }
+
+  /**
+   * Calculate node metadata from the provided information. We use start of jvm boot time and information whether
+   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   *
+   * @param uniqueId  unique Id created by createUniqueId.
+   * @param amIClient true if this node is client, otherwise false
+   */
+  static char calculateNodeUniqueMeta(char uniqueId, boolean amIClient) {
+    // we have 2 bytes -> 16 bits to represent this information
+    // we use highest 1 bit to tell us whether we are client or not
+    // the last 15 bits are used to distinguish new clients by a unique ID
+
+    // if we are client set the 1 bit to one by doing OR with number 65356, in binary 1 and 15 zeros
+    if (amIClient) {
+      return (char) (uniqueId | CLIENT_CODE_MASK);
+    } else {
+      return uniqueId;
+    }
+  }
+
+  static boolean decodeIsClient(char nodeMeta) {
+    return ((nodeMeta >> 15) & 1) == 1;
+  }
+  static char decodeUniqueId(char nodeMeta) {
+    if (decodeIsClient(nodeMeta)) {
+      return (char) (nodeMeta & CLIENT_DECODE_MASK);
+    } else {
+      return nodeMeta;
+    }
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
@@ -1017,8 +1075,8 @@ public final class AutoBuffer {
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
-    putSp(_bb.position()+1+2+4);
-    _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    putSp(_bb.position()+1+2+2+4);
+    _bb.put((byte)ctrl).putChar(calculateNodeUniqueMeta()).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 

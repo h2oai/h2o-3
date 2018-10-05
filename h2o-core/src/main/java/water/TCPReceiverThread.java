@@ -49,6 +49,20 @@ public class TCPReceiverThread extends Thread {
     this.socketChannelFactory = H2O.SELF.getSocketFactory();
   }
 
+  public static H2ONode processNewNode(InetAddress inetAddress, int port, boolean isClient, char uniqueId) {
+    H2ONode node = H2O.getClientByIPPort(inetAddress.getHostAddress() + ":" + (port - 1));
+    if (!H2O.ARGS.client && isClient && node != null && node.uniqueMetaId != uniqueId) {
+      // don't do this check in case we are the client
+      H2ONode.removeClient(node);
+    }
+    H2ONode h2o = H2ONode.intern(inetAddress, port);
+    if(!H2O.ARGS.client && ((node == null && isClient) || (node != null && isClient && node.uniqueMetaId != uniqueId))){
+      Log.info("New client discovered: " + h2o.toDebugString());
+    }
+    h2o.uniqueMetaId = uniqueId;
+    return h2o;
+  }
+
   // The Run Method.
   // Started by main() on a single thread, this code manages reading TCP requests
   @SuppressWarnings("resource")
@@ -76,7 +90,7 @@ public class TCPReceiverThread extends Thread {
         }
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
-        ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+        ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
         ByteChannel wrappedSocket = socketChannelFactory.serverChannel(sock);
         bb.limit(bb.capacity());
         bb.position(0);
@@ -85,7 +99,10 @@ public class TCPReceiverThread extends Thread {
         }
         bb.flip();
         int chanType = bb.get(); // 1 - small , 2 - big
-        int port = bb.getChar();
+        char nodeMeta = bb.getChar(); // read note id
+        int port = bb.getChar(); // read port
+        boolean isClient = AutoBuffer.decodeIsClient(nodeMeta);
+        char uniqueId = AutoBuffer.decodeUniqueId(nodeMeta);
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
           if(H2O.SELF.getSecurityManager().securityEnabled) {
@@ -103,10 +120,10 @@ public class TCPReceiverThread extends Thread {
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
-          H2ONode h2o = H2ONode.intern(inetAddress, port);
-          new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
+          new UDP_TCP_ReaderThread(processNewNode(inetAddress, port, isClient, uniqueId), wrappedSocket).start();
           break;
         case TCP_BIG:
+          processNewNode(inetAddress, port, isClient, uniqueId);
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
           break;
         case TCP_EXTERNAL:
