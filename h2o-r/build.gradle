@@ -118,6 +118,7 @@ task setPackageFiles {
 
 task buildPackageDocumentation(type: Exec) {
     doFirst {
+        new File("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
         errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
     }
