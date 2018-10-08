@@ -1,13 +1,14 @@
 package hex.tree;
 
+import hex.Model;
 import hex.ModelCategory;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.schemas.TreeV3;
 import water.Keyed;
 import water.MemoryManager;
 import water.api.Handler;
-
 import java.util.*;
 
 /**
@@ -20,16 +21,36 @@ public class TreeHandler extends Handler {
 
         final Keyed possibleModel = args.model.key().get();
         if (possibleModel == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
-        if(! (possibleModel instanceof SharedTreeModel)){
+
+        else if (!(possibleModel instanceof SharedTreeModel) && !(possibleModel instanceof TreeBackedModel)) {
             throw new IllegalArgumentException("Given model is not tree-based.");
         }
+        final SharedTreeSubgraph sharedTreeSubgraph;
 
-        final SharedTreeModel model = (SharedTreeModel) possibleModel;
-        final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
-        final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
-        validateArgs(args, sharedTreeOutput, treeClass);
+        if (possibleModel instanceof TreeBackedModel) {
+            final TreeBackedModel treeBackedModel = (TreeBackedModel) possibleModel;
+            final SharedTreeGraph sharedTreeGraph = treeBackedModel.convert(args.tree_number, args.tree_class);
+            assert sharedTreeGraph.subgraphArray.size() == 1;
+            sharedTreeSubgraph = sharedTreeGraph.subgraphArray.get(0);
 
-        final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(args.tree_number, treeClass);
+            if (ModelCategory.Regression.equals(((Model)possibleModel)._output.getModelCategory())) {
+                args.tree_class = null; // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
+            }
+        } else {
+            final SharedTreeModel model = (SharedTreeModel) possibleModel;
+            final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
+            final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
+            validateArgs(args, sharedTreeOutput, treeClass);
+            sharedTreeSubgraph = model.getSharedTreeSubgraph(args.tree_number, treeClass);
+            // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
+            if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
+                args.tree_class = null;
+            } else {
+                args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
+            }
+        }
+
+
         final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
 
         args.left_children = treeProperties._leftChildren;
@@ -41,12 +62,6 @@ public class TreeHandler extends Handler {
         args.nas = treeProperties._nas;
         args.levels = treeProperties.levels;
         args.predictions = treeProperties._predictions;
-        // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
-        if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
-            args.tree_class = null;
-        } else {
-            args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
-        }
 
         return args;
     }

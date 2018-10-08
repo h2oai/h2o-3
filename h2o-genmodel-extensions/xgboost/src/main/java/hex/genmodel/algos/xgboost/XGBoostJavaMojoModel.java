@@ -4,6 +4,8 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.learner.ObjFunction;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -58,6 +60,11 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   @Override
   public void close() {
     _predictor = null;
+  }
+
+  @Override
+  public SharedTreeGraph convert(int treeNumber, int treeClass) {
+    return null;
   }
 
   private static class RegObjFunction extends ObjFunction {

@@ -5,9 +5,7 @@ description = "H2O GenModel XGBoost support"
 dependencies {
     compile project(":h2o-genmodel")
 
-    compile('ai.h2o:xgboost-predictor:0.3.4') {
-        exclude group: 'net.jafama', 'module': 'jafama'
-    }
+    compile files('/home/pavel/wrk/xgboost-predictor/xgboost-predictor/build/libs/xgboost-predictor-0.3.4.jar');
 
     // XGBoost dependencies published into Maven central by H2O
     // Versioning rules may differ for XGBoost artifacts published by H2O

@@ -34,9 +34,10 @@ public class XGBoostUtils {
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();
         assert(coefnames.length == di.fullN());
+        int catCols = di._catOffsets[di._catOffsets.length-1];
+
         for (int i = 0; i < di.fullN(); ++i) {
             sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
-            int catCols = di._catOffsets[di._catOffsets.length-1];
             if (i < catCols || f.vec(i-catCols).isBinary())
                 sb.append("i");
             else if (f.vec(i-catCols).isInt())

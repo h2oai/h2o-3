@@ -1,6 +1,7 @@
 package ml.dmlc.xgboost4j.java;
 
 import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.util.FVec;
 import biz.k11i.xgboost.util.ModelReader;
 import water.util.UnsafeUtils;
@@ -69,6 +70,11 @@ public class XGBoostRegTree implements RegTree {
     }
 
     return UnsafeUtils.get4f(_nodes, pos + 12);
+  }
+
+  @Override
+  public RegTreeImpl.Node[] getNodes() {
+    throw new UnsupportedOperationException();
   }
 
   private static int readNumNodes(ModelReader reader) throws IOException {

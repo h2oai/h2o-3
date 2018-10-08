@@ -2,6 +2,7 @@ package hex.genmodel.algos.xgboost;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
 import java.io.Closeable;
 
@@ -9,7 +10,7 @@ import java.io.Closeable;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel,Closeable {
 
   public enum ObjectiveType {
     BINARY_LOGISTIC("binary:logistic"),
