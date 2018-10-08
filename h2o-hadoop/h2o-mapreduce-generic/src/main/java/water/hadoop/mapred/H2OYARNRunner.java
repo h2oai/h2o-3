@@ -20,9 +20,14 @@ import java.util.Vector;
 import water.util.CollectionUtils;
 
 /**
- * A H2o specific ProtocolClient
+ * A H2O specific ProtocolClient
  *
- * In this case we use standard YARNRunner, but just override application type to H2O.
+ * This class makes sure that the reported type of the Application is H2O instead of MapReduce.
+ * We use standard YARNRunner, but just override application type to H2O.
+ *
+ * This class is used by H2OYarnClientProtocolProvider, which is loaded dynamically via SPI.
+ *
+ * Important note: This class is not use in H2O but in Sparkling Water.
  */
 public class H2OYARNRunner extends YARNRunner {
 
