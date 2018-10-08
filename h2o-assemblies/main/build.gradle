@@ -79,13 +79,8 @@ shadowJar {
   }
 }
 
-configurations {
-    fatH2OJar
-}
-
 artifacts {
   archives shadowJar
-  fatH2OJar shadowJar
 }
 
 //
@@ -151,3 +146,5 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
 shadowJar.dependsOn(licenseReport)
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
+// Run shadowJar as part of build
+jar.finalizedBy shadowJar

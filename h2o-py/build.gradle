@@ -1,7 +1,7 @@
 description = "H2O Python Package"
 
 dependencies {
-    compile project(path: ":h2o-assemblies:main", configuration: 'fatH2OJar')
+    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def buildVersion = new H2OBuildVersion(rootDir, version)

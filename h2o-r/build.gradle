@@ -7,7 +7,7 @@ description = "H2O R Package"
 //apply plugin: 'water.gradle.plugins.manageLocalClouds'
 
 dependencies {
-    compile project(path: ":h2o-assemblies:main", configuration: 'fatH2OJar')
+    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def getOS() {

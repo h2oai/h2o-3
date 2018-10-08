@@ -29,7 +29,7 @@ dependencies {
     testCompile "junit:junit:${junitVersion}"
 
     // Generator dependencies
-    srcGenCompile project(path: ":h2o-assemblies:main", configuration: "fatH2OJar")
+    srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")
 }
 
 // Configure idea import
