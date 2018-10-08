@@ -165,9 +165,6 @@ public class AutoMLTest extends water.TestUtil {
       assertNotNull(leader._output._cross_validation_fold_assignment_frame_id);
 
     } finally {
-      // Since user asked to keep cv fold assignments( we set parameter `keep_cross_validation_fold_assignment` to true) we need to remove this key manually
-      Frame cvFoldAssignmentFrame = DKV.getGet(leader._output._cross_validation_fold_assignment_frame_id);
-      cvFoldAssignmentFrame.delete();
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.remove();
     }

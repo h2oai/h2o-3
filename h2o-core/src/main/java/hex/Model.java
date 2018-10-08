@@ -1722,6 +1722,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for( Key k : _output._model_metrics )
         k.remove(fs);
     cleanUp(_toDelete);
+    deleteCrossValidationModels();
+    deleteCrossValidationPreds();
+    deleteCrossValidationFoldAssignment();
     return super.remove_impl(fs);
   }
 
@@ -2291,6 +2294,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
+    }
+  }
+
+  /**
+   * delete fold assignment from the output.
+   */
+  public void deleteCrossValidationFoldAssignment() {
+    if (_output._cross_validation_fold_assignment_frame_id != null) {
+      _output._cross_validation_fold_assignment_frame_id.remove();
     }
   }
 
