@@ -26,6 +26,8 @@ import water.util.CollectionUtils;
  * We use standard YARNRunner, but just override application type to H2O.
  *
  * This class is used by H2OYarnClientProtocolProvider, which is loaded dynamically via SPI.
+ *
+ * Important note: This class is not use in H2O but in Sparkling Water.
  */
 public class H2OYARNRunner extends YARNRunner {
 
