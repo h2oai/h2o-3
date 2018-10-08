@@ -359,6 +359,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           DKV.remove(Key.make(mb.getPredictionKey()), fs);
           mb._result.remove(fs);
         }
+        fs.blockForPending();
       }
       throw e;
     } finally {

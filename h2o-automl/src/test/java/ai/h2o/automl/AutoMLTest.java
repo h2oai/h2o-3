@@ -96,14 +96,14 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
+//      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
-      // no assertion, we just want to check to leaked keys
+      // no assertion, we just want to check leaked keys
     } finally {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
@@ -111,6 +111,31 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
+  @Test public void test_automl_basic_behaviour_on_grid_timeout() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.build_models.exclude_algos = new AutoML.Algo[] {AutoML.Algo.DeepLearning, AutoML.Algo.DRF, AutoML.Algo.GLM};
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(8);
+//      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      // no assertion, we just want to check leaked keys
+    } finally {
+      // Cleanup
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.delete();
+    }
+  }
 
 
   @Ignore //reenable in PUBDEV-5956
