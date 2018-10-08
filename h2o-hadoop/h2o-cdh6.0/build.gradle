@@ -4,3 +4,7 @@ ext {
 }
 
 apply from: '../driverjar.gradle'
+
+dependencies {
+    compile 'org.apache.hadoop:hadoop-mapreduce-client-app:3.0.0-cdh6.0.0'
+}
