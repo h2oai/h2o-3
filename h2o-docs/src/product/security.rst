@@ -255,8 +255,8 @@ manipulated on the command line with the
 `keytool <http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html>`_
 command.
 
-The underlying HTTPS implementation is provided by Jetty 8 and the Java
-runtime. (**Note**: Jetty 8 was chosen to retain Java 6 compatibility.)
+The underlying HTTPS implementation is provided by Jetty 9 and the Java
+runtime.
 
 Standalone H2O
 ''''''''''''''
@@ -529,7 +529,7 @@ Example **ldap.conf**:
 ::
 
     ldaploginmodule {
-        ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+        ai.h2o.org.eclipse.jetty.jaas.spi.LdapLoginModule required
         debug="true"
         useLdaps="false"
         contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
@@ -542,8 +542,8 @@ Example **ldap.conf**:
         userBaseDn="ou=users,dc=0xdata,dc=loc";
     };
 
-See the `Jetty 8 LdapLoginModule
-documentation <http://wiki.eclipse.org/Jetty/Feature/JAAS#LdapLoginModule>`__
+See the `Jetty 9 LdapLoginModule
+documentation <http://www.eclipse.org/jetty/documentation/current/jaas-support.html>`__
 for more information.
 
 Standalone H2O
@@ -811,7 +811,7 @@ Example **realm.properties**:
 
 ::
 
-    # See https://wiki.eclipse.org/Jetty/Howto/Secure_Passwords
+    # See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
     # java -cp h2o.jar org.eclipse.jetty.util.security.Password
     username1: password1
     username2: MD5:6cb75f652a9b52798eb6cf2201057c73
@@ -823,10 +823,10 @@ tool:
 
     java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
 
-See the `Jetty 8 HashLoginService
+See the `Jetty 9 HashLoginService
 documentation <http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService>`_
-and `Jetty 8 Secure Password
-HOWTO <http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords>`_ for more
+and `Jetty 9 Secure Password
+HOWTO <http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html>`_ for more
 information.
 
 Standalone H2O
