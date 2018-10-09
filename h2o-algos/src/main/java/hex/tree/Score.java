@@ -5,6 +5,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import water.Iced;
 import water.Key;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -25,7 +26,7 @@ public class Score extends CMetricScoringTask<Score> {
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
   
   /** Output parameter: Metric builder */
-  ModelMetricsSupervised.MetricBuilderSupervised _mb;
+  ModelMetrics.MetricBuilder _mb;
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
@@ -41,14 +42,15 @@ public class Score extends CMetricScoringTask<Score> {
 
   private Score(SharedTree bldr, boolean is_train, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
   super(customMetricFunc);
-    _bldr = bldr; _is_train = is_train; _sii = sii; _oob = oob; _kresp = kresp._key; _mcat = mcat; _computeGainsLift = computeGainsLift;
+    _bldr = bldr; _is_train = is_train; _sii = sii; _oob = oob; _kresp = kresp != null ? kresp._key : null; _mcat = mcat; _computeGainsLift = computeGainsLift;
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
+    assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
   }
 
   @Override public void map(Chunk allchks[]) {
     final Chunk[] chks = getScoringChunks(allchks);
-    Chunk ys = _bldr.chk_resp(chks);  // Response
+    Chunk ys = _bldr.isSupervised() ? _bldr.chk_resp(chks) : new C0DChunk(0, chks[0]._len);  // Response
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
@@ -56,7 +58,7 @@ public class Score extends CMetricScoringTask<Score> {
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
-    String[] domain = _kresp.get().domain();
+    String[] domain = _kresp != null ? _kresp.get().domain() : null;
     if (domain == null && m._parms._distribution == DistributionFamily.quasibinomial)
       domain = new String[]{"0", "1"};
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
@@ -130,14 +132,14 @@ public class Score extends CMetricScoringTask<Score> {
     }
   }
 
-  ModelMetricsSupervised scoreAndMakeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, boolean buildTreeOneNode) {
+  ModelMetrics scoreAndMakeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, boolean buildTreeOneNode) {
     Frame input = _preds != null ? new Frame(adaptedFr).add(_preds) : adaptedFr;
     return doAll(input, buildTreeOneNode)
             .makeModelMetrics(model, fr, adaptedFr, _preds);
   }
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
-  private ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, Frame preds) {
+  private ModelMetrics makeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, Frame preds) {
     ModelMetrics mm;
     if (model._output.nclasses() == 2 && _computeGainsLift) {
       assert preds != null : "Predictions were pre-created";
@@ -153,14 +155,14 @@ public class Score extends CMetricScoringTask<Score> {
       if (calculatePreds && (preds != null))
         preds.remove();
     }
-    return (ModelMetricsSupervised) mm;
+    return mm;
   }
 
   static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
     String[] domain = resp.domain();
     if (domain == null && model._parms._distribution == DistributionFamily.quasibinomial)
       domain = new String[]{"0", "1"};
-    ModelMetricsSupervised.MetricBuilderSupervised mb = model.makeMetricBuilder(domain);
+    ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
     return mb.makePredictionCache(model, resp);
   }
 

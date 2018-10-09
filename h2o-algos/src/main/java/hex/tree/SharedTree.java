@@ -176,7 +176,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
     if( _train != null )
-      _ncols = _train.numCols()-1-numSpecialCols();
+      _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
     // Calibration
     Frame cf = _parms.calib();  // User-given calibration set
@@ -222,7 +222,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
 
         // Compute the response domain; makes for nicer printouts
-        String[] domain = _response.domain();
+        String[] domain = isSupervised() ? _response.domain() : null;
         if (_parms._distribution == DistributionFamily.quasibinomial) {
           domain = new String[]{"0", "1"};
         }
@@ -324,7 +324,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           twNames[i] = "Tree_" + domain[i];
           twNames[_nclass+i] = "Work_" + domain[i];
         }
-        Vec [] twVecs = _response.makeVolatileDoubles(_nclass*2);
+        Vec [] twVecs = templateVec().makeVolatileDoubles(_nclass*2);
         _train.add(twNames,twVecs);
 
 
@@ -334,18 +334,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         final int [] cons = new int[_nclass];
         for( int i=0; i<_nclass; i++ ) {
           names[i] = "NIDs_" + domain[i];
-          cons[i] = (_parms._distribution == DistributionFamily.quasibinomial || _model._output._distribution[i]==0 ?-1:0);
+          cons[i] = isSupervised() && ((_parms._distribution == DistributionFamily.quasibinomial || _model._output._distribution[i]==0)) ? -1 : 0;
         }
-        Vec [] vs = _response.makeVolatileInts(cons);
+        Vec [] vs = templateVec().makeVolatileInts(cons);
         _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
-        _train.add("OUT_BAG_TREES", _response.makeZero());
+        _train.add("OUT_BAG_TREES", templateVec().makeZero());
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
           _validPredsCache = Score.makePredictionCache(_model, vresponse());
         }
-        _trainPredsCache = Score.makePredictionCache(_model, response());
+        _trainPredsCache = Score.makePredictionCache(_model, templateVec());
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -371,6 +371,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           _trainPredsCache = null;
         }
       }
+    }
+
+    /** Vec to be used as template to create workspaces */
+    private Vec templateVec() {
+      return isSupervised() ? _response : _train.anyVec();
     }
 
     // Abstract classes implemented by the tree builders
@@ -580,7 +585,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_weight(   ) { return _model._output.weightsIdx(); }
   protected int idx_offset(   ) { return _model._output.offsetIdx(); }
   protected int idx_resp(     ) { return _model._output.responseIdx(); }
-  protected int idx_tree(int c) { return _ncols+1+c+numSpecialCols(); }
+  protected int idx_tree(int c) { return _ncols+(isSupervised()?1:0)+c+numSpecialCols(); }
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }

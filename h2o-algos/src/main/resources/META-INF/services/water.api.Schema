@@ -10,6 +10,10 @@ hex.schemas.DRFModelV3
 hex.schemas.DRFModelV3$DRFModelOutputV3
 hex.schemas.DRFV3
 hex.schemas.DRFV3$DRFParametersV3
+hex.schemas.IsolationForestModelV3
+hex.schemas.IsolationForestModelV3$IsolationForestModelOutputV3
+hex.schemas.IsolationForestV3
+hex.schemas.IsolationForestV3$IsolationForestParametersV3
 hex.schemas.DataInfoFrameV3
 hex.schemas.DeepLearningModelV3
 hex.schemas.DeepLearningModelV3$DeepLearningModelOutputV3
@@ -74,6 +78,7 @@ hex.schemas.Word2VecSynonymsV3
 hex.schemas.Word2VecTransformV3
 hex.schemas.Word2VecV3
 hex.schemas.Word2VecV3$Word2VecParametersV3
+water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3
 water.api.ModelMetricsSVDV99
