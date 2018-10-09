@@ -5,32 +5,9 @@
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
-#' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
-#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
-#'        "Random", "Modulo", "Stratified". Defaults to AUTO.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
-#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
-#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
-#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
-#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
 #' @param ntrees Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 20.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -40,16 +17,6 @@
 #'        decrease by factor of two per level Defaults to 1024.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
 #'        values can lead to more overfitting. Defaults to 1024.
-#' @param r2_stopping r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric
-#'        and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
-#'        exceeds this Defaults to 1.797693135e+308.
-#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-#'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
@@ -57,67 +24,31 @@
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
 #'        (where p is the # of predictors) Defaults to -1.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
-#' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.
-#' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
-#'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to Random.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
-#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-#'        "tweedie", "laplace", "quantile", "huber". Defaults to gaussian.
-#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @export
 h2o.isolationforest <- function(training_frame, x,
                                 model_id = NULL,
-                                validation_frame = NULL,
-                                nfolds = 0,
-                                keep_cross_validation_models = FALSE,
-                                keep_cross_validation_predictions = FALSE,
-                                keep_cross_validation_fold_assignment = FALSE,
                                 score_each_iteration = FALSE,
                                 score_tree_interval = 0,
-                                fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                fold_column = NULL,
                                 ignore_const_cols = TRUE,
-                                offset_column = NULL,
-                                weights_column = NULL,
-                                balance_classes = FALSE,
-                                class_sampling_factors = NULL,
-                                max_after_balance_size = 5.0,
-                                max_hit_ratio_k = 0,
                                 ntrees = 50,
                                 max_depth = 20,
                                 min_rows = 1,
                                 nbins = 20,
                                 nbins_top_level = 1024,
                                 nbins_cats = 1024,
-                                r2_stopping = 1.797693135e+308,
-                                stopping_rounds = 0,
-                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
-                                stopping_tolerance = 0.001,
                                 max_runtime_secs = 0,
                                 seed = -1,
                                 build_tree_one_node = FALSE,
                                 mtries = -1,
-                                sample_rate = 0.6320000291,
-                                sample_rate_per_class = NULL,
                                 checkpoint = NULL,
                                 col_sample_rate_change_per_level = 1,
                                 col_sample_rate_per_tree = 1,
-                                min_split_improvement = 0,
-                                histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                calibrate_model = FALSE,
-                                calibration_frame = NULL,
-                                distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                                custom_metric_func = NULL
+                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
                                 ) 
 {
 
@@ -144,38 +75,12 @@ h2o.isolationforest <- function(training_frame, x,
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
   if (!missing(model_id))
     parms$model_id <- model_id
-  if (!missing(validation_frame))
-    parms$validation_frame <- validation_frame
-  if (!missing(nfolds))
-    parms$nfolds <- nfolds
-  if (!missing(keep_cross_validation_models))
-    parms$keep_cross_validation_models <- keep_cross_validation_models
-  if (!missing(keep_cross_validation_predictions))
-    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
-  if (!missing(keep_cross_validation_fold_assignment))
-    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
-  if (!missing(fold_assignment))
-    parms$fold_assignment <- fold_assignment
-  if (!missing(fold_column))
-    parms$fold_column <- fold_column
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
-  if (!missing(offset_column))
-    parms$offset_column <- offset_column
-  if (!missing(weights_column))
-    parms$weights_column <- weights_column
-  if (!missing(balance_classes))
-    parms$balance_classes <- balance_classes
-  if (!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if (!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_hit_ratio_k))
-    parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -188,14 +93,6 @@ h2o.isolationforest <- function(training_frame, x,
     parms$nbins_top_level <- nbins_top_level
   if (!missing(nbins_cats))
     parms$nbins_cats <- nbins_cats
-  if (!missing(r2_stopping))
-    parms$r2_stopping <- r2_stopping
-  if (!missing(stopping_rounds))
-    parms$stopping_rounds <- stopping_rounds
-  if (!missing(stopping_metric))
-    parms$stopping_metric <- stopping_metric
-  if (!missing(stopping_tolerance))
-    parms$stopping_tolerance <- stopping_tolerance
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(seed))
@@ -204,30 +101,14 @@ h2o.isolationforest <- function(training_frame, x,
     parms$build_tree_one_node <- build_tree_one_node
   if (!missing(mtries))
     parms$mtries <- mtries
-  if (!missing(sample_rate))
-    parms$sample_rate <- sample_rate
-  if (!missing(sample_rate_per_class))
-    parms$sample_rate_per_class <- sample_rate_per_class
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
   if (!missing(col_sample_rate_change_per_level))
     parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if (!missing(col_sample_rate_per_tree))
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
-  if (!missing(min_split_improvement))
-    parms$min_split_improvement <- min_split_improvement
-  if (!missing(histogram_type))
-    parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
-  if (!missing(calibrate_model))
-    parms$calibrate_model <- calibrate_model
-  if (!missing(calibration_frame))
-    parms$calibration_frame <- calibration_frame
-  if (!missing(distribution))
-    parms$distribution <- distribution
-  if (!missing(custom_metric_func))
-    parms$custom_metric_func <- custom_metric_func
   # Error check and build model
   .h2o.modelJob('isolationforest', parms, h2oRestApiVersion = 3) 
 }
