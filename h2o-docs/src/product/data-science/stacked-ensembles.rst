@@ -16,7 +16,7 @@ Stacking / Super Learning
 
 Stacking, also called Super Learning [3_] or Stacked Regression [2_], is a class of algorithms that involves training a second-level "metalearner" to find the optimal combination of the base learners.  Unlike bagging and boosting, the goal in stacking is to ensemble strong, diverse sets of learners together. 
 
-Although the concept of stacking was originally developed in 1992 [1_], the theoretical guarantees for stacking were not proven until the publication of a paper titled, `"Super Learner" <http://dx.doi.org/10.2202/1544-6115.1309>`__, in 2007 [3_].  In this paper, it was shown that the Super Learner ensemble represents an asymptotically optimal system for learning.  
+Although the concept of stacking was originally developed in 1992 [1_], the theoretical guarantees for stacking were not proven until the publication of a paper titled, `"Super Learner" <https://doi.org/10.2202/1544-6115.1309>`__, in 2007 [3_].  In this paper, it was shown that the Super Learner ensemble represents an asymptotically optimal system for learning.  
 
 There are some ensemble methods that are broadly labeled as stacking, however, the Super Learner ensemble is distinguished by the use of cross-validation to form what is called the "level-one" data, or the data that the metalearning or "combiner" algorithm is trained on.  More detail about the Super Learner algorithm is provided below.
 
