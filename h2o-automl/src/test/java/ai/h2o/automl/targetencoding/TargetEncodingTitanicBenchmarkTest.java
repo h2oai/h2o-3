@@ -17,71 +17,11 @@ import water.util.TwoDimTable;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static water.util.FrameUtils.generateNumKeys;
-
 public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
-  }
-
-  @Before
-  public void beforeEach() {
-
-  }
-
-  @Test
-  public void assertionErrorDuringMergeDueToNAsTest() {
-    Scope.enter();
-    try {
-
-      TargetEncoder tec = new TargetEncoder();
-
-      Frame titanicFrame = parse_test_file(Key.make("titanic_parsed"), "smalldata/gbm_test/titanic.csv");
-      Scope.track(titanicFrame);
-
-      titanicFrame.remove("name");
-      titanicFrame.remove("ticket");
-      titanicFrame.remove("boat");
-      titanicFrame.remove("body");
-
-      double[] ratios = ard(0.7f, 0.1f);
-      Frame[] splits = null;
-      FrameSplitter fs = new FrameSplitter(titanicFrame, ratios, generateNumKeys(titanicFrame._key, ratios.length + 1), null);
-      H2O.submitTask(fs).join();
-      splits = fs.getResult();
-      Frame train = splits[0];
-      Frame valid = splits[1];
-      Frame test = splits[2];
-      Scope.track(train, valid, test);
-
-
-      String[] teColumns = {"home.dest"};
-
-      String targetColumnName = "survived";
-
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, null);
-      Frame trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false,1234,true);
-      Scope.track(trainEncoded);
-
-      printOutFrameAsTable(test, true);
-      printOutFrameAsTable(valid, true);
-      printOutColumnsMeta(valid);
-      assertEquals(valid.vec("home.dest").max(), Double.NaN, 1e-5);
-
-      assertTrue(valid.vec("home.dest").isNA(0));
-      assertEquals("null", valid.vec("home.dest").stringAt(0)); // "null" is just a string representation of NA. It could have been easy to merge by this string.
-
-      // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, false, 0, false,1234, true);
-      Scope.track(validEncoded);
-      encodingMapCleanUp(encodingMap);
-    } finally {
-      Scope.exit();
-    }
   }
 
   @Test
@@ -96,9 +36,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
-//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
-//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -192,9 +129,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-//      Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_filled_str.csv");
-//      Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid_filled_str.csv");
-//      Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test_filled_str.csv");
 
       Scope.track(trainFrame, validFrame, testFrame);
 
