@@ -56,8 +56,6 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
         error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
-    if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
-      warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
     if (_parms._distribution != DistributionFamily.AUTO && _parms._distribution != DistributionFamily.gaussian) {
       throw new IllegalStateException("Isolation Forest doesn't expect the distribution to be specified by the user");
     }
