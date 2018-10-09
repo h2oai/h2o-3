@@ -205,8 +205,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       Model model = modelKey.get();
       mm = ModelMetrics.getFromDKV(model, this.frame);
       if (null == mm) {
-        // call score()
-        Frame preds = model.score(this.frame);
+        // call score() and immediately delete the resulting frame to avoid leaks
+        model.score(this.frame).delete();
 
         mm = ModelMetrics.getFromDKV(model, this.frame);
         if (null == mm) {
