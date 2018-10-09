@@ -1,6 +1,5 @@
 package water;
 
-import water.RPC.RPCCall;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.network.SocketChannelFactory;
@@ -14,7 +13,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -239,12 +237,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       throw Log.throwErr(e);
     }
 
-    try {
-      assert water.init.NetworkInit.CLOUD_DGRAM == null;
-      water.init.NetworkInit.CLOUD_DGRAM = DatagramChannel.open();
-    } catch( Exception e ) {
-      throw Log.throwErr(e);
-    }
     return intern(new H2Okey(local,H2O.H2O_PORT));
   }
 
@@ -580,56 +572,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       if( rpc2 == null || rpc2._dt != null || !_removed_task_ids.compareAndSet(t,t+1) )
         break;                  // Stop when we hit in-progress tasks
       _work.remove(t+1);        // Else we can remove the tracking now
-    }
-  }
-
-  // Resend ACK's, in case the UDP ACKACK got dropped.  Note that even if the
-  // ACK was sent via TCP, the ACKACK might be dropped.  Further: even if we
-  // *know* the client got our TCP response, we do not know *when* he'll
-  // process it... so we cannot e.g. eagerly do an ACKACK on this side.  We
-  // must wait for the real ACKACK - which can drop.  So we *must* resend ACK's
-  // occasionally to force a resend of ACKACKs.
-
-  static class AckAckTimeOutThread extends Thread {
-    AckAckTimeOutThread() { super("ACKTimeout"); }
-    // List of DTasks with results ready (and sent!), and awaiting an ACKACK.
-    // Started by main() on a single thread, handle timing-out UDP packets
-    @Override public void run() {
-      Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-      while( true ) {
-        long currenTime = System.currentTimeMillis();
-        for(H2ONode h2o:H2O.CLOUD._memary) {
-          if(h2o != H2O.SELF) {
-            for(RPCCall rpc:h2o._work.values()) {
-              if((rpc._started + rpc._retry) < currenTime) {
-                // RPC from somebody who dropped out of cloud?
-                if( (!H2O.CLOUD.contains(rpc._client) && !rpc._client._heartbeat._client) ||
-                  // Timedout client?
-                  (rpc._client._heartbeat._client && rpc._retry >= HeartBeatThread.CLIENT_TIMEOUT) ) {
-                  rpc._client.remove_task_tracking(rpc._tsknum);
-                } else  {
-                  if (rpc._computed) {
-                    if (rpc._computedAndReplied) {
-                      DTask dt = rpc._dt;
-                      if(dt != null) {
-                        if (++rpc._ackResendCnt % 5 == 0)
-                          Log.warn("Got " + rpc._ackResendCnt + " resends on ack for task # " + rpc._tsknum + ", class = " + dt.getClass().getSimpleName());
-                        rpc.resend_ack();
-                      }
-                    }
-                  } else if(rpc._nackResendCnt == 0) { // else send nack
-                    ++rpc._nackResendCnt;
-                    rpc.send_nack();
-                  }
-                }
-              }
-            }
-          }
-        }
-        long timeElapsed = System.currentTimeMillis()-currenTime;
-        if(timeElapsed < 1000)
-          try {Thread.sleep(1000-timeElapsed);} catch (InterruptedException e) {/*comment to stop ideaj warning*/}
-      }
     }
   }
 

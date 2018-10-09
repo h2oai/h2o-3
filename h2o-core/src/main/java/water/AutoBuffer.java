@@ -178,13 +178,10 @@ public final class AutoBuffer {
    *  This helps in UDP floods to shut down flooding senders. */
   private byte _msg_priority; 
   AutoBuffer( H2ONode h2o, byte priority ) {
-    // If UDP goes via UDP, we write into a DBB up front - because we plan on
-    // sending it out via a Datagram socket send call.  If UDP goes via batched
+    // If UDP goes via batched
     // TCP, we write into a HBB up front, because this will be copied again
     // into a large outgoing buffer.
-    _bb = H2O.ARGS.useUDP // Actually use UDP?
-      ? BBP_SML.make()    // Make DirectByteBuffers to start with
-      : ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
+    _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -579,10 +576,8 @@ public final class AutoBuffer {
     if( _h2o==H2O.SELF ) {      // SELF-send is the multi-cast signal
       water.init.NetworkInit.multicast(_bb, _msg_priority);
     } else {                    // Else single-cast send
-      if(H2O.ARGS.useUDP)       // Send via UDP directly
-        water.init.NetworkInit.CLOUD_DGRAM.send(_bb, _h2o._key);
-      else                      // Send via bulk TCP
-        _h2o.sendMessage(_bb, _msg_priority);
+      // Send via bulk TCP
+      _h2o.sendMessage(_bb, _msg_priority);
     }
     return 0;                   // Flow-coding
   }
