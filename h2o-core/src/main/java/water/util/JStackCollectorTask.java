@@ -119,7 +119,7 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
         }
         trace = tcp_traces;
         tinfo = tcpThreads;
-      } else if(elms[elms.length-1].getClassName().equals("water.MultiReceiverThread") || elms[elms.length-1].getClassName().equals("water.TCPReceiverThread") || elms[elms.length-1].getClassName().equals("water.UDPReceiverThread") || elms[elms.length-1].getClassName().equals("water.HeartBeatThread")){
+      } else if(elms[elms.length-1].getClassName().equals("water.MultiReceiverThread") || elms[elms.length-1].getClassName().equals("water.TCPReceiverThread") || elms[elms.length-1].getClassName().equals("water.HeartBeatThread")){
         trace = h2o_sys_traces;
         tinfo = h2oSysThreads;
       } else if(elms.length > 1 && elms[elms.length-2].getClassName().startsWith("java.util.concurrent.ThreadPoolExecutor") || elms[elms.length-1].getClassName().startsWith("java.lang.ref.Finalizer") || elms[elms.length-1].getClassName().startsWith("java.lang.ref.Reference")) {

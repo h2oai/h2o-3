@@ -347,8 +347,6 @@ final public class H2O {
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
 
-    public boolean useUDP = false;
-
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
@@ -564,9 +562,6 @@ final public class H2O {
       else if (s.matches("quiet")) {
         trgt.quiet = true;
       }
-      else if(s.matches("useUDP")) {
-        trgt.useUDP = true;
-      }
       else if(s.matches("cleaner")) {
         trgt.cleaner = true;
       }
@@ -621,6 +616,9 @@ final public class H2O {
         }
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
         }
+      else if(s.matches("useUDP")) {
+          Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -722,7 +720,6 @@ final public class H2O {
 
 
   public static void closeAll() {
-    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
@@ -1357,7 +1354,7 @@ final public class H2O {
     public abstract void callback(T t);
   }
 
-  public static int H2O_PORT; // Both TCP & UDP cluster ports
+  public static int H2O_PORT; // H2O TCP Port
   public static int API_PORT; // RequestServer and the API HTTP port
 
   /**
@@ -1556,19 +1553,6 @@ final public class H2O {
     // We've rebooted the JVM recently. Tell other Nodes they can ignore task
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
-
-    // Start the UDPReceiverThread, to listen for requests from other Cloud
-    // Nodes. There should be only 1 of these, and it never shuts down.
-    // Started first, so we can start parsing UDP packets
-    if(H2O.ARGS.useUDP) {
-      new UDPReceiverThread(NetworkInit._udpSocket).start();
-      // Start a UDP timeout worker thread. This guy only handles requests for
-      // which we have not received a timely response and probably need to
-      // arrange for a re-send to cover a dropped UDP packet.
-      new UDPTimeOutThread().start();
-      // Same same for a dropped ACK needing an ACKACK back.
-      new H2ONode.AckAckTimeOutThread().start();
-    }
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts

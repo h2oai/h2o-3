@@ -7,6 +7,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Date;
+import java.util.Random;
 
 import water.network.SocketChannelFactory;
 import water.util.Log;
@@ -237,7 +239,7 @@ public class TCPReceiverThread extends Thread {
           int sentinel = read(sz+1).get(ary,0,sz).get(); // extract the message bytes, then the sentinel byte
           assert (0xFF & sentinel) == 0xef : "Missing expected sentinel (0xef) at the end of the message from " + _h2o + ", likely out of sync, size = " + sz + ", position = " + _bb.position() +", bytes = " + printBytes(_bb, _bb.position(), sz);
           // package the raw bytes into an array and pass it on to FJQ for further processing
-          UDPReceiverThread.basic_packet_handling(new AutoBuffer(_h2o, ary, 0, sz));
+          basic_packet_handling(new AutoBuffer(_h2o, ary, 0, sz));
         }
       } catch(Throwable t) {
         if( !idle || !(t instanceof IOException) ) {
@@ -250,6 +252,85 @@ public class TCPReceiverThread extends Thread {
           try { _chan.close();} catch (IOException e) {/*ignore error on close*/}
       }
     }
+  }
+
+  static private int  _unknown_packets_per_sec = 0;
+  static private long _unknown_packet_time = 0;
+  static final Random RANDOM_UDP_DROP = new Random();
+  // Basic packet handling:
+  //   - Timeline record it
+  static public void basic_packet_handling( AutoBuffer ab ) throws java.io.IOException {
+    // Randomly drop 1/10th of the packets, as-if broken network.  Dropped
+    // packets are timeline recorded before dropping - and we still will
+    // respond to timelines and suicide packets.
+    int drop = H2O.ARGS.random_udp_drop &&
+            RANDOM_UDP_DROP.nextInt(5) == 0 ? 2 : 0;
+
+    // Record the last time we heard from any given Node
+    TimeLine.record_recv(ab, false, drop);
+    final long now = ab._h2o._last_heard_from = System.currentTimeMillis();
+
+    // Snapshots are handled *IN THIS THREAD*, to prevent more UDP packets from
+    // being handled during the dump.  Also works for packets from outside the
+    // Cloud... because we use Timelines to diagnose Paxos failures.
+    int ctrl = ab.getCtrl();
+    ab.getPort(); // skip the port bytes
+    if( ctrl == UDP.udp.timeline.ordinal() ) {
+      UDP.udp.timeline._udp.call(ab);
+      return;
+    }
+
+    // Suicide packet?  Short-n-sweet...
+    if( ctrl == UDP.udp.rebooted.ordinal())
+      UDPRebooted.checkForSuicide(ctrl, ab);
+
+    // Drop the packet.
+    if( drop != 0 ) return;
+
+    // Get the Cloud we are operating under for this packet
+    H2O cloud = H2O.CLOUD;
+    // Check cloud membership; stale ex-members are "fail-stop" - we mostly
+    // ignore packets from them (except paxos packets).
+    boolean is_member = cloud.contains(ab._h2o);
+    boolean is_client = ab._h2o._heartbeat._client;
+
+    // Some non-Paxos packet from a non-member.  Probably should record & complain.
+    // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
+    // voting we can get a LOT of these packets/sec, flooding the logs.
+    if( !(UDP.udp.UDPS[ctrl]._paxos || is_member || is_client) ) {
+      _unknown_packets_per_sec++;
+      long timediff = ab._h2o._last_heard_from - _unknown_packet_time;
+      if( timediff > 1000 ) {
+        // If this is a recently booted client node... coming up right after a
+        // prior client was shutdown, it might see leftover trash UDP packets
+        // from the servers intended for the prior client.
+        if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
+          Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
+        _unknown_packets_per_sec = 0;
+        _unknown_packet_time = ab._h2o._last_heard_from;
+      }
+      ab.close();
+      return;
+    }
+
+    // Paxos stateless packets & ACKs just fire immediately in a worker
+    // thread.  Dups are handled by these packet handlers directly.  No
+    // current membership check required for Paxos packets.
+    //
+    // Handle the case of packet flooding draining all the available
+    // ByteBuffers and running the JVM out of *native* memory, triggering
+    // either a large RSS (and having YARN kill us for being over-budget) or
+    // simply tossing a OOM - but a out-of-native-memory nothing to do with
+    // heap memory.
+    //
+    // All UDP packets at this stage have fairly short lifetimes - Exec packets
+    // (which you might think to be unboundedly slow) are actually just going
+    // through the deserialization call in RPC.remote_exec - and the deser'd
+    // DTask gets tossed on a low priority queue to do "the real work".  Since
+    // this is coming from a UDP packet the deser work is actually small.
+
+
+    H2O.submitTask(new FJPacket(ab,ctrl));
   }
 
 }
