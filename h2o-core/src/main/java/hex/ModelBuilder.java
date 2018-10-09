@@ -353,6 +353,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Futures fs = new Futures();
         // removing keys added during cv_makeFramesAndBuilders and cv_makeFramesAndBuilders
         // need a better solution: part of this is done in cv_makeFramesAndBuilders but partially and only for its method scope
+        // also removing the completed CV models as the main model is incomplete anyway
         for (ModelBuilder mb : cvModelBuilders) {
           DKV.remove(mb._parms._train, fs);
           DKV.remove(mb._parms._valid, fs);
