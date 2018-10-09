@@ -151,8 +151,7 @@ public final class AutoBuffer {
    *  This helps in UDP floods to shut down flooding senders. */
   private byte _msg_priority; 
   AutoBuffer( H2ONode h2o, byte priority ) {
-    // If UDP goes via batched
-    // TCP, we write into a HBB up front, because this will be copied again
+    // If UDP goes via TCP, we write into a HBB up front, because this will be copied again
     // into a large outgoing buffer.
     _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
     _chan = null;               // Channel made lazily only if we write alot
