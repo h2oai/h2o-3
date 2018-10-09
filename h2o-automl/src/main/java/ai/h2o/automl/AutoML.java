@@ -29,6 +29,7 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,35 +129,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
-  // if we need to make the Algo list dynamic, we should just turn this enum into a class...
-  // NOTE: make sure that this is in sync with the exclude option in AutoMLBuildSpecV99
-  public enum Algo implements algo {
-    GLM,
-    DRF,
-    GBM,
-    DeepLearning,
-    StackedEnsemble,
-    XGBoost,
-    ;
-
-    String urlName() {
-      return this.name().toLowerCase();
-    }
-  }
-
   /**
-   * for external use only.
-   * Keeping this mapping for customers consuming the Java API directly
-   * @deprecated use {@link Algo} instead
+   * For external use only.
+   * Keeping this mapping for existing users consuming the Java API directly.
+   * Putting here only algos that were available in H2O 3.20.x,
+   *  users that need to exclude new algos should switch to {@link Algo}.
+   * @deprecated will be removed in H2O 3.24.x, please use {@link Algo} instead.
    */
   @Deprecated
-  public interface algo {
+  public interface algo extends Serializable {
     @Deprecated public static final Algo GLM = Algo.GLM;
     @Deprecated public static final Algo DRF = Algo.DRF;
     @Deprecated public static final Algo GBM = Algo.GBM;
     @Deprecated public static final Algo DeepLearning = Algo.DeepLearning;
     @Deprecated public static final Algo StackedEnsemble = Algo.StackedEnsemble;
-    @Deprecated public static final Algo XGBoost = Algo.XGBoost;
   }
 
   private enum JobType {
@@ -286,7 +272,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             .end();
 
     if (buildSpec.build_models.exclude_algos != null) {
-      for (Algo algo : (Algo[])buildSpec.build_models.exclude_algos) {
+      for (Algo algo : (Algo[]) buildSpec.build_models.exclude_algos) {
         skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
       }
     }
@@ -1329,15 +1315,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model[] allModels = leaderboard().getModels();
 
     WorkAllocations.Work seWork = workAllocations.getAllocation(Algo.StackedEnsemble, JobType.ModelBuild);
-    if (allModels.length == 0) {
+    if (seWork == null) {
+      this.job.update(0, "StackedEnsemble builds skipped");
+      userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
+    } else if (allModels.length == 0) {
       this.job.update(seWork.consumeAll(), "No models built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
     } else if (allModels.length == 1) {
       this.job.update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
       userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
-    } else if (ArrayUtils.contains(skipAlgosList, Algo.StackedEnsemble)) { //TODO: can be removed, check is done later before starting model
-      this.job.update(seWork.consumeAll(), "StackedEnsemble builds skipped");
-      userFeedback.info(Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
     } else if (buildSpec.build_control.nfolds == 0) {
         this.job.update(seWork.consumeAll(), "Cross-validation disabled by the user; StackedEnsemble build skipped");
         userFeedback.info(Stage.ModelTraining,"Cross-validation disabled by the user; StackedEnsemble build skipped");
