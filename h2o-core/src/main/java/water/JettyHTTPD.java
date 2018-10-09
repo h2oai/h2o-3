@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * Embedded Jetty instance inside H2O.

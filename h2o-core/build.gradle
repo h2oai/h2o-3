@@ -14,8 +14,9 @@ dependencies {
   compile 'org.javassist:javassist:3.18.2-GA'
   compile "org.apache.commons:commons-math3:3.3"
   compile "commons-io:commons-io:2.4"
-  compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
-  compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
+  compile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+  compile "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
+
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
   compile project(":h2o-jaas-pam")
 
