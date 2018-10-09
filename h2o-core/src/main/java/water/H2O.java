@@ -616,6 +616,9 @@ final public class H2O {
         }
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
         }
+      else if(s.matches("useUDP")) {
+          throw new IllegalArgumentException("Support for UDP communication was removed from H2O");
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
