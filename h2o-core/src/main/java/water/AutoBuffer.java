@@ -114,33 +114,6 @@ public final class AutoBuffer {
 
   static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
 
-  /** Incoming UDP request.  Make a read-mode AutoBuffer from the open Channel,
-   *  figure the originating H2ONode from the first few bytes read. */
-  AutoBuffer( DatagramChannel sock ) throws IOException {
-    _chan = null;
-    _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
-    _read = true;               // Reading by default
-    _firstPage = true;
-    // Read a packet; can get H2ONode from 'sad'?
-    Inet4Address addr = null;
-    SocketAddress sad = sock.receive(_bb);
-    if( sad instanceof InetSocketAddress ) {
-      InetAddress address = ((InetSocketAddress) sad).getAddress();
-      if( address instanceof Inet4Address ) {
-        addr = (Inet4Address) address;
-      }
-    }
-    _size = _bb.position();
-    _bb.flip();                 // Set limit=amount read, and position==0
-    if( addr == null ) throw new RuntimeException("Unhandled socket type: " + sad);
-    // Read Inet from socket, port from the stream, figure out H2ONode
-    _h2o = H2ONode.intern(addr, getPort());
-    _firstPage = true;
-    assert _h2o != null;
-    _persist = 0;               // No persistance
-  }
-
-
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
    *  figure the originating H2ONode from the first few bytes read.
    *
