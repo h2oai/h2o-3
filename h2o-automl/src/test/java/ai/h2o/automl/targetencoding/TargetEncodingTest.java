@@ -975,6 +975,34 @@ public class TargetEncodingTest extends TestUtil {
       accFrame.delete();
     }
 
+  @Test
+  public void referentialTransparencyTest() {
+    Frame fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_NUM)
+            .withDataForCol(0, ar(1,2))
+            .build();
+
+    Frame fr2 = new TestFrameBuilder()
+            .withName("testFrame2")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_NUM)
+            .withDataForCol(0, ar(3, 4))
+            .build();
+
+    Frame newReferenceFrame = fr;
+    assertEquals(1, newReferenceFrame.vec(0).at(0), 1e-5);
+
+    newReferenceFrame = fr2;
+
+    assertEquals(3, newReferenceFrame.vec(0).at(0), 1e-5);
+
+    newReferenceFrame.delete(); // And we should not delete fr2 explicitly since it will be deleted by reference.
+    assertEquals(1, fr.vec(0).at(0), 1e-5);
+    fr.delete();
+  }
+
     @Test
     public void filterOutByTest() {
       fr = new TestFrameBuilder()

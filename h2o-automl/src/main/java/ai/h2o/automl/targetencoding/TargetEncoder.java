@@ -551,11 +551,12 @@ public class TargetEncoder {
             double priorMeanFromTrainingDataset = calculatePriorMean(encodingMapForCurrentTEColumn);
 
             int teColumnIndex = getColumnIndexByName(dataWithAllEncodings, teColumnName);
-            Frame holdoutEncodeMap = null;
 
             switch (dataLeakageHandlingStrategy) {
                 case DataLeakageHandlingStrategy.KFold:
                     assert isTrainOrValidSet : "Following calculations assume we can access target column but we can do this only on training and validation sets.";
+                    Frame holdoutEncodeMap = null;
+
                     if(foldColumnName == null)
                         throw new IllegalStateException("`foldColumn` must be provided for dataLeakageHandlingStrategy = KFold");
 
@@ -587,7 +588,7 @@ public class TargetEncoder {
                             }
 
                             outOfFoldData.delete();
-                            Scope.track(groupedByTEColumnAndAggregate);
+                            Scope.track(groupedWithAppendedFoldColumn);
                         }
                     } finally {
                         Scope.exit();
