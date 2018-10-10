@@ -29,28 +29,26 @@ public class CompressedTree extends Keyed<CompressedTree> {
   private static final String KEY_PREFIX = "tree_";
 
   final byte [] _bits;
-  final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
 
-  public CompressedTree(byte[] bits, int nclass, long seed, int tid, int cls) {
+  public CompressedTree(byte[] bits, long seed, int tid, int cls) {
     super(makeTreeKey(tid, cls));
     _bits = bits;
-    _nclass = nclass;
     _seed = seed;
   }
 
   public double score(final double row[], final String[][] domains) {
-    return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false, domains);
+    return SharedTreeMojoModel.scoreTree(_bits, row, false, domains);
   }
 
   @Deprecated
   public String getDecisionPath(final double row[], final String[][] domains) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, domains);
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d);
   }
 
   public <T> T getDecisionPath(final double row[], final String[][] domains, final SharedTreeMojoModel.DecisionPathTracker<T> tr) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, domains);
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d, tr);
   }
 
@@ -58,7 +56,7 @@ public class CompressedTree extends Keyed<CompressedTree> {
                                                  final String[] colNames, final String[][] domains) {
     TreeCoords tc = getTreeCoords();
     String treeName = SharedTreeMojoModel.treeName(tc._treeId, tc._clazz, domains[domains.length - 1]);
-    return SharedTreeMojoModel.computeTreeGraph(tc._treeId, treeName, _bits, auxTreeInfo._bits, _nclass, colNames, domains);
+    return SharedTreeMojoModel.computeTreeGraph(tc._treeId, treeName, _bits, auxTreeInfo._bits, colNames, domains);
   }
 
   public Random rngForChunk(int cidx) {

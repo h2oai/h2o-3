@@ -70,6 +70,34 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       return _ntrees_per_group;
     }
 
+
+    /**
+     * @deprecated use {@link #scoreTree0(byte[], double[], boolean)} instead.
+     */
+    @Deprecated
+    public static double scoreTree0(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+      // note that nclasses is ignored (and in fact, always was)
+      return scoreTree0(tree, row, computeLeafAssignment);
+    }
+
+    /**
+     * @deprecated use {@link #scoreTree1(byte[], double[], boolean)} instead.
+     */
+    @Deprecated
+    public static double scoreTree1(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+      // note that nclasses is ignored (and in fact, always was)
+      return scoreTree1(tree, row, computeLeafAssignment);
+    }
+
+    /**
+     * @deprecated use {@link #scoreTree(byte[], double[], boolean, String[][])} instead.
+     */
+    @Deprecated
+    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
+      // note that {@link nclasses} is ignored (and in fact, always was)
+      return scoreTree(tree, row, computeLeafAssignment, domains);
+    }
+
   /**
    * Highly efficient (critical path) tree scoring
    *
@@ -80,7 +108,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
    * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
+    public static double scoreTree(byte[] tree, double[] row, boolean computeLeafAssignment, String[][] domains) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
         GenmodelBitSet bs = null;
         long bitsRight = 0;
@@ -168,7 +196,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                     case 1:  ab.skip(ab.get2());  break;
                     case 2:  ab.skip(ab.get3());  break;
                     case 3:  ab.skip(ab.get4());  break;
-                    case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
                     case 48: ab.skip(4);  break;  // skip the prediction
                     default:
                         assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
@@ -284,7 +311,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     //------------------------------------------------------------------------------------------------------------------
 
     private static void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap,
-                                         int nclasses, String names[], String[][] domains) {
+                                         String names[], String[][] domains) {
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -342,9 +369,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 case 3:
                     ab2.skip(ab2.get4());
                     break;
-                case 16:
-                    ab2.skip(nclasses < 256 ? 1 : 2);
-                    break;  // Small leaf
                 case 48:
                     ab2.skip(4);
                     break;  // skip the prediction
@@ -364,7 +388,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predR = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
             }
         }
 
@@ -387,7 +411,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predL = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, nclasses, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
             }
         }
         if (node.getNodeNumber() == 0) {
@@ -427,7 +451,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 String treeName = treeName(j, i, domainValues);
                 SharedTreeSubgraph sg = g.makeSubgraph(treeName);
                 computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
-                        _nclasses, getNames(), getDomainValues());
+                        getNames(), getDomainValues());
             }
 
             if (treeToPrint >= 0) {
@@ -439,21 +463,21 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     }
 
     public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
-                                                      int nclasses, String names[], String[][] domains) {
+                                                      String names[], String[][] domains) {
       SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
-      computeTreeGraph(sg, tree, auxTreeInfo, nclasses, names, domains);
+      computeTreeGraph(sg, tree, auxTreeInfo, names, domains);
       return sg;
     }
 
     private static void computeTreeGraph(SharedTreeSubgraph sg, byte[] tree, byte[] auxTreeInfo,
-                                         int nclasses, String names[], String[][] domains) {
+                                         String names[], String[][] domains) {
       SharedTreeNode node = sg.makeRootNode();
       node.setSquaredError(Float.NaN);
       node.setPredValue(Float.NaN);
       ByteBufferWrapper ab = new ByteBufferWrapper(tree);
       ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
       HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
-      computeTreeGraph(sg, node, tree, ab, auxMap, nclasses, names, domains);
+      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains);
     }
 
     private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
@@ -669,7 +693,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
             int itree = treeIndex(fromIndex, classIndex);
             for (int groupIndex = fromIndex; groupIndex < toIndex; groupIndex++) {
                 if (_compressed_trees[itree] != null) { // Skip all empty trees
-                  preds[k] += _scoreTree.scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                  preds[k] += _scoreTree.scoreTree(_compressed_trees[itree], row, false, _domains);
                 }
                 itree++;
             }
@@ -725,7 +749,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
       for (int j = 0; j < _ntree_groups; j++) {
         for (int i = 0; i < _ntrees_per_group; i++) {
           int itree = treeIndex(j, i);
-          double d = scoreTree(_compressed_trees[itree], row, _nclasses, true, _domains);
+          double d = scoreTree(_compressed_trees[itree], row, true, _domains);
           if (paths != null)
             paths[itree] = SharedTreeMojoModel.getDecisionPath(d);
           if (nodeIds != null) {
@@ -759,12 +783,11 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
    * SET IN STONE FOR MOJO VERSION "1.00" - DO NOT CHANGE
    * @param tree
    * @param row
-   * @param nclasses
    * @param computeLeafAssignment
    * @return
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-  public static double scoreTree0(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+  public static double scoreTree0(byte[] tree, double[] row, boolean computeLeafAssignment) {
     ByteBufferWrapper ab = new ByteBufferWrapper(tree);
     GenmodelBitSet bs = null;  // Lazily set on hitting first group test
     long bitsRight = 0;
@@ -804,7 +827,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
           case 1:  ab.skip(ab.get2());  break;
           case 2:  ab.skip(ab.get3());  break;
           case 3:  ab.skip(ab.get4());  break;
-          case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
           case 48: ab.skip(4);  break;  // skip the prediction
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
@@ -833,12 +855,11 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
    * SET IN STONE FOR MOJO VERSION "1.10" - DO NOT CHANGE
    * @param tree
    * @param row
-   * @param nclasses
    * @param computeLeafAssignment
    * @return
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-  public static double scoreTree1(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+  public static double scoreTree1(byte[] tree, double[] row, boolean computeLeafAssignment) {
     ByteBufferWrapper ab = new ByteBufferWrapper(tree);
     GenmodelBitSet bs = null;
     long bitsRight = 0;
@@ -879,7 +900,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
           case 1:  ab.skip(ab.get2());  break;
           case 2:  ab.skip(ab.get3());  break;
           case 3:  ab.skip(ab.get4());  break;
-          case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
           case 48: ab.skip(4);  break;  // skip the prediction
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);

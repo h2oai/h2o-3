@@ -201,7 +201,7 @@ public abstract class SharedTreeModel<
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
         DKV.put(ctAux);
       }
@@ -382,7 +382,7 @@ public abstract class SharedTreeModel<
       CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
       assert auxTree != null;
 
-      final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, _nclasses, true, _domains);
+      final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
       final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
 
       out.addNum(nodeId, 0);
