@@ -213,7 +213,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["word2vec", "aggregator", "coxph"]:
+    if algo not in ["word2vec", "aggregator", "coxph", "isolationforest"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -1140,6 +1140,7 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "isolationforest": module = "isolationForest"
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"

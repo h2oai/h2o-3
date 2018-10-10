@@ -133,7 +133,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
         """
         Maximum tree depth.
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``  (default: ``64``).
         """
         return self._parms.get("max_depth")
 

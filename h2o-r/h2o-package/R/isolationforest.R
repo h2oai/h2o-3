@@ -9,7 +9,7 @@
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 20.
+#' @param max_depth Maximum tree depth. Defaults to 64.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 #'        Defaults to 20.
@@ -30,13 +30,13 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @export
-h2o.isolationforest <- function(training_frame, x,
+h2o.isolationForest <- function(training_frame, x,
                                 model_id = NULL,
                                 score_each_iteration = FALSE,
                                 score_tree_interval = 0,
                                 ignore_const_cols = TRUE,
                                 ntrees = 50,
-                                max_depth = 20,
+                                max_depth = 64,
                                 min_rows = 1,
                                 nbins = 20,
                                 nbins_top_level = 1024,
@@ -60,14 +60,6 @@ h2o.isolationforest <- function(training_frame, x,
            error = function(err) {
              stop("argument 'training_frame' must be a valid H2OFrame or key")
            })
-  # Validation_frame must be a key or an H2OFrame object
-  if (!is.null(validation_frame)) {
-     if (!is.H2OFrame(validation_frame))
-         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
-             error = function(err) {
-                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
-             })
-  }
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
