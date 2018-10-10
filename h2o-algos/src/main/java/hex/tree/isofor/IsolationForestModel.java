@@ -29,6 +29,9 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   public static class IsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
+    public long _max_path_length;
+    public long _min_path_length;
+
     public IsolationForestOutput(IsolationForest b) { super(b); }
 
     @Override
@@ -51,7 +54,10 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   @Override protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     super.score0(data, preds, offset, ntrees);
     int N = _output._ntrees;
-    if (N>=1) preds[0] /= N;
+    if (_output._max_path_length > _output._min_path_length) {
+      preds[0] = (_output._max_path_length - preds[0]) / (_output._max_path_length - _output._min_path_length);
+    }
+    //if (N>=1) preds[0] /= N;
     return preds;
   }
 

@@ -13,7 +13,7 @@ test.IsolationForest.depth <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
-    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, max_depth = 20)
+    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, max_depth = 20, ntrees = 10)
 
 
     sample_ind <- sample(c(1:nrow(random_data)), size = 1000)
@@ -22,20 +22,17 @@ test.IsolationForest.depth <- function() {
 
     # calculated score
     score <- h2o.predict(isofor.model, sample.hex)
-    print(score)
+    result_pred <- as.data.frame(score)$predict
 
     # manually calculate score from average depth
-    depths <- h2o.nchar(h2o.predict_leaf_node_assignment(isofor.model, sample.hex))
+    depths <- h2o.nchar(h2o.predict_leaf_node_assignment(isofor.model, random_data.hex))
     avg_path_length <- h2o.mean(depths, axis = 1, return_frame = TRUE)
-    print(avg_path_length)
-
     normalize <- function(avpl) {
         min_length <- min(avpl)
         max_length <- max(avpl)
         as.data.frame((max_length - avpl) / (max_length - min_length))[, 1]
     }
-    result_pred <- normalize(score$predict)
-    result_manual <- normalize(avg_path_length$mean)
+    result_manual <- normalize(avg_path_length$mean)[sample_ind]
 
     expect_equal(result_pred, result_manual)
 

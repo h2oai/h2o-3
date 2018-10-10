@@ -99,23 +99,29 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
     @Override protected boolean buildNextKTrees() {
-      // Reset NIDs
-      new ResetNodeIds().doAll(_train);
-
       // Create a Random response
       randomResp(_parms._seed, _model._output._ntrees);
 
       // Assign rows to nodes - fill the "NIDs" column(s)
-      final DTree[] ktrees = growTree(_rand);
+      final DTree[] ktrees = new DTree[1];
+      final int[] depths = growTree(_rand, ktrees);
+
+      // Reset NIDs
+      ResetNodeIds stats = new ResetNodeIds(ktrees[0], depths).doAll(_train);
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
+      _model._output._min_path_length = stats._minPathLength;
+      _model._output._max_path_length = stats._maxPathLength;
+
+      System.out.println(stats._minPathLength);
+      System.out.println(stats._maxPathLength);
 
       return false; // never stop early
     }
 
-    // Assumes that the "Work" column are filled with horizontalized (0/1) class memberships per row (or copy of regression response)
-    private DTree[] growTree(Random rand) {
+    // Assumes that the "Work" column are filled with copy of a random generated response
+    private int[] growTree(final Random rand, final DTree[] treeWrapper) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -126,16 +132,15 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       long rseed = rand.nextLong();
 
       // Initially setup as-if an empty-split had just happened
-      DTree tree = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
+      DTree tree = treeWrapper[0] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
       new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
 
       // ----
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
-      final DTree[] ktrees = {tree};
       final int[] leafs = new int[1];
       for(int depth=0 ; depth<_parms._max_depth; depth++ ) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, treeWrapper, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
@@ -169,17 +174,55 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
         }
       }
 
-      return ktrees;
+      return depths;
     }
 
     // Collect and write predictions into leafs.
     private class ResetNodeIds extends MRTask<ResetNodeIds> {
-      @Override public void map( Chunk[] chks ) {
+      private final DTree _tree;
+      private final int _depths[];
+      // OUT
+      private long _minPathLength = Long.MAX_VALUE;
+      private long _maxPathLength = 0;
+      private ResetNodeIds(DTree tree, int[] depths) { _tree = tree; _depths = depths; }
+      @Override public void map(Chunk[] chks) {
+        final Chunk tree = chk_tree(chks, 0);
         final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
         for (int row = 0; row < nids._len; row++) {
+          int nid = (int) nids.at8(row);
+          int depth = getNodeDepth(chks, row, nid);
+          long len = tree.at8(row) + depth;
+          tree.set(row, len);
+          if (tree.start() == 0 && row == 0) {
+            System.out.println("len=" + depth);
+          }
+          _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
+          _minPathLength = len < _minPathLength ? len : _minPathLength;
+          // reset NIds
           nids.set(row, 0);
         }
       }
+      @Override public void reduce(ResetNodeIds mrt) {
+        _minPathLength = Math.min(_minPathLength, mrt._minPathLength);
+        _maxPathLength = Math.max(_maxPathLength, mrt._maxPathLength);
+      }
+
+      int getNodeDepth(Chunk[] chks, int row, int nid) {
+        if (_tree.node(nid) instanceof UndecidedNode) // If we bottomed out the tree
+          nid = _tree.node(nid).pid();                 // Then take parent's decision
+        if (_tree.root() instanceof LeafNode) {
+          return 0;
+        } else {
+          DecidedNode dn = _tree.decided(nid);           // Must have a decision point
+          if (dn._split == null)     // Unable to decide?
+            dn = _tree.decided(_tree.node(nid).pid());    // Then take parent's decision
+          int leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
+          double depth = ((LeafNode) _tree.node(leafnid)).pred();
+          assert (int) depth == depth;
+          return (int) depth;
+        }
+      }
+
     }
 
     @Override protected IsolationForestModel makeModel(Key modelKey, IsolationForestParameters parms) {
@@ -193,7 +236,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     assert weight == 1;
-    fs[0] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+    fs[0] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row); // FIXME
     fs[1] = 0;
     return fs[0];
   }
