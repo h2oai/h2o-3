@@ -14,17 +14,14 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public String algoName() { return "IsolationForest"; }
     public String fullName() { return "Isolation Forest"; }
     public String javaName() { return IsolationForestModel.class.getName(); }
-    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+    public int _mtries;
 
     public IsolationForestParameters() {
       super();
-      // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
       _mtries = -1;
       _sample_rate = 0.632f;
-      _max_depth = 20;
+      _max_depth = 64;
       _min_rows = 1;
-
-      // implicit parameters
       _min_split_improvement = 0;
       _histogram_type = HistogramType.Random;
       _distribution = DistributionFamily.gaussian;
