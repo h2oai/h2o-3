@@ -99,7 +99,7 @@ public class TargetEncodingTest extends TestUtil {
         assertTrue(fr.vec("ColA").isCategorical());
         assertEquals(2, fr.vec("ColA").cardinality());
 
-        Frame res = tec.imputeNAsForColumn(fr, 0, "ColA_NA");
+        Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
 
         Vec colA = res.vec("ColA");
 
@@ -128,7 +128,7 @@ public class TargetEncodingTest extends TestUtil {
     assertTrue(fr.vec("ColA").isCategorical());
     assertEquals(4, fr.vec("ColA").cardinality());
 
-    Frame res = tec.imputeNAsForColumn(fr, 0, "ColA_NA");
+    Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
 
     Vec colA = res.vec("ColA");
 
