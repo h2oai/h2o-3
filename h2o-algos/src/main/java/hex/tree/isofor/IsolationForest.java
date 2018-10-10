@@ -27,6 +27,9 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       ModelCategory.AnomalyDetection
     };
   }
+  @Override public BuilderVisibility builderVisibility() {
+    return BuilderVisibility.Experimental;
+  }
 
   // Called from an http request
   public IsolationForest(IsolationForestParameters parms                               ) { super(parms     ); init(false); }
@@ -227,8 +230,9 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     assert weight == 1;
-    fs[0] = _model.normalizePathLength(chk_tree(chks, 0).atd(row));
-    fs[1] = 0;
+    double len = chk_tree(chks, 0).atd(row);
+    fs[0] = _model.normalizePathLength(len); // score
+    fs[1] = len / _model._output._ntrees; // average tree path length
     return fs[0];
   }
 

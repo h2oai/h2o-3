@@ -47,12 +47,17 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     return new ModelMetricsAnomaly.MetricBuilderAnomaly();
   }
 
+  protected String[] makeScoringNames(){
+    return new String[]{"predict", "mean_length"};
+  }
+
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     super.score0(data, preds, offset, ntrees);
+    if (ntrees >= 1) preds[1] = preds[0] / ntrees;
     preds[0] = normalizePathLength(preds[0]);
     return preds;
   }
@@ -66,7 +71,12 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    body.ip("preds[0] /= " + _output._ntrees + ";").nl();
+    throw new UnsupportedOperationException("Isolation Forest support only MOJOs.");
+  }
+
+  @Override
+  public boolean havePojo() {
+    return false;
   }
 
   @Override

@@ -719,7 +719,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
       out._scoring_history = createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
-      if( out._ntrees > 0 ) {    // Compute variable importances
+      if (out._ntrees > 0 && isSupervised()) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
