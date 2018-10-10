@@ -41,7 +41,7 @@ public class TargetEncoder {
      */
     //TODO do we need to do this preparation before as a separate phase? because we are grouping twice.
     //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
-    public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName, boolean inputeNAs) {
+    public Map<String, Frame> prepareEncodingMap(Frame data, String[] columnNamesToEncode, String targetColumnName, String foldColumnName, boolean inputeNAsWithNewCategory) {
 
         // Validate input data. Not sure whether we should check some of these.
         // It will become clear when we decide if TE is going to be exposed to user or only integrated into AutoML's pipeline
@@ -74,7 +74,7 @@ public class TargetEncoder {
             Frame teColumnFrame = null;
             int colIndex = getColumnIndexByName(dataWithEncodedTarget, teColumnName);
 
-            if(inputeNAs) {
+            if(inputeNAsWithNewCategory) {
               imputeNAsForColumn(dataWithEncodedTarget, colIndex, teColumnName + "_NA");
             }
 
@@ -516,7 +516,7 @@ public class TargetEncoder {
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     boolean inputeNAs,
+                                     boolean inputeNAsWithNewCategory,
                                      long seed,
                                      boolean isTrainOrValidSet) {
 
@@ -530,21 +530,15 @@ public class TargetEncoder {
 
         Frame dataWithAllEncodings = null ;
         if(isTrainOrValidSet) {
-          Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataCopy, targetColumnName);
-          dataWithAllEncodings = dataWithEncodedTarget.deepCopy(Key.make().toString());
-          DKV.put(dataWithAllEncodings);
-          dataWithEncodedTarget.delete();
+          ensureTargetColumnIsNumericOrBinaryCategorical(dataCopy, targetColumnName);
         }
-        else {
-          dataWithAllEncodings = dataCopy;
-        }
-
+        dataWithAllEncodings = dataCopy;
 
         for ( String teColumnName: columnsToEncode) {
 
             // Impute NA's for each column we are going to encode
             int colIndex = getColumnIndexByName(dataWithAllEncodings, teColumnName);
-            if(inputeNAs) {
+            if(inputeNAsWithNewCategory) {
               imputeNAsForColumn(dataWithAllEncodings, colIndex, teColumnName + "_NA");
             }
 

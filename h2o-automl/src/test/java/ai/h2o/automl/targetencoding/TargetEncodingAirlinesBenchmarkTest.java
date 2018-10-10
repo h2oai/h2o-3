@@ -52,7 +52,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       boolean withImputationForNAsInOriginalColumns = true;
 
       // Create encoding
-      encodingMap = tec.prepareEncodingMap(airlinesTrainWithTEH, teColumns, targetColumnName, foldColumnName);
+      encodingMap = tec.prepareEncodingMap(airlinesTrainWithTEH, teColumns, targetColumnName, foldColumnName, true);
 
       // Apply encoding to the training set
       Frame trainEncoded;

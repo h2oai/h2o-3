@@ -9,7 +9,8 @@ import org.junit.runners.Suite;
         TargetEncodingTest.class,
         TargetEncodingKFoldStrategyTest.class,
         TargetEncodingLeaveOneOutStrategyTest.class,
-        TargetEncodingNoneStrategyTest.class
+        TargetEncodingNoneStrategyTest.class,
+        TargetEncodingImmutabilityTest.class
 })
 
 public class AllTETestsSuite {
