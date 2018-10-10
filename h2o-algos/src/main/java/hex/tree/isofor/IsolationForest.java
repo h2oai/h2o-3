@@ -103,25 +103,21 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       randomResp(_parms._seed, _model._output._ntrees);
 
       // Assign rows to nodes - fill the "NIDs" column(s)
-      final DTree[] ktrees = new DTree[1];
-      final int[] depths = growTree(_rand, ktrees);
+      final DTree[] ktrees = growTree(_rand);
 
       // Reset NIDs
-      ResetNodeIds stats = new ResetNodeIds(ktrees[0], depths).doAll(_train);
+      CalculatePaths stats = new CalculatePaths(ktrees[0]).doAll(_train);
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
       _model._output._min_path_length = stats._minPathLength;
       _model._output._max_path_length = stats._maxPathLength;
 
-      System.out.println(stats._minPathLength);
-      System.out.println(stats._maxPathLength);
-
       return false; // never stop early
     }
 
     // Assumes that the "Work" column are filled with copy of a random generated response
-    private int[] growTree(final Random rand, final DTree[] treeWrapper) {
+    private DTree[] growTree(final Random rand) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -132,7 +128,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       long rseed = rand.nextLong();
 
       // Initially setup as-if an empty-split had just happened
-      DTree tree = treeWrapper[0] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
+      DTree tree = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
+      final DTree[] treeWrapper = {tree};
       new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
 
       // ----
@@ -174,17 +171,16 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
         }
       }
 
-      return depths;
+      return treeWrapper;
     }
 
     // Collect and write predictions into leafs.
-    private class ResetNodeIds extends MRTask<ResetNodeIds> {
+    private class CalculatePaths extends MRTask<CalculatePaths> {
       private final DTree _tree;
-      private final int _depths[];
       // OUT
       private long _minPathLength = Long.MAX_VALUE;
       private long _maxPathLength = 0;
-      private ResetNodeIds(DTree tree, int[] depths) { _tree = tree; _depths = depths; }
+      private CalculatePaths(DTree tree) { _tree = tree; }
       @Override public void map(Chunk[] chks) {
         final Chunk tree = chk_tree(chks, 0);
         final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
@@ -193,36 +189,31 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
           int depth = getNodeDepth(chks, row, nid);
           long len = tree.at8(row) + depth;
           tree.set(row, len);
-          if (tree.start() == 0 && row == 0) {
-            System.out.println("len=" + depth);
-          }
           _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
           _minPathLength = len < _minPathLength ? len : _minPathLength;
           // reset NIds
           nids.set(row, 0);
         }
       }
-      @Override public void reduce(ResetNodeIds mrt) {
+      @Override public void reduce(CalculatePaths mrt) {
         _minPathLength = Math.min(_minPathLength, mrt._minPathLength);
         _maxPathLength = Math.max(_maxPathLength, mrt._maxPathLength);
       }
-
       int getNodeDepth(Chunk[] chks, int row, int nid) {
-        if (_tree.node(nid) instanceof UndecidedNode) // If we bottomed out the tree
-          nid = _tree.node(nid).pid();                 // Then take parent's decision
         if (_tree.root() instanceof LeafNode) {
           return 0;
         } else {
+          if (_tree.node(nid) instanceof UndecidedNode)  // If we bottomed out the tree
+            nid = _tree.node(nid).pid();                 // Then take parent's decision
           DecidedNode dn = _tree.decided(nid);           // Must have a decision point
-          if (dn._split == null)     // Unable to decide?
-            dn = _tree.decided(_tree.node(nid).pid());    // Then take parent's decision
-          int leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
+          if (dn._split == null)                         // Unable to decide?
+            dn = _tree.decided(_tree.node(nid).pid());   // Then take parent's decision
+          int leafnid = dn.getChildNodeID(chks, row);    // Decide down to a leafnode
           double depth = ((LeafNode) _tree.node(leafnid)).pred();
           assert (int) depth == depth;
           return (int) depth;
         }
       }
-
     }
 
     @Override protected IsolationForestModel makeModel(Key modelKey, IsolationForestParameters parms) {
@@ -236,7 +227,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     assert weight == 1;
-    fs[0] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row); // FIXME
+    fs[0] = _model.normalizePathLength(chk_tree(chks, 0).atd(row));
     fs[1] = 0;
     return fs[0];
   }

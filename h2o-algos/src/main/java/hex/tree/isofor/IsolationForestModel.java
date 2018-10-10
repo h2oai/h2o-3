@@ -53,12 +53,16 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
    *  subclass scoring logic. */
   @Override protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     super.score0(data, preds, offset, ntrees);
-    int N = _output._ntrees;
-    if (_output._max_path_length > _output._min_path_length) {
-      preds[0] = (_output._max_path_length - preds[0]) / (_output._max_path_length - _output._min_path_length);
-    }
-    //if (N>=1) preds[0] /= N;
+    preds[0] = normalizePathLength(preds[0]);
     return preds;
+  }
+
+  final double normalizePathLength(double pathLength) {
+    if (_output._max_path_length > _output._min_path_length) {
+      return  (_output._max_path_length - pathLength) / (_output._max_path_length - _output._min_path_length);
+    } else {
+      return 1;
+    }
   }
 
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {

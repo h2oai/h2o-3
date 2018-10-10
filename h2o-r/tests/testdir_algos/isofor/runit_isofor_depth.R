@@ -13,12 +13,14 @@ test.IsolationForest.depth <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
-    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, max_depth = 20, ntrees = 10)
-
+    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, max_depth = 20, ntrees = 10, score_each_iteration = TRUE)
 
     sample_ind <- sample(c(1:nrow(random_data)), size = 1000)
     sample_ind <- sample_ind[order(sample_ind)]
     sample.hex <- random_data.hex[sample_ind, ]
+
+    score.all <- h2o.predict(isofor.model, random_data.hex)
+    print(h2o.mean(score.all))
 
     # calculated score
     score <- h2o.predict(isofor.model, sample.hex)
