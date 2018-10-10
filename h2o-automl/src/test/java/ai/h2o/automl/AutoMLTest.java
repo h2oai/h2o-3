@@ -119,7 +119,7 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      autoMLBuildSpec.build_models.exclude_algos = new AutoML.Algo[] {AutoML.Algo.DeepLearning, AutoML.Algo.DRF, AutoML.Algo.GLM};
+      autoMLBuildSpec.build_models.exclude_algos = new AutoML.algo[] {AutoML.algo.DeepLearning, AutoML.algo.DRF, AutoML.algo.GLM};
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(8);
 //      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
