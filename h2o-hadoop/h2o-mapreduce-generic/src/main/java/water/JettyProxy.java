@@ -36,6 +36,7 @@ public class JettyProxy extends AbstractHTTPD {
     // setup authenticating proxy servlet (each request is forwarded with BASIC AUTH)
     ServletHolder proxyServlet = new ServletHolder(Transparent.class);
     proxyServlet.setInitParameter("ProxyTo", _proxyTo);
+    proxyServlet.setInitParameter("proxyTo", _proxyTo); // this one is needed in Jetty-9 branch // TODO: check if we need both
     proxyServlet.setInitParameter("Prefix", "/");
     proxyServlet.setInitParameter("BasicAuth", _credentials.toBasicAuth());
     context.addServlet(proxyServlet, "/*");
