@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.IsolationForest.depth <- function() {
     set.seed(1234)
-    N = 1e6
+    N = 1e5
     random_data <- data.frame(
         x = c(rnorm(N, 0, 0.5), rnorm(N*0.05, -1.5, 1)),
         y = c(rnorm(N, 0, 0.5), rnorm(N*0.05,  1.5, 1)),
@@ -13,25 +13,28 @@ test.IsolationForest.depth <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
-    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234)
+    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, max_depth = 20)
 
 
     sample_ind <- sample(c(1:nrow(random_data)), size = 1000)
     sample_ind <- sample_ind[order(sample_ind)]
+    sample.hex <- random_data.hex[sample_ind, ]
 
     # calculated score
-    score <- h2o.predict(isofor.model, random_data.hex[sample_ind, ])
+    score <- h2o.predict(isofor.model, sample.hex)
+    print(score)
 
     # manually calculate score from average depth
-    depths <- h2o.nchar(h2o.predict_leaf_node_assignment(isofor.model, random_data.hex[sample_ind, ]))
+    depths <- h2o.nchar(h2o.predict_leaf_node_assignment(isofor.model, sample.hex))
     avg_path_length <- h2o.mean(depths, axis = 1, return_frame = TRUE)
+    print(avg_path_length)
 
-    normalize <- function(avg_path_length) {
-        min_length <- min(avg_path_length)
-        max_length <- max(avg_path_length)
-        as.data.frame((max_length - avg_path_length) / (max_length - min_length))[, 1]
+    normalize <- function(avpl) {
+        min_length <- min(avpl)
+        max_length <- max(avpl)
+        as.data.frame((max_length - avpl) / (max_length - min_length))[, 1]
     }
-    result_pred <- normalize(score)
+    result_pred <- normalize(score$predict)
     result_manual <- normalize(avg_path_length$mean)
 
     expect_equal(result_pred, result_manual)
