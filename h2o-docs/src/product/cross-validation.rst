@@ -188,3 +188,14 @@ The frame of cross-validated predictions is a single-column frame, where each ro
     # However you most likely want a single-column frame including all cv preds
     prostate_kmeans.cross_validation_holdout_predictions()
 
+
+Cross-validation Cleanup
+------------------------
+
+When building models using cross-validation, various residuals are automatically deleted from memory once the final model has been completed. This includes the cross-validation models and its metrics, the predictions and the fold assignments.
+If you want to prevent those information from being deleted for further investigation, please refer to their corresponding activation flags:
+- :ref:`keep_cross_validation_fold_assignment`
+- :ref:`keep_cross_validation_models`
+- :ref:`keep_cross_validation_predictions`
+
+Whether the model didn't complete due to timeout or manual interruption, its associated CV models and residuals are also expected to be automatically removed from memory in any case.

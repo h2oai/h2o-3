@@ -8,36 +8,37 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 .. example-code::
    .. code-block:: r
    
-	> library(h2o)
-	> h2o.init()
+	library(h2o)
+	h2o.init()
 	
 	# Import an existing training dataset
-	> ecg1Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv"
-	> ecg1.hex <- h2o.importFile(path=ecg1Path, destination_frame="ecg1.hex")
-	> print(dim(ecg1.hex))
+	ecg1Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv"
+	ecg1.hex <- h2o.importFile(path=ecg1Path, destination_frame="ecg1.hex")
+	print(dim(ecg1.hex))
 	[1] 20 210 
 
 	# Import an existing testing dataset
-	> ecg2Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv"
-	> ecg2.hex <- h2o.importFile(path=ecg2Path, destination_frame="ecg2.hex")
-	> print(dim(ecg2.hex))
+	ecg2Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv"
+	ecg2.hex <- h2o.importFile(path=ecg2Path, destination_frame="ecg2.hex")
+	print(dim(ecg2.hex))
 	[1] 23 210
 
 	# Combine the two datasets into a single, larger dataset
-	> ecgCombine.hex <- h2o.rbind(ecg1.hex, ecg2.hex)
-	> print(dim(ecgCombine.hex))
+	ecgCombine.hex <- h2o.rbind(ecg1.hex, ecg2.hex)
+	print(dim(ecgCombine.hex))
 	[1] 43 210
 
 
    .. code-block:: python
 
-	>>> import h2o
-	>>> import numpy as np
-	>>> h2o.init()
+	import h2o
+	import numpy as np
+	h2o.init()
 	
-	# Generate a random dataset with 100 rows 4 columns. Label the columns A, B, C, and D.
-	>>> df1 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
-	>>> df1.describe
+	# Generate a random dataset with 100 rows 4 columns. 
+	# Label the columns A, B, C, and D.
+	df1 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+	df1.describe
 	        A           B          C           D
 	---------  ----------  ---------  ----------
 	 0.412228  -0.991376   -1.44374   -0.276455
@@ -53,9 +54,10 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 
 	[100 rows x 4 columns]
 	
-	# Generate a second random dataset with 100 rows and 4 columns. Again, label the columns, A, B, C, and D.
-	>>> df2 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
-	>>> df2.describe
+	# Generate a second random dataset with 100 rows and 4 columns. 
+	# Again, label the columns, A, B, C, and D.
+	df2 = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
+	df2.describe
 	          A          B          C          D
 	-----------  ---------  ---------  ---------
 	 0.00118227  -0.835817   1.06634    1.81794
@@ -72,7 +74,7 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 	[100 rows x 4 columns]
 	
 	# Bind the rows from the second dataset into the first dataset.
-	>>> df1.rbind(df2)
+	df1.rbind(df2)
 	        A           B          C           D
 	---------  ----------  ---------  ----------
 	 0.412228  -0.991376   -1.44374   -0.276455

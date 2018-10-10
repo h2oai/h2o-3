@@ -6,16 +6,19 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 .. example-code::
    .. code-block:: r
 	
-	> library(h2o)
-	> h2o.init()
+	library(h2o)
+	h2o.init()
 	
-	# Create two simple, two-column R data frames by inputting values, ensuring that both have a common column (in this case, "fruit").
-	> left <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','blueberry'), color = c('red','orange','yellow','yellow','red','blue'))
-	> right <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','watermelon'), citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+	# Create two simple, two-column R data frames by inputting values, 
+	# ensuring that both have a common column (in this case, "fruit").
+	left <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','blueberry'), 
+	     color = c('red','orange','yellow','yellow','red','blue'))
+	right <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','watermelon'), 
+	    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
 	
 	# Create the H2O data frames from the inputted data.
-	> l.hex <- as.h2o(left)
-	> print(l.hex)
+	l.hex <- as.h2o(left)
+	print(l.hex)
 	        fruit  color
 	 1      apple    red
 	 2     orange orange
@@ -26,9 +29,9 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 	
 	[6 rows x 2 columns]
 	
-	> r.hex <- as.h2o(right)
-	> print(r.hex)
-	        fruit  color
+	r.hex <- as.h2o(right)
+	print(r.hex)
+	        fruit  citrus
 	 1      apple  FALSE
 	 2     orange   TRUE
 	 3     banana  FALSE
@@ -39,11 +42,13 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 	[6 rows x 2 columns]
 
 	# Combine the l.hex and r.hex datasets into a single dataset. 
-	#The columns from r.hex will be appended to the right side of the final dataset. In addition, because both datasets include a "fruit" column, H2O will append the second "fruit" column name with "0". 
-	#Note that this is different than ``merge``, which combines data from two commonly named columns in two datasets. 
+	# The columns from r.hex will be appended to the right side of the final dataset. 
+	# In addition, because both datasets include a "fruit" column, H2O will append the 
+	# second "fruit" column name with "0". Note that this is different than ``merge``, 
+	# which combines data from two commonly named columns in two datasets. 
 	
-	> columns.hex <- h2o.cbind(l.hex, r.hex)
-	> print(columns.hex)
+	columns.hex <- h2o.cbind(l.hex, r.hex)
+	print(columns.hex)
 	       fruit  color     fruit0 citrus
 	1      apple    red      apple  FALSE
 	2     orange orange     orange   TRUE
@@ -57,13 +62,14 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		
    .. code-block:: python
    
-	>>> import h2o
-	>>> h2o.init()
-	>>> import numpy as np
+	import h2o
+	h2o.init()
+	import numpy as np
 	
-	# Generate a random dataset with 10 rows 4 columns. Label the columns A, B, C, and D.
-	>>> cols1_df = h2o.H2OFrame.from_python(np.random.randn(10,4).tolist(), column_names=list('ABCD'))
-	>>> cols1_df.describe
+	# Generate a random dataset with 10 rows 4 columns. 
+	# Label the columns A, B, C, and D.
+	cols1_df = h2o.H2OFrame.from_python(np.random.randn(10,4).tolist(), column_names=list('ABCD'))
+	cols1_df.describe
 	        A          B          C           D
 	---------  ---------  ---------  ---------- 
 	 0.660737  -1.11679    0.278233  -0.0326621
@@ -79,9 +85,10 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 
 	[10 rows x 4 columns]
 	
-	# Generate a second random dataset with 10 rows and 1 column. Label the columns, Y and D.
-	>>> cols2_df = h2o.H2OFrame.from_python(np.random.randn(10,2).tolist(), column_names=list('YZ'))
-	>>> cols2_df.describe
+	# Generate a second random dataset with 10 rows and 1 column. 
+	# Label the columns, Y and D.
+	cols2_df = h2o.H2OFrame.from_python(np.random.randn(10,2).tolist(), column_names=list('YZ'))
+	cols2_df.describe
 	         Y           Z
 	----------  ----------
 	 0.54945     0.0283338
@@ -97,9 +104,10 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 
 	[10 rows x 2 columns]
 
-	# Add the columns from the second dataset into the first. H2O will append these as the right-most columns.
-	>>> colsCombine_df = cols1_df.cbind(cols2_df)
-	>>> colsCombine_df.describe
+	# Add the columns from the second dataset into the first. 
+	# H2O will append these as the right-most columns.
+	colsCombine_df = cols1_df.cbind(cols2_df)
+	colsCombine_df.describe
 	        A          B          C           D           Y           Z
 	---------  ---------  ---------  ----------  ----------  ----------
 	 0.660737  -1.11679    0.278233  -0.0326621   0.54945     0.0283338

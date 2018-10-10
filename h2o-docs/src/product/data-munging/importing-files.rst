@@ -1,7 +1,7 @@
 Importing Multiple Files
 ------------------------
 
-The ``importFolder`` (R)/``import_file`` (Python) function can be used to import multiple files by specifying a directory and a pattern. Example patterns include:
+The ``importFolder`` (R)/``import_file`` (Python) function can be used to import multiple local files by specifying a directory and a pattern. Example patterns include:
 
 - ``pattern="/A/.*/iris_.*"``: Import all files that have the pattern ``/A/.*/iris_.*`` in the specified directory.
 - ``pattern="/A/iris_.*"``: Import all files that have the pattern ``/A/iris_.*`` in the specified directory.
@@ -16,7 +16,7 @@ The ``importFolder`` (R)/``import_file`` (Python) function can be used to import
   - R: ``h2o.setTimezone("America/Los Angeles")``
   - Python: ``h2o.cluster().timezone = "America/Los Angeles"``
 
-- The Python example below assumes that the H2O-3 GitHub repository has been cloned, and that the following command was run in the **h2o-3** folder to retrieve the **smalldata** datasets. 
+- The examples below assumes that the H2O-3 GitHub repository has been cloned, and that the following command was run in the **h2o-3** folder to retrieve the **smalldata** datasets. 
 
   :: 
 
@@ -27,16 +27,28 @@ The ``importFolder`` (R)/``import_file`` (Python) function can be used to import
    .. code-block:: r
 	
 	# To import all .csv files from the prostate_folder directory:
-	> library(h2o)
-	> h2o.init()
-	> prosPath <- system.file("extdata", "prostate_folder", package = "h2o")
-	> prostate_pattern.hex <- h2o.importFolder(path = prosPath, pattern = ".*.csv", destination_frame = "prostate.hex")
-	> class(prostate_pattern.hex)
-	> summary(prostate_pattern.hex)
+	library(h2o)
+	h2o.init()
+	prosPath <- system.file("extdata", "prostate_folder", package = "h2o")
+	prostate_pattern.hex <- h2o.importFolder(path = prosPath, 
+	                                         pattern = ".*.csv", 
+	                                         destination_frame = "prostate.hex")
+	class(prostate_pattern.hex)
+	summary(prostate_pattern.hex)
+
+	# To import all .csv files from an anomaly folder stored locally
+	ecgPath <- "../path_to_h2o-3/smalldata/anomaly/"
+	ecg_pattern.hex <- h2o.importFolder(path=ecgPath, 
+	                                    pattern = ".*.csv", 
+	                                    destination_frame = "ecg_pattern.hex")
+
+	class(ecg_pattern.hex)
+	summary(ecg_pattern.hex)
 	  
    .. code-block:: python
 
-	# To import all files in the iris folder matching the regex "iris_.*\.csv"
-	>>> import h2o
-	>>> h2o.init()
-	>>> iris_pattern = h2o.import_file(path = "../smalldata/iris",pattern = "iris_.*\.csv")
+	# To import all .csv files from an anomaly folder stored locally matching the regex ".*\.csv"
+	import h2o
+	h2o.init()
+	ecg_pattern = h2o.import_file(path="../path_to_h2o-3/smalldata/anomaly/",pattern = ".*\.csv")
+

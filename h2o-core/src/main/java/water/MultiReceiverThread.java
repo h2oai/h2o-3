@@ -69,7 +69,7 @@ class MultiReceiverThread extends Thread {
         byte[] buf = new byte[AutoBuffer.MTU];
         DatagramPacket pack = new DatagramPacket(buf,buf.length);
         sock.receive(pack);
-        UDPReceiverThread.basic_packet_handling(new AutoBuffer(pack));
+        TCPReceiverThread.basic_packet_handling(new AutoBuffer(pack));
       } catch( SocketException e ) {
         // This rethrow will not be caught and thus kills the multi-cast thread.
         Log.err("Turning off multicast, which will disable further cloud building");

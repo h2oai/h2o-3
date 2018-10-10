@@ -36,6 +36,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
+      stageName: 'Java 7 Smoke (no h2o-algos multinode)', target: 'test-junit-7-smoke-jenkins', javaVersion: 7, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
@@ -56,15 +60,7 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -76,27 +72,11 @@ def call(final pipelineContext) {
       timeoutValue: 5, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -168,6 +148,10 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
+      stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '2.7', javaVersion: 11,
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
       stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
       archiveAdditionalFiles: ['r-generated-docs.zip'], installRPackage: false
@@ -185,6 +169,13 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+    ],
+    [
+      stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
     ],
     [
@@ -213,14 +204,6 @@ def call(final pipelineContext) {
   // Stages executed in addition to PR_STAGES after merge to master.
   def MASTER_STAGES = [
     [
-      stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
       stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -237,6 +220,38 @@ def call(final pipelineContext) {
 
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
+    [
+      stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
       timeoutValue: 70, component: pipelineContext.getBuildConfig().COMPONENT_R
@@ -283,14 +298,17 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(standaloneStage.customData.distribution, standaloneStage.customData.version, false)
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
+    onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, false)
 
     def withKRBStage = evaluate(stageTemplate.inspect())
     withKRBStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - KRB"
     withKRBStage.customData.mode = 'WITH_KRB'
+    withKRBStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(withKRBStage.customData.distribution, withKRBStage.customData.version, true)
 
     HADOOP_STAGES += standaloneStage
     HADOOP_STAGES += onHadoopStage
@@ -302,7 +320,7 @@ def call(final pipelineContext) {
     final def xgbEnvs = pipelineContext.getBuildConfig().getSupportedXGBEnvironments()[osName]
     xgbEnvs.each {xgbEnv ->
       final def stageDefinition = [
-        stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins", activateR: false,
+        stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
         timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.5',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv),
@@ -410,7 +428,6 @@ private void executeInParallel(final jobs, final pipelineContext) {
           excludeAdditionalFiles = c['excludeAdditionalFiles']
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
-          activateR = c['activateR']
 	      customDockerArgs = c['customDockerArgs']
         }
       }
@@ -446,7 +463,6 @@ private void invokeStage(final pipelineContext, final body) {
   config.additionalTestPackages = config.additionalTestPackages ?: []
   config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
   config.executionScript = config.executionScript ?: DEFAULT_EXECUTION_SCRIPT
-  config.image = config.image ?: pipelineContext.getBuildConfig().DEFAULT_IMAGE
   config.makefilePath = config.makefilePath ?: pipelineContext.getBuildConfig().MAKEFILE_PATH
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
   config.excludeAdditionalFiles = config.excludeAdditionalFiles ?: []
@@ -458,46 +474,62 @@ private void invokeStage(final pipelineContext, final body) {
       config.installRPackage = true
   }
 
+  if (config.activatePythonEnv == null) {
+    config.activatePythonEnv = config.component == pipelineContext.getBuildConfig().COMPONENT_PY ||
+            config.component == pipelineContext.getBuildConfig().COMPONENT_JS ||
+            config.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)
+  }
+  config.image = config.image ?: pipelineContext.getBuildConfig().getStageImage(config)
+
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
-    pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
-    stage(config.stageName) {
-      if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
-        echo "###### Stage was successful in previous build ######"
-        pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
-        pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
-      } else {
-        boolean healthCheckPassed = false
-        int attempt = 0
-        String nodeLabel = config.nodeLabel
-        try {
-          while (!healthCheckPassed) {
-            attempt += 1
-            if (attempt > HEALTH_CHECK_RETRIES) {
-              error "Too many attempts to pass initial health check"
-            }
-            nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
-            echo "######### NodeLabel: ${nodeLabel} #########"
-            node(nodeLabel) {
-              echo "###### Unstash scripts. ######"
-              pipelineContext.getUtils().unstashScripts(this)
+    def stageClosure = {
+      pipelineContext.getBuildSummary().addStageSummary(this, config.stageName, config.stageDir)
+      stage(config.stageName) {
+        if (params.executeFailedOnly && pipelineContext.getUtils().wasStageSuccessful(this, config.stageName)) {
+          echo "###### Stage was successful in previous build ######"
+          pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, 'Skipped', 'N/A')
+          pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+        } else {
+          boolean healthCheckPassed = false
+          int attempt = 0
+          String nodeLabel = config.nodeLabel
+          try {
+            while (!healthCheckPassed) {
+              attempt += 1
+              if (attempt > HEALTH_CHECK_RETRIES) {
+                error "Too many attempts to pass initial health check"
+              }
+              nodeLabel = pipelineContext.getHealthChecker().getHealthyNodesLabel(config.nodeLabel)
+              echo "######### NodeLabel: ${nodeLabel} #########"
+              node(nodeLabel) {
+                echo "###### Unstash scripts. ######"
+                pipelineContext.getUtils().unstashScripts(this)
 
-              healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
-              if (healthCheckPassed) {
-                pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
+                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+                if (healthCheckPassed) {
+                  pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
-                sh "rm -rf ${config.stageDir}"
+                  sh "rm -rf ${config.stageDir}"
 
-                def script = load(config.executionScript)
-                script(pipelineContext, config)
-                pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+                  def script = load(config.executionScript)
+                  script(pipelineContext, config)
+                  pipelineContext.getBuildSummary().markStageSuccessful(this, config.stageName)
+                }
               }
             }
+          } catch (Exception e) {
+            pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
+            throw e
           }
-        } catch (Exception e) {
-          pipelineContext.getBuildSummary().markStageFailed(this, config.stageName)
-          throw e
         }
       }
+    }
+    if (env.BUILDING_FORK) {
+      withCustomCommitStates(scm, pipelineContext.getBuildConfig().H2O_OPS_TOKEN, config.stageName) {
+        stageClosure()
+      }
+    } else {
+      stageClosure()
     }
   } else {
     echo "###### Changes for ${config.component} NOT detected, skipping ${config.stageName}. ######"

@@ -89,6 +89,7 @@ class BuildSummary {
               <li><strong>Commit Message:</strong> ${context.env.COMMIT_MESSAGE}</li>
               <li><strong>Git Branch:</strong> ${context.env.BRANCH_NAME}</li>
               <li><strong>Git SHA:</strong> ${context.env.GIT_SHA}</li>
+              ${context.env.BUILDING_FORK ? "<li><strong>Building Fork:</strong> true</li>" : ''}
             </ul>
           """)
     }

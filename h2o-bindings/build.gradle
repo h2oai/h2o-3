@@ -19,7 +19,7 @@ ext{
 }
 dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.0.1'
-    compile 'com.squareup.retrofit2:converter-gson:2.0.1'  
+    compile 'com.squareup.retrofit2:converter-gson:2.0.1'
     compile 'com.squareup.okhttp3:okhttp:3.3.1'
     compile 'com.squareup.okio:okio:1.8.0'
 
@@ -63,6 +63,7 @@ test {
 task runGenerateRESTAPIBindingsSrc(type: Exec) {
     workingDir binDir
     // Note: by default the generated sources get written to ./h2o-bindings/src-gen/*
+    environment "H2O_JARFILE", configurations.srcGenCompile.getSingleFile()
     commandLine getOsSpecificCommandLine([pythonexe, "gen_all.py"])
 }
 

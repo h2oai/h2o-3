@@ -12,6 +12,10 @@ import java.net.InetSocketAddress;
  * H2O specific yarn client provider.
  *
  * The provider can be selected by providing: `-Dmapreduce.framework.name=h2o-yarn`
+ *
+ * It is loaded using SPI. Different protocol provides are specified in
+ * org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider service file
+ *
  */
 public class H2OYarnClientProtocolProvider extends ClientProtocolProvider {
 

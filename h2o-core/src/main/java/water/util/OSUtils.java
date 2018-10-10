@@ -56,4 +56,9 @@ public class OSUtils {
   public static boolean isWindows() {
     return getOsName().toLowerCase().startsWith("windows");
   }
+
+  public static boolean isWsl() {
+    LinuxProcFileReader lpfr = new LinuxProcFileReader();
+    return lpfr.isWsl();
+  }
 }

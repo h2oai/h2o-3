@@ -64,7 +64,7 @@ The network initialization is specified in the ``H2O.startLocalNode`` static met
 
 The ``startLocalNode`` method further:
 
-- initializes the heartbeast with cloud name and bunch of other required preprties so we can be sure we communicate only with the nodes in the same cluster
+- initializes the heartbeat with cloud name and bunch of other required properties so we can be sure we communicate only with the nodes in the same cluster
 - in case of the node is client (``-client``), we report ourselves as the client to ourselves. This is important for the consistency in cases
   we need perform some operations on all the clients, including me.
 

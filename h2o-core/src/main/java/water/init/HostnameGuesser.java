@@ -162,6 +162,7 @@ public class HostnameGuesser {
     ArrayList<java.net.InetAddress> ips = new ArrayList<>();
     ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
     boolean isWindows = OSUtils.isWindows();
+    boolean isWsl = OSUtils.isWsl();
     int localIpTimeout = NetworkUtils.getLocalIpPingTimeout();
     for (NetworkInterface nIface : networkInterfaceList) {
       Enumeration<InetAddress> ias = nIface.getInetAddresses();
@@ -169,7 +170,7 @@ public class HostnameGuesser {
         while (ias.hasMoreElements()) {
           InetAddress ia = ias.nextElement();
           // Windows specific code, since isReachable was not able to detect live IPs on Windows8.1 machines
-          if (isWindows || NetworkUtils.isReachable(null, ia, localIpTimeout /* ms */)) {
+          if (isWindows || isWsl || NetworkUtils.isReachable(null, ia, localIpTimeout /* ms */)) {
             ips.add(ia);
             Log.info("Possible IP Address: ", nIface.getName(), " (", nIface.getDisplayName(), "), ", ia.getHostAddress());
           } else {

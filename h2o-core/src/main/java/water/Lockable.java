@@ -84,13 +84,19 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     ((Lockable)val.get()).delete();
   }
   /** Write-lock 'this' and delete; blocking.
-   *  Throws IAE if the _key is already locked.  
+   *  Throws IAE if the _key is already locked.
+   *
+   *  Subclasses that need custom deletion logic should override {@link #remove_impl(Futures)}
+   *  as by contract, the only difference between {@link #delete()} and {@link #remove()}
+   *  is that `delete` first write-locks `this`.
    */
-  public void delete( ) { delete(null,new Futures()).blockForPending(); }
+  public final void delete( ) { delete(null,new Futures()).blockForPending(); }
   /** Write-lock 'this' and delete. 
-   *  Throws IAE if the _key is already locked.  
+   *  Throws IAE if the _key is already locked.
+   *
+   *  Subclasses that need custom deletion logic should override {@link #remove_impl(Futures)}.
    */
-  public Futures delete( Key<Job> job_key, Futures fs ) {
+  public final Futures delete( Key<Job> job_key, Futures fs ) {
     if( _key != null ) {
       Log.debug("lock-then-delete "+_key+" by job "+job_key);
       new PriorWriteLock(job_key).invoke(_key);

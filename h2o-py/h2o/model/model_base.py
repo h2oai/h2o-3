@@ -13,6 +13,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum
+from six import string_types
 
 
 class ModelBase(backwards_compatible()):
@@ -882,7 +883,8 @@ class ModelBase(backwards_compatible()):
         if not server: plt.show()
 
 
-    def partial_plot(self, data, cols, destination_key=None, nbins=20, plot=True, plot_stddev = True, figsize=(7, 10), server=False):
+    def partial_plot(self, data, cols, destination_key=None, nbins=20, weight_column=None,
+                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -890,11 +892,14 @@ class ModelBase(backwards_compatible()):
         :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: An key reference to the created partial dependence tables in H2O.
-        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable add_missing_NA, the returned length will be nbin+1.
+        :param weight_column: A string denoting which column of data should be used as the weight column.
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
+        :param include_na: A boolean specifying whether missing value should be included in the Feature values.
+        :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
@@ -909,6 +914,12 @@ class ModelBase(backwards_compatible()):
         for xi in cols:
             if xi not in data.names:
                 raise H2OValueError("Column %s does not exist in the training frame" % xi)
+        if isinstance(weight_column, int) and not (weight_column == -1):
+            raise H2OValueError("Weight column should be a column name in your data frame.")
+        elif isinstance(weight_column, str): # index is a name
+            if weight_column not in data.names:
+                raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
+            weight_column = data.names.index(weight_column)
 
         kwargs = {}
         kwargs["cols"] = cols
@@ -916,6 +927,58 @@ class ModelBase(backwards_compatible()):
         kwargs["frame_id"] = data.frame_id
         kwargs["nbins"] = nbins
         kwargs["destination_key"] = destination_key
+        kwargs["weight_column_index"] = weight_column
+        kwargs["add_missing_na"] = include_na
+
+        # extract user defined split points from dict user_splits into an integer array of column indices
+        # and a double array of user define values for the corresponding columns
+        if not(user_splits == None):
+            if not(isinstance(user_splits, dict)):
+                raise H2OValueError("user_splits must be a Python dict.")
+            else:
+                if len(user_splits)>0: # do nothing with an empty dict
+                    user_cols = []
+                    user_values = []
+                    user_num_splits = []
+                    data_ncol = data.ncol
+                    column_names = data.names
+                    for colKey,val in user_splits.items():
+                        if isinstance(colKey, string_types) and colKey in column_names:
+                            user_cols.append(colKey)
+                        elif isinstance(colKey, int) and colKey < data_ncol:
+                            user_cols.append(column_names[colKey])
+                        else:
+                            raise H2OValueError("column names/indices used in user_splits are not valid.  They "
+                                                "should be chosen from the columns of your data set.")
+
+                        if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                            nVal = len(val)
+                            if data[colKey].isfactor()[0]:
+                                domains = data[colKey].levels()[0]
+
+                                numVal = [0]*nVal
+                                for ind in range(nVal):
+                                    if (val[ind] in domains):
+                                        numVal[ind] = domains.index(val[ind])
+                                    else:
+                                        raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
+                                                        " values in your feature values, set include_na to "
+                                                        "True".format(val[ind]))
+
+                                user_values.extend(numVal)
+                            else:
+                                user_values.extend(val)
+                            user_num_splits.append(nVal)
+                        else:
+                            raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
+                                                "columns only.")
+                    kwargs["user_cols"] = user_cols
+                    kwargs["user_splits"] = user_values
+                    kwargs["num_user_splits"] = user_num_splits
+                else:
+                    kwargs["user_cols"] = None
+                    kwargs["user_splits"] = None
+                    kwargs["num_user_splits"] = None
 
         json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)

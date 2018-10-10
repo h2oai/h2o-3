@@ -1,169 +1,185 @@
-#! /usr/bin/groovy
+@Library('test-shared-library') _
+import ai.h2o.ci.buildsummary.StagesSummary
 
-final String AGENT_LABEL = 'mr-0xc6'
-final String IMAGE_NAME = "${params.dockerRegistry}/opsh2oai/h2o-3-runtime"
-def pipelineContext = null
+DEFAULT_LABEL = 'mr-0xc10'
 
-pipeline {
+// initialize build summary
+buildSummary('https://github.com/h2oai/h2o-3', true)
+// use default StagesSummary implementation
+buildSummary.get().addStagesSummary(this, new StagesSummary())
 
-    agent { label AGENT_LABEL }
+properties([
+    parameters([
+        booleanParam(defaultValue: false, description: 'Whether to build GPU enabled images', name: 'useGPU'),
+        booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
+        string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
+    ])
+])
 
-    parameters {
-      string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
-      booleanParam(name: 'force', defaultValue: false, description: 'If false and image with version specified by BuildConfig exists in repository, then the build fails.')
-      booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
-      string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
-      booleanParam(name: 'noCache', defaultValue: false, description: 'If true, build the docker image using the --no-cache flag')
-    }
+IMAGE_NAME_PREFIX = 'docker.h2o.ai/opsh2oai/h2o-3'
+GPU_SUFFIX = params.useGpu ? '-gpu' : ''
 
-    environment {
-        H2O_GIT_URL = 'https://github.com/h2oai/h2o-3.git'
-    }
+UBUNTU_BASE_IMAGE = 'ubuntu:16.04'
+GPU_BASE_IMAGE = 'nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04'
 
-    options {
-        ansiColor('xterm')
-        timestamps()
-        timeout(time: 3, unit: 'HOURS')
-    }
+JDK_VERSIONS = ['7', '8', '10', '11']
+PYTHON_VERSIONS = ['2.7', '3.5', '3.6']
+R_VERSION = ['3.4.1', '3.3.3']
 
-    stages {
+def pipelineContext
 
-        stage('Checkout Sources') {
-            steps {
-                script {
-                    final String stageName = 'Checkout Sources'
-                    def final scmEnv = git url: env.H2O_GIT_URL, branch: params.gitBranch
+ansiColor('xterm') {
+    timestamps {
+        def checkoutStageName = 'Checkout and Init'
+        buildSummary.stageWithSummary(checkoutStageName) {
+            node (DEFAULT_LABEL) {
+                buildSummary.refreshStage(checkoutStageName)
+                cleanWs()
+                def scmEnv = checkout scm
 
-                    def final pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
-                    pipelineContext = pipelineContextFactory('.', 'MODE_BUILD_DOCKER', scmEnv, true)
+                def final pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
+                pipelineContext = pipelineContextFactory('.', 'MODE_BUILD_DOCKER', scmEnv, true)
+                def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
+                currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                    try {
-                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
-
-                        currentBuild.displayName += " v${version}"
-
-                        pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
-
-                        pipelineContext.getBuildSummary().addSection(this, 'docker-details', "<a href=\"${currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
-                            <ul>
-                            <li><strong>Git Branch:</strong> ${env.BRANCH_NAME}</li>
-                            <li><strong>Version:</strong> ${version}</li>
-                            <li><strong>Force Overwrite:</strong> ${params.force}</li>
-                            <li><strong>Publish:</strong> ${params.publishDockerImage}</li>
-                            <li><strong>Disable Cache:</strong> ${params.noCache}</li>
-                            </ul>
-                        """)
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, stageName)
-                        throw e
+                if (!params.forceBuild) {
+                    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
+                        error "Image already exists. Use forceBuild if you wish to overwrite."
                     }
+                } else {
+                    manager.addBadge("warning.gif", "forceBuild enabled")
                 }
-            }
-        }
 
-        stage('Pre-build checks') {
-            steps {
-                script {
-                    final String stageName = 'Pre-build checks'
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
-
-                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
-
-                        final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, 'opsh2oai/h2o-3-runtime', version)
-                        if (conflict && !params.force) {
-                            error "Tag opsh2oai/h2o-3-runtime:${version} already exists in the repository"
+                dir('docker') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip"
                         }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, stageName)
-                        throw e
                     }
+                    stash name: 'docker-sources'
                 }
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    final String stageName = 'Build Docker Image'
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
-
-                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
-
-                        def dockerBuildCMD = 'docker build'
-                        if (params.noCache) {
-                            dockerBuildCMD += ' --no-cache'
-                        }
-                        dockerBuildCMD += " -t ${IMAGE_NAME}:${version} --build-arg JENKINS_UID=\$(id -u) --build-arg JENKINS_GID=\$(id -g) --build-arg H2O_BRANCH=${params.gitBranch} -f Dockerfile.jenkins ."
-                        sh """
-                            printenv
-                            cd docker
-                            ${dockerBuildCMD}
-                        """
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, stageName)
-                        throw e
-                    }
+        def devBaseStageName = 'Build dev-base'
+        buildSummary.stageWithSummary(devBaseStageName) {
+            node(DEFAULT_LABEL) {
+                buildSummary.refreshStage(devBaseStageName)
+                dir('dev-base') {
+                    deleteDir()
+                    unstash 'docker-sources'
+                    pullPreviousVersionIfRequired(pipelineContext, 'dev-base')
+                    sh """
+                        docker build \
+                            -t ${IMAGE_NAME_PREFIX}/dev-base${GPU_SUFFIX}:${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                            -f jenkins-images/Dockerfile-base \
+                            --build-arg FROM_IMAGE=${params.useGPU ? GPU_BASE_IMAGE : UBUNTU_BASE_IMAGE} \
+                            .
+                        docker push ${IMAGE_NAME_PREFIX}/dev-base${GPU_SUFFIX}:${pipelineContext.getBuildConfig().getDefaultImageVersion()}
+                    """
                 }
             }
         }
 
-        stage('Publish Docker Image') {
-            when {
-                expression { params.publishDockerImage }
-            }
-            steps {
-                script {
-                    final String stageName = 'Publish Docker Image'
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
+        JDK_BASE_IMAGES = [
+            'dev-jdk-8-base': [dockerfile: 'Dockerfile-jdk-8-base'],
+            'dev-jdk-others-base': [dockerfile: 'Dockerfile-jdk-others-base', buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]],
+        ]
+        buildInParallel(pipelineContext, JDK_BASE_IMAGES)
 
-                        final String version = pipelineContext.getBuildConfig().getDefaultImageVersion()
+        COMPONENT_BASE_IMAGES = [
+            'dev-python-base': [dockerfile: 'Dockerfile-python-base'],
+            'dev-r-base': [dockerfile: 'Dockerfile-r-base'],
+        ]
+        buildInParallel(pipelineContext, COMPONENT_BASE_IMAGES)
 
-                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+        def componentImages = [:]
+        PYTHON_VERSIONS.each {version ->
+            componentImages["dev-python-${version}"] = [dockerfile: 'Dockerfile-python', buildArgs: ["PYTHON_VERSION=${version}", "H2O_BRANCH=${params.h2oBranch}"]]
+        }
+        R_VERSION.each {version ->
+            componentImages["dev-r-${version}"] = [dockerfile: 'Dockerfile-r', buildArgs: ["R_VERSION=${version}"]]
+        }
+        JDK_VERSIONS.each {version ->
+            componentImages["dev-jdk-${version}"] = [dockerfile: 'Dockerfile-jdk-others', buildArgs: ["JAVA_VERSION=${version}"]]
+        }
+        buildInParallel(pipelineContext, componentImages)
+
+        BUILD_BASE_IMAGE = [
+            "dev-build-base": [
+                dockerfile: 'Dockerfile-build-base',
+                buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]
+            ]
+        ]
+        buildInParallel(pipelineContext, BUILD_BASE_IMAGE)
+
+        BUILD_IMAGE = [
+            "dev-build-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
+                dockerfile: 'Dockerfile-build',
+                buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]
+            ]
+        ]
+        buildInParallel(pipelineContext, BUILD_IMAGE)
+
+        BUILD_HADOOP_IMAGE = [
+            "dev-build-hadoop-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
+                dockerfile: 'Dockerfile-build-hadoop',
+                buildArgs: ["GRADLE_VERSION=${pipelineContext.getBuildConfig().getCurrentGradleVersion()}", "H2O_BRANCH=${params.h2oBranch}"]
+            ]
+        ]
+        buildInParallel(pipelineContext, BUILD_HADOOP_IMAGE)
+
+        RELEASE_IMAGE = [
+            "dev-release-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
+                dockerfile: 'Dockerfile-release',
+                buildArgs: ["GRADLE_VERSION=${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"]
+            ]
+        ]
+        buildInParallel(pipelineContext, RELEASE_IMAGE)
+    }
+}
+
+private buildInParallel(final pipelineContext, final images) {
+    parallel(images.collectEntries { image, config ->
+        [
+            image, {
+                def buildImageStageName = "Build ${image}"
+                buildSummary.stageWithSummary(buildImageStageName) {
+                    node (DEFAULT_LABEL) {
+                        buildSummary.refreshStage(buildImageStageName)
+                        dir (image) {
+                            deleteDir()
+                            unstash 'docker-sources'
+                            pullPreviousVersionIfRequired(pipelineContext, image)
+                            config.buildArgs = config.buildArgs ?: []
+                            def buildArgsStr = config.buildArgs.collect{ arg -> "--build-arg ${arg}"}.join(' ')
                             sh """
-                                docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                docker push ${IMAGE_NAME}:${version}
+                                docker build \
+                                    -t ${IMAGE_NAME_PREFIX}/${image}:${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                    -f jenkins-images/${config.dockerfile} \
+                                    --build-arg FROM_VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                    --build-arg GPU_SUFFIX=${GPU_SUFFIX} \
+                                    ${buildArgsStr} \
+                                    .
+                                docker push ${IMAGE_NAME_PREFIX}/${image}:${pipelineContext.getBuildConfig().getDefaultImageVersion()}
                             """
-                            echo "###### Docker image ${IMAGE_NAME}:${version} built and pushed. ######"
                         }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, stageName)
-                        throw e
                     }
                 }
             }
-        }
-    }
+        ]
+    })
+}
 
-    post {
-        failure {
-            emailext(
-                    subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                    body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-        <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-                    to: "michalr@h2o.ai"
-            )
-        }
-        success {
-            emailext(
-                    subject: "New ${IMAGE_NAME} docker image READY!",
-                    body: """<p>The new ${IMAGE_NAME} docker image is ready.</p>
-                          <p>Check the build at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${
-                        env.BUILD_NUMBER
-                    }]</a>"</p>""",
-                    to: "michalr@h2o.ai"
-            )
+def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
+    def previousVersion = pipelineContext.getBuildConfig().getDefaultImageVersion() - 1
+    // hack for first version of image
+    if (previousVersion <= 0) {
+        previousVersion = 1
+    }
+    if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'docker.h2o.ai', "opsh2oai/h2o-3/${image}", "${previousVersion}")) {
+        retryWithDelay(3 /* retries */, 120 /* delay in sec */) {
+            sh "docker pull ${IMAGE_NAME_PREFIX}/${image}:${previousVersion}"
         }
     }
 }

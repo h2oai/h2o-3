@@ -7,7 +7,7 @@ description = "H2O R Package"
 //apply plugin: 'water.gradle.plugins.manageLocalClouds'
 
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def getOS() {
@@ -118,6 +118,7 @@ task setPackageFiles {
 
 task buildPackageDocumentation(type: Exec) {
     doFirst {
+        new File("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
         errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
     }
@@ -143,8 +144,11 @@ task cpPDF(type: Copy) {
 
 cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
-task cpH2OAppJar(type: Copy) {
-    from "${rootDir}/build/h2o.jar"
+task cpH2OAppJar(type: Copy, dependsOn: [configurations.compile]) {
+    from configurations.compile.getSingleFile()
+    rename { filename ->
+        return 'h2o.jar'
+    }
     into "${projectDir}/h2o-package/inst/java/"
 }
 

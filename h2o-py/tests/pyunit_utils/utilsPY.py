@@ -6,6 +6,7 @@ from past.builtins import basestring
 from scipy.sparse import csr_matrix
 import sys, os
 import pandas as pd
+from six import string_types
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -458,7 +459,8 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    h2o.init(strict_version_check=False)
+    if not h2o.h2o.connection():
+        h2o.init(strict_version_check=False)
 
     h2o.remove_all()
 
@@ -833,10 +835,10 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
 
     # for family_type = 'multinomial' or 'binomial', response_y can be -ve to indicate bad sample data.
     # need to delete this data sample before proceeding
-    if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
-        if 'threshold' in class_method.lower():
-            if np.any(response_y < 0):  # remove negative entries out of data set
-                (x_mat, response_y) = remove_negative_response(x_mat, response_y)
+    # if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
+    #     if 'threshold' in class_method.lower():
+    #         if np.any(response_y < 0):  # remove negative entries out of data set
+    #             (x_mat, response_y) = remove_negative_response(x_mat, response_y)
 
     # write to file in csv format
     np.savetxt(csv_filename, np.concatenate((x_mat, response_y), axis=1), delimiter=",")
@@ -1235,42 +1237,7 @@ def derive_discrete_response(prob_mat, class_method, class_margin, family_type='
     """
 
     (num_sample, num_class) = prob_mat.shape
-    lastCat = num_class-1
-    if 'probability' in class_method.lower():
-        prob_mat = normalize_matrix(prob_mat)
-    discrete_y = np.zeros((num_sample, 1), dtype=np.int)
-
-    if 'probability' in class_method.lower():
-        if 'ordinal' not in family_type.lower():
-            prob_mat = np.cumsum(prob_mat, axis=1)
-        else: # for ordinal
-            for indR in list(range(num_sample)):
-                for indC in list(range(num_class)):
-                    prob_mat[indR, indC] = prob_mat[indR,indC]/prob_mat[indR,lastCat]
-        random_v = np.random.uniform(0, 1, [num_sample, 1])
-
-        # choose the class that final response y belongs to according to the
-        # probability prob(y=k)
-        class_bool = random_v < prob_mat
-
-        for indR in range(num_sample):
-            for indC in range(num_class):
-                if class_bool[indR, indC]:
-                    discrete_y[indR, 0] = indC
-                    break
-
-    elif 'threshold' in class_method.lower():
-        discrete_y = np.argmax(prob_mat, axis=1)
-
-        temp_mat = np.diff(np.sort(prob_mat, axis=1), axis=1)
-
-        # check if max value exceeds second one by at least margin
-        mat_diff = temp_mat[:, num_class-2]
-        mat_bool = mat_diff < class_margin
-
-        discrete_y[mat_bool] = -1
-    else:
-        assert False, 'class_method should be set to "probability" or "threshold" only!'
+    discrete_y =  np.argmax(prob_mat, axis=1)
 
     return discrete_y
 
@@ -1483,6 +1450,85 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         print(pass_string)
         return 0
 
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
+
+
+def extract_col_value_H2OTwoDimTable(table, col_name):
+    '''
+    This function given the column name will extract a list containing the value used for the column name from the
+    H2OTwoDimTable.
+
+    :param table:
+    :param col_name:
+    :return:
+    '''
+
+    tableList = []
+    col_header = table.col_header
+    colIndex = col_header.index(col_name)
+    for ind in range(len(table.cell_values)):
+        temp = table.cell_values[ind]
+        tableList.append(temp[colIndex])
+
+    return tableList
+
+
+def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=1e-6):
+    '''
+    This method will compare two H2OTwoDimTables that are almost of the same size.  table1 can be shorter
+    than table2.  However, for whatever part of table2 table1 has, they must be the same.
+
+    :param table1:
+    :param table2:
+    :param col_header_list:
+    :param tolerance:
+    :return:
+    '''
+    size1 = len(table1.cell_values)
+
+    for cname in col_header_list:
+        colindex = table1.col_header.index(cname)
+
+        for cellind in range(size1):
+            val1 = table1.cell_values[cellind][colindex]
+            val2 = table2.cell_values[cellind][colindex]
+
+            if isinstance(val1, float) and isinstance(val2, float):
+                assert abs(val1-val2) < tolerance, \
+                    "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                    "{3}".format(val1, val2, cname, tolerance)
+            else:
+                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+                                   "{3}".format(val1, val2, cname, tolerance)
+    print("******* Congrats!  Test passed. ")
+
 
 def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
                                 num_per_dim=10):
@@ -1496,7 +1542,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
 
     :param table1: H2OTwoDimTable to be compared
     :param table2: the other H2OTwoDimTable to be compared
-    :param col_header_list: list of strings denote names that we can the comparison to be performed
+    :param col_header_list: list of strings denote names that we want the comparison to be performed
     :param tolerance: default to 1e-6
     :param check_sign: bool, determine if the sign of values are important or not.  For eigenvectors, they are not.
     :param check_all: bool, determine if we need to compare every single element
@@ -1601,7 +1647,7 @@ def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
 
                 if compare_val_h2o_Py > tolerance:    # difference is too high, return false
                     if throwError:
-                        assert False, "The two arrays are not equal in value."
+                        assert False, "Array 1 value {0} and array 2 value {1} do not agree.".format(array1[ind], array2[ind])
                     else:
                         return False
 
@@ -3461,7 +3507,7 @@ def build_save_model_DRF(params, x, train, respName):
 
 
 # generate random dataset, copied from Pasha
-def random_dataset(response_type, verbose=True, NTESTROWS=200):
+def random_dataset(response_type, verbose=True, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
     if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
@@ -3477,9 +3523,9 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200):
     else:
         response_factors = random.randint(3, 10)
     df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
-                          missing_fraction=0,
+                          missing_fraction=missing_fraction,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
-                          **fractions)
+                          seed=seed, **fractions)
     if verbose:
         print()
         df.show()
@@ -3764,3 +3810,66 @@ def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
                 abs(h2oPredictLocalS['c0.l1'][ind]-nativePred[ind])<tolerance, \
             "H2O prediction prob: {0} and native XGBoost prediction prob: {1}.  They are very " \
             "different.".format(h2oPredictLocalD['c0.l1'][ind], nativePred[ind])
+
+
+def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, tol=1e-6):
+    '''
+    This method is used to test the partial dependency plots and is not meant for any other functions.
+    
+    :param model:
+    :param dataframe:
+    :param xlist:
+    :param xname:
+    :param weightV:
+    :param pdpTDTable:
+    :param tol:
+    :return:
+    '''
+    weightStat =  manual_partial_dependence(model, dataframe, xlist, xname, weightV) # calculate theoretical weighted sts
+    wMean = extract_col_value_H2OTwoDimTable(pdpTDTable, "mean_response") # stats for age predictor
+    wStd = extract_col_value_H2OTwoDimTable(pdpTDTable, "stddev_response")
+    wStdErr = extract_col_value_H2OTwoDimTable(pdpTDTable, "std_error_mean_response")
+    equal_two_arrays(weightStat[0], wMean, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[1], wStd, tol, tol, throwError=True)
+    equal_two_arrays(weightStat[2], wStdErr, tol, tol, throwError=True)
+
+
+def manual_partial_dependence(model, dataframe, xlist, xname, weightV):
+    meanV = []
+    stdV = []
+    stderrV = []
+    nRows = dataframe.nrow
+    nCols = dataframe.ncol-1
+
+    for xval in xlist:
+        cons = [xval]*nRows
+        if xname in dataframe.names:
+            dataframe=dataframe.drop(xname)
+        if not((isinstance(xval, string_types) and xval=='NA') or (isinstance(xval, float) and math.isnan(xval))):
+            dataframe = dataframe.cbind(h2o.H2OFrame(cons))
+            dataframe.set_name(nCols, xname)
+
+        pred = model.predict(dataframe).as_data_frame(use_pandas=False, header=False)
+        pIndex = len(pred[0])-1
+        sumEle = 0.0
+        sumEleSq = 0.0
+        sumWeight = 0.0
+        numNonZeroWeightCount = 0.0
+        m = 1.0/math.sqrt(dataframe.nrow*1.0)
+        for rindex in range(len(pred)):
+            val = float(pred[rindex][pIndex]);
+            weight = float(weightV[rindex][0])
+            if (abs(weight) > 0) and isinstance(val, float) and not(math.isnan(val)):
+                temp = val*weight
+                sumEle = sumEle+temp
+                sumEleSq = sumEleSq+temp*val
+                sumWeight = sumWeight+weight
+                numNonZeroWeightCount = numNonZeroWeightCount+1
+        wMean = sumEle/sumWeight
+        scale = numNonZeroWeightCount*1.0/(numNonZeroWeightCount-1)
+        wSTD = math.sqrt((sumEleSq/sumWeight-wMean*wMean)*scale)
+        meanV.append(wMean)
+        stdV.append(wSTD)
+        stderrV.append(wSTD*m)
+
+    return meanV, stdV, stderrV

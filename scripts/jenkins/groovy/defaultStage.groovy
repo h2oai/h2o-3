@@ -45,7 +45,7 @@ def call(final pipelineContext, final stageConfig) {
             makefilePath = stageConfig.makefilePath
             archiveFiles = stageConfig.archiveFiles
             activatePythonEnv = stageConfig.activatePythonEnv
-            activateR = stageConfig.activateR
+            javaVersion = stageConfig.javaVersion
         }
     }
 }
@@ -54,14 +54,12 @@ def installPythonPackage(String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-        pip install ${h2o3dir}/h2o-py/dist/*.whl
+        pip install ${h2o3dir}/h2o-py/build/dist/*.whl
     """
 }
 
 def installRPackage(String h2o3dir) {
     sh """
-        echo "Activating R ${env.R_VERSION}"
-        activate_R_${env.R_VERSION}
         R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
     """
 }

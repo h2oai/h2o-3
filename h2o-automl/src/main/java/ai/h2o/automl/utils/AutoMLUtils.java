@@ -122,12 +122,4 @@ public class AutoMLUtils {
     return a;
   }
 
-  // TODO: Temporarily have this function since it is protected in hex.Model
-  static public void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    Key[] keys = adaptFr.keys();
-    for( int i=0; i<keys.length; i++ )
-      if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
-    DKV.remove(adaptFr._key); //delete the frame header
-  }
 }

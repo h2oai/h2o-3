@@ -16,7 +16,9 @@ import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -28,6 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -113,6 +117,10 @@ final public class H2O {
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
+            "\n" +
+            "    -notify_local <fileSystemPath>" +
+            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
+            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
             "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
@@ -306,6 +314,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** specifies a file to write when the node is up */
+    public String notify_local;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -335,8 +346,6 @@ final public class H2O {
 
     /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
     public boolean quiet = false;
-
-    public boolean useUDP = false;
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
@@ -373,6 +382,10 @@ final public class H2O {
      */
     public boolean launchedWithHadoopJar() {
       return hdfs_skip;
+    }
+
+    public static int getSysPropInt(String suffix, int defaultValue) {
+      return Integer.getInteger(SYSTEM_PROP_PREFIX + suffix, defaultValue);
     }
   }
 
@@ -477,6 +490,10 @@ final public class H2O {
       else if (s.matches("client")) {
         trgt.client = true;
       }
+      else if (s.matches("notify_local")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.notify_local = args[i];
+      }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
         trgt.user_name = args[i];
@@ -545,9 +562,6 @@ final public class H2O {
       else if (s.matches("quiet")) {
         trgt.quiet = true;
       }
-      else if(s.matches("useUDP")) {
-        trgt.useUDP = true;
-      }
       else if(s.matches("cleaner")) {
         trgt.cleaner = true;
       }
@@ -602,6 +616,9 @@ final public class H2O {
         }
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
         }
+      else if(s.matches("useUDP")) {
+          Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -679,13 +696,30 @@ final public class H2O {
    * @param size Number of H2O instances in the cloud.
    */
   public static void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
+    if (ARGS.notify_local != null && !ARGS.notify_local.trim().isEmpty()) {
+      final File notifyFile = new File(ARGS.notify_local);
+      final File parentDir = notifyFile.getParentFile();
+      if (parentDir != null && !parentDir.isDirectory()) {
+        if (!parentDir.mkdirs()) {
+          Log.err("Cannot make parent dir for notify file.");
+          H2O.exit(-1);
+        }
+      }
+      try(BufferedWriter output = new BufferedWriter(new FileWriter(notifyFile))) {
+        output.write(SELF_ADDRESS.getHostAddress());
+        output.write(':');
+        output.write(Integer.toString(API_PORT));
+        output.flush();
+      } catch ( IOException e ) {
+        e.printStackTrace();
+      }
+    }
     if (embeddedH2OConfig == null) { return; }
     embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
   }
 
 
   public static void closeAll() {
-    try { NetworkInit._udpSocket.close(); } catch( IOException ignore ) { }
     try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
@@ -718,7 +752,7 @@ final public class H2O {
   public static int orderlyShutdown() {
     return orderlyShutdown(-1);
   }
-  
+
   public static int orderlyShutdown(int timeout) {
     boolean [] confirmations = new boolean[H2O.CLOUD.size()];
     if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
@@ -1320,7 +1354,7 @@ final public class H2O {
     public abstract void callback(T t);
   }
 
-  public static int H2O_PORT; // Both TCP & UDP cluster ports
+  public static int H2O_PORT; // H2O TCP Port
   public static int API_PORT; // RequestServer and the API HTTP port
 
   /**
@@ -1520,19 +1554,6 @@ final public class H2O {
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
 
-    // Start the UDPReceiverThread, to listen for requests from other Cloud
-    // Nodes. There should be only 1 of these, and it never shuts down.
-    // Started first, so we can start parsing UDP packets
-    if(H2O.ARGS.useUDP) {
-      new UDPReceiverThread(NetworkInit._udpSocket).start();
-      // Start a UDP timeout worker thread. This guy only handles requests for
-      // which we have not received a timely response and probably need to
-      // arrange for a re-send to cover a dropped UDP packet.
-      new UDPTimeOutThread().start();
-      // Same same for a dropped ACK needing an ACKACK back.
-      new H2ONode.AckAckTimeOutThread().start();
-    }
-
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
     // down. Started soon, so we can start parsing multi-cast UDP packets
@@ -1661,7 +1682,7 @@ final public class H2O {
 
   public final int size() { return _memary.length; }
   final H2ONode leader() {
-    return _memary[0]; 
+    return _memary[0];
   }
 
   // Find the node index for this H2ONode, or a negative number on a miss
@@ -1847,16 +1868,30 @@ final public class H2O {
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
     }
-    String version = System.getProperty("java.version");
-    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see file connection.R near line 536
-    if (version != null && !(version.startsWith("1.7") || version.startsWith("1.8") || version.startsWith("9") || version.startsWith("10"))) {
-      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + version);
+
+    // NOTE for developers: make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<7 || JAVA_VERSION.getMajor()>10)) {
+      System.err.println("Only Java 7, 8, 9 and 10 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
     if (vmName != null && vmName.equals("GNU libgcj")) {
       System.err.println("GNU gcj is not supported");
       return true;
+    }
+    return false;
+  }
+
+  private static boolean isUserEnabledJavaVersion() {
+    String extraJavaVersionsStr = System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions");
+    if (extraJavaVersionsStr == null || extraJavaVersionsStr.isEmpty())
+      return false;
+    String[] vs = extraJavaVersionsStr.split(",");
+    for (String v : vs) {
+      int majorVersion = Integer.valueOf(v);
+      if (JAVA_VERSION.getMajor() == majorVersion) {
+        return true;
+      }
     }
     return false;
   }

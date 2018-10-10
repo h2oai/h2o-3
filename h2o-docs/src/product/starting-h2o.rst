@@ -265,7 +265,8 @@ H2O Options
 -  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
 -  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
 -  ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
--  ``-context_path <context_path>``: The context path for jetty.
+-  ``-notify_local <fileSystemPath>``: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321. 
+-  ``-context_path <context_path>``: The context path for Jetty.
 
 Authentication Options
 ~~~~~~~~~~~~~~~~~~~~~~

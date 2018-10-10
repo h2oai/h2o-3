@@ -929,19 +929,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert (bestModel.compareTo(this) <= 0);
   }
 
-  @Override public void delete() {
+  @Override protected Futures remove_impl(Futures fs) {
     if (_output.weights != null && _output.biases != null) {
-      for (Key k : _output.weights) {
-        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
-      }
-      for (Key k : _output.biases) {
-        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
-      }
+      for (Key k : _output.weights) if (k!=null) k.remove(fs);
+      for (Key k : _output.biases) if (k!=null) k.remove(fs);
     }
     if (actual_best_model_key!=null) DKV.remove(actual_best_model_key);
-    DKV.remove(model_info().data_info()._key);
+    DKV.remove(model_info().data_info()._key, fs);
     deleteElasticAverageModels();
-    super.delete();
+    return super.remove_impl(fs);
   }
 
   void deleteElasticAverageModels() {

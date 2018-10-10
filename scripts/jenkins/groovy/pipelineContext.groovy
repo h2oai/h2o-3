@@ -27,7 +27,8 @@ def call(final String h2o3Root, final String mode, final scmEnv, final boolean i
     return new PipelineContext(
             buildConfigFactory(this, mode, env.COMMIT_MESSAGE, getChanges(h2o3Root), ignoreChanges,
                     pipelineUtils.readSupportedHadoopDistributions(this, buildinfoPath), gradleOpts,
-                    pipelineUtils.readCurrentXGBVersion(this, h2o3Root)
+                    pipelineUtils.readCurrentXGBVersion(this, h2o3Root),
+                    pipelineUtils.readCurrentGradleVersion(this, h2o3Root)
             ),
             buildSummaryFactory(true),
             pipelineUtils,

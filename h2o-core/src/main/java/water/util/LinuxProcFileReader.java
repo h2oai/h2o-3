@@ -40,6 +40,27 @@ public class LinuxProcFileReader {
   }
 
   /**
+   * @return whether this java process is running in Windows Subsystem for Linux environment.
+   */
+  public boolean isWsl() {
+    try {
+      if (! new File("/proc/version").exists()) {
+        return false;
+      }
+
+      String s = readFile(new File("/proc/version"));
+      if (! s.contains("Microsoft")) {
+        return false;
+      }
+
+      return true;
+    }
+    catch (Exception e) {
+      return false;
+    }
+  }
+
+  /**
    * @return ticks the system was idle.  in general:  idle + busy == 100%
    */
   public long getSystemIdleTicks()   { assert _systemIdleTicks > 0;    return _systemIdleTicks; }

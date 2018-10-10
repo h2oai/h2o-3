@@ -3043,9 +3043,15 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
-#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceeds the level count.
+#'        If you enable add_missing_NA, the returned length will be nbin+1.
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
+#' @param weight_column A string denoting which column of data should be used as the weight column.
+#' @param include_na A logical specifying whether missing value should be included in the Feature values.
+#' @param user_splits A two-level nested list containing user defined split points for pdp plots for each column.
+#' If there are two columns using user defined split points, there should be two lists in the nested list.
+#' Inside each list, the first element is the column name followed by values defined by the user.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -3065,7 +3071,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE, weight_column=-1, include_na=FALSE, user_splits=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
@@ -3073,17 +3079,79 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
+  if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
   if(missing(cols)) cols =  object@parameters$x
 
   y = object@parameters$y
   x = cols
   args <- .verify_dataxy(data, x, y)
+  
+  if (is.numeric(weight_column) && (weight_column != -1)) {
+      stop("weight_column should be a column name of your data frame.")
+  } else if (is.character(weight_column)) { # weight_column_index is column name
+    if (!weight_column %in% h2o.names(data))
+      stop("weight_column_index should be one of your columns in your data frame.")
+    else
+      weight_column <- match(weight_column, h2o.names(data))-1
+  }
 
   parms = list()
   parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
   parms$model_id  <- attr(object, "model_id")
   parms$frame_id <- attr(data, "id")
   parms$nbins <- nbins
+  parms$weight_column_index <- weight_column
+  parms$add_missing_na <- include_na
+  
+  if (length(user_splits) == 0) {
+    parms$user_cols <- NULL
+    parms$user_splits <- NULL
+    parms$num_user_splits <- NULL
+  } else {
+    user_cols <- c()
+    user_values <- c()
+    user_num_splits <- c()
+    column_names <- h2o.names(data)
+    for (ind in c(1:length(user_splits))) {
+      aList <- user_splits[[ind]]
+      csname = aList[1]
+      if (csname %in% column_names) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
+          nVal <- length(aList)-1
+          if (h2o.isfactor(data[csname])) {
+            domains <- h2o.levels(data[csname]) # enum values
+            tempVal <- aList[2:length(aList)]
+            intVals <- c(1:length(tempVal))
+            for (eleind in c(1:nVal)) {
+              eleIndex <- which(domains == tempVal[eleind])
+              if (eleIndex>0) {
+                intVals[eleind] <- which(domains == tempVal[eleind]) - 1
+              } else {
+                stop("Illegal enum value encountered.  To include missing values in your feature values, set include_na to TRUE")
+              }
+            }
+            user_values <- c(user_values, intVals)
+          } else {
+            vals <- as.numeric(unlist(strsplit(aList[2:length(aList)], ",")))
+            user_values <- c(user_values, vals)
+          }
+
+          user_num_splits <- c(user_num_splits, nVal)
+          user_cols <- c(user_cols, csname)          
+        } else {
+          stop ("Partial dependency plots are generated for numerical and categorical columns only.")
+        }
+      } else {
+        stop(
+          "column names used in user_splits are not valid.  They should be chosen from the columns of your data set"
+        )
+      }
+    }
+    parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
+    parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
+    parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+  }
+
   if(!missing(destination_key)) parms$destination_key = destination_key
 
   res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "PartialDependence/", .params = parms)

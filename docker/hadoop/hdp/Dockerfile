@@ -10,8 +10,6 @@ ARG DEFAULT_USER_UID=2117
 ARG PYTHON_VERSIONS='2.7,3.6'
 ARG JAVA_VERSIONS='8'
 ARG HIVE_VERSION='2.2.0'
-ARG AWS_ACCESS_KEY
-ARG AWS_SECRET_ACCESS_KEY
 
 ENV DISTRIBUTION='hdp' \
     MASTER='yarn-client' \
@@ -25,7 +23,7 @@ ENV DISTRIBUTION='hdp' \
     HIVE_HOME=/home/hive/apache-hive-${HIVE_VERSION}-bin
 
 # Copy bin and sbin scripts
-COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/install_python_versions /usr/sbin/
+COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_java_version scripts/install_java_versions scripts/java-*-vars.sh scripts/install_python_version /usr/sbin/
 
 # Add HDP repository and install packages
 RUN apt-get update && \
@@ -38,15 +36,20 @@ RUN apt-get update && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils
 
+# Create jenkins and hive users
+RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins && \
+    adduser --disabled-password --gecos "" hive
+
 ENV H2O_BRANCH='master'
 
 # Set required env vars and install Java 8 and Pythons
 RUN \
   chmod 700 /usr/sbin/install_java_version && \
   chmod 700 /usr/sbin/install_java_versions && \
-  chmod 700 /usr/sbin/install_python_versions && \
+  chmod 700 /usr/sbin/java-*-vars.sh && \
+  chmod 700 /usr/sbin/install_python_version && \
   sync && \
-  /usr/sbin/install_python_versions && \
+  /usr/sbin/install_python_version && \
   /usr/sbin/install_java_versions && \
   /usr/bin/activate_java_8
 ENV \
@@ -66,10 +69,6 @@ RUN rm /usr/hdp/2*/hadoop/conf/* && \
 
 # Copy configs
 COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
-RUN \
-    sed -i "s@SUBST_AWS_ACCESS_KEY@${AWS_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
-    sed -i "s@SUBST_AWS_SECRET_ACCESS_KEY@${AWS_SECRET_ACCESS_KEY}@g" ${HADOOP_CONF_DIR}/core-site.xml && \
-    cat ${HADOOP_CONF_DIR}/core-site.xml
 
 # Generate mapred-site.xml
 RUN chmod 700 /usr/sbin/generate-mapred-site && \
@@ -85,10 +84,6 @@ RUN chmod 700 /usr/sbin/generate-yarn-site && \
 
 # Format namenode
 RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namenode -format"
-
-# Create jenkins and hive users
-RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins && \
-    adduser --disabled-password --gecos "" hive
 
 # Copy startup scripts
 COPY ${PATH_PREFIX}/scripts/startup ${PATH_PREFIX}/../common/startup /etc/startup/

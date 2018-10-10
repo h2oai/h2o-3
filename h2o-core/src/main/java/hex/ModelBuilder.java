@@ -320,6 +320,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
     final Integer N = nFoldWork();
     init(false);
+    ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
       Scope.enter();
 
@@ -327,10 +328,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final Vec foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
-      final Vec[] weights = cv_makeWeights(N,foldAssignment);
+      final Vec[] weights = cv_makeWeights(N, foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-      ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
+      cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
       // Step 4: Run all the CV models
       cv_buildModels(N, cvModelBuilders);
@@ -345,13 +346,29 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
 
-      // Step 8: Clean up potentially created temp frames
-      for (ModelBuilder mb : cvModelBuilders)
-        mb.cleanUp();
-
       _job.setReadyForView(true);
       DKV.put(_job);
+    } catch (Exception e) {
+      if (cvModelBuilders != null) {
+        Futures fs = new Futures();
+        // removing keys added during cv_makeFramesAndBuilders and cv_makeFramesAndBuilders
+        // need a better solution: part of this is done in cv_makeFramesAndBuilders but partially and only for its method scope
+        // also removing the completed CV models as the main model is incomplete anyway
+        for (ModelBuilder mb : cvModelBuilders) {
+          DKV.remove(mb._parms._train, fs);
+          DKV.remove(mb._parms._valid, fs);
+          DKV.remove(Key.make(mb.getPredictionKey()), fs);
+          mb._result.remove(fs);
+        }
+        fs.blockForPending();
+      }
+      throw e;
     } finally {
+      if (cvModelBuilders != null) {
+        for (ModelBuilder mb : cvModelBuilders) {
+          mb.cleanUp();
+        }
+      }
       cleanUp();
       Scope.exit();
     }
@@ -501,7 +518,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
       if (job.stop_requested() ) {
-        Log.info("Skipping last "+(N-i)+" out of "+N+" "+modelType+" models");
+        Log.info("Skipping build of last "+(N-i)+" out of "+N+" "+modelType+" CV models");
+        stopAll(submodel_tasks);
         throw new Job.JobCancelledException();
       }
       Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
@@ -528,6 +546,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(rt != null) throw rt;
   }
 
+  private static void stopAll(H2O.H2OCountedCompleter[] tasks) {
+    for (H2O.H2OCountedCompleter task : tasks) {
+      if (task != null) {
+        task.cancel(true);
+      }
+    }
+  }
+
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -542,6 +568,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
       if (_job.stop_requested()) {
+        Log.info("Skipping scoring for last "+(N-i)+" out of "+N+" CV models");
         throw new Job.JobCancelledException();
       }
       Frame cvValid = cvModelBuilders[i].valid();
@@ -552,7 +579,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */
               || _parms._keep_cross_validation_predictions
               || (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
-        String predName = "prediction_" + cvModelBuilders[i]._result.toString();
+        String predName = cvModelBuilders[i].getPredictionKey();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
         DKV.put(cvModel);
       }
@@ -597,9 +624,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
-      Key<M> cvModelKey = cvModelBuilders[i]._result;
-      cvModKeys[i] = cvModelKey;
-      predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
+      cvModKeys[i] = cvModelBuilders[i]._result;
+      predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
 
     Frame holdoutPreds = null;
@@ -642,6 +668,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
+  }
+
+  private String getPredictionKey() {
+    return "prediction_"+_result.toString();
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.

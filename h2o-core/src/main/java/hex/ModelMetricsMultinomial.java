@@ -200,6 +200,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _sumsqe += w*err*err;        // Squared error
       assert !Double.isNaN(_sumsqe);
 
+      assert iact < _cm.length : "iact = " + iact + "; _cm.length = " + _cm.length;
+      assert (int)ds[0] < _cm.length :  "ds[0] = " + ds[0] + "; _cm.length = " + _cm.length;
       // Plain Olde Confusion Matrix
       _cm[iact][(int)ds[0]]++; // actual v. predicted
 

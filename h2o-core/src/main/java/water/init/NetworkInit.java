@@ -10,7 +10,6 @@ import water.util.StringUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.security.GeneralSecurityException;
 import java.util.*;
@@ -20,11 +19,7 @@ import java.util.*;
  */
 public class NetworkInit {
 
-  public static DatagramChannel _udpSocket;
   public static ServerSocketChannel _tcpSocket;
-
-  // Default NIO Datagram channel
-  public static DatagramChannel CLOUD_DGRAM;
 
   public static InetAddress findInetAddressForSelf() throws Error {
     if (H2O.SELF_ADDRESS != null)
@@ -80,11 +75,7 @@ public class NetworkInit {
                       : new ServerSocket(H2O.API_PORT, -1, getInetAddress(H2O.ARGS.web_ip));
           apiSocket.setReuseAddress(true);
         }
-        // Bind to the UDP socket
-        _udpSocket = DatagramChannel.open();
-        _udpSocket.socket().setReuseAddress(true);
         InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
-        _udpSocket.socket().bind(isa);
         // Bind to the TCP socket also
         _tcpSocket = ServerSocketChannel.open();
         _tcpSocket.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
@@ -105,10 +96,8 @@ public class NetworkInit {
         }
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
-        if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
         apiSocket = null;
-        _udpSocket = null;
         _tcpSocket = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
@@ -261,18 +250,11 @@ public class NetworkInit {
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
-        if(h2o._removed_from_cloud)
+        if(h2o._removed_from_cloud) {
           continue;
-        try {
-          bb.reset();
-          if(H2O.ARGS.useUDP) {
-            CLOUD_DGRAM.send(bb, h2o._key);
-          } else {
-            h2o.sendMessage(bb,priority);
-          }
-        } catch( IOException e ) {
-          Log.warn("Multicast Error to "+h2o, e);
         }
+        bb.reset();
+        h2o.sendMessage(bb, priority);
       }
     }
   }

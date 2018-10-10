@@ -2,6 +2,67 @@
 
 ## H2O
 
+### Wright (3.20.0.9) - 10/1/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5930'>PUBDEV-5930</a>] - Fixed an issue that caused H2O to fail when loading a GLRM model. 
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5938'>PUBDEV-5938</a>] - log4j.properties can be loaded from classpath.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5939'>PUBDEV-5939</a>] - Buffer configuration is now available for http/https connections.
+</li>
+</ul>
+
+
+### Wright (3.20.0.8) - 9/21/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/8/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5855'>PUBDEV-5855</a>] - Fixed an issue that occurred when parsing columns that include double quotation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5880'>PUBDEV-5880</a>] - The `max_runtime_secs` option is no longer ignored when using the Python client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5906'>PUBDEV-5906</a>] - Fixed an XGBoost Sparsity detection test to make it deterministic.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5907'>PUBDEV-5907</a>] - Hadoop driver class no longer fails to parse new Java version string.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5861'>PUBDEV-5861</a>] - Added a GBM/DRF Tree walker API in the R client.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5862'>PUBDEV-5862</a>] - The R API for obtaining and traversing model trees in GBM/DRF is available in Python.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5706'>PUBDEV-5706</a>] - Added  support for user defined split points in partial dependence plots.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5748'>PUBDEV-5748</a>] - Confusion matrices can now be generated in Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5900'>PUBDEV-5900</a>] - Java version error messages now reference versions 7 and 8 instead of 1.7 and 1.8. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5902'>PUBDEV-5902</a>] - A Python tree traversal demo is available at <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb">https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/tree_demo.ipynb</a>. 
+</li>
+</ul>
+
+
 ### Wright (3.20.0.7) - 8/31/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/7/index.html</a>
