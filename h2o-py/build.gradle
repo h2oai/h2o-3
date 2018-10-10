@@ -1,7 +1,7 @@
 description = "H2O Python Package"
 
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def buildVersion = new H2OBuildVersion(rootDir, version)
@@ -22,6 +22,7 @@ ext {
 //
 task createVersionFiles() {
     doLast {
+        file("${buildDir}/h2o").mkdirs()
         File version_file = new File("${buildDir}/h2o", "version.txt")
         version_file.write(PROJECT_VERSION)
 
@@ -37,7 +38,7 @@ task verifyDependencies(type: Exec) {
                                           "--metayaml", "conda/h2o/meta.yaml"])
 }
 
-task copyH2OJar(type: Copy) {
+task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
     from "${rootDir}/build/h2o.jar"
     into "${buildDir}/h2o/backend/bin/"
 }

@@ -29,6 +29,10 @@ dependencies {
     compile "org.slf4j:slf4j-log4j12:1.7.10"
 }
 
+jar {
+    enabled = false
+}
+
 //
 // Bundle optional modules
 // The process is defined by convention. There are two flags:
@@ -49,10 +53,10 @@ for (comp in optionalComponents) {
         logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
         apply from: "$rootDir/gradle/components/${compName}.gradle"
     }
-    
+
 }
 
-shadowJar { 
+shadowJar {
   mergeServiceFiles()
   classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
@@ -142,6 +146,5 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
 shadowJar.dependsOn(licenseReport)
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
-// Run shadowJar as par of build
+// Run shadowJar as part of build
 jar.finalizedBy shadowJar
-

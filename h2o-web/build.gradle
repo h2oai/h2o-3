@@ -163,7 +163,8 @@ task cleanUpSmokeTest {
 
 task compileAndInstallDocFiles(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-web_compileAndInstallDocFiles.out")
+        file("${buildDir}/tmp").mkdirs()
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-web_compileAndInstallDocFiles.out")
     }
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
     def projectVersion = bv.getProjectVersion()
@@ -200,7 +201,7 @@ processResources.dependsOn copyGenModelJarToWebRoot
 processResources.dependsOn copyDeepWaterJarToWebRoot
 
 compileAndInstallDocFiles.dependsOn installNpmPackages
-compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
+compileAndInstallDocFiles.dependsOn ":h2o-bindings:runGenerateRESTAPIBindingsSrc"
 build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
