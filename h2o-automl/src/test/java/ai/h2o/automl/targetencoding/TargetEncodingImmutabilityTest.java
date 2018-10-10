@@ -1,11 +1,11 @@
 package ai.h2o.automl.targetencoding;
 
-import ai.h2o.automl.TestUtil;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.fvec.*;
 import java.util.Map;
 
