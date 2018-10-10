@@ -546,7 +546,6 @@ public class TargetEncoder {
 
             Frame dataWithMergedAggregations = null;
             Frame dataWithEncodings = null;
-            Frame dataWithEncodingsAndNoise = null;
 
             Frame encodingMapForCurrentTEColumn = columnToEncodingMap.get(teColumnName);
             double priorMeanFromTrainingDataset = calculatePriorMean(encodingMapForCurrentTEColumn);
@@ -599,22 +598,21 @@ public class TargetEncoder {
 
                     dataWithEncodings = calculateEncoding(dataWithMergedAggregations, encodingMapForCurrentTEColumn, targetColumnName, newEncodedColumnName, withBlendedAvg);
 
-                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
+                    applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
                     // Cases when we can introduce NA's:
                     // 1) if column is represented only in one fold then during computation of out-of-fold subsets we will get empty aggregations.
                     //   When merging with the original dataset we will get NA'a on the right side
                     // Note: since we create encoding based on training dataset and use KFold mainly when we apply encoding to the training set,
                     // there is zero probability that we haven't seen some category.
-                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName), priorMeanFromTrainingDataset);
+                    imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName), priorMeanFromTrainingDataset);
 
-                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
+                    removeNumeratorAndDenominatorColumns(dataWithEncodings);
 
                     dataWithAllEncodings.delete();
-                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    dataWithAllEncodings = dataWithEncodings.deepCopy(Key.make().toString());
                     DKV.put(dataWithAllEncodings);
 
-                    dataWithEncodingsAndNoise.delete();
                     holdoutEncodeMap.delete();
 
                     break;
@@ -631,20 +629,19 @@ public class TargetEncoder {
 
                     dataWithEncodings = calculateEncoding(preparedFrame, groupedTargetEncodingMap, targetColumnName, newEncodedColumnName, withBlendedAvg); // do we really need to pass groupedTargetEncodingMap again?
 
-                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
+                    applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
                     // Cases when we can introduce NA's:
                     // 1) Only in case when our encoding map has not seen some category.
-                    imputeWithMean(dataWithEncodingsAndNoise, getColumnIndexByName(dataWithEncodingsAndNoise, newEncodedColumnName), priorMeanFromTrainingDataset);
+                    imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName), priorMeanFromTrainingDataset);
 
-                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
+                    removeNumeratorAndDenominatorColumns(dataWithEncodings);
 
                     dataWithAllEncodings.delete();
-                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    dataWithAllEncodings = dataWithEncodings.deepCopy(Key.make().toString());
                     DKV.put(dataWithAllEncodings);
 
                     preparedFrame.delete();
-                    dataWithEncodingsAndNoise.delete();
                     groupedTargetEncodingMap.delete();
 
                     break;
@@ -665,15 +662,14 @@ public class TargetEncoder {
                     // Otherwise there are higher chances to get NA's for unseen categories.
                     imputeWithMean(dataWithEncodings, getColumnIndexByName(dataWithEncodings, newEncodedColumnName), priorMeanFromTrainingDataset);
 
-                    dataWithEncodingsAndNoise = applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
+                    applyNoise(dataWithEncodings, newEncodedColumnName, noiseLevel, seed);
 
-                    removeNumeratorAndDenominatorColumns(dataWithEncodingsAndNoise);
+                    removeNumeratorAndDenominatorColumns(dataWithEncodings);
 
                     dataWithAllEncodings.delete();
-                    dataWithAllEncodings = dataWithEncodingsAndNoise.deepCopy(Key.make().toString());
+                    dataWithAllEncodings = dataWithEncodings.deepCopy(Key.make().toString());
                     DKV.put(dataWithAllEncodings);
 
-                    dataWithEncodingsAndNoise.delete();
                     groupedTargetEncodingMapForNone.delete();
             }
 
