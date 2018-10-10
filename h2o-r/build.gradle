@@ -146,7 +146,10 @@ cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
 task cpH2OAppJar(type: Copy, dependsOn: [configurations.compile]) {
     from configurations.compile.getSingleFile()
-    into "${projectDir}/h2o-package/inst/java/h2o.jar"
+    rename { filename ->
+        return 'h2o.jar'
+    }
+    into "${projectDir}/h2o-package/inst/java/"
 }
 
 task buildPKG(type: Exec) {
