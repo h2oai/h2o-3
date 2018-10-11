@@ -48,14 +48,14 @@ public class TargetEncoder {
     /**
      * @param targetColumnName name of the target column
      * @param foldColumnName name of the column that contains fold number the row is belong to
-     * @param inputeNAsWithNewCategory set to `true` to impute NAs with new category.     // TODO probably we need to always set it to true bc we do not support null values on the right side of merge operation.
+     * @param imputeNAsWithNewCategory set to `true` to impute NAs with new category.     // TODO probably we need to always set it to true bc we do not support null values on the right side of merge operation.
      */
     //TODO do we need to do this preparation before as a separate phase? because we are grouping twice.
     //TODO At least it seems that way in the case of KFold. But even if we need to preprocess for other types of TE calculations... we should not affect KFOLD case anyway.
     public Map<String, Frame> prepareEncodingMap(Frame data,
                                                  String targetColumnName,
                                                  String foldColumnName,
-                                                 boolean inputeNAsWithNewCategory) {
+                                                 boolean imputeNAsWithNewCategory) {
 
         // Validate input data. Not sure whether we should check some of these.
         // It will become clear when we decide if TE is going to be exposed to user or only integrated into AutoML's pipeline
@@ -84,7 +84,7 @@ public class TargetEncoder {
         for ( String teColumnName: _columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
 
-            if(inputeNAsWithNewCategory) {
+            if(imputeNAsWithNewCategory) {
               imputeNAsForColumn(dataWithEncodedTarget, teColumnName, teColumnName + "_NA");
             }
 
@@ -501,7 +501,7 @@ public class TargetEncoder {
      * @param foldColumnName column's name that contains fold number the row is belong to.
      * @param withBlendedAvg whether to apply blending or not.
      * @param noiseLevel amount of noise to add to the final encodings.
-     * @param inputeNAsWithNewCategory set to `true` to impute NAs with new category.
+     * @param imputeNAsWithNewCategory set to `true` to impute NAs with new category.
      * @param seed we might want to specify particular values for reproducibility in tests.
      * @param isTrainOrValidSet `true` if we are applying target encoding to training/validation set and `false` for test set.
      * @return copy of the `data` frame with encodings
@@ -513,7 +513,7 @@ public class TargetEncoder {
                                      String foldColumnName,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     boolean inputeNAsWithNewCategory,
+                                     boolean imputeNAsWithNewCategory,
                                      long seed,
                                      boolean isTrainOrValidSet) {
 
@@ -532,7 +532,7 @@ public class TargetEncoder {
         for ( String teColumnName: _columnNamesToEncode) {
 
             // Impute NA's for each column we are going to encode
-            if(inputeNAsWithNewCategory) {
+            if(imputeNAsWithNewCategory) {
               imputeNAsForColumn(dataWithAllEncodings, teColumnName, teColumnName + "_NA");
             }
 
@@ -707,14 +707,14 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      String foldColumn,
                                      boolean withBlendedAvg,
-                                     boolean inputeNAs,
+                                     boolean imputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
         double defaultNoiseLevel = 0.01;
         int targetIndex = getColumnIndexByName(data, targetColumnName);
         Vec targetVec = data.vec(targetIndex);
         double   noiseLevel = targetVec.isNumeric()  ?   defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, imputeNAs, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -722,10 +722,10 @@ public class TargetEncoder {
                                      Map<String, Frame> targetEncodingMap,
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
-                                     boolean inputeNAs,
+                                     boolean imputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, inputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, imputeNAs, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -734,11 +734,11 @@ public class TargetEncoder {
                                      byte dataLeakageHandlingStrategy,
                                      boolean withBlendedAvg,
                                      double noiseLevel,
-                                     boolean inputeNAs,
+                                     boolean imputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
         assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, imputeNAs, seed, isTrainOrValidSet);
     }
 
 }
