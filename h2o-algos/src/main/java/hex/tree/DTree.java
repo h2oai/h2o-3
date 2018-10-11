@@ -483,17 +483,23 @@ public class DTree extends Iced {
       return best;
     }
 
-    class FindSplits extends RecursiveAction {
-      FindSplits(DHistogram[] hs, int col, int nid) {
+    public final class FindSplits extends RecursiveAction {
+      public FindSplits(DHistogram[] hs, int col, UndecidedNode node) {
+        this(hs, col, node._nid);
+      }
+      private FindSplits(DHistogram[] hs, int col, int nid) {
         _hs = hs; _col = col; _nid = nid;
       }
       final DHistogram[] _hs;
       final int _col;
-      DTree.Split _s;
       final int _nid;
+      DTree.Split _s;
       @Override public void compute() {
+        computeSplit();
+      }
+      public final DTree.Split computeSplit() {
         _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows);
-        if (_s == null) return;
+        return _s;
       }
     }
 

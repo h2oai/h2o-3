@@ -78,6 +78,11 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }.doAll(_train);
   }
 
+  @Override
+  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[]) {
+    return new IFDecidedNode(udn, hs);
+  }
+
   // ----------------------
   private class IsolationForestDriver extends Driver {
     @Override protected boolean doOOBScoring() { return false; }

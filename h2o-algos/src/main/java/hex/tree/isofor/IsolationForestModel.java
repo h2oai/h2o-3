@@ -20,9 +20,11 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
       super();
       _mtries = -1;
       _sample_rate = 0.632f;
-      _max_depth = 64;
+      _max_depth = 32;
       _min_rows = 1;
       _min_split_improvement = 0;
+      _nbins = 2;
+      _nbins_cats = 2;
       _histogram_type = HistogramType.Random;
       _distribution = DistributionFamily.gaussian;
     }
