@@ -47,11 +47,8 @@ class CsvParser extends Parser {
       // Starting state.  Are we skipping the first (partial) line, or not?  Skip
       // a header line, or a partial line if we're in the 2nd and later chunks.
       if (_setup._check_header == ParseSetup.HAS_HEADER || cidx > 0) state = SKIP_LINE;
-      else state = WHITESPACE_BEFORE_TOKEN;
+      else state = POSSIBLE_EMPTY_LINE;
     }
-
-    // For parsing ARFF
-    if (_setup._parse_type.equals(ARFF_INFO) && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
 
     int quotes = 0;
     byte quoteCount = 0;
@@ -68,7 +65,7 @@ class CsvParser extends Parser {
     byte[] nonDataLineMarkers = nonDataLineMarkers();
     if( cidx == 0 ) {
       while (ArrayUtils.contains(nonDataLineMarkers, c) || isEOL(c)) {
-        while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
+        while ((offset < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
         }
@@ -225,7 +222,6 @@ MAIN_LOOP:
             state = SKIP_LINE;
             break;
           }
-          state = WHITESPACE_BEFORE_TOKEN;
           // fallthrough to WHITESPACE_BEFORE_TOKEN
         // ---------------------------------------------------------------------
         case WHITESPACE_BEFORE_TOKEN:
@@ -234,6 +230,7 @@ MAIN_LOOP:
           } else if (c == CHAR_SEPARATOR) {
             // we have empty token, store as NaN
             dout.addInvalidCol(colIdx++);
+            state = WHITESPACE_BEFORE_TOKEN;
             break;
           } else if (isEOL(c)) {
             dout.addInvalidCol(colIdx++);
