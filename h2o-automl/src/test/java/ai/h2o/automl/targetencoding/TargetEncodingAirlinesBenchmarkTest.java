@@ -12,6 +12,7 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -169,9 +170,9 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       System.out.println("Calculation of encodings took: " + (finishTimeEncoding - startTimeEncoding));
 
       // With target encoded  columns
-      tec.checkNumRows(airlinesTrainWithoutTEH, trainEncoded);
-      tec.checkNumRows(airlinesValid, validEncoded);
-      tec.checkNumRows(airlinesTestFrame, testEncoded);
+      checkNumRows(airlinesTrainWithoutTEH, trainEncoded);
+      checkNumRows(airlinesValid, validEncoded);
+      checkNumRows(airlinesTestFrame, testEncoded);
 
       long startTime = System.currentTimeMillis();
 
@@ -267,6 +268,13 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
         gbm2.deleteCrossValidationModels();
       }
       Scope.exit();
+    }
+  }
+
+  public void checkNumRows(Frame before, Frame after) {
+    long droppedCount = before.numRows()- after.numRows();
+    if(droppedCount != 0) {
+      Log.warn(String.format("Number of rows has dropped by %d after manipulations with frame ( %s , %s ).", droppedCount, before._key, after._key));
     }
   }
 

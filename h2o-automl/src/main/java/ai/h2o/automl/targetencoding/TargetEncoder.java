@@ -161,11 +161,6 @@ public class TargetEncoder {
         return columnNames.toArray(new String[columnIndexes.length]);
     }
 
-    String getColumnNameBy(Frame data, int columnIndex) {
-        String [] allColumnNames = data._names.clone();
-        return allColumnNames[columnIndex];
-    }
-
     private Frame execRapidsAndGetFrame(String astTree) {
         Val val = Rapids.exec(astTree);
         Frame res = val.getFrame();
@@ -403,7 +398,7 @@ public class TargetEncoder {
     }
 
     //TODO think about what value could be used for substitution ( maybe even taking into account target's value)
-    private String getDenominatorIsZeroSubstitutionTerm(Frame fr, String targetColumnName, double globalMeanForTargetClass) {
+    /*private String getDenominatorIsZeroSubstitutionTerm(Frame fr, String targetColumnName, double globalMeanForTargetClass) {
       // This should happen only for Leave-One-Out case:
       // These groups have this singleness in common and we probably want to represent it somehow.
       // If we choose just global average then we just lose difference between single-row-groups that have different target values.
@@ -420,7 +415,7 @@ public class TargetEncoder {
         denominatorIsZeroSubstitutionTerm = String.format("ifelse ( == (cols %s [%d]) 1) %f  %f", fr._key, targetColumnIndex, globalMeanForTargetClass, globalMeanForNonTargetClass);
       }
       return denominatorIsZeroSubstitutionTerm;
-    }
+    }*/
 
     Frame addNoise(Frame fr, String applyToColumnName, double noiseLevel, long seed) {
       int appyToColumnIndex = getColumnIndexByName(fr, applyToColumnName);
@@ -747,32 +742,4 @@ public class TargetEncoder {
         return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
     }
 
-    //TODO usefull during development remove
-    public void checkNumRows(Frame before, Frame after) {
-        long droppedCount = before.numRows()- after.numRows();
-        if(droppedCount != 0) {
-            Log.warn(String.format("Number of rows has dropped by %d after manipulations with frame ( %s , %s ).", droppedCount, before._key, after._key));
-        }
-    }
-
-    // TODO usefull for development. remove.
-    private void printOutFrameAsTable(Frame fr) {
-        TwoDimTable twoDimTable = fr.toTwoDimTable();
-        System.out.println(twoDimTable.toString());
-    }
-
-    // TODO usefull for development. remove.
-    private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
-        TwoDimTable twoDimTable = fr.toTwoDimTable(0, 1000000, rollups);
-        System.out.println(twoDimTable.toString(2, full));
-    }
-
-    // TODO usefull for development. remove.
-    private void printOutColumnsMeta(Frame fr) {
-        for (String header : fr.toTwoDimTable().getColHeaders()) {
-            String type = fr.vec(header).get_type_str();
-            int cardinality = fr.vec(header).cardinality();
-            System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-        }
-    }
 }
