@@ -1,7 +1,9 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -9,7 +11,7 @@ import static hex.genmodel.utils.DistributionFamily.*;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public final class GbmMojoModel extends SharedTreeMojoModel {
+public final class GbmMojoModel extends SharedTreeMojoModel implements TreeBackedMojoModel {
     public DistributionFamily _family;
     public double _init_f;
 
@@ -59,4 +61,8 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
         return getDecisionPath(row);
     }
 
+    @Override
+    public SharedTreeGraph computeGraph(int treeNumber, int treeClass) {
+        return _computeGraph(treeNumber);
+    }
 }

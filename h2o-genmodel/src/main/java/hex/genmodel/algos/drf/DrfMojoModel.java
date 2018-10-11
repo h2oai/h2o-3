@@ -1,13 +1,15 @@
 package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel {
+public final class DrfMojoModel extends SharedTreeMojoModel implements TreeBackedMojoModel {
     protected boolean _binomial_double_trees;
 
 
@@ -56,4 +58,8 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
         return score0(row, 0.0, preds);
     }
 
+    @Override
+    public SharedTreeGraph computeGraph(int treeNumber, int treeClass) {
+        return _computeGraph(treeNumber);
+    }
 }

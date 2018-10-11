@@ -63,7 +63,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   }
 
   @Override
-  public SharedTreeGraph convert(int treeNumber, int treeClass) {
+  public SharedTreeGraph computeGraph(int treeNumber, int treeClass) {
     return null;
   }
 

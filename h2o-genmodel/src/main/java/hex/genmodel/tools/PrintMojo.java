@@ -2,8 +2,6 @@ package hex.genmodel.tools;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.algos.drf.DrfMojoModel;
-import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
@@ -191,23 +189,9 @@ public class PrintMojo {
       os = System.out;
     }
 
-    if (genModel instanceof GbmMojoModel) {
-      SharedTreeGraph g = ((GbmMojoModel) genModel)._computeGraph(treeToPrint);
-      if (printRaw) {
-        g.print();
-      }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
-    }
-    else if (genModel instanceof DrfMojoModel) {
-      SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
-      if (printRaw) {
-        g.print();
-      }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
-    }
-    else if(genModel instanceof TreeBackedMojoModel){
+    if(genModel instanceof TreeBackedMojoModel){
       TreeBackedMojoModel treeBackedMojoModel = (TreeBackedMojoModel) genModel;
-      final SharedTreeGraph g = treeBackedMojoModel.convert(treeToPrint, 0);
+      final SharedTreeGraph g = treeBackedMojoModel.computeGraph(treeToPrint, 0);
       if (printRaw) {
         g.print();
       }
