@@ -3,19 +3,19 @@ package ai.h2o.automl.targetencoding;
 import water.Iced;
 
 public class BlendingParams extends Iced<BlendingParams> {
-  private long k;
-  private long f;
+  private double k;
+  private double f;
 
-  public BlendingParams(long k, long f) {
+  public BlendingParams(double k, double f) {
     this.k = k;
     this.f = f;
   }
 
-  public long getK() {
+  public double getK() {
     return k;
   }
 
-  public long getF() {
+  public double getF() {
     return f;
   }
 }
