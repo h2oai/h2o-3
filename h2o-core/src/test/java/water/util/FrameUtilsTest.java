@@ -203,8 +203,8 @@ public class FrameUtilsTest extends TestUtil {
               .build();
       Scope.track(fr);
 
-      assertEquals(0, FrameUtils.getColumnIndexByName(fr, "ColA"));
-      assertEquals(1, FrameUtils.getColumnIndexByName(fr, "ColB"));
+      assertEquals(0, fr.find("ColA"));
+      assertEquals(1, fr.find("ColB"));
 
     } finally {
       Scope.exit();

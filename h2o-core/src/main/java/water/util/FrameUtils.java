@@ -969,28 +969,12 @@ public class FrameUtils {
 
   /**
    *
-   * @param fr
-   * @param name name of the column we want to know index of
-   * @return
-   */
-  static public int getColumnIndexByName(Frame fr, String name) {
-    String[] names = fr.names();
-
-    int foundIndex = Arrays.asList(names).indexOf(name);
-    if (foundIndex == -1) {
-      throw new IllegalArgumentException(String.format("Column with name `%s` was not found in the Frame with key: %s", name,  fr._key));
-    }
-    return foundIndex;
-  }
-
-  /**
-   *
    * @param frame
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
   static public Frame asFactor(Frame frame, String columnName) {
-    int columnIndex = getColumnIndexByName(frame, columnName);
+    int columnIndex = frame.find(columnName);
     String astTree = String.format("(:= %s (as.factor (cols %s [%d])) [%d] [])", frame._key, frame._key, columnIndex, columnIndex);
     Frame res = Rapids.exec(astTree).getFrame();
     res._key = Key.make();

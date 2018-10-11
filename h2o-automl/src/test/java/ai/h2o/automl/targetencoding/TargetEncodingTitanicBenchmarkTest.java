@@ -1,6 +1,5 @@
 package ai.h2o.automl.targetencoding;
 
-import hex.FrameSplitter;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
