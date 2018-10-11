@@ -19,7 +19,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
+import java.util.Arrays;
 
 /**
  * Please note: user is advised to explicitly release the native resources of XGBoost by calling close method on the instance.
@@ -85,7 +85,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
 
   public String[] getBoosterDump(final boolean withStats, final String format) {
     final Path featureMapFile;
-    if (_featureMap != null && ! _featureMap.isEmpty())
+    if (_featureMap != null && _featureMap.length > 0)
       try {
         featureMapFile = Files.createTempFile("featureMap", ".txt");
       } catch (IOException e) {
@@ -93,10 +93,9 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       }
     else
       featureMapFile = null;
-
     try {
       if (featureMapFile != null) {
-        Files.write(featureMapFile, Collections.singletonList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
+        Files.write(featureMapFile, Arrays.asList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
       }
 
       BoosterHelper.BoosterOp<String[]> dumpOp = new BoosterHelper.BoosterOp<String[]>() {
@@ -171,21 +170,20 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
 
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph("XGBoost Graph");
-    treeNodes[0].split_index();
 
-    final FeatureProperties featureProperties = assembleFeatureNames(_names); // XGBoost's usage of one-hot encoding assumed
-    constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
+    final boolean[] oneHotEncodedMap = markOneHotEncodedCategoricals(_featureMap); // XGBoost's usage of one-hot encoding assumed
+    constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, oneHotEncodedMap, true); // Root node is at index 0
     return sharedTreeGraph;
 
   }
 
-  private static void constructSubgraph(final RegTreeImpl.Node[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  private void constructSubgraph(final RegTreeImpl.Node[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
                                         final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
-                                        final FeatureProperties featureProperties, boolean inclusiveNA) {
+                                        final boolean[] oneHotEncodedMap, boolean inclusiveNA) {
     final RegTreeImpl.Node xgBoostNode = xgBoostNodes[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
-    if (featureProperties._oneHotEncoded[xgBoostNode.split_index()]) {
+    if (oneHotEncodedMap[xgBoostNode.split_index()]) {
       //Shared tree model uses < to the left and >= to the right. Transforiming one-hot encoded categoricals
       // from 0 to 1 makes it fit the current split description logic
       sharedTreeNode.setSplitValue(1.0F);
@@ -193,34 +191,47 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       sharedTreeNode.setSplitValue(xgBoostNode.getSplitCondition());
     }
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
-    sharedTreeNode.setCol(xgBoostNode.split_index(), featureProperties._names[xgBoostNode.split_index()]);
+    sharedTreeNode.setCol(xgBoostNode.split_index(), _featureMap[xgBoostNode.split_index()]);
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 
     if (xgBoostNode.getLeftChildIndex() != -1) {
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
-              xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
+              xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, oneHotEncodedMap, xgBoostNode.default_left());
     }
 
     if (xgBoostNode.getRightChildIndex() != -1) {
       constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
-              xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
+              xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, oneHotEncodedMap, !xgBoostNode.default_left());
     }
   }
 
 
-  private static FeatureProperties assembleFeatureNames(final String[] coefnames) {
-    final boolean[] oneHotEncoded = new boolean[coefnames.length];
-    return new FeatureProperties(coefnames, oneHotEncoded);
-  }
+  private boolean[] markOneHotEncodedCategoricals(final String[] featureMap) {
+    final int numColumns = featureMap.length;
 
-  private static class FeatureProperties {
-    private String[] _names;
-    private boolean[] _oneHotEncoded;
-
-    public FeatureProperties(String[] names, boolean[] oneHotEncoded) {
-      _names = names;
-      _oneHotEncoded = oneHotEncoded;
+    int numCatCols = -1;
+    for (int i = 0; i < featureMap.length;i++) {
+      final String[] s = featureMap[i].split(" ");
+      assert s.length > 3; // There should be at least three tokens, the third token is feature type (int, categorical etc).
+      if(!s[2].equals("i")){
+        numCatCols = i;
+        break;
+      }
     }
+
+    if (numCatCols == -1) {
+      numCatCols = featureMap.length;
+    }
+
+
+    boolean[] categorical = new boolean[numColumns];
+    for (int i = 0; i < numColumns; ++i) {
+      if (i < numCatCols) {
+        categorical[i] = true;
+      }
+    }
+
+    return categorical;
   }
 }

@@ -112,7 +112,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   private static FeatureProperties assembleFeatureNames(final DataInfo di) {
     String[] coefnames = di.coefNames();
     assert (coefnames.length == di.fullN());
-    final Frame frame = di._adaptedFrame;
     int numCatCols = di._catOffsets[di._catOffsets.length - 1];
 
     String[] featureNames = new String[di.fullN()];

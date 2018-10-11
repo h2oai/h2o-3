@@ -3,6 +3,7 @@ package hex.genmodel.algos.xgboost;
 import hex.genmodel.ModelMojoReader;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  */
@@ -21,7 +22,17 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
     _model._sparse = readkv("sparse");
     if (exists("feature_map")) {
-      _model._featureMap = new String(readblob("feature_map"), "UTF-8");
+      final String[] featureMapTokens = new String(readblob("feature_map"), "UTF-8").split("\n");
+      // There might be an empty line after "\n", this part avoids parsing empty token(s) at the end
+      int nonEmptyTokenRange = featureMapTokens.length;
+      for (int i = 0; i < featureMapTokens.length;i++) {
+        if(featureMapTokens[i].trim().isEmpty()){
+          nonEmptyTokenRange = i + 1;
+          break;
+        }
+      }
+
+      _model._featureMap = Arrays.copyOfRange(featureMapTokens, 0, nonEmptyTokenRange);
     }
     _model.postReadInit();
   }
