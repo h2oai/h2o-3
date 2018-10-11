@@ -10,7 +10,6 @@ import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.FrameUtils;
 import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.util.*;
 
@@ -18,8 +17,8 @@ import static water.util.FrameUtils.getColumnIndexByName;
 
 public class TargetEncoder {
 
-    private BlendingParams blendingParams;
-    private String[] columnNamesToEncode;
+    private BlendingParams _blendingParams;
+    private String[] _columnNamesToEncode;
 
   /**
    *
@@ -32,8 +31,8 @@ public class TargetEncoder {
       if(columnNamesToEncode == null || columnNamesToEncode.length == 0)
         throw new IllegalStateException("Argument 'columnsToEncode' is not defined or empty");
 
-      this.columnNamesToEncode = columnNamesToEncode;
-      this.blendingParams = blendingParams;
+      _columnNamesToEncode = columnNamesToEncode;
+      _blendingParams = blendingParams;
     }
 
     public TargetEncoder (String[] columnNamesToEncode) {
@@ -66,10 +65,10 @@ public class TargetEncoder {
         if(targetColumnName == null || targetColumnName.equals(""))
             throw new IllegalStateException("Argument 'target' is missing, with no default");
 
-        if(! checkAllTEColumnsAreCategorical(data, columnNamesToEncode))
+        if(! checkAllTEColumnsAreCategorical(data, _columnNamesToEncode))
             throw new IllegalStateException("Argument 'columnsToEncode' should contain only names of categorical columns");
 
-        if(Arrays.asList(columnNamesToEncode).contains(targetColumnName)) {
+        if(Arrays.asList(_columnNamesToEncode).contains(targetColumnName)) {
             throw new IllegalArgumentException("Columns for target encoding contain target column.");
         }
 
@@ -82,7 +81,7 @@ public class TargetEncoder {
 
         Map<String, Frame> columnToEncodingMap = new HashMap<String, Frame>();
 
-        for ( String teColumnName: columnNamesToEncode) { // TODO maybe we can do it in parallel
+        for ( String teColumnName: _columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
 
             if(inputeNAsWithNewCategory) {
@@ -309,42 +308,42 @@ public class TargetEncoder {
       Vec zeroVec = Vec.makeZero(fr.numRows());
       fr.add(appendedColumnName, zeroVec);
       int encodingsColumnIdx = getColumnIndexByName(fr, appendedColumnName);
-      new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, blendingParams, encodingsColumnIdx).doAll(fr);
+      new CalcEncodingsWithBlending(numeratorIndex, denominatorIndex, globalMeanForTargetClass, _blendingParams, encodingsColumnIdx).doAll(fr);
       zeroVec.remove();
       return fr;
     }
 
     static class CalcEncodingsWithBlending extends MRTask<CalcEncodingsWithBlending> {
-      private double priorMean;
-      private int numeratorIdx;
-      private int denominatorIdx;
-      private int encodingsIdx;
-      private BlendingParams blendingParams;
+      private double _priorMean;
+      private int _numeratorIdx;
+      private int _denominatorIdx;
+      private int _encodingsIdx;
+      private BlendingParams _blendingParams;
 
       CalcEncodingsWithBlending(int numeratorIdx, int denominatorIdx, double priorMean, BlendingParams blendingParams, int encodingsIdx) {
-        this.numeratorIdx = numeratorIdx;
-        this.denominatorIdx = denominatorIdx;
-        this.priorMean = priorMean;
-        this.blendingParams = blendingParams;
-        this.encodingsIdx = encodingsIdx;
+        _numeratorIdx = numeratorIdx;
+        _denominatorIdx = denominatorIdx;
+        _priorMean = priorMean;
+        _blendingParams = blendingParams;
+        _encodingsIdx = encodingsIdx;
       }
 
       @Override
       public void map(Chunk cs[]) {
-        Chunk num = cs[numeratorIdx];
-        Chunk den = cs[denominatorIdx];
-        Chunk encodings = cs[encodingsIdx];
+        Chunk num = cs[_numeratorIdx];
+        Chunk den = cs[_denominatorIdx];
+        Chunk encodings = cs[_encodingsIdx];
         for (int i = 0; i < num._len; i++) {
           if (num.isNA(i) || den.isNA(i))
             encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            Log.info("Denominator is zero. Imputing with priorMean = " + priorMean);
-            encodings.set(i, priorMean);
+            Log.info("Denominator is zero. Imputing with _priorMean = " + _priorMean);
+            encodings.set(i, _priorMean);
           } else {
             double numberOfRowsInCurrentCategory = den.atd(i);
-            double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - numberOfRowsInCurrentCategory) / blendingParams.getF()));
+            double lambda = 1.0 / (1 + Math.exp((_blendingParams.getK() - numberOfRowsInCurrentCategory) / _blendingParams.getF()));
             double posteriorMean = num.atd(i) / den.atd(i);
-            double blendedValue = lambda * posteriorMean + (1 - lambda) * priorMean;
+            double blendedValue = lambda * posteriorMean + (1 - lambda) * _priorMean;
             encodings.set(i, blendedValue);
           }
         }
@@ -367,28 +366,28 @@ public class TargetEncoder {
 
 
     static class CalcEncodings extends MRTask<CalcEncodings> {
-      private double priorMean;
-      private int numeratorIdx;
-      private int denominatorIdx;
-      private int encodingsIdx;
+      private double _priorMean;
+      private int _numeratorIdx;
+      private int _denominatorIdx;
+      private int _encodingsIdx;
 
       CalcEncodings(int numeratorIdx, int denominatorIdx, double priorMean, int encodingsIdx) {
-        this.numeratorIdx = numeratorIdx;
-        this.denominatorIdx = denominatorIdx;
-        this.priorMean = priorMean;
-        this.encodingsIdx = encodingsIdx;
+        _numeratorIdx = numeratorIdx;
+        _denominatorIdx = denominatorIdx;
+        _priorMean = priorMean;
+        _encodingsIdx = encodingsIdx;
       }
 
       @Override
       public void map(Chunk cs[]) {
-        Chunk num = cs[numeratorIdx];
-        Chunk den = cs[denominatorIdx];
-        Chunk encodings = cs[encodingsIdx];
+        Chunk num = cs[_numeratorIdx];
+        Chunk den = cs[_denominatorIdx];
+        Chunk encodings = cs[_encodingsIdx];
         for (int i = 0; i < num._len; i++) {
           if (num.isNA(i) || den.isNA(i))
             encodings.setNA(i);
           else if (den.at8(i) == 0) {
-            encodings.set(i, priorMean);
+            encodings.set(i, _priorMean);
           } else {
             double posteriorMean = num.atd(i) / den.atd(i);
             encodings.set(i, posteriorMean);
@@ -434,23 +433,23 @@ public class TargetEncoder {
     }
 
     public static class AddNoiseTask extends MRTask<AddNoiseTask> {
-      int applyToColumnIdx;
-      int runifIdx;
-      double noiseLevel;
+      private int _applyToColumnIdx;
+      private int _runifIdx;
+      private double _noiseLevel;
 
       public AddNoiseTask(int applyToColumnIdx, int runifIdx, double noiseLevel) {
-        this.applyToColumnIdx = applyToColumnIdx;
-        this.runifIdx = runifIdx;
-        this.noiseLevel = noiseLevel;
+        _applyToColumnIdx = applyToColumnIdx;
+        _runifIdx = runifIdx;
+        _noiseLevel = noiseLevel;
       }
 
       @Override
       public void map(Chunk cs[]) {
-        Chunk column = cs[applyToColumnIdx];
-        Chunk runifCol = cs[runifIdx];
+        Chunk column = cs[_applyToColumnIdx];
+        Chunk runifCol = cs[_runifIdx];
         for (int i = 0; i < column._len; i++) {
           if (!column.isNA(i)) {
-            column.set(i, column.atd(i) + (runifCol.atd(i) * 2 * noiseLevel - noiseLevel));
+            column.set(i, column.atd(i) + (runifCol.atd(i) * 2 * _noiseLevel - _noiseLevel));
           }
         }
       }
@@ -466,21 +465,21 @@ public class TargetEncoder {
     }
 
     public static class SubtractCurrentRowForLeaveOneOutTask extends MRTask<SubtractCurrentRowForLeaveOneOutTask> {
-      int numeratorIdx;
-      int denominatorIdx;
-      int targetIdx;
+      private int _numeratorIdx;
+      private int _denominatorIdx;
+      private int _targetIdx;
 
       public SubtractCurrentRowForLeaveOneOutTask(int numeratorIdx, int denominatorIdx, int targetIdx) {
-        this.numeratorIdx = numeratorIdx;
-        this.denominatorIdx = denominatorIdx;
-        this.targetIdx = targetIdx;
+        _numeratorIdx = numeratorIdx;
+        _denominatorIdx = denominatorIdx;
+        _targetIdx = targetIdx;
       }
 
       @Override
       public void map(Chunk cs[]) {
-        Chunk num = cs[numeratorIdx];
-        Chunk den = cs[denominatorIdx];
-        Chunk target = cs[targetIdx];
+        Chunk num = cs[_numeratorIdx];
+        Chunk den = cs[_denominatorIdx];
+        Chunk target = cs[_targetIdx];
         for (int i = 0; i < num._len; i++) {
           if (!target.isNA(i)) {
             num.set(i, num.atd(i) - target.atd(i));
@@ -519,7 +518,7 @@ public class TargetEncoder {
                                      boolean isTrainOrValidSet) {
 
         if(noiseLevel < 0 )
-            throw new IllegalStateException("`noiseLevel` must be non-negative");
+            throw new IllegalStateException("`_noiseLevel` must be non-negative");
 
         //TODO Should we remove string columns from `data` as it is done in R version (see: https://0xdata.atlassian.net/browse/PUBDEV-5266) ?
 
@@ -530,7 +529,7 @@ public class TargetEncoder {
           ensureTargetColumnIsNumericOrBinaryCategorical(dataWithAllEncodings, targetColumnName);
         }
 
-        for ( String teColumnName: columnNamesToEncode) {
+        for ( String teColumnName: _columnNamesToEncode) {
 
             // Impute NA's for each column we are going to encode
             if(inputeNAsWithNewCategory) {
@@ -715,7 +714,7 @@ public class TargetEncoder {
         int targetIndex = getColumnIndexByName(data, targetColumnName);
         Vec targetVec = data.vec(targetIndex);
         double   noiseLevel = targetVec.isNumeric()  ?   defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
-        return this.applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, inputeNAs, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,

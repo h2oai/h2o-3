@@ -5,20 +5,20 @@ import water.fvec.Chunk;
 
 public class FillNAWithValueTask extends MRTask<FillNAWithValueTask> {
 
-  private int columnIdx;
-  private double valueToImpute;
+  private int _columnIdx;
+  private double _valueToImpute;
 
   public FillNAWithValueTask(int columnIdx, double valueToImpute ) {
-    this.columnIdx = columnIdx;
-    this.valueToImpute = valueToImpute;
+    _columnIdx = columnIdx;
+    _valueToImpute = valueToImpute;
   }
 
   @Override
   public void map(Chunk cs[]) {
-    Chunk num = cs[columnIdx];
+    Chunk num = cs[_columnIdx];
     for (int i = 0; i < num._len; i++) {
       if (num.isNA(i)) {
-        num.set(i, valueToImpute);
+        num.set(i, _valueToImpute);
       }
     }
   }

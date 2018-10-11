@@ -6,12 +6,12 @@ import water.fvec.NewChunk;
 
 public class FilterByValueTask extends MRTask<FilterByValueTask> {
 
-  private double value;
-  private boolean isInverted;
+  private double _value;
+  private boolean _isInverted;
 
   public FilterByValueTask( double value, boolean isInverted ) {
-    this.value = value;
-    this.isInverted = isInverted;
+    _value = value;
+    _isInverted = isInverted;
   }
 
   @Override
@@ -21,10 +21,10 @@ public class FilterByValueTask extends MRTask<FilterByValueTask> {
       NewChunk nc = ncs[col];
       for (int i = 0; i < c._len; i++) {
           double currentValue = c.atd(i);
-          if(isInverted)
-            nc.addNum(value == currentValue ? 0 : 1);
+          if(_isInverted)
+            nc.addNum(_value == currentValue ? 0 : 1);
           else
-            nc.addNum(value == currentValue ? 1 : 0);
+            nc.addNum(_value == currentValue ? 1 : 0);
       }
     }
   }
