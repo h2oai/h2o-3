@@ -1,9 +1,7 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -43,6 +41,8 @@ public class Merge {
     return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps, ascending, new int[0]);
   }
 
+
+
   public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
                             boolean allLeft, int[][] id_maps) {
 
@@ -60,6 +60,7 @@ public class Merge {
     } else
       ascendingR = new int[0];
 
+
     return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, ascendingL, ascendingR);
   }
   // single-threaded driver logic.  Merge left and right frames based on common columns.
@@ -67,13 +68,55 @@ public class Merge {
                             boolean allLeft, int[][] id_maps, int[] ascendingL, int[] ascendingR) {
     final boolean hasRite = riteCols.length > 0;
 
+    // if there are NaN or null values in the rite frames in the merge columns, it is decided by Matt Dowle to not
+    // include those rows in the final merged frame.  Hence, I am going to first remove the na rows in the
+    // mergedCols.
+    boolean naPresent = false;  // true if there are nas in merge columns
+    if (riteFrame != null) {
+      for (int colidx : riteCols)
+        if (riteFrame.vec(colidx).naCnt() > 0) {
+          naPresent = true;
+          break;
+        }
+    }
+
+    Frame rightFrame = naPresent?new MRTask() {
+      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+        for (int i = 0; i < cs.length; ++i) {
+          if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
+          else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
+          else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
+          else ncs[i].addNum(cs[i].at8(row), 0);
+        }
+      }
+
+      @Override
+      public void map(Chunk[] cs, NewChunk[] ncs) {
+        boolean noNA = true;
+        for (int row = 0; row < cs[0]._len; ++row) {
+          noNA = true;
+          for (int col : riteCols) {
+            if (cs[col].isNA(row)) {
+              noNA = false;
+              break;
+            }
+          }
+          if (noNA)
+            copyRow(row, cs, ncs);
+        }
+      }
+    }.doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains()) : riteFrame;
+
+
     // map missing levels to -1 (rather than increasing slots after the end)
     // for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) {
       if (id_maps[i] == null) continue;
-      assert id_maps[i].length >= leftFrame.vec(leftCols[i]).max()+1;
+      assert id_maps[i].length >= leftFrame.vec(leftCols[i]).max()+1
+              :"Left frame cardinality is higher than right frame!  Switch frames and change merge directions to get " +
+              "around this restriction.";
       if( !hasRite ) continue;
-      int right_max = (int)riteFrame.vec(riteCols[i]).max();
+      int right_max = (int)rightFrame.vec(riteCols[i]).max();
       for (int j=0; j<id_maps[i].length; j++) {
         assert id_maps[i][j] >= 0;
         if (id_maps[i][j] > right_max) id_maps[i][j] = -1;
@@ -84,7 +127,7 @@ public class Merge {
     // and right in parallel was a little slower (97s) than one by one (89s).
     // TODO: retest in future
     RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL);
-    RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps, ascendingR);
+    RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR);
 
     // TODO: start merging before all indexes had been created. Use callback?
 
@@ -113,7 +156,7 @@ public class Merge {
       // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
         BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift,
-                leftIndex._bytesUsed, leftIndex._base), new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1, riteShift,
+                leftIndex._bytesUsed, leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift,
                 riteIndex._bytesUsed, riteIndex._base),
                 true);
           bmList.add(bm);
@@ -144,11 +187,11 @@ public class Merge {
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
-          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,
-                  leftIndex._bytesUsed,leftIndex._base),
-                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,
-                                                   riteIndex._bytesUsed,riteIndex._base),
-                                           true);
+        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,
+                leftIndex._bytesUsed,leftIndex._base),
+                new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,riteShift,
+                        riteIndex._bytesUsed,riteIndex._base),
+                true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
       }
@@ -180,7 +223,7 @@ public class Merge {
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
         BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                         new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
+                                         new BinaryMerge.FFSB(rightFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                          allLeft);
         bmList.add(bm);
         // TODO: choose the bigger side to execute on (where that side of index
@@ -264,7 +307,7 @@ public class Merge {
     t0 = System.nanoTime();
     int numJoinCols = hasRite ? leftIndex._bytesUsed.length : 0;
     int numLeftCols = leftFrame.numCols();
-    int numColsInResult = numLeftCols + riteFrame.numCols() - numJoinCols ;
+    int numColsInResult = numLeftCols + rightFrame.numCols() - numJoinCols ;
     final byte[] types = new byte[numColsInResult];
     final String[][] doms = new String[numColsInResult][];
     final String[] names = new String[numColsInResult];
@@ -273,10 +316,10 @@ public class Merge {
       doms[j] = leftFrame.domains()[j];
       names[j] = leftFrame.names()[j];
     }
-    for (int j=0; j<riteFrame.numCols()-numJoinCols; j++) {
-      types[numLeftCols + j] = riteFrame.vec(j+numJoinCols).get_type();
-      doms[numLeftCols + j] = riteFrame.domains()[j+numJoinCols];
-      names[numLeftCols + j] = riteFrame.names()[j+numJoinCols];
+    for (int j=0; j<rightFrame.numCols()-numJoinCols; j++) {
+      types[numLeftCols + j] = rightFrame.vec(j+numJoinCols).get_type();
+      doms[numLeftCols + j] = rightFrame.domains()[j+numJoinCols];
+      names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
     }
     Key<Vec> key = Vec.newKey();
     Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);

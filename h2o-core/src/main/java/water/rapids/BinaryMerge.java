@@ -83,7 +83,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   // In X[Y], 'left'=i and 'right'=x
-  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft) {   
+  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft) {
     assert riteSB._msb!=-1 || allLeft;
     _leftSB = leftSB;
     _riteSB = riteSB;
@@ -197,7 +197,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // occur, they only happen for leftMSB 0 and 255, and will quickly resolve
     // to no match in the right bucket via bmerge
     t0 = System.nanoTime();
-    bmerge_r(_leftFrom, leftTo, -1, rightN);   
+    bmerge_r(_leftFrom, leftTo, -1, rightN);
     _timings[1] += (System.nanoTime() - t0) / 1e9;
 
     if (_allLeft) {
@@ -412,7 +412,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     assert lUpp - lLow >= 2;
 
     // if value found, rLow and rUpp surround it, unlike standard binary search where rLow falls on it
-    long len = rUpp - rLow - 1;  
+    long len = rUpp - rLow - 1;
     // TODO - we don't need loop here :)  Why does perNodeNumRightRowsToFetch increase so much?
     if (len > 0 || _allLeft) {
       long t0 = System.nanoTime();
