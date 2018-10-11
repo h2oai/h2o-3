@@ -2,8 +2,6 @@ package hex.tree.isofor;
 
 import hex.tree.DHistogram;
 import hex.tree.DTree;
-import hex.tree.SharedTreeModel;
-import water.fvec.Frame;
 
 import java.util.ArrayList;
 import java.util.Collections;

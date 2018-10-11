@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
+import water.fvec.Frame;
 import water.util.SBPrintStream;
 
 
@@ -49,8 +50,15 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     return new ModelMetricsAnomaly.MetricBuilderAnomaly();
   }
 
+  @Override
   protected String[] makeScoringNames(){
     return new String[]{"predict", "mean_length"};
+  }
+
+  @Override
+  protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
+    assert names.length == 2;
+    return new String[2][];
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
