@@ -56,15 +56,15 @@ public class TargetEncodingImmutabilityTest extends TestUtil {
             .withDataForCol(2, ar(1, 2, 2, 3, 1, 2, 1))
             .build();
 
-    TargetEncoder tec = new TargetEncoder();
     String[] teColumns = {teColumnName};
+    TargetEncoder tec = new TargetEncoder(teColumns);
 
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(training, teColumns, targetColumnName, foldColumn);
+    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(training, targetColumnName, foldColumn);
 
     Frame trainCopy = training.deepCopy(Key.make().toString());
     DKV.put(trainCopy);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(training, teColumns, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false, 1234, true);
+    Frame resultWithEncoding = tec.applyTargetEncoding(training, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false, 1234, true);
 
     assertTrue(isBitIdentical(training, trainCopy));
 

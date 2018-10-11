@@ -59,15 +59,15 @@ public class TargetEncodingBusBreakdownAndDelaysBenchmarkTest extends TestUtil {
 
       long startTimeEncoding = System.currentTimeMillis();
 
-      TargetEncoder tec = new TargetEncoder();
       String[] teColumns = {"Bus_Company_Name", "Route_Number", "Bus_No", "Run_Type"};
+      TargetEncoder tec = new TargetEncoder(teColumns);
       String targetColumnName = "Breakdown_or_Running_Late";
 
       boolean withBlendedAvg = true;
       boolean withNoise = false;
 
       // Create encoding
-      encodingMap = tec.prepareEncodingMap(train, teColumns, targetColumnName, foldColumnName);
+      encodingMap = tec.prepareEncodingMap(train, targetColumnName, foldColumnName);
 
       Frame busCompanyName = encodingMap.get("Bus_Company_Name");
       long numOfGroups = busCompanyName.numRows();
@@ -76,16 +76,16 @@ public class TargetEncodingBusBreakdownAndDelaysBenchmarkTest extends TestUtil {
       // Apply encoding to the training set
       Frame trainEncoded;
       if (withNoise) {
-        trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, false, 1234, true);
+        trainEncoded = tec.applyTargetEncoding(train, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, false, 1234, true);
       } else {
-        trainEncoded = tec.applyTargetEncoding(train, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0, false,1234, true);
+        trainEncoded = tec.applyTargetEncoding(train, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0, false,1234, true);
       }
       // Applying encoding to the valid set
-      Frame validEncoded = tec.applyTargetEncoding(valid, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(valid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, 1234, true);
       validEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(validEncoded, 10);
 
       // Applying encoding to the test set
-      Frame testEncoded = tec.applyTargetEncoding(test, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, 1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(test, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, false, 1234, false);
       testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);

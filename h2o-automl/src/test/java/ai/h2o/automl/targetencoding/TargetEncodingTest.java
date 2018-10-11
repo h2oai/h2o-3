@@ -29,20 +29,20 @@ public class TargetEncodingTest extends TestUtil {
     @Test(expected = IllegalStateException.class)
     public void targetEncoderPrepareEncodingFrameValidationDataIsNotNullTest() {
 
-        TargetEncoder tec = new TargetEncoder();
-        String[] teColumns = {"0"};
+      String[] teColumns = {"ColA"};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-        tec.prepareEncodingMap(null, teColumns, "2", null, true);
+      tec.prepareEncodingMap(null, "ColB", null, true);
     }
 
 
     @Test(expected = IllegalStateException.class)
     public void targetEncoderPrepareEncodingFrameValidationTEColumnsIsNotEmptyTest() {
 
-        TargetEncoder tec = new TargetEncoder();
-        String[] teColumns = {};
+      String[] teColumns = {};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
-        tec.prepareEncodingMap(null, teColumns, "2", null, true);
+      tec.prepareEncodingMap(null, "2", null, true);
 
     }
 
@@ -94,7 +94,8 @@ public class TargetEncodingTest extends TestUtil {
         String nullStr = null;
         fr.vec(0).set(2, nullStr);
 
-        TargetEncoder tec = new TargetEncoder();
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
 
         assertTrue(fr.vec("ColA").isCategorical());
         assertEquals(2, fr.vec("ColA").cardinality());
@@ -123,7 +124,8 @@ public class TargetEncodingTest extends TestUtil {
             .withChunkLayout(2,2,2,1)
             .build();
 
-    TargetEncoder tec = new TargetEncoder();
+    String[] teColumns = {""};
+    TargetEncoder tec = new TargetEncoder(teColumns);
 
     assertTrue(fr.vec("ColA").isCategorical());
     assertEquals(4, fr.vec("ColA").cardinality());
@@ -156,8 +158,9 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(0, ar("1", "0"))
                 .withDataForCol(2, ar("1", "6"));
 
-        TargetEncoder tec = new TargetEncoder();
-        int[] teColumns = {0, 1};
+      String[] teColumns = {"ColA", "ColB"};
+      String targetColumnName = "ColC";
+      TargetEncoder tec = new TargetEncoder(teColumns);
         Map<String, Frame> encodingMap = null;
 
         fr = baseBuilder
@@ -165,7 +168,7 @@ public class TargetEncodingTest extends TestUtil {
                 .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
                 .build();
         try {
-          tec.prepareEncodingMap(fr, teColumns, 2, null);
+          tec.prepareEncodingMap(fr, targetColumnName, null);
             fail();
         } catch (IllegalStateException ex) {
             assertEquals("Argument 'columnsToEncode' should contain only names of categorical columns", ex.getMessage());
@@ -177,7 +180,7 @@ public class TargetEncodingTest extends TestUtil {
                 .build();
 
         try {
-          encodingMap = tec.prepareEncodingMap(fr, teColumns, 2, null);
+          encodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
         } catch (IllegalStateException ex) {
             fail(String.format("All columns were categorical but something else went wrong: %s", ex.getMessage()));
         }
@@ -199,10 +202,11 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(2, ar("2", "6", "6", "6"))
                 .build();
 
-        TargetEncoder tec = new TargetEncoder();
-        int[] teColumns = {0};
+        String[] teColumns = {"ColA"};
+        String targetColumnName = "ColC";
+        TargetEncoder tec = new TargetEncoder(teColumns);
 
-        targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 2);
+        targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
         Frame colAEncoding = targetEncodingMap.get("ColA");
         Scope.track(colAEncoding);
@@ -228,7 +232,8 @@ public class TargetEncodingTest extends TestUtil {
               .build();
 
       boolean flag = false;
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
       Frame dataWithAllEncodings = null ;
       if(flag) {
         Frame dataWithEncodedTarget = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, "ColB");
@@ -256,7 +261,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("1", "2", null))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       // We have to do this trick because we cant initialize array with `null` values.
       Vec strVec = fr.vec("ColA");
@@ -284,7 +290,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar(1))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame result = tec.rBind(null, fr);
       assertEquals(fr._key, result._key);
@@ -327,7 +334,8 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(0, ard(1, 2, 3))
                 .withDataForCol(1, ard(3, 4, 5))
                 .build();
-        TargetEncoder tec = new TargetEncoder();
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
         double result = tec.calculatePriorMean(fr);
 
         assertEquals(result, 0.5, 1e-5);
@@ -343,7 +351,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ard(1, 2, 3))
               .withDataForCol(2, ard(3, 4, 5))
               .build();
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
       Frame result = tec.groupByTEColumnAndAggregate(fr, 0);
       printOutFrameAsTable(result);
 
@@ -458,9 +467,10 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ar("yes", "no", "yes"))
               .withChunkLayout(1,1,1)
               .build();
-      TargetEncoder tec = new TargetEncoder();
-      int[] teColumns = {0};
-      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, teColumns, 1);
+      String[] teColumns = {"ColA"};
+      String targetColumnName = "ColB";
+      TargetEncoder tec = new TargetEncoder(teColumns);
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
       Frame merged = tec.mergeByTEColumn(fr, targetEncodingMap.get("ColA"), 0, 0);
 
@@ -631,7 +641,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(2, ar(1, 2, 2))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
       printOutFrameAsTable(merged);
@@ -666,7 +677,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ar("NULL", "no", "yes")) // String `null` is printed as NA but it is different from null/NA
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       // "(merge leftFrame holdoutEncodingMap TRUE FALSE [0.0] [0.0] 'auto' )"
       Frame merged = tec.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0});
@@ -700,7 +712,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ar("yes", "no", "yes"))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame merged = tec.merge(fr, holdoutEncodingMap, new int[]{0}, new int[]{0});
       printOutFrameAsTable(merged);
@@ -728,7 +741,8 @@ public class TargetEncodingTest extends TestUtil {
               .build();
 
       double noiseLevel = 1e-2;
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       tec.addNoise(fr, "ColA", noiseLevel, 1234);
       tec.addNoise(fr, "ColB", noiseLevel, 5678);
@@ -757,8 +771,8 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(1, ard(1, 1))
                 .withDataForCol(2, ar("2", "6"))
                 .build();
-
-        TargetEncoder tec = new TargetEncoder();
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
         int[] columns = ari(0,2);
         String [] columnNames = tec.getColumnNamesBy(fr, columns);
         assertEquals("ColA", columnNames[0]);
@@ -779,7 +793,8 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(3, ar("2", "6", "6", null))
                 .build();
 
-        TargetEncoder tec = new TargetEncoder();
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
 
         try {
           tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 0);
@@ -818,7 +833,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(0, ar("2", "6", "6", null))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame tmp1 = tec.filterOutNAsFromTargetColumn(fr, 0);
       Frame tmp2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(tmp1, 0);
@@ -849,7 +865,8 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ar(1, 2, 3))
               .build();
 
-      TargetEncoder tec = new TargetEncoder();
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
 
       try {
         assertArrayEquals(fr.vec(0).domain(), fr2.vec(0).domain());
@@ -920,7 +937,8 @@ public class TargetEncodingTest extends TestUtil {
                 .withDataForCol(3, ar(1, 2))
                 .build();
 
-        TargetEncoder tec = new TargetEncoder();
+        String[] teColumns = {""};
+        TargetEncoder tec = new TargetEncoder(teColumns);
 
         // So with TestFrameBuilder column is automatically seen as binary but it is not Numerical
         assertTrue(fr.vec(2).isBinary());

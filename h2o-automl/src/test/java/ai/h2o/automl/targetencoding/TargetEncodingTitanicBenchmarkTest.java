@@ -30,7 +30,12 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     try {
 
       BlendingParams params = new BlendingParams(3, 1);
-      TargetEncoder tec = new TargetEncoder(params);
+      String targetColumnName = "survived";
+      String[] teColumns = {"cabin", "home.dest", "embarked"};
+      String foldColumnName = "fold";
+      String[] teColumnsWithFold = {"cabin", "home.dest", "embarked", foldColumnName};
+
+      TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
@@ -38,37 +43,33 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       Scope.track(trainFrame, validFrame, testFrame);
 
-      String foldColumnName = "fold";
       FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
 
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-      String targetColumnName = "survived";
 
-      String[] teColumns = {"cabin", "home.dest", "embarked"};
-      String[] teColumnsWithFold = {"cabin", "home.dest", "embarked", foldColumnName};
 
       boolean withBlendedAvg = true;
       boolean withNoiseOnlyForTraining = true;
       boolean withImputationForNAsInOriginalColumns = true;
 
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, foldColumnName, withImputationForNAsInOriginalColumns);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, foldColumnName, withImputationForNAsInOriginalColumns);
 
       Frame trainEncoded;
       if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns,1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, withImputationForNAsInOriginalColumns,1234, true);
       } else {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, true);
       }
 
       // Preparing valid frame
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg,0.0, withImputationForNAsInOriginalColumns, 1234, true);
 
       // Preparing test frame
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       printOutColumnsMeta(trainEncoded);
@@ -123,7 +124,8 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     try {
       BlendingParams params = new BlendingParams(3, 1);
 //      BlendingParams params = new BlendingParams(20, 10);
-      TargetEncoder tec = new TargetEncoder(params);
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
+      TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
@@ -135,8 +137,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
-      String[] teColumns = {"cabin", "embarked", "home.dest"};
-
       boolean withBlendedAvg = true;
       boolean withBlendedAvgOnlyForTraining = false;
       boolean withNoiseOnlyForTraining = true;
@@ -144,18 +144,18 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       String targetColumnName = "survived";
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, teColumns, targetColumnName, null, withImputationForNAsInOriginalColumns);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, null, withImputationForNAsInOriginalColumns);
 
       Frame trainEncoded;
       if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg, withImputationForNAsInOriginalColumns, 1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg, withImputationForNAsInOriginalColumns, 1234, true);
       } else {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg,  0, withImputationForNAsInOriginalColumns,1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, withBlendedAvg,  0, withImputationForNAsInOriginalColumns,1234, true);
       }
 
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, withImputationForNAsInOriginalColumns,1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, withImputationForNAsInOriginalColumns,1234, true);
 
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, withImputationForNAsInOriginalColumns,1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg && !withBlendedAvgOnlyForTraining, 0, withImputationForNAsInOriginalColumns,1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
 
@@ -215,7 +215,9 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
     try {
 
       BlendingParams params = new BlendingParams(3, 1); //k = 3, f = 1 AUC=0.8664  instead of for k = 20, f = 10 -> AUC=0.8523
-      TargetEncoder tec = new TargetEncoder(params);
+      String[] teColumns = {"cabin", "embarked", "home.dest"};
+
+      TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train_wteh.csv");
       Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
@@ -233,25 +235,23 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame teHoldoutFrameFactorized = FrameUtils.asFactor(teHoldoutFrame, "cabin");
       Scope.track(teHoldoutFrameFactorized);
 
-      String[] teColumns = {"cabin", "embarked", "home.dest"};
-
       String targetColumnName = "survived";
 
       boolean withNoiseOnlyForTraining = true;
       boolean withImputation = true;
 
-      Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, teColumns, targetColumnName, null, withImputation);
+      Map<String, Frame> encodingMap = tec.prepareEncodingMap(teHoldoutFrameFactorized, targetColumnName, null, withImputation);
 
       Frame trainEncoded;
       if (withNoiseOnlyForTraining) {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, withImputation, 1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, withImputation, 1234, true);
       } else {
-        trainEncoded = tec.applyTargetEncoding(trainFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, true);
+        trainEncoded = tec.applyTargetEncoding(trainFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, true);
       }
 
-      Frame validEncoded = tec.applyTargetEncoding(validFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, true);
+      Frame validEncoded = tec.applyTargetEncoding(validFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, true);
 
-      Frame testEncoded = tec.applyTargetEncoding(testFrame, teColumns, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, false);
+      Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, true, 0.0, withImputation, 1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
 
