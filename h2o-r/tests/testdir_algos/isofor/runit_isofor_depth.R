@@ -35,7 +35,6 @@ test.IsolationForest.depth <- function() {
     result_manual <- normalize(avg_path_length$mean)[sample_ind]
 
     expect_equal(result_pred, result_manual)
-
 }
 
 doTest("IsolationForest: Test Depth Calculation", test.IsolationForest.depth)
