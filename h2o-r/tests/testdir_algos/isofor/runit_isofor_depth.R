@@ -13,7 +13,7 @@ test.IsolationForest.depth <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
-    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234,
+    isofor.model <- h2o.isolationForest(training_frame = random_data.hex, seed = 1234, sample_rate = 0.1,
                                         max_depth = 20, ntrees = 10, score_each_iteration = TRUE)
 
     sample_ind <- sample(c(1:nrow(random_data)), size = 1000)
@@ -34,7 +34,8 @@ test.IsolationForest.depth <- function() {
     }
     result_manual <- normalize(avg_path_length$mean)[sample_ind]
 
-    expect_equal(result_pred, result_manual)
+    # we estimating the max path length => results are only correct up to tolerance
+    expect_equal(result_pred, result_manual, tolerance = 0.1, scale = 1)
 }
 
 doTest("IsolationForest: Test Depth Calculation", test.IsolationForest.depth)

@@ -1,6 +1,5 @@
 package hex.tree.isofor;
 
-import hex.Model;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
@@ -21,7 +20,6 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
 import static hex.tree.isofor.IsolationForestModel.IsolationForestParameters;
@@ -225,24 +223,27 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     // Collect and write predictions into leafs.
     private class CalculatePaths extends MRTask<CalculatePaths> {
       private final DTree _tree;
+      private final int _ntrees;
       // OUT
       private long _minPathLength = Long.MAX_VALUE;
       private long _maxPathLength = 0;
-      private CalculatePaths(DTree tree) { _tree = tree; }
+      private CalculatePaths(DTree tree) { _tree = tree; _ntrees = _model._output._ntrees; }
       @Override public void map(Chunk[] chks) {
         final Chunk tree = chk_tree(chks, 0);
         final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
+        final Chunk oobt = chk_oobt(chks);
         for (int row = 0; row < nids._len; row++) {
           final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int) chk_nids(chks,0).at8(row));
           if (wasOOBRow) {
+            double oobcnt = oobt.atd(row) + 1;
             int nid = ScoreBuildHistogram.oob2Nid((int) nids.at8(row));
             int depth = getNodeDepth(chks, row, nid);
-            long len = Math.abs(tree.at8(row)) + depth;
+            long len = tree.at8(row) + depth;
+            long total_len = (long) (len * _ntrees / oobcnt);
             tree.set(row, len);
-            _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
-            _minPathLength = len < _minPathLength ? len : _minPathLength;
-          } else {
-            tree.set(row, -Math.abs(tree.at8(row)));
+            _maxPathLength = total_len > _maxPathLength ? total_len : _maxPathLength;
+            _minPathLength = total_len < _minPathLength ? total_len : _minPathLength;
+            oobt.set(row, oobcnt);
           }
           // reset NIds
           nids.set(row, 0);
@@ -284,7 +285,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       return fs[0];
     }
     fs[0] = _model.normalizePathLength(len); // score
-    fs[1] = len / _model._output._ntrees; // average tree path length
+    fs[1] = len / chk_oobt(chks).atd(row); // average tree path length
     return fs[0];
   }
 
