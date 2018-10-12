@@ -459,7 +459,8 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    h2o.init(strict_version_check=False)
+    if not h2o.h2o.connection():
+        h2o.init(strict_version_check=False)
 
     h2o.remove_all()
 
