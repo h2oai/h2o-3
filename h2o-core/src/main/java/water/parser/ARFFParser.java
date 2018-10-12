@@ -1,26 +1,38 @@
 package water.parser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import water.Key;
+import water.exceptions.H2OUnsupportedDataFileException;
+import water.fvec.ByteVec;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
 class ARFFParser extends CsvParser {
+  private static final String INCOMPLETE_HEADER = "@H20_INCOMPLETE_HEADER@";
+  private static final String SKIP_NEXT_HEADER = "@H20_SKIP_NEXT_HEADER@";
   private static final String TAG_ATTRIBUTE = "@ATTRIBUTE";
+  private static final String NA = "?"; //standard NA in Arff format
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
+  private static final byte[] NON_DATA_LINE_MARKERS = {'%', '@'};
 
   ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
 
+  @Override
+  protected byte[] nonDataLineMarkers() {
+    return NON_DATA_LINE_MARKERS;
+  }
+
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup(byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
+  static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA
     boolean haveData = false;
-    int offset = 0;
-    String[][] data = new String[0][];;
+    String[][] data = new String[0][];
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
@@ -28,17 +40,36 @@ class ARFFParser extends CsvParser {
 
     // header section
     ArrayList<String> header = new ArrayList<>();
-    offset = readArffHeader(offset, header, bits, singleQuotes);
+
+    int offset = 0;
+    int chunk_idx = 0; //relies on the assumption that bits param have been extracted from first chunk: cf. ParseSetup#map
+    boolean readHeader = true;
+    while (readHeader) {
+      offset = readArffHeader(0, header, bits, singleQuotes);
+      if (isValidHeader(header)) {
+        String lastHeader = header.get(header.size() - 1);
+        if (INCOMPLETE_HEADER.equals(lastHeader) || SKIP_NEXT_HEADER.equals(lastHeader)) {
+          bits = bv.chunkForChunkIdx(++chunk_idx).getBytes();
+          continue;
+        }
+      } else if (chunk_idx > 0) { //first chunk parsed correctly, but not the next => formatting issue
+        throw new H2OUnsupportedDataFileException(
+            "Arff parsing: Invalid header. If compressed file, please try without compression",
+            "First chunk was parsed correctly, but a following one failed, common with archives as only first chunk in decompressed");
+      }
+      readHeader = false;
+    }
+
     if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
       haveData = true; //more than just the header
 
     if (header.size() == 0)
       throw new ParseDataset.H2OParseException("No data!");
+
     headerlines = header.toArray(headerlines);
 
     // process header
-    final int nlines = headerlines.length;
-    int ncols = nlines;
+    int ncols = headerlines.length;
     labels = new String[ncols];
     domains = new String[ncols][];
     ctypes = new byte[ncols];
@@ -46,17 +77,17 @@ class ARFFParser extends CsvParser {
 
     // data section (for preview)
     if (haveData) {
-      String[] datalines = new String[0];
+      final int preview_max_length = 10;
       ArrayList<String> datablock = new ArrayList<>();
-      while (offset < bits.length) {
+      //Careful! the last data line could be incomplete too (cf. readArffHeader)
+      while (offset < bits.length && datablock.size() < preview_max_length) {
         int lineStart = offset;
         while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
         int lineEnd = offset;
         ++offset;
         // For Windoze, skip a trailing LF after CR
         if ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-        if (bits[lineStart] == '#') continue; // Ignore      comment lines
-        if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
+        if (ArrayUtils.contains(NON_DATA_LINE_MARKERS, bits[lineStart])) continue;
         if (lineEnd > lineStart) {
           String str = new String(bits, lineStart, lineEnd - lineStart).trim();
           if (!str.isEmpty()) datablock.add(str);
@@ -64,65 +95,110 @@ class ARFFParser extends CsvParser {
       }
       if (datablock.size() == 0)
         throw new ParseDataset.H2OParseException("Unexpected line.");
-      datalines = datablock.toArray(datalines);
 
       // process data section
-      int nlines2 = Math.min(10, datalines.length);
-      data = new String[nlines2][];
+      String[] datalines = datablock.toArray(new String[datablock.size()]);
+      data = new String[datalines.length][];
 
       // First guess the field separator by counting occurrences in first few lines
-      if (nlines2 == 1) {
+      if (datalines.length == 1) {
         if (sep == GUESS_SEP) {
-          if (datalines[0].split(",").length > 2) sep = (byte) ',';
+          //could be a bit more robust than just counting commas?
+          if (datalines[0].split(",").length > 2) sep = ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
-          else
-            throw new ParseDataset.H2OParseException("Failed to detect separator.");
+          else throw new ParseDataset.H2OParseException("Failed to detect separator.");
         }
         data[0] = determineTokens(datalines[0], sep, singleQuotes);
         ncols = (ncols > 0) ? ncols : data[0].length;
         labels = null;
       } else {                    // 2 or more lines
         if (sep == GUESS_SEP) {   // first guess the separator
+          //FIXME if last line is incomplete, this logic fails
           sep = guessSeparator(datalines[0], datalines[1], singleQuotes);
-          if (sep == GUESS_SEP && nlines2 > 2) {
+          if (sep == GUESS_SEP && datalines.length > 2) {
             sep = guessSeparator(datalines[1], datalines[2], singleQuotes);
             if (sep == GUESS_SEP) sep = guessSeparator(datalines[0], datalines[2], singleQuotes);
           }
           if (sep == GUESS_SEP) sep = (byte) ' '; // Bail out, go for space
         }
 
-        for (int i = 0; i < nlines2; ++i) {
+        for (int i = 0; i < datalines.length; ++i) {
           data[i] = determineTokens(datalines[i], sep, singleQuotes);
         }
       }
     }
 
+    naStrings = addDefaultNAs(naStrings, ncols);
+
     // Return the final setup
     return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
   }
 
-  private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
+  private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {
+    final String[][] nas = naStrings == null ? new String[nCols][] : naStrings;
+    for (int i = 0; i < nas.length; i++) {
+      String [] colNas = nas[i];
+      if (!ArrayUtils.contains(colNas, NA)) {
+        nas[i] = colNas = ArrayUtils.append(colNas, NA);
+      }
+    }
+    return nas;
+  }
+
+  private static boolean isValidHeader(List<String> header) {
+    for (String line : header) {
+      if (!isValidHeaderLine(line)) return false;
+    }
+    return header.size() > 0;
+  }
+
+  private static boolean isValidHeaderLine(String str) {
+    return str != null && str.startsWith("@");
+  }
+
+  private static int readArffHeader(int offset, List<String> header, byte[] bits, boolean singleQuotes) {
+    String lastHeader = header.size() > 0 ? header.get(header.size() - 1) : null;
+    boolean lastHeaderIncomplete = INCOMPLETE_HEADER.equals(lastHeader);
+    boolean skipFirstLine = SKIP_NEXT_HEADER.equals(lastHeader);
+    if (lastHeaderIncomplete || skipFirstLine) header.remove(header.size() - 1);  //remove fake header
+    lastHeader = lastHeaderIncomplete ? header.remove(header.size() - 1) : null; //remove incomplete header for future concatenation
+
     while (offset < bits.length) {
       int lineStart = offset;
       while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
       int lineEnd = offset;
+
       ++offset;
       // For Windoze, skip a trailing LF after CR
       if ((offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-      if (bits[lineStart] == '#') continue; // Ignore      comment lines
-      if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
-      if (lineEnd > lineStart) {
-        if (bits[lineStart] == '@' &&
-                (bits[lineStart+1] == 'D' || bits[lineStart+1] =='d' ) &&
-                (bits[lineStart+2] == 'A' || bits[lineStart+2] =='a' ) &&
-                (bits[lineStart+3] == 'T' || bits[lineStart+3] =='t' ) &&
-                (bits[lineStart+4] == 'A' || bits[lineStart+4] =='a' )){
-          break;
+
+      boolean lastLineIncomplete = lineEnd == bits.length && !CsvParser.isEOL(bits[lineEnd-1]);
+
+      if (skipFirstLine) {
+        skipFirstLine = false;
+        if (lastLineIncomplete) header.add(SKIP_NEXT_HEADER);
+        continue;
+      }
+
+      if (bits[lineStart] == '%') { //skip comment lines
+        if (!lastHeaderIncomplete) {
+          if (lastLineIncomplete) header.add(SKIP_NEXT_HEADER);
+          continue;
         }
-        String str = new String(bits, lineStart, lineEnd - lineStart).trim();
-        String[] tok = determineTokens(str, CHAR_SPACE, singleQuotes);
-        if (tok.length > 0 && tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
-        if (!str.isEmpty()) header.add(str);
+      }
+
+      String str = new String(bits, lineStart, lineEnd - lineStart).trim();
+      if (lastHeaderIncomplete) {
+          str = lastHeader + str;  //add current line portion to last header portion from previous chunk
+          lastHeaderIncomplete = false;
+      } else if (str.matches("(?i)^@relation\\s?.*$")) { //ignore dataset name
+        continue;
+      } else if (str.matches("(?i)^@data\\s?.*$")) {  //stop header parsing as soon as we encounter data
+        break;
+      }
+      if (!str.isEmpty()) {
+        header.add(str);
+        if (lastLineIncomplete) header.add(INCOMPLETE_HEADER);
       }
     }
     return offset;
