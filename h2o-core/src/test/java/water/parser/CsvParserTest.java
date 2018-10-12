@@ -1,6 +1,5 @@
 package water.parser;
 
-import org.junit.Assert;
 import org.junit.Test;
 import water.fvec.Vec;
 import water.util.StringUtils;

@@ -868,16 +868,51 @@ public class ParserTestARFF extends TestUtil {
     }
   }
 
+  @Test public void testIgnoreBlankLines() {
+    String[] arff = new String[] {
+        "% comment",
+        " ",
+        "\t",
+        "  ",
+        " \t",
+        "\t ",
+        "\t\t",
+        "@relation test_nas",
+        " ",
+        "@attribute y {'0', '1'}",
+        "@attribute x1 numeric",
+        "@attribute x2 string",
+        " ",
+        "@data",
+        "  ",
+        "\t ",
+        "'0',42,\"foo\"",
+        "'1',24,\"bar\"",
+        "  ",
+    };
+    byte[] expected_types = new byte[]{Vec.T_CAT, Vec.T_NUM, Vec.T_STR};
+    String[] expected_names = new String[]{"y", "x1", "x2"};
+    int expected_data_length = 2;
+
+    testTypes(arff, expected_types, expected_data_length, "\n", 1);
+    testColNames(arff, expected_names, expected_data_length, "\n", 1);
+  }
+
 
   @Test public void testMultiChunkHeader() {
     final int col_count = 51;
     final int cat_length = 10_000;
     final int data_count = 10_000;
+    final int header_comment_length = 1_000;
 
     byte[] expected_types = new byte[col_count];
     String[] expected_names = new String[col_count];
 
     List<String> arff = new ArrayList<>();
+    for (int i = 0; i < header_comment_length; i++) {
+      arff.add("%%%% comment comment comment");
+      if (i % 50 == 0) arff.add("");
+    }
     arff.add("@relation test_large_header");
     arff.add("@attribute y numeric");
     expected_types[0] = Vec.T_NUM;
