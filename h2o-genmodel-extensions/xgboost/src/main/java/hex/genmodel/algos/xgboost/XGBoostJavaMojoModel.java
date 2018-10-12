@@ -1,11 +1,18 @@
 package hex.genmodel.algos.xgboost;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.gbm.GBTree;
+import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.learner.ObjFunction;
+import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -64,7 +71,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
 
   @Override
   public SharedTreeGraph computeGraph(int treeNumber, int treeClass) {
-    return null;
+    GradBooster booster = _predictor.getBooster();
+    return super._computeGraph(booster, treeNumber,treeClass);
   }
 
   private static class RegObjFunction extends ObjFunction {
