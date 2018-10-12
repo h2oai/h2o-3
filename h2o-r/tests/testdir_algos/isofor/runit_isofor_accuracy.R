@@ -25,9 +25,13 @@ test.IsolationForest.accuracy <- function() {
     glm_model <- h2o.glm(training_frame = glm_train, x = "predict", y = "outlier", family = "binomial")
 
     # we should get a good AUC
-    expect_equal(h2o.auc(glm_model), 0.9738122, tolerance = .02, scale = 1)
+    auc <- h2o.auc(glm_model)
+    cat(sprintf("AUC: %f\n", auc))
+    expect_equal(h2o.auc(glm_model), 0.98, tolerance = .01, scale = 1)
     # rate of outlier misclassification should be low
-    expect_equal(h2o.confusionMatrix(glm_model)["YES", "Error"], 0.341120, tolerance = .05, scale = 1)
+    cm <- h2o.confusionMatrix(glm_model)
+    print(cm)
+    expect_equal(cm["YES", "Error"], 0.22, tolerance = .01, scale = 1)
 }
 
 doTest("IsolationForest: Test Accuracy", test.IsolationForest.accuracy)

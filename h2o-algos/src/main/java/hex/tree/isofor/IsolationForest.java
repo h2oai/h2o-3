@@ -10,6 +10,7 @@ import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -140,8 +141,17 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       // Create a Random response
       randomResp(_parms._seed, _model._output._ntrees);
 
+      final long rseed = _rand.nextLong();
+      final DTree tree = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
+      final DTree[] ktrees = {tree};
+
+
+      Sample s = new Sample(tree, _parms._sample_rate, null)
+              .dfork(null, new Frame(vec_nids(_train, 0), vec_work(_train, 0)), _parms._build_tree_one_node)
+              .getResult();
+
       // Assign rows to nodes - fill the "NIDs" column(s)
-      final DTree[] ktrees = growTree(_rand);
+      growTree(rseed, ktrees);
 
       // Reset NIDs
       CalculatePaths stats = new CalculatePaths(ktrees[0]).doAll(_train);
@@ -155,7 +165,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
 
     // Assumes that the "Work" column are filled with copy of a random generated response
-    private DTree[] growTree(final Random rand) {
+    private void growTree(long rseed, final DTree[] ktrees) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
       DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
@@ -163,11 +173,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       // Adjust real bins for the top-levels
       int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
-      long rseed = rand.nextLong();
-
       // Initially setup as-if an empty-split had just happened
-      DTree tree = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
-      final DTree[] treeWrapper = {tree};
+      final DTree tree = ktrees[0];
       new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
 
       // ----
@@ -175,7 +182,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       // Adds a layer to the trees each pass.
       final int[] leafs = new int[1];
       for(int depth=0 ; depth<_parms._max_depth; depth++ ) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, treeWrapper, leafs, hcs, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
@@ -208,8 +215,6 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
           }
         }
       }
-
-      return treeWrapper;
     }
 
     // Collect and write predictions into leafs.
@@ -223,12 +228,15 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
         final Chunk tree = chk_tree(chks, 0);
         final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
         for (int row = 0; row < nids._len; row++) {
-          int nid = (int) nids.at8(row);
-          int depth = getNodeDepth(chks, row, nid);
-          long len = tree.at8(row) + depth;
-          tree.set(row, len);
-          _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
-          _minPathLength = len < _minPathLength ? len : _minPathLength;
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int) chk_nids(chks,0).at8(row));
+          if (wasOOBRow) {
+            int nid = ScoreBuildHistogram.oob2Nid((int) nids.at8(row));
+            int depth = getNodeDepth(chks, row, nid);
+            long len = tree.at8(row) + depth;
+            tree.set(row, len);
+            _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
+            _minPathLength = len < _minPathLength ? len : _minPathLength;
+          }
           // reset NIds
           nids.set(row, 0);
         }

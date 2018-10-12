@@ -24,7 +24,7 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
                 "seed",
                 "build_tree_one_node",
                 "mtries",
-                "checkpoint",
+                "sample_rate",
                 "col_sample_rate_change_per_level",
                 "col_sample_rate_per_tree",
                 "categorical_encoding"

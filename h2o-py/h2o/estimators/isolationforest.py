@@ -25,7 +25,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
                       "ignore_const_cols", "ntrees", "max_depth", "min_rows", "nbins", "nbins_top_level", "nbins_cats",
-                      "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "checkpoint",
+                      "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -133,7 +133,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
         """
         Maximum tree depth.
 
-        Type: ``int``  (default: ``64``).
+        Type: ``int``  (default: ``32``).
         """
         return self._parms.get("max_depth")
 
@@ -163,7 +163,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
         """
         For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``  (default: ``2``).
         """
         return self._parms.get("nbins")
 
@@ -195,7 +195,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
         For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
         values can lead to more overfitting.
 
-        Type: ``int``  (default: ``1024``).
+        Type: ``int``  (default: ``2``).
         """
         return self._parms.get("nbins_cats")
 
@@ -267,18 +267,18 @@ class H2OIsolationforestEstimator(H2OEstimator):
 
 
     @property
-    def checkpoint(self):
+    def sample_rate(self):
         """
-        Model checkpoint to resume training with.
+        Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``str``.
+        Type: ``float``  (default: ``0.6320000291``).
         """
-        return self._parms.get("checkpoint")
+        return self._parms.get("sample_rate")
 
-    @checkpoint.setter
-    def checkpoint(self, checkpoint):
-        assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+    @sample_rate.setter
+    def sample_rate(self, sample_rate):
+        assert_is_type(sample_rate, None, numeric)
+        self._parms["sample_rate"] = sample_rate
 
 
     @property

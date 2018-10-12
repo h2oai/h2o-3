@@ -9,14 +9,14 @@
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 64.
+#' @param max_depth Maximum tree depth. Defaults to 32.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
-#'        Defaults to 20.
+#'        Defaults to 2.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then
 #'        decrease by factor of two per level Defaults to 1024.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
-#'        values can lead to more overfitting. Defaults to 1024.
+#'        values can lead to more overfitting. Defaults to 2.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
@@ -24,7 +24,7 @@
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
 #'        (where p is the # of predictors) Defaults to -1.
-#' @param checkpoint Model checkpoint to resume training with.
+#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
@@ -36,16 +36,16 @@ h2o.isolationForest <- function(training_frame, x,
                                 score_tree_interval = 0,
                                 ignore_const_cols = TRUE,
                                 ntrees = 50,
-                                max_depth = 64,
+                                max_depth = 32,
                                 min_rows = 1,
-                                nbins = 20,
+                                nbins = 2,
                                 nbins_top_level = 1024,
-                                nbins_cats = 1024,
+                                nbins_cats = 2,
                                 max_runtime_secs = 0,
                                 seed = -1,
                                 build_tree_one_node = FALSE,
                                 mtries = -1,
-                                checkpoint = NULL,
+                                sample_rate = 0.6320000291,
                                 col_sample_rate_change_per_level = 1,
                                 col_sample_rate_per_tree = 1,
                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
@@ -93,8 +93,8 @@ h2o.isolationForest <- function(training_frame, x,
     parms$build_tree_one_node <- build_tree_one_node
   if (!missing(mtries))
     parms$mtries <- mtries
-  if (!missing(checkpoint))
-    parms$checkpoint <- checkpoint
+  if (!missing(sample_rate))
+    parms$sample_rate <- sample_rate
   if (!missing(col_sample_rate_change_per_level))
     parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if (!missing(col_sample_rate_per_tree))
