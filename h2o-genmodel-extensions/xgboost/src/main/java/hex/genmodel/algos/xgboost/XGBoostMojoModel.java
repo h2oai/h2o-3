@@ -19,6 +19,8 @@ import java.io.Closeable;
  */
 public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel,Closeable {
 
+  private static final String SPACE = " ";
+
   public enum ObjectiveType {
     BINARY_LOGISTIC("binary:logistic"),
     REG_GAMMA("reg:gamma"),
@@ -95,7 +97,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
       sharedTreeNode.setSplitValue(xgBoostNode.getSplitCondition());
     }
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
-    sharedTreeNode.setCol(xgBoostNode.split_index(), _featureMap[xgBoostNode.split_index()]);
+    sharedTreeNode.setCol(xgBoostNode.split_index(), _featureMap[xgBoostNode.split_index()].split(SPACE)[1]);
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
 
@@ -116,7 +118,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
 
     int numCatCols = -1;
     for (int i = 0; i < featureMap.length;i++) {
-      final String[] s = featureMap[i].split(" ");
+      final String[] s = featureMap[i].split(SPACE);
       assert s.length > 3; // There should be at least three tokens, the third token is feature type (int, categorical etc).
       if(!s[2].equals("i")){
         numCatCols = i;
