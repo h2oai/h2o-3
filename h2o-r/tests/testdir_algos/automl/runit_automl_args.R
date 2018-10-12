@@ -208,6 +208,14 @@ automl.args.test <- function() {
   }
   cv_model_ids <- unlist(cv_model_ids)
   expect_equal(sum(sapply(cv_model_ids, function(i) grepl(i, h2o.ls()))), 0)
+
+  print("Check that automl gets interrupted after `max_runtime_secs`")
+  max_runtime_secs <- 30
+  cancel_tolerance_secs <- 5 # should be enough for most cases given job notification mechanism
+  time <- system.time(aml19 <- h2o.automl(x=x, y=y, training_frame=train,
+                                         project_name="aml_max_runtime_secs",
+                                         max_runtime_secs=max_runtime_secs))[['elapsed']]
+  expect_lte(abs(time - max_runtime_secs), cancel_tolerance_secs)
 }
 
 doTest("AutoML Args Test", automl.args.test)
