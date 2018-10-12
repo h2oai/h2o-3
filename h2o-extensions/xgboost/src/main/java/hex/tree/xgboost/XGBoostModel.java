@@ -4,7 +4,7 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
+import biz.k11i.xgboost.tree.RegTreeNode;
 import biz.k11i.xgboost.util.FVec;
 import hex.*;
 import hex.genmodel.GenModel;
@@ -15,7 +15,6 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.TreeBackedModel;
-import hex.tree.TreeHandler;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
@@ -67,7 +66,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       throw new IllegalArgumentException(String.format("There is no such tree number for given class. Total number of trees is %d.", treesInGroup.length));
     }
 
-    final RegTreeImpl.Node[] treeNodes = treesInGroup[treeNumber].getNodes();
+    final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
     assert treeNodes.length >= 1;
 
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
@@ -79,10 +78,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return sharedTreeGraph;
   }
 
-  private static void constructSubgraph(final RegTreeImpl.Node[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
                                         final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
                                         final FeatureProperties featureProperties, boolean inclusiveNA) {
-    final RegTreeImpl.Node xgBoostNode = xgBoostNodes[nodeIndex];
+    final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
     if (featureProperties._oneHotEncoded[xgBoostNode.split_index()]) {

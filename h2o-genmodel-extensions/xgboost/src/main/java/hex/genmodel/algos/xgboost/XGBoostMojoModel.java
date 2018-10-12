@@ -3,8 +3,7 @@ package hex.genmodel.algos.xgboost;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
-import hex.ModelCategory;
+import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
@@ -84,10 +83,10 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     return preds;
   }
 
-  protected void constructSubgraph(final RegTreeImpl.Node[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
-                                 final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
-                                 final boolean[] oneHotEncodedMap, boolean inclusiveNA) {
-    final RegTreeImpl.Node xgBoostNode = xgBoostNodes[nodeIndex];
+  protected void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+                                   final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
+                                   final boolean[] oneHotEncodedMap, boolean inclusiveNA) {
+    final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
     if (oneHotEncodedMap[xgBoostNode.split_index()]) {
@@ -161,7 +160,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     }
 
 
-    final RegTreeImpl.Node[] treeNodes = treesInGroup[treeNumber].getNodes();
+    final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
     assert treeNodes.length >= 1;
 
 
