@@ -1202,12 +1202,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   /**
    * Delete the AutoML-related objects, but leave the grids and models that it built.
    */
-  public void delete() {
-    //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
-    AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
-    leaderboard.delete();
-    userFeedback.delete();
-    remove();
+  @Override
+  protected Futures remove_impl(Futures fs) {
+    Frame.deleteTempFrameAndItsNonSharedVecs(trainingFrame, origTrainingFrame);
+    leaderboard.remove(fs);
+    userFeedback.remove(fs);
+    return super.remove_impl(fs);
   }
 
   /**
@@ -1215,8 +1215,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   void deleteWithChildren() {
     leaderboard.deleteWithChildren();
-    // implicit: feedback.delete();
-    delete(); // is it safe to do leaderboard.delete() now?
 
     for (Key<Grid> gridKey : gridKeys)
       gridKey.remove();
@@ -1225,9 +1223,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (buildSpec.input_spec.training_frame == null) {
       origTrainingFrame.delete();
     }
-    if (buildSpec.input_spec.validation_frame == null) {
+    if (buildSpec.input_spec.validation_frame == null && validationFrame != null) {
       validationFrame.delete();
     }
+    if (buildSpec.input_spec.leaderboard_frame == null && leaderboardFrame != null) {
+      leaderboardFrame.delete();
+    }
+    delete();
   }
 
   public Job job() {

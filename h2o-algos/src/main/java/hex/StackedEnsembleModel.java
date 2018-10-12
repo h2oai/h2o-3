@@ -392,10 +392,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   }
 
-  // TODO: Are we leaking anything?
   @Override protected Futures remove_impl(Futures fs ) {
     if (_output._metalearner != null)
-        DKV.remove(_output._metalearner._key, fs);
+      _output._metalearner.remove(fs);
+    if (_output._levelone_frame_id != null)
+      _output._levelone_frame_id.remove(fs);
 
     return super.remove_impl(fs);
   }
