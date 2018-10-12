@@ -315,36 +315,6 @@ automl.args.test <- function() {
     expect_equal(some_base_model@model$cross_validation_fold_assignment_frame_id, NULL)
   }
 
-  test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0 <- function() {
-    print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment`= TRUE and nfolds > 1")
-    ds <- import_dataset()
-    aml <- h2o.automl(x = ds$x, y = ds$y,
-                    training_frame = ds$train,
-                    nfolds = 3,
-                    max_models = max_models,
-                    project_name = "aml17",
-                    keep_cross_validation_fold_assignment = TRUE,
-    )
-    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
-    expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, TRUE)
-    expect_equal(length(base_model@model$cross_validation_fold_assignment_frame_id), 4)
-  }
-
-  test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0 <- function() {
-    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment`= TRUE and nfolds = 0")
-    ds <- import_dataset()
-    aml <- h2o.automl(x = ds$x, y = ds$y,
-                        training_frame = ds$train,
-                        nfolds = 0,
-                        max_models = max_models,
-                        project_name = "aml18",
-                        keep_cross_validation_fold_assignment = TRUE,
-    )
-    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
-    expect_equal(base_model@parameters$keep_cross_validation_fold_assignment, NULL)
-    expect_equal(base_model@model$cross_validation_fold_assignment_frame_id, NULL)
-  }
-
   test_max_runtime_secs <- function() {
     print("Check that automl gets interrupted after `max_runtime_secs`")
     ds <- import_dataset()
@@ -393,8 +363,6 @@ automl.args.test <- function() {
     test_balance_classes,
     test_keep_cv_models_and_keep_cv_predictions,
     test_keep_cv_fold_assignment_defaults_with_nfolds_gt_0,
-    test_keep_cv_fold_assignment_TRUE_with_nfolds_gt_0,
-    test_keep_cv_fold_assignment_TRUE_with_nfolds_eq_0,
     test_max_runtime_secs,
     test_max_models
   )

@@ -186,30 +186,6 @@ def test_nfolds_default_and_fold_assignements_skipped_by_default():
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
 
-def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0():
-    print("Check that fold assignments were kept when `keep_cross_validation_fold_assignment` = True and nfolds > 1")
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment1",
-                    nfolds=3, max_models=3, seed=1,
-                    keep_cross_validation_fold_assignment=True)
-    aml.train(y=ds['target'], training_frame=ds['train'])
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == True
-    assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] != None
-
-
-def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
-    print("Check that fold assignments were skipped when `keep_cross_validation_fold_assignment` = True and nfolds = 0")
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_keep_cross_validation_fold_assignment2",
-                    nfolds=0, max_models=3, seed=1,
-                    keep_cross_validation_fold_assignment=True)
-    aml.train(y=ds['target'], training_frame=ds['train'])
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    assert amodel.params['keep_cross_validation_fold_assignment']['actual'] == False
-    assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
-
-
 def test_automl_stops_after_max_runtime_secs():
     print("Check that automl gets interrupted after `max_runtime_secs`")
     max_runtime_secs = 30
@@ -275,8 +251,6 @@ tests = [
     test_nfolds_eq_0,
     test_balance_classes,
     test_nfolds_default_and_fold_assignements_skipped_by_default,
-    test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
-    test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
     test_automl_stops_after_max_runtime_secs,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
