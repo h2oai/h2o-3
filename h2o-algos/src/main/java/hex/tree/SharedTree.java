@@ -718,7 +718,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }
       out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
-      out._scoring_history = createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
+      out._scoring_history = createScoringHistoryTable();
       if (out._ntrees > 0 && isSupervised()) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
@@ -786,6 +786,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
         System.out.println(dtree.root().toString2(new StringBuilder(), 0));
       }
+  }
+
+  protected TwoDimTable createScoringHistoryTable() {
+    O out = _model._output;
+    return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
+            out._training_time_ms, _parms._custom_metric_func != null);
   }
 
   public static TwoDimTable createScoringHistoryTable(Model.Output _output,

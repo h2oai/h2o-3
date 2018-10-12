@@ -145,8 +145,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       final DTree tree = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
       final DTree[] ktrees = {tree};
 
-
-      Sample s = new Sample(tree, _parms._sample_rate, null)
+      new Sample(tree, _parms._sample_rate, null)
               .dfork(null, new Frame(vec_nids(_train, 0), vec_work(_train, 0)), _parms._build_tree_one_node)
               .getResult();
 
@@ -236,6 +235,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
             tree.set(row, len);
             _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
             _minPathLength = len < _minPathLength ? len : _minPathLength;
+          } else {
+            tree.set(row, -1);
           }
           // reset NIds
           nids.set(row, 0);
@@ -268,12 +269,14 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   }
 
-  // Read the 'tree' columns, do model-specific math and put the results in the
-  // fs[] array, and return the sum.  Dividing any fs[] element by the sum
-  // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     assert weight == 1;
     double len = chk_tree(chks, 0).atd(row);
+    if (len < 0) {
+      fs[0] = len;
+      fs[1] = 0;
+      return fs[0];
+    }
     fs[0] = _model.normalizePathLength(len); // score
     fs[1] = len / _model._output._ntrees; // average tree path length
     return fs[0];
