@@ -1,12 +1,9 @@
 package hex.tree.isofor;
 
-import hex.CustomMetric;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import water.fvec.Frame;
 
-public class ModelMetricsAnomaly extends ModelMetricsUnsupervised {
+public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements ScoreKeeper.ScoreKeeperAware {
 
   public final double _mean_score;
   public final double _mean_normalized_score;
@@ -16,6 +13,12 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised {
     super(model, frame, nobs, Double.NaN, customMetric);
     _mean_score = totalScore / nobs;
     _mean_normalized_score = totalNormScore / nobs;
+  }
+
+  @Override
+  public void fillTo(ScoreKeeper sk) {
+    sk._anomaly_score = _mean_score;
+    sk._anomaly_score_normalized = _mean_normalized_score;
   }
 
   public static class MetricBuilderAnomaly extends MetricBuilderUnsupervised<MetricBuilderAnomaly> {

@@ -32,6 +32,8 @@ public class ScoreKeeper extends Iced {
   public float[] _hitratio;
   public double _lift = Double.NaN; //Lift in top group
   public double _r2 = Double.NaN;
+  public double _anomaly_score = Double.NaN;
+  public double _anomaly_score_normalized = Double.NaN;
 
   public ScoreKeeper() {}
 
@@ -105,6 +107,8 @@ public class ScoreKeeper extends Iced {
       _mean_per_class_error = ((ModelMetricsOrdinal)m).mean_per_class_error();
       _hitratio = ((ModelMetricsOrdinal)m)._hit_ratios;
       _r2 = ((ModelMetricsOrdinal)m).r2();
+    } else if (m instanceof ScoreKeeperAware) {
+      ((ScoreKeeperAware) m).fillTo(this);
     }
     if (m._custom_metric != null )
     _custom_metric =  m._custom_metric.value;
@@ -343,4 +347,9 @@ public class ScoreKeeper extends Iced {
       //  ", _r2=" + _r2 +
         '}';
   }
+
+  public interface ScoreKeeperAware {
+    void fillTo(ScoreKeeper sk);
+  }
+
 }

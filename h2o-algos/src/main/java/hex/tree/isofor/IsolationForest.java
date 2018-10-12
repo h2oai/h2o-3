@@ -1,16 +1,22 @@
 package hex.tree.isofor;
 
+import hex.Model;
 import hex.ModelCategory;
+import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -231,12 +237,12 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
           if (wasOOBRow) {
             int nid = ScoreBuildHistogram.oob2Nid((int) nids.at8(row));
             int depth = getNodeDepth(chks, row, nid);
-            long len = tree.at8(row) + depth;
+            long len = Math.abs(tree.at8(row)) + depth;
             tree.set(row, len);
             _maxPathLength = len > _maxPathLength ? len : _maxPathLength;
             _minPathLength = len < _minPathLength ? len : _minPathLength;
           } else {
-            tree.set(row, -1);
+            tree.set(row, -Math.abs(tree.at8(row)));
           }
           // reset NIds
           nids.set(row, 0);
@@ -273,7 +279,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     assert weight == 1;
     double len = chk_tree(chks, 0).atd(row);
     if (len < 0) {
-      fs[0] = len;
+      fs[0] = -1;
       fs[1] = 0;
       return fs[0];
     }
@@ -281,5 +287,53 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     fs[1] = len / _model._output._ntrees; // average tree path length
     return fs[0];
   }
+
+  protected TwoDimTable createScoringHistoryTable() {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Mean Tree Path Length"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Mean Anomaly Score"); colTypes.add("double"); colFormat.add("%.5f");
+    if (_parms._custom_metric_func != null) {
+      colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+
+    ScoreKeeper[] sks = _model._output._scored_train;
+
+    int rows = 0;
+    for (int i = 0; i < sks.length; i++) {
+      if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+      rows++;
+    }
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    for( int i = 0; i<sks.length; i++ ) {
+      if (i != 0 && Double.isNaN(sks[i]._anomaly_score)) continue;
+      int col = 0;
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(_model._output._training_time_ms[i]));
+      table.set(row, col++, PrettyPrint.msecs(_model._output._training_time_ms[i] - _job.start_time(), true));
+      table.set(row, col++, i);
+      ScoreKeeper st = sks[i];
+      table.set(row, col++, st._anomaly_score);
+      table.set(row, col++, st._anomaly_score_normalized);
+      if (_parms._custom_metric_func != null) {
+        table.set(row, col++, st._custom_metric);
+      }
+      assert col == colHeaders.size();
+      row++;
+    }
+    return table;
+  }
+
 
 }
