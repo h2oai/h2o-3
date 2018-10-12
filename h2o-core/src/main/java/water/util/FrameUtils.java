@@ -974,12 +974,8 @@ public class FrameUtils {
    * @return Frame with factorized column
    */
   static public Frame asFactor(Frame frame, String columnName) {
-    int columnIndex = frame.find(columnName);
-    String astTree = String.format("(:= %s (as.factor (cols %s [%d])) [%d] [])", frame._key, frame._key, columnIndex, columnIndex);
-    Frame res = Rapids.exec(astTree).getFrame();
-    res._key = Key.make();
-    DKV.put(res);
-    return res;
+    frame.replace(frame.find(columnName), frame.vec(columnName).toCategoricalVec());
+    return frame;
   }
 
   /**

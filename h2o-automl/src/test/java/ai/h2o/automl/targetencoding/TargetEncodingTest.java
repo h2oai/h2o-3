@@ -70,11 +70,12 @@ public class TargetEncodingTest extends TestUtil {
 
     @Test
     public void imputationWorksForBinaryCategoricalColumnsTest() {
+        long seed = 42L;
         fr = new TestFrameBuilder()
                 .withName("testFrame")
                 .withColNames("ColA")
                 .withVecTypes(Vec.T_CAT)
-                .withRandomBinaryDataForCol(0, 1000)
+                .withRandomBinaryDataForCol(0, 1000, seed)
                 .withChunkLayout(500, 500) // that way our task could be executed with 2 threads
                 .build();
 
@@ -495,15 +496,16 @@ public class TargetEncodingTest extends TestUtil {
   public void calculateAndAppendEncodingsOrderIsPreservedWhenWeUseAddMethodTest() {
 
     int sizeOfDataset = 1000000;
+    long seed = 42L;
     double[] arr = new double[sizeOfDataset];
       Arrays.fill(arr, 0.5);
       Frame fr = new TestFrameBuilder()
               .withName("testFrame")
               .withColNames("numerator", "denominator", "target", "encodings_to_compare_with")
               .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-              .withRandomDoubleDataForCol(0, sizeOfDataset, 1, 1)
-              .withRandomDoubleDataForCol(1, sizeOfDataset, 2, 2)
-              .withRandomBinaryDataForCol(2, sizeOfDataset)
+              .withRandomDoubleDataForCol(0, sizeOfDataset, 1, 1, seed)
+              .withRandomDoubleDataForCol(1, sizeOfDataset, 2, 2, seed + 1)
+              .withRandomBinaryDataForCol(2, sizeOfDataset, seed + 2)
               .withDataForCol(3,  arr) // vec that is used for comparing with encodings
               .withChunkLayout(100, 200, 300, sizeOfDataset - 600)
               .build();
@@ -532,15 +534,16 @@ public class TargetEncodingTest extends TestUtil {
       long startTimeEncoding = System.currentTimeMillis();
 
       int numberOfRuns = 10;
+      long seed = 42L;
       for(int i = 0; i < numberOfRuns; i ++) {
         int dataframeSize = 1000000;
         Frame fr = new TestFrameBuilder()
                 .withName("testFrame")
                 .withColNames("numerator", "denominator", "target")
                 .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
-                .withRandomDoubleDataForCol(0, dataframeSize, 0, 50)
-                .withRandomDoubleDataForCol(1, dataframeSize, 1, 100)
-                .withRandomBinaryDataForCol(2, dataframeSize)
+                .withRandomDoubleDataForCol(0, dataframeSize, 0, 50, seed)
+                .withRandomDoubleDataForCol(1, dataframeSize, 1, 100, seed + 1)
+                .withRandomBinaryDataForCol(2, dataframeSize, seed + 2)
                 .build();
 
         BlendingParams blendingParams = new BlendingParams(20, 10);
@@ -563,6 +566,7 @@ public class TargetEncodingTest extends TestUtil {
     long startTimeEncoding = System.currentTimeMillis();
 
     int numberOfRuns = 10;
+    long seed = 42L;
     for(int i = 0; i < numberOfRuns; i ++) {
       int dataframeSize = 1000000;
 
@@ -570,9 +574,9 @@ public class TargetEncodingTest extends TestUtil {
               .withName("testFrame")
               .withColNames("numerator", "denominator", "target")
               .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
-              .withRandomDoubleDataForCol(0, dataframeSize, 0, 50)
-              .withRandomDoubleDataForCol(1, dataframeSize, 1, 100)
-              .withRandomBinaryDataForCol(2, dataframeSize)
+              .withRandomDoubleDataForCol(0, dataframeSize, 0, 50, seed)
+              .withRandomDoubleDataForCol(1, dataframeSize, 1, 100, seed + 1)
+              .withRandomBinaryDataForCol(2, dataframeSize, seed + 2)
               .build();
 
       Vec zeroVec = Vec.makeZero(dataframeSize);

@@ -94,11 +94,11 @@ public class TestFrameBuilder {
    * @param min minimal value to generate
    * @param max maximum value to generate
    */
-  public TestFrameBuilder withRandomIntDataForCol(int column, int size, int min, int max) {
+  public TestFrameBuilder withRandomIntDataForCol(int column, int size, int min, int max, long seed) {
     assert max > min;
     double[] arr = new double[size];
     for(int i = 0; i < size; i++) {
-      arr[i] = min + new Random().nextInt(max - min);
+      arr[i] = min + new Random(seed).nextInt(max - min);
     }
     numericData.put(column, arr);
     return this;
@@ -111,11 +111,11 @@ public class TestFrameBuilder {
    * @param min minimal value to generate
    * @param max maximum value to generate
    */
-  public TestFrameBuilder withRandomDoubleDataForCol(int column, int size, int min, int max) {
+  public TestFrameBuilder withRandomDoubleDataForCol(int column, int size, int min, int max, long seed) {
     assert max >= min;
     double[] arr = new double[size];
     for(int i = 0; i < size; i++) {
-      arr[i] = min + (max - min) * new Random().nextDouble();
+      arr[i] = min + (max - min) * new Random(seed).nextDouble();
     }
     numericData.put(column, arr);
     return this;
@@ -126,10 +126,10 @@ public class TestFrameBuilder {
    *
    * @param column for which to set data
    */
-  public TestFrameBuilder withRandomBinaryDataForCol(int column, int size) {
+  public TestFrameBuilder withRandomBinaryDataForCol(int column, int size, long seed) {
     String[] arr = new String[size];
     for(int i = 0; i < size; i++) {
-      arr[i] = Boolean.toString( new Random().nextBoolean());
+      arr[i] = Boolean.toString( new Random(seed).nextBoolean());
     }
     stringData.put(column, arr);
     return this;
