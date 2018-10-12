@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import water.DKV;
 import water.Key;
 import water.Keyed;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import static water.Key.make;
@@ -34,16 +35,19 @@ public class UserFeedback extends Keyed<UserFeedback> {
 
   /** Add a Debug UserFeedbackEvent and log. */
   public void debug(UserFeedbackEvent.Stage stage, String message) {
+    Log.debug(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Debug, stage, message));
   }
 
   /** Add a Info UserFeedbackEvent and log. */
   public void info(UserFeedbackEvent.Stage stage, String message) {
+    Log.info(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Info, stage, message));
   }
 
   /** Add a Warn UserFeedbackEvent and log. */
   public void warn(UserFeedbackEvent.Stage stage, String message) {
+    Log.warn(stage+": "+message);
     addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Warn, stage, message));
   }
 

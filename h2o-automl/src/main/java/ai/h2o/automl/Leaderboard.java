@@ -284,11 +284,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
           } else {
             mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             if (mm == null) {
-              Frame preds = aModel.score(leaderboardFrame);
+              //scores and magically stores the metrics where we're looking for it on the next line
+              aModel.score(leaderboardFrame).delete();  // immediately delete the resulting frame to avoid leaks
               mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
             }
           }
-          updating.leaderboard_set_metrics.put(mm._key, mm);
+          if (mm != null) updating.leaderboard_set_metrics.put(mm._key, mm);
         }
 
         // Sort by metric on the leaderboard/test set or cross-validation metrics.
@@ -507,7 +508,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
    */
-  public void delete() {
+  void delete() {
+    for (Key k : leaderboard_set_metrics.keySet())
+      k.remove();
     remove();
   }
 
