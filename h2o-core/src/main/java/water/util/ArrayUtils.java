@@ -556,6 +556,11 @@ public class ArrayUtils {
     return false;
   }
 
+  static public boolean contains(byte[] a, byte d) {
+    for (byte anA : a) if (anA == d) return true;
+    return false;
+  }
+
   static public boolean contains(int[] a, int d) {
     for (int anA : a) if (anA == d) return true;
     return false;
