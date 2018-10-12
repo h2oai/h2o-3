@@ -4,6 +4,7 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeImpl;
+import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
@@ -141,31 +142,34 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     return categorical;
   }
 
-  protected SharedTreeGraph _computeGraph(final GradBooster booster, final int treeNumber, final int treeClass){
+  protected SharedTreeGraph _computeGraph(final GradBooster booster, final int treeNumber) {
+
     if (!(booster instanceof GBTree)) {
       throw new IllegalArgumentException(String.format("Given XGBoost model is not backed by a tree-based booster. Booster class is %d",
               booster.getClass().getCanonicalName()));
     }
 
-    final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
-    if (treeClass >= groupedTrees.length) {
-      throw new IllegalArgumentException("Given XGBoost model does not have given class"); //Todo: better info - print at least number of existing classes, ideal situation would be to print the tring
+    final RegTree[][] treesAndClasses = ((GBTree) booster).getGroupedTrees();
+
+    SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
+
+    for (int i = 0; i < treesAndClasses.length; i++) {
+      final RegTree[] treesInGroup = treesAndClasses[i];
+
+    if (treeNumber >= treesInGroup.length || treeNumber < 0) {
+      throw new IllegalArgumentException(String.format("There is no such tree number for given class. Total number of trees is %d.", treesInGroup.length));
     }
 
-    final RegTree[] treesInGroup = groupedTrees[treeClass];
-
-    if (treeNumber >= treesInGroup.length) {
-      throw new IllegalArgumentException("There is no such tree number for given class"); // Todo: better info - same as above
-    }
 
     final RegTreeImpl.Node[] treeNodes = treesInGroup[treeNumber].getNodes();
     assert treeNodes.length >= 1;
 
-    SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
-    final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph("XGBoost Graph");
+
+    final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(String.format("Class %d", i));
 
     final boolean[] oneHotEncodedMap = markOneHotEncodedCategoricals(_featureMap); // XGBoost's usage of one-hot encoding assumed
     constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, oneHotEncodedMap, true); // Root node is at index 0
+    }
     return sharedTreeGraph;
   }
 

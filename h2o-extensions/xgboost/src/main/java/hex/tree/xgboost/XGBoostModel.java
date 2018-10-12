@@ -58,13 +58,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
     final int treeClass = getXGBoostClassIndex(treeClassName);
     if (treeClass >= groupedTrees.length) {
-      throw new IllegalArgumentException("Given XGBoost model does not have given class"); //Todo: better info - print at least number of existing classes, ideal situation would be to print the tring
+      throw new IllegalArgumentException(String.format("Given XGBoost model does not have given class '%s'.", treeClassName));
     }
 
     final RegTree[] treesInGroup = groupedTrees[treeClass];
 
-    if (treeNumber >= treesInGroup.length) {
-      throw new IllegalArgumentException("There is no such tree number for given class"); // Todo: better info - same as above
+    if (treeNumber >= treesInGroup.length || treeNumber < 0) {
+      throw new IllegalArgumentException(String.format("There is no such tree number for given class. Total number of trees is %d.", treesInGroup.length));
     }
 
     final RegTreeImpl.Node[] treeNodes = treesInGroup[treeNumber].getNodes();
@@ -145,14 +145,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     final String[] domain = Objects.requireNonNull(model_info._dataInfoKey.get())
             ._adaptedFrame.vec(_parms._response_column).domain();
+    if(ModelCategory.Regression.equals(modelCategory) && treeClass != null){
+      throw new IllegalArgumentException("There should be no tree class specified for regression.");
+    }
     final int treeClassIndex = ArrayUtils.find(domain, treeClass);
 
     if (ModelCategory.Binomial.equals(modelCategory) && treeClassIndex != 0) {
-      throw new IllegalArgumentException(String.format("For binomial XGBoost model, only one tree for class %d has been built.", domain[0]));
+      throw new IllegalArgumentException(String.format("For binomial XGBoost model, only one tree for class %s has been built.", domain[0]));
+    } else if (treeClassIndex < 0) {
+      throw new IllegalArgumentException(String.format("No such class '%s' in tree.", treeClass));
     }
-
-    if (treeClassIndex < 0)
-      throw new IllegalArgumentException(String.format("No such class '%d' in tree.", treeClass));
 
     return treeClassIndex;
   }

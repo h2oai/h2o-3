@@ -59,7 +59,7 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements TreeBacke
     }
 
     @Override
-    public SharedTreeGraph computeGraph(int treeNumber, int treeClass) {
+    public SharedTreeGraph computeGraph(final int treeNumber) {
         return _computeGraph(treeNumber);
     }
 }

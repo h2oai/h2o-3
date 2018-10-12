@@ -191,7 +191,7 @@ public class PrintMojo {
 
     if(genModel instanceof TreeBackedMojoModel){
       TreeBackedMojoModel treeBackedMojoModel = (TreeBackedMojoModel) genModel;
-      final SharedTreeGraph g = treeBackedMojoModel.computeGraph(treeToPrint, 0);
+      final SharedTreeGraph g = treeBackedMojoModel.computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
