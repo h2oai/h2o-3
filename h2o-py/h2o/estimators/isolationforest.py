@@ -24,9 +24,9 @@ class H2OIsolationforestEstimator(H2OEstimator):
         super(H2OIsolationforestEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
-                      "ignore_const_cols", "ntrees", "max_depth", "min_rows", "nbins", "nbins_top_level", "nbins_cats",
-                      "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "sample_rate",
-                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "categorical_encoding"}
+                      "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
+                      "build_tree_one_node", "mtries", "sample_rate", "col_sample_rate_change_per_level",
+                      "col_sample_rate_per_tree", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -156,53 +156,6 @@ class H2OIsolationforestEstimator(H2OEstimator):
     def min_rows(self, min_rows):
         assert_is_type(min_rows, None, numeric)
         self._parms["min_rows"] = min_rows
-
-
-    @property
-    def nbins(self):
-        """
-        For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
-
-        Type: ``int``  (default: ``2``).
-        """
-        return self._parms.get("nbins")
-
-    @nbins.setter
-    def nbins(self, nbins):
-        assert_is_type(nbins, None, int)
-        self._parms["nbins"] = nbins
-
-
-    @property
-    def nbins_top_level(self):
-        """
-        For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease
-        by factor of two per level
-
-        Type: ``int``  (default: ``1024``).
-        """
-        return self._parms.get("nbins_top_level")
-
-    @nbins_top_level.setter
-    def nbins_top_level(self, nbins_top_level):
-        assert_is_type(nbins_top_level, None, int)
-        self._parms["nbins_top_level"] = nbins_top_level
-
-
-    @property
-    def nbins_cats(self):
-        """
-        For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
-        values can lead to more overfitting.
-
-        Type: ``int``  (default: ``2``).
-        """
-        return self._parms.get("nbins_cats")
-
-    @nbins_cats.setter
-    def nbins_cats(self, nbins_cats):
-        assert_is_type(nbins_cats, None, int)
-        self._parms["nbins_cats"] = nbins_cats
 
 
     @property
