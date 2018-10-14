@@ -720,3 +720,9 @@ class H2OWordEmbeddingModelMetrics(MetricsBase):
 
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OWordEmbeddingModelMetrics, self).__init__(metric_json, on, algo)
+
+
+class H2OAnomalyDetectionModelMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OAnomalyDetectionModelMetrics, self).__init__(metric_json, on, algo)
