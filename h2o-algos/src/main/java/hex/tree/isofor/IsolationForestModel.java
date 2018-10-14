@@ -26,7 +26,7 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
       _min_split_improvement = 0;
       _nbins = 2;
       _nbins_cats = 2;
-      _nbins_top_level = 2;
+      // _nbins_top_level = 2;
       _histogram_type = HistogramType.Random;
       _distribution = DistributionFamily.gaussian;
     }
