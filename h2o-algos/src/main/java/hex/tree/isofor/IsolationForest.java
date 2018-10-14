@@ -336,5 +336,14 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     return table;
   }
 
+  @Override
+  public boolean havePojo() {
+    return false;
+  }
+
+  @Override
+  public boolean haveMojo() {
+    return true;
+  }
 
 }

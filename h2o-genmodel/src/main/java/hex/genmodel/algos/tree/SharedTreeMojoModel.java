@@ -423,7 +423,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         for (; j < _ntree_groups; j++) {
             for (int i = 0; i < _ntrees_per_group; i++) {
                 int itree = treeIndex(j, i);
-                String treeName = treeName(j, i, getDomainValues(getResponseIdx()));
+                String[] domainValues = isSupervised() ? getDomainValues(getResponseIdx()) : null;
+                String treeName = treeName(j, i, domainValues);
                 SharedTreeSubgraph sg = g.makeSubgraph(treeName);
                 computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
                         _nclasses, getNames(), getDomainValues());

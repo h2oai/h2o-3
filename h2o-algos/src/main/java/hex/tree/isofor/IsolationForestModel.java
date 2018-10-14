@@ -85,11 +85,6 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   @Override
-  public boolean havePojo() {
-    return false;
-  }
-
-  @Override
   public IsolationForestMojoWriter getMojo() {
     return new IsolationForestMojoWriter(this);
   }

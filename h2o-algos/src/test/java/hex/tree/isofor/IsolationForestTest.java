@@ -23,6 +23,7 @@ public class IsolationForestTest extends TestUtil {
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
       p._seed = 0xDECAF;
+      p._ntrees = 7;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
       assertNotNull(model);
@@ -32,6 +33,7 @@ public class IsolationForestTest extends TestUtil {
       assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());
       assertEquals(train.numRows(), preds.numRows());
 
+      assertTrue(model.testJavaScoring(train, preds, 1e-8));
     } finally {
       Scope.exit();
     }

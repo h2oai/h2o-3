@@ -2185,6 +2185,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 decisionPath = mmp.leafNodeAssignments;
                 nodeIds = mmp.leafNodeAssignmentIds;
                 break;
+              case AnomalyDetection:
+                AnomalyDetectionPrediction adp = (AnomalyDetectionPrediction) p;
+                d2 = (col == 0) ? adp.normalizedScore : adp.score;
+                decisionPath = adp.leafNodeAssignments;
+                nodeIds = adp.leafNodeAssignmentIds;
+                break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:
                         ((DimReductionModelPrediction) p).dimensions[col];    // look at the reconstructed matrix
