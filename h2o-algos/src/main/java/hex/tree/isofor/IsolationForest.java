@@ -157,7 +157,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       growTree(rseed, ktrees);
 
       // Reset NIDs
-      CalculatePaths stats = new CalculatePaths(ktrees[0]).doAll(_train);
+      CalculatePaths stats = new CalculatePaths(ktrees[0]).doAll(_train, _parms._build_tree_one_node);
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
