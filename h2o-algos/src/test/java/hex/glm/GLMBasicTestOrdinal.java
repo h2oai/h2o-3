@@ -307,7 +307,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
 
       GLMTask.GLMGradientTask grBinomial = new GLMTask.GLMBinomialGradientTask(null, dinfo, params,
               lAmbda, beta).doAll(dinfo._adaptedFrame);
-      GLMTask.GLMMultinomialGradientTask grOrdinal = new GLMTask.GLMMultinomialGradientTask(null, odinfo, lAmbda,
+      GLMTask.GLMMultinomialGradientBaseTask grOrdinal = new GLMTask.GLMMultinomialGradientTask(null, odinfo, lAmbda,
               _betaMultinomial, paramsO).doAll(odinfo._adaptedFrame);
       compareBinomalOrdinalGradients(grBinomial, grOrdinal);  // compare and make sure the two gradients agree
 
@@ -317,7 +317,7 @@ public class GLMBasicTestOrdinal extends TestUtil {
     }
   }
 
-  public void compareBinomalOrdinalGradients(GLMTask.GLMGradientTask bGr, GLMTask.GLMMultinomialGradientTask oGr) {
+  public void compareBinomalOrdinalGradients(GLMTask.GLMGradientTask bGr, GLMTask.GLMMultinomialGradientBaseTask oGr) {
     // compare likelihood
     assertEquals(bGr._likelihood, oGr._likelihood, _tol);
 

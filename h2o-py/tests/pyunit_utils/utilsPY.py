@@ -835,10 +835,10 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
 
     # for family_type = 'multinomial' or 'binomial', response_y can be -ve to indicate bad sample data.
     # need to delete this data sample before proceeding
-    if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
-        if 'threshold' in class_method.lower():
-            if np.any(response_y < 0):  # remove negative entries out of data set
-                (x_mat, response_y) = remove_negative_response(x_mat, response_y)
+    # if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()) or ('ordinal' in family_type.lower()):
+    #     if 'threshold' in class_method.lower():
+    #         if np.any(response_y < 0):  # remove negative entries out of data set
+    #             (x_mat, response_y) = remove_negative_response(x_mat, response_y)
 
     # write to file in csv format
     np.savetxt(csv_filename, np.concatenate((x_mat, response_y), axis=1), delimiter=",")
@@ -1237,42 +1237,7 @@ def derive_discrete_response(prob_mat, class_method, class_margin, family_type='
     """
 
     (num_sample, num_class) = prob_mat.shape
-    lastCat = num_class-1
-    if 'probability' in class_method.lower():
-        prob_mat = normalize_matrix(prob_mat)
-    discrete_y = np.zeros((num_sample, 1), dtype=np.int)
-
-    if 'probability' in class_method.lower():
-        if 'ordinal' not in family_type.lower():
-            prob_mat = np.cumsum(prob_mat, axis=1)
-        else: # for ordinal
-            for indR in list(range(num_sample)):
-                for indC in list(range(num_class)):
-                    prob_mat[indR, indC] = prob_mat[indR,indC]/prob_mat[indR,lastCat]
-        random_v = np.random.uniform(0, 1, [num_sample, 1])
-
-        # choose the class that final response y belongs to according to the
-        # probability prob(y=k)
-        class_bool = random_v < prob_mat
-
-        for indR in range(num_sample):
-            for indC in range(num_class):
-                if class_bool[indR, indC]:
-                    discrete_y[indR, 0] = indC
-                    break
-
-    elif 'threshold' in class_method.lower():
-        discrete_y = np.argmax(prob_mat, axis=1)
-
-        temp_mat = np.diff(np.sort(prob_mat, axis=1), axis=1)
-
-        # check if max value exceeds second one by at least margin
-        mat_diff = temp_mat[:, num_class-2]
-        mat_bool = mat_diff < class_margin
-
-        discrete_y[mat_bool] = -1
-    else:
-        assert False, 'class_method should be set to "probability" or "threshold" only!'
+    discrete_y =  np.argmax(prob_mat, axis=1)
 
     return discrete_y
 

@@ -85,6 +85,7 @@ public final class ComputationState {
   public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
   public BetaConstraint activeBC(){return _activeBC;}
   public double likelihood() {return _likelihood;}
+  public boolean ginfoNull() {return _ginfo==null;}
 
   public DataInfo activeData(){
     if(_activeClass != -1)
@@ -640,9 +641,7 @@ public final class ComputationState {
       removeCols(zeros);
       res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeData().activeCols(),null,gt._yy,gt._likelihood);
     } else res = new GramXY(gt._gram,gt._xy,null,beta == null?null:beta,activeCols,null,gt._yy,gt._likelihood);
-    if(s == GLMParameters.Solver.COORDINATE_DESCENT) {
-      res.gram.getXX();
-    }
+
     return res;
   }
 
