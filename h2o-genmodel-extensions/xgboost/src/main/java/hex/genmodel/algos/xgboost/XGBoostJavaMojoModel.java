@@ -70,7 +70,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel {
   }
 
   @Override
-  public SharedTreeGraph computeGraph(int treeNumber) {
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
     return _computeGraph(booster, treeNumber);
   }

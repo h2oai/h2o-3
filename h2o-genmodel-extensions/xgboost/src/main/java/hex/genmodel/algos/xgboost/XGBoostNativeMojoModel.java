@@ -141,7 +141,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
   }
 
   @Override
-  public SharedTreeGraph computeGraph(final int treeNumber) {
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = null;
     try {
       booster = new Predictor(new ByteArrayInputStream(_booster.toByteArray())).getBooster();

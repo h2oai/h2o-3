@@ -9,7 +9,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.tree.TreeBackedMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
 import java.io.Closeable;
 
@@ -17,7 +17,7 @@ import java.io.Closeable;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel,Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter,Closeable {
 
   private static final String SPACE = " ";
 

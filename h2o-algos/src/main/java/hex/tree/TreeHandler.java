@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.schemas.TreeV3;
 import water.Keyed;
 import water.MemoryManager;
@@ -22,13 +23,13 @@ public class TreeHandler extends Handler {
         final Keyed possibleModel = args.model.key().get();
         if (possibleModel == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
 
-        else if (!(possibleModel instanceof SharedTreeModel) && !(possibleModel instanceof TreeBackedModel)) {
+        else if (!(possibleModel instanceof SharedTreeModel) && !(possibleModel instanceof SharedTreeGraphConverter)) {
             throw new IllegalArgumentException("Given model is not tree-based.");
         }
         final SharedTreeSubgraph sharedTreeSubgraph;
 
-        if (possibleModel instanceof TreeBackedModel) {
-            final TreeBackedModel treeBackedModel = (TreeBackedModel) possibleModel;
+        if (possibleModel instanceof SharedTreeGraphConverter) {
+            final SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) possibleModel;
             final SharedTreeGraph sharedTreeGraph = treeBackedModel.convert(args.tree_number, args.tree_class);
             assert sharedTreeGraph.subgraphArray.size() == 1;
             sharedTreeSubgraph = sharedTreeGraph.subgraphArray.get(0);

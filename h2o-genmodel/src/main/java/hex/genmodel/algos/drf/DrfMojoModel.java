@@ -3,13 +3,13 @@ package hex.genmodel.algos.drf;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.tree.TreeBackedMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfMojoModel extends SharedTreeMojoModel implements TreeBackedMojoModel {
+public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTreeGraphConverter {
     protected boolean _binomial_double_trees;
 
 
@@ -59,7 +59,7 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements TreeBacke
     }
 
     @Override
-    public SharedTreeGraph computeGraph(final int treeNumber) {
+    public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
         return _computeGraph(treeNumber);
     }
 }

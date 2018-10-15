@@ -11,10 +11,10 @@ import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.TreeBackedModel;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
 import water.fvec.Chunk;
@@ -32,7 +32,7 @@ import java.util.Map;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
 
-public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> implements TreeBackedModel {
+public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> implements SharedTreeGraphConverter {
 
   private XGBoostModelInfo model_info;
 

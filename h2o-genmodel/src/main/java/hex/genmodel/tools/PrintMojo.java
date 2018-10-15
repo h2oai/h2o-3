@@ -3,7 +3,7 @@ package hex.genmodel.tools;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.TreeBackedMojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -189,9 +189,9 @@ public class PrintMojo {
       os = System.out;
     }
 
-    if(genModel instanceof TreeBackedMojoModel){
-      TreeBackedMojoModel treeBackedMojoModel = (TreeBackedMojoModel) genModel;
-      final SharedTreeGraph g = treeBackedMojoModel.computeGraph(treeToPrint);
+    if(genModel instanceof SharedTreeGraphConverter){
+      SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
+      final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null);
       if (printRaw) {
         g.print();
       }
