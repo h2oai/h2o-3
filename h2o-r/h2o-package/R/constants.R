@@ -115,7 +115,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Model Metrics Endpoint
 #'
-#' @param mode H2OModel.
+#' @param model H2OModel.
 #' @param data H2OFrame.
 .h2o.__MODEL_METRICS <- function(model,data) {
   if(missing(data)) {

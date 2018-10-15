@@ -2,8 +2,19 @@
 #' H2O Model Related Functions
 #'
 #' @importFrom graphics strwidth par legend polygon
+#'
 
+#-----------------------------------------------------------------------------------------------------------------------
+#   Helper Functions
+#-----------------------------------------------------------------------------------------------------------------------
 
+#'
+#' Used to verify data, x, y and turn into the appropriate things
+#'
+#' @param data H2OFrame
+#' @param x features
+#' @param y response
+#' @param autoencoder autoencoder flag
 .verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
   if(!is.character(x) && !is.numeric(x))
     stop('`x` must be column names or indices')
