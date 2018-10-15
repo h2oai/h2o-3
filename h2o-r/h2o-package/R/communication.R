@@ -267,9 +267,11 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
+#' @param conn H2OConnection
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parametes
 #' @return A list object as described above
 .h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -291,10 +293,12 @@
 #'     $httpStatusMessage  -- A string describing the httpStatusCode.
 #'     $payload            -- The raw response payload as a character vector.
 #'
+#' @param conn H2OConnection
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
+#' @param ... (Optional) Additional parametes.
 #' @return A list object as described above
 .h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -319,6 +323,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parametes.
 #' @return A list object as described above
 .h2o.doGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -330,6 +335,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parametes.
 #' @return A list object as described above
 .h2o.doPOST <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -391,6 +397,7 @@
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param ... (Optional) Additional parametes.
 #' @return The raw response payload as a character vector
 .h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
@@ -407,6 +414,7 @@
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
+#' @param ... (Optional) Additional parametes.
 #' @return The raw response payload as a character vector
 .h2o.doSafePOST <- function(h2oRestApiVersion, urlSuffix, parms, fileUploadInfo, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,

@@ -10,6 +10,8 @@
 #' Locate a file given the pattern <bucket>/<path/to/file>
 #' e.g. h2o:::.h2o.locate("smalldata/iris/iris22.csv") returns the absolute path to iris22.csv
 #'
+#' @param pathStub relative path
+#' @param root.parent search root directory
 .h2o.locate<-
   function(pathStub, root.parent = NULL) {
     pathStub <- .h2o.locate.clean(pathStub)
