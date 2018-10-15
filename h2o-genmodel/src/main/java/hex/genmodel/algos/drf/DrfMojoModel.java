@@ -58,8 +58,4 @@ public final class DrfMojoModel extends SharedTreeMojoModel implements SharedTre
         return score0(row, 0.0, preds);
     }
 
-    @Override
-    public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
-        return _computeGraph(treeNumber);
-    }
 }

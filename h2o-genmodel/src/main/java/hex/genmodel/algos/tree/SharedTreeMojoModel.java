@@ -14,7 +14,7 @@ import java.util.Map;
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class SharedTreeMojoModel extends MojoModel {
+public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter{
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
@@ -914,5 +914,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     preds[2] = p;
     return true;
   }
+
+    @Override
+    public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
+        return _computeGraph(treeNumber);
+    }
 
 }

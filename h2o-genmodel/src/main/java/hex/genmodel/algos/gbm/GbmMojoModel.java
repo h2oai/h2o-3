@@ -60,9 +60,4 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
     public String[] leaf_node_assignment(double[] row) {
         return getDecisionPath(row);
     }
-
-    @Override
-    public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
-        return _computeGraph(treeNumber);
-    }
 }
