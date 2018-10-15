@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-from h2o.estimators.isolationforest import H2OIsolationforestEstimator
+from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
 
 
 def isolation_forest():
@@ -12,8 +12,10 @@ def isolation_forest():
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_test.csv"))
 
-    if_model = H2OIsolationforestEstimator(ntrees=7, seed=12)
+    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12)
     if_model.train(training_frame=train)
+
+    print(if_model)
 
     perf = if_model.model_performance()
     print(perf)

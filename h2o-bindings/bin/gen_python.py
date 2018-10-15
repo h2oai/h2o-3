@@ -296,6 +296,7 @@ def algo_to_classname(algo):
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
+    if algo == "isolationforest": return "H2OIsolationForestEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -621,6 +622,7 @@ def main():
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
+        if name == "isolationforest": module = "isolation_forest"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
         category = "Supervised" if mb["supervised"] else "Unsupervised"

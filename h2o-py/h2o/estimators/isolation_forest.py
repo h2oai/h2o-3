@@ -12,7 +12,7 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OIsolationforestEstimator(H2OEstimator):
+class H2OIsolationForestEstimator(H2OEstimator):
     """
     Isolation Forest
 
@@ -21,7 +21,7 @@ class H2OIsolationforestEstimator(H2OEstimator):
     algo = "isolationforest"
 
     def __init__(self, **kwargs):
-        super(H2OIsolationforestEstimator, self).__init__()
+        super(H2OIsolationForestEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
                       "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
