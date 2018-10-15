@@ -1,15 +1,12 @@
 package hex.genmodel.algos.xgboost;
 
 import biz.k11i.xgboost.Predictor;
-import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
-import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
+
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
+
 import ml.dmlc.xgboost4j.java.*;
 
 import java.io.ByteArrayInputStream;
@@ -19,7 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Please note: user is advised to explicitly release the native resources of XGBoost by calling close method on the instance.
@@ -85,7 +82,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
 
   public String[] getBoosterDump(final boolean withStats, final String format) {
     final Path featureMapFile;
-    if (_featureMap != null && _featureMap.length > 0)
+    if (_featureMap != null && ! _featureMap.isEmpty())
       try {
         featureMapFile = Files.createTempFile("featureMap", ".txt");
       } catch (IOException e) {
@@ -95,7 +92,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       featureMapFile = null;
     try {
       if (featureMapFile != null) {
-        Files.write(featureMapFile, Arrays.asList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
+        Files.write(featureMapFile, Collections.singletonList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
       }
 
       BoosterHelper.BoosterOp<String[]> dumpOp = new BoosterHelper.BoosterOp<String[]>() {

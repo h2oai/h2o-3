@@ -1,7 +1,6 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.utils.DistributionFamily;
