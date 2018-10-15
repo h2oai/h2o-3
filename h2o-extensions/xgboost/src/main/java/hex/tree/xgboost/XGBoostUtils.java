@@ -1,5 +1,7 @@
 package hex.tree.xgboost;
 
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimap;
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -878,6 +880,32 @@ public class XGBoostUtils {
      */
     private static BigDenseMatrix allocateDenseMatrix(final int rowCount, final DataInfo dataInfo) {
         return new BigDenseMatrix(rowCount, dataInfo.fullN());
+    }
+
+    public static FeatureProperties assembleFeatureNames(final DataInfo di) {
+        String[] coefnames = di.coefNames();
+        assert (coefnames.length == di.fullN());
+        int numCatCols = di._catOffsets[di._catOffsets.length - 1];
+
+        String[] featureNames = new String[di.fullN()];
+        boolean[] oneHotEncoded = new boolean[di.fullN()];
+        for (int i = 0; i < di.fullN(); ++i) {
+            featureNames[i] = coefnames[i];
+            if (i < numCatCols) {
+                oneHotEncoded[i] = true;
+            }
+        }
+        return new FeatureProperties(featureNames, oneHotEncoded);
+    }
+
+    static class FeatureProperties {
+        public String[] _names;
+        public boolean[] _oneHotEncoded;
+
+        public FeatureProperties(String[] names, boolean[] oneHotEncoded) {
+            _names = names;
+            _oneHotEncoded = oneHotEncoded;
+        }
     }
 
 }
