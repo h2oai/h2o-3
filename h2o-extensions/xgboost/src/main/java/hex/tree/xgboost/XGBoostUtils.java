@@ -1,7 +1,5 @@
 package hex.tree.xgboost;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Multimap;
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
