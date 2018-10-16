@@ -234,6 +234,50 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
+  /**
+   * Start model training using a this ModelBuilder as a template. The MB can be either used directly
+   * or if the method was invoked on a regular H2O node. If the method was called on a client node, the model builder
+   * will be used as a template only and the actual instance used for training will re-created on a remote H2O node.
+   *
+   * Warning: the nature of this method prohibits further use of this instance of the model builder after the method
+   *          is called.
+   *
+   * This is intended to reduce training time in client-mode setups, it pushes all computation to a regular H2O node
+   * and avoid exchanging data between client and H2O cluster. This also lowers requirements on the H2O client node.
+   *
+   * @return model job
+   */
+  public Job<M> trainModelOnH2ONode() {
+    if (H2O.ARGS.client) {
+      RemoteTrainModelTask tmt = new RemoteTrainModelTask(_job, _job._result, _parms);
+      H2ONode leader = H2O.CLOUD.leader();
+      new RPC<>(leader, tmt).call().get();
+      return _job;
+    } else {
+      return trainModel(); // use directly
+    }
+  }
+
+  private static class RemoteTrainModelTask extends DTask<RemoteTrainModelTask> {
+    private Job<Model> _job;
+    private Key<Model> _key;
+    private Model.Parameters _parms;
+    @SuppressWarnings("unchecked")
+    private RemoteTrainModelTask(Job job, Key key, Model.Parameters parms) {
+      _job = (Job<Model>) job;
+      _key = (Key<Model>) key;
+      _parms = parms;
+    }
+    @Override
+    public void compute2() {
+      ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
+      mb._parms = _parms;
+      mb.init(false); // validate parameters
+      mb.trainModel();
+      tryComplete();
+    }
+  }
+
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     if (error_count() > 0)

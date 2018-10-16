@@ -61,7 +61,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
     PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     schema.setHttpStatus(HttpResponseStatus.OK.getCode());
-    if( doTrain ) schema.job.fillFromImpl(builder.trainModel());
+    if( doTrain ) schema.job.fillFromImpl(builder.trainModelOnH2ONode());
     return schema;
   }
 

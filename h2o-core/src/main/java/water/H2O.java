@@ -1681,7 +1681,7 @@ final public class H2O {
   }
 
   public final int size() { return _memary.length; }
-  final H2ONode leader() {
+  public final H2ONode leader() {
     return _memary[0];
   }
 
