@@ -98,9 +98,13 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__RAPIDS         <- "Rapids"
 
 #' Model Builder Endpoint Generator
+#'
+#' @param algo Cannonical identifier of H2O algorithm.
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
 #' Export Files Endpoint Generator
+#'
+#' @param frame H2OFrame
 .h2o.__EXPORT_FILES <- function(frame) paste0("Frames/", h2o.getId(frame), '/export')
 
 #' Model Endpoint
@@ -110,6 +114,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__W2V_SYNONYMS       <- "Word2VecSynonyms"
 
 #' Model Metrics Endpoint
+#'
+#' @param model H2OModel.
+#' @param data H2OFrame.
 .h2o.__MODEL_METRICS <- function(model,data) {
   if(missing(data)) {
     paste0("ModelMetrics/models/",model)
