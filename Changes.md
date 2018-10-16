@@ -2,6 +2,21 @@
 
 ## H2O
 
+### Wright (3.20.0.10) - 10/16/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/10/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5613'>PUBDEV-5613</a>] - AutoML now correctly. respects the max_runtime_secs setting.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5856'>PUBDEV-5856</a>] - Fixed a multinomial COD solver bug.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5919'>PUBDEV-5919</a>] - Fixed an issue that caused importing of ARFF files to fail if the header was too large and/or with large datasets with categoricals.
+</li>
+</ul>
+
 ### Wright (3.20.0.9) - 10/1/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-wright/9/index.html</a>
@@ -439,8 +454,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5610'>PUBDEV-5610</a>] - Proxy Mode of h2odriver now supports a notification file (specified with the `-notify` argument).
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5611'>PUBDEV-5611</a>] - Jetty 9 no longer fails in h2odriver proxy mode.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5617'>PUBDEV-5617</a>] - Fixed an issue that caused h2o.predict to throw an exception in H2OCoxPH models with interactions with stratum.
 </li>
 </ul>
@@ -506,8 +519,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-wright/1/index
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4375'>PUBDEV-4375</a>] - Replaced the Jama SVD computation in PCA with netlib-java library MTJ.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4447'>PUBDEV-4447</a>] - Upgraded Jetty to Jetty 9.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4518'>PUBDEV-4518</a>] - Created more tests in AutoML to ensure that all fold_assignment values and fold_column work correctly.
 </li>
