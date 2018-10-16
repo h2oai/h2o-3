@@ -547,7 +547,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: handle error_count and messages
 
     Log.debug("Training model: " + algoName + ", time remaining (ms): " + timeRemainingMs());
-    return builder.trainModel();
+    return builder.trainModelOnH2ONode();
   }
 
   private Key<Grid> gridKey(String algoName) {
