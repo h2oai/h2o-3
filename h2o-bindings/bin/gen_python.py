@@ -342,6 +342,14 @@ def help_preamble_for(algo):
             or more H2O learning algorithms to improve predictive performance. It is a loss-based
             supervised learning method that finds the optimal combination of a collection of prediction
             algorithms.This method supports regression and binary classification. """
+    if algo == "isolationforest":
+        return """
+            Builds an Isolation Forest model. Isolation Forest algorithm samples the training frame
+            and in each iteration builds a tree that partitions the space of the sample observations until
+            it isolates each observation. Length of the path from root to a leaf node of the resulting tree
+            is used to calculate the anomaly score. Anomalies are easier to isolate and their average
+            tree path is expected to be shorter than paths of regular observations.
+        """
 
 def help_epilogue_for(algo):
     if algo == "deeplearning":
