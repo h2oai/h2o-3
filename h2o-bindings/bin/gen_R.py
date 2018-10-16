@@ -482,6 +482,10 @@ def help_preamble_for(algo):
         return """
             Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset
         """
+    if algo == "isolationforest":
+        return """
+            Trains an Isolation Forest model
+        """
 
 def help_details_for(algo):
     if algo == "naivebayes":

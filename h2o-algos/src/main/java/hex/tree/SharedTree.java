@@ -152,16 +152,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
-    if (_parms._sample_rate_per_class != null) {
-      warn("_sample_rate", "_sample_rate is ignored if _sample_rate_per_class is specified.");
-      if (_parms._sample_rate_per_class.length != nclasses()) error("_sample_rate_per_class", "_sample_rate_per_class must have " + nclasses() + " values (one per class).");
-      for (int i=0;i<_parms._sample_rate_per_class.length;++i) {
-        if (!(0.0 < _parms._sample_rate_per_class[i] && _parms._sample_rate_per_class[i] <= 1.0))
-          error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain()[i] + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
-      }
-    }
-    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
-      error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate + ".");
+    validateRowSampleRate();
     if (_parms._min_split_improvement < 0)
       error("_min_split_improvement", "min_split_improvement must be >= 0, but is " + _parms._min_split_improvement + ".");
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
@@ -190,6 +181,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
       if (cf == null)
         error("_calibrate_model", "Calibration frame was not specified.");
+    }
+  }
+
+  protected void validateRowSampleRate() {
+    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
+      error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate + ".");
+    if (_parms._sample_rate_per_class != null) {
+      warn("_sample_rate", "_sample_rate is ignored if _sample_rate_per_class is specified.");
+      if (_parms._sample_rate_per_class.length != nclasses()) error("_sample_rate_per_class", "_sample_rate_per_class must have " + nclasses() + " values (one per class).");
+      for (int i=0;i<_parms._sample_rate_per_class.length;++i) {
+        if (!(0.0 < _parms._sample_rate_per_class[i] && _parms._sample_rate_per_class[i] <= 1.0))
+          error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain()[i] + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
+      }
     }
   }
 

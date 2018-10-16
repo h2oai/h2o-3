@@ -2,6 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- isolationforest -------------------------- #
+#' 
+#' Trains an Isolation Forest model
+#' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
