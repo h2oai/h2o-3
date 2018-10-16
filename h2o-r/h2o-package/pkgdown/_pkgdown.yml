@@ -306,7 +306,8 @@ reference:
       - is.character
       - is.factor 
       - is.h2o 
-      - is.numeric 
+      - is.numeric
+      - h2o.isolationForest
       - Logical-or
       - ModelAccessors
       - names.H2OFrame
