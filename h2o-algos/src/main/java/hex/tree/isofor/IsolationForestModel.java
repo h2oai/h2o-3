@@ -16,12 +16,14 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public String fullName() { return "Isolation Forest"; }
     public String javaName() { return IsolationForestModel.class.getName(); }
     public int _mtries;
+    public long _sample_size;
 
     public IsolationForestParameters() {
       super();
       _mtries = -1;
-      _sample_rate = 0.632f;
-      _max_depth = 32;
+      _sample_size = 256;
+      _max_depth = 8; // log2(_sample_size)
+      _sample_rate = -1;
       _min_rows = 1;
       _min_split_improvement = 0;
       _nbins = 2;

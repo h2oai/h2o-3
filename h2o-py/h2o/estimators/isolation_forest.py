@@ -25,7 +25,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
                       "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
-                      "build_tree_one_node", "mtries", "sample_rate", "col_sample_rate_change_per_level",
+                      "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
                       "col_sample_rate_per_tree", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
@@ -133,7 +133,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Maximum tree depth.
 
-        Type: ``int``  (default: ``32``).
+        Type: ``int``  (default: ``8``).
         """
         return self._parms.get("max_depth")
 
@@ -207,7 +207,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def mtries(self):
         """
         Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
-        (where p is the # of predictors)
+        (where p is the # of predictors).
 
         Type: ``int``  (default: ``-1``).
         """
@@ -220,11 +220,27 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
 
     @property
+    def sample_size(self):
+        """
+        Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate will
+        be used instead.
+
+        Type: ``int``  (default: ``256``).
+        """
+        return self._parms.get("sample_size")
+
+    @sample_size.setter
+    def sample_size(self, sample_size):
+        assert_is_type(sample_size, None, int)
+        self._parms["sample_size"] = sample_size
+
+
+    @property
     def sample_rate(self):
         """
         Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.6320000291``).
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("sample_rate")
 

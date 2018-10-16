@@ -9,7 +9,7 @@
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 32.
+#' @param max_depth Maximum tree depth. Defaults to 8.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
@@ -17,8 +17,10 @@
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
-#'        (where p is the # of predictors) Defaults to -1.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
+#'        (where p is the # of predictors). Defaults to -1.
+#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate
+#'        will be used instead. Defaults to 256.
+#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to -1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
@@ -30,13 +32,14 @@ h2o.isolationForest <- function(training_frame, x,
                                 score_tree_interval = 0,
                                 ignore_const_cols = TRUE,
                                 ntrees = 50,
-                                max_depth = 32,
+                                max_depth = 8,
                                 min_rows = 1,
                                 max_runtime_secs = 0,
                                 seed = -1,
                                 build_tree_one_node = FALSE,
                                 mtries = -1,
-                                sample_rate = 0.6320000291,
+                                sample_size = 256,
+                                sample_rate = -1,
                                 col_sample_rate_change_per_level = 1,
                                 col_sample_rate_per_tree = 1,
                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
@@ -78,6 +81,8 @@ h2o.isolationForest <- function(training_frame, x,
     parms$build_tree_one_node <- build_tree_one_node
   if (!missing(mtries))
     parms$mtries <- mtries
+  if (!missing(sample_size))
+    parms$sample_size <- sample_size
   if (!missing(sample_rate))
     parms$sample_rate <- sample_rate
   if (!missing(col_sample_rate_change_per_level))
