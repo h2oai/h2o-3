@@ -247,10 +247,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *
    * @return model job
    */
-  @SuppressWarnings("unchecked")
   public Job<M> trainModelOnH2ONode() {
     if (H2O.ARGS.client) {
-      RemoteTrainModelTask tmt = new RemoteTrainModelTask((Job<Model>) _job, (Key<Model>) _job._result, _parms);
+      RemoteTrainModelTask tmt = new RemoteTrainModelTask(_job, _job._result, _parms);
       H2ONode leader = H2O.CLOUD.leader();
       new RPC<>(leader, tmt).call().get();
       return _job;
@@ -263,13 +262,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     private Job<Model> _job;
     private Key<Model> _key;
     private Model.Parameters _parms;
-    private RemoteTrainModelTask(Job<Model> job, Key<Model> key, Model.Parameters parms) {
-      _job = job;
-      _key = key;
+    @SuppressWarnings("unchecked")
+    private RemoteTrainModelTask(Job job, Key key, Model.Parameters parms) {
+      _job = (Job<Model>) job;
+      _key = (Key<Model>) key;
       _parms = parms;
     }
     @Override
-    @SuppressWarnings("unchecked")
     public void compute2() {
       ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
       mb._parms = _parms;
