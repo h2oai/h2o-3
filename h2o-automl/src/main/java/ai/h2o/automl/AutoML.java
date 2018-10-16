@@ -45,6 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
+
+
   static class WorkAllocations extends Iced<WorkAllocations> {
 
     private static class Work extends Iced<Work> {
@@ -124,6 +126,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
   }
+
+  private static final String DISTRIBUTED_XGBOOST_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.multinode.xgboost.enabled";
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
@@ -276,7 +280,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
       }
     }
-    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")) {
+    if (!ExtensionManager.getInstance().isCoreExtensionEnabled("XGBoost")
+        || (H2O.CLOUD.size() > 1 && !Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, "false")))) {
       userFeedback.warn(Stage.ModelTraining, "AutoML: XGBoost extension is not available; skipping default XGBoost");
       skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.XGBoost);
     }
