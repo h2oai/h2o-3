@@ -251,7 +251,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (H2O.ARGS.client) {
       RemoteTrainModelTask tmt = new RemoteTrainModelTask(_job, _job._result, _parms);
       H2ONode leader = H2O.CLOUD.leader();
-      new RPC<>(leader, tmt).call().get();
+      try {
+        new RPC<>(leader, tmt).call().get();
+      } catch (DistributedException de) {
+        if (de.getCause() instanceof RuntimeException) throw (RuntimeException)de.getCause();
+        throw de;
+      }
       return _job;
     } else {
       return trainModel(); // use directly

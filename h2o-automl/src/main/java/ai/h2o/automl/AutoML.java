@@ -1,7 +1,6 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
-import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
