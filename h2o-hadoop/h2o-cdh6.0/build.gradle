@@ -1,0 +1,10 @@
+ext {
+  hadoopVersion = 'cdh6.0'
+  hadoopMavenArtifactVersion = '3.0.0-cdh6.0.0'
+}
+
+apply from: '../driverjar.gradle'
+
+dependencies {
+    compile 'org.apache.hadoop:hadoop-mapreduce-client-app:3.0.0-cdh6.0.0'
+}
