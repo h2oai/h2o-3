@@ -606,6 +606,8 @@ public class h2odriver extends Configured implements Tool {
                     "          [-ea]\n" +
                     "          [-verbose:gc]\n" +
                     "          [-XX:+PrintGCDetails]\n" +
+                    "          [-XX:+PrintGCTimeStamps]\n" +
+                    "          [-Xlog:gc=info]\n" +
                     "          [-license <license file name (local filesystem, not hdfs)>]\n" +
                     "          [-o | -output <hdfs output dir>]\n" +
                     "\n" +
@@ -639,6 +641,9 @@ public class h2odriver extends Configured implements Tool {
                     "             The file contains one line with the IP and port of the embedded\n" +
                     "             web server for one of the H2O nodes in the cluster.  e.g.\n" +
                     "                 192.168.1.100:54321\n" +
+                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]" +
+                    "             are deperacated in Java 9 and removed in Java 10." +
+                    "             The option [-Xlog:gc=info] replaces these flags since Java 9." +
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
@@ -863,7 +868,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ea")) {
         enableExceptions = true;
       }
-      else if (s.equals("-verbose:gc")) {
+      else if (s.equals("-verbose:gc") && !useUnifiedLogging()) {
+        enableVerboseGC = true;
+      } else if (s.equals("-Xlog:gc=info") && useUnifiedLogging()) {
         enableVerboseGC = true;
       }
       else if (s.equals("-verbose:class")) {
@@ -891,10 +898,10 @@ public class h2odriver extends Configured implements Tool {
           error("Debug port must be between 1 and 65535");
         }
       }
-      else if (s.equals("-XX:+PrintGCDetails")) {
+      else if (s.equals("-XX:+PrintGCDetails") && !useUnifiedLogging()) {
         enablePrintGCDetails = true;
       }
-      else if (s.equals("-XX:+PrintGCTimeStamps")) {
+      else if (s.equals("-XX:+PrintGCTimeStamps") && !useUnifiedLogging()) {
         enablePrintGCTimeStamps = true;
       }
       else if (s.equals("-gc")) {
@@ -995,6 +1002,15 @@ public class h2odriver extends Configured implements Tool {
     for (int j = 0; j < otherArgs.length; j++)
       otherArgs[j] = args[i++];
     return otherArgs;
+  }
+
+  /**
+   *
+   * @return True if current Java version uses unified logging (JEP 158), otherwise false.
+   */
+  boolean useUnifiedLogging(){
+    // Unified logging enabled since version 9, enforced in version 10.
+    return JAVA_VERSION.isKnown() && JAVA_VERSION.getMajor() >= 9;
   }
 
   void validateArgs() {
@@ -1412,7 +1428,8 @@ public class h2odriver extends Configured implements Tool {
               .append(" -Xmx").append(mapperXmx)
               .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
               .append((enableExceptions ? " -ea" : ""))
-              .append((enableVerboseGC ? " -verbose:gc" : ""))
+              .append((enableVerboseGC && !useUnifiedLogging() ? " -verbose:gc" : ""))
+              .append(enableVerboseGC && useUnifiedLogging() ? "-Xlog:gc=info" : "")
               .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
               .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
               .append((enableVerboseClass ? " -verbose:class" : ""))

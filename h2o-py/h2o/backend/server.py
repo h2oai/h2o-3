@@ -267,7 +267,6 @@ class H2OLocalServer(object):
                      "%dM" % (num >> 20) if num == (num >> 20) << 20 else \
                      str(num)
             cmd += [mq + numstr]
-        cmd += ["-verbose:gc", "-XX:+PrintGCDetails", "-XX:+PrintGCTimeStamps"]
         cmd += ["-cp", os.pathsep.join(classpath), "water.H2OApp"]  # This should be the last JVM option
 
         # ...add H2O options
