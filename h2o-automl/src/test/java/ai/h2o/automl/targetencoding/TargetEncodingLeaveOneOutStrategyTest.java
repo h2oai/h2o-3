@@ -2,15 +2,20 @@ package ai.h2o.automl.targetencoding;
 
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import water.Job;
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.TwoDimTable;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -25,39 +30,59 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
   private Frame fr = null;
 
-
   // In case of LOO holdout we subtract target value of the current row from aggregated values per group.
   // This is where we can end up with 0 in denominator column.
+  @Ignore // TODO see PUBDEV-5941 regarding chunk layout
   @Test
   public void calculateAndAppendBlendedTEEncodingDivisionByZeroTest() {
+    String tmpName = null;
+    Frame reimportedFrame = null;
 
     String teColumnName = "ColA";
     String targetColumnName = "ColB";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName, "numerator", "denominator")
-            .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "a"))
-            .withDataForCol(1, ar("yes", "no", "yes"))
-            .withDataForCol(2, ar(2, 0, 2))
-            .withDataForCol(3, ar(2, 0, 2))  // For b row we set denominator to 0
-            .withChunkLayout(1,2) // TODO see PUBDEV-5941 regarding chunk layout
-            .build();
+    Map<String, Frame> targetEncodingMap = null;
+    Frame result = null;
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName, "numerator", "denominator")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "a"))
+              .withDataForCol(1, ar("yes", "no", "yes"))
+              .withDataForCol(2, ar(2, 0, 2))
+              .withDataForCol(3, ar(2, 0, 2))  // For b row we set denominator to 0
+              .withChunkLayout(1, 2) // TODO see PUBDEV-5941 regarding chunk layout
+              .build();
 
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      tmpName = UUID.randomUUID().toString();
+      Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
+      export.get();
 
-    Frame result = tec.calculateAndAppendBlendedTEEncoding(fr, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
+      reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+      printOutFrameAsTable(reimportedFrame);
 
-    double globalMean = 2.0 / 3;
+      printOutColumnsMeta(fr);
+      printOutColumnsMeta(reimportedFrame);
 
-    printOutFrameAsTable(result);
-    assertEquals(globalMean, result.vec(4).at(1), 1e-5);
-    assertFalse(result.vec(2).isNA(1));
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+      targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-    encodingMapCleanUp(targetEncodingMap);
-    result.delete();
+      result = tec.calculateAndAppendBlendedTEEncoding(reimportedFrame, targetEncodingMap.get(teColumnName), targetColumnName, "targetEncoded");
+
+      double globalMean = 2.0 / 3;
+
+      printOutFrameAsTable(result);
+      assertEquals(globalMean, result.vec(4).at(1), 1e-5);
+      assertFalse(result.vec(2).isNA(1));
+
+    } finally {
+      encodingMapCleanUp(targetEncodingMap);
+      result.delete();
+      reimportedFrame.delete();
+      new File(tmpName).delete();
+    }
+
   }
 
   @Test // TODO see PUBDEV-5941 regarding chunk layout

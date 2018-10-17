@@ -39,6 +39,10 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      FrameUtils.asFactor(trainFrame, targetColumnName);
+      FrameUtils.asFactor(validFrame, targetColumnName);
+      FrameUtils.asFactor(testFrame, targetColumnName);
+      printOutColumnsMeta(testFrame);
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -47,8 +51,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
-
-
 
       boolean withBlendedAvg = true;
       boolean withNoiseOnlyForTraining = true;
@@ -80,7 +82,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
+      parms._distribution = DistributionFamily.multinomial;
       parms._valid = validEncoded._key;
       parms._stopping_tolerance = 0.001;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;

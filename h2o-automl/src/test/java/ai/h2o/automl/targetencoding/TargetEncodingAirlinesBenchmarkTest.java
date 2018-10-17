@@ -1,6 +1,5 @@
 package ai.h2o.automl.targetencoding;
 
-import hex.AUC2;
 import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
@@ -69,9 +68,11 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       // Applying encoding to the valid set
       Frame validEncoded = tec.applyTargetEncoding(airlinesValid, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, withImputationForNAsInOriginalColumns, seed, true);
 
+
       // Applying encoding to the test set
       Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, withImputationForNAsInOriginalColumns, seed, false);
-      testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10);
+      printOutColumnsMeta(testEncoded);
+      testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
       //Frame.export(trainEncoded, "airlines_train_kfold_dest_noise_noblend.csv", trainEncoded._key.toString(), true, 1);
@@ -162,7 +163,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       // Applying encoding to the test set
       Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, withImputationForNAsInOriginalColumns, 1234, false);
       //We do it manually just to be able to measure metrics in the end. TargetEncoder should not be aware of target column for test dataset.
-      testEncoded = tec.ensureTargetColumnIsNumericOrBinaryCategorical(testEncoded, 10);
+      testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
       Scope.track(trainEncoded, validEncoded, testEncoded);
 
 
@@ -233,9 +234,9 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
 
       Scope.track(airlinesTrainWithTEHDefault, airlinesValidDefault, airlinesTestFrameDefault);
 
-      airlinesTrainWithTEHDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTrainWithTEHDefault, 10);
-      airlinesValidDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesValidDefault, 10);
-      airlinesTestFrameDefault = tec.ensureTargetColumnIsNumericOrBinaryCategorical(airlinesTestFrameDefault, 10);
+      airlinesTrainWithTEHDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesTrainWithTEHDefault, targetColumnName);
+      airlinesValidDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesValidDefault, targetColumnName);
+      airlinesTestFrameDefault = tec.ensureTargetColumnIsBinaryCategorical(airlinesTestFrameDefault, targetColumnName);
 
       GBMModel.GBMParameters parms2 = new GBMModel.GBMParameters();
       parms2._train = airlinesTrainWithTEHDefault._key;

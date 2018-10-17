@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
@@ -7,6 +8,8 @@ import water.Scope;
 import water.rapids.Env;
 import water.rapids.Session;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -96,9 +99,10 @@ public class TestFrameBuilder {
    */
   public TestFrameBuilder withRandomIntDataForCol(int column, int size, int min, int max, long seed) {
     assert max > min;
+    assert seed + size * size <= Long.MAX_VALUE;
     double[] arr = new double[size];
     for(int i = 0; i < size; i++) {
-      arr[i] = min + new Random(seed).nextInt(max - min);
+      arr[i] = min + new Random(seed + i * size).nextInt(max - min);
     }
     numericData.put(column, arr);
     return this;
@@ -115,7 +119,7 @@ public class TestFrameBuilder {
     assert max >= min;
     double[] arr = new double[size];
     for(int i = 0; i < size; i++) {
-      arr[i] = min + (max - min) * new Random(seed).nextDouble();
+      arr[i] = min + (max - min) * new Random(seed + i * size).nextDouble();
     }
     numericData.put(column, arr);
     return this;
@@ -128,8 +132,12 @@ public class TestFrameBuilder {
    */
   public TestFrameBuilder withRandomBinaryDataForCol(int column, int size, long seed) {
     String[] arr = new String[size];
+    Random generator = new Random();
+    long multiplierFromRandomClass = 0x5DEECE66DL;
+    assert seed + size * multiplierFromRandomClass < Long.MAX_VALUE;
     for(int i = 0; i < size; i++) {
-      arr[i] = Boolean.toString( new Random(seed).nextBoolean());
+      generator.setSeed(seed + i * multiplierFromRandomClass);
+      arr[i] = Boolean.toString( generator.nextBoolean());
     }
     stringData.put(column, arr);
     return this;

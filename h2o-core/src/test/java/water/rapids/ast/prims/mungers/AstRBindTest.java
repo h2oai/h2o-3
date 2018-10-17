@@ -48,7 +48,7 @@ public class AstRBindTest extends TestUtil {
 
     Vec resVec = unionFrame.vec(2);
 
-    printOutFrameAsTable(fr, true, false, 10);
+    printOutFrameAsTable(fr, false, 10);
 
     assertEquals(2, unionFrame.numRows());
     assertEquals(5L, resVec.at(0), 1e-5);

@@ -2,8 +2,8 @@ package ai.h2o.automl.targetencoding;
 
 import water.*;
 import water.fvec.*;
-import water.fvec.task.FillNAWithStringValueTask;
-import water.fvec.task.FillNAWithValueTask;
+import water.fvec.task.FillNAWithLongValueTask;
+import water.fvec.task.FillNAWithDoubleValueTask;
 import water.rapids.Merge;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -75,7 +75,7 @@ public class TargetEncoder {
         //TODO Losing data here, we should use clustering to assign instances with some reasonable target values.
         Frame  dataWithoutNAsForTarget = filterOutNAsFromTargetColumn(data, targetIndex);
 
-        Frame dataWithEncodedTarget = ensureTargetColumnIsNumericOrBinaryCategorical(dataWithoutNAsForTarget, targetIndex);
+        Frame dataWithEncodedTarget = ensureTargetColumnIsBinaryCategorical(dataWithoutNAsForTarget, targetColumnName);
 
         Map<String, Frame> columnToEncodingMap = new HashMap<String, Frame>();
 
@@ -121,25 +121,20 @@ public class TargetEncoder {
       return FrameUtils.register(result);
     }
 
-    Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, String targetColumnName) {
-        return ensureTargetColumnIsNumericOrBinaryCategorical(data, data.find(targetColumnName));
-    };
-
-    Frame ensureTargetColumnIsNumericOrBinaryCategorical(Frame data, int targetIndex) {
+    // This method is mutating data frame
+    Frame ensureTargetColumnIsBinaryCategorical(Frame data, String targetColumnName) {
+        int targetIndex = data.find(targetColumnName);
         if (data.vec(targetIndex).isCategorical()){
             Vec targetVec = data.vec(targetIndex);
             if(targetVec.cardinality() == 2) {
-                return transformBinaryTargetColumn(data, targetIndex);
+                return data;//transformBinaryCategoricalToZeroOneNumerical(data, targetIndex);
             }
             else {
-                throw new IllegalStateException("`target` must be a binary vector");
+                throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");
             }
         }
         else {
-            if(! data.vec(targetIndex).isNumeric()) {
-                throw new IllegalStateException("`target` must be a numeric or binary vector");
-            }
-            return data;
+          throw new IllegalStateException("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now");
         }
     };
 
@@ -175,17 +170,13 @@ public class TargetEncoder {
       int columnIndex = data.find(teColumnName);
       Vec currentVec = data.vec(columnIndex);
       int indexForNACategory = currentVec.cardinality(); // Warn: Cardinality returns int but it could be larger than it for big datasets
-      new FillNAWithStringValueTask(columnIndex, indexForNACategory).doAll(data);
+      new FillNAWithLongValueTask(columnIndex, indexForNACategory).doAll(data);
       String[] oldDomain = currentVec.domain();
       String[] newDomain = new String[indexForNACategory + 1];
       System.arraycopy(oldDomain, 0, newDomain, 0, oldDomain.length);
       newDomain[indexForNACategory] = strToImpute;
       currentVec.setDomain(newDomain);
       return data;
-    }
-
-    Frame transformBinaryTargetColumn(Frame data, int targetIndex)  {
-        return data.vectorAsQuasiBinomial(targetIndex);
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
@@ -284,7 +275,7 @@ public class TargetEncoder {
       assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
       long numberOfNAs = vecWithEncodings.naCnt();
       if (numberOfNAs > 0) {
-        new FillNAWithValueTask(columnIndex, mean).doAll(fr);
+        new FillNAWithDoubleValueTask(columnIndex, mean).doAll(fr);
         Log.info(String.format("Frame with id = %s was imputed with mean = %f ( %d rows were affected)", fr._key, mean, numberOfNAs));
       }
       return fr;
@@ -518,13 +509,11 @@ public class TargetEncoder {
         if(noiseLevel < 0 )
             throw new IllegalStateException("`_noiseLevel` must be non-negative");
 
-        //TODO Should we remove string columns from `data` as it is done in R version (see: https://0xdata.atlassian.net/browse/PUBDEV-5266) ?
-
         Frame dataWithAllEncodings = data.deepCopy(Key.make().toString());
         DKV.put(dataWithAllEncodings);
 
         if(isTrainOrValidSet) {
-          ensureTargetColumnIsNumericOrBinaryCategorical(dataWithAllEncodings, targetColumnName);
+          ensureTargetColumnIsBinaryCategorical(dataWithAllEncodings, targetColumnName);
         }
 
         for ( String teColumnName: _columnNamesToEncode) {

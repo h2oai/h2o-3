@@ -227,36 +227,6 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     resultWithEncoding.delete();
   }
 
-  @Test
-  public void targetEncoderKFoldHoldoutApplyingWithMulticlassTargetColumnTest() {
-    String teColumnName = "ColA";
-    String targetColumnName = "ColB";
-    String foldColumnName = "fold_column";
-    fr = new TestFrameBuilder()
-            .withName("testFrame")
-            .withColNames(teColumnName, targetColumnName, foldColumnName)
-            .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
-            .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-            .withDataForCol(1, ar(1, 2, 3, 4, 5))
-            .withDataForCol(2, ar(1, 2, 2, 3, 2))
-            .build();
-
-    String[] teColumns = {teColumnName};
-    TargetEncoder tec = new TargetEncoder(teColumns);
-
-    Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumnName);
-
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, 1234, true);
-
-    printOutFrameAsTable(resultWithEncoding);
-    Vec expected = dvec(5.0, 1.0, 4.0, 4.0, 2.5);
-    assertVecEquals(expected, resultWithEncoding.vec("ColA_te"), 1e-5);
-
-    expected.remove();
-    encodingMapCleanUp(targetEncodingMap);
-    resultWithEncoding.delete();
-  }
-
   @Ignore
   @Test
   public void targetEncoderKFoldHoldoutApplyingWithBlendedAvgTest() {

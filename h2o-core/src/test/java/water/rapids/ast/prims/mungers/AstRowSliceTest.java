@@ -86,7 +86,7 @@ public class AstRowSliceTest extends TestUtil {
     Val val = Rapids.exec(tree);
     Frame res = val.getFrame();
 
-    printOutFrameAsTable(res, true, false, 100);
+    printOutFrameAsTable(res, false, 100);
     assertEquals(1, res.numRows());
     assertEquals("6", res.vec(2).stringAt(0));
 

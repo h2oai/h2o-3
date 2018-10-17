@@ -10,6 +10,8 @@ import org.junit.runners.Suite;
         TargetEncodingKFoldStrategyTest.class,
         TargetEncodingLeaveOneOutStrategyTest.class,
         TargetEncodingNoneStrategyTest.class,
+        TargetEncodingMultiClassTargetTest.class,
+        TargetEncodingTargetColumnTest.class,
         TargetEncodingImmutabilityTest.class
 })
 

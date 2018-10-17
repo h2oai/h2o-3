@@ -974,7 +974,9 @@ public class FrameUtils {
    * @return Frame with factorized column
    */
   static public Frame asFactor(Frame frame, String columnName) {
-    frame.replace(frame.find(columnName), frame.vec(columnName).toCategoricalVec());
+    Vec vec = frame.vec(columnName);
+    frame.replace(frame.find(columnName), vec.toCategoricalVec());
+    vec.remove();
     return frame;
   }
 

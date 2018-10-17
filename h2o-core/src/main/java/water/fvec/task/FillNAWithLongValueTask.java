@@ -4,14 +4,14 @@ import water.MRTask;
 import water.fvec.Chunk;
 
 
-public class FillNAWithStringValueTask extends MRTask<FillNAWithStringValueTask> {
+public class FillNAWithLongValueTask extends MRTask<FillNAWithLongValueTask> {
 
   private int _columnIdx;
-  private int _indexForNACategory;
+  private long _intValue;
 
-  public FillNAWithStringValueTask(int columnIdx, int indexForNACategory) {
+  public FillNAWithLongValueTask(int columnIdx, long intValue) {
     _columnIdx = columnIdx;
-    _indexForNACategory = indexForNACategory;
+    _intValue = intValue;
   }
 
   @Override
@@ -19,7 +19,7 @@ public class FillNAWithStringValueTask extends MRTask<FillNAWithStringValueTask>
     Chunk num = cs[_columnIdx];
     for (int i = 0; i < num._len; i++) {
       if (num.isNA(i)) {
-        num.set(i, _indexForNACategory);
+        num.set(i, _intValue);
       }
     }
   }

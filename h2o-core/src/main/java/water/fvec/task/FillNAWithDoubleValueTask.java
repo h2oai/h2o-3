@@ -3,12 +3,12 @@ package water.fvec.task;
 import water.MRTask;
 import water.fvec.Chunk;
 
-public class FillNAWithValueTask extends MRTask<FillNAWithValueTask> {
+public class FillNAWithDoubleValueTask extends MRTask<FillNAWithDoubleValueTask> {
 
   private int _columnIdx;
   private double _valueToImpute;
 
-  public FillNAWithValueTask(int columnIdx, double valueToImpute ) {
+  public FillNAWithDoubleValueTask(int columnIdx, double valueToImpute ) {
     _columnIdx = columnIdx;
     _valueToImpute = valueToImpute;
   }

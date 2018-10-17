@@ -8,12 +8,12 @@ import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -85,6 +85,7 @@ public class TargetEncodingTest extends TestUtil {
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
 
+        printOutFrameAsTable(fr);
         assertTrue(fr.vec("ColA").isCategorical());
         assertEquals(2, fr.vec("ColA").cardinality());
 
@@ -224,7 +225,7 @@ public class TargetEncodingTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
       Frame dataWithAllEncodings = null ;
       if(flag) {
-        Frame dataWithEncodedTarget = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, "ColB");
+        Frame dataWithEncodedTarget = tec.ensureTargetColumnIsBinaryCategorical(fr, "ColB");
         dataWithAllEncodings = dataWithEncodedTarget.deepCopy(Key.make().toString());
         DKV.put(dataWithAllEncodings);
 
@@ -446,6 +447,8 @@ public class TargetEncodingTest extends TestUtil {
     // ----------------------------- blended average -----------------------------------------------------------------//
     @Test
     public void calculateAndAppendBlendedTEEncodingTest() {
+      String tmpName = null;
+      Frame reimportedFrame = null;
 
       fr = new TestFrameBuilder()
               .withName("testFrame")
@@ -455,15 +458,23 @@ public class TargetEncodingTest extends TestUtil {
               .withDataForCol(1, ar("yes", "no", "yes"))
               .withChunkLayout(1,1,1)
               .build();
+
+      tmpName = UUID.randomUUID().toString();
+      Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
+      export.get();
+
+      reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+
       String[] teColumns = {"ColA"};
       String targetColumnName = "ColB";
       TargetEncoder tec = new TargetEncoder(teColumns);
-      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-      Frame merged = tec.mergeByTEColumn(fr, targetEncodingMap.get("ColA"), 0, 0);
+      Frame merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
 
       Frame resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
 
+//      String[] dom = resultWithEncoding.vec(1).domain();
       // k <- 20
       // f <- 10
       // global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
@@ -489,7 +500,7 @@ public class TargetEncodingTest extends TestUtil {
       encodingMapCleanUp(targetEncodingMap);
       merged.delete();
       resultWithEncoding.delete();
-
+      reimportedFrame.delete();
     }
 
   @Test
@@ -714,25 +725,30 @@ public class TargetEncodingTest extends TestUtil {
         TargetEncoder tec = new TargetEncoder(teColumns);
 
         try {
-          tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 0);
+          tec.ensureTargetColumnIsBinaryCategorical(fr, "ColA");
           fail();
         } catch (Exception ex) {
-          assertEquals("`target` must be a binary vector", ex.getMessage());
+          assertEquals("`target` must be a binary vector. We do not support multi-class target case for now", ex.getMessage());
         }
 
+        // Check that string column will be rejected.
         try {
-          tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 2);
+          tec.ensureTargetColumnIsBinaryCategorical(fr, "ColC");
           fail();
         } catch (Exception ex) {
-          assertEquals("`target` must be a numeric or binary vector", ex.getMessage());
+          assertEquals("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now", ex.getMessage());
         }
 
-        // Check that numerical column is ok
-        Frame tmp3 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 1);
-        Scope.track(tmp3);
+        // Check that numerical column is not supported for now
+        try {
+          tec.ensureTargetColumnIsBinaryCategorical(fr, "ColB");
+          fail();
+        } catch (Exception ex) {
+          assertEquals("`target` must be a binary categorical vector. We do not support multi-class and continuos target case for now", ex.getMessage());
+        }
 
         // Check that binary categorical is ok (transformation is checked in another test)
-        Frame tmp4 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(fr, 3);
+        Frame tmp4 = tec.ensureTargetColumnIsBinaryCategorical(fr, "ColD");
         Scope.track(tmp4);
 
         assertTrue(tmp4.vec(3).isNA(3));
@@ -743,9 +759,10 @@ public class TargetEncodingTest extends TestUtil {
 
     @Test
     public void ensureTargetEncodingAndRemovingNAsWorkingTogetherTest() {
+      String targetColumnName = "ColA";
       fr = new TestFrameBuilder()
               .withName("testFrame")
-              .withColNames("ColA")
+              .withColNames(targetColumnName)
               .withVecTypes(Vec.T_CAT)
               .withDataForCol(0, ar("2", "6", "6", null))
               .build();
@@ -754,7 +771,7 @@ public class TargetEncodingTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame tmp1 = tec.filterOutNAsFromTargetColumn(fr, 0);
-      Frame tmp2 = tec.ensureTargetColumnIsNumericOrBinaryCategorical(tmp1, 0);
+      Frame tmp2 = tec.ensureTargetColumnIsBinaryCategorical(tmp1, targetColumnName);
 
       Vec expected = vec(0, 1, 1);
       assertVecEquals(expected, tmp2.vec(0), 1e-5);
@@ -762,46 +779,6 @@ public class TargetEncodingTest extends TestUtil {
       expected.remove();
       tmp1.delete();
       tmp2.delete();
-    }
-
-    @Test
-    public void ensureTargetColumnIsNumericOrBinaryCategoricalOrderTest() {
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_CAT ,Vec.T_NUM)
-              .withDataForCol(0, ar("NO", "YES", "NO"))
-              .withDataForCol(1, ar(1, 2, 3))
-              .build();
-
-      Frame fr2 = new TestFrameBuilder()
-              .withName("testFrame2")
-              .withColNames("ColA2", "ColB2")
-              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("YES", "NO", "NO"))
-              .withDataForCol(1, ar(1, 2, 3))
-              .build();
-
-      String[] teColumns = {""};
-      TargetEncoder tec = new TargetEncoder(teColumns);
-
-      try {
-        assertArrayEquals(fr.vec(0).domain(), fr2.vec(0).domain());
-        fail();
-      } catch (AssertionError ex) {
-        assertEquals("arrays first differed at element [0]; expected:<[NO]> but was:<[YES]>", ex.getMessage());
-      }
-
-      Frame encoded = tec.transformBinaryTargetColumn(fr, 0);
-      Frame encoded2 = tec.transformBinaryTargetColumn(fr2, 0);
-
-      // Checking that Label Encoding will not assign 0 label to the first category it encounters. We are sorting domain to make order consistent.
-      assertEquals(0, encoded.vec(0).at(0), 1e-5);
-      assertEquals(1, encoded2.vec(0).at(0), 1e-5);
-      fr.delete();
-      fr2.delete();
-      encoded.delete();
-      encoded2.delete();
     }
 
   @Test
@@ -818,67 +795,7 @@ public class TargetEncodingTest extends TestUtil {
     assertFalse(fr.vec(1).isBinary());
   }
 
-    @Ignore
-    @Test
-    public void ensureTargetColumnIsNumericOrBinaryCategoricalUnderrepresentedClassTest() {
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_CAT ,Vec.T_NUM)
-              .withDataForCol(0, ar("NO")) //case 2: ("yes") let say all the examples are "yes" // case 3: YES
-              .withDataForCol(1, ar(111))
-              .build();
-
-      Frame fr2 = new TestFrameBuilder()
-              .withName("testFrame2")
-              .withColNames("ColA2", "ColB2")
-              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("YES")) //case 2: ("no", "yes")  in validation set we will be comparing YESs with NOs // case 3: NO - we will think that all examples are of 0 class.
-              .withDataForCol(1, ar(222))
-              .build();
-
-      // TODO consider all possible combinations. Some of them does not make sense but still we should check them.
-
-      fr2.delete();
-    }
-
-    @Test
-    public void transformBinaryTargetColumnTest() {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA", "ColB", "ColC", "fold_column")
-                .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT,  Vec.T_NUM)
-                .withDataForCol(0, ar("a", "b"))
-                .withDataForCol(1, ard(1, 1))
-                .withDataForCol(2, ar("2", "6"))
-                .withDataForCol(3, ar(1, 2))
-                .build();
-
-        String[] teColumns = {""};
-        TargetEncoder tec = new TargetEncoder(teColumns);
-
-        // So with TestFrameBuilder column is automatically seen as binary but it is not Numerical
-        assertTrue(fr.vec(2).isBinary());
-        assertTrue(fr.vec(2).isCategorical());
-        assertFalse(fr.vec(2).isString());
-        assertFalse(fr.vec(2).isNumeric());
-
-        Frame res = tec.transformBinaryTargetColumn(fr, 2);
-
-        Vec transformedVector = res.vec(2);
-
-        assertTrue(transformedVector.isBinary());
-        assertFalse(transformedVector.isCategorical());
-        assertTrue(transformedVector.isNumeric());
-
-        assertEquals(0, transformedVector.at(0), 1e-5);
-        assertEquals(1, transformedVector.at(1), 1e-5);
-
-        transformedVector.remove();
-        res.delete();
-    }
-
-  // Can we do it simply ? with mutation?
+    // Can we do it simply ? with mutation?
     @Test
     public void appendingColumnsInTheLoopTest() {
       fr = new TestFrameBuilder()

@@ -6,7 +6,6 @@ import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.task.AsQuasiBinomialTask;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
@@ -1254,22 +1253,6 @@ public class Frame extends Lockable<Frame> {
     predicateFrame.delete();
     remove("predicate");
     return filtered;
-  }
-
-  /**
-   *
-   * @param columnIndex
-   * @return frame with specified column encoded into binary enumeration column
-   */
-  public Frame vectorAsQuasiBinomial(int columnIndex) {
-
-    Vec columnToEncode = vec(columnIndex);
-    String[] domains = columnToEncode.domain().clone();
-    Frame encodedFrame = new AsQuasiBinomialTask(domains).doAll( Vec.T_NUM, columnToEncode).outputFrame(); // TODO how to avoid creation of Frame when doing MRT?
-    replace(columnIndex, encodedFrame.vec(0));
-    DKV.put(this);
-    columnToEncode.remove();
-    return this;
   }
 
   /** return a frame with unique values from the specified column */
