@@ -24,6 +24,7 @@ public class IsolationForestTest extends TestUtil {
       p._train = train._key;
       p._seed = 0xDECAF;
       p._ntrees = 7;
+      p._sample_size = 5;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
       assertNotNull(model);
