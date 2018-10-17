@@ -132,7 +132,7 @@ Depending on the user-specified predictors, max_depth per tree, the number of tr
 
 We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ depending on your Java version.
 
-For Java Java version < 10, the following flags are available:
+For Java version < 10, the following flags are available:
 
 ::
 
