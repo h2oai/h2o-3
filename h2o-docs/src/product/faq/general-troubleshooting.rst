@@ -130,7 +130,7 @@ Depending on the user-specified predictors, max_depth per tree, the number of tr
 
 **What's the best approach to help diagnose a possible memory problem on a cluster?**
 
-We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ si
+We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ depending on your Java version.
 
 For Java Java version < 10, the following flags are available:
 
