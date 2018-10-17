@@ -13,7 +13,15 @@ echo "Installing Java ${JAVA_INSTALL_VERSION_MAJOR} to ${JAVA_INSTALL_PATH}"
 mkdir -p ${JAVA_INSTALL_PATH}
 cd ${JAVA_INSTALL_PATH}
 
-unzip -q ${JDK_FILE}
+EXTENSION=$(echo ${JDK_FILE} | rev | cut -d'.' -f1 | rev)
+
+if [ "${EXTENSION}" = 'gz' ]; then
+    tar xzf ${JDK_FILE}
+elif [ "${EXTENSION}" = 'zip' ]; then
+    unzip -q ${JDK_FILE}
+else
+    echo "Unsupported extension for ${JDK_FILE}. Supported are .gz, .zip."
+fi
 
 cd jdk*
 mkdir -p /usr/lib/jvm/

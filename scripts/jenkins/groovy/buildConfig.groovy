@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  private static final int DEFAULT_IMAGE_VERSION_TAG = 4
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 5
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
