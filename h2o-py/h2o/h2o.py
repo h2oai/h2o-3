@@ -261,28 +261,13 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath,
-                                  jvm_custom_args=tokenize_custom_jvm_args(jvm_custom_args))
+                                  jvm_custom_args=jvm_custom_args)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
-
-def tokenize_custom_jvm_args(args:str):
-    checked_args = []
-
-    if args is None:
-        return checked_args
-
-    for arg in args:
-        if arg[0] != '-':
-            print("Custom JVM argument '{}' does not begin with '-', ignoring.".format(arg))
-        else:
-            checked_args.append(arg)
-
-    return checked_args
-
 
 def lazy_import(path, pattern=None):
     """

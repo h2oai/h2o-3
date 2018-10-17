@@ -580,16 +580,6 @@ h2o.clusterStatus <- function() {
   name <- paste0("H2O_started_from_R_", gsub("\\s", "_", Sys.info()["user"]),"_",ltrs,nums)
   if(enable_assertions) args <- c(args, "-ea")
   
-  if(!is.null(jvm_custom_args)){
-    for (arg in jvm_custom_args){
-      if(substring(arg,1,1) != '-'){
-        sprintf("Custom JVM argument '%s' does not begin with '-', ignoring.", arg)
-      }else{
-        args <- c(args,arg)
-      }
-    }
-  }
-  
   class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
   args <- c(args, "-cp", class_path, "water.H2OApp")
   args <- c(args, "-name", name)
