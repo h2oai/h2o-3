@@ -127,7 +127,7 @@ public class TargetEncoder {
         if (data.vec(targetIndex).isCategorical()){
             Vec targetVec = data.vec(targetIndex);
             if(targetVec.cardinality() == 2) {
-                return data;//transformBinaryCategoricalToZeroOneNumerical(data, targetIndex);
+                return data;
             }
             else {
                 throw new IllegalStateException("`target` must be a binary vector. We do not support multi-class target case for now");

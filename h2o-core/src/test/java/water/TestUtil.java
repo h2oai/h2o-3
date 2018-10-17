@@ -917,4 +917,12 @@ public class TestUtil extends Iced {
     System.out.println(twoDimTable.toString(2, true));
   }
 
+  public void printOutColumnsMetadata(Frame fr) {
+    for (String header : fr.toTwoDimTable().getColHeaders()) {
+      String type = fr.vec(header).get_type_str();
+      int cardinality = fr.vec(header).cardinality();
+      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
+    }
+  }
+
 }

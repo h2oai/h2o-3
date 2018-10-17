@@ -12,13 +12,11 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FrameUtils;
 import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Map;
 
-public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
-
+public class TargetEncodingAirlinesBenchmark extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -71,7 +69,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
 
       // Applying encoding to the test set
       Frame testEncoded = tec.applyTargetEncoding(airlinesTestFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, withImputationForNAsInOriginalColumns, seed, false);
-      printOutColumnsMeta(testEncoded);
+      printOutColumnsMetadata(testEncoded);
       testEncoded = tec.ensureTargetColumnIsBinaryCategorical(testEncoded, targetColumnName);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
@@ -91,7 +89,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
+      parms._distribution = DistributionFamily.AUTO;
       parms._valid = validEncoded._key;
       parms._stopping_tolerance = 0.001;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
@@ -183,7 +181,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
+      parms._distribution = DistributionFamily.AUTO;
       parms._valid = validEncoded._key;
       parms._stopping_tolerance = 0.001;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
@@ -244,7 +242,7 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
       parms2._score_tree_interval = 10;
       parms2._ntrees = 1000;
       parms2._max_depth = 5;
-      parms2._distribution = DistributionFamily.quasibinomial;
+      parms2._distribution = DistributionFamily.AUTO;
       parms2._valid = airlinesValidDefault._key;
       parms2._stopping_tolerance = 0.001;
       parms2._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
@@ -282,21 +280,6 @@ public class TargetEncodingAirlinesBenchmarkTest extends TestUtil {
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for( Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
-    }
-  }
-
-  private void printOutFrameAsTable(Frame fr, boolean full) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int)fr.numRows(), false);
-    System.out.println(twoDimTable.toString(2, full));
-  }
-
-  private void printOutColumnsMeta(Frame fr) {
-    for (String header : fr.toTwoDimTable().getColHeaders()) {
-      String type = fr.vec(header).get_type_str();
-      int cardinality = fr.vec(header).cardinality();
-      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
     }
   }
 

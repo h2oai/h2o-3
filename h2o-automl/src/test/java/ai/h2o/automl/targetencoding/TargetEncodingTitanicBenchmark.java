@@ -11,11 +11,10 @@ import water.TestUtil;
 import water.Scope;
 import water.fvec.Frame;
 import water.util.FrameUtils;
-import water.util.TwoDimTable;
 
 import java.util.Map;
 
-public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
+public class TargetEncodingTitanicBenchmark extends TestUtil {
 
 
   @BeforeClass public static void setup() {
@@ -42,7 +41,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       FrameUtils.asFactor(trainFrame, targetColumnName);
       FrameUtils.asFactor(validFrame, targetColumnName);
       FrameUtils.asFactor(testFrame, targetColumnName);
-      printOutColumnsMeta(testFrame);
+      printOutColumnsMetadata(testFrame);
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -73,7 +72,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame testEncoded = tec.applyTargetEncoding(testFrame, targetColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName,withBlendedAvg, 0.0, withImputationForNAsInOriginalColumns,1234, false);
 
       Scope.track(trainEncoded, validEncoded, testEncoded);
-      printOutColumnsMeta(trainEncoded);
+      printOutColumnsMetadata(trainEncoded);
 
       // With target encoded Origin column
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -126,11 +125,16 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       BlendingParams params = new BlendingParams(3, 1);
 //      BlendingParams params = new BlendingParams(20, 10);
       String[] teColumns = {"cabin", "embarked", "home.dest"};
+      String targetColumnName = "survived";
+
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      FrameUtils.asFactor(trainFrame, targetColumnName);
+      FrameUtils.asFactor(validFrame, targetColumnName);
+      FrameUtils.asFactor(testFrame, targetColumnName);
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -142,8 +146,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       boolean withBlendedAvgOnlyForTraining = false;
       boolean withNoiseOnlyForTraining = true;
       boolean withImputationForNAsInOriginalColumns = true;
-
-      String targetColumnName = "survived";
 
       Map<String, Frame> encodingMap = tec.prepareEncodingMap(trainFrame, targetColumnName, null, withImputationForNAsInOriginalColumns);
 
@@ -172,7 +174,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
+      parms._distribution = DistributionFamily.AUTO;
       parms._valid = validEncoded._key;
       parms._stopping_tolerance = 0.001;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
@@ -217,6 +219,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       BlendingParams params = new BlendingParams(3, 1); //k = 3, f = 1 AUC=0.8664  instead of for k = 20, f = 10 -> AUC=0.8523
       String[] teColumns = {"cabin", "embarked", "home.dest"};
+      String targetColumnName = "survived";
 
       TargetEncoder tec = new TargetEncoder(teColumns, params);
 
@@ -224,6 +227,10 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
+      FrameUtils.asFactor(trainFrame, targetColumnName);
+      FrameUtils.asFactor(teHoldoutFrame, targetColumnName);
+      FrameUtils.asFactor(validFrame, targetColumnName);
+      FrameUtils.asFactor(testFrame, targetColumnName);
 
       Scope.track(trainFrame, teHoldoutFrame, validFrame, testFrame);
 
@@ -235,8 +242,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       // TODO we need to make it automatically just in case if user will try to load frames from separate sources like we did here
       Frame teHoldoutFrameFactorized = FrameUtils.asFactor(teHoldoutFrame, "cabin");
       Scope.track(teHoldoutFrameFactorized);
-
-      String targetColumnName = "survived";
 
       boolean withNoiseOnlyForTraining = true;
       boolean withImputation = true;
@@ -263,7 +268,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
       parms._score_tree_interval = 10;
       parms._ntrees = 1000;
       parms._max_depth = 5;
-      parms._distribution = DistributionFamily.quasibinomial;
+      parms._distribution = DistributionFamily.AUTO;
       parms._valid = validEncoded._key;
       parms._stopping_tolerance = 0.001;
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
@@ -334,7 +339,7 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
 
       Frame preds2 = gbm2.score(testFrame2);
       Scope.track(preds2);
-      printOutFrameAsTable(preds2, false, false);
+      printOutFrameAsTable(preds2, false, preds2.numRows());
       hex.ModelMetricsBinomial mm2 = ModelMetricsBinomial.make(preds2.vec(2), testFrame2.vec(parms2._response_column));
       double auc2 = mm2._auc._auc;
       return auc2;
@@ -354,25 +359,6 @@ public class TargetEncodingTitanicBenchmarkTest extends TestUtil {
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for( Map.Entry<String, Frame> map : encodingMap.entrySet()) {
       map.getValue().delete();
-    }
-  }
-
-  private void printOutFrameAsTable(Frame fr, boolean full) {
-    printOutFrameAsTable(fr, full, false);
-  }
-
-  private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
-    System.out.println(twoDimTable.toString(2, full));
-  }
-
-  private void printOutColumnsMeta(Frame fr) {
-    for (String header : fr.toTwoDimTable().getColHeaders()) {
-      String type = fr.vec(header).get_type_str();
-      int cardinality = fr.vec(header).cardinality();
-      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
     }
   }
 }
