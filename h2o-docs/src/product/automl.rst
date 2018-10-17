@@ -291,6 +291,19 @@ Here is an example leaderboard for a binary classification task:
 +--------------------------------------------------------+----------+----------+----------------------+----------+----------+
 
 
+Experimental features
+~~~~~~~~~~~~~~~~~~~~~
+
+XGBoost
+'''''''
+
+AutoML now includes `XGBoost <data-science/xgboost.html>`__ in its selection of algorithms used to train the best model.
+This feature is however currently provided with the following restrictions:
+- XGBoost is used only if it is available globally, especially if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__.
+- Even so, XGBoost is disabled by default in AutoML when running H2O-3 in multi-node due to current `limitations <data-science/xgboost.html#limitations>`__.
+- XGBoost can however be enabled experimentally in multi-node by setting the environment variable ``-Dsys.ai.h2o.automl.xgboost.multinode.enabled=true`` for every node of the H2O cloud.
+
+
 FAQ
 ~~~
 
@@ -306,6 +319,7 @@ FAQ
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
 
+-  **Why don't I see XGBoost models when using AutoML in multinode**
 
 Resources
 ~~~~~~~~~
