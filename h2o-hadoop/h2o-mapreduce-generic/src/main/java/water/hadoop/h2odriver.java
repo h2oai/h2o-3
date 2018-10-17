@@ -17,7 +17,6 @@ import water.JettyProxy;
 import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
-import water.util.JavaVersionUtils;
 import water.util.StringUtils;
 
 import static water.util.JavaVersionUtils.JAVA_VERSION;
@@ -868,9 +867,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ea")) {
         enableExceptions = true;
       }
-      else if (s.equals("-verbose:gc") && !useUnifiedLogging()) {
+      else if (s.equals("-verbose:gc") && !JAVA_VERSION.useUnifiedLogging()) {
         enableVerboseGC = true;
-      } else if (s.equals("-Xlog:gc=info") && useUnifiedLogging()) {
+      } else if (s.equals("-Xlog:gc=info") && JAVA_VERSION.useUnifiedLogging()) {
         enableVerboseGC = true;
       }
       else if (s.equals("-verbose:class")) {
@@ -898,10 +897,10 @@ public class h2odriver extends Configured implements Tool {
           error("Debug port must be between 1 and 65535");
         }
       }
-      else if (s.equals("-XX:+PrintGCDetails") && !useUnifiedLogging()) {
+      else if (s.equals("-XX:+PrintGCDetails") && !JAVA_VERSION.useUnifiedLogging()) {
         enablePrintGCDetails = true;
       }
-      else if (s.equals("-XX:+PrintGCTimeStamps") && !useUnifiedLogging()) {
+      else if (s.equals("-XX:+PrintGCTimeStamps") && !JAVA_VERSION.useUnifiedLogging()) {
         enablePrintGCTimeStamps = true;
       }
       else if (s.equals("-gc")) {
@@ -1002,15 +1001,6 @@ public class h2odriver extends Configured implements Tool {
     for (int j = 0; j < otherArgs.length; j++)
       otherArgs[j] = args[i++];
     return otherArgs;
-  }
-
-  /**
-   *
-   * @return True if current Java version uses unified logging (JEP 158), otherwise false.
-   */
-  boolean useUnifiedLogging(){
-    // Unified logging enabled since version 9, enforced in version 10.
-    return JAVA_VERSION.isKnown() && JAVA_VERSION.getMajor() >= 9;
   }
 
   void validateArgs() {
@@ -1428,8 +1418,8 @@ public class h2odriver extends Configured implements Tool {
               .append(" -Xmx").append(mapperXmx)
               .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
               .append((enableExceptions ? " -ea" : ""))
-              .append((enableVerboseGC && !useUnifiedLogging() ? " -verbose:gc" : ""))
-              .append(enableVerboseGC && useUnifiedLogging() ? "-Xlog:gc=info" : "")
+              .append((enableVerboseGC && !JAVA_VERSION.useUnifiedLogging() ? " -verbose:gc" : ""))
+              .append(enableVerboseGC && JAVA_VERSION.useUnifiedLogging() ? "-Xlog:gc=info" : "")
               .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
               .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
               .append((enableVerboseClass ? " -verbose:class" : ""))

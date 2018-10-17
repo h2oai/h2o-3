@@ -34,4 +34,13 @@ public enum JavaVersionUtils {
         }
         return UNKNOWN;
     }
+
+    /**
+     *
+     * @return True if current Java version uses unified logging (JEP 158), otherwise false.
+     */
+    public boolean useUnifiedLogging(){
+        // Unified logging enabled since version 9, enforced in version 10.
+        return isKnown() && getMajor() >= 9;
+    }
 }
