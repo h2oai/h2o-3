@@ -1,10 +1,11 @@
 package water.automl.api.schemas3;
 
 
-import ai.h2o.automl.AutoML;
+import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import hex.schemas.HyperSpaceSearchCriteriaV99;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.Schema;
 import water.api.schemas3.*;
 
@@ -111,13 +112,19 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
   } // class AutoMLInputV99
 
+  public static final class AlgoProvider extends EnumValuesProvider<Algo> {
+    public AlgoProvider() {
+      super(Algo.class);
+    }
+  }
+
   static final public class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
     public AutoMLBuildModelsV99() {
       super();
     }
 
-    @API(help="A list algorithms to skip during the model-building phase.", values = {"GLM", "DRF", "GBM", "DeepLearning", "StackedEnsemble"}, direction=API.Direction.INPUT)
-    public AutoML.algo[] exclude_algos;
+    @API(help="A list algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
+    public Algo[] exclude_algos;
 
   } // class AutoMLBuildModels
 

@@ -13,7 +13,7 @@ automl.leaderboard.test <- function() {
     fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
     fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
     exclude_algos <- c("GLM", "DeepLearning", "DRF")  #Expect GBM + StackedEnsemble
-    aml1 <- h2o.automl(y = 2, training_frame = fr1, max_models = 2,
+    aml1 <- h2o.automl(y = 2, training_frame = fr1, max_models = 10,
                        project_name = "r_lb_test_aml1",
                        exclude_algos = exclude_algos)
     aml1@leaderboard
@@ -30,10 +30,9 @@ automl.leaderboard.test <- function() {
     }
 
     # Regression:
-    # TO DO: Change this dataset
-    fr2 <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
+    fr2 <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"))
     exclude_algos <- c("GBM", "DeepLearning")  #Expect GLM, DRF (and XRT), StackedEnsemble
-    aml2 <- h2o.automl(y = 55, training_frame = fr2, max_models = 4,
+    aml2 <- h2o.automl(y = "runoffnew", training_frame = fr2, max_models = 10,
                        project_name = "r_lb_test_aml2",
                        exclude_algos = exclude_algos)
     aml2@leaderboard
@@ -48,8 +47,8 @@ automl.leaderboard.test <- function() {
 
     # Multinomial:
     fr3 <- as.h2o(iris)
-    exclude_algos <- c("GBM")
-    aml3 <- h2o.automl(y = 5, training_frame = fr3, max_models = 6,
+    exclude_algos <- c("DeepLearning")
+    aml3 <- h2o.automl(y = 5, training_frame = fr3, max_models = 10,
                        project_name = "r_lb_test_aml3",
                        exclude_algos = exclude_algos)
     aml3@leaderboard
@@ -78,7 +77,7 @@ automl.leaderboard.test <- function() {
     
     # Include all algorithms (all should be there, given large enough max_models)
     fr3 <- as.h2o(iris)
-    aml5 <- h2o.automl(y = 5, training_frame = fr3, max_models = 10, 
+    aml5 <- h2o.automl(y = 5, training_frame = fr3, max_models = 12,
                        project_name = "r_lb_test_aml5")
     model_ids <- as.vector(aml5@leaderboard$model_id)
     include_algos <- c(all_algos, "XRT")

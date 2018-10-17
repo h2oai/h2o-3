@@ -37,9 +37,8 @@ automl.leaderboard_sort_metric.test <- function() {
 
 
   # Regression:
-  # TO DO: Change this dataset
-  fr2 <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
-  aml2 <- h2o.automl(y = 55, training_frame = fr2, max_models = 2,
+  fr2 <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"))
+  aml2 <- h2o.automl(y = 'runoffnew', training_frame = fr2, max_models = 2,
                      project_name = "r_lbsm_test_aml2",
                      sort_metric = "RMSE")
   aml2@leaderboard
@@ -49,7 +48,7 @@ automl.leaderboard_sort_metric.test <- function() {
   expect_equal(identical(rmse_col, sort(rmse_col, decreasing = FALSE)), TRUE)
 
   # new AutoML run, sort_metric AUTO (check sorting by mean_residual_deviance)
-  aml2 <- h2o.automl(y = 55, training_frame = fr2, max_models = 2,
+  aml2 <- h2o.automl(y = 'runoffnew', training_frame = fr2, max_models = 2,
                      project_name = "r_lbsm_test_aml2_auto")
   aml2@leaderboard
   # check that leaderboard is sorted by mean_residual_deviance

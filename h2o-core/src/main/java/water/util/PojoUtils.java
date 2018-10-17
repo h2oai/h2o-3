@@ -138,7 +138,12 @@ public class PojoUtils {
             //
             // You can't use reflection to set an int[] with an Integer[].  Argh.
             // TODO: other types of arrays. . .
-            if (dest_field.getType().getComponentType() == double.class && orig_field.getType().getComponentType() == Double.class) {
+            if (dest_field.getType().getComponentType().isAssignableFrom(orig_field.getType().getComponentType())) {
+              //
+              //Assigning an T[] to an U[] if T extends U
+              //
+              dest_field.set(dest, orig_field.get(origin));
+            } else if (dest_field.getType().getComponentType() == double.class && orig_field.getType().getComponentType() == Double.class) {
               //
               // Assigning an Double[] to an double[]
               //

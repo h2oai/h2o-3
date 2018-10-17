@@ -3,6 +3,7 @@ package hex;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -249,6 +250,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public Job<M> trainModelOnH2ONode() {
     if (H2O.ARGS.client) {
+      if (error_count() > 0)
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
       RemoteTrainModelTask tmt = new RemoteTrainModelTask(_job, _job._result, _parms);
       H2ONode leader = H2O.CLOUD.leader();
       new RPC<>(leader, tmt).call().get();
