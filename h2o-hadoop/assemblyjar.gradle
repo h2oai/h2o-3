@@ -13,10 +13,10 @@ dependencies {
   else {
     compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   }
-  compile project(':h2o-hadoop:h2o-' + hadoopVersion)
-  compile project(':h2o-app')
-  compile project(":h2o-web")
-  compile project(":h2o-avro-parser")
+  compile project(':h2o-hadoop:h2o-' + hadoopVersion) // this is a magically hidden dependency on h2odriver.jar
+  compile project(':h2o-app')           // TODO check if we need this, probably arrives transitively from h2odriver.jar
+  compile project(":h2o-web")           // TODO check if we need this, probably arrives transitively from h2odriver.jar
+  compile project(":h2o-avro-parser")   // TODO check if we need this, probably arrives transitively from h2odriver.jar
   // Include GCS persist layer
   compile(project(":h2o-persist-gcs"))
   // Include S3 persist layer
@@ -25,7 +25,6 @@ dependencies {
   compile (project(':h2o-persist-hdfs')) {
     transitive = false
   }
-  compile (project(':h2o-ext-authsupport'))
 
   // For standalone mode to work with MapR, this extra library needs to be
   // included, and it's not pulled in by the dependency stuff;  this must

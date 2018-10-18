@@ -1,0 +1,6 @@
+dependencies {
+    compile project(":h2o-core")
+    compileOnly "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
+    compileOnly "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

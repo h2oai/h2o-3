@@ -16,6 +16,15 @@ configurations {
 // Dependencies
 dependencies {
     compile project(":h2o-app")
+
+    // Adding dependency on Jetty is enough for compilation, but not for embedding jetty into the shadow jar ...
+    runtime project(":h2o-jetty-9")
+    // ... so we need to take care of it separately, here:
+    runtime "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    runtime "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
+    runtime "org.eclipse.jetty:jetty-proxy:${jettyVersion}"
+    //
+
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
     compile project(":h2o-persist-gcs")
