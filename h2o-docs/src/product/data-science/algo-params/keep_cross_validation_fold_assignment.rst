@@ -1,3 +1,5 @@
+.. _keep_cross_validation_fold_assignment:
+
 ``keep_cross_validation_fold_assignment``
 -----------------------------------------
 

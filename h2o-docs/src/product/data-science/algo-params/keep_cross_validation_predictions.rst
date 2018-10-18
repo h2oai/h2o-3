@@ -1,3 +1,5 @@
+.. _keep_cross_validation_predictions:
+
 ``keep_cross_validation_predictions``
 -------------------------------------
 
