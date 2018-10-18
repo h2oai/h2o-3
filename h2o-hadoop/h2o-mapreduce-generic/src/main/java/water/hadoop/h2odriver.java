@@ -868,9 +868,17 @@ public class h2odriver extends Configured implements Tool {
         enableExceptions = true;
       }
       else if (s.equals("-verbose:gc") && !JAVA_VERSION.useUnifiedLogging()) {
-        enableVerboseGC = true;
-      } else if (s.equals("-Xlog:gc=info") && JAVA_VERSION.useUnifiedLogging()) {
-        enableVerboseGC = true;
+        if (!JAVA_VERSION.useUnifiedLogging()) {
+          enableVerboseGC = true;
+        } else {
+          error("Parameter -verbose:gc is unusable, running on JVM with deprecated GC debugging flags.");
+        }
+      } else if (s.equals("-Xlog:gc=info")) {
+        if (JAVA_VERSION.useUnifiedLogging()) {
+          enableVerboseGC = true;
+        } else {
+          error("Parameter -verbose:gc is unusable, running on JVM without unified JVM logging.");
+        }
       }
       else if (s.equals("-verbose:class")) {
         enableVerboseClass = true;
@@ -896,12 +904,19 @@ public class h2odriver extends Configured implements Tool {
         if ((debugPort < 0) || (debugPort > 65535)) {
           error("Debug port must be between 1 and 65535");
         }
+      } else if (s.equals("-XX:+PrintGCDetails")) {
+        if (!JAVA_VERSION.useUnifiedLogging()) {
+          enablePrintGCDetails = true;
+        } else {
+          error("Parameter -XX:+PrintGCDetails is unusable, running on JVM with deprecated GC debugging flags.");
+        }
       }
-      else if (s.equals("-XX:+PrintGCDetails") && !JAVA_VERSION.useUnifiedLogging()) {
-        enablePrintGCDetails = true;
-      }
-      else if (s.equals("-XX:+PrintGCTimeStamps") && !JAVA_VERSION.useUnifiedLogging()) {
-        enablePrintGCTimeStamps = true;
+      else if (s.equals("-XX:+PrintGCTimeStamps")) {
+        if (!JAVA_VERSION.useUnifiedLogging()) {
+          enablePrintGCDetails = true;
+        } else {
+          error("Parameter -XX:+PrintGCTimeStamps is unusable, running on JVM with deprecated GC debugging flags.");
+        }
       }
       else if (s.equals("-gc")) {
         enableVerboseGC = true;
