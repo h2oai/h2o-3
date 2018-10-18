@@ -47,6 +47,11 @@ dependencies {
   compile(project(":h2o-parquet-parser"))
 }
 
+configurations {
+  compile.exclude module: 'servlet-api'
+  compile.exclude group: "javax.servlet", module: "javax.servlet-api"
+}
+
 //
 // Bundle optional modules
 // The process is defined by convention. There are two flags:
