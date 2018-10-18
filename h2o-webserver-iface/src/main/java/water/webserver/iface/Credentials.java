@@ -1,7 +1,6 @@
-package water.server;
+package water.webserver.iface;
 
 import org.apache.commons.codec.binary.Base64;
-import water.network.SecurityUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,7 +9,6 @@ import java.security.MessageDigest;
  * Representation of the User-Password pair
  */
 public class Credentials {
-  private static final int GEN_PASSWORD_LENGTH = 16;
 
   private final String _user;
   private final String _password;
@@ -34,10 +32,6 @@ public class Credentials {
 
   public static Credentials make(String user, String password) {
     return new Credentials(user, password);
-  }
-
-  public static Credentials make(String user) {
-    return make(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
   }
 
   /**

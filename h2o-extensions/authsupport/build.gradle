@@ -1,5 +1,0 @@
-description = "H2O Authentication Support"
-
-dependencies {
-    compile project(":h2o-core")
-}

@@ -19,10 +19,11 @@ import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
 import water.ProxyStarter;
+import water.init.NetworkInit;
 import water.network.SecurityUtils;
-import water.server.Credentials;
 import water.util.ArrayUtils;
 import water.util.StringUtils;
+import water.webserver.iface.Credentials;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -81,6 +82,7 @@ public class h2odriver extends Configured implements Tool {
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
   final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
+  private static final int GEN_PASSWORD_LENGTH = 16;
 
   static {
       if(!JAVA_VERSION.isKnown()) {
@@ -164,6 +166,10 @@ public class h2odriver extends Configured implements Tool {
   volatile int clusterPort = -1;
   volatile String flatfileContent = null;
 
+  private static Credentials make(String user) {
+    return Credentials.make(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
+  }
+
   public void setShutdownRequested() {
     shutdownRequested = true;
   }
@@ -180,7 +186,7 @@ public class h2odriver extends Configured implements Tool {
   public String getPublicUrl() {
     String url;
     if (client) {
-      url = H2O.getURL(H2O.getJetty().getScheme());
+      url = H2O.getURL(NetworkInit.h2oHttpView.getScheme());
     } else if (proxy) {
       url = proxyUrl;
     } else {
@@ -1581,9 +1587,11 @@ public class h2odriver extends Configured implements Tool {
     }
 
     // Proxy
-    final Credentials proxyCredentials = proxy ? Credentials.make(userName) : null;
-    if (proxyCredentials != null) {
-      final byte[] hashFileData = StringUtils.bytesOf(proxyCredentials.toHashFileEntry());
+    final Credentials proxyCredentials = proxy ? make(userName) : null;
+    final String hashFileEntry = proxyCredentials != null ? proxyCredentials.toHashFileEntry() : null;
+//    HttpServerLoader.INSTANCE.getHashFileEntry()
+    if (hashFileEntry != null) {
+      final byte[] hashFileData = StringUtils.bytesOf(hashFileEntry);
       addMapperArg(conf, "-hash_login");
       addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }

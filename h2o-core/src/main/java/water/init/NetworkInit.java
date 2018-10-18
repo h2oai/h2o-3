@@ -2,10 +2,13 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
-import water.JettyHTTPD;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
+import water.webserver.H2OHttpViewImpl;
+import water.webserver.iface.H2OHttpConfig;
+import water.webserver.iface.HttpServerLoader;
+import water.webserver.iface.LoginType;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -38,6 +41,8 @@ public class NetworkInit {
 
   public static ServerSocketChannel _tcpSocket;
 
+  public static H2OHttpViewImpl h2oHttpView;
+
   public static InetAddress findInetAddressForSelf() throws Error {
     if (H2O.SELF_ADDRESS != null)
       return H2O.SELF_ADDRESS;
@@ -55,16 +60,21 @@ public class NetworkInit {
     return null;
   }
 
-  // Parse arguments and set cloud name in any case. Strip out "-name NAME"
-  // and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
-  // function of the name. Parse node ip addresses from the filename.
+  /**
+   *  Parse arguments and set cloud name in any case. Strip out "-name NAME"
+   *  and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
+   *  function of the name. Parse node ip addresses from the filename.
+   * @todo this method introduces mutual dependency between classes {@link H2O} and {@link NetworkInit} ! Move it out!
+   */
   public static void initializeNetworkSockets( ) {
     // Assign initial ports
     H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
-    // Late instantiation of Jetty object, if needed.
-    if (H2O.getJetty() == null && !H2O.ARGS.disable_web) {
-      H2O.setJetty(new JettyHTTPD());
+    // Late instantiation of web server, if needed.
+    if (H2O.getWebServer() == null && !H2O.ARGS.disable_web) {
+      final H2OHttpConfig config = webServerConfig(H2O.ARGS);
+      h2oHttpView = new H2OHttpViewImpl(config);
+      H2O.setWebServer(HttpServerLoader.INSTANCE.createWebServer(h2oHttpView));
     }
 
     // API socket is only used to find opened port on given ip.
@@ -101,7 +111,7 @@ public class NetworkInit {
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (!H2O.ARGS.disable_web) {
           apiSocket.close();
-          H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
+          H2O.getWebServer().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
 
         break;
@@ -133,7 +143,7 @@ public class NetworkInit {
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     if (!H2O.ARGS.disable_web) {
       Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
-          "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
+          "Listening for HTTP and REST traffic on " + H2O.getURL(h2oHttpView.getScheme()) + "/");
     }
     try {
       Log.debug("Interface MTU: ", (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
@@ -183,6 +193,57 @@ public class NetworkInit {
       Log.throwErr(e);
     }
     H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash);
+  }
+
+  public static H2OHttpConfig webServerConfig(H2O.OptArgs args) {
+    final H2OHttpConfig config = new H2OHttpConfig();
+    config.jks = args.jks;
+    config.jks_pass = args.jks_pass;
+    config.loginType = parseLoginType(args);
+    configureLoginType(config.loginType, args.login_conf);
+    config.login_conf = args.login_conf;
+    config.form_auth = args.form_auth;
+    config.session_timeout = args.session_timeout;
+    config.user_name = args.user_name;
+    config.context_path = args.context_path;
+    return config;
+  }
+
+  /**
+   * @param args commandline arguments to parse
+   * @return one of login types - never returns null
+   */
+  private static LoginType parseLoginType(H2O.BaseArgs args) {
+    final LoginType loginType;
+    if (args.hash_login) {
+      loginType = LoginType.HASH;
+    } else if (args.ldap_login) {
+      loginType = LoginType.LDAP;
+    } else if (args.kerberos_login) {
+      loginType = LoginType.KERBEROS;
+    } else if (args.pam_login) {
+      loginType = LoginType.PAM;
+    } else {
+      return LoginType.NONE;
+    }
+    return loginType;
+  }
+
+  private static void configureLoginType(LoginType loginType, String loginConf) {
+    if (loginType == LoginType.NONE) {
+      return;
+    }
+    if (loginConf == null) {
+      throw new IllegalArgumentException("Must specify -login_conf argument");
+    }
+    if (loginType.needToCheckUserName()) {
+      // LDAP, KERBEROS, PAM
+      Log.info(String.format("Configuring JAASLoginService (with %s)", loginType));
+      System.setProperty("java.security.auth.login.config", loginConf);
+    } else {
+      // HASH only
+      Log.info("Configuring HashLoginService");
+    }
   }
 
   /**
