@@ -1,6 +1,6 @@
 ARG GPU_SUFFIX=''
 ARG FROM_VERSION
-FROM docker.h2o.ai/opsh2oai/h2o-3/dev-base${GPU_SUFFIX}:${FROM_VERSION}
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-base${GPU_SUFFIX}:${FROM_VERSION}
 
 ENV JAVA_VERSION=8
 COPY scripts/install_java_version scripts/java-${JAVA_VERSION}-vars.sh /tmp/
