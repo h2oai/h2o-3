@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.tree.visitor <- function() {
   airlines.data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
-  xgboost.model <- h2o.xgboost(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, max_depth = 2, seed = 1)
+  xgboost.model <- h2o.xgboost(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model", ntrees = 1, max_depth = 1, seed = 1)
   xgboost.tree <-h2o.getModelTree(xgboost.model, 1, "NO")
   expect_true(is.integer(length(xgboost.tree)))
   expect_false(is.null(xgboost.tree@root_node))
