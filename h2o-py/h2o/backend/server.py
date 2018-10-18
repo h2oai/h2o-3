@@ -62,7 +62,7 @@ class H2OLocalServer(object):
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, port="54321+", extra_classpath=None, verbose=True):
+              ice_root=None, port="54321+", extra_classpath=None, verbose=True, jvm_custom_args=None):
         """
         Start new H2O server on the local machine.
 
@@ -79,6 +79,7 @@ class H2OLocalServer(object):
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
         :param extra_classpath List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
+        :param jvm_custom_args Custom, user-defined arguments for the JVM H2O is instantiated in
 
         :returns: a new H2OLocalServer instance
         """
@@ -90,6 +91,7 @@ class H2OLocalServer(object):
         assert_is_type(max_mem_size, None, BoundInt(1 << 25))
         assert_is_type(ice_root, None, I(str, os.path.isdir))
         assert_is_type(extra_classpath, None, [str])
+        assert_is_type(jvm_custom_args, list, None)
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
@@ -118,7 +120,7 @@ class H2OLocalServer(object):
 
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
-                          mmax=max_mem_size, mmin=min_mem_size)
+                          mmax=max_mem_size, mmin=min_mem_size, jvm_custom_args=jvm_custom_args)
         if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
@@ -241,7 +243,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
 
-    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads):
+    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -267,7 +269,11 @@ class H2OLocalServer(object):
                      "%dM" % (num >> 20) if num == (num >> 20) << 20 else \
                      str(num)
             cmd += [mq + numstr]
-        cmd += ["-verbose:gc", "-XX:+PrintGCDetails", "-XX:+PrintGCTimeStamps"]
+        if jvm_custom_args is not None:
+            for arg in jvm_custom_args:
+                assert type(arg) is str
+                cmd += [arg]
+
         cmd += ["-cp", os.pathsep.join(classpath), "water.H2OApp"]  # This should be the last JVM option
 
         # ...add H2O options

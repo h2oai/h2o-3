@@ -130,13 +130,21 @@ Depending on the user-specified predictors, max_depth per tree, the number of tr
 
 **What's the best approach to help diagnose a possible memory problem on a cluster?**
 
-We've found that the best way to understand JVM memory consumption is to turn on the following JVM flags:
+We've found that the best way to understand JVM memory consumption is to turn on specific flags. These flags differ depending on your Java version.
+
+For Java version < 10, the following flags are available:
 
 ::
 
    -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
 
 You can then use the following tool to analyze the output: http://www.tagtraum.com/gcviewer-download.html
+
+Since Java 9, the previously metioned flags have been marked as deprecated and are completely removed in Java version 10 and newer. The following flag may be used instead.
+
+::
+
+   -Xlog:gc=info
 
 --------------
 
