@@ -2,26 +2,23 @@ package hex.tree.xgboost;
 
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
-import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
-import hex.ModelMetricsBinomial;
-import hex.SplitFrame;
+import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.tools.PrintMojo;
-import hex.genmodel.tools.PrintMojo.PrintTreeOptions;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
+import water.DKV;
+import water.ExtensionManager;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
-import water.util.Log;
 
 import java.io.ByteArrayInputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class XGBoostTreeConverterTest extends TestUtil {
 
@@ -61,9 +58,9 @@ public class XGBoostTreeConverterTest extends TestUtil {
 
             final GBTree booster = (GBTree) new Predictor(new ByteArrayInputStream(model.model_info()._boosterBytes)).getBooster();
             final RegTree tree = booster.getGroupedTrees()[0][0];
-            final RegTreeImpl.Node[] nodes = tree.getNodes();
+            final RegTreeNode[] nodes = tree.getNodes();
 
-            final SharedTreeGraph sharedTreeGraph = XGBoostTreeConverter.convertXGBoostTree(model, 0, 0);
+            final SharedTreeGraph sharedTreeGraph = model.convert(0, "down");
             final String s = XGBoostUtils.makeFeatureMap(tfr, model.model_info()._dataInfoKey.get());
             assertNotNull(sharedTreeGraph);
             assertEquals(parms._ntrees, sharedTreeGraph.subgraphArray.size());
@@ -99,9 +96,9 @@ public class XGBoostTreeConverterTest extends TestUtil {
 
             final GBTree booster = (GBTree) new Predictor(new ByteArrayInputStream(model.model_info()._boosterBytes)).getBooster();
             final RegTree tree = booster.getGroupedTrees()[0][0];
-            final RegTreeImpl.Node[] nodes = tree.getNodes();
+            final RegTreeNode[] nodes = tree.getNodes();
 
-            final SharedTreeGraph sharedTreeGraph = XGBoostTreeConverter.convertXGBoostTree(model, 0, 0);
+            final SharedTreeGraph sharedTreeGraph = model.convert(0, "NO");
             assertNotNull(sharedTreeGraph);
             assertEquals(parms._ntrees, sharedTreeGraph.subgraphArray.size());
             final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.subgraphArray.get(0);
