@@ -51,6 +51,7 @@ public class RapidsHandler extends Handler {
       case Val.STR:  return new RapidsStringV3(val.getStr());
       case Val.STRS: return new RapidsStringsV3(val.getStrs());
       case Val.FRM:  return new RapidsFrameV3(val.getFrame());
+      case Val.MFRM:  return new RapidsMapFrameV3(val.getMapFrame());
       case Val.FUN:  return new RapidsFunctionV3(val.getFun().toString());
       default:       throw H2O.fail();
     }

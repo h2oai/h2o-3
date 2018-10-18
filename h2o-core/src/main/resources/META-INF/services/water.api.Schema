@@ -88,6 +88,7 @@ water.api.schemas3.ProfilerNodeV3
 water.api.schemas3.ProfilerNodeV3$ProfilerNodeEntryV3
 water.api.schemas3.ProfilerV3
 water.api.schemas3.RapidsFrameV3
+water.api.schemas3.RapidsMapFrameV3
 water.api.schemas3.RapidsFunctionV3
 water.api.schemas3.RapidsHelpV3
 water.api.schemas3.RapidsHelpV3$RapidsExpressionV3

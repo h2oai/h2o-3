@@ -48,6 +48,28 @@ public class TargetEncodingTest extends TestUtil {
     }
 
     @Test
+    public void teColumnExistsTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b"))
+              .withDataForCol(1, ar("yes", "no"))
+              .build();
+      String teColumnName = "ColThatNotExist";
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      try {
+        tec.prepareEncodingMap(fr, "ColB", null, true);
+        fail();
+      } catch (AssertionError ex) {
+        assertEquals("Column name `" +  teColumnName + "` was not found in the provided data frame", ex.getMessage());
+      }
+    }
+
+    @Test
     public void changeKeyFrameTest() {
       Frame res = null;
       try {

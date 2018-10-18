@@ -201,6 +201,7 @@ public class TargetEncoder {
     private boolean checkAllTEColumnsAreCategorical(Frame data, String[] columnsToEncode)  {
         for( String columnName : columnsToEncode) {
             int columnIndex = data.find(columnName);
+            assert columnIndex!=-1 : "Column name `" +  columnName + "` was not found in the provided data frame";
             if(! data.vec(columnIndex).isCategorical()) return false;
         }
         return true;
