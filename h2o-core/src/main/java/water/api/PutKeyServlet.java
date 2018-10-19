@@ -1,21 +1,16 @@
 package water.api;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jetty.server.Response;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.UUID;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import water.DKV;
 import water.JettyHTTPD;
 import water.Key;
 import water.Value;
-import water.fvec.UploadFileVec;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Upload any value to K/V store.
@@ -80,7 +75,7 @@ public class PutKeyServlet extends HttpServlet {
 
   private boolean validate(String destKey, Boolean overwrite, HttpServletResponse response) throws IOException {
     if (destKey == null) {
-      JettyHTTPD.sendResponseError(response, Response.SC_BAD_REQUEST, "The field 'destination_frame` is compulsory!");
+      JettyHTTPD.sendResponseError(response, HttpServletResponse.SC_BAD_REQUEST, "The field 'destination_frame` is compulsory!");
       return false;
     }
     return true;
