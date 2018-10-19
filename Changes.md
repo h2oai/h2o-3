@@ -126,7 +126,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5719'>PUBDEV-5719</a>] - Improved and cleaned up output for the h2o.mojo_predict_csv and h2o.mojo_predict_df functions.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5743'>PUBDEV-5743</a>] -         h2o.xgboost: Add a way to visualize h2o-xgboost trees (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5743'>PUBDEV-5743</a>] - Users can now visualize XGBoost trees when running predictions.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5761'>PUBDEV-5761</a>] - Added weights to partial depenced plots. Also added a level for missing values.
 </li>
@@ -151,6 +151,8 @@ Download at: (tbd)
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5961'>PUBDEV-5961</a>] - In lockable.java, delete is now final in order to prevent inconsistent overrides.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5964'>PUBDEV-5964</a>] - Reverted AutoML naming change from Auto.Algo to Auto.algo.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5993'>PUBDEV-5993</a>] - Update Retrofit2, okHttp, and Okio dependecies. (STILL OPEN)
 </li>
 </ul>
     
