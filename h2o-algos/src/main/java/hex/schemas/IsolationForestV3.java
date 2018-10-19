@@ -32,7 +32,7 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
         @API(help = "Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate will be used instead.", gridable = true)
         public long sample_size;
 
-        @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression (where p is the # of predictors).", gridable = true)
+        @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of predictors)/3.", gridable = true)
         public int mtries;
     }
 }
