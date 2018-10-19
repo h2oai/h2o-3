@@ -19,8 +19,8 @@
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
-#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
-#'        (where p is the # of predictors). Defaults to -1.
+#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
+#'        predictors)/3. Defaults to -1.
 #' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate
 #'        will be used instead. Defaults to 256.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to -1.

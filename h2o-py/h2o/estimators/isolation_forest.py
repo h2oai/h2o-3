@@ -211,8 +211,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @property
     def mtries(self):
         """
-        Number of variables randomly sampled as candidates at each split. If set to -1, defaults p/3 for regression
-        (where p is the # of predictors).
+        Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
+        predictors)/3.
 
         Type: ``int``  (default: ``-1``).
         """
