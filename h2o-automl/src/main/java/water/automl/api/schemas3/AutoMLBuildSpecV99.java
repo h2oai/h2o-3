@@ -46,7 +46,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Whether to keep the predictions of the cross-validation predictions.  This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML.", direction=API.Direction.INPUT)
     public boolean keep_cross_validation_predictions;
 
-    @API(help="Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster.", direction=API.Direction.INPUT)
+    @API(help="Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster.", direction=API.Direction.INPUT, gridable = true)
     public boolean keep_cross_validation_models;
 
     @API(help="Whether to keep cross-validation assignments.", direction=API.Direction.INPUT)
