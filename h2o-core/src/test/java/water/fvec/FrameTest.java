@@ -108,6 +108,10 @@ public class FrameTest extends TestUtil {
     }
   }
 
+  /**
+   * This test is testing deepSlice functionality and shows that we can use zero-based indexes for slicing
+   * // TODO if confirmed go and correct comments for Frame.deepSlice() method
+   */
   @Test
   public void testRowDeepSlice() {
     Scope.enter();
@@ -129,7 +133,9 @@ public class FrameTest extends TestUtil {
       assertEquals(2, sliced.vec(1).at(0), 1e-5);
 
       //checking that 0-based indexing is allowed as well
+      // We are slicing here particular indexes of rows : 0 and 3
       Frame slicedRange = input.deepSlice(new long[]{0, 3}, null);
+      printOutFrameAsTable(slicedRange, false, slicedRange.numRows());
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);

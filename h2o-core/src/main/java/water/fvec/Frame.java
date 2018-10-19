@@ -1056,7 +1056,7 @@ public class Frame extends Lockable<Frame> {
    *  <li><em>an unordered list of positive</em> - just these, allowing dups
    *  </ul>
    *
-   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values. // TODO is it true? see Frametest.testRowDeepSlice test
+   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values.
    *  @return the sliced Frame
    */
   public Frame deepSlice( Object orows, Object ocols ) {
@@ -1249,7 +1249,7 @@ public class Frame extends Lockable<Frame> {
     String[][] domains = domains().clone();
 
     add("predicate", predicateFrame.anyVec());
-    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains); // TODO here we do a copy of the Frame because of the outputFrame. probably can do better.
+    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains);
     predicateFrame.delete();
     remove("predicate");
     return filtered;

@@ -911,6 +911,19 @@ public class TestUtil extends Iced {
     ParseSetup transformSetup(ParseSetup guessedSetup);
   }
 
+  /**
+   *
+   * @param frame
+   * @param columnName column's name to be factorized
+   * @return Frame with factorized column
+   */
+  public Frame asFactor(Frame frame, String columnName) {
+    Vec vec = frame.vec(columnName);
+    frame.replace(frame.find(columnName), vec.toCategoricalVec());
+    vec.remove();
+    return frame;
+  }
+
   public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);

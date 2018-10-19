@@ -112,7 +112,6 @@ class ExprNode(object):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
         if 'teColumns' in res:
-            # self._cache._data = res['teColumns']
             self._cache.teColumns = res['teColumns']
             self._cache.frames = res['frames']
 

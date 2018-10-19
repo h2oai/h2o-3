@@ -13,7 +13,11 @@ import water.rapids.vals.ValMapFrame;
 import java.util.Map;
 
 /**
- * Rapids wrapper for java TargetEncoder
+ * Rapids wrapper for java TargetEncoder (fit part)
+ *
+ * Design:
+ *  Due to a stateless nature of the calls from the client we will have to implement target encoding's workflow with two separate calls:
+ *  to AstTargetEncoderFit.java and AstTargetEncoderTransform.java
  */
 public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
   @Override
@@ -41,6 +45,7 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     String foldColumnName = getFoldColumnName(env, stk, asts); // TODO make it optional
     boolean withImputationForOriginalColumns = true; // Default fo now
 
+    // We won't actually use this instance here.  Because we will instantiate another instance of TargetEncoder in the second `transform`  call
     BlendingParams params = new BlendingParams(3, 1);
 
     TargetEncoder tec = new TargetEncoder(teColumnsToEncode, params);

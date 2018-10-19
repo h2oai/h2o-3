@@ -13,6 +13,22 @@ import water.util.Log;
 
 import java.util.*;
 
+/**
+ * This is a core class for target encoding related logic.
+ *
+ * In general target encoding could be applied to three types of problems, namely:
+ *      1) Binary classification (supported)
+ *      2) Multi-class classification (not supported yet)
+ *      3) Regression (not supported yet)
+ *
+ * In order to differentiate between abovementioned types of problems at hand and enable algorithm to do encodings correctly
+ * user should explicitly set corresponding type for a response column:
+ *      1) Binary classification: response column should be of a categorical type with cardinality = 2
+ *      2) Multi-class: response column should be of a categorical type with cardinality > 2
+ *      3) Regression: response column should be of a numerical type
+ *
+ * Usage: see TargetEncodingTitanicBenchmark.java
+ */
 public class TargetEncoder {
 
     private BlendingParams _blendingParams;
@@ -77,14 +93,12 @@ public class TargetEncoder {
 
         Frame dataWithEncodedTarget = ensureTargetColumnIsBinaryCategorical(dataWithoutNAsForTarget, targetColumnName);
 
-        Map<String, Frame> columnToEncodingMap = new HashMap<String, Frame>();
+        Map<String, Frame> columnToEncodingMap = new HashMap<>();
 
         for ( String teColumnName: _columnNamesToEncode) { // TODO maybe we can do it in parallel
             Frame teColumnFrame = null;
 
-            if(imputeNAsWithNewCategory) {
-              imputeNAsForColumn(dataWithEncodedTarget, teColumnName, teColumnName + "_NA");
-            }
+            imputeNAsForColumn(dataWithEncodedTarget, teColumnName, teColumnName + "_NA");
 
             teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, teColumnName, foldColumnName, targetIndex);
 
@@ -140,7 +154,9 @@ public class TargetEncoder {
 
 
   public Map<String, Frame> prepareEncodingMap(Frame data, String targetColumnName, String foldColumnName) {
-      return prepareEncodingMap( data, targetColumnName, foldColumnName, false);
+    // Making imputation to be our only strategy since otherwise current implementation of merge will return unexpected results.
+    boolean imputeNAsWithNewCategory = true;
+    return prepareEncodingMap( data, targetColumnName, foldColumnName, imputeNAsWithNewCategory);
   }
 
     String[] getColumnNamesBy(Frame data, int[] columnIndexes) {
@@ -520,9 +536,7 @@ public class TargetEncoder {
         for ( String teColumnName: _columnNamesToEncode) {
 
             // Impute NA's for each column we are going to encode
-            if(imputeNAsWithNewCategory) {
-              imputeNAsForColumn(dataWithAllEncodings, teColumnName, teColumnName + "_NA");
-            }
+            imputeNAsForColumn(dataWithAllEncodings, teColumnName, teColumnName + "_NA");
 
             String newEncodedColumnName = teColumnName + "_te";
 
@@ -702,7 +716,7 @@ public class TargetEncoder {
         int targetIndex = data.find(targetColumnName);
         Vec targetVec = data.vec(targetIndex);
         double   noiseLevel = targetVec.isNumeric()  ?   defaultNoiseLevel * (targetVec.max() - targetVec.min()) : defaultNoiseLevel;
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, imputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, foldColumn, withBlendedAvg, noiseLevel, true, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -713,7 +727,7 @@ public class TargetEncoder {
                                      boolean imputeNAs,
                                      long seed,
                                      boolean isTrainOrValidSet) {
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, imputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, true, seed, isTrainOrValidSet);
     }
 
     public Frame applyTargetEncoding(Frame data,
@@ -726,7 +740,7 @@ public class TargetEncoder {
                                      long seed,
                                      boolean isTrainOrValidSet) {
         assert dataLeakageHandlingStrategy != DataLeakageHandlingStrategy.KFold : "Use another overloaded method for KFold dataLeakageHandlingStrategy.";
-        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, imputeNAs, seed, isTrainOrValidSet);
+        return applyTargetEncoding(data, targetColumnName, targetEncodingMap, dataLeakageHandlingStrategy, null, withBlendedAvg, noiseLevel, true, seed, isTrainOrValidSet);
     }
 
 }

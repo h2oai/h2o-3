@@ -968,19 +968,6 @@ public class FrameUtils {
   }
 
   /**
-   *
-   * @param frame
-   * @param columnName column's name to be factorized
-   * @return Frame with factorized column
-   */
-  static public Frame asFactor(Frame frame, String columnName) {
-    Vec vec = frame.vec(columnName);
-    frame.replace(frame.find(columnName), vec.toCategoricalVec());
-    vec.remove();
-    return frame;
-  }
-
-  /**
    * @return Frame that is registered in DKV
    */
   static public Frame register(Frame frame) {

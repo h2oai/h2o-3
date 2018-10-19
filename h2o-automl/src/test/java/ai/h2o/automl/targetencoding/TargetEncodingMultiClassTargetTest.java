@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
-
+// Multi-class target encoding is not fully supported yet
 public class TargetEncodingMultiClassTargetTest extends TestUtil {
 
 
@@ -85,7 +85,7 @@ public class TargetEncodingMultiClassTargetTest extends TestUtil {
       parsedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
 
       printOutColumnsMeta(parsedFrame);
-      FrameUtils.asFactor(parsedFrame, targetColumnName);
+      asFactor(parsedFrame, targetColumnName);
 
       String[] teColumns = {"ColB"};
       TargetEncoder tec = new TargetEncoder(teColumns);

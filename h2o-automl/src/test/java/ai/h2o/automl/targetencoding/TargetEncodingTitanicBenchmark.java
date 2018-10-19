@@ -38,9 +38,9 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-      FrameUtils.asFactor(trainFrame, targetColumnName);
-      FrameUtils.asFactor(validFrame, targetColumnName);
-      FrameUtils.asFactor(testFrame, targetColumnName);
+      asFactor(trainFrame, targetColumnName);
+      asFactor(validFrame, targetColumnName);
+      asFactor(testFrame, targetColumnName);
       printOutColumnsMetadata(testFrame);
 
       Scope.track(trainFrame, validFrame, testFrame);
@@ -132,9 +132,9 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       Frame trainFrame = parse_test_file(Key.make("titanic_train_parsed"), "smalldata/gbm_test/titanic_train.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-      FrameUtils.asFactor(trainFrame, targetColumnName);
-      FrameUtils.asFactor(validFrame, targetColumnName);
-      FrameUtils.asFactor(testFrame, targetColumnName);
+      asFactor(trainFrame, targetColumnName);
+      asFactor(validFrame, targetColumnName);
+      asFactor(testFrame, targetColumnName);
 
       Scope.track(trainFrame, validFrame, testFrame);
 
@@ -227,10 +227,10 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       Frame teHoldoutFrame = parse_test_file(Key.make("titanic_te_holdout_parsed"), "smalldata/gbm_test/titanic_te_holdout.csv");
       Frame validFrame = parse_test_file(Key.make("titanic_valid_parsed"), "smalldata/gbm_test/titanic_valid.csv");
       Frame testFrame = parse_test_file(Key.make("titanic_test_parsed"), "smalldata/gbm_test/titanic_test.csv");
-      FrameUtils.asFactor(trainFrame, targetColumnName);
-      FrameUtils.asFactor(teHoldoutFrame, targetColumnName);
-      FrameUtils.asFactor(validFrame, targetColumnName);
-      FrameUtils.asFactor(testFrame, targetColumnName);
+      asFactor(trainFrame, targetColumnName);
+      asFactor(teHoldoutFrame, targetColumnName);
+      asFactor(validFrame, targetColumnName);
+      asFactor(testFrame, targetColumnName);
 
       Scope.track(trainFrame, teHoldoutFrame, validFrame, testFrame);
 
@@ -240,7 +240,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
       testFrame.remove(new String[]{"name", "ticket", "boat", "body"});
 
       // TODO we need to make it automatically just in case if user will try to load frames from separate sources like we did here
-      Frame teHoldoutFrameFactorized = FrameUtils.asFactor(teHoldoutFrame, "cabin");
+      Frame teHoldoutFrameFactorized = asFactor(teHoldoutFrame, "cabin");
       Scope.track(teHoldoutFrameFactorized);
 
       boolean withNoiseOnlyForTraining = true;

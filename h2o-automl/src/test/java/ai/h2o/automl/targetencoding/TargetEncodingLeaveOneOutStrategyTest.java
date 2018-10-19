@@ -153,10 +153,10 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, false, 1234, true);
+    Frame resultWithEncodings = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234, true);
 
+    Vec expected = dvec(0.6, 0.6, 0.5, 1, 0.5);
     printOutFrameAsTable(resultWithEncodings);
-    Vec expected = dvec(0.5, 1, 0.5, 0.6, 0.6);
     assertVecEquals(expected, resultWithEncodings.vec("ColA_te"), 1e-5);
 
     expected.remove();
@@ -217,11 +217,11 @@ public class TargetEncodingLeaveOneOutStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
 
-    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, false, 1234, true);
+    Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, true, 1234, true);
 
     Map<String, Frame> targetEncodingMap2 = tec.prepareEncodingMap(fr2, targetColumnName, null);
 
-    Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, false, 1234, true);
+    Frame resultWithEncoding2 = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap2, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false,0.0, true, 1234, true);
 
     Frame sortedResult = resultWithEncoding.sort(new int[]{2}, new int[]{2});
     Frame sortedResult2 = resultWithEncoding2.sort(new int[]{2}, new int[]{2});
