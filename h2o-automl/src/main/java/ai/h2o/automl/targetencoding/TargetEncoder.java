@@ -703,6 +703,7 @@ public class TargetEncoder {
         }
     }
 
+    // Overloaded for the case when user had not specified the noise parameter
     public Frame applyTargetEncoding(Frame data,
                                      String targetColumnName,
                                      Map<String, Frame> targetEncodingMap,

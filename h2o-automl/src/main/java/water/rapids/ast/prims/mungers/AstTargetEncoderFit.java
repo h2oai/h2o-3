@@ -41,8 +41,7 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     Frame trainFrame = getTrainingFrame(env, stk, asts);
     String[] teColumnsToEncode = getTEColumns(asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
-//    double numberOfFolds = getNumberOfFolds(env, stk, asts); // TODO make it optional
-    String foldColumnName = getFoldColumnName(env, stk, asts); // TODO make it optional
+    String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withImputationForOriginalColumns = true; // Default fo now
 
     // We won't actually use this instance here.  Because we will instantiate another instance of TargetEncoder in the second `transform`  call
@@ -72,12 +71,14 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     return stk.track(asts[3].exec(env)).getStr();
   }
 
-  private double getNumberOfFolds(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    return stk.track(asts[4].exec(env)).getNum();
-  }
-
   private String getFoldColumnName(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    return stk.track(asts[4].exec(env)).getStr();
+    try {
+      String str = stk.track(asts[4].exec(env)).getStr();
+      if(str.equals("")) return null;
+      return str;
+    } catch (IllegalArgumentException ex) {
+      return null;
+    }
   }
 
   private boolean getWithImputation(Env env, Env.StackHelp stk, AstRoot asts[]) {

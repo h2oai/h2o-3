@@ -19,7 +19,7 @@ import java.util.Map;
 public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransform> {
   @Override
   public String[] args() {
-    return new String[]{"encodingMapKeys encodingMapFrames frameToTransform teColumns strategy targetColumnName foldColumnName withBlending inflectionPoint smoothing seed"};
+    return new String[]{"encodingMapKeys encodingMapFrames frameToTransform teColumns strategy targetColumnName foldColumnName withBlending inflectionPoint smoothing noise seed"};
   }
 
   @Override
@@ -29,7 +29,7 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
   @Override
   public int nargs() {
-    return 1 + 11;
+    return 1 + 12;
   }
 
   @Override
@@ -41,10 +41,11 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     String[] teColumnsToEncode = getTEColumns(asts);
     byte dataLeakageHandlingStrategy = getDataLeakageHandlingStrategy(env, stk, asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
-    String foldColumnName = getFoldColumnName(env, stk, asts); // TODO make it optional
+    String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
     double inflectionPoint = getInflectionPoint(env, stk, asts);
     double smoothing = getSmoothing(env, stk, asts);
+    double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
     boolean withImputationForOriginalColumns = true;
 
@@ -52,16 +53,25 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
     TargetEncoder tec = new TargetEncoder(teColumnsToEncode, params);
 
+    Map<String, Frame> encodingMap = reconstructEncodingMap(encodingMapKeys, encodingMapFrames);
+
+    if(noise == -1) {
+      return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
+              foldColumnName, withBlending, withImputationForOriginalColumns, (long) seed, true));
+    } else {
+      return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
+              foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed, true));
+    }
+  }
+
+  private Map<String, Frame> reconstructEncodingMap(String[] encodingMapKeys, Frame[] encodingMapFrames) {
     Map<String,Frame> encodingMap = new HashMap<>();
 
     assert encodingMapKeys.length == encodingMapFrames.length : "EncodingMap elements are inconsistent";
     for (int i = 0; i < encodingMapKeys.length; i++) {
       encodingMap.put(encodingMapKeys[i], encodingMapFrames[i]);
     }
-
-    Frame encoded = tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy, foldColumnName, withBlending, 0.0, withImputationForOriginalColumns, (long) seed, true);
-
-    return new ValFrame(encoded);
+    return encodingMap;
   }
 
   //TODO why can't we use stk.track(asts[1].exec(env)).getStrs(); ?
@@ -121,7 +131,13 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
   }
 
   private String getFoldColumnName(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    return stk.track(asts[7].exec(env)).getStr();
+    try {
+      String str = stk.track(asts[7].exec(env)).getStr();
+      if(str.equals("")) return null;
+      return str;
+    } catch (IllegalArgumentException ex) {
+      return null;
+    }
   }
 
   private boolean getWithBlending(Env env, Env.StackHelp stk, AstRoot asts[]) {
@@ -136,8 +152,12 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     return stk.track(asts[10].exec(env)).getNum();
   }
 
-  private double getSeed(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  private double getNoise(Env env, Env.StackHelp stk, AstRoot asts[]) {
     return stk.track(asts[11].exec(env)).getNum();
+  }
+
+  private double getSeed(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    return stk.track(asts[12].exec(env)).getNum();
   }
 
 }

@@ -22,7 +22,7 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, teColumns=None, targetColumnName = None, foldColumnName = None, blending = True, inflection_point = 3, smoothing = 1):
+    def __init__(self, teColumns=None, targetColumnName = None, foldColumnName = '', blending = True, inflection_point = 3, smoothing = 1):
 
         #todo remove (self, teColumns=None, destination_frame=None, header=0, separator=",", column_names=None, column_types=None, na_strings=None
         """
@@ -55,7 +55,7 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, frame = None , strategy = None, withBlending = True, seed = -1):
+    def transform(self, frame = None , strategy = None, noise = -1, seed = -1):
         """
         Description of the parameters:
         """
@@ -65,5 +65,5 @@ class TargetEncoder(object):
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, strategy,
                         self._targetColumnName, self._foldColumnName,
-                        withBlending, self._inflectionPoint, self._smoothing,
-                        seed))
+                        self._blending, self._inflectionPoint, self._smoothing,
+                        noise, seed))
