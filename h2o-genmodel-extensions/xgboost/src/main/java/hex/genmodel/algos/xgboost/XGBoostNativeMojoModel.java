@@ -1,7 +1,12 @@
 package hex.genmodel.algos.xgboost;
 
+import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.gbm.GradBooster;
+
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.SharedTreeGraph;
+
 import ml.dmlc.xgboost4j.java.*;
 
 import java.io.ByteArrayInputStream;
@@ -85,7 +90,6 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       }
     else
       featureMapFile = null;
-
     try {
       if (featureMapFile != null) {
         Files.write(featureMapFile, Collections.singletonList(_featureMap), Charset.defaultCharset(), StandardOpenOption.WRITE);
@@ -133,4 +137,15 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     System.out.println("java -cp h2o-genmodel.jar " + XGBoostNativeMojoModel.class.getCanonicalName() + " --dump <mojo> [withStats?] [format]");
   }
 
+  @Override
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
+    GradBooster booster = null;
+    try {
+      booster = new Predictor(new ByteArrayInputStream(_booster.toByteArray())).getBooster();
+    } catch (IOException | XGBoostError e) {
+      e.printStackTrace();
+    }
+
+    return _computeGraph(booster, treeNumber);
+  }
 }

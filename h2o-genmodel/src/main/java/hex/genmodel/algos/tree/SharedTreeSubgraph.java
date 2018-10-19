@@ -37,7 +37,7 @@ public class SharedTreeSubgraph {
    * Make the root node in the tree.
    * @return The node
    */
-  SharedTreeNode makeRootNode() {
+  public SharedTreeNode makeRootNode() {
     SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, 0);
     n.setInclusiveNa(true);
     nodesArray.add(n);
@@ -58,7 +58,7 @@ public class SharedTreeSubgraph {
    * @param parent Parent node
    * @return The new child node
    */
-  SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
+  public SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
     SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, parent.getDepth() + 1);
     nodesArray.add(child);
     makeLeftEdge(parent, child);
@@ -70,7 +70,7 @@ public class SharedTreeSubgraph {
    * @param parent Parent node
    * @return The new child node
    */
-  SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
+  public SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
     SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, parent.getDepth() + 1);
     nodesArray.add(child);
     makeRightEdge(parent, child);
