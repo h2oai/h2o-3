@@ -1,9 +1,6 @@
 package hex;
 
-import hex.genmodel.GenModel;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -2267,7 +2264,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /** Model stream writer - output Java code representation of model. */
-  public class JavaModelStreamWriter extends StreamWriter {
+  public class JavaModelStreamWriter implements StreamWriter {
     /** Show only preview */
     private final boolean preview;
 
@@ -2473,6 +2470,41 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
       return MojoModel.load(mojoReaderBackend);
     }
+  }
+
+  ModelDescriptor modelDescriptor() {
+    return new ModelDescriptor() {
+      @Override
+      public String[][] scoringDomains() { return Model.this.scoringDomains(); }
+      @Override
+      public String projectVersion() { return H2O.ABV.projectVersion(); }
+      @Override
+      public String algoName() { return _parms.algoName(); }
+      @Override
+      public String algoFullName() { return _parms.fullName(); }
+      @Override
+      public ModelCategory getModelCategory() { return _output.getModelCategory(); }
+      @Override
+      public boolean isSupervised() { return _output.isSupervised(); }
+      @Override
+      public int nfeatures() { return _output.nfeatures(); }
+      @Override
+      public int nclasses() { return _output.nclasses(); }
+      @Override
+      public String[] columnNames() { return _output._names; }
+      @Override
+      public boolean balanceClasses() { return _parms._balance_classes; }
+      @Override
+      public double defaultThreshold() { return Model.this.defaultThreshold(); }
+      @Override
+      public double[] priorClassDist() { return _output._priorClassDist; }
+      @Override
+      public double[] modelClassDist() { return _output._modelClassDist; }
+      @Override
+      public String uuid() { return String.valueOf(Model.this.checksum()); }
+      @Override
+      public String timestamp() { return new DateTime().toString(); }
+    };
   }
 
 }

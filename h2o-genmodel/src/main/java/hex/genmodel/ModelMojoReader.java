@@ -137,6 +137,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     boolean isSupervised = readkv("supervised");
     _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null);
     _model._uuid = readkv("uuid");
+    _model._h2oVersion = readkv("h2o_version", "unknown");
     _model._category = hex.ModelCategory.valueOf((String) readkv("category"));
     _model._supervised = isSupervised;
     _model._nfeatures = readkv("n_features");
