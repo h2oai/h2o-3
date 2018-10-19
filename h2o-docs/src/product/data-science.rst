@@ -25,7 +25,6 @@ Supervised
    data-science/drf
    data-science/glm
    data-science/gbm
-   data-science/if
    data-science/naive-bayes
    data-science/stacked-ensembles
    data-science/xgboost
@@ -38,6 +37,7 @@ Unsupervised
 
    data-science/aggregator
    data-science/glrm
+   data-science/if
    data-science/k-means
    data-science/pca
 
