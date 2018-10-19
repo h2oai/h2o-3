@@ -1,14 +1,14 @@
 package water.api;
 
 
+import ai.h2o.jetty9.Jetty9HTTPD;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.H2O;
-import water.TestUtil;
-import water.server.jetty.JettyHTTPD;
+import water.server.H2oServletContainer;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -24,9 +24,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
-public class CustomHttpFilterTest extends TestUtil {
+public class CustomHttpFilterTest {
   @BeforeClass static public void setup() {
-    stall_till_cloudsize(1);
+//    stall_till_cloudsize(1);
     // h2o-core/.., register the web bits (so we don't get errs below)
     String relativeResourcePath = System.getProperty("user.dir")+ "/..";
     H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
@@ -109,7 +109,8 @@ public class CustomHttpFilterTest extends TestUtil {
     });
 
     // start the request lifecycle
-    H2O.getJetty().getServer().getChildHandlersByClass(JettyHTTPD.GateHandler.class)[0].handle("/", null, request, response);
+    final H2oServletContainer servletContainer = H2O.getServletContainer();
+    ((Jetty9HTTPD) servletContainer).getServer().getChildHandlersByClass(Jetty9HTTPD.GateHandler.class)[0].handle("/", null, request, response);
     new RequestServer().doGet(request, response);
 
   }

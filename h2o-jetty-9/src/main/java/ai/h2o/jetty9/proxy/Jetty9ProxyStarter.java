@@ -1,5 +1,6 @@
-package water;
+package ai.h2o.jetty9.proxy;
 
+import water.H2O;
 import water.init.HostnameGuesser;
 import water.server.Credentials;
 
@@ -9,7 +10,7 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 
-public class ProxyStarter {
+public class Jetty9ProxyStarter {
 
   public static String start(String[] args, Credentials credentials, String proxyTo,
                              boolean useHostname) {
@@ -18,7 +19,7 @@ public class ProxyStarter {
 
     H2O.BaseArgs baseArgs = H2O.parseH2OArgumentsTo(args, new H2O.OptArgs());
 
-    JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
+    Jetty9Proxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
     InetAddress address = HostnameGuesser.findInetAddressForSelf(baseArgs.ip, baseArgs.network);
     if (useHostname) {
@@ -40,10 +41,10 @@ public class ProxyStarter {
     return hostname;
   }
 
-  private static JettyProxy initializeProxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
+  private static Jetty9Proxy initializeProxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
     int proxyPort = args.port == 0 ? args.baseport : args.port;
 
-    JettyProxy proxy = new JettyProxy(args, credentials, proxyTo);
+    Jetty9Proxy proxy = new Jetty9Proxy(args, credentials, proxyTo);
 
     // PROXY socket is only used to find opened port on given ip
     ServerSocket proxySocket = null;

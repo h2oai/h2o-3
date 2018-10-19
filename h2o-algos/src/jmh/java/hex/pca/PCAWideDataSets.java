@@ -126,7 +126,7 @@ public class PCAWideDataSets {
 		if (pcaScore != null) {
 			pcaScore.delete();
 		}
-		water.H2O.getJetty().stop();
+		water.H2O.getServletContainer().stop();
 	}
 	
 	public boolean train() {

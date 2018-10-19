@@ -33,7 +33,7 @@ public class H2OStarter {
     Log.info("H2O started in " + (timeF - time0) + "ms");
     if (!H2O.ARGS.disable_web) {
       Log.info("");
-      Log.info("Open H2O Flow in your web browser: " + H2O.getURL(H2O.getJetty().getScheme()));
+      Log.info("Open H2O Flow in your web browser: " + H2O.getURL(H2O.getServletContainer().getScheme()));
       Log.info("");
     }
   }

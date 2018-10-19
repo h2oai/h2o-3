@@ -1,4 +1,4 @@
-package water.server.jetty;
+package ai.h2o.jetty9;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -14,6 +14,7 @@ import water.api.PostFileServlet;
 import water.api.PutKeyServlet;
 import water.api.RequestServer;
 import water.server.RequestAuthExtension;
+import water.server.H2oServletContainer;
 import water.server.ServletUtils;
 
 import javax.servlet.ServletException;
@@ -31,7 +32,7 @@ import java.util.List;
  * Embedded Jetty instance inside H2O.
  * This is intended to be a singleton per H2O node.
  */
-public class JettyHTTPD extends AbstractHTTPD {
+public class Jetty9HTTPD extends AbstractJetty9HTTPD implements H2oServletContainer {
   //------------------------------------------------------------------------------------------
   // Object-specific things.
   //------------------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ public class JettyHTTPD extends AbstractHTTPD {
   /**
    * Create bare Jetty object.
    */
-  public JettyHTTPD() {
+  public Jetty9HTTPD() {
     super(H2O.ARGS);
   }
 
@@ -107,9 +108,9 @@ public class JettyHTTPD extends AbstractHTTPD {
 
       boolean isXhrRequest = false;
       if (request != null) {
-        isXhrRequest = isXhrRequest(request);
+        isXhrRequest = ServletUtils.isXhrRequest(request);
       }
-      setCommonResponseHttpHeaders(response, isXhrRequest);
+      ServletUtils.setCommonResponseHttpHeaders(response, isXhrRequest);
     }
   }
 
@@ -169,31 +170,4 @@ public class JettyHTTPD extends AbstractHTTPD {
       return target.equals(_loginTarget) || target.equals(_errorTarget);
     }
   }
-
-  private static boolean isXhrRequest(final HttpServletRequest request) {
-    final String requestedWithHeader = request.getHeader("X-Requested-With");
-    return "XMLHttpRequest".equals(requestedWithHeader);
-  }
-
-  private static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
-    if (xhrRequest) {
-      response.setHeader("Cache-Control", "no-cache");
-    }
-    response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
-    response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
-    response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
-    response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
-    response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
-  }
-
-  private static String sanatizeContextPath(String context_path) {
-    if(null == context_path || context_path.isEmpty()) {
-      return "/";
-    }
-    return context_path + "/";
-  }
-
-
-  //--------------------------------------------------
-
 }
