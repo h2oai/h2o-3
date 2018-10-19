@@ -28,6 +28,10 @@ public abstract class MultiModelMojoReader<M extends MojoModel> extends ModelMoj
     return _subModels.get(key);
   }
 
+  protected Map<String, MojoModel> getSubModels() {
+    return _subModels;
+  }
+
   protected abstract void readParentModelData() throws IOException;
 
   private class NestedMojoReaderBackend implements MojoReaderBackend {

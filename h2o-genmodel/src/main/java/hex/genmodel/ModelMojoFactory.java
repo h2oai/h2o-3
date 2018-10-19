@@ -7,6 +7,7 @@ import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
+import hex.genmodel.algos.pipeline.MojoPipelineReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
@@ -83,6 +84,9 @@ public class ModelMojoFactory {
       case "StackedEnsemble":
       case "Stacked Ensemble":
         return new StackedEnsembleMojoReader();
+
+      case "MOJO Pipeline":
+        return new MojoPipelineReader();
 
       default:
         // Try to load MOJO reader via service
