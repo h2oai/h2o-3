@@ -18,9 +18,9 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
-import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.server.Credentials;
+import water.server.H2oServletContainerLoader;
 import water.util.ArrayUtils;
 import water.util.StringUtils;
 
@@ -180,7 +180,7 @@ public class h2odriver extends Configured implements Tool {
   public String getPublicUrl() {
     String url;
     if (client) {
-      url = H2O.getURL(H2O.getJetty().getScheme());
+      url = H2O.getURL(H2O.getServletContainer().getScheme());
     } else if (proxy) {
       url = proxyUrl;
     } else {
@@ -1582,8 +1582,10 @@ public class h2odriver extends Configured implements Tool {
 
     // Proxy
     final Credentials proxyCredentials = proxy ? Credentials.make(userName) : null;
-    if (proxyCredentials != null) {
-      final byte[] hashFileData = StringUtils.bytesOf(proxyCredentials.toHashFileEntry());
+    final String hashFileEntry = proxyCredentials != null ? proxyCredentials.toHashFileEntry() : null;
+//    H2oServletContainerLoader.INSTANCE.getHashFileEntry()
+    if (hashFileEntry != null) {
+      final byte[] hashFileData = StringUtils.bytesOf(hashFileEntry);
       addMapperArg(conf, "-hash_login");
       addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }
@@ -1744,7 +1746,8 @@ public class h2odriver extends Configured implements Tool {
     }
 
     if (proxy) {
-      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
+      proxyUrl = H2oServletContainerLoader.INSTANCE.startProxy(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
+//      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
       reportProxyReady(proxyUrl);
     }
 

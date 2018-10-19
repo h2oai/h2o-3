@@ -1,4 +1,4 @@
-package water.server.jetty;
+package ai.h2o.jetty9;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -11,17 +11,17 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * DelegatingAuthenticator dynamically switches between Form-based authentication
+ * Jetty9DelegatingAuthenticatorynamically switches between Form-based authentication
  * and Basic Access authentication.
  * The decision is made based on user's "User-Agent". Browser clients will use Form based
  * authentication, all other clients will use basic auth.
  */
-class DelegatingAuthenticator implements Authenticator {
+class Jetty9DelegatingAuthenticator implements Authenticator {
 
   private BasicAuthenticator _basicAuth;
   private FormAuthenticator _formAuth;
 
-  DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
+  Jetty9DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
     _basicAuth = basicAuth;
     _formAuth = formAuth;
   }

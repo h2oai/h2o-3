@@ -1,4 +1,4 @@
-package water.server.jetty;
+package ai.h2o.jetty9;
 
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.security.Authenticator;
@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 
-public abstract class AbstractHTTPD {
+public abstract class AbstractJetty9HTTPD {
 
   private final H2O.BaseArgs _args;
 
@@ -43,7 +43,7 @@ public abstract class AbstractHTTPD {
   // Jetty server object.
   protected Server _server;
 
-  protected AbstractHTTPD(H2O.BaseArgs args) {
+  protected AbstractJetty9HTTPD(H2O.BaseArgs args) {
     _args = args;
   }
 
@@ -162,7 +162,7 @@ public abstract class AbstractHTTPD {
       if (_args.form_auth) {
         BasicAuthenticator basicAuthenticator = new BasicAuthenticator();
         FormAuthenticator formAuthenticator = new FormAuthenticator("/login", "/loginError", false);
-        authenticator = new DelegatingAuthenticator(basicAuthenticator, formAuthenticator);
+        authenticator = new Jetty9DelegatingAuthenticator(basicAuthenticator, formAuthenticator);
       } else {
         authenticator = new BasicAuthenticator();
       }

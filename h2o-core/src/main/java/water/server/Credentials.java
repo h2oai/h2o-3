@@ -1,8 +1,8 @@
 package water.server;
 
+import org.apache.commons.codec.binary.Base64;
 import water.network.SecurityUtils;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
@@ -43,12 +43,10 @@ public class Credentials {
   /**
    * This replaces Jetty's B64Code.encode().
    */
-  static String base64EncodeToString(String s) {
+  private static String base64EncodeToString(String s) {
     final byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
-//    return new String(Base64.getEncoder().encode(bytes)); // java 8 variant
-    return DatatypeConverter.printBase64Binary(bytes);
+    return Base64.encodeBase64String(bytes);
   }
-
 
   // following part is copied out of Jetty's class org.eclipse.jetty.util.security.Credential$MD5, because we cannot depend on the library
 
@@ -60,7 +58,7 @@ public class Credentials {
   /**
    * This replaces Jetty's Credential.MD5.digest().
    */
-  static String credentialMD5digest(String password) {
+  private static String credentialMD5digest(String password) {
     try {
       byte[] digest;
       synchronized (__md5Lock) {

@@ -2,7 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
-import water.server.jetty.JettyHTTPD;
+import water.server.H2oServletContainerLoader;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
@@ -55,16 +55,19 @@ public class NetworkInit {
     return null;
   }
 
-  // Parse arguments and set cloud name in any case. Strip out "-name NAME"
-  // and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
-  // function of the name. Parse node ip addresses from the filename.
+  /**
+   *  Parse arguments and set cloud name in any case. Strip out "-name NAME"
+   *  and "-flatfile <filename>". Ignore the rest. Set multi-cast port as a hash
+   *  function of the name. Parse node ip addresses from the filename.
+   * @todo this method introduces mutual dependency between classes {@link H2O} and {@link NetworkInit} ! Move it out!
+   */
   public static void initializeNetworkSockets( ) {
     // Assign initial ports
     H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
     // Late instantiation of Jetty object, if needed.
-    if (H2O.getJetty() == null && !H2O.ARGS.disable_web) {
-      H2O.setJetty(new JettyHTTPD());
+    if (H2O.getServletContainer() == null && !H2O.ARGS.disable_web) {
+      H2O.setServletContainer(H2oServletContainerLoader.INSTANCE.createServletContainer());
     }
 
     // API socket is only used to find opened port on given ip.
@@ -101,7 +104,7 @@ public class NetworkInit {
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (!H2O.ARGS.disable_web) {
           apiSocket.close();
-          H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
+          H2O.getServletContainer().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
 
         break;
@@ -133,7 +136,7 @@ public class NetworkInit {
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     if (!H2O.ARGS.disable_web) {
       Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
-          "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
+          "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getServletContainer().getScheme()) + "/");
     }
     try {
       Log.debug("Interface MTU: ", (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());

@@ -1,5 +1,6 @@
-package water;
+package ai.h2o.jetty9.proxy;
 
+import ai.h2o.jetty9.AbstractJetty9HTTPD;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.proxy.ProxyServlet;
 import org.eclipse.jetty.server.Handler;
@@ -8,8 +9,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import water.H2O;
 import water.server.Credentials;
-import water.server.jetty.AbstractHTTPD;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -19,12 +20,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class JettyProxy extends AbstractHTTPD {
+public class Jetty9Proxy extends AbstractJetty9HTTPD {
 
   private final String _proxyTo;
   private final Credentials _credentials;
 
-  public JettyProxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
+  public Jetty9Proxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
     super(args);
     _proxyTo = proxyTo;
     _credentials = credentials;
@@ -105,10 +106,11 @@ public class JettyProxy extends AbstractHTTPD {
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
       if (isLoginTarget(target)) {
-        if (isPageRequest(request))
+        if (isPageRequest(request)) {
           sendLoginForm(response);
-        else
-          sendUnauthorizedResponse(response, "Access denied. Please login.");
+        } else {
+          response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access denied. Please login.");
+        }
         baseRequest.setHandled(true);
       } else {
         // not for us, invoke wrapped handler

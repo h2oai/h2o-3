@@ -5,7 +5,6 @@ import water.H2OError;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
-import water.server.jetty.JettyHTTPD;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.StringUtils;
@@ -33,7 +32,7 @@ public class ServletUtils {
   }
 
   /**
-   * Called from {@link JettyHTTPD}.
+   * Called from ai.h2o.jetty9.JettyHTTPD
    */
   public static void startRequestLifecycle() {
     _startMillis.set(System.currentTimeMillis());
