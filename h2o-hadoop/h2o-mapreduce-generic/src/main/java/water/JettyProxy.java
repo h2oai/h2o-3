@@ -11,6 +11,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Credential;
 import water.network.SecurityUtils;
+import water.server.jetty.AbstractHTTPD;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;

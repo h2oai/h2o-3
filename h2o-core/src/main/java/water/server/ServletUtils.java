@@ -1,47 +1,41 @@
-package water;
+package water.server;
 
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import water.api.DatasetServlet;
-import water.api.NpsBinServlet;
-import water.api.PostFileServlet;
-import water.api.PutKeyServlet;
-import water.api.RequestServer;
+import water.H2O;
+import water.H2OError;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
-import water.server.RequestAuthExtension;
+import water.server.jetty.JettyHTTPD;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.StringUtils;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.util.Arrays;
 
 /**
- * Embedded Jetty instance inside H2O.
- * This is intended to be a singleton per H2O node.
+ * Utilities supporting HTTP server-side functionality, without depending on specific version of Jetty, or on Jetty at all.
  */
-public class JettyHTTPD extends AbstractHTTPD {
-  //------------------------------------------------------------------------------------------
-  // Thread-specific things.
-  //------------------------------------------------------------------------------------------
-
+public class ServletUtils {
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
+  public static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
 
-  private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
+  private ServletUtils() {
+    // not instantiable
+  }
 
-  private static void startRequestLifecycle() {
+  /**
+   * Called from {@link JettyHTTPD}.
+   */
+  public static void startRequestLifecycle() {
     _startMillis.set(System.currentTimeMillis());
     _status.set(999);
   }
@@ -73,9 +67,6 @@ public class JettyHTTPD extends AbstractHTTPD {
     return _userAgent.get();
   }
 
-  //------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------
-
   public static void setResponseStatus(HttpServletResponse response, int sc) {
     setStatus(sc);
     response.setStatus(sc);
@@ -84,145 +75,6 @@ public class JettyHTTPD extends AbstractHTTPD {
   public static void sendResponseError(HttpServletResponse response, int sc, String msg) throws java.io.IOException {
     setStatus(sc);
     response.sendError(sc, msg);
-  }
-
-  //------------------------------------------------------------------------------------------
-  // Object-specific things.
-  //------------------------------------------------------------------------------------------
-  private static volatile boolean _acceptRequests = false;
-
-  /**
-   * Create bare Jetty object.
-   */
-  public JettyHTTPD() {
-    super(H2O.ARGS);
-  }
-
-  public void acceptRequests() {
-    _acceptRequests = true;
-  }
-
-  @Override
-  protected RuntimeException failEx(String message) {
-    return H2O.fail(message);
-  }
-
-  @Override
-  protected void registerHandlers(HandlerWrapper handlerWrapper, ServletContextHandler context) {
-    context.addServlet(NpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
-    context.addServlet(PostFileServlet.class, "/3/PostFile.bin");
-    context.addServlet(PostFileServlet.class, "/3/PostFile");
-    context.addServlet(DatasetServlet.class,  "/3/DownloadDataset");
-    context.addServlet(DatasetServlet.class,  "/3/DownloadDataset.bin");
-    context.addServlet(PutKeyServlet.class,   "/3/PutKey.bin");
-    context.addServlet(PutKeyServlet.class,   "/3/PutKey");
-    context.addServlet(RequestServer.class,   "/");
-
-
-    final List<Handler> extHandlers = new ArrayList<Handler>();
-    extHandlers.add(new AuthenticationHandler());
-    // here we wrap generic authentication handlers into jetty-aware wrappers
-    for (final RequestAuthExtension requestAuthExtension : ExtensionManager.getInstance().getAuthExtensions()) {
-      extHandlers.add(new AbstractHandler() {
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-          if (requestAuthExtension.handle(target, request, response)) {
-            baseRequest.setHandled(true);
-          }
-        }
-      });
-    }
-    //
-    extHandlers.add(context);
-
-    // Handlers that can only be invoked for an authenticated user (if auth is enabled)
-    HandlerCollection authHandlers = new HandlerCollection();
-    authHandlers.setHandlers(extHandlers.toArray(new Handler[extHandlers.size()]));
-
-    // LoginHandler handles directly login requests and delegates the rest to the authHandlers
-    LoginHandler loginHandler = new LoginHandler("/login", "/loginError");
-    loginHandler.setHandler(authHandlers);
-
-    HandlerCollection hc = new HandlerCollection();
-    hc.setHandlers(new Handler[]{
-            new GateHandler(),
-            loginHandler
-    });
-    handlerWrapper.setHandler(hc);
-  }
-
-  public class GateHandler extends AbstractHandler {
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
-      startRequestLifecycle();
-      while (!_acceptRequests) {
-        try { Thread.sleep(100); }
-        catch (Exception ignore) {}
-      }
-
-      boolean isXhrRequest = false;
-      if (request != null) {
-        isXhrRequest = isXhrRequest(request);
-      }
-      setCommonResponseHttpHeaders(response, isXhrRequest);
-    }
-  }
-
-  @Override
-  protected void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
-    sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, message);
-  }
-
-  public class LoginHandler extends HandlerWrapper {
-    private String _loginTarget;
-    private String _errorTarget;
-    public LoginHandler(String loginTarget, String errorTarget) {
-      _loginTarget = loginTarget;
-      _errorTarget = errorTarget;
-    }
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException {
-      if (isLoginTarget(target)) {
-        if (isPageRequest(request))
-          sendLoginForm(request, response);
-        else
-          sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Access denied. Please login.");
-        baseRequest.setHandled(true);
-      } else {
-        // not for us, invoke wrapped handler
-        super.handle(target, baseRequest, request, response);
-      }
-    }
-    private void sendLoginForm(HttpServletRequest request, HttpServletResponse response) {
-      String uri = JettyHTTPD.getDecodedUri(request);
-      try {
-        byte[] bytes;
-        try (InputStream resource = water.init.JarHash.getResource2("/login.html")) {
-          if (resource == null)
-            throw new IllegalStateException("Login form not found");
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          water.util.FileUtils.copyStream(resource, baos, 2048);
-          bytes = baos.toByteArray();
-        }
-        response.setContentType(RequestServer.MIME_HTML);
-        response.setContentLength(bytes.length);
-        setResponseStatus(response, HttpServletResponse.SC_OK);
-        OutputStream os = response.getOutputStream();
-        water.util.FileUtils.copyStream(new ByteArrayInputStream(bytes), os, 2048);
-      } catch (Exception e) {
-        sendErrorResponse(response, e, uri);
-      } finally {
-        logRequest("GET", request, response);
-      }
-    }
-    private boolean isPageRequest(HttpServletRequest request) {
-      String accept = request.getHeader("Accept");
-      return (accept != null) && accept.contains(RequestServer.MIME_HTML);
-    }
-    private boolean isLoginTarget(String target) {
-      return target.equals(_loginTarget) || target.equals(_errorTarget);
-    }
   }
 
   public static InputStream extractPartInputStream (HttpServletRequest request, HttpServletResponse response) throws
@@ -315,12 +167,12 @@ public class JettyHTTPD extends AbstractHTTPD {
     }
   }
 
-  private static boolean isXhrRequest(final HttpServletRequest request) {
+  public static boolean isXhrRequest(final HttpServletRequest request) {
     final String requestedWithHeader = request.getHeader("X-Requested-With");
     return "XMLHttpRequest".equals(requestedWithHeader);
   }
 
-  private static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
+  public static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
     if (xhrRequest) {
       response.setHeader("Cache-Control", "no-cache");
     }
@@ -337,9 +189,6 @@ public class JettyHTTPD extends AbstractHTTPD {
     }
     return context_path + "/";
   }
-
-
-  //--------------------------------------------------
 
   @SuppressWarnings("unused")
   public static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
