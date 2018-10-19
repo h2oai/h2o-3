@@ -64,7 +64,6 @@ public class JettyHTTPD extends AbstractHTTPD {
     HandlerCollection authHandlers = new HandlerCollection();
     authHandlers.setHandlers(new Handler[]{
             new AuthenticationHandler(),
-            new ExtensionHandler1(),
             context,
     });
 
@@ -100,16 +99,6 @@ public class JettyHTTPD extends AbstractHTTPD {
   @Override
   protected void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
     ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, message);
-  }
-
-  public class ExtensionHandler1 extends AbstractHandler {
-    public ExtensionHandler1() {}
-
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException, ServletException {
-    }
   }
 
   public class LoginHandler extends HandlerWrapper {
