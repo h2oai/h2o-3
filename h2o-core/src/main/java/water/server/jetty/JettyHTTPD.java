@@ -102,12 +102,6 @@ public class JettyHTTPD extends AbstractHTTPD {
     ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, message);
   }
 
-  @SuppressWarnings("unused")
-  protected void handle1(String target,
-                         Request baseRequest,
-                         HttpServletRequest request,
-                         HttpServletResponse response) throws IOException, ServletException {}
-
   public class ExtensionHandler1 extends AbstractHandler {
     public ExtensionHandler1() {}
 
@@ -115,7 +109,6 @@ public class JettyHTTPD extends AbstractHTTPD {
                        Request baseRequest,
                        HttpServletRequest request,
                        HttpServletResponse response) throws IOException, ServletException {
-      H2O.getJetty().handle1(target, baseRequest, request, response);
     }
   }
 
