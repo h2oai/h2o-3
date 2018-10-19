@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -10,18 +11,15 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.ProxyServlet;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Credential;
+import water.network.SecurityUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.IOUtils;
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-
-import water.network.SecurityUtils;
 
 public class JettyProxy extends AbstractHTTPD {
 

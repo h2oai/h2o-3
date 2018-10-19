@@ -10,12 +10,20 @@ import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
-import water.util.*;
+import water.server.ServletUtils;
+import water.util.Log;
+import water.util.NetworkUtils;
+import water.util.OSUtils;
+import water.util.PrettyPrint;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,8 +32,23 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.net.*;
-import java.util.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -453,7 +476,7 @@ final public class H2O {
     parseH2OArgumentsTo(args, ARGS);
   }
 
-  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
+  public static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -898,7 +921,7 @@ final public class H2O {
     sb.append(desc).append("_model_");
 
     // Append user agent string if we can figure it out.
-    String source = JettyHTTPD.getUserAgent();
+    String source = ServletUtils.getUserAgent();
     if (source != null) {
       StringBuilder ua = new StringBuilder();
 
