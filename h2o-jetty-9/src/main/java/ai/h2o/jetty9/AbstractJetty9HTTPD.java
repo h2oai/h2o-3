@@ -223,6 +223,19 @@ public abstract class AbstractJetty9HTTPD {
     createServer(httpsConnector);
   }
 
+  // Configure connector via properties which we can modify.
+  // Also increase request header size and buffer size from default values
+  // located in org.eclipse.jetty.http.HttpBuffersImpl
+/* TODO find replacements for this, used in Jetty8 but missing in Jetty9:
+  private Connector configureConnector(String proto, Connector connector) {
+    connector.setRequestHeaderSize(H2O.OptArgs.getSysPropInt(proto+".requestHeaderSize", 32*1024));
+    connector.setRequestBufferSize(H2O.OptArgs.getSysPropInt(proto+".requestBufferSize", 32*1024));
+    connector.setResponseHeaderSize(H2O.OptArgs.getSysPropInt(proto+".responseHeaderSize", connector.getResponseHeaderSize()));
+    connector.setResponseBufferSize(H2O.OptArgs.getSysPropInt(proto+".responseBufferSize", connector.getResponseBufferSize()));
+    return connector;
+  }
+*/
+
   /**
    * Stop Jetty server after it has been started.
    * This is unlikely to ever be called by H2O until H2O supports graceful shutdown.
