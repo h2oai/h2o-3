@@ -109,13 +109,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> GBM, deeplearning -> DeepLearning */
   public static String algoName(String urlName) {
     final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
-    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    if (algorithmIndex < 0) throw new IllegalStateException(String.format("Algorithm not available: %s. Please review '-features' flag.", urlName));
     return BUILDERS[algorithmIndex]._parms.algoName();
   }
   /** gbm -> hex.tree.gbm.GBM, deeplearning -> hex.deeplearning.DeepLearning */
   public static String javaName(String urlName) {
     final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
-    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    if (algorithmIndex < 0) throw new IllegalStateException(String.format("Algorithm not available: %s. Please review '-features' flag.", urlName));
     return BUILDERS[algorithmIndex]._parms.javaName();
   }
   /** gbm -> GBMParameters */
@@ -123,7 +123,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) {
     final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
-    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    if (algorithmIndex < 0) throw new IllegalStateException(String.format("Algorithm not available: %s. Please review '-features' flag.", urlName));
     return SCHEMAS[algorithmIndex];
   }
 
