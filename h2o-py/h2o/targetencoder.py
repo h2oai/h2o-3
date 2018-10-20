@@ -55,7 +55,7 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, frame = None , strategy = None, noise = -1, seed = -1):
+    def transform(self, frame = None , strategy = None, noise = -1, seed = -1 , isTrainOrVaid = True):
         """
         Description of the parameters:
         """
@@ -66,4 +66,4 @@ class TargetEncoder(object):
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, strategy,
                         self._targetColumnName, self._foldColumnName,
                         self._blending, self._inflectionPoint, self._smoothing,
-                        noise, seed))
+                        noise, seed, isTrainOrVaid))
