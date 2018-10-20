@@ -22,12 +22,13 @@ from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics)
+                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
 from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
+from ..model.anomaly_detection import H2OAnomalyDetectionModel
 
 
 class EstimatorAttributeError(AttributeError):
@@ -130,7 +131,7 @@ class H2OEstimator(ModelBase):
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
-        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec"})
+        is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"})
         if not training_frame_exists:
             names = training_frame.names
             ncols = training_frame.ncols
@@ -194,7 +195,7 @@ class H2OEstimator(ModelBase):
 
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
-        is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec"}
+        is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
 
@@ -402,6 +403,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "WordEmbedding":
             metrics_class = H2OWordEmbeddingModelMetrics
             model_class = H2OWordEmbeddingModel
+        elif model_type == "AnomalyDetection":
+            metrics_class = H2OAnomalyDetectionModelMetrics
+            model_class = H2OAnomalyDetectionModel
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]

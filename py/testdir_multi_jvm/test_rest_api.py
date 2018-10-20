@@ -22,7 +22,7 @@ sys.path.insert(1, '../rest_tests')
 
 clean_up_after = False
 
-algos = ['coxph', 'kmeans', 'deeplearning', 'deepwater', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'aggregator', 'word2vec', 'stackedensemble', 'xgboost']
+algos = ['coxph', 'kmeans', 'deeplearning', 'deepwater', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'aggregator', 'word2vec', 'stackedensemble', 'xgboost', 'isolationforest']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params

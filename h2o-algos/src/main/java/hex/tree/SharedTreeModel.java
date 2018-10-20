@@ -121,7 +121,7 @@ public abstract class SharedTreeModel<
     }
   }
 
-  @Override public ModelMetricsSupervised.MetricBuilderSupervised makeMetricBuilder(String[] domain) {
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
