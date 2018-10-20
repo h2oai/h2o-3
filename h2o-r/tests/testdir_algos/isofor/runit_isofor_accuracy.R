@@ -13,8 +13,9 @@ test.IsolationForest.accuracy <- function() {
     )
     random_data.hex <- as.h2o(random_data)
 
+    # different approach than in the paper - build a smaller number of deeper trees trained on a much larger sample
     h2o_isolation_forest <- h2o.isolationForest(x = c("x", "y"), training_frame = random_data.hex[, c("x", "y")],
-                                                ntrees = 100, seed = 1234, build_tree_one_node = TRUE)
+                                                ntrees = 25, seed = 1234, sample_rate = 0.7, min_rows = 1000, max_depth = 16)
 
     anomaly_score <- h2o.predict(h2o_isolation_forest, random_data.hex)
 
@@ -26,11 +27,11 @@ test.IsolationForest.accuracy <- function() {
     # we should get a good AUC
     auc <- h2o.auc(glm_model)
     cat(sprintf("AUC: %f\n", auc))
-    expect_equal(h2o.auc(glm_model), 0.97, tolerance = .01, scale = 1)
+    expect_equal(h2o.auc(glm_model), 0.95, tolerance = .05, scale = 1)
     # rate of outlier misclassification should be low
     cm <- h2o.confusionMatrix(glm_model)
     print(cm)
-    expect_equal(cm["YES", "Error"], 0.14, tolerance = .05, scale = 1)
+    expect_equal(cm["YES", "Error"], 0.10, tolerance = .05, scale = 1)
 }
 
 doTest("IsolationForest: Test Accuracy", test.IsolationForest.accuracy)
