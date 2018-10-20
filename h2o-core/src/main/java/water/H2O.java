@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -34,11 +35,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
-* Start point for creating or joining an <code>H2O</code> Cloud.
-*
-* @author <a href="mailto:cliffc@h2o.ai"></a>
-* @version 1.0
-*/
+ * Start point for creating or joining an <code>H2O</code> Cloud.
+ *
+ * @author <a href="mailto:cliffc@h2o.ai"></a>
+ * @version 1.0
+ */
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
 
@@ -56,127 +57,127 @@ final public class H2O {
       // H2O doesn't know how to guess a good one.
       // user.home doesn't make sense.
       defaultFlowDirMessage =
-      "          (The default is none; saving flows not available.)\n";
+              "          (The default is none; saving flows not available.)\n";
     }
     else {
       defaultFlowDirMessage =
-      "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n";
+              "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n";
     }
 
     String s =
             "\n" +
-            "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
-            "        (Note that every option has a default and is optional.)\n" +
-            "\n" +
-            "    -h | -help\n" +
-            "          Print this help.\n" +
-            "\n" +
-            "    -version\n" +
-            "          Print version info and exit.\n" +
-            "\n" +
-            "    -name <h2oCloudName>\n" +
-            "          Cloud name used for discovery of other nodes.\n" +
-            "          Nodes with the same cloud name will form an H2O cloud\n" +
-            "          (also known as an H2O cluster).\n" +
-            "\n" +
-            "    -flatfile <flatFileName>\n" +
-            "          Configuration file explicitly listing H2O cloud node members.\n" +
-            "\n" +
-            "    -ip <ipAddressOfNode>\n" +
-            "          IP address of this node.\n" +
-            "\n" +
-            "    -port <port>\n" +
-            "          Port number for this node (note: port+1 is also used by default).\n" +
-            "          (The default port is " + ARGS.port + ".)\n" +
-            "\n" +
-            "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
-            "          The IP address discovery code will bind to the first interface\n" +
-            "          that matches one of the networks in the comma-separated list.\n" +
-            "          Use instead of -ip when a broad range of addresses is legal.\n" +
-            "          (Example network specification: '10.1.2.0/24' allows 256 legal\n" +
-            "          possibilities.)\n" +
-            "\n" +
-            "    -ice_root <fileSystemPath>\n" +
-            "          The directory where H2O spills temporary data to disk.\n" +
-            "\n" +
-            "    -log_dir <fileSystemPath>\n" +
-            "          The directory where H2O writes logs to disk.\n" +
-            "          (This usually has a good default that you need not change.)\n" +
-            "\n" +
-            "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
-            "          Write messages at this logging level, or above.  Default is INFO." +
-            "\n" +
-            "\n" +
-            "    -flow_dir <server side directory or HDFS directory>\n" +
-            "          The directory where H2O stores saved flows.\n" +
-            defaultFlowDirMessage +
-            "\n" +
-            "    -nthreads <#threads>\n" +
-            "          Maximum number of threads in the low priority batch-work queue.\n" +
-            "          (The default is " + (char)Runtime.getRuntime().availableProcessors() + ".)\n" +
-            "\n" +
-            "    -client\n" +
-            "          Launch H2O node in client mode.\n" +
-            "\n" +
-            "    -notify_local <fileSystemPath>" +
-            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
-            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
-            "\n" +
-            "    -context_path <context_path>\n" +
-            "          The context path for jetty.\n" +
-            "\n" +
-            "Authentication options:\n" +
-            "\n" +
-            "    -jks <filename>\n" +
-            "          Java keystore file\n" +
-            "\n" +
-            "    -jks_pass <password>\n" +
-            "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
-            "\n" +
-            "    -hash_login\n" +
-            "          Use Jetty HashLoginService\n" +
-            "\n" +
-            "    -ldap_login\n" +
-            "          Use Jetty LdapLoginService\n" +
-            "\n" +
-            "    -kerberos_login\n" +
-            "          Use Kerberos LoginService\n" +
-            "\n" +
-            "    -pam_login\n" +
-            "          Use PAM LoginService\n" +
-            "\n" +
-            "    -login_conf <filename>\n" +
-            "          LoginService configuration file\n" +
-            "\n" +
-            "    -form_auth\n" +
-            "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
-            "\n" +
-            "    -session_timeout <minutes>\n" +
-            "          Specifies the number of minutes that a session can remain idle before the server invalidates\n" +
-            "          the session and requests a new login. Requires '-form_auth'. Default is no timeout\n" +
-            "\n" +
-            "    -internal_security_conf <filename>\n" +
-            "          Path (absolute or relative) to a file containing all internal security related configurations\n" +
-            "\n" +
-            "Cloud formation behavior:\n" +
-            "\n" +
-            "    New H2O nodes join together to form a cloud at startup time.\n" +
-            "    Once a cloud is given work to perform, it locks out new members\n" +
-            "    from joining.\n" +
-            "\n" +
-            "Examples:\n" +
-            "\n" +
-            "    Start an H2O node with 4GB of memory and a default cloud name:\n" +
-            "        $ java -Xmx4g -jar h2o.jar\n" +
-            "\n" +
-            "    Start an H2O node with 6GB of memory and a specify the cloud name:\n" +
-            "        $ java -Xmx6g -jar h2o.jar -name MyCloud\n" +
-            "\n" +
-            "    Start an H2O cloud with three 2GB nodes and a default cloud name:\n" +
-            "        $ java -Xmx2g -jar h2o.jar &\n" +
-            "        $ java -Xmx2g -jar h2o.jar &\n" +
-            "        $ java -Xmx2g -jar h2o.jar &\n" +
-            "\n";
+                    "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
+                    "        (Note that every option has a default and is optional.)\n" +
+                    "\n" +
+                    "    -h | -help\n" +
+                    "          Print this help.\n" +
+                    "\n" +
+                    "    -version\n" +
+                    "          Print version info and exit.\n" +
+                    "\n" +
+                    "    -name <h2oCloudName>\n" +
+                    "          Cloud name used for discovery of other nodes.\n" +
+                    "          Nodes with the same cloud name will form an H2O cloud\n" +
+                    "          (also known as an H2O cluster).\n" +
+                    "\n" +
+                    "    -flatfile <flatFileName>\n" +
+                    "          Configuration file explicitly listing H2O cloud node members.\n" +
+                    "\n" +
+                    "    -ip <ipAddressOfNode>\n" +
+                    "          IP address of this node.\n" +
+                    "\n" +
+                    "    -port <port>\n" +
+                    "          Port number for this node (note: port+1 is also used by default).\n" +
+                    "          (The default port is " + ARGS.port + ".)\n" +
+                    "\n" +
+                    "    -network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
+                    "          The IP address discovery code will bind to the first interface\n" +
+                    "          that matches one of the networks in the comma-separated list.\n" +
+                    "          Use instead of -ip when a broad range of addresses is legal.\n" +
+                    "          (Example network specification: '10.1.2.0/24' allows 256 legal\n" +
+                    "          possibilities.)\n" +
+                    "\n" +
+                    "    -ice_root <fileSystemPath>\n" +
+                    "          The directory where H2O spills temporary data to disk.\n" +
+                    "\n" +
+                    "    -log_dir <fileSystemPath>\n" +
+                    "          The directory where H2O writes logs to disk.\n" +
+                    "          (This usually has a good default that you need not change.)\n" +
+                    "\n" +
+                    "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
+                    "          Write messages at this logging level, or above.  Default is INFO." +
+                    "\n" +
+                    "\n" +
+                    "    -flow_dir <server side directory or HDFS directory>\n" +
+                    "          The directory where H2O stores saved flows.\n" +
+                    defaultFlowDirMessage +
+                    "\n" +
+                    "    -nthreads <#threads>\n" +
+                    "          Maximum number of threads in the low priority batch-work queue.\n" +
+                    "          (The default is " + (char) Runtime.getRuntime().availableProcessors() + ".)\n" +
+                    "\n" +
+                    "    -client\n" +
+                    "          Launch H2O node in client mode.\n" +
+                    "\n" +
+                    "    -notify_local <fileSystemPath>" +
+                    "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
+                    "          port of the embedded web server. e.g. 192.168.1.100:54321" +
+                    "\n" +
+                    "    -context_path <context_path>\n" +
+                    "          The context path for jetty.\n" +
+                    "\n" +
+                    "Authentication options:\n" +
+                    "\n" +
+                    "    -jks <filename>\n" +
+                    "          Java keystore file\n" +
+                    "\n" +
+                    "    -jks_pass <password>\n" +
+                    "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
+                    "\n" +
+                    "    -hash_login\n" +
+                    "          Use Jetty HashLoginService\n" +
+                    "\n" +
+                    "    -ldap_login\n" +
+                    "          Use Jetty LdapLoginService\n" +
+                    "\n" +
+                    "    -kerberos_login\n" +
+                    "          Use Kerberos LoginService\n" +
+                    "\n" +
+                    "    -pam_login\n" +
+                    "          Use PAM LoginService\n" +
+                    "\n" +
+                    "    -login_conf <filename>\n" +
+                    "          LoginService configuration file\n" +
+                    "\n" +
+                    "    -form_auth\n" +
+                    "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
+                    "\n" +
+                    "    -session_timeout <minutes>\n" +
+                    "          Specifies the number of minutes that a session can remain idle before the server invalidates\n" +
+                    "          the session and requests a new login. Requires '-form_auth'. Default is no timeout\n" +
+                    "\n" +
+                    "    -internal_security_conf <filename>\n" +
+                    "          Path (absolute or relative) to a file containing all internal security related configurations\n" +
+                    "\n" +
+                    "Cloud formation behavior:\n" +
+                    "\n" +
+                    "    New H2O nodes join together to form a cloud at startup time.\n" +
+                    "    Once a cloud is given work to perform, it locks out new members\n" +
+                    "    from joining.\n" +
+                    "\n" +
+                    "Examples:\n" +
+                    "\n" +
+                    "    Start an H2O node with 4GB of memory and a default cloud name:\n" +
+                    "        $ java -Xmx4g -jar h2o.jar\n" +
+                    "\n" +
+                    "    Start an H2O node with 6GB of memory and a specify the cloud name:\n" +
+                    "        $ java -Xmx6g -jar h2o.jar -name MyCloud\n" +
+                    "\n" +
+                    "    Start an H2O cloud with three 2GB nodes and a default cloud name:\n" +
+                    "        $ java -Xmx2g -jar h2o.jar &\n" +
+                    "        $ java -Xmx2g -jar h2o.jar &\n" +
+                    "        $ java -Xmx2g -jar h2o.jar &\n" +
+                    "\n";
 
     System.out.print(s);
 
@@ -194,7 +195,7 @@ final public class H2O {
    * A class containing all of the authentication arguments for H2O.
    */
   public static class
-    BaseArgs {
+  BaseArgs {
 
     //-----------------------------------------------------------------------------------
     // Authentication & Security
@@ -268,7 +269,7 @@ final public class H2O {
    * A class containing all of the arguments for H2O.
    */
   public static class
-    OptArgs extends BaseArgs {
+  OptArgs extends BaseArgs {
     // Prefix of hidden system properties
     public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
     public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
@@ -349,6 +350,8 @@ final public class H2O {
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
+
+    public ModelBuilder.BuilderVisibility features_level = ModelBuilder.BuilderVisibility.Experimental;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -517,9 +520,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
         trgt.context_path = value.startsWith("/")
-                            ? value.trim().length() == 1
-                              ? "" : value
-                            : "/" + value;
+                ? value.trim().length() == 1
+                ? "" : value
+                : "/" + value;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -618,8 +621,11 @@ final public class H2O {
         }
       else if(s.matches("useUDP")) {
           Log.warn("Support for UDP communication was removed from H2O, using TCP.");
-      }
-      else {
+      } else if (s.matches("features")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
+        Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }

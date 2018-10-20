@@ -3,7 +3,6 @@ package hex;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -85,6 +84,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
+    if (H2O.ARGS.features_level.compareTo(builderVisibility()) > 0) {
+      return;
+    }
     String base = getClass().getSimpleName().toLowerCase();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
@@ -105,13 +107,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** gbm -> GBM, deeplearning -> DeepLearning */
-  public static String algoName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.algoName(); }
+  public static String algoName(String urlName) {
+    final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
+    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    return BUILDERS[algorithmIndex]._parms.algoName();
+  }
   /** gbm -> hex.tree.gbm.GBM, deeplearning -> hex.deeplearning.DeepLearning */
-  public static String javaName(String urlName) { return BUILDERS[ArrayUtils.find(ALGOBASES,urlName)]._parms.javaName(); }
+  public static String javaName(String urlName) {
+    final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
+    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    return BUILDERS[algorithmIndex]._parms.javaName();
+  }
   /** gbm -> GBMParameters */
   public static String paramName(String urlName) { return algoName(urlName)+"Parameters"; }
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
-  public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
+  public static String schemaDirectory(String urlName) {
+    final int algorithmIndex = ArrayUtils.find(ALGOBASES, urlName);
+    if (algorithmIndex < 0) throw new IllegalStateException("Unknown algorithm");
+    return SCHEMAS[algorithmIndex];
+  }
 
   /**
    *
@@ -741,7 +755,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  visible but with a note in the UI) or is it experimental (hidden by
    *  default, visible in the UI if the user gives an "experimental" flag at
    *  startup); test-only builders are "experimental"  */
-  public enum BuilderVisibility { Experimental, Beta, Stable }
+  public enum BuilderVisibility {
+    Experimental, Beta, Stable;
+
+    /**
+     * @param value A value to search for among {@link BuilderVisibility}'s values
+     * @return A member of {@link BuilderVisibility}, if found.
+     * @throws IllegalArgumentException If given value is not found among members of {@link BuilderVisibility} enum.
+     */
+    public static BuilderVisibility valueOfIgnoreCase(final String value) throws IllegalArgumentException {
+      final BuilderVisibility[] values = values();
+
+      for (int i = 0; i < values.length; i++) {
+        if (values[i].name().equalsIgnoreCase(value)) return values[i];
+      }
+
+      throw new IllegalArgumentException(String.format("Algorithm availability level of '%s' is not known. Available levels: %s",
+              value, Arrays.toString(values)));
+    }
+  }
   public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   /** Clear whatever was done by init() so it can be run again. */
@@ -1491,8 +1523,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     String[] colNames = new String[N+extra_length];
     colNames[0] = "mean";
     colNames[1] = "sd";
-    for (int i=0;i<N;++i)
-    colNames[i+extra_length] = "cv_" + (i+1) + "_valid";
+    for (int i = 0; i < N; ++i)
+      colNames[i + extra_length] = "cv_" + (i + 1) + "_valid";
     Set<String> excluded = new HashSet<>();
     excluded.add("total_rows");
     excluded.add("makeSchema");
