@@ -17,6 +17,7 @@ import java.util.*;
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
+  public static String[] SKIPPED_ALGORITHMS = new String[0];
 
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
@@ -84,10 +85,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
+    String base = getClass().getSimpleName().toLowerCase();
     if (H2O.ARGS.features_level.compareTo(builderVisibility()) > 0) {
+      SKIPPED_ALGORITHMS = ArrayUtils.append(SKIPPED_ALGORITHMS, base);
       return;
     }
-    String base = getClass().getSimpleName().toLowerCase();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;

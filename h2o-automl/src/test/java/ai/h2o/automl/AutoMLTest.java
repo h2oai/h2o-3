@@ -1,15 +1,22 @@
 package ai.h2o.automl;
 
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ensemble.StackedEnsemble;
+import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
 
 import java.util.Date;
 import java.util.Random;
 
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -192,6 +199,39 @@ public class AutoMLTest extends water.TestUtil {
     } finally {
       if (aml != null) aml.deleteWithChildren();
       if (fr != null) fr.remove();
+    }
+  }
+
+
+  @Test
+  public void test_skipped_algos() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      ModelBuilder.SKIPPED_ALGORITHMS = new String[]{Algo.GBM._baseName};
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.StackedEnsemble, Algo.DRF, Algo.XGBoost, Algo.DeepLearning};
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(8);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+
+      for (Key key : modelKeys){
+        Model model = (Model) key.get();
+        assertFalse(model instanceof GBMModel);
+      }
+
+    } finally {
+      ModelBuilder.SKIPPED_ALGORITHMS = new String[0];
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.delete();
     }
   }
 }

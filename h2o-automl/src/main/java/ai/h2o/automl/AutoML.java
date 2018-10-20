@@ -285,6 +285,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.XGBoost);
     }
 
+    for(Algo algo : Algo.values()){
+      final int i = ArrayUtils.find(ModelBuilder.SKIPPED_ALGORITHMS, algo._baseName);
+      if(i >= 0){
+        skipAlgosList = ArrayUtils.append(skipAlgosList, algo);
+      }
+    }
+
     // This is useful during debugging.
 //    skipAlgosList = ArrayUtils.append(skipAlgosList, Algo.GLM, Algo.DRF, Algo.GBM, Algo.DeepLearning, Algo.StackedEnsemble);
 
