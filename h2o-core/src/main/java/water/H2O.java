@@ -350,6 +350,16 @@ final public class H2O {
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
+    /**
+     * Disable algorithms marked as beta
+     */
+    public boolean disable_beta;
+
+    /**
+     * Disable algorithms marked as experimental
+     */
+    public boolean disable_experimental;
+
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -615,11 +625,15 @@ final public class H2O {
           throw new IllegalArgumentException("Interval for checking if client is disconnected has to be positive (milliseconds).");
         }
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
-        }
-      else if(s.matches("useUDP")) {
-          Log.warn("Support for UDP communication was removed from H2O, using TCP.");
-      }
-      else {
+      } else if (s.matches("useUDP")) {
+        Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      } else if (s.matches("disable_beta")) {
+        Log.info("Disabling algorithms marked as BETA.");
+        trgt.disable_beta = true;
+      } else if (s.matches("disable_experimental")) {
+        Log.info("Disabling algorithms marked as EXPERIMENTAL.");
+        trgt.disable_experimental = true;
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }

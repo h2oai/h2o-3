@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.ModelBuilder;
+import water.H2O;
 
 /**
  * Abstract base class for registering Rest API for algorithms
@@ -14,10 +15,14 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
    * @param version  registration version
    */
   protected final void registerModelBuilder(RestApiContext context, ModelBuilder mbProto, int version) {
+    Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
+    if (H2O.ARGS.disable_experimental && ModelBuilder.BuilderVisibility.Experimental.equals(mbProto.builderVisibility())
+            || H2O.ARGS.disable_beta && ModelBuilder.BuilderVisibility.Beta.equals(mbProto.builderVisibility())) {
+      return; // Skip endpoint registration
+    }
     String base = mbProto.getClass().getSimpleName();
     String lbase = base.toLowerCase();
     // This is common model builder handler
-    Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
 
     context.registerEndpoint("train_" + lbase, "POST /" + version + "/ModelBuilders/" + lbase, handlerClass, "train",
             "Train a " + base + " model.");
