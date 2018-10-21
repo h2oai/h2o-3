@@ -204,7 +204,7 @@ public class AutoMLTest extends water.TestUtil {
 
 
   @Test
-  public void test_skipped_algos() {
+  public void testSkippedAlgos() {
     AutoML aml=null;
     Frame fr=null;
     try {
