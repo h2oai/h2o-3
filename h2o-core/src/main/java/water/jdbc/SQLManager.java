@@ -197,7 +197,6 @@ public class SQLManager {
     }
     final boolean estimateConcurrentConnections = optimize && (! streaming);
     if (estimateConcurrentConnections) {
-      assert ! streaming;
       final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
       vec = num_retrieval_chunks >= num_chunks
               ? Vec.makeConN(numRow, num_chunks)
