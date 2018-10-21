@@ -11,8 +11,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * Jetty9DelegatingAuthenticatorynamically switches between Form-based authentication
- * and Basic Access authentication.
+ * Dynamically switches between Form-based authentication and Basic Access authentication.
  * The decision is made based on user's "User-Agent". Browser clients will use Form based
  * authentication, all other clients will use basic auth.
  */
