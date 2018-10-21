@@ -2,6 +2,7 @@ package ai.h2o.jetty8.proxy;
 
 import water.H2O;
 import water.init.HostnameGuesser;
+import water.server.Credentials;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -9,16 +10,16 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 
-public class ProxyStarter {
+public class Jetty8ProxyStarter {
 
-  public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo,
+  public static String start(String[] args, Credentials credentials, String proxyTo,
                              boolean useHostname) {
     if (! proxyTo.endsWith("/"))
       proxyTo = proxyTo + "/";
 
     H2O.BaseArgs baseArgs = H2O.parseH2OArgumentsTo(args, new H2O.OptArgs());
 
-    JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
+    Jetty8Proxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
     InetAddress address = HostnameGuesser.findInetAddressForSelf(baseArgs.ip, baseArgs.network);
     if (useHostname) {
@@ -40,10 +41,10 @@ public class ProxyStarter {
     return hostname;
   }
 
-  private static JettyProxy initializeProxy(H2O.BaseArgs args, JettyProxy.Credentials credentials, String proxyTo) {
+  private static Jetty8Proxy initializeProxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
     int proxyPort = args.port == 0 ? args.baseport : args.port;
 
-    JettyProxy proxy = new JettyProxy(args, credentials, proxyTo);
+    Jetty8Proxy proxy = new Jetty8Proxy(args, credentials, proxyTo);
 
     // PROXY socket is only used to find opened port on given ip
     ServerSocket proxySocket = null;
@@ -92,7 +93,7 @@ public class ProxyStarter {
 
   // just for local testing
   public static void main(String[] args) {
-    JettyProxy.Credentials cred = JettyProxy.Credentials.make(System.getProperty("user.name"), "Heslo123");
+    Credentials cred = Credentials.make(System.getProperty("user.name"), "Heslo123");
     String url = start(args, cred, "https://localhost:54321/", false);
     System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }
