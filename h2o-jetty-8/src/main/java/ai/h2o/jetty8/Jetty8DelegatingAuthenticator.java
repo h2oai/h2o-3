@@ -11,17 +11,16 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * DelegatingAuthenticator dynamically switches between Form-based authentication
- * and Basic Access authentication.
+ * Dynamically switches between Form-based authentication and Basic Access authentication.
  * The decision is made based on user's "User-Agent". Browser clients will use Form based
  * authentication, all other clients will use basic auth.
  */
-class DelegatingAuthenticator implements Authenticator {
+class Jetty8DelegatingAuthenticator implements Authenticator {
 
   private BasicAuthenticator _basicAuth;
   private FormAuthenticator _formAuth;
 
-  DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
+  Jetty8DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
     _basicAuth = basicAuth;
     _formAuth = formAuth;
   }

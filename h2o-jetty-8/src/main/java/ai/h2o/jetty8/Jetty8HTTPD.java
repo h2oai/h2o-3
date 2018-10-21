@@ -16,6 +16,7 @@ import water.api.RequestServer;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
+import water.server.H2oServletContainer;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.StringUtils;
@@ -38,7 +39,7 @@ import java.util.Arrays;
  * Embedded Jetty instance inside H2O.
  * This is intended to be a singleton per H2O node.
  */
-public class JettyHTTPD extends AbstractHTTPD {
+public class Jetty8HTTPD extends AbstractJetty8HTTPD implements H2oServletContainer {
   //------------------------------------------------------------------------------------------
   // Thread-specific things.
   //------------------------------------------------------------------------------------------
@@ -101,7 +102,7 @@ public class JettyHTTPD extends AbstractHTTPD {
   /**
    * Create bare Jetty object.
    */
-  public JettyHTTPD() {
+  public Jetty8HTTPD() {
     super(H2O.ARGS);
   }
 
@@ -206,7 +207,7 @@ public class JettyHTTPD extends AbstractHTTPD {
       }
     }
     private void sendLoginForm(HttpServletRequest request, HttpServletResponse response) {
-      String uri = JettyHTTPD.getDecodedUri(request);
+      String uri = Jetty8HTTPD.getDecodedUri(request);
       try {
         byte[] bytes;
         try (InputStream resource = water.init.JarHash.getResource2("/login.html")) {
