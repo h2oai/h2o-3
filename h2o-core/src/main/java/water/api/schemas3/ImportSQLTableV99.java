@@ -2,6 +2,7 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
+import water.jdbc.SqlFetchMode;
 
 
 public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
@@ -25,10 +26,10 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "columns")
   public String columns = "*";
 
-  @API(help = "optimize")
+  @API(help = " Deprecated. Optimize data loading.")
   public boolean optimize = true;
 
-  @API(help = "streaming")
-  public boolean streaming = false;
+  @API(help = "Mode for data loading. All modes may not be supported by all databases.")
+  public String sqlFetchMode;
 
 }

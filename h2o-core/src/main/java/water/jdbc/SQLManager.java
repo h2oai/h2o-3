@@ -31,12 +31,6 @@ public class SQLManager {
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
-  public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
-                                          final String username, final String password, final String columns,
-                                          final boolean optimize) {
-    return importSqlTable(connection_url, table, select_query, username, password, columns, optimize, false);
-  }
-
   /**
    * @param connection_url (Input) 
    * @param table (Input)
@@ -44,12 +38,11 @@ public class SQLManager {
    * @param username (Input)
    * @param password (Input)
    * @param columns (Input)
-   * @param optimize (Input)
-   * @param streaming (Input)
+   * @param sqlFetchMode (Input)
    */
   public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
                                           final String username, final String password, final String columns,
-                                          final boolean optimize, final boolean streaming) {
+                                          final SqlFetchMode sqlFetchMode) {
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
@@ -60,6 +53,7 @@ public class SQLManager {
     long numRow = 0;
     final String[] columnNames;
     final byte[] columnH2OTypes;
+    final boolean distributed = SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode);
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
@@ -94,7 +88,7 @@ public class SQLManager {
         rs.close();
       }
       //get H2O column names and types
-      if (streaming) {
+      if (distributed) {
         stmt.setMaxRows(1);
         rs = stmt.executeQuery("SELECT " + columns + " FROM " + table);
       } else {
@@ -192,11 +186,7 @@ public class SQLManager {
     final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
     final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
 
-    if (streaming && optimize) {
-      Log.warn("Parameter 'optimize' will be ignored in streaming ingest.");
-    }
-    final boolean estimateConcurrentConnections = optimize && (! streaming);
-    if (estimateConcurrentConnections) {
+    if (!distributed) {
       final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
       vec = num_retrieval_chunks >= num_chunks
               ? Vec.makeConN(numRow, num_chunks)
@@ -216,7 +206,7 @@ public class SQLManager {
         final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
         final Frame fr;
 
-        if (! streaming) {
+        if (!distributed) {
           fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
                   .doAll(columnH2OTypes, vec)
                   .outputFrame(destination_key, columnNames, null);
