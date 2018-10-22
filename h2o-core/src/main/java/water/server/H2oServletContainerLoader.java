@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.ServiceLoader;
 
 /**
- * Finds implementation of {@link H2oServletContainerFacade} found on the classpath.
+ * Finds implementation of {@link H2oServletContainerFacade} on the classpath.
  * There must be exactly one present.
  */
 public class H2oServletContainerLoader {

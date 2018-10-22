@@ -1583,7 +1583,6 @@ public class h2odriver extends Configured implements Tool {
     // Proxy
     final Credentials proxyCredentials = proxy ? Credentials.make(userName) : null;
     final String hashFileEntry = proxyCredentials != null ? proxyCredentials.toHashFileEntry() : null;
-//    H2oServletContainerLoader.INSTANCE.getHashFileEntry()
     if (hashFileEntry != null) {
       final byte[] hashFileData = StringUtils.bytesOf(hashFileEntry);
       addMapperArg(conf, "-hash_login");
