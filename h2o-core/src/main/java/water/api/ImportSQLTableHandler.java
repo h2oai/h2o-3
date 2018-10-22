@@ -18,7 +18,7 @@ public class ImportSQLTableHandler extends Handler {
   public JobV3 importSQLTable(int version, ImportSQLTableV99 importSqlTable) {
       final SqlFetchMode sqlFetchMode;
       if (importSqlTable.sqlFetchMode == null) {
-        sqlFetchMode = SqlFetchMode.SINGLE;
+        sqlFetchMode = SqlFetchMode.DISTRIBUTED;
       } else {
           sqlFetchMode = EnumUtils.valueOfIgnoreCase(SqlFetchMode.class, importSqlTable.sqlFetchMode);
       }
