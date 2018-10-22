@@ -298,9 +298,13 @@ reference:
       - H2OFrame-class
       - H2OFrame-Extract
       - H2OGrid-class
+      - H2OLeafNode-class
       - H2OModel-class 
       - H2OModelFuture-class
       - H2OModelMetrics-class
+      - H2ONode-class
+      - H2OSplitNode-class
+      - H2OTree-class
       - housevotes
       - iris
       - is.character
