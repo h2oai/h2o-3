@@ -2,7 +2,6 @@ package ai.h2o.automl.targetencoding;
 
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
@@ -10,6 +9,7 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.TwoDimTable;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -197,6 +197,29 @@ public class TargetEncodingTest extends TestUtil {
         }
 
       encodingMapCleanUp(encodingMap);
+    }
+
+    @Test
+    public void checkAllTEColumnsExistAndAreCategoricalTest() {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withDataForCol(0, ar("1", "0"))
+              .withVecTypes(Vec.T_CAT)
+              .build();
+
+      String[] teColumns = {"ColA", "ColNonExist"};
+      String targetColumnName = "ColC";
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      try{
+        tec.prepareEncodingMap(fr, targetColumnName, null);
+        fail();
+      } catch (AssertionError ex){
+        assertEquals("Column name `ColNonExist` was not found in the provided data frame", ex.getMessage());
+      }
+
     }
 
     @Test
@@ -471,58 +494,66 @@ public class TargetEncodingTest extends TestUtil {
     public void calculateAndAppendBlendedTEEncodingTest() {
       String tmpName = null;
       Frame reimportedFrame = null;
+      Frame merged = null;
+      Frame resultWithEncoding = null;
+      Map<String, Frame> targetEncodingMap = null;
+      try {
 
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "a"))
-              .withDataForCol(1, ar("yes", "no", "yes"))
-              .withChunkLayout(1,1,1)
-              .build();
+        fr = new TestFrameBuilder()
+                .withName("testFrame")
+                .withColNames("ColA", "ColB")
+                .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+                .withDataForCol(0, ar("a", "b", "a"))
+                .withDataForCol(1, ar("yes", "no", "yes"))
+                .withChunkLayout(1, 1, 1)
+                .build();
 
-      tmpName = UUID.randomUUID().toString();
-      Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
-      export.get();
+        tmpName = UUID.randomUUID().toString();
+        Job export = Frame.export(fr, tmpName, fr._key.toString(), true, 1);
+        export.get();
 
-      reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
+        reimportedFrame = parse_test_file(Key.make("parsed"), tmpName, true);
 
-      String[] teColumns = {"ColA"};
-      String targetColumnName = "ColB";
-      TargetEncoder tec = new TargetEncoder(teColumns);
-      Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
+        String[] teColumns = {"ColA"};
+        String targetColumnName = "ColB";
+        TargetEncoder tec = new TargetEncoder(teColumns);
+        targetEncodingMap = tec.prepareEncodingMap(reimportedFrame, targetColumnName, null);
 
-      Frame merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
+        merged = tec.mergeByTEColumn(reimportedFrame, targetEncodingMap.get("ColA"), 0, 0);
 
-      Frame resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
+        resultWithEncoding = tec.calculateAndAppendBlendedTEEncoding(merged, targetEncodingMap.get("ColA"), "ColB", "targetEncoded");
 
 //      String[] dom = resultWithEncoding.vec(1).domain();
-      // k <- 20
-      // f <- 10
-      // global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
-      // lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
-      // te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
+        // k <- 20
+        // f <- 10
+        // global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
+        // lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
+        // te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
 
-      double globalMean = 2.0 / 3;
-      double lambda1 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
-      double te1 = (1.0 - lambda1) * globalMean + (lambda1 * 2 / 2);
+        double globalMean = 2.0 / 3;
+        double lambda1 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
+        double te1 = (1.0 - lambda1) * globalMean + (lambda1 * 2 / 2);
 
-      double lambda2 = 1.0 / (1 + Math.exp((20.0 - 1) / 10));
-      double te2 = (1.0 - lambda2) * globalMean + (lambda2 * 0 / 1);
+        double lambda2 = 1.0 / (1 + Math.exp((20.0 - 1) / 10));
+        double te2 = (1.0 - lambda2) * globalMean + (lambda2 * 0 / 1);
 
-      double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
-      double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
+        double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
+        double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
-      printOutFrameAsTable(resultWithEncoding, true, false);
+        printOutFrameAsTable(resultWithEncoding, true, false);
 
-      assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
-      assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
-      assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
+        assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
+        assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
+        assertEquals(te2, resultWithEncoding.vec(4).at(2), 1e-5);
 
-      encodingMapCleanUp(targetEncodingMap);
-      merged.delete();
-      resultWithEncoding.delete();
-      reimportedFrame.delete();
+
+      } finally {
+        new File(tmpName).delete();
+        encodingMapCleanUp(targetEncodingMap);
+        merged.delete();
+        resultWithEncoding.delete();
+        reimportedFrame.delete();
+      }
     }
 
   @Test
@@ -876,48 +907,6 @@ public class TargetEncodingTest extends TestUtil {
     assertEquals(1, fr.vec(0).at(0), 1e-5);
     fr.delete();
   }
-
-    @Test
-    public void filterOutByTest() {
-      fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA")
-              .withVecTypes(Vec.T_STR)
-              .withDataForCol(0, ar("SAN", "SFO"))
-              .build();
-      Frame res = filterOutBy(fr, 0, "SAN");
-      res.delete();
-    }
-
-    @Test
-    public void filterByTest() {
-        fr = new TestFrameBuilder()
-                .withName("testFrame")
-                .withColNames("ColA")
-                .withVecTypes(Vec.T_STR)
-                .withDataForCol(0, ar("SAN", "SFO"))
-                .build();
-        Frame res = filterBy(fr, 0, "SAN");
-        res.delete();
-    }
-
-    public Frame filterOutBy(Frame data, int columnIndex, String value)  {
-        String tree = String.format("(rows %s  (!= (cols %s [%s] ) '%s' )  )", data._key, data._key, columnIndex, value);
-        Val val = Rapids.exec(tree);
-        Frame res = val.getFrame();
-        res._key = data._key;
-        DKV.put(res._key , res);
-        return res;
-    }
-
-    public Frame filterBy(Frame data, int columnIndex, String value)  {
-        String tree = String.format("(rows %s  (==(cols %s [%s] ) '%s' ) )", data._key, data._key, columnIndex, value);
-        Val val = Rapids.exec(tree);
-        Frame res = val.getFrame();
-        res._key = data._key;
-        DKV.put(res);
-        return res;
-    }
 
     @After
     public void afterEach() {

@@ -12,6 +12,7 @@ import org.junit.runners.Suite;
         TargetEncodingNoneStrategyTest.class,
         TargetEncodingMultiClassTargetTest.class,
         TargetEncodingTargetColumnTest.class,
+        TargetEncodingExceptionsHandlingTest.class,
         TargetEncodingImmutabilityTest.class
 })
 

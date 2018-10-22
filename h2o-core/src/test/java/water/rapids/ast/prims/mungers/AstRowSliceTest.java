@@ -4,15 +4,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.H2O;
+import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.rapids.vals.ValFrame;
-import water.util.TwoDimTable;
 
 import static org.junit.Assert.assertEquals;
 
@@ -91,6 +89,50 @@ public class AstRowSliceTest extends TestUtil {
     assertEquals("6", res.vec(2).stringAt(0));
 
     res.delete();
+  }
+
+  @Test
+  public void filterByTest() {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_STR)
+            .withDataForCol(0, ar("SAN", "SFO"))
+            .build();
+    Frame res = filterBy(fr, 0, "SAN");
+    assertEquals("SAN", res.vec(0).stringAt(0));
+    res.delete();
+  }
+
+  private Frame filterBy(Frame data, int columnIndex, String value)  {
+    String tree = String.format("(rows %s  (==(cols %s [%s] ) '%s' ) )", data._key, data._key, columnIndex, value);
+    Val val = Rapids.exec(tree);
+    Frame res = val.getFrame();
+    res._key = data._key;
+    DKV.put(res);
+    return res;
+  }
+
+  @Test
+  public void filterOutByTest() {
+    fr = new TestFrameBuilder()
+            .withName("testFrame")
+            .withColNames("ColA")
+            .withVecTypes(Vec.T_STR)
+            .withDataForCol(0, ar("SAN", "SFO"))
+            .build();
+    Frame res = filterOutBy(fr, 0, "SAN");
+    assertEquals("SFO", res.vec(0).stringAt(0));
+    res.delete();
+  }
+
+  private Frame filterOutBy(Frame data, int columnIndex, String value)  {
+    String tree = String.format("(rows %s  (!= (cols %s [%s] ) '%s' )  )", data._key, data._key, columnIndex, value);
+    Val val = Rapids.exec(tree);
+    Frame res = val.getFrame();
+    res._key = data._key;
+    DKV.put(res._key , res);
+    return res;
   }
 
   @After
