@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -350,6 +351,12 @@ final public class H2O {
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
+    /**
+     * Optionally disable algorithms marked as beta or experimental.
+     * Everything is on by default.
+     */
+    public ModelBuilder.BuilderVisibility features_level = ModelBuilder.BuilderVisibility.Experimental;
+
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -615,11 +622,13 @@ final public class H2O {
           throw new IllegalArgumentException("Interval for checking if client is disconnected has to be positive (milliseconds).");
         }
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
-        }
-      else if(s.matches("useUDP")) {
-          Log.warn("Support for UDP communication was removed from H2O, using TCP.");
-      }
-      else {
+      } else if (s.matches("useUDP")) {
+        Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      } else if (s.matches("features")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
+        Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
+      } else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
