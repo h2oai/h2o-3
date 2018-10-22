@@ -53,7 +53,6 @@ public class SQLManager {
     long numRow = 0;
     final String[] columnNames;
     final byte[] columnH2OTypes;
-    final boolean distributed = SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode);
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
@@ -88,7 +87,7 @@ public class SQLManager {
         rs.close();
       }
       //get H2O column names and types
-      if (distributed) {
+      if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
         stmt.setMaxRows(1);
         rs = stmt.executeQuery("SELECT " + columns + " FROM " + table);
       } else {
@@ -186,7 +185,7 @@ public class SQLManager {
     final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
     final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
 
-    if (!distributed) {
+    if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
       final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
       vec = num_retrieval_chunks >= num_chunks
               ? Vec.makeConN(numRow, num_chunks)
@@ -206,7 +205,7 @@ public class SQLManager {
         final ConnectionPoolProvider provider = new ConnectionPoolProvider(connection_url, username, password, vec.nChunks());
         final Frame fr;
 
-        if (!distributed) {
+        if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
           fr = new SqlTableToH2OFrame(finalTable, databaseType, columns, columnNames, numCol, j, provider)
                   .doAll(columnH2OTypes, vec)
                   .outputFrame(destination_key, columnNames, null);
