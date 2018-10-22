@@ -72,7 +72,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5399'>PUBDEV-5399</a>] - The `keep_cross_validation_fold_assignment` option is now available in AutoML.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5609'>PUBDEV-5609</a>] -          Implement Isolation Forest Algorithm in h2o (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5609'>PUBDEV-5609</a>] - Added support for the Isolation Forest algorithm in H2O-3. Note that this is a Beta version of the algorithm.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5668'>PUBDEV-5668</a>] - Added the  `keep_cross_validation_fold_assignment` option to AutoML in Flow.
 </li>
