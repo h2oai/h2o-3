@@ -57,7 +57,7 @@ public class SQLManagerIntegTest extends TestUtil {
               .withDataForCol(1, new String[]{"TOM", "BILL", "AMY", "OWEN"})
               .build());
 
-      Job<Frame> j = SQLManager.importSqlTable(connectionString, "TestData", "", "", "", "*", SqlFetchMode.DISTRIBUTED);
+      Job<Frame> j = SQLManager.importSqlTable(connectionString, "TestData", "", "", "", "*", SqlFetchMode.SINGLE);
       Frame fr = Scope.track(j.get());
 
       assertArrayEquals(expected._names, fr._names);
