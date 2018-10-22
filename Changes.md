@@ -11,10 +11,6 @@ Download at: (tbd)
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5023'>PUBDEV-5023</a>] - In Python, the metalearner method is only available for Stacked Ensembles.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5233'>PUBDEV-5233</a>] -         Multinode tests of xgboost on Hadoop (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5530'>PUBDEV-5530</a>] -         Remove XLSX from the list of supported parsers. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5658'>PUBDEV-5658</a>] -  Fixed an issue that caused micro benchmark tests to fail to run in the jmh directory.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5663'>PUBDEV-5663</a>] - Fixed an issue that caused H2O to fail to export dataframes to S3. (STILL OPEN)
@@ -30,8 +26,6 @@ Download at: (tbd)
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5791'>PUBDEV-5791</a>] -         AutoML chooses arbitrary model globally as leader (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5824'>PUBDEV-5824</a>] - In the Python client and the Java API, multiple runs of the same AutoML instance no longer fail training new "Best Of Family" SE models that would include the newly generated models.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5859'>PUBDEV-5859</a>] -         h2o.ls() produces Error: DistributedException from pc1udatahad15/10.20.33.76:27031: &#39;48&#39;   Request: None (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5873'>PUBDEV-5873</a>] - Fixed an issue that resulted in an AssertionError when calling `cbind` from the Python client.
 </li>
@@ -58,6 +52,10 @@ Download at: (tbd)
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5971'>PUBDEV-5971</a>] - CSV/ARFF Parser no longer treats blank lines as data lines with NAs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5976'>PUBDEV-5976</a>] - Starting h2o-3 from the Python Client no longer fails on Java 10.0.2.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5996'>PUBDEV-5996</a>] - Removed the "nclasses" parameter from tree traversal routines. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5999'>PUBDEV-5999</a>] - Removed "illegal reflective access" warnings when starting H2O-3 with Java 10.
 </li>
 </ul>
 
@@ -99,13 +97,9 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5245'>PUBDEV-5245</a>] -         Improve parameter descriptions in documentation (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5571'>PUBDEV-5571</a>] -         (due) GLM: Investigate long running glm multinomial with msgs like Got NonSPD matrix (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5696'>PUBDEV-5696</a>] - Added an option to allow users to use a user-specified JDBC driver.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5722'>PUBDEV-5722</a>] - Exposed `pr_auc` to areas where you can find AUC, including scoring_history, model summary. Also added h2o.pr_auc() in R.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5891'>PUBDEV-5891</a>] -         Investigate GLM multinomial run with IRLSM and non-SPD matrix (STILL OPEN. DO NOT INCLUDE)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5894'>PUBDEV-5894</a>] - Added support for CDH 6. (STILL OPEN)
 </li>
