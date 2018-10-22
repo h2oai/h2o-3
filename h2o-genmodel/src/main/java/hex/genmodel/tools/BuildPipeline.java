@@ -64,13 +64,15 @@ public class BuildPipeline {
     System.out.println("             --mapping <inputMapping1> <inputMapping2> ... --output <outputFile> --input <inputFile1> <inputFile2> ...");
     System.out.println("");
     System.out.println("     --mapping Mapping of model predictions to main model inputs.");
-    System.out.println("               Example: to map the predicted cluster (output 0) of a model defined in MOJO 'clustering.zip'");
-    System.out.println("                        to input column 'CLUSTER' of the main model, use specification 'CLUSTER=cluster:0'.");
+    System.out.println("               Example: Specify 'CLUSTER=clustering:0' to use a model defined in a MOJO file 'clustering.zip'");
+    System.out.println("                        and map the predicted cluster (output 0) to input column 'CLUSTER' of the main model.");
     System.out.println("     --input   List of input MOJO files representing both the main model and the prerequisite models.");
     System.out.println("     --output  Name of the generated MOJO pipeline file.");
     System.out.println("");
     System.out.println("     Input mappings are specified in format '<columnName>=<modelAlias>:<predictionIndex>'.");
-    System.out.println("     Model alias is based on the name of the MOJO file, MOJO stored in 'glm_model.zip' will have alias 'glm_model'.");
+    System.out.println("");
+    System.out.println("     Model alias is based on the name of the MOJO file.");
+    System.out.println("     For example, a MOJO stored in 'glm_model.zip' will have the alias 'glm_model'.");
     System.out.println("");
     System.out.println("Note: There is no need to specify which of the MOJO model represents the main model. The tool");
     System.out.println("automatically identifies the main model as the one that doesn't have any output mappings.");
@@ -97,7 +99,8 @@ public class BuildPipeline {
         } else if (s.equals("--output")) {
           List<String> outputFile = readArgValues(args, i + 1);
           if (outputFile.size() != 1) {
-            throw new IllegalArgumentException("Invalid specification of the output file. Please specify a single output file.");
+            throw new IllegalArgumentException("Invalid specification of the output file (" + outputFile.toString() + "). " +
+                    "Please specify only a single output file.");
           }
           _output = new File(outputFile.get(0));
           i += 1;

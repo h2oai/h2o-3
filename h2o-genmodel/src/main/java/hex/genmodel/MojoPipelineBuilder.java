@@ -54,21 +54,22 @@ public class MojoPipelineBuilder {
          ZipOutputStream zos = new ZipOutputStream(fos)) {
       w.writeTo(zos);
       for (Map.Entry<String, File> mojoFile : _files.entrySet()) {
-        ZipFile zf = new ZipFile(mojoFile.getValue());
-        Enumeration<? extends ZipEntry> entries = zf.entries();
-        while (entries.hasMoreElements()) {
-          ZipEntry ze = entries.nextElement();
+        try (ZipFile zf = new ZipFile(mojoFile.getValue())) {
+          Enumeration<? extends ZipEntry> entries = zf.entries();
+          while (entries.hasMoreElements()) {
+            ZipEntry ze = entries.nextElement();
 
-          ZipEntry copy = new ZipEntry("models/" + mojoFile.getKey() + "/" + ze.getName());
-          if (copy.getSize() >= 0) {
-            copy.setSize(copy.getSize());
+            ZipEntry copy = new ZipEntry("models/" + mojoFile.getKey() + "/" + ze.getName());
+            if (copy.getSize() >= 0) {
+              copy.setSize(copy.getSize());
+            }
+            copy.setTime(copy.getTime());
+            zos.putNextEntry(copy);
+            try (InputStream input = zf.getInputStream(zf.getEntry(ze.getName()))) {
+              IOUtils.copyStream(input, zos);
+            }
+            zos.closeEntry();
           }
-          copy.setTime(copy.getTime());
-          zos.putNextEntry(copy);
-          try (InputStream input = zf.getInputStream(zf.getEntry(ze.getName()))) {
-            IOUtils.copyStream(input, zos);
-          }
-          zos.closeEntry();
         }
       }
     }

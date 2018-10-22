@@ -105,6 +105,18 @@ public abstract class AbstractMojoWriter {
     tmpfile.append('\n');
   }
 
+  private void writelnkv(String key, String value, boolean escapeNewlines) {
+    assert tmpfile != null : "No text file is currently being written";
+    tmpfile.append(escapeNewlines ? StringEscapeUtils.escapeNewlines(key) : key);
+    tmpfile.append(" = ");
+    tmpfile.append(escapeNewlines ? StringEscapeUtils.escapeNewlines(value) : value);
+    tmpfile.append('\n');
+  }
+
+  private void writelnkv(String key, String value) {
+    writelnkv(key, value, false);
+  }
+
   /**
    * Write a single line of text to a previously opened text file.
    */
@@ -202,7 +214,7 @@ public abstract class AbstractMojoWriter {
     startWritingTextFile("model.ini");
     writeln("[info]");
     for (Map.Entry<String, String> kv : lkv.entrySet()) {
-      writeln(kv.getKey() + " = " + kv.getValue());
+      writelnkv(kv.getKey(), kv.getValue());
     }
 
     writeln("\n[columns]");
@@ -237,11 +249,7 @@ public abstract class AbstractMojoWriter {
   }
 
   private static byte[] toBytes(Object value) {
-    return bytesOf(String.valueOf(value));
-  }
-
-  private static byte[] bytesOf(CharSequence str) {
-    return str.toString().getBytes(Charset.forName("UTF-8"));
+    return String.valueOf(value).getBytes(Charset.forName("UTF-8"));
   }
 
 }
