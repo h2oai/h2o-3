@@ -18,6 +18,9 @@ public class XGBoostModelV3 extends ModelSchemaV3<
   public static final class XGBoostModelOutputV3 extends ModelOutputSchemaV3<XGBoostOutput, XGBoostModelOutputV3> {
     @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 variable_importances;
+
+    @API(help="XGBoost Native Parameters", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 native_parameters;
   }
 
   public XGBoostV3.XGBoostParametersV3 createParametersSchema() { return new XGBoostV3.XGBoostParametersV3(); }

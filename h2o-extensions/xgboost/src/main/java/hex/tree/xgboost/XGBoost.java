@@ -297,6 +297,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         featureMapFile = createFeatureMapFile(featureMap);
 
         BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+        model._output._native_parameters = boosterParms.toTwoDimTable();
 
         setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
         try {
