@@ -1,7 +1,7 @@
 ``ignored_columns``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, CoxPH
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, XGBoost, Aggregator, CoxPH, Isolation Forest
 - Hyperparameter: no
 
 Description

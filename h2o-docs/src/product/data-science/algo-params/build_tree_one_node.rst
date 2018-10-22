@@ -1,7 +1,7 @@
 ``build_tree_one_node``
 -----------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, Isolation Forest
 - Hyperparameter: no
 
 Description

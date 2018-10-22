@@ -1,7 +1,7 @@
 ``max_depth``
 -------------
 
-- Available in: GBM, DRF, XGBoost
+- Available in: GBM, DRF, XGBoost, Isolation Forest
 - Hyperparameter: yes
 
 Description
