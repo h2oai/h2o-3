@@ -455,14 +455,14 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     assert_is_type(optimize, bool)
     assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "table": table, "username": username, "password": password,
-         "optimize": optimize, "fetch_mode": fetch_mode}
+         "fetch_mode": fetch_mode}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True, fetch_mode=False):
+def import_sql_select(connection_url, select_query, username, password, optimize=True, fetch_mode=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
 
@@ -492,7 +492,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> username = "root"
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
-        ...                                          username, password)
+        ...                                          username, password, fetch_mode)
     """
     assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
@@ -501,7 +501,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     assert_is_type(optimize, bool)
     assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
-         "optimize": optimize, "fetch_mode": fetch_mode}
+         "fetch_mode": fetch_mode}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 

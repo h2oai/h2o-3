@@ -210,7 +210,6 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
     columns <- toString(columns)
     parms$columns <- columns
   }
-  if (!is.null(optimize)) parms$optimize <- optimize
   if (!is.null(fetch_mode)) parms$fetch_mode <- fetch_mode
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name
@@ -253,7 +252,6 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
   parms$select_query <- select_query
   parms$username <- username
   parms$password <- password
-  if (!is.null(optimize)) parms$optimize <- optimize
   if (!is.null(fetch_mode)) parms$fetch_mode <- fetch_mode
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name

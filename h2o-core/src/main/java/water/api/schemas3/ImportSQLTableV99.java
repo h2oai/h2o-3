@@ -26,9 +26,6 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "columns")
   public String columns = "*";
 
-  @API(help = " Deprecated. Optimize data loading. Ignored - use fetch_mode instead.")
-  public boolean optimize = false;
-
   @API(help = "Mode for data loading. All modes may not be supported by all databases.")
   public String fetch_mode;
 
