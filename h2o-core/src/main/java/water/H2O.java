@@ -1,5 +1,6 @@
 package water;
 
+import hex.ModelBuilder;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -351,14 +352,10 @@ final public class H2O {
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
     /**
-     * Disable algorithms marked as beta
+     * Optionally disable algorithms marked as beta or experimental.
+     * Everything is on by default.
      */
-    public boolean disable_beta;
-
-    /**
-     * Disable algorithms marked as experimental
-     */
-    public boolean disable_experimental;
+    public ModelBuilder.BuilderVisibility features_level = ModelBuilder.BuilderVisibility.Experimental;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -627,12 +624,10 @@ final public class H2O {
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
       } else if (s.matches("useUDP")) {
         Log.warn("Support for UDP communication was removed from H2O, using TCP.");
-      } else if (s.matches("disable_beta")) {
-        Log.info("Disabling algorithms marked as BETA.");
-        trgt.disable_beta = true;
-      } else if (s.matches("disable_experimental")) {
-        Log.info("Disabling algorithms marked as EXPERIMENTAL.");
-        trgt.disable_experimental = true;
+      } else if (s.matches("features")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
+        Log.info(String.format("Limiting algorithms available to level: %s", trgt.features_level.name()));
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }

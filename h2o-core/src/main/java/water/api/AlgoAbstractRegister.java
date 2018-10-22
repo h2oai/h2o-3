@@ -16,8 +16,7 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
    */
   protected final void registerModelBuilder(RestApiContext context, ModelBuilder mbProto, int version) {
     Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
-    if (H2O.ARGS.disable_experimental && ModelBuilder.BuilderVisibility.Experimental.equals(mbProto.builderVisibility())
-            || H2O.ARGS.disable_beta && ModelBuilder.BuilderVisibility.Beta.equals(mbProto.builderVisibility())) {
+    if (H2O.ARGS.features_level.compareTo(mbProto.builderVisibility()) > 0) {
       return; // Skip endpoint registration
     }
     String base = mbProto.getClass().getSimpleName();
