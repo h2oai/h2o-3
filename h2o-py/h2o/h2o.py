@@ -414,7 +414,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, streaming=False):
+def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
     """
     Import SQL table to H2OFrame in memory.
 
@@ -434,9 +434,9 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :param columns: a list of column names to import from SQL table. Default is to import all columns.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: optimize import of SQL table for faster imports. Experimental.
-    :param streaming: disable distributed import, read data sequentially on single H2O node and stream it to
-        the rest of the cluster. Use for databases that do not support OFFSET-like clauses in SQL statements.
+    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
+        from the database.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
@@ -453,16 +453,16 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     assert_is_type(password, str)
     assert_is_type(columns, [str], None)
     assert_is_type(optimize, bool)
-    assert_is_type(streaming, bool)
+    assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "table": table, "username": username, "password": password,
-         "optimize": optimize, "streaming": streaming}
+         "optimize": optimize, "fetch_mode": fetch_mode}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
-def import_sql_select(connection_url, select_query, username, password, optimize=True, streaming=False):
+def import_sql_select(connection_url, select_query, username, password, optimize=True, fetch_mode=False):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
 
@@ -480,9 +480,9 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param select_query: SQL query starting with `SELECT` that returns rows from one or more database tables.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: optimize import of SQL table for faster imports. Experimental.
-    :param streaming: disable distributed import, read data sequentially on single H2O node and stream it to
-        the rest of the cluster. Use for databases that do not support OFFSET-like clauses in SQL statements.
+    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
+        from the database.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
@@ -499,9 +499,9 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
-    assert_is_type(streaming, bool)
+    assert_is_type(fetch_mode, str, None)
     p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
-         "optimize": optimize, "streaming": streaming}
+         "optimize": optimize, "fetch_mode": fetch_mode}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
