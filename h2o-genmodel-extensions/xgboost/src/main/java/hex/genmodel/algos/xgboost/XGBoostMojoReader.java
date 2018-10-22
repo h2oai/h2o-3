@@ -3,6 +3,7 @@ package hex.genmodel.algos.xgboost;
 import hex.genmodel.ModelMojoReader;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  */

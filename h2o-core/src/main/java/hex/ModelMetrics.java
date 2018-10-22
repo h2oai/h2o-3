@@ -3,7 +3,9 @@ package hex;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -448,5 +450,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void setCustomMetric(CustomMetric customMetric) {
       _customMetric = customMetric;
     }
+
+    public Frame makePredictionCache(Model m, Vec response) {
+      return null;
+    }
+
+    public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
+      throw new UnsupportedOperationException("Should be overridden in implementation (together with makePredictionCache(..)).");
+    }
+
   }
 }

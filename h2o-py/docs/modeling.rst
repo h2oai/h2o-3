@@ -77,6 +77,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OIsolationForestEstimator`
+----------------------------------
+.. autoclass:: h2o.estimators.isolation_forest.H2OIsolationForestEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OKMeansEstimator`
 -------------------------
 .. autoclass:: h2o.estimators.kmeans.H2OKMeansEstimator

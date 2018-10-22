@@ -159,6 +159,14 @@ word2vec_export <- function() {
   h2o.download_mojo(model, path = RESULT_DIR)
 }
 
+isofor_export <- function() {
+  print("###### ISOLATION FOREST ######")
+  frame <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame= "frame")
+  model <- h2o.isolationForest(frame)
+  expect_error(model, POJO)
+  h2o.download_mojo(model, path = RESULT_DIR)
+}
+
 # doTest("Perform the test for pubdev 4711", pubdev_4711_test)
 deeplearning_export()
 gbm_export()
@@ -170,3 +178,4 @@ pca_export()
 drf_export()
 stacked_ensemble_export()
 word2vec_export()
+isofor_export()

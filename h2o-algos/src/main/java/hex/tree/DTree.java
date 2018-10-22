@@ -27,7 +27,6 @@ import java.util.*;
 public class DTree extends Iced {
   final String[] _names; // Column names
   final int _ncols;      // Active training columns
-  final char _nclass;    // #classes, or 1 for regression trees
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array
@@ -46,11 +45,10 @@ public class DTree extends Iced {
     return Math.min(Math.max(1,(int)((double)_mtrys * Math.pow(_parms._col_sample_rate_change_per_level, _depth))),_ncols);
   }
 
-  public DTree(Frame fr, int ncols, char nclass, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
+  public DTree(Frame fr, int ncols, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
     _names = fr.names();
     _ncols = ncols;
     _parms = parms;
-    _nclass=nclass;
     _ns = new Node[1];
     _mtrys = mtrys;
     _mtrys_per_tree = mtrys_per_tree;
@@ -483,17 +481,23 @@ public class DTree extends Iced {
       return best;
     }
 
-    class FindSplits extends RecursiveAction {
-      FindSplits(DHistogram[] hs, int col, int nid) {
+    public final class FindSplits extends RecursiveAction {
+      public FindSplits(DHistogram[] hs, int col, UndecidedNode node) {
+        this(hs, col, node._nid);
+      }
+      private FindSplits(DHistogram[] hs, int col, int nid) {
         _hs = hs; _col = col; _nid = nid;
       }
       final DHistogram[] _hs;
       final int _col;
-      DTree.Split _s;
       final int _nid;
+      DTree.Split _s;
       @Override public void compute() {
+        computeSplit();
+      }
+      public final DTree.Split computeSplit() {
         _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows);
-        if (_s == null) return;
+        return _s;
       }
     }
 
@@ -751,7 +755,7 @@ public class DTree extends Iced {
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
     root().compress(ab, _abAux);      // Compress whole tree
     assert ab.position() == sz;
-    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
+    return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {

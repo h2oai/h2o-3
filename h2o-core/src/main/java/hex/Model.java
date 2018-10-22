@@ -1420,6 +1420,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return makeScoringNames(_output);
   }
 
+  protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : adaptFrm.lastVec().domain();
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
+      domains[0] = new String[]{"0", "1"};
+    }
+    return domains;
+  }
+
   public static <O extends Model.Output> String [] makeScoringNames(O output){
     final int nc = output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
@@ -1465,11 +1474,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
-    String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
-    if (_parms._distribution == DistributionFamily.quasibinomial) {
-      domains[0] = new String[]{"0", "1"};
-    }
+    String[][] domains = makeScoringDomains(adaptFrm, computeMetrics, names);
 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains,
@@ -2179,6 +2184,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
                 decisionPath = mmp.leafNodeAssignments;
                 nodeIds = mmp.leafNodeAssignmentIds;
+                break;
+              case AnomalyDetection:
+                AnomalyDetectionPrediction adp = (AnomalyDetectionPrediction) p;
+                d2 = (col == 0) ? adp.normalizedScore : adp.score;
+                decisionPath = adp.leafNodeAssignments;
+                nodeIds = adp.leafNodeAssignmentIds;
                 break;
               case DimReduction:
                 d2 = (genmodel instanceof GlrmMojoModel)?((DimReductionModelPrediction) p).reconstructed[col]:

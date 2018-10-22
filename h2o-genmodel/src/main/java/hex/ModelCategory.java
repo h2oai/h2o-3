@@ -15,5 +15,6 @@ public enum ModelCategory {
   AutoEncoder,
   DimReduction,
   WordEmbedding,
-  CoxPH
+  CoxPH,
+  AnomalyDetection
 }

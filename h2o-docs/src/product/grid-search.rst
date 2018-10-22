@@ -768,7 +768,10 @@ XGBoost Hyperparameters
 -  ``skip_drop``
 
 
+AutoML Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~
 
+- ``keep_cross_validation_models``
 
 
 Grid Testing

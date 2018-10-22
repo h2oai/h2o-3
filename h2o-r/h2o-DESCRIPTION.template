@@ -70,6 +70,7 @@ Collate:
          'kvstore.R'
          'frame.R'
          'import.R'
+         'isolationforest.R'
          'parse.R'
          'export.R'
          'edicts.R'

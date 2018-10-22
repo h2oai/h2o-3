@@ -71,7 +71,7 @@ public class CompressedTreeTest extends TestUtil  {
 
         for (double[] row : data) {
           final double leafAssignment = SharedTreeMojoModel.scoreTree(tree._bits, row,
-                  2, true, model._output._domains);
+                  true, model._output._domains);
           final String nodePath = SharedTreeMojoModel.getDecisionPath(leafAssignment);
           final int nodeId = SharedTreeMojoModel.getLeafNodeId(leafAssignment, auxTreeInfo._bits);
 
@@ -94,7 +94,7 @@ public class CompressedTreeTest extends TestUtil  {
   public void testMakeTreeKey() {
     try {
       Scope.enter();
-      CompressedTree ct = new CompressedTree(new byte[0], 7, 123, 42, 17);
+      CompressedTree ct = new CompressedTree(new byte[0], 123, 42, 17);
       Scope.track_generic(ct);
       DKV.put(ct);
 

@@ -16,7 +16,7 @@ public class SharedTreeGraph {
   /**
    * Make a new forest.
    */
-  SharedTreeGraph() {
+  public SharedTreeGraph() {
     subgraphArray = new ArrayList<>();
   }
 
@@ -25,7 +25,7 @@ public class SharedTreeGraph {
    * @param name Tree name.
    * @return The new tree.
    */
-  SharedTreeSubgraph makeSubgraph(String name) {
+  public SharedTreeSubgraph makeSubgraph(String name) {
     SharedTreeSubgraph sg = new SharedTreeSubgraph(subgraphArray.size(), name);
     subgraphArray.add(sg);
     return sg;

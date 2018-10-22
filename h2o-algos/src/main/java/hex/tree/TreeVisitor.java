@@ -59,7 +59,6 @@ public abstract class TreeVisitor<T extends Exception> {
     case 1:  skip = _ts.get2();  break;
     case 2:  skip = _ts.get3();  break;
     case 3:  skip = _ts.get4();  break;
-    case 16: skip = _ct._nclass < 256?1:2;  break; // Small leaf
     case 48: skip =  4;  break; // skip is always 4 for direct leaves (see DecidedNode.size() and LeafNode.size() methods)
     default: assert false:"illegal lmask value " + lmask;
     }
