@@ -13,7 +13,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5658'>PUBDEV-5658</a>] -  Fixed an issue that caused micro benchmark tests to fail to run in the jmh directory.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5663'>PUBDEV-5663</a>] - Fixed an issue that caused H2O to fail to export dataframes to S3. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5663'>PUBDEV-5663</a>] - Fixed an issue that caused H2O to fail to export dataframes to S3.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5745'>PUBDEV-5745</a>] - Added the `keep_cross_validation_models` argument to Grid Search.
 </li>
@@ -45,25 +45,27 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5954'>PUBDEV-5954</a>] - Upgraded the version of the lodash package used in H2O Flow.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5959'>PUBDEV-5959</a>] -         PySparking client is hanging after re-connecting to the H2O external backend (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5967'>PUBDEV-5967</a>] - `-ip localhost` now works correctly on WSL.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5971'>PUBDEV-5971</a>] - CSV/ARFF Parser no longer treats blank lines as data lines with NAs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5976'>PUBDEV-5976</a>] - Starting h2o-3 from the Python Client no longer fails on Java 10.0.2.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5995'>PUBDEV-5995</a>] - Fixed an issue that caused StackedEnsemble MOJO model to return an  "IllegalArgumentException: categorical value out of range" message. (STILL OPEN)
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5996'>PUBDEV-5996</a>] - Removed the "nclasses" parameter from tree traversal routines. 
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5998'>PUBDEV-5998</a>] - Exposed H2OXGBoost parameters used to train a model to the Python API. Previously, this information was visible in the Java backend but was not passed back to the Python API. 
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5999'>PUBDEV-5999</a>] - Removed "illegal reflective access" warnings when starting H2O-3 with Java 10.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6005'>PUBDEV-6005</a>] - When running AutoML in Flow, updated the list of algorithms that can ber selected in the "Exclude These Algorithms" section.
 </li>
 </ul>
 
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5049'>PUBDEV-5049</a>] -         Add a stopping_method parameter to all models to control early stopping (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5170'>PUBDEV-5170</a>] - Individual predictions of GBM trees are now exposed in the MOJO API. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5378'>PUBDEV-5378</a>] -         Add target encoding to Java (STILL OPEN)
@@ -78,7 +80,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5695'>PUBDEV-5695</a>] - Created an R demo for CoxPH. This is available <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R">here</a>.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5775'>PUBDEV-5775</a>] -         Combine two models into one mojo (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5775'>PUBDEV-5775</a>] - It is now possible to combine two models into one MOJO, with the second model using the prediction from the first model as a feature. These models can be from any algorithm or combination of algorithms except Word2Vec. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5852'>PUBDEV-5852</a>] - Implemented h2oframe.fillna(method='backward').
 </li>
@@ -103,15 +105,15 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5894'>PUBDEV-5894</a>] - Added support for CDH 6. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5901'>PUBDEV-5901</a>] -         Add support for Java 11 (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5901'>PUBDEV-5901</a>] - Added support for Java 11.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6001'>PUBDEV-6001</a>] - Improved the AutoML documentation in the User Guide.
 </li>
 </ul>
     
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3911'>PUBDEV-3911</a>] -         Add model summary for Stacked Ensembles in Python API (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5590'>PUBDEV-5590</a>] - Added a `MAX_USR_CONNECTIONS_KEY` argument to limit number of sessions for import_sql_table. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5669'>PUBDEV-5669</a>] - Improved performance gap when importing data using Hive2.
@@ -136,7 +138,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5913'>PUBDEV-5913</a>] - Improved the h2o-3 README for installing in R and IntelliJ IDEA.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5927'>PUBDEV-5927</a>] -         Add support for reading from any JDBC datasource (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5927'>PUBDEV-5927</a>] - Introduced a simple "streaming" mode that allows H2O to read from a table using basic SQL:92 constructs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5929'>PUBDEV-5929</a>] - In AutoML, `stopping_metric` is now based on `sort_metric`.
 </li>
@@ -148,6 +150,10 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5993'>PUBDEV-5993</a>] - Update Retrofit2, okHttp, and Okio dependecies. (STILL OPEN)
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6000'>PUBDEV-6000</a>] - In AutoML, automatic partitioning of the valiation frame now uses 10% of the training data instead of 20%. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6002'>PUBDEV-6002</a>] - Changed model and grid indexing in autogenerated model names in AutoML to be 1 instead of 0 indexed. (STILL OPEN)
+</li>
 </ul>
     
 <h4>Docs</h4>
@@ -158,8 +164,6 @@ Download at: (tbd)
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4505'>PUBDEV-4505</a>] - Added Scala and Java examples to the Building and Extracting a MOJO topic.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4590'>PUBDEV-4590</a>] - Added a Scala example to the Stacked Ensembles topic.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5050'>PUBDEV-5050</a>] -         Add stopping_method option to the user guide (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5641'>PUBDEV-5641</a>] - Removed references to UDP in the documentation.
 </li>
@@ -177,19 +181,15 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5810'>PUBDEV-5810</a>] - Updated documentation for `class_sampling_factors`. `balance_classes` must be enabled when using `class_sampling_factors`.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5834'>PUBDEV-5834</a>] -         Coordinate blog post for 3.22.0.1 release (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5839'>PUBDEV-5839</a>] - Added a Python example for initializing and starting h2o-3 in Docker.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5857'>PUBDEV-5857</a>] - Updated the Admin menu documentation in Flow after adding "Download Gen Model" option.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5889'>PUBDEV-5889</a>] -         add explanation of variable importance calculations (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5905'>PUBDEV-5905</a>] - In GBM and DRF, `enum_limited` is a supported option for `categorical_encoding`.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5962'>PUBDEV-5962</a>] - Added the -notify_local flag to list of flags available when starting H2O-3 from the command line.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5982'>PUBDEV-5982</a>] -         Added documentation for Isolation Forest (beta) (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5982'>PUBDEV-5982</a>] - Added documentation for Isolation Forest (beta).
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5984'>PUBDEV-5984</a>] -         Added CDH 6 to list of supported Hadoop versions. (STILL OPEN)
 </li>
