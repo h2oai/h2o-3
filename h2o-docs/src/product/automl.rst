@@ -193,7 +193,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # 19    DeepLearning_grid_1_AutoML_20181022_221411_model_1 0.7286182 0.6095040            0.3689510 0.4586798 0.2103872
     # 20                 DeepLearning_1_AutoML_20181022_221411 0.6881761 0.6433626            0.4173049 0.4738028 0.2244891
     # 21             GLM_grid_1_AutoML_20181022_221411_model_1 0.6853161 0.6366259            0.3936651 0.4717700 0.2225669
-    # 22    DeepLearning_grid_1_AutoML_20181022_221411_model_2 0.6742703 0.6786356            0.4233795 0.4833303 0.2336081
+    # 22    DeepLearning_grid_1_AutoML_20181022_221411_model_1 0.6742703 0.6786356            0.4233795 0.4833303 0.2336081
     # 
     # [22 rows x 6 columns] 
 
