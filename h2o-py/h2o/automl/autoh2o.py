@@ -17,7 +17,7 @@ class H2OAutoML(object):
 
     :param int nfolds: Number of folds for k-fold cross-validation. Defaults to ``5``. Use ``0`` to disable cross-validation; this will also 
       disable Stacked Ensemble (thus decreasing the overall model performance).
-    :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.
+    :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``False``.
     :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
       factors will be automatically computed to obtain class balance during training. Requires ``balance_classes``.
     :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
