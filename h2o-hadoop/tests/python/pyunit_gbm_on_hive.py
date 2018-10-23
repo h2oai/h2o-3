@@ -34,7 +34,8 @@ def gbm_on_hive():
     airlines_dataset = h2o.import_sql_select(connection_url, select_query, username, password)
     airlines_dataset = adapt_airlines(airlines_dataset)
     # read from Hive Streaming
-    airlines_dataset_streaming = h2o.import_sql_select(connection_url, select_query, username, password, streaming=True)
+    airlines_dataset_streaming = h2o.import_sql_select(connection_url, select_query, username, password,
+                                                       fetch_mode="SINGLE")
     airlines_dataset_streaming = adapt_airlines(airlines_dataset_streaming)
 
     # datasets should be identical from user's point of view
