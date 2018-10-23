@@ -7,7 +7,10 @@ import scala.util.{Failure, Success, Try}
 /**
  * High-level DSL proving user-friendly operations
  * on top of H2O Frame.
+ *
+ * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
  */
+@Deprecated
 trait FrameOps { self: H2OFrame =>  // Mix only with H2OFrame types
 
   /** Functional type to transform vectors. */

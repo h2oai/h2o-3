@@ -15,7 +15,10 @@ import water.parser.DefaultParserProviders.GUESS_INFO
  * @param frameKey  reference of new frame
  * @param names  column names for new frame
  * @param vecs  vectors composing new frame
+ *
+ * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
  */
+@Deprecated
 class H2OFrame private (frameKey: Key[Frame], names: Array[String], vecs: Array[Vec])
   extends Frame(frameKey, names, vecs) with FrameOps {
 
@@ -105,7 +108,9 @@ class H2OFrame private (frameKey: Key[Frame], names: Array[String], vecs: Array[
 
 /** Companion object providing factory methods to create frame
   * from different sources.
+  * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
   */
+@Deprecated
 object H2OFrame {
   def apply(key : Key[Frame]) = new H2OFrame(key)
   def apply(f : Frame) = new H2OFrame(f)

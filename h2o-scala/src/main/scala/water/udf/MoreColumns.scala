@@ -10,6 +10,10 @@ import water.util.{fp => F}
 
 import scala.collection.JavaConverters._
 
+/**
+  * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
+  */
+@Deprecated
 trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[JavaType] =>
 
   import collection.JavaConverters._
@@ -27,6 +31,10 @@ trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[
   }
 }
 
+/**
+  * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
+  */
+@Deprecated
 object ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double] {
   def newColumn(size: Long, f: Long => Double) = super.newColumn(size, ff1LD(f))
   def newColumnOpt(size: Long, f: Long => Option[Double]) = super.newColumn(size, ff1LDO(f))
@@ -47,7 +55,10 @@ object ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double] 
 
 /**
   * Scala adapters for h2o3 udf (which is currently in Java)
+  *
+  * @deprecated Scala API will be moved to the Sparkling Water project - https://github.com/h2oai/sparkling-water
   */
+@Deprecated
 object MoreColumns extends DataColumns {
   
   private[MoreColumns] def ff1L[Y](f: Long => Y): UFunction[lang.Long, Y] =
