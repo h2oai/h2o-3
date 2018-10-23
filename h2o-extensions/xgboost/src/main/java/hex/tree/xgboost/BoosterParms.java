@@ -2,6 +2,7 @@ package hex.tree.xgboost;
 
 import water.Iced;
 import water.util.IcedHashMapGeneric;
+import water.util.TwoDimTable;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -51,6 +52,25 @@ public class BoosterParms extends Iced<BoosterParms> {
       localized.put(key, newValue);
     }
     return Collections.unmodifiableMap(localized);
+  }
+
+  public TwoDimTable toTwoDimTable() {
+    final int rows = _parms.size();
+    TwoDimTable table = new TwoDimTable(
+            "Native XGBoost Parameters", null,
+            new String[rows],
+            new String[]{"Name", "Value"},
+            new String[]{"String", "String"},
+            new String[]{"%s", "%s"},
+            "");
+    int row = 0;
+    for (Map.Entry<String, Object> p : _parms.entrySet()) {
+      table.set(row, 0, p.getKey());
+      table.set(row, 1, p.getValue());
+      row++;
+    }
+    assert row == rows;
+    return table;
   }
 
 }
