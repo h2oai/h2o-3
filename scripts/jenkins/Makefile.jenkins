@@ -217,8 +217,6 @@ test-package-java:
 		h2o-extensions/xgboost/ \
 		h2o-genmodel-extensions/ \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
-		h2o-scala/src/ \
-		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
 		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
@@ -245,28 +243,28 @@ test-junit-10-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-10
 
 test-junit-10:
-	./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-11-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-11
 
 test-junit-11:
-	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=11" ./gradlew test -x h2o-scala_2.11:test -x h2o-scala_2.10:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=11" ./gradlew test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-smoke
 
 test-junit-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test $$ADDITIONAL_GRADLE_OPTS
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-10-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-10-smoke
 
 test-junit-7-smoke:
-	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test -x h2o-algos:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-7-smoke-jenkins:
 	$(call sed_test_scripts)
