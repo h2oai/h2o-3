@@ -44,8 +44,8 @@ class H2OAutoML(object):
       existing AutoML project by specifying the same project name in muliple calls to the AutoML function
       (as long as the same training frame is used in subsequent runs).
     :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
-      An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "GLM", "GBM", "DRF" 
-      (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
+      An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "DRF" 
+      (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
       all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
     :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
     :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. Defaults to ``False``.
