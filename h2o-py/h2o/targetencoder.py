@@ -16,6 +16,7 @@ __all__ = ("TargetEncoder", )
 class TargetEncoder(object):
 
     """
+    Status: alpha version
     This is a main class that provides Python's API to the Java implementation of the target encoding.
 
     In general target encoding could be applied to three types of problems, namely:
@@ -24,14 +25,14 @@ class TargetEncoder(object):
          3) Regression (not supported yet)
 
     Usage:
-    targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
+    targetEncoder = TargetEncoder(te_columns= te_columns, response_column = targetColumnName,
                                   blending = True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame)
 
-    encodedFrame = targetEncoder.transform(frame=frame, strategy="kfold", seed=1234, isTrainOrVaid=True)
+    encodedValid = targetEncoder.transform(frame=frame, strategy="kfold", seed=1234, isTrainOrVaid=True)
 
-    encodedTest = targetEncoder.transform(frame=testFrame, strategy="none", noise=0.0, seed=1234, isTrainOrVaid=False)
+    encodedTest = targetEncoder.transform(frame=testFrame, strategy="none", noise=0.0, seed=1234, is_train_or_valid=False)
     """
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -54,15 +55,6 @@ class TargetEncoder(object):
             threshold between the posterior and the prior probability.
 
         """
-        #Validations:
-        #coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric", "categorical", "factor", "enum", "time")
-        # assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
-        # assert_is_type(destination_frame, None, str)
-        # assert_is_type(header, -1, 0, 1)
-        # assert_is_type(separator, I(str, lambda s: len(s) == 1))
-        # assert_is_type(column_names, None, [str])
-        # assert_is_type(column_types, None, [coltype], {str: coltype})
-        # assert_is_type(na_strings, None, [str], [[str]], {str: [str]})
 
         self._teColumns = te_columns
         self._targetColumnName = response_column
@@ -102,8 +94,8 @@ class TargetEncoder(object):
         assert_is_type(strategy, "kfold", "loo", "none")
 
         # We need to make sure that frames are being sent in the same order
-        assert self._encodingMap.teColumns['string'] == self._teColumns
-        encodingMapKeys = self._encodingMap.teColumns['string']
+        assert self._encodingMap.mapKeys['string'] == self._teColumns
+        encodingMapKeys = self._encodingMap.mapKeys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, strategy,
                                             self._targetColumnName, self._foldColumnName,

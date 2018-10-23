@@ -30,7 +30,7 @@ def test_target_encoding_fit_method():
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
 
     encodingMap = targetEncoder.fit(frame=trainingFrame)
-    assert encodingMap.teColumns['string'] == teColumns
+    assert encodingMap.mapKeys['string'] == teColumns
     assert encodingMap.frames[0]['num_rows'] == 583
 
 

@@ -111,8 +111,8 @@ class ExprNode(object):
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
-        if 'teColumns' in res:
-            self._cache.teColumns = res['teColumns']
+        if 'mapKeys' in res:
+            self._cache.mapKeys = res['mapKeys']
             self._cache.frames = res['frames']
 
         if 'scalar' in res:
