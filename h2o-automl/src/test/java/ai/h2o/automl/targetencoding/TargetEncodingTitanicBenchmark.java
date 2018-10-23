@@ -14,6 +14,9 @@ import water.util.FrameUtils;
 
 import java.util.Map;
 
+/*
+  Be aware that `smalldata/gbm_test/titanic_*.csv` files are not present in the repo. Replace with your own splits.
+ */
 public class TargetEncodingTitanicBenchmark extends TestUtil {
 
 

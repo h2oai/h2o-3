@@ -204,7 +204,7 @@ public class TestFrameBuilderTest extends TestUtil {
     Frame fr = new TestFrameBuilder()
             .withName("testFrame")
             .withColNames("ColA")
-            .withVecTypes(Vec.T_CAT)
+            .withVecTypes(Vec.T_NUM)
             .withRandomDoubleDataForCol(0, 1000, 1, 5, seed)
             .build();
 

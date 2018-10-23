@@ -4,21 +4,10 @@ sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.targetencoder import TargetEncoder
-import json
 
 """
 This test is used to check Rapids wrapper for java TargetEncoder
 """
-
-# def import_dataset():
-#     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-#     target = "CAPSULE"
-#     df[target] = df[target].asfactor()
-#     #Split frames
-#     fr = df.split_frame(ratios=[.8,.1])
-#     #Set up train, validation, and test sets
-#     return dict(train=fr[0], valid=fr[1], test=fr[2], target=target, target_idx=1)
-
 
 def test_target_encoding_parameters():
     print("Check arguments to TargetEncoder class")
@@ -35,14 +24,14 @@ def test_target_encoding_fit_method():
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
                                   foldColumnName = foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
 
     encodingMap = targetEncoder.fit(trainingFrame=trainingFrame)
     assert encodingMap.teColumns['string'] == teColumns
-    assert encodingMap.frames[0]['num_rows'] == 484
+    assert encodingMap.frames[0]['num_rows'] == 583
 
 
 def test_target_encoding_transform_kfold():
@@ -53,14 +42,14 @@ def test_target_encoding_transform_kfold():
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
                                   foldColumnName = foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
 
     targetEncoder.fit(trainingFrame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="kfold", seed=1234)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="kfold", seed=1234, isTrainOrVaid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -74,13 +63,13 @@ def test_target_encoding_transform_loo():
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
                                   foldColumnName = '', blending = True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder.fit(trainingFrame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="loo", seed=1234)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="loo", seed=1234, isTrainOrVaid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -94,13 +83,13 @@ def test_target_encoding_transform_none():
     teColumns = ["home.dest", "cabin", "embarked"]
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
                                 blending = True, inflection_point = 3, smoothing = 1)
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder.fit(trainingFrame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=1234)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=1234, isTrainOrVaid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -112,7 +101,7 @@ def test_target_encoding_transform_none_blending():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     
     targetEncoderWithBlending = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
@@ -120,7 +109,7 @@ def test_target_encoding_transform_none_blending():
     
     targetEncoderWithBlending.fit(trainingFrame=trainingFrame)
 
-    encodedFrameWithBlending = targetEncoderWithBlending.transform(frame=trainingFrame, strategy="none", seed=1234)
+    encodedFrameWithBlending = targetEncoderWithBlending.transform(frame=trainingFrame, strategy="none", seed=1234, isTrainOrVaid=True)
 
     frameWithBlendedEncodingsOnly = encodedFrameWithBlending[teColumnsEncoded]
 
@@ -129,7 +118,7 @@ def test_target_encoding_transform_none_blending():
 
     targetEncoderWithoutBlending.fit(trainingFrame=trainingFrame)
 
-    encodedFrameWithoutBlending = targetEncoderWithoutBlending.transform(frame=trainingFrame, strategy="none", seed=1234)
+    encodedFrameWithoutBlending = targetEncoderWithoutBlending.transform(frame=trainingFrame, strategy="none", seed=1234, isTrainOrVaid=True)
     encodedFrameWithoutBlendingOnly = encodedFrameWithoutBlending[teColumnsEncoded]
 
     try:
@@ -147,7 +136,7 @@ def test_target_encoding_seed_is_working():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
@@ -155,16 +144,16 @@ def test_target_encoding_seed_is_working():
 
     targetEncoder.fit(trainingFrame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234, isTrainOrVaid=True)
 
     encodingsOnly = encodedFrame[teColumnsEncoded]
 
     # Second transformation with the same seed 1234
-    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234)
+    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234, isTrainOrVaid=True)
     encodingsOnly2 = encodedFrame2[teColumnsEncoded]
 
     # Third  transformation with another seed 1235
-    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1235)
+    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1235, isTrainOrVaid=True)
     encodingsOnly3 = encodedFrame3[teColumnsEncoded]
 
     # Comparing results
@@ -185,7 +174,7 @@ def test_target_encoding_default_noise_is_applied():
 
     teColumns = ["home.dest", "cabin", "embarked"]
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
-    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic_train.csv"), header=1)
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
     targetEncoder = TargetEncoder(teColumns= teColumns, targetColumnName = targetColumnName,
@@ -194,16 +183,16 @@ def test_target_encoding_default_noise_is_applied():
     targetEncoder.fit(trainingFrame=trainingFrame)
 
     seedTest = 1234
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest, isTrainOrVaid=True)
 
     encodingsOnly = encodedFrame[teColumnsEncoded]
 
     # Second transformation without specifying noise. Default will be applied.
-    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=seedTest)
+    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=seedTest, isTrainOrVaid=True)
     encodingsOnly2 = encodedFrame2[teColumnsEncoded]
 
     # Third  transformation with zero noise
-    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest)
+    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest, isTrainOrVaid=True)
     encodingsOnly3 = encodedFrame3[teColumnsEncoded]
 
     # Comparing results

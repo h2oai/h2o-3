@@ -36,8 +36,8 @@ public class AstImputeTest extends TestUtil {
             Val val = Rapids.exec("(h2o.impute testFrame 0 'mean' 'interpolate' [] _ _)", sess);
             double[] res = val.getNums();
 
-            assertEquals(res[0], 1.5, 1e-5);
-            assertEquals(fr.vec(0).at(1), 1.5, 1e-5);
+            assertEquals(1.5 , res[0], 1e-5);
+            assertEquals( 1.5, fr.vec(0).at(1), 1e-5);
         } finally {
             Scope.exit();
         }

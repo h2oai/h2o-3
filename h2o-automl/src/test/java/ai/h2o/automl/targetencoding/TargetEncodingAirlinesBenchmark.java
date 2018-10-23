@@ -16,6 +16,9 @@ import water.util.Log;
 import java.util.Arrays;
 import java.util.Map;
 
+/*
+  Be aware that `smalldata/airlines/target_encoding/airlines_*.csv` files are not present in the repo. Replace with your own splits.
+ */
 public class TargetEncodingAirlinesBenchmark extends TestUtil {
 
   @BeforeClass

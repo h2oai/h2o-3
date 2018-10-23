@@ -55,7 +55,7 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, frame = None , strategy = None, noise = -1, seed = -1 , isTrainOrVaid = True):
+    def transform(self, isTrainOrVaid, frame = None , strategy = None, noise = -1, seed = -1 ):
         """
         Description of the parameters:
         """
