@@ -174,7 +174,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     #                                                 model_id       auc   logloss mean_per_class_error      rmse       mse
     # 1     StackedEnsemble_AllModels_AutoML_20181022_221411 0.7870176 0.5541308            0.3254615 0.4333729 0.1878121
     # 2  StackedEnsemble_BestOfFamily_AutoML_20181022_221411 0.7857408 0.5553949            0.3265818 0.4340249 0.1883776
-    # 3          XGBoost_grid_1_AutoML_20181022_221411_model_2 0.7825571 0.5598532            0.3326678 0.4358508 0.1899659
+    # 3          XGBoost_grid_1_AutoML_20181022_221411_model_3 0.7825571 0.5598532            0.3326678 0.4358508 0.1899659
     # 4                       XGBoost_1_AutoML_20181022_221411 0.7810665 0.5601261            0.3312270 0.4363277 0.1903818
     # 5                       XGBoost_3_AutoML_20181022_221411 0.7808475 0.5611616            0.3240078 0.4364818 0.1905164
     # 6          XGBoost_grid_1_AutoML_20181022_221411_model_3 0.7806241 0.5606613            0.3229925 0.4365599 0.1905845
