@@ -15,27 +15,27 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
-    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also 
+    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to ``5``. Use ``0`` to disable cross-validation; this will also 
       disable Stacked Ensemble (thus decreasing the overall model performance).
     :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``false``.
     :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-      factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+      factors will be automatically computed to obtain class balance during training. Requires ``balance_classes``.
     :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
-      Requires ``balance_classes``. Defaults to 5.0.
-    :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
-    :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
+      Requires ``balance_classes``. Defaults to ``5.0``.
+    :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to ``3600`` seconds (1 hour).
+    :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble models.)
     :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
       The available options are:
-      ``AUTO`` (This defaults to ``logloss`` for classification, ``deviance`` for regression),
-      ``deviance``, ``logloss``, ``mse``, ``rmse``, ``mae``, ``rmsle``, ``auc``, ``lift_top_group``,
-      ``misclassification``, ``mean_per_class_error``, ``r2``.
+      ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
+      ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``"lift_top_group"``,
+      ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
-      to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
+      to stop the AutoML run if the improvement is less than this value. This value defaults to ``0.001``
       if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
       and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
     :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
       stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
-      To disable this feature, set it to 0. Defaults to 3 and must be an non-negative integer.
+      To disable this feature, set it to ``0``. Defaults to ``3`` and must be an non-negative integer.
     :param int seed: Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or
       early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are
       not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``None``.
@@ -44,16 +44,20 @@ class H2OAutoML(object):
       existing AutoML project by specifying the same project name in muliple calls to the AutoML function
       (as long as the same training frame is used in subsequent runs).
     :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
-      An example use is exclude_algos = ["GLM", "DeepLearning", "DRF"], and the full list of options is: "DRF" 
-      (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble". Defaults to None, which means that 
-      all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
-    :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. Defaults to ``False``.
-    :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. This option defaults to ``False``.
-    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
-    For binomial classification choose between ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
-            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between
-            ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+      An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``, and the full list of options is: ``"DRF"`` 
+      (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``, ``"DeepLearning"`` and ``"StackedEnsemble"``. 
+      Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. 
+      This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
+      additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
+    :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume 
+      significantly more memory in the H2O cluster. Defaults to ``False``.
+    :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory 
+      in the H2O cluster. This option defaults to ``False``.
+    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
+      ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
+      ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
+      ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
 
     :examples:
     >>> import h2o
