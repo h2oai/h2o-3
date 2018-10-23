@@ -88,10 +88,11 @@ public class SQLManager {
       }
       //get H2O column names and types
       if (SqlFetchMode.DISTRIBUTED.equals(sqlFetchMode)) {
+        rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
+      } else {
+        // we use a simpler SQL-dialect independent query in the `streaming` mode because the goal is to be dialect independent
         stmt.setMaxRows(1);
         rs = stmt.executeQuery("SELECT " + columns + " FROM " + table);
-      } else {
-        rs = stmt.executeQuery(buildSelectSingleRowSql(databaseType, table, columns));
       }
       ResultSetMetaData rsmd = rs.getMetaData();
       numCol = rsmd.getColumnCount();
