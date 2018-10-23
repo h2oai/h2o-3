@@ -146,7 +146,7 @@ public class SQLManager {
       }
 
     } catch (SQLException ex) {
-      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + connection_url);
+      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + connection_url, ex);
     } finally {
       // release resources in a finally{} block in reverse-order of their creation
       if (rs != null) {
@@ -223,7 +223,7 @@ public class SQLManager {
       }
     };
     j.start(work, vec.nChunks());
-    
+
     return j;
   }
 
@@ -350,7 +350,7 @@ public class SQLManager {
           connectionPool.add(conn);
         }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url, ex);
       }
 
       return connectionPool;
@@ -367,7 +367,7 @@ public class SQLManager {
         }
       } catch (NumberFormatException e) {
         Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
-                + ". Falling back to default settings (" + MAX_CONNECTIONS + ").");
+                + ". Falling back to default settings (" + MAX_CONNECTIONS + ").", e);
       }
       return maxConnections;
     }
@@ -418,7 +418,7 @@ public class SQLManager {
         Class.forName(driverClass);
       } catch (ClassNotFoundException e) {
         throw new RuntimeException("Connection to '" + databaseType + "' database is not possible due to missing JDBC driver. " +
-                "User specified driver class: " + driverClass);
+                "User specified driver class: " + driverClass, e);
       }
       return;
     }
@@ -428,14 +428,14 @@ public class SQLManager {
         try {
           Class.forName(HIVE_JDBC_DRIVER_CLASS);
         } catch (ClassNotFoundException e) {
-          throw new RuntimeException("Connection to HIVE database is not possible due to missing JDBC driver.");
+          throw new RuntimeException("Connection to HIVE database is not possible due to missing JDBC driver.", e);
         }
         break;
       case NETEZZA_DB_TYPE:
         try {
           Class.forName(NETEZZA_JDBC_DRIVER_CLASS);
         } catch (ClassNotFoundException e) {
-          throw new RuntimeException("Connection to Netezza database is not possible due to missing JDBC driver.");
+          throw new RuntimeException("Connection to Netezza database is not possible due to missing JDBC driver.", e);
         }
         break;
       default:
@@ -589,10 +589,9 @@ public class SQLManager {
           writeRow(rs, ncs);
         }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data", ex);
       } catch (InterruptedException e) {
-        e.printStackTrace();
-        throw new RuntimeException("Interrupted exception when trying to take connection from pool");
+        throw new RuntimeException("Interrupted exception when trying to take connection from pool", e);
       } finally {
 
         //close result set
@@ -679,18 +678,18 @@ public class SQLManager {
       } // ignore
     }
   }
-  
+
   private static void dropTempTable(String connection_url, String username, String password) {
     Connection conn = null;
     Statement stmt = null;
-    
+
     String drop_table_query = "DROP TABLE " + SQLManager.TEMP_TABLE_NAME;
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
       stmt.executeUpdate(drop_table_query);
     } catch (SQLException ex) {
-      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to execute SQL query: " + drop_table_query);
+      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to execute SQL query: " + drop_table_query, ex);
     } finally {
       // release resources in a finally{} block in reverse-order of their creation
       if (stmt != null) {
