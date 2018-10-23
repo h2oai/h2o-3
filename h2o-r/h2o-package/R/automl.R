@@ -26,7 +26,7 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
-#' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
+#' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).  
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the 
 #'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed 
@@ -37,7 +37,7 @@
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"), 
-#'        and the full list of options is: "GLM", "GBM", "DRF" (Random Forest and Extremely-Randomized Trees), "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
+#'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble". Defaults to NULL, which means that 
 #'        all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
