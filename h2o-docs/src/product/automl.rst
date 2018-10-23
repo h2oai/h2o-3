@@ -384,14 +384,33 @@ Resources
 - `AutoML Roadmap <https://0xdata.atlassian.net/issues/?filter=21603>`__
 
 
-Appendix: Grid Search Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Appendix: Random Grid Search Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
+
+**GLM Hyperparameters**
+
+-  ``alpha``
+-  ``missing_values_handling``
+
+
+**XGBoost Hyperparameters**
+
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``min_sum_hessian_in_leaf``
+-  ``sample_rate``
+-  ``col_sample_rate``
+-  ``col_sample_rate_per_tree``
+-  ``booster``
+-  ``reg_lambda``
+-  ``reg_alpha``
+
 **GBM Hyperparameters**
 
--  ``score_tree_interval``
 -  ``histogram_type``
 -  ``ntrees``
 -  ``max_depth``
@@ -402,10 +421,6 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 -  ``col_sample_rate_per_tree``
 -  ``min_split_improvement``
 
-**GLM Hyperparameters**
-
--  ``alpha``
--  ``missing_values_handling``
 
 **Deep Learning Hyperparameters**
 
