@@ -4,6 +4,7 @@ package water;
 import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
+import water.server.RequestAuthExtension;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -30,12 +31,15 @@ public class ExtensionManager {
   private HashMap<String, AbstractH2OExtension> coreExtensions = new HashMap<>();
   private HashMap<String, RestApiExtension> restApiExtensions = new HashMap<>();
   private HashMap<String, H2OListenerExtension> listenerExtensions = new HashMap<>();
+  private HashMap<String, RequestAuthExtension> authExtensions = new HashMap<>();
   private long registerCoreExtensionsMillis = 0;
   private long registerListenerExtensionsMillis = 0;
+  private long registerAuthExtensionsMillis = 0;
   // Be paranoid and check that this doesn't happen twice.
   private boolean extensionsRegistered = false;
   private boolean restApiExtensionsRegistered = false;
   private boolean listenerExtensionsRegistered = false;
+  private boolean authExtensionsRegistered = false;
 
   public StringBuilder makeExtensionReport(StringBuilder sb) {
     try {
@@ -134,6 +138,10 @@ public class ExtensionManager {
       Log.info("Registered: " + listenerExtensions.size() + " listener extensions in: " + registerListenerExtensionsMillis + "ms");
       Log.info("Registered Listeners extensions: " + Arrays.toString(getListenerExtensionNames()));
     }
+    if(authExtensions.size() > 0) {
+      Log.info("Registered: " + authExtensions.size() + " auth extensions in: " + registerAuthExtensionsMillis + "ms");
+      Log.info("Registered Auth extensions: " + Arrays.toString(getAuthExtensionNames()));
+    }
     long before = System.currentTimeMillis();
     RequestServer.DummyRestApiContext dummyRestApiContext = new RequestServer.DummyRestApiContext();
     ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
@@ -185,6 +193,10 @@ public class ExtensionManager {
     return listenerExtensions.keySet().toArray(new String[listenerExtensions.keySet().size()]);
   }
 
+  private String[] getAuthExtensionNames(){
+    return authExtensions.keySet().toArray(new String[authExtensions.keySet().size()]);
+  }
+
   public boolean isCoreExtensionEnabled(String name) {
     if (coreExtensions.containsKey(name)) {
       return coreExtensions.get(name).isEnabled();
@@ -217,6 +229,24 @@ public class ExtensionManager {
 
   public Collection<H2OListenerExtension> getListenerExtensions(){
     return listenerExtensions.values();
+  }
+
+  public void registerAuthExtensions() {
+    if (authExtensionsRegistered) {
+      throw H2O.fail("Auth extensions already registered");
+    }
+
+    long before = System.currentTimeMillis();
+    ServiceLoader<RequestAuthExtension> extensionsLoader = ServiceLoader.load(RequestAuthExtension.class);
+    for (RequestAuthExtension ext : extensionsLoader) {
+      authExtensions.put(ext.getClass().getName(), ext);
+    }
+    authExtensionsRegistered = true;
+    registerAuthExtensionsMillis = System.currentTimeMillis() - before;
+  }
+
+  public Collection<RequestAuthExtension> getAuthExtensions(){
+    return authExtensions.values();
   }
 
 }
