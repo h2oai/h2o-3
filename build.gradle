@@ -60,8 +60,6 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
       project(':h2o-persist-gcs'),
       project(':h2o-persist-hdfs'),
       project(':h2o-persist-s3'),
@@ -104,11 +102,6 @@ ext {
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-authsupport'),
       project(':h2o-ext-jython-cfunc'),
-    ]
-
-    scalaProjects = [
-      project(':h2o-scala_2.10'),
-      project(':h2o-scala_2.11'),
     ]
 
     rProjects = [
@@ -264,16 +257,6 @@ subprojects {
         // Apt preprocessor
         if (project in aptProjects) {
             apply from: "$rootDir/gradle/apt.gradle"
-        }
-    }
-
-    // Configure Scala projects
-    if (project in scalaProjects) {
-        apply from: "$rootDir/gradle/scala.gradle"
-        apply from: "$rootDir/gradle/cp.gradle"
-        if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = project.ext.isCi
         }
     }
 

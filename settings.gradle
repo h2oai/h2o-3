@@ -37,16 +37,6 @@ if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
     include 'h2o-grpc'
 }
 
-// Reconfigure scala projects to support cross compilation
-// The following code will create two projects for each included item:
-//   For example: h2o-scala_2.10, h2o-scala_2.11
-apply plugin: 'scala-cross-build'
-
-scalaCrossCompile {
-  targetVersions "2.10.4", "2.11.7"
-  include 'h2o-scala'
-}
-
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
   if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
