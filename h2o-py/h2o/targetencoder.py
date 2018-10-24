@@ -25,12 +25,12 @@ class TargetEncoder(object):
          3) Regression (not supported yet)
 
     Usage:
-    targetEncoder = TargetEncoder(te_columns= te_columns, response_column = targetColumnName,
+    targetEncoder = TargetEncoder(x= te_columns, y = responseColumnName,
                                   blending = True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame)
 
-    encodedValid = targetEncoder.transform(frame=frame, strategy="kfold", seed=1234, isTrainOrVaid=True)
+    encodedValid = targetEncoder.transform(frame=frame, strategy="kfold", seed=1234, is_train_or_valid=True)
 
     encodedTest = targetEncoder.transform(frame=testFrame, strategy="none", noise=0.0, seed=1234, is_train_or_valid=False)
     """
@@ -39,11 +39,11 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, te_columns=None, y=None, fold_column='', blending_avg=True, inflection_point=3, smoothing=1):
+    def __init__(self, x=None, y=None, fold_column='', blending_avg=True, inflection_point=3, smoothing=1):
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
 
-        :param List[str] te_columns: List of categorical column names that we want apply target encoding to
+        :param List[str] x: List of categorical column names that we want apply target encoding to
 
         :param str y: response column we will create encodings with
         :param str fold_column: fold column if we want to use 'kfold' strategy
@@ -56,7 +56,7 @@ class TargetEncoder(object):
 
         """
 
-        self._teColumns = te_columns
+        self._teColumns = x
         self._responseColumnName = y
         self._foldColumnName = fold_column
         self._blending = blending_avg
