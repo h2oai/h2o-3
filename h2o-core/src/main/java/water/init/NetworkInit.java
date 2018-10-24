@@ -2,7 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
-import water.server.H2oServletContainerLoader;
+import water.server.H2OServletContainerLoader;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
@@ -67,7 +67,7 @@ public class NetworkInit {
 
     // Late instantiation of Jetty object, if needed.
     if (H2O.getServletContainer() == null && !H2O.ARGS.disable_web) {
-      H2O.setServletContainer(H2oServletContainerLoader.INSTANCE.createServletContainer());
+      H2O.setServletContainer(H2OServletContainerLoader.INSTANCE.createServletContainer());
     }
 
     // API socket is only used to find opened port on given ip.

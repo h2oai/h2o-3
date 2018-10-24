@@ -19,7 +19,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
-import water.server.H2oServletContainer;
+import water.server.H2OServletContainer;
 import water.server.ServletUtils;
 import water.util.Log;
 import water.util.NetworkUtils;
@@ -1490,11 +1490,11 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
-  private static H2oServletContainer servletContainer;
-  public static void setServletContainer(H2oServletContainer value) {
+  private static H2OServletContainer servletContainer;
+  public static void setServletContainer(H2OServletContainer value) {
     servletContainer = value;
   }
-  public static H2oServletContainer getServletContainer() {
+  public static H2OServletContainer getServletContainer() {
     return servletContainer;
   }
 

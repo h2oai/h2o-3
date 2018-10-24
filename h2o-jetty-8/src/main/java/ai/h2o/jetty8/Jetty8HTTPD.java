@@ -13,7 +13,7 @@ import water.api.NpsBinServlet;
 import water.api.PostFileServlet;
 import water.api.PutKeyServlet;
 import water.api.RequestServer;
-import water.server.H2oServletContainer;
+import water.server.H2OServletContainer;
 import water.server.RequestAuthExtension;
 import water.server.ServletUtils;
 
@@ -32,7 +32,7 @@ import java.util.List;
  * Embedded Jetty instance inside H2O.
  * This is intended to be a singleton per H2O node.
  */
-public class Jetty8HTTPD extends AbstractJetty8HTTPD implements H2oServletContainer {
+public class Jetty8HTTPD extends AbstractJetty8HTTPD implements H2OServletContainer {
   //------------------------------------------------------------------------------------------
   // Object-specific things.
   //------------------------------------------------------------------------------------------

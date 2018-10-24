@@ -1,6 +1,6 @@
 package water.server;
 
-public interface H2oServletContainer {
+public interface H2OServletContainer {
 
   String getScheme();
 

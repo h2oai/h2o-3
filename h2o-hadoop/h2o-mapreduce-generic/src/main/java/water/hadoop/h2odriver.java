@@ -20,7 +20,7 @@ import water.H2O;
 import water.H2OStarter;
 import water.network.SecurityUtils;
 import water.server.Credentials;
-import water.server.H2oServletContainerLoader;
+import water.server.H2OServletContainerLoader;
 import water.util.ArrayUtils;
 import water.util.StringUtils;
 
@@ -1745,7 +1745,7 @@ public class h2odriver extends Configured implements Tool {
     }
 
     if (proxy) {
-      proxyUrl = H2oServletContainerLoader.INSTANCE.startProxy(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
+      proxyUrl = H2OServletContainerLoader.INSTANCE.startProxy(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
 //      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl(), reportHostname);
       reportProxyReady(proxyUrl);
     }
