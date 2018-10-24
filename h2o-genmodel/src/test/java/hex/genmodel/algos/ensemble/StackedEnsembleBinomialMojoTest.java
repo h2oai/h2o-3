@@ -70,4 +70,27 @@ public class StackedEnsembleBinomialMojoTest {
         assertNotNull(pred);
         assertFalse(pred.label.isEmpty());
     }
+
+    @Test
+    public void testStackedEnsembleMojoSubModel() throws Exception {
+        URL mojoSource = StackedEnsembleRegressionMojoTest.class.getResource("binomial_titanic.zip");
+        assertNotNull(mojoSource);
+        MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.DISK);
+        StackedEnsembleMojoModel model = (StackedEnsembleMojoModel) ModelMojoReader.readFrom(reader);
+
+
+        final StackedEnsembleMojoModel.StackedEnsembleMojoSubModel subModel =
+                new StackedEnsembleMojoModel.StackedEnsembleMojoSubModel(model._baseModels[0]._mojoModel,
+                        null);
+        assertNull(subModel._mapping);
+        assertNotNull(subModel._mojoModel);
+        double[] originalRow = new double[]{1, 2, 3};
+        final double[] remappedRow = subModel.remapRow(originalRow);
+        
+        assertNotEquals(originalRow, remappedRow); // Resulting remapped row should not be a reference to the same array
+        assertEquals(originalRow.length, remappedRow.length);
+        for (int i = 0; i < originalRow.length; i++) {
+            assertEquals(originalRow[i], remappedRow[i], 0);
+        }
+    }
 }

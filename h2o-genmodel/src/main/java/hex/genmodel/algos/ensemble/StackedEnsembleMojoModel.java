@@ -49,8 +49,8 @@ public class StackedEnsembleMojoModel extends MojoModel {
      */
     static class StackedEnsembleMojoSubModel {
 
-        private final MojoModel _mojoModel;
-        private final int[] _mapping; // Mapping. If null, no mapping is required.
+        final MojoModel _mojoModel;
+        final int[] _mapping; // Mapping. If null, no mapping is required.
 
         public StackedEnsembleMojoSubModel(MojoModel mojoModel, int[] mapping) {
             _mojoModel = mojoModel;
