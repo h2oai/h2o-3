@@ -6,10 +6,11 @@ description = "H2O Scala API (Scala version ${scalaVersion})"
 dependencies {
   compile project(":h2o-core")
   compile "org.scala-lang:scala-library:$scalaVersion"
-  
+
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.scalatest:scalatest_${scalaBaseVersion}:2.2.1"
+  testCompile project(':h2o-jetty-9') // TODO: hack
 }
 
 // The default 'test' behavior is broken in that it does not grok clusters.

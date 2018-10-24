@@ -60,6 +60,7 @@ dependencies {
       exclude module: "servlet-api"
       exclude module: "zookeper"
   }
+  testCompile project(':h2o-jetty-9') // TODO: hack
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

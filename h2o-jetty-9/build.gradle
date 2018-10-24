@@ -1,8 +1,8 @@
 dependencies {
     compile project(":h2o-core")
-    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-    compileOnly "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
-    compileOnly "org.eclipse.jetty:jetty-proxy:${jettyVersion}"
+    compile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    compile "org.eclipse.jetty:jetty-jaas:${jettyVersion}"
+    compile "org.eclipse.jetty:jetty-proxy:${jettyVersion}"
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile "org.mockito:mockito-core:2.18.0"
 }

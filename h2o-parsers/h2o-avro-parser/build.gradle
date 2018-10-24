@@ -10,6 +10,7 @@ dependencies {
 
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(':h2o-jetty-9') // TODO: hack
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

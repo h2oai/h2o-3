@@ -5,6 +5,7 @@ description = "H2O Algorithms"
 
 dependencies {
   compile project(":h2o-core")
+  testCompile project(":h2o-jetty-9") // TODO: hack
   // Include ad-hoc dependency represented by deepwater fat jar
   if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
       compile files("${rootDir}/lib/deepwater-all.jar")
