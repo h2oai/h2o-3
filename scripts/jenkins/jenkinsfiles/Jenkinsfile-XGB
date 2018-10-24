@@ -30,11 +30,9 @@ try {
               // clear the folder
               deleteDir()
               // checkout H2O-3
-              retry(3) {
-                timeout(time: 1, unit: 'MINUTES') {
-                  echo "###### Checkout H2O-3 ######"
-                  scmEnv = checkout scm
-                }
+              retryWithTimeout(60, 3) {
+                echo "###### Checkout H2O-3 ######"
+                scmEnv = checkout scm
               }
             }
 

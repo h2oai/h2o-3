@@ -47,30 +47,28 @@ try {
               // clear the folder
               deleteDir()
               // checkout H2O-3
-              retry(3) {
-                timeout(time: 1, unit: 'MINUTES') {
-                  echo "###### Checkout H2O-3 ######"
-                  if (env.ghprbPullId) {
-                    // building PR from fork
-                    sh """
-                      git init
-                      git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
-                      git config remote.origin.url https://github.com/h2oai/h2o-3
+              retryWithTimeout(60, 3) {
+                echo "###### Checkout H2O-3 ######"
+                if (env.ghprbPullId) {
+                  // building PR from fork
+                  sh """
+                    git init
+                    git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+                    git config remote.origin.url https://github.com/h2oai/h2o-3
 
-                      git fetch --no-tags origin pull/${env.ghprbPullId}/head:remote-${env.ghprbSourceBranch}
-                      git checkout ${env.ghprbActualCommit}
-                      git checkout -b ${env.ghprbSourceBranch}
-                    """
-                    scmEnv = [
-                      GIT_BRANCH: env.ghprbSourceBranch,
-                      GIT_COMMIT: env.ghprbActualCommit,
-                      GIT_URL: 'https://github.com/h2oai/h2o-3'
-                    ]
-                    env.BUILDING_FORK = true
-                  } else {
-                    // building regular PR
-                    scmEnv = checkout scm
-                  }
+                    git fetch --no-tags origin pull/${env.ghprbPullId}/head:remote-${env.ghprbSourceBranch}
+                    git checkout ${env.ghprbActualCommit}
+                    git checkout -b ${env.ghprbSourceBranch}
+                  """
+                  scmEnv = [
+                    GIT_BRANCH: env.ghprbSourceBranch,
+                    GIT_COMMIT: env.ghprbActualCommit,
+                    GIT_URL: 'https://github.com/h2oai/h2o-3'
+                  ]
+                  env.BUILDING_FORK = true
+                } else {
+                  // building regular PR
+                  scmEnv = checkout scm
                 }
               }
             }
