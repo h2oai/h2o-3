@@ -39,4 +39,35 @@ public class StackedEnsembleBinomialMojoTest {
         assertEquals("0", pred.label);
         assertArrayEquals(new double[]{0.8222695, 0.1777305}, pred.classProbabilities, 1e-5);
     }
+
+    @Test
+    public void testPredictWithRowReordering() throws Exception {
+        URL mojoSource = StackedEnsembleRegressionMojoTest.class.getResource("binomial_titanic.zip");
+        assertNotNull(mojoSource);
+        MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.DISK);
+        MojoModel model = ModelMojoReader.readFrom(reader);
+        assertTrue(model instanceof StackedEnsembleMojoModel);
+        EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
+
+        final RowData rowData = new RowData() {{
+            put("pclass", 1D);
+            put("survived", 1D);
+            put("name", "Allison, Master. Hudson Trevor");
+            put("sex", "male");
+            put("age", 0.9167);
+            put("sibsp", 1D);
+            put("parch", 2D);
+            put("ticket", 113781D);
+            put("fare", 151.5500D);
+            put("cabin", "C22 C26");
+            put("embarked", "S");
+            put("boat", 11D);
+            put("body", Double.NaN);
+            put("home.dest", "Montreal, PQ / Chesterville, ON");
+        }};
+
+        BinomialModelPrediction pred = (BinomialModelPrediction) modelWrapper.predict(rowData);
+        assertNotNull(pred);
+        assertFalse(pred.label.isEmpty());
+    }
 }
