@@ -43,7 +43,7 @@ test.IsolationForest.creditcardfraud <- function() {
     expect_equal(
         h2o_cm[2,2] / (h2o_cm[1,2] + h2o_cm[2,2]),
         isofor_cm[2,2] / (isofor_cm[1,2] + isofor_cm[2,2]),
-        tolerance = 0.02, scale = 1
+        tolerance = 0.05, scale = 1
     )
 }
 
