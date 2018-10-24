@@ -634,9 +634,6 @@ public class Frame extends Lockable<Frame> {
    *  @return the expanded Frame, for flow-coding */
   public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
 
-  /** @return the expanded with constant vector Frame, for flow-coding */
-  public Frame addCon(String appendedColumnName, long constant ) { add(appendedColumnName, Vec.makeCon(constant, numRows(), Vec.T_NUM)); return this; }
-
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
     if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
@@ -1214,80 +1211,6 @@ public class Frame extends Lockable<Frame> {
         }
       }
     }
-  }
-
-  /**
-   * @return frame without rows with NAs in `columnIndex` column
-   */
-  public Frame filterOutNAsInColumn(int columnIndex) {
-    Frame noNaPredicateFrame = new IsNotNaTask().doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
-    return selectByPredicate(noNaPredicateFrame);
-  }
-
-  /**
-   * @return frame with all the rows except for those whose value in the `columnIndex' column equals to `value`
-   */
-  public Frame filterNotByValue(int columnIndex, double value) {
-    return filterByValueBase(columnIndex, value, true);
-  }
-
-  /**
-   * @return frame with all the rows whose value in the `columnIndex' column equals to `value`
-   */
-  public Frame filterByValue(int columnIndex, double value) {
-    return filterByValueBase(columnIndex, value,false);
-  }
-
-  private Frame filterByValueBase(int columnIndex, double value, boolean isInverted) {
-    Frame predicateFrame = new FilterByValueTask(value, isInverted).doAll(1, Vec.T_NUM, new Frame(this.vec(columnIndex))).outputFrame();
-    return selectByPredicate(predicateFrame);
-  }
-
-  private Frame selectByPredicate(Frame predicateFrame) {
-    String[] names = names().clone();
-    byte[] types = types().clone();
-    String[][] domains = domains().clone();
-
-    add("predicate", predicateFrame.anyVec());
-    Frame filtered = new Frame.DeepSelect().doAll(types, this).outputFrame(Key.<Frame>make(), names, domains);
-    predicateFrame.delete();
-    remove("predicate");
-    return filtered;
-  }
-
-  /** return a frame with unique values from the specified column */
-  public Frame uniqueValuesBy(int columnIndex) {
-    Vec vec0 = vec(columnIndex);
-    Vec v;
-    if (vec0.isCategorical()) {
-      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
-      v.setDomain(vec0.domain());
-      DKV.put(v);
-    } else {
-      UniqTask t = new UniqTask().doAll(vec0);
-      int nUniq = t._uniq.size();
-      final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq, vec0.get_type());
-      new MRTask() {
-        @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
-        }
-      }.doAll(v);
-    }
-    return new Frame(v);
-  }
-
-  public Frame renameColumn(int indexOfColumnToRename, String newName) {
-    String[] updatedtNames = this.names();
-    updatedtNames[indexOfColumnToRename] = newName;
-    setNames(updatedtNames);
-    return this;
-  }
-
-  public Frame renameColumn(String oldName, String newName) {
-    return renameColumn(find(oldName), newName);
   }
 
   // Convert len rows starting at off to a 2-d ascii table

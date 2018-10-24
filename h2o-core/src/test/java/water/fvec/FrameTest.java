@@ -146,99 +146,8 @@ public class FrameTest extends TestUtil {
     }
   }
 
-  @Test
-  public void testUniqueValuesBy() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("column1")
-              .withVecTypes( Vec.T_NUM)
-              .withDataForCol(0, ar(1, 2, 2, 3, 2))
-              .build();
-      Frame uniqueValuesFrame = fr.uniqueValuesBy(0);
-      Vec uniqueValuesVec = uniqueValuesFrame.vec(0);
-      long numberOfUniqueValues = uniqueValuesVec.length();
-      int length = (int) numberOfUniqueValues;
-      long[] uniqueValuesArr = new long[length];
-      for(int i = 0; i < numberOfUniqueValues; i++) {
-        uniqueValuesArr[i] = uniqueValuesVec.at8(i);
-      }
-
-      Arrays.sort(uniqueValuesArr);
-      assertArrayEquals( ar(1L, 2L, 3L), uniqueValuesArr);
-      Scope.track(uniqueValuesFrame);
-    } finally {
-        Scope.exit();
-    }
-  }
-
-  @Test
-  public void filterOutNAsTest() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_NUM, Vec.T_STR)
-              .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
-              .build();
-
-      Frame result = fr.filterOutNAsInColumn(1);
-
-      Scope.track(result);
-      assertEquals(1L, result.numRows());
-      assertEquals(42, result.vec(0).at(0), 1e-5);
-
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void filterByValueTest() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_NUM, Vec.T_STR)
-              .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
-              .build();
-
-      Frame result = fr.filterByValue(0, 42);
-      Scope.track(result);
-
-      assertEquals(1L, result.numRows());
-      assertEquals("6", result.vec(1).stringAt(0));
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void filterNotByValueTest() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB")
-              .withVecTypes(Vec.T_NUM, Vec.T_STR)
-              .withDataForCol(0, ard(1, 42, 33))
-              .withDataForCol(1, ar(null, "6", null))
-              .build();
-      Frame result = fr.filterNotByValue(0, 42);
-      Scope.track(result);
-
-      assertEquals(2L, result.numRows());
-      assertVecEquals(vec(1, 33), result.vec(0), 1e-5);
-    } finally {
-      Scope.exit();
-    }
-  }
-
+  // This test keeps failing locally when we run the whole suite but green if we run it alone.
+  // Vec$ESPC.rowLayout is using shared state... might be a bug
   @Test
   public void testRowDeepSliceWithPredicateFrame() {
     Scope.enter();
@@ -340,33 +249,6 @@ public class FrameTest extends TestUtil {
   }
 
   @Test
-  public void addVecToFrameTest() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA")
-              .withVecTypes(Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b"))
-              .build();
-
-      Vec vec = vec(1, 2);
-      fr.add("ColB", vec);
-      Scope.track(vec);
-
-      assertVecEquals(vec, fr.vec("ColB"), 1e-5);
-
-      // add constant vector
-      Frame tmp = fr.addCon("ColC", 42);
-      Vec expectedConstVec = vec(42, 42);
-
-      assertVecEquals(expectedConstVec, tmp.vec("ColC"), 1e-5);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
   public void deepCopyFrameTest() {
     Scope.enter();
     try {
@@ -383,36 +265,6 @@ public class FrameTest extends TestUtil {
       fr.delete();
       assertStringVecEquals(newFrame.vec("ColB"), cvec("c", "d"));
 
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void renameColumnTest() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA", "ColB", "ColC", "fold_column")
-              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("a", "b"))
-              .withDataForCol(1, ard(1, 1))
-              .withDataForCol(2, ar("2", "6"))
-              .withDataForCol(3, ar(1, 2))
-              .build();
-
-      // Case1: Renaming by index
-      int indexOfColumnToRename = 0;
-      String newName = "NewColA";
-      fr.renameColumn(indexOfColumnToRename, newName);
-
-      assertEquals(fr.names()[indexOfColumnToRename], newName);
-
-      // Case2: Renaming by name
-      String newName2 = "NewColA-2";
-      fr.renameColumn("NewColA", newName2);
-      assertEquals(fr.names()[indexOfColumnToRename], newName2);
     } finally {
       Scope.exit();
     }

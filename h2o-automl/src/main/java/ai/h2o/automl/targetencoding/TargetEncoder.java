@@ -10,6 +10,7 @@ import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.FrameUtils;
 import water.util.Log;
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 
 import java.util.*;
 
@@ -106,8 +107,8 @@ public class TargetEncoder {
 
             teColumnFrame = groupThenAggregateForNumeratorAndDenominator(dataWithEncodedTarget, teColumnName, foldColumnName, targetIndex);
 
-            teColumnFrame.renameColumn("sum_" + targetColumnName, "numerator");
-            teColumnFrame.renameColumn("nrow", "denominator");
+            renameColumn(teColumnFrame,"sum_" + targetColumnName, "numerator");
+            renameColumn(teColumnFrame,"nrow", "denominator");
 
             columnToEncodingMap.put(teColumnName, teColumnFrame);
           }
@@ -187,7 +188,7 @@ public class TargetEncoder {
 
     //TODO We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
     Frame filterOutNAsFromTargetColumn(Frame data, int targetColumnIndex) {
-        return data.filterOutNAsInColumn(targetColumnIndex);
+        return filterOutNAsInColumn(data, targetColumnIndex);
     }
 
     Frame imputeNAsForColumn(Frame data, String teColumnName, String strToImpute) {
@@ -205,11 +206,11 @@ public class TargetEncoder {
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {
         int foldColumnIndexInEncodingMap = encodingMap.find(foldColumnName);
-        return encodingMap.filterNotByValue(foldColumnIndexInEncodingMap, currentFoldValue);
+        return filterNotByValue(encodingMap, foldColumnIndexInEncodingMap, currentFoldValue);
     }
 
     long[] getUniqueValuesOfTheFoldColumn(Frame data, int columnIndex) {
-        Vec uniqueValues = data.uniqueValuesBy(columnIndex).vec(0);
+        Vec uniqueValues = uniqueValuesBy(data, columnIndex).vec(0);
         long numberOfUniqueValues = uniqueValues.length();
         assert numberOfUniqueValues <= Integer.MAX_VALUE : "Number of unique values exceeded Integer.MAX_VALUE";
 
@@ -579,10 +580,10 @@ public class TargetEncoder {
 
                       Frame groupedByTEColumnAndAggregate = groupByTEColumnAndAggregate(outOfFoldData, teColumnIndexInEncodingMap);
 
-                      groupedByTEColumnAndAggregate.renameColumn("sum_numerator", "numerator");
-                      groupedByTEColumnAndAggregate.renameColumn("sum_denominator", "denominator");
+                      renameColumn(groupedByTEColumnAndAggregate, "sum_numerator", "numerator");
+                      renameColumn(groupedByTEColumnAndAggregate, "sum_denominator", "denominator");
 
-                      Frame groupedWithAppendedFoldColumn = groupedByTEColumnAndAggregate.addCon("foldValueForMerge", foldValue);
+                      Frame groupedWithAppendedFoldColumn = addCon(groupedByTEColumnAndAggregate, "foldValueForMerge", foldValue);
 
                       if (holdoutEncodeMap == null) {
                         holdoutEncodeMap = groupedWithAppendedFoldColumn;
@@ -729,8 +730,8 @@ public class TargetEncoder {
             int teColumnIndex = targetEncodingMap.find(teColumnName);
 
             Frame newTargetEncodingMap = groupByTEColumnAndAggregate(targetEncodingMap, teColumnIndex);
-            newTargetEncodingMap.renameColumn( "sum_numerator", "numerator");
-            newTargetEncodingMap.renameColumn( "sum_denominator", "denominator");
+            renameColumn(newTargetEncodingMap,  "sum_numerator", "numerator");
+            renameColumn(newTargetEncodingMap,  "sum_denominator", "denominator");
             return newTargetEncodingMap;
         } else {
             Frame targetEncodingMapCopy = targetEncodingMap.deepCopy(Key.make().toString());

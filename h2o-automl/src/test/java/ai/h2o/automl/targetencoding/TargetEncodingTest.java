@@ -7,7 +7,6 @@ import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.util.TwoDimTable;
 
 import java.io.File;
 import java.util.Arrays;
@@ -107,7 +106,7 @@ public class TargetEncodingTest extends TestUtil {
         String[] teColumns = {""};
         TargetEncoder tec = new TargetEncoder(teColumns);
 
-        printOutFrameAsTable(fr);
+//        printOutFrameAsTable(fr);
         assertTrue(fr.vec("ColA").isCategorical());
         assertEquals(2, fr.vec("ColA").cardinality());
 
@@ -388,7 +387,7 @@ public class TargetEncodingTest extends TestUtil {
       String[] teColumns = {""};
       TargetEncoder tec = new TargetEncoder(teColumns);
       Frame result = tec.groupByTEColumnAndAggregate(fr, 0);
-      printOutFrameAsTable(result);
+//      printOutFrameAsTable(result, false, result.numRows());
 
       Vec expectedNum = vec(3, 3);
       assertVecEquals(expectedNum, result.vec("sum_numerator"), 1e-5);
@@ -414,7 +413,7 @@ public class TargetEncodingTest extends TestUtil {
 
       Frame oneColumnMultipliedOnly = new CalculatedColumnTask(1).doAll(Vec.T_NUM, fr).outputFrame();
 
-      printOutFrameAsTable(oneColumnMultipliedOnly);
+//      printOutFrameAsTable(oneColumnMultipliedOnly, false, oneColumnMultipliedOnly.numRows());
       assertEquals(1, oneColumnMultipliedOnly.numCols());
 
       Vec expectedVec = vec(2, 4, 6);
@@ -461,7 +460,7 @@ public class TargetEncodingTest extends TestUtil {
 
       new TestMutableTask(1).doAll(fr);
 
-      printOutFrameAsTable(fr);
+//      printOutFrameAsTable(fr, false, fr.numRows());
       assertEquals(3, fr.numCols());
 
       Vec expected = vec(2, 4, 6);
@@ -540,7 +539,7 @@ public class TargetEncodingTest extends TestUtil {
         double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
-        printOutFrameAsTable(resultWithEncoding, true, false);
+//        printOutFrameAsTable(resultWithEncoding, true, resultWithEncoding.numRows());
 
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);
         assertEquals(te3, resultWithEncoding.vec(4).at(1), 1e-5);
@@ -582,8 +581,6 @@ public class TargetEncodingTest extends TestUtil {
 
 
       new TargetEncoder.CalcEncodings(0, 1, 42, 4).doAll(fr);
-
-      printOutFrameAsTable(fr, true, false);
 
       zeroVec.remove();
       assertEquals(0, fr.vec("placeholder_for_encodings").at(changedIndex), 1e-5);
@@ -700,7 +697,7 @@ public class TargetEncodingTest extends TestUtil {
       TargetEncoder tec = new TargetEncoder(teColumns);
 
       Frame merged = tec.mergeByTEAndFoldColumns(fr, holdoutEncodingMap, 0, 1, 0);
-      printOutFrameAsTable(merged);
+//      printOutFrameAsTable(merged);
       Vec expecteds = svec("yes", "yes", null);
       assertStringVecEquals(expecteds, merged.vec("ColC"));
 
@@ -861,7 +858,7 @@ public class TargetEncodingTest extends TestUtil {
       Frame accFrame = fr.deepCopy(Key.make().toString());;
       DKV.put(accFrame);
 
-      printOutFrameAsTable(accFrame, true, false);
+//      printOutFrameAsTable(accFrame, true, false);
 
       for(int i = 0 ; i < 3; i ++) {
 
@@ -874,7 +871,7 @@ public class TargetEncodingTest extends TestUtil {
         accFrame = withAppendedFrame.deepCopy(Key.make().toString());
         DKV.put(accFrame);
         withAppendedFrame.delete();
-        printOutFrameAsTable(accFrame);
+//        printOutFrameAsTable(accFrame);
       }
 
       accFrame.delete();
@@ -908,35 +905,15 @@ public class TargetEncodingTest extends TestUtil {
     fr.delete();
   }
 
-    @After
-    public void afterEach() {
-        if( fr!= null) fr.delete();
-    }
-
-    private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
-      for( Map.Entry<String, Frame> map : encodingMap.entrySet()) {
-        map.getValue().delete();
-      }
-    }
-
-    private void printOutFrameAsTable(Frame fr) {
-
-        TwoDimTable twoDimTable = fr.toTwoDimTable();
-        System.out.println(twoDimTable.toString(2, false));
-    }
-
-  private void printOutFrameAsTable(Frame fr, boolean full, boolean rollups) {
-
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, 10000, rollups);
-    System.out.println(twoDimTable.toString(2, full));
+  @After
+  public void afterEach() {
+    if (fr != null) fr.delete();
   }
 
-  private void printOutColumnsMeta(Frame fr) {
-    for (String header : fr.toTwoDimTable().getColHeaders()) {
-      String type = fr.vec(header).get_type_str();
-      int cardinality = fr.vec(header).cardinality();
-      System.out.println(header + " - " + type + String.format("; Cardinality = %d", cardinality));
-
+  private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
+    for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {
+      map.getValue().delete();
     }
   }
+
 }
