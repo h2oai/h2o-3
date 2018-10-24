@@ -10,11 +10,12 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.FrameUtils;
 import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Map;
+
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 /*
   Be aware that `smalldata/airlines/target_encoding/airlines_*.csv` files are not present in the repo. Replace with your own splits.
@@ -40,7 +41,7 @@ public class TargetEncodingAirlinesBenchmark extends TestUtil {
       long startTimeEncoding = System.currentTimeMillis();
 
       String foldColumnName = "fold";
-      FrameUtils.addKFoldColumn(airlinesTrainWithTEH, foldColumnName, 5, 1234L);
+      addKFoldColumn(airlinesTrainWithTEH, foldColumnName, 5, 1234L);
 
       BlendingParams params = new BlendingParams(5, 1);
 

@@ -52,8 +52,8 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
       ds['train'][foldColumnName] = ds['train'].kfold_column(n_folds=5, seed=current_seed)
 
       teColumns = ["home.dest", "cabin", "embarked"]
-      targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                    fold_column= foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
+      targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                    fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
       targetEncoder.fit(frame=ds['train'])
 
       encodedTrain = targetEncoder.transform(frame=ds['train'], strategy="kfold", seed=1234, is_train_or_valid=True)
@@ -92,8 +92,8 @@ def titanic_with_te_loostrategy(frame = None, seeds = None):
     ds['train'][foldColumnName] = ds['train'].kfold_column(n_folds=5, seed=current_seed)
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  fold_column= foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=ds['train'])
 
     encodedTrain = targetEncoder.transform(frame=ds['train'], strategy="loo", seed=1234, is_train_or_valid=True)
@@ -132,8 +132,8 @@ def titanic_with_te_nonestrategy(frame = None, seeds = None):
     targetColumnName = "survived"
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  blending_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=holdout)
 
     encodedTrain = targetEncoder.transform(frame=train, strategy="none", noise=0.0, seed=1234, is_train_or_valid=True)

@@ -10,9 +10,10 @@ import water.Key;
 import water.TestUtil;
 import water.Scope;
 import water.fvec.Frame;
-import water.util.FrameUtils;
 
 import java.util.Map;
+
+import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 /*
   Be aware that `smalldata/gbm_test/titanic_*.csv` files are not present in the repo. Replace with your own splits.
@@ -48,7 +49,7 @@ public class TargetEncodingTitanicBenchmark extends TestUtil {
 
       Scope.track(trainFrame, validFrame, testFrame);
 
-      FrameUtils.addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
+      addKFoldColumn(trainFrame, foldColumnName, 5, 1234L);
 
       trainFrame.remove(new String[]{"name", "ticket", "boat", "body"});
       validFrame.remove(new String[]{"name", "ticket", "boat", "body"});

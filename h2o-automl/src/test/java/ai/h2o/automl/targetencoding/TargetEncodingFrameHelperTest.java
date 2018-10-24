@@ -2,6 +2,8 @@ package ai.h2o.automl.targetencoding;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -11,8 +13,7 @@ import water.fvec.Vec;
 import java.util.Arrays;
 
 import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TargetEncodingFrameHelperTest extends TestUtil {
 
@@ -166,6 +167,50 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
       Arrays.sort(uniqueValuesArr);
       assertArrayEquals( ar(1L, 2L, 3L), uniqueValuesArr);
       Scope.track(uniqueValuesFrame);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testAddKFoldColumn() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .build();
+      Scope.track(fr);
+      int nfolds = 5;
+      addKFoldColumn(fr, "fold", nfolds, -1);
+
+      assertTrue(fr.vec(1).at(0) < nfolds);
+      assertTrue(fr.vec(1).at(1) < nfolds);
+      assertTrue(fr.vec(1).at(2) < nfolds);
+      assertTrue(fr.vec(1).at(3) < nfolds);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void registerTest() {
+    Scope.enter();
+    try {
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .build();
+      Scope.track(fr);
+
+      Key<Frame> keyBefore = fr._key;
+      DKV.remove(keyBefore);
+      Frame res = register(fr);
+      Scope.track(res);
+
+      assertNotSame(res._key, keyBefore);
     } finally {
       Scope.exit();
     }

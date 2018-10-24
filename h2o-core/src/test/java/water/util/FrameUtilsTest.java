@@ -166,30 +166,6 @@ public class FrameUtilsTest extends TestUtil {
   }
 
   @Test
-  public void testAddKFoldColumn() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .withColNames("ColA")
-              .withVecTypes(Vec.T_CAT)
-              .withDataForCol(0, ar("a", "b", "c", "d"))
-              .build();
-      Scope.track(fr);
-      int nfolds = 5;
-      FrameUtils.addKFoldColumn(fr, "fold", nfolds, -1);
-
-      assertTrue(fr.vec(1).at(0) < nfolds);
-      assertTrue(fr.vec(1).at(1) < nfolds);
-      assertTrue(fr.vec(1).at(2) < nfolds);
-      assertTrue(fr.vec(1).at(3) < nfolds);
-
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
   public void getColumnIndexByName() {
     Scope.enter();
     try {
@@ -206,26 +182,6 @@ public class FrameUtilsTest extends TestUtil {
       assertEquals(0, fr.find("ColA"));
       assertEquals(1, fr.find("ColB"));
 
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void register() {
-    Scope.enter();
-    try {
-      Frame fr = new TestFrameBuilder()
-              .withName("testFrame")
-              .build();
-      Scope.track(fr);
-
-      Key<Frame> keyBefore = fr._key;
-      DKV.remove(keyBefore);
-      Frame res = FrameUtils.register(fr);
-      Scope.track(res);
-
-      assertNotSame(res._key, keyBefore);
     } finally {
       Scope.exit();
     }

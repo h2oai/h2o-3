@@ -9,7 +9,10 @@ import water.fvec.Vec;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
+import water.rapids.ast.prims.advmath.AstKFold;
 import water.rapids.ast.prims.mungers.AstGroup;
+
+import java.util.Random;
 
 class TargetEncoderFrameHelper {
 
@@ -88,6 +91,27 @@ class TargetEncoderFrameHelper {
 
   static Frame renameColumn(Frame fr, String oldName, String newName) {
     return renameColumn(fr, fr.find(oldName), newName);
+  }
+
+  /**
+   * @param frame
+   * @param name name of the fold column
+   * @param nfolds number of folds
+   * @param seed
+   */
+  static public Frame addKFoldColumn(Frame frame, String name, int nfolds, long seed) {
+    Vec foldVec = frame.anyVec().makeZero();
+    frame.add(name, AstKFold.kfoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed));
+    return frame;
+  }
+
+  /**
+   * @return Frame that is registered in DKV
+   */
+  static public Frame register(Frame frame) {
+    frame._key = Key.make();
+    DKV.put(frame);
+    return frame;
   }
 
 }

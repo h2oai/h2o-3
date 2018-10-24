@@ -6,12 +6,8 @@ import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.task.FilterByValueTask;
-import water.fvec.task.IsNotNaTask;
-import water.fvec.task.UniqTask;
 import water.parser.BufferedString;
 import water.rapids.Merge;
-import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 
 import java.io.IOException;

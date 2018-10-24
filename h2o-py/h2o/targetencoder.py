@@ -39,15 +39,15 @@ class TargetEncoder(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, te_columns=None, response_column = None, fold_column ='', blending = True, inflection_point = 3, smoothing = 1):
+    def __init__(self, te_columns=None, y=None, fold_column='', blending_avg=True, inflection_point=3, smoothing=1):
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
 
         :param List[str] te_columns: List of categorical column names that we want apply target encoding to
 
-        :param str response_column: response column we will create encodings with
+        :param str y: response column we will create encodings with
         :param str fold_column: fold column if we want to use 'kfold' strategy
-        :param boolean blending: whether to use blending or not
+        :param boolean blending_avg: whether to use blending or not
         :param double inflection_point: parameter for blending. Used to calculate `lambda`. Parameter determines half of the minimal sample size
             for which we completely trust the estimate based on the sample in the particular level of categorical variable.
         :param double smoothing: parameter for blending. Used to calculate `lambda`. The parameter f controls the rate of transition between
@@ -57,9 +57,9 @@ class TargetEncoder(object):
         """
 
         self._teColumns = te_columns
-        self._targetColumnName = response_column
+        self._responseColumnName = y
         self._foldColumnName = fold_column
-        self._blending = blending
+        self._blending = blending_avg
         self._inflectionPoint = inflection_point
         self._smoothing = smoothing
 
@@ -70,7 +70,7 @@ class TargetEncoder(object):
 
         :param frame frame: frame you want to generate encoding map for target encoding based on.
         """
-        self._encodingMap = ExprNode("target.encoder.fit", frame, self._teColumns, self._targetColumnName,
+        self._encodingMap = ExprNode("target.encoder.fit", frame, self._teColumns, self._responseColumnName,
                                      self._foldColumnName)._eager_map_frame()
 
         return self._encodingMap
@@ -98,6 +98,6 @@ class TargetEncoder(object):
         encodingMapKeys = self._encodingMap.mapKeys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, strategy,
-                                            self._targetColumnName, self._foldColumnName,
+                                            self._responseColumnName, self._foldColumnName,
                                             self._blending, self._inflectionPoint, self._smoothing,
                                             noise, seed, is_train_or_valid))

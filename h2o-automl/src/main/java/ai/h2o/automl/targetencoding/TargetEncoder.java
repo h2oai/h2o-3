@@ -15,6 +15,7 @@ import static ai.h2o.automl.targetencoding.TargetEncoderFrameHelper.*;
 import java.util.*;
 
 /**
+ * Status: alpha version
  * This is a core class for target encoding related logic.
  *
  * In general target encoding could be applied to three types of problems, namely:
@@ -141,7 +142,7 @@ public class TargetEncoder {
       aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIndex, na, (int) fr.vec(targetIndex).max() + 1);
 
       Frame result = new AstGroup().performGroupingWithAggregations(fr, groupByColumns, aggs, -1).getFrame();
-      return FrameUtils.register(result);
+      return register(result);
     }
 
     // This method is mutating data frame
@@ -180,10 +181,7 @@ public class TargetEncoder {
 
     private Frame execRapidsAndGetFrame(String astTree) {
         Val val = Rapids.exec(astTree);
-        Frame res = val.getFrame();
-        res._key = Key.make();
-        DKV.put(res);
-        return res;
+        return register(val.getFrame());
     }
 
     //TODO We might want to introduce parameter that will change this behaviour. We can treat NA's as extra class.
@@ -242,7 +240,7 @@ public class TargetEncoder {
       aggs[1] = new AstGroup.AGG(AstGroup.FCN.sum, denominatorColumnIndex, na, (int) data.vec(denominatorColumnIndex).max() + 1);
 
       Frame result = new AstGroup().performGroupingWithAggregations(data, new int[]{teColumnIndex}, aggs, -1).getFrame();
-      return FrameUtils.register(result);
+      return register(result);
     }
 
     Frame rBind(Frame a, Frame b) {
@@ -289,7 +287,7 @@ public class TargetEncoder {
       }
       int cols[] = new int[ncols];
       for (int i = 0; i < ncols; i++) cols[i] = i;
-      return FrameUtils.register(Merge.merge(l, r, cols, cols, allLeft, id_maps));
+      return register(Merge.merge(l, r, cols, cols, allLeft, id_maps));
     }
 
     Frame mergeByTEColumn(Frame a, Frame b, int teColumnIndexOriginal, int teColumnIndex) {

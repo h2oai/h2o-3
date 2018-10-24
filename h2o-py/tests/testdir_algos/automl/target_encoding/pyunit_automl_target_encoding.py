@@ -22,8 +22,8 @@ def test_target_encoding_fit_method():
     foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  fold_column= foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -40,8 +40,8 @@ def test_target_encoding_transform_kfold():
     foldColumnName = "kfold_column" # it is strange that we can't set name for generated kfold
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  fold_column= foldColumnName, blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -61,8 +61,8 @@ def test_target_encoding_transform_loo():
     targetColumnName = "survived"
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  fold_column='', blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  fold_column='', blending_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -81,8 +81,8 @@ def test_target_encoding_transform_none():
     targetColumnName = "survived"
 
     teColumns = ["home.dest", "cabin", "embarked"]
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  blending_avg= True, inflection_point = 3, smoothing = 1)
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
 
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
@@ -104,8 +104,8 @@ def test_target_encoding_transform_none_blending():
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
     
-    targetEncoderWithBlending = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                              blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoderWithBlending = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                              blending_avg= True, inflection_point = 3, smoothing = 1)
     
     targetEncoderWithBlending.fit(frame=trainingFrame)
 
@@ -113,8 +113,8 @@ def test_target_encoding_transform_none_blending():
 
     frameWithBlendedEncodingsOnly = encodedFrameWithBlending[teColumnsEncoded]
 
-    targetEncoderWithoutBlending = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                                 blending = False, inflection_point = 3, smoothing = 1)
+    targetEncoderWithoutBlending = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                                 blending_avg= False, inflection_point = 3, smoothing = 1)
 
     targetEncoderWithoutBlending.fit(frame=trainingFrame)
 
@@ -139,8 +139,8 @@ def test_target_encoding_seed_is_working():
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  blending_avg= True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame=trainingFrame)
 
@@ -177,8 +177,8 @@ def test_target_encoding_default_noise_is_applied():
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
 
-    targetEncoder = TargetEncoder(te_columns= teColumns, response_column= targetColumnName,
-                                  blending = True, inflection_point = 3, smoothing = 1)
+    targetEncoder = TargetEncoder(te_columns= teColumns, y= targetColumnName,
+                                  blending_avg= True, inflection_point = 3, smoothing = 1)
 
     targetEncoder.fit(frame=trainingFrame)
 
