@@ -35,10 +35,11 @@ def call(final pipelineContext) {
       stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
-    [
-      stageName: 'Java 7 Smoke (no h2o-algos multinode)', target: 'test-junit-7-smoke-jenkins', javaVersion: 7, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
+    // TODO temporarily disable Java 7 Smokes
+    // [
+    //   stageName: 'Java 7 Smoke (no h2o-algos multinode)', target: 'test-junit-7-smoke-jenkins', javaVersion: 7, timeoutValue: 20,
+    //   component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    // ],
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
