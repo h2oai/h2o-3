@@ -3,21 +3,17 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
-import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
-import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.prediction.*;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -729,10 +725,6 @@ public class EasyPredictModelWrapper implements Serializable {
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
-    // TODO: refactor
-    boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
-    boolean isText  = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("text");
-
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
@@ -749,60 +741,13 @@ public class EasyPredictModelWrapper implements Serializable {
         double value = Double.NaN;
         Object o = data.get(dataColumnName);
         if (o instanceof String) {
-          String s = ((String) o).trim();
           // Url to an image given
-          if (isImage) {
-            boolean isURL = s.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
-            try {
-              img = isURL? ImageIO.read(new URL(s)) : ImageIO.read(new File(s));
-            }
-            catch (IOException e) {
-              throw new PredictException("Couldn't read image from " + s);
-            }
-          } else if (isText) {
-            // TODO: use model-specific vectorization of text
-            throw new PredictException("MOJO scoring for text classification is not yet implemented.");
-          }
-          else {
-            // numeric
-            try {
-              value = Double.parseDouble(s);
-            } catch(NumberFormatException nfe) {
-              if (!convertInvalidNumbersToNa)
-                throw new PredictNumberFormatException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
-            }
-          }
+          throw new UnsupportedOperationException("deepwater is no longer available");
         } else if (o instanceof Double) {
           value = (Double) o;
-        } else if (o instanceof byte[] && isImage) {
-          // Read the image from raw bytes
-          InputStream is = new ByteArrayInputStream((byte[]) o);
-          try {
-            img = ImageIO.read(is);
-          } catch (IOException e) {
-            throw new PredictException("Couldn't interpret raw bytes as an image.");
-          }
         } else {
           throw new PredictUnknownTypeException(
                   "Unexpected object type " + o.getClass().getName() + " for numeric column " + dataColumnName);
-        }
-
-        if (isImage && img != null) {
-          DeepwaterMojoModel dwm = (DeepwaterMojoModel) m;
-          int W = dwm._width;
-          int H = dwm._height;
-          int C = dwm._channels;
-          float[] _destData = new float[W * H * C];
-          try {
-            GenModel.img2pixels(img, W, H, C, _destData, 0, dwm._meanImageData);
-          } catch (IOException e) {
-            e.printStackTrace();
-            throw new PredictException("Couldn't vectorize image.");
-          }
-          rawData = new double[_destData.length];
-          for (int i = 0; i < rawData.length; ++i)
-            rawData[i] = _destData[i];
-          return rawData;
         }
 
         if (Double.isNaN(value)) {

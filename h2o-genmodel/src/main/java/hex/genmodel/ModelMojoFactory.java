@@ -1,7 +1,6 @@
 package hex.genmodel;
 
 import hex.genmodel.algos.deeplearning.DeeplearningMojoReader;
-import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
@@ -57,9 +56,6 @@ public class ModelMojoFactory {
       case "Gradient Boosting Method":
       case "Gradient Boosting Machine":
         return new GbmMojoReader();
-
-      case "Deep Water":
-        return new DeepwaterMojoReader();
 
       case "Generalized Low Rank Modeling":
       case "Generalized Low Rank Model":

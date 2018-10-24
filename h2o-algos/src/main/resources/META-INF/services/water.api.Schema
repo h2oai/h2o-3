@@ -19,10 +19,6 @@ hex.schemas.DeepLearningModelV3
 hex.schemas.DeepLearningModelV3$DeepLearningModelOutputV3
 hex.schemas.DeepLearningV3
 hex.schemas.DeepLearningV3$DeepLearningParametersV3
-hex.schemas.DeepWaterModelV3
-hex.schemas.DeepWaterModelV3$DeepWaterModelOutputV3
-hex.schemas.DeepWaterV3
-hex.schemas.DeepWaterV3$DeepWaterParametersV3
 hex.schemas.ExampleModelV3
 hex.schemas.ExampleModelV3$ExampleModelOutputV3
 hex.schemas.ExampleV3
