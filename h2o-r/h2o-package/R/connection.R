@@ -579,6 +579,7 @@ h2o.clusterStatus <- function() {
   nums <- paste0(sample(0:9, 3,  replace = TRUE),     collapse="")
   name <- paste0("H2O_started_from_R_", gsub("\\s", "_", Sys.info()["user"]),"_",ltrs,nums)
   if(enable_assertions) args <- c(args, "-ea")
+  if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
   
   class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
   args <- c(args, "-cp", class_path, "water.H2OApp")
