@@ -520,7 +520,7 @@ def generate_main_class(endpoints):
               .registerTypeAdapter(ModelSchemaBaseV3.class, new ModelSchemaDeserializer())
               .registerTypeAdapter(ModelOutputSchemaV3.class, new ModelOutputDeserializer())
               .registerTypeAdapter(ModelParametersSchemaV3.class, new ModelParametersDeserializer())
-			  .setLenient()
+              .setLenient()
               .create();
 
             OkHttpClient client = new OkHttpClient.Builder()
