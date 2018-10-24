@@ -42,6 +42,7 @@ dependencies {
   testCompile("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
     exclude module: "servlet-api"
   }
+  testCompile project(':h2o-jetty-9') // TODO: hack
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
