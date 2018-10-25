@@ -19,11 +19,9 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5746'>PUBDEV-5746</a>] - Improved efficiency of the `keep_cross_validation_models` parameter in AutoML
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5777'>PUBDEV-5777</a>] -         (due) Simplify comparison of H2OXGBoost with native XGBoost in Python (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5777'>PUBDEV-5777</a>] - Simplified the comparison of H2OXGBoost with native XGBoost when using the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5780'>PUBDEV-5780</a>] - Fixed JDBC ingestion for Teradata databases.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5791'>PUBDEV-5791</a>] -         AutoML chooses arbitrary model globally as leader (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5824'>PUBDEV-5824</a>] - In the Python client and the Java API, multiple runs of the same AutoML instance no longer fail training new "Best Of Family" SE models that would include the newly generated models.
 </li>
@@ -51,7 +49,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5976'>PUBDEV-5976</a>] - Starting h2o-3 from the Python Client no longer fails on Java 10.0.2.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5995'>PUBDEV-5995</a>] - Fixed an issue that caused StackedEnsemble MOJO model to return an  "IllegalArgumentException: categorical value out of range" message. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5995'>PUBDEV-5995</a>] - Fixed an issue that caused StackedEnsemble MOJO model to return an  "IllegalArgumentException: categorical value out of range" message.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5996'>PUBDEV-5996</a>] - Removed the "nclasses" parameter from tree traversal routines. 
 </li>
@@ -59,7 +57,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5999'>PUBDEV-5999</a>] - Removed "illegal reflective access" warnings when starting H2O-3 with Java 10.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6004'>PUBDEV-6004</a>] - In Stacked Ensembles, changes made to data during scoring now apply to all models. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6004'>PUBDEV-6004</a>] - In Stacked Ensembles, changes made to data during scoring now apply to all models.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6005'>PUBDEV-6005</a>] - When running AutoML in Flow, updated the list of algorithms that can ber selected in the "Exclude These Algorithms" section.
 </li>
@@ -70,7 +68,7 @@ Download at: (tbd)
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5170'>PUBDEV-5170</a>] - Individual predictions of GBM trees are now exposed in the MOJO API. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5378'>PUBDEV-5378</a>] -         Add target encoding to Java (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5378'>PUBDEV-5378</a>] - Exposed target encoding in the Java API.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5399'>PUBDEV-5399</a>] - The `keep_cross_validation_fold_assignment` option is now available in AutoML.
 </li>
@@ -88,7 +86,7 @@ Download at: (tbd)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5977'>PUBDEV-5977</a>] - Improved speed-up of AutoML training on smaller datesets in client mode (Sparkling Water).
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5979'>PUBDEV-5979</a>] -         Expose Java target encoding to Python (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5979'>PUBDEV-5979</a>] - Exposed Java Target Encoding in the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5988'>PUBDEV-5988</a>] - Users can now specify a `-features` parameter when starting h2o from the command line. This allows users to remove experimental or beta algorithms when starting H2O-3. Available options for this parameter include `beta`, `stable`, and `experimental`. 
 </li>
@@ -115,8 +113,6 @@ Download at: (tbd)
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5590'>PUBDEV-5590</a>] - Added a `MAX_USR_CONNECTIONS_KEY` argument to limit number of sessions for import_sql_table. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5669'>PUBDEV-5669</a>] - Improved performance gap when importing data using Hive2.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5705'>PUBDEV-5705</a>] -         parse: add an ability to drop specific columns before parsing (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5719'>PUBDEV-5719</a>] - Improved and cleaned up output for the h2o.mojo_predict_csv and h2o.mojo_predict_df functions.
 </li>
