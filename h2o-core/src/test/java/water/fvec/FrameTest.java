@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.util.FrameUtils;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -109,6 +110,80 @@ public class FrameTest extends TestUtil {
     }
   }
 
+  /**
+   * This test is testing deepSlice functionality and shows that we CAN use zero-based indexes for slicing (conflicts with the comment in Frame.java)
+   * // TODO if confirmed go and correct comments for Frame.deepSlice() method
+   */
+  @Test
+  public void testRowDeepSlice() {
+    Scope.enter();
+    try {
+      long[] numericalCol = ar(1, 2, 3, 4);
+      Frame input = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, numericalCol)
+              .withChunkLayout(numericalCol.length)
+              .build();
+
+      // Single number row slice
+      Frame sliced = input.deepSlice(new long[]{1}, null);
+      assertEquals(1, sliced.numRows());
+      assertEquals("b", sliced.vec(0).stringAt(0));
+      assertEquals(2, sliced.vec(1).at(0), 1e-5);
+
+      //checking that 0-based indexing is allowed as well
+      // We are slicing here particular indexes of rows : 0 and 3
+      Frame slicedRange = input.deepSlice(new long[]{0, 3}, null);
+      printOutFrameAsTable(slicedRange, false, slicedRange.numRows());
+      assertEquals(2, slicedRange.numRows());
+      assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
+      assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
+
+      //TODO add test for new long[]{-4} values
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // IMPORTANT: this test does not fail without another test added, namely: testRowDeepSlice
+  //
+  // This test keeps failing locally when we run the whole suite but green if we run it alone.
+  // Vec$ESPC.rowLayout is using shared state... might be a bug
+  @Test
+  public void testRowDeepSliceWithPredicateFrame() {
+    Scope.enter();
+    try {
+      long[] numericalCol = ar(1, 2, 3, 4);
+      Frame input = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA", "ColB")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c", "d"))
+              .withDataForCol(1, numericalCol)
+              .withChunkLayout(numericalCol.length)
+              .build();
+
+      // Single number row slice
+      Frame sliced = input.deepSlice(new Frame(vec(0, 1, 0, 0)), null);
+      assertEquals(1, sliced.numRows());
+      assertEquals("b", sliced.vec(0).stringAt(0));
+      assertEquals(2, sliced.vec(1).at(0), 1e-5);
+
+      //checking that 0-based indexing is allowed as well
+      Frame slicedRange = input.deepSlice(new Frame(vec(1, 0, 0, 1)), null);
+      assertEquals(2, slicedRange.numRows());
+      assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
+      assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
+
+      //TODO add test for new long[]{-4} values
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test // deep select filters out all defined values of the chunk and the only left ones are NAs, eg.: c(1, NA, NA) -> c(NA, NA)
   public void testDeepSelectNAs() {
     Scope.enter();
@@ -175,6 +250,12 @@ public class FrameTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  public void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+    assert limit <= Integer.MAX_VALUE;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+    System.out.println(twoDimTable.toString(2, true));
   }
 
 }
