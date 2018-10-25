@@ -3,6 +3,8 @@ package hex.ensemble;
 import hex.Model;
 import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -19,6 +21,8 @@ import water.fvec.Frame;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.junit.Assert.assertTrue;
 
 public class StackedEnsembleTest extends TestUtil {
 
@@ -218,6 +222,7 @@ public class StackedEnsembleTest extends TestUtil {
         DRFModel drf = null;
         StackedEnsembleModel stackedEnsembleModel = null;
         Frame training_frame = null, validation_frame = null;
+        Frame preds = null;
         try {
             Scope.enter();
             training_frame = parse_test_file(training_file);
@@ -300,6 +305,10 @@ public class StackedEnsembleTest extends TestUtil {
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             // Get the stacked ensemble
             stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+
+            preds = stackedEnsembleModel.score(training_frame);
+            final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_frame, preds, 1e-15, 0.01);
+            Assert.assertTrue(predsTheSame);
             Assert.assertTrue(stackedEnsembleJob.isStopped());
 
             //return
@@ -320,6 +329,8 @@ public class StackedEnsembleTest extends TestUtil {
                 drf._output._cross_validation_holdout_predictions_frame_id.remove();
                 drf.deleteCrossValidationModels();
             }
+
+            if (preds != null) preds.delete();
 
             Set<Frame> framesAfter = new HashSet<>(framesBefore);
             framesAfter.removeAll(Arrays.asList( Frame.fetchAll()));
