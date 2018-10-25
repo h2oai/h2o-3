@@ -9,7 +9,7 @@ This section describes how H2O-3 can be used to evaluate model performance throu
 Evaluation Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O-3 provides a variety of metrics that can be used for evaluating models. These metrics vary based on the model type (classification or regression).
+H2O-3 provides a variety of metrics that can be used for evaluating supervised and unsupervised models. The metrics for this section only cover supervised learning models, which vary based on the model type (classification or regression).
 
 Classification or Regression
 ''''''''''''''''''''''''''''
@@ -112,7 +112,7 @@ The following evaluation metrics are available for classification models:
 
 - `Absolute MCC (Matthews Correlation Coefficient)`_
 - `F1`_
-- `F0`_
+- `F0.5`_
 - `F2`_
 - `Accuracy`_
 - `Logloss`_
@@ -140,12 +140,12 @@ Where:
  - *precision* is the positive observations (true positives) the model correctly identified from all the observations it labeled as positive (the true positives + the false positives).
  - *recall* is the positive observations (true positives) the model correctly identified from all the actual positive cases (the true positives + the false negatives).
 
-F0
-##
+F0.5
+####
 
-The F0 (F0.5) score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be very precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
+The F0.5 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F0.5 score gives more weight to precision than to recall. More weight should be given to precision for cases where False Positives are considered worse than False Negatives. For example, if your use case is to predict which products you will run out of, you may consider False Positives worse than False Negatives. In this case, you want your predictions to be very precise and only capture the products that will definitely run out. If you predict a product will need to be restocked when it actually doesn't, you incur cost by having purchased more inventory than you actually need.
 
-F05 equation:
+F0.5 equation:
 
  .. math::
    F0.5 = 1.25 \;\Big(\; \frac{(precision) \; (recall)}{0.25 \; precision + recall}\; \Big)
@@ -201,7 +201,7 @@ Where:
 AUC (Area Under the ROC Curve)
 ##############################
 
-This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. (*Tip: AUC is usually the best stopping metric for an imbalanced binary target*.)
+This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. 
 
 H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
 
@@ -406,8 +406,6 @@ Variable Importances
 
 Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm.
 
-The method of computing each variable's importance depends on the algorithm. 
-
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
 
@@ -450,13 +448,18 @@ Partial Dependence Plots
 
 This plot provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). Note that this is only available for models that include only numerical values. 
 
-The partial dependence of a given feature :math:`X_j` is the average of the response function :math:`g`, where all the components of :math:`X_j` are set to :math:`x_j (X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)`
+The partial dependence of a given feature :math:`X_j` is the average of the response function :math:`g`, where all the components of :math:`X_j` are set to :math:`x_j` :math:`(X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)`
 
 Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j` is the marginal expectation:
 
 .. math:: 
 
-  {PD}(X_j, g) = {E}_{X_(-j)} \big{[}g(X_j, X_{(-j)})\big{]} = \frac{1}{N}\sum_{i = 0}^{N-1}g(x_j, \mathbf{x}_{(-j)}^{(i)})
+  {PD}(X_j, g) = {E}_{X_{(-j)}} \big{[}g(X_j, X_{(-j)})\big{]} = \frac{1}{N}\sum_{i = 0}^{N-1}g(x_j, \mathbf{x}_{(-j)}^{(i)})
+
+**Notes**:
+
+- The partial dependence of a given feature :math:`Xj` (where :math:`j` is the column index)``
+- You can also change the equation to sum from 1 to N instead of 0 to N-1
 
 .. figure:: images/pdp_summary.png
     :alt: Partial Dependence Summary
