@@ -14,9 +14,6 @@ dependencies {
     compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   }
   compile project(':h2o-hadoop:h2o-' + hadoopVersion) // this is a magically hidden dependency on h2odriver.jar
-  compile project(':h2o-app')           // TODO check if we need this, probably arrives transitively from h2odriver.jar
-  compile project(":h2o-web")           // TODO check if we need this, probably arrives transitively from h2odriver.jar
-  compile project(":h2o-avro-parser")   // TODO check if we need this, probably arrives transitively from h2odriver.jar
   // Include GCS persist layer
   compile(project(":h2o-persist-gcs"))
   // Include S3 persist layer
