@@ -20,10 +20,10 @@ public class H2OStarter {
     // Fire up the H2O Cluster
     H2O.main(args);
 
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
+    ExtensionManager.getInstance().registerRestApiExtensions();
     if (!H2O.ARGS.disable_web) {
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
-      ExtensionManager.getInstance().registerRestApiExtensions();
       if (finalizeRestRegistration) {
         H2O.startServingRestApi();
       }
