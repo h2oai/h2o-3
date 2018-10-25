@@ -21,6 +21,9 @@ public class XGBoostModelV3 extends ModelSchemaV3<
 
     @API(help="XGBoost Native Parameters", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 native_parameters;
+
+    @API(help="Sparse", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    boolean sparse;
   }
 
   public XGBoostV3.XGBoostParametersV3 createParametersSchema() { return new XGBoostV3.XGBoostParametersV3(); }
