@@ -617,7 +617,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private int nextInstanceCounter(String algoName, NonBlockingHashMap<String, Integer> instanceCounters) {
     synchronized (instanceCounters) {
-      int instanceNum = 0;
+      int instanceNum = 1;
       if (instanceCounters.containsKey(algoName))
         instanceNum = instanceCounters.get(algoName) + 1;
       instanceCounters.put(algoName, instanceNum);
@@ -626,7 +626,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private Key<Model> modelKey(String algoName) {
-    return Key.make(algoName + "_" + nextInstanceCounter(algoName, algoInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
+    return modelKey(algoName, true);
+  }
+
+  private Key<Model> modelKey(String algoName, boolean with_counter) {
+    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, algoInstanceCounters) : "";
+    return Key.make(algoName + counterStr + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
   Job<Model> trainModel(Key<Model> key, WorkAllocations.Work work, Model.Parameters parms) {
@@ -1218,7 +1223,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
     stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
 
-    Key modelKey = modelKey(modelName);
+    Key modelKey = modelKey(modelName, false);
     Job ensembleJob = trainModel(modelKey, work, stackedEnsembleParameters, true);
     return ensembleJob;
   }
