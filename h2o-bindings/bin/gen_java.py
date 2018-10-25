@@ -135,7 +135,7 @@ def generate_schema(class_name, schema):
     yield " */"
     yield "package water.bindings.pojos;"
     yield ""
-    yield "import com.google.gson.Gson;"
+    yield "import com.google.gson.GsonBuilder;"
     yield "import com.google.gson.annotations.*;"
     yield "import java.util.Map;" if has_map else None
     yield ""
@@ -180,7 +180,7 @@ def generate_schema(class_name, schema):
     yield "     */"
     yield "    @Override"
     yield "    public String toString() {"
-    yield "        return new Gson().toJson(this);"
+    yield "        return new GsonBuilder().serializeSpecialFloatingPointValues().create().toJson(this);"
     yield "    }"
     yield ""
     yield "}"
