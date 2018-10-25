@@ -6,3 +6,20 @@ ext {
 }
 
 apply from: '../assemblyjar.gradle'
+
+task checkJetty9Packages(type: Exec, dependsOn: [configurations.compile]) {
+  commandLine 'unzip', '-l', shadowJar.archivePath
+  standardOutput = new ByteArrayOutputStream()
+  doLast {
+    def lines = standardOutput.toString().split(System.lineSeparator())
+    def jetty9Packages = ['jetty-server', 'jetty-security']
+    jetty9Packages.each { bannedPackage ->
+      def filteredLines = lines.findAll { it.contains("META-INF/maven/org.eclipse.jetty/${bannedPackage}/") }
+      if (!filteredLines?.isEmpty()) {
+        throw new RuntimeException("${shadowJar.archivePath} contains banned packages: \n${filteredLines*.replaceAll('^.*META-INF', 'META-INF').join('\t\n')}")
+      }
+    }
+  }
+}
+
+shadowJar.finalizedBy checkJetty9Packages
