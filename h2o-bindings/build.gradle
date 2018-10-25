@@ -27,6 +27,8 @@ dependencies {
     testCompile project(":h2o-web")
     testCompile project(":h2o-avro-parser")
     testCompile "junit:junit:${junitVersion}"
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    testCompile group: 'commons-io', name: 'commons-io', version: '2.6'
 
     // Generator dependencies
     srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")

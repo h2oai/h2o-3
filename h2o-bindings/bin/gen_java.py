@@ -238,6 +238,7 @@ def generate_proxy(classname, endpoints):
     yield "import retrofit2.*;"
     yield "import retrofit2.http.*;"
     yield "import java.util.Map;" if classname == "Grid" or classname == "ModelBuilders" else None
+    yield "import okhttp3.ResponseBody;"
     yield ""
     yield "public interface " + classname + " {"
     yield ""
@@ -251,8 +252,14 @@ def generate_proxy(classname, endpoints):
         param_strs = []
         required_param_strs = []
         for field in e["input_params"]:
+            is_url_encoded = e["http_method"] == "POST"
             fname = field["name"]
-            ftype = "Path" if field["is_path_param"] else "Field"
+            if field["is_path_param"]:
+                ftype = "Path"
+            elif is_url_encoded:
+                ftype = "Field"
+            else:
+                ftype = "Query"
             ptype = translate_type(field["type"], field["schema_name"])
             if ptype.endswith("KeyV3") or ptype == "ColSpecifierV3": ptype = "String"
             if ptype.endswith("KeyV3[]"): ptype = "String[]"
@@ -269,6 +276,9 @@ def generate_proxy(classname, endpoints):
             yield s + bi.wrap(field["help"], indent="   *" + " " * (len(s) - 4), indent_first=False)
         yield u"   */"
         # Create 2 versions of each call: first with all input parameters present, and then only with required params
+
+        if e["output_schema"] == 'DownloadDataV3':
+            e["output_schema"] = 'ResponseBody'
         for params in [param_strs, required_param_strs]:
             if params is None: continue
             yield u"  @FormUrlEncoded" if e["http_method"] == "POST" else None
@@ -283,6 +293,8 @@ def generate_proxy(classname, endpoints):
                 yield "  );"
             yield ""
 
+        if e["output_schema"] == 'ResponseBody':
+            e["output_schema"] = 'DownloadDataV3'
         # Make special static Helper class for Grid and ModelBuilders.
         if "algo" in e:
             # We make two train_ and validate_ methods.  One (built here) takes the parameters schema, the other
@@ -362,6 +374,8 @@ def generate_main_class(endpoints):
         import java.lang.reflect.Field;
         import java.lang.reflect.InvocationTargetException;
         import java.lang.reflect.Type;
+        
+        import okhttp3.ResponseBody;
 
 
         @SuppressWarnings("unused")
@@ -435,6 +449,8 @@ def generate_main_class(endpoints):
         apiname = route["api_name"]
         class_name = route["class_name"]
         outtype = route["output_schema"]
+        if outtype == 'DownloadDataV3':
+            outtype = 'ResponseBody'
         input_fields = route["input_params"]
         required_fields = [field for field in input_fields if field["required"]]
         input_fields_wo_excluded = [field for field in input_fields if field["name"] != "_exclude_fields"]
