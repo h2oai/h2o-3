@@ -19,6 +19,9 @@ from io import StringIO
 from types import FunctionType
 
 import requests
+import pandas as pd
+import numpy as np
+import math
 
 import h2o
 from h2o.display import H2ODisplay
@@ -2564,6 +2567,88 @@ class H2OFrame(object):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
+    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
+        '''
+        This method will convert an H2OFrame to a DMatrix that can be used by native XGBoost.  The H2OFrame contains
+        numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
+        column. There can be NAs in any columns.
+
+        Follow the steps below to compare H2OXGBoost and native XGBoost:
+
+        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+
+        2. Derive the DMatrix from H2OFrame:
+        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+
+        3. Derive the parameters for native XGBoost:
+        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+
+        4. Train your native XGBoost model and generate a prediction:
+        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
+
+        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+
+        :param h2oFrame: H2OFrame to be converted to DMatrix for native XGBoost
+        :param predictors: List of predictor columns, can be column names or indices
+        :param yresp: response column, can be column index or name
+        :param h2oXGBoostModel: H2OXGboost model that are built with the same H2OFrame as input earlier
+        :return: DMatrix that can be an input to a native XGBoost model
+        '''
+        import xgboost as xgb
+        from scipy.sparse import csr_matrix
+
+        assert isinstance(predictors, list) or isinstance(predictors, tuple)
+        assert h2oXGBoostModel._model_json['algo'] == 'xgboost', \
+            "convert_H2OFrame_2_DMatrix is used for H2OXGBoost model only."
+
+        colnames = self.names
+        if type(predictors[0])=='int': # convert integer indices to column names
+            temp = []
+            for colInd in predictors:
+                temp.append(colnames[colInd])
+            predictors = temp
+
+        if (type(yresp) == 'int'):
+            tempy = colnames[yresp]
+            yresp = tempy
+
+        enumCols = [] # extract enum columns out to process them
+        typeDict = self.types
+        for predName in predictors:
+            if str(typeDict[predName])=='enum':
+                enumCols.append(predName)
+
+        pandaFtrain = self.as_data_frame(use_pandas=True, header=True)
+        nrows = self.nrow
+
+        # convert H2OFrame to DMatrix starts here
+        if len(enumCols) > 0:   # start with first enum column
+            pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows)
+            pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
+
+            for colInd in range(1, len(enumCols)):
+                cname=enumCols[colInd]
+                ctemp = generatePandaEnumCols(pandaFtrain, cname,  nrows)
+                pandaTrainPart=pd.concat([pandaTrainPart, ctemp], axis=1)
+                pandaFtrain.drop([cname], axis=1, inplace=True)
+
+            pandaFtrain = pd.concat([pandaTrainPart, pandaFtrain], axis=1)
+
+        c0= self[yresp].asnumeric().as_data_frame(use_pandas=True, header=True)
+        pandaFtrain.drop([yresp], axis=1, inplace=True)
+        pandaF = pd.concat([c0, pandaFtrain], axis=1)
+        pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+        newX = list(pandaFtrain.columns.values)
+        data = pandaF.as_matrix(newX)
+        label = pandaF.as_matrix([yresp])
+
+        return xgb.DMatrix(data=csr_matrix(data), label=label) \
+            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)
+
     def pivot(self, index, column, value):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
@@ -3330,3 +3415,45 @@ def _binop(lhs, op, rhs, rtype=None):
     if rtype is not None and res._ex._cache._names is not None:
         res._ex._cache._types = {name: rtype for name in res._ex._cache._names}
     return res
+
+
+
+
+def generatePandaEnumCols(pandaFtrain, cname, nrows):
+    """
+    For an H2O Enum column, we perform one-hot-encoding here and add one more column, "missing(NA)" to it.
+
+    :param pandaFtrain: panda frame derived from H2OFrame
+    :param cname: column name of enum col
+    :param nrows: number of rows of enum col
+    :return: panda frame with enum col encoded correctly for native XGBoost
+    """
+    cmissingNames=[cname+".missing(NA)"]
+    tempnp = np.zeros((nrows,1), dtype=np.int)
+    # check for nan and assign it correct value
+    colVals = pandaFtrain[cname]
+    for ind in range(nrows):
+        try:
+            float(colVals[ind])
+            if math.isnan(colVals[ind]):
+                tempnp[ind]=1
+        except ValueError:
+            pass
+    zeroFrame = pd.DataFrame(tempnp)
+    zeroFrame.columns=cmissingNames
+    temp = pd.get_dummies(pandaFtrain[cname], prefix=cname, drop_first=False)
+    tempNames = list(temp)  # get column names
+    colLength = len(tempNames)
+    newNames = ['a']*colLength
+    newIndics = [0]*colLength
+    header = tempNames[0].split('.')[0]
+
+    for ind in range(colLength):
+        newIndics[ind] = int(tempNames[ind].split('.')[1][1:])
+    newIndics.sort()
+
+    for ind in range(colLength):
+        newNames[ind] = header+'.l'+str(newIndics[ind])  # generate correct order of names
+    ftemp = temp[newNames]
+    ctemp = pd.concat([ftemp, zeroFrame], axis=1)
+    return ctemp

@@ -104,6 +104,10 @@ class ExprNode(object):
         assert self._cache.is_scalar()
         return self._cache._data
 
+    def _eager_map_frame(self):  # returns a scalar (or a list of scalars)
+        self._eval_driver(False)
+        return self._cache
+
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
@@ -117,6 +121,9 @@ class ExprNode(object):
         if 'key' in res:
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
+        if 'map_keys' in res:
+            self._cache.map_keys = res['map_keys']
+            self._cache.frames = res['frames']
         return self
 
     def _optimize(self):

@@ -319,7 +319,8 @@ EOF
                                     try {
                                         insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                             sh """
-                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/conda
+                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build
+                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/conda
                                                 # Create conda package for current platform
                                                 conda config --append channels conda-forge
                                                 conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}

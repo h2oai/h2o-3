@@ -148,9 +148,9 @@ public class AstMerge extends AstPrimitive {
       }
 
       if (onlyLeftAllOff) {
-        return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+        return sortingMerge(l, r, allLeft, ncols, id_maps);
       } else {  // implement allRite here by switching leftframe and riteframe.  However, column order is wrong, re-order before return
-        ValFrame tempFrame = sortingMerge(r, l, allRite, allLeft, ncols, id_maps);
+        ValFrame tempFrame = sortingMerge(r, l, allRite, ncols, id_maps);
         Frame mergedFrame = tempFrame.getFrame();  // need to switch order of merged frame
         int allColNum = mergedFrame.numCols();
         int[] colMapping = new int[allColNum];  // index into combined frame but with correct order
@@ -214,7 +214,7 @@ public class AstMerge extends AstPrimitive {
       }
     }.doAllNodes();
     if (method.equals("auto") && (rows == null || rows.size() > MAX_HASH_SIZE))  // Blew out hash size; switch to a sorting join.  Matt: even with 0, rows was size 3 hence added ||
-      return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+      return sortingMerge(l, r, allLeft, ncols, id_maps);
 
     // All of the walked set, and no dup handling on the right - which means no
     // need to replicate rows of the walked dataset.  Simple 1-pass over the
@@ -261,14 +261,13 @@ public class AstMerge extends AstPrimitive {
    * @param left    is the LHS frame; not-null.
    * @param right   is the RHS frame; not-null.
    * @param allLeft all rows in the LHS frame will appear in the result frame.
-   * @param allRite all rows in the RHS frame will appear in the result frame.
    * @param ncols   is the number of columns to join on, and these are ordered
    *                as the first ncols of both the left and right frames.
    * @param id_maps if not-null denote simple integer mappings from one
    *                categorical column to another; the width is ncols
    */
 
-  private ValFrame sortingMerge(Frame left, Frame right, boolean allLeft, boolean allRite, int ncols, int[][] id_maps) {
+  private ValFrame sortingMerge(Frame left, Frame right, boolean allLeft, int ncols, int[][] id_maps) {
     int cols[] = new int[ncols];
     for (int i = 0; i < ncols; i++) cols[i] = i;
     return new ValFrame(Merge.merge(left, right, cols, cols, allLeft, id_maps));
