@@ -1,7 +1,7 @@
 ``seed``
 --------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Stacked Ensembles
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost, Stacked Ensembles, Isolation Forest
 - Hyperparameter: yes
 
 Description

@@ -2,9 +2,8 @@ package hex.genmodel.tools;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.algos.drf.DrfMojoModel;
-import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,7 +46,7 @@ public class PrintMojo {
 
   private static void usage() {
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
-    System.out.println("The currently supported model types are DRF and GBM.");
+    System.out.println("The currently supported model types are DRF, GBM and XGBoost.");
     System.out.println("");
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [--title sss] [-o outputFileName]");
     System.out.println("");
@@ -76,7 +75,7 @@ public class PrintMojo {
     System.out.println("    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model_mojo.zip -o model.gv -f 20 -d 3");
     System.out.println("    dot -Tpng model.gv -o model.png");
     System.out.println("    open model.png");
-    System.out.println("");
+    System.out.println();
     System.exit(1);
   }
 
@@ -190,15 +189,9 @@ public class PrintMojo {
       os = System.out;
     }
 
-    if (genModel instanceof GbmMojoModel) {
-      SharedTreeGraph g = ((GbmMojoModel) genModel)._computeGraph(treeToPrint);
-      if (printRaw) {
-        g.print();
-      }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
-    }
-    else if (genModel instanceof DrfMojoModel) {
-      SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
+    if(genModel instanceof SharedTreeGraphConverter){
+      SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
+      final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null);
       if (printRaw) {
         g.print();
       }

@@ -1,17 +1,9 @@
 package water.init;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Pattern;
-
-import water.H2O;
-import water.util.FileUtils;
 
 abstract public class AbstractBuildVersion {
 

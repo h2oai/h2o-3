@@ -3,7 +3,6 @@ package hex;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -741,7 +740,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  visible but with a note in the UI) or is it experimental (hidden by
    *  default, visible in the UI if the user gives an "experimental" flag at
    *  startup); test-only builders are "experimental"  */
-  public enum BuilderVisibility { Experimental, Beta, Stable }
+  public enum BuilderVisibility {
+    Experimental, Beta, Stable;
+    /**
+     * @param value A value to search for among {@link BuilderVisibility}'s values
+     * @return A member of {@link BuilderVisibility}, if found.
+     * @throws IllegalArgumentException If given value is not found among members of {@link BuilderVisibility} enum.
+     */
+    public static BuilderVisibility valueOfIgnoreCase(final String value) throws IllegalArgumentException {
+      final BuilderVisibility[] values = values();
+      for (int i = 0; i < values.length; i++) {
+        if (values[i].name().equalsIgnoreCase(value)) return values[i];
+      }
+      throw new IllegalArgumentException(String.format("Algorithm availability level of '%s' is not known. Available levels: %s",
+              value, Arrays.toString(values)));
+    }
+  }
   public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   /** Clear whatever was done by init() so it can be run again. */

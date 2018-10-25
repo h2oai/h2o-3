@@ -1,5 +1,7 @@
 package hex.genmodel;
 
+import hex.genmodel.utils.IOUtils;
+
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
@@ -82,7 +84,7 @@ public class MojoReaderBackendFactory {
         if (entry.getSize() > Integer.MAX_VALUE)
           throw new IOException("File too large: " + entry.getName());
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        copyStream(zis, os);
+        IOUtils.copyStream(zis, os);
         content.put(entry.getName(), os.toByteArray());
       }
       zis.close();
@@ -97,7 +99,7 @@ public class MojoReaderBackendFactory {
     tmpFile.deleteOnExit(); // register delete on exit hook (in case tmp reader doesn't do the job)
     FileOutputStream fos = new FileOutputStream(tmpFile);
     try {
-      copyStream(inputStream, fos);
+      IOUtils.copyStream(inputStream, fos);
       fos.close();
     } catch (IOException e) {
       closeQuietly(fos); // Windows won't let us delete an open file
@@ -117,16 +119,6 @@ public class MojoReaderBackendFactory {
       } catch (IOException e) {
         // intentionally ignore exception
       }
-  }
-
-  private static void copyStream(InputStream source, OutputStream target) throws IOException {
-    byte[] buffer = new byte[8 * 1024];
-    while (true) {
-      int len = source.read(buffer);
-      if (len == -1)
-        break;
-      target.write(buffer, 0, len);
-    }
   }
 
 }

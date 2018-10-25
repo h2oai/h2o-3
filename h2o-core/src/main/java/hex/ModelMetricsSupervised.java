@@ -37,12 +37,5 @@ public class ModelMetricsSupervised extends ModelMetrics {
       _work = new double[_nclasses+1];
     }
 
-    public Frame makePredictionCache(Model m, Vec response) {
-      return null;
-    }
-
-    public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
-      throw new UnsupportedOperationException("Should be overridden in implementation (together with makePredictionCache(..)).");
-    }
   }
 }

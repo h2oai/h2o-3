@@ -62,7 +62,7 @@ public class SharedTreeNode {
     return weight;
   }
 
-  void setNodeNumber(int id) {
+  public void setNodeNumber(int id) {
     nodeNumber = id;
   }
 
@@ -70,7 +70,7 @@ public class SharedTreeNode {
     weight = w;
   }
 
-  void setCol(int v1, String v2) {
+  public void setCol(int v1, String v2) {
     colId = v1;
     colName = v2;
   }
@@ -79,7 +79,7 @@ public class SharedTreeNode {
     return colId;
   }
 
-  void setLeftward(boolean v) {
+  public void setLeftward(boolean v) {
     leftward = v;
   }
 
@@ -87,8 +87,12 @@ public class SharedTreeNode {
     naVsRest = v;
   }
 
-  void setSplitValue(float v) {
+  public void setSplitValue(float v) {
     splitValue = v;
+  }
+
+  public void setColName(String colName) {
+    this.colName = colName;
   }
 
   void setBitset(String[] v1, GenmodelBitSet v2) {
@@ -97,11 +101,11 @@ public class SharedTreeNode {
     bs = v2;
   }
 
-  void setPredValue(float v) {
+  public void setPredValue(float v) {
     predValue = v;
   }
 
-  void setSquaredError(float v) {
+  public void setSquaredError(float v) {
     squaredError = v;
   }
 
@@ -216,7 +220,7 @@ public class SharedTreeNode {
     v.setInclusiveLevels(childInclusiveLevels);
   }
 
-  void setInclusiveNa(boolean v) {
+  public void setInclusiveNa(boolean v) {
     inclusiveNa = v;
   }
 
@@ -455,6 +459,10 @@ public class SharedTreeNode {
 
   public String[] getDomainValues() {
     return domainValues;
+  }
+
+  public void setDomainValues(String[] domainValues) {
+    this.domainValues = domainValues;
   }
 
   public GenmodelBitSet getBs() {

@@ -78,6 +78,7 @@ class MetricsBase(backwards_compatible()):
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
+        types_w_anomaly = ['ModelMetricsAnomaly']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -91,8 +92,9 @@ class MetricsBase(backwards_compatible()):
         else:
             print(reported_on.format("test"))
         print()
-        print("MSE: " + str(self.mse()))
-        print("RMSE: " + str(self.rmse()))
+        if metric_type not in types_w_anomaly:
+            print("MSE: " + str(self.mse()))
+            print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
             print("MAE: " + str(self.mae()))
             print("RMSLE: " + str(self.rmsle()))
@@ -121,7 +123,9 @@ class MetricsBase(backwards_compatible()):
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
-
+        if metric_type in types_w_anomaly:
+            print("Anomaly Score: " + str(self.mean_score()))
+            print("Normalized Anomaly Score: " + str(self.mean_normalized_score()))
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
@@ -720,3 +724,21 @@ class H2OWordEmbeddingModelMetrics(MetricsBase):
 
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OWordEmbeddingModelMetrics, self).__init__(metric_json, on, algo)
+
+
+class H2OAnomalyDetectionModelMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OAnomalyDetectionModelMetrics, self).__init__(metric_json, on, algo)
+
+    def mean_score(self):
+        """Mean Anomaly Score. For Isolation Forest represents the average of all tree-path lengths."""
+        if MetricsBase._has(self._metric_json, "mean_score"):
+            return self._metric_json["mean_score"]
+        return None
+
+    def mean_normalized_score(self):
+        """Mean Normalized Anomaly Score. For Isolation Forest - normalized average path length."""
+        if MetricsBase._has(self._metric_json, "mean_normalized_score"):
+            return self._metric_json["mean_normalized_score"]
+        return None

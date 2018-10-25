@@ -587,6 +587,17 @@ GBM Hyperparameters
 -  ``huber_alpha``
 -  ``categorical_encoding``
 
+Isolation Forest Hyperparameters
+--------------------------------
+
+-  ``mtries``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``categorical_encoding``
+-  ``sample_size``
+-  ``sample_rate``
+
 K-Means Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -757,7 +768,10 @@ XGBoost Hyperparameters
 -  ``skip_drop``
 
 
+AutoML Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~
 
+- ``keep_cross_validation_models``
 
 
 Grid Testing

@@ -8,6 +8,7 @@ import java.io.*;
  */
 public abstract class MojoModel extends GenModel {
 
+  public String _h2oVersion;
   public hex.ModelCategory _category;
   public String _uuid;
   public boolean _supervised;

@@ -18,11 +18,11 @@ public class SharedTreeMojoModelTest {
     bb.putFloat(4.2f);
 
     // Root Node Prediction
-    final double score = SharedTreeMojoModel.scoreTree(tree, null, -1, false, null);
+    final double score = SharedTreeMojoModel.scoreTree(tree, null, false, null);
     assertEquals(4.2f, score, 0.0);
 
     // Leaf Node Assignment
-    final double path = SharedTreeMojoModel.scoreTree(tree, null, -1, true, null);
+    final double path = SharedTreeMojoModel.scoreTree(tree, null, true, null);
     assertEquals("", SharedTreeMojoModel.getDecisionPath(path));
   }
 

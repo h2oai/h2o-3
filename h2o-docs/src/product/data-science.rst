@@ -37,6 +37,7 @@ Unsupervised
 
    data-science/aggregator
    data-science/glrm
+   data-science/if
    data-science/k-means
    data-science/pca
 

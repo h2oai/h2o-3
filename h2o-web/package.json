@@ -29,7 +29,7 @@
     "fs-extra": "0.18.2",
     "htmlparser2": "3.8.2",
     "js-yaml": "3.3.0",
-    "lodash": "3.7.0",
+    "lodash": "~2.4.1",
     "marked": "0.3.9",
     "minimist": "1.1.1",
     "mkdirp": "0.5.0",

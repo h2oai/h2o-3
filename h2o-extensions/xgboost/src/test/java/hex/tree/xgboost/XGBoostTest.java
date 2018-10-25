@@ -21,6 +21,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
@@ -692,6 +693,42 @@ public class XGBoostTest extends TestUtil {
 
   }
 
+  @Test
+  public void testNativeParams() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+
+      TwoDimTable np = model._output._native_parameters;
+      assertNotNull(np);
+      System.out.println(np.toString());
+
+      Set<String> names = new HashSet<>();
+      for (int i = 0; i < np.getRowDim(); i++) {
+        names.add(String.valueOf(np.get(i, 0)));
+      }
+      assertEquals(names, new HashSet<>(Arrays.asList(
+              "colsample_bytree", "silent", "tree_method", "seed", "max_depth", "booster", "objective", "nround",
+              "lambda", "eta", "grow_policy", "nthread", "alpha", "colsample_bylevel", "subsample", "min_child_weight",
+              "gamma", "max_delta_step")));
+    } finally {
+      Scope.exit();
+      if (tfr!=null) tfr.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+  }
 
   @Test
   public void testBinomialTrainingWeights() {

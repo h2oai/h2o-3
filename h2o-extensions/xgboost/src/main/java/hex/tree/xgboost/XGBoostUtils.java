@@ -34,9 +34,10 @@ public class XGBoostUtils {
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();
         assert(coefnames.length == di.fullN());
+        int catCols = di._catOffsets[di._catOffsets.length-1];
+
         for (int i = 0; i < di.fullN(); ++i) {
             sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
-            int catCols = di._catOffsets[di._catOffsets.length-1];
             if (i < catCols || f.vec(i-catCols).isBinary())
                 sb.append("i");
             else if (f.vec(i-catCols).isInt())
@@ -877,6 +878,32 @@ public class XGBoostUtils {
      */
     private static BigDenseMatrix allocateDenseMatrix(final int rowCount, final DataInfo dataInfo) {
         return new BigDenseMatrix(rowCount, dataInfo.fullN());
+    }
+
+    public static FeatureProperties assembleFeatureNames(final DataInfo di) {
+        String[] coefnames = di.coefNames();
+        assert (coefnames.length == di.fullN());
+        int numCatCols = di._catOffsets[di._catOffsets.length - 1];
+
+        String[] featureNames = new String[di.fullN()];
+        boolean[] oneHotEncoded = new boolean[di.fullN()];
+        for (int i = 0; i < di.fullN(); ++i) {
+            featureNames[i] = coefnames[i];
+            if (i < numCatCols) {
+                oneHotEncoded[i] = true;
+            }
+        }
+        return new FeatureProperties(featureNames, oneHotEncoded);
+    }
+
+    static class FeatureProperties {
+        public String[] _names;
+        public boolean[] _oneHotEncoded;
+
+        public FeatureProperties(String[] names, boolean[] oneHotEncoded) {
+            _names = names;
+            _oneHotEncoded = oneHotEncoded;
+        }
     }
 
 }

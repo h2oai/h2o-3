@@ -293,6 +293,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictDimReduction(data);
       case WordEmbedding:
         return predictWord2Vec(data);
+      case AnomalyDetection:
+        return predictAnomalyDetection(data);
 
       case Unknown:
         throw new PredictException("Unknown model category");
@@ -429,6 +431,29 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
 
   }
+
+  /**
+   * Make a prediction on a new data point using a Binomial model.
+   *
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public AnomalyDetectionPrediction predictAnomalyDetection(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.AnomalyDetection, data, 0.0);
+
+    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction();
+    p.normalizedScore = preds[0];
+    p.score = preds[1];
+    if (enableLeafAssignment) { // only get leaf node assignment if enabled
+      SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
+      p.leafNodeAssignments = assignments._paths;
+      p.leafNodeAssignmentIds = assignments._nodeIds;
+    }
+
+    return p;
+  }
+
   /**
    * Make a prediction on a new data point using a Binomial model.
    *

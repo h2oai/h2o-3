@@ -1,8 +1,10 @@
+.. _keep_cross_validation_models:
+
 ``keep_cross_validation_models``
--------------------------------------
+--------------------------------
 
 - Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
-- Hyperparameter: no
+- Hyperparameter: yes for AutoML, no for other algorithms
 
 Description
 ~~~~~~~~~~~

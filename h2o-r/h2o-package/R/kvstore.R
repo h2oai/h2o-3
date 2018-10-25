@@ -138,7 +138,7 @@ h2o.getModel <- function(model_id) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Ordinal", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding", "CoxPH")))
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Ordinal", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding", "CoxPH", "AnomalyDetection")))
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "model_category"))]

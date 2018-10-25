@@ -850,10 +850,6 @@ The available options vary depending on the selected model. If an option is only
     - ``AUC``
     - ``mean_per_class_error``
 
--  **keep_cross_validation_predictions** (AutoML): Specify whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
-
--  **keep_cross_validation_models** (AutoML): Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
-
 -  **build_tree_one_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled.
 
 -  **rate**: (DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. Not applicable if **adaptive_rate** is enabled.
@@ -943,11 +939,11 @@ The available options vary depending on the selected model. If an option is only
 
 **Expert Options**
 
--  **keep_cross_validation_models**: (GLM, GBM, DL, DRF, K-Means, XGBoost) To keep the cross-validation models, check this checkbox.
+-  **keep_cross_validation_models**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation models, check this checkbox.
 
--  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means, XGBoost) To keep the cross-validation predictions, check this checkbox.
+-  **keep_cross_validation_predictions**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation predictions, check this checkbox.
 
--  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost) Enable this option to preserve the cross-validation fold assignment.
+-  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) Enable this option to preserve the cross-validation fold assignment.
 
 -  **class_sampling_factors**: (DRF, GBM, DL, Naive-Bayes, AutoML) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
@@ -1674,8 +1670,6 @@ To access H2Ostream from Flow:
 4. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your logs. (Refer to `Downloading Logs`_.)
 
 You can also email your question to h2ostream@googlegroups.com.
-
---------------
 
 .. |Flow - Hide Sidebar| image:: images/Flow_SidebarHide.png
 .. |Flow - Display Sidebar| image:: images/Flow_SidebarDisplay.png

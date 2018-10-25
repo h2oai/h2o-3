@@ -34,4 +34,5 @@ public class XGBoostOutput extends Model.Output {
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
   public TwoDimTable _variable_importances;
   public VarImp _varimp;
+  public TwoDimTable _native_parameters;
 }

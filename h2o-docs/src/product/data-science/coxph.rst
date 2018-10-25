@@ -15,6 +15,8 @@ where :math:`\lambda(t)` is the baseline hazard function shared by all observati
 
 This combination of a non-parametric baseline hazard function and a parametric risk score results in Cox proportional hazards models being described as *semi-parametric*. In addition, a simple rearrangement of terms shows that unlike generalized linear models, an intercept (constant) term in the risk score adds no value to the model fit, due to the inclusion of a baseline hazard function.
 
+`An R demo is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__. This uses the CoxPH algorithm along with the craigslistJobTitles.csv dataset. 
+
 Defining a CoxPH Model
 ~~~~~~~~~~~~~~~~~~~~~~
 

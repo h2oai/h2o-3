@@ -1,5 +1,6 @@
 import h2o
 import math
+from h2o.estimators import H2OXGBoostEstimator
 
 class H2OTree():
     """
@@ -135,6 +136,9 @@ class H2OTree():
 
     def __decode_categoricals(self, model, levels):
         string_levels = len(self._left_children) * [None]
+
+        if type(model) is H2OXGBoostEstimator:
+            return string_levels;
 
         for i in range(0, len(self._left_children)):
             if (self._features[i] is None): continue

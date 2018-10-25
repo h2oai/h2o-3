@@ -1,7 +1,7 @@
 ``mtries``
 ----------
 
-- Available in: DRF
+- Available in: DRF, Isolation Forest
 - Hyperparameter: yes
 
 Description
