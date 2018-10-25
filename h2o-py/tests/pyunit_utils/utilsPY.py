@@ -3141,7 +3141,7 @@ def model_run_time_sorted_by_time(model_list):
 
     for index in range(model_num):
         model_index = int(model_list[index]._id.split('_')[-1])
-        model_runtime_sec_list[model_index] = \
+        model_runtime_sec_list[model_index - 1] = \
             (model_list[index]._model_json["output"]["run_time"]/1000.0)
 
     return model_runtime_sec_list
@@ -3165,7 +3165,7 @@ def model_seed_sorted_by_time(model_list):
 
         for pIndex in range(len(model_list.models[0]._model_json["parameters"])):
             if model_list.models[index]._model_json["parameters"][pIndex]["name"]=="seed":
-                model_seed_list[model_index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
+                model_seed_list[model_index - 1]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
                 break
 
     return model_seed_list
@@ -3460,7 +3460,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6):
                                                                      "{1}".format(temp1[rowInd], temp2[rowInd], rowInd)
                 else:
                     assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
 # frame compare with NAs in column
 def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5):
