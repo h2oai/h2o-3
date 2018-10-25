@@ -229,8 +229,7 @@ There are three different argument types:
 -  H2O options
 -  Authentication options
 
-The arguments use the following format: java ``<JVM Options>`` -jar
-h2o.jar ``<H2O Options>``.
+The arguments use the following format: java ``<JVM Options>`` -jar h2o.jar ``<H2O Options>``.
 
 JVM Options
 ~~~~~~~~~~~
@@ -260,13 +259,18 @@ H2O Options
     - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported.)
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
--  ``-log_dir <fileSystemPath>\``: Specify the directory where H2O writes logs to disk. (This usually has a good default that you need not change.
--  ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
--  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
--  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
--  ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
--  ``-notify_local <fileSystemPath>``: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321. 
+- ``-log_dir <fileSystemPath>\``: Specify the directory where H2O writes logs to disk. (This usually has a good default that you need not change.
+- ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
+- ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
+- ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
+- ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
+- ``-notify_local <fileSystemPath>``: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321. 
 -  ``-context_path <context_path>``: The context path for Jetty.
+- ``features``: Disable availability of features considered to be experimental or beta. Currently, this only works with algorithms. Options include:
+
+   -  ``stable``: Only stable algorithms will be enabled; beta and experimental will not.
+   -  ``beta``: Only beta and stable algorithms will be enabled; experimental will not.
+   -  ``experimental``: Enables all algorithms (default).   
 
 Authentication Options
 ~~~~~~~~~~~~~~~~~~~~~~

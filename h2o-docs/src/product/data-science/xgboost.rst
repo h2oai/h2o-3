@@ -235,9 +235,7 @@ The list of limitations include:
 
   1. XGBoost is not supported on Windows.
 
-  2. XGBoost is initialized for single-node H2O clusters; however multi-node XGBoost support is available as a Beta feature.
-
-  3. The list of supported platforms includes:
+  2. The list of supported platforms includes:
  
     +----------+-----------------+-----+-----+-----------------------+
     | Platform | Minimal XGBoost | OMP | GPU | Compilation OS        |
@@ -251,9 +249,9 @@ The list of limitations include:
 
     **Note**: Minimal XGBoost configuration includes support for a single CPU.
 
-  4. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
+  3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
-  5. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
+  4. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
 Disabling XGBoost
 ~~~~~~~~~~~~~~~~~
