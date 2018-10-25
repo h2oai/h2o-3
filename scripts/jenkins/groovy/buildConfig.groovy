@@ -1,4 +1,4 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes,
+def call(final context, final String mode, final String commitMessage, final changes,
          final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
          final String xgbVersion, final String gradleVersion) {
   def buildConfig = new BuildConfig()
@@ -74,7 +74,7 @@ class BuildConfig {
   private String xgbVersion
   private String gradleVersion
 
-  void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
+  void initialize(final context, final String mode, final String commitMessage, final changes,
                   final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
                   final String xgbVersion, final String gradleVersion) {
     this.mode = mode
@@ -290,7 +290,7 @@ class BuildConfig {
     return gradleVersion
   }
 
-  private void detectChanges(List<String> changes) {
+  private void detectChanges(changes) {
     markAllComponentsForSkip()
 
     changesMap[COMPONENT_ANY] = true
