@@ -111,10 +111,6 @@ class ExprNode(object):
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
-        if 'mapKeys' in res:
-            self._cache.mapKeys = res['mapKeys']
-            self._cache.frames = res['frames']
-
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
                 self._cache._data = [float(x) for x in res['scalar']]
@@ -125,6 +121,9 @@ class ExprNode(object):
         if 'key' in res:
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
+        if 'map_keys' in res:
+            self._cache.map_keys = res['map_keys']
+            self._cache.frames = res['frames']
         return self
 
     def _optimize(self):
