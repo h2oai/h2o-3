@@ -96,6 +96,15 @@ public class GBM_Example {
         predict_params.frame = gbmParms.trainingFrame;
         predict_params.predictionsFrame = H2oApi.stringToFrameKey("predictions");
 
+        // STEP 9: Check Gson deserialize NaN values
+        FramesV3 h2oFrames = h2o.frameSummary(gbmParms.trainingFrame);
+        FrameV3 trainFrame = h2oFrames.frames[0];
+        for (ColV3 col : trainFrame.columns) {
+            if ("enum".equals(col.type)) {
+                assert Double.isNaN(col.mean);
+            }
+        }
+
         ModelMetricsListSchemaV3 predictions = h2o.predict(predict_params);
         System.out.println("predictions: " + predictions);
 
