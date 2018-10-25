@@ -328,7 +328,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
                 new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
                         Key.make("automl_validation_" + origTrainingFrame._key)},
-                new double[] { 0.8, 0.2 },
+                new double[] { 0.9, 0.1 },
                 buildSpec.build_control.stopping_criteria.seed());
         this.trainingFrame = splits[0];
         this.validationFrame = splits[1];
@@ -374,13 +374,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and leaderboard frames in the ratio 50/50");
         }
       } else {
-        // leaderboard frame is there, so if missing valid, then we just need to do a 80/20 split, else do nothing
+        // leaderboard frame is there, so if missing valid, then we just need to do a 90/10 split, else do nothing
         if (null == this.validationFrame) {
           // case 6: no CV, missing validation -- need to create it from train
           Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
                   new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
                           Key.make("automl_validation_" + origTrainingFrame._key)},
-                  new double[] { 0.8, 0.2 },
+                  new double[] { 0.9, 0.1 },
                   buildSpec.build_control.stopping_criteria.seed());
           this.trainingFrame = splits[0];
           this.validationFrame = splits[1];

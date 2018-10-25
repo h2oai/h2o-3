@@ -117,14 +117,14 @@ Optional Miscellaneous Parameters
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
-If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
+If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required by and used exclusively for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
 
 By default, AutoML uses cross-validation for all models, and therefore we can use cross-validation metrics to generate the leaderboard.  If the ``leaderboard_frame`` is explicitly specified by the user, then that frame will be used to generate the leaderboard metrics instead of using cross-validation metrics. 
 
 For cross-validated AutoML, when the user specifies:
 
-   1. **training**: The ``training_frame`` is split into training (80%) and validation (20%).  
-   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  
+   1. **training**: The ``training_frame`` is split into training (90%) and validation (10%).  
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (90%) and validation (10%).  
    3. **training + validation**: Leave frames as-is.
    4. **training + validation + leaderboard**: Leave frames as-is.
 
@@ -132,8 +132,8 @@ For cross-validated AutoML, when the user specifies:
 If not using cross-validation (by setting ``nfolds = 0``) in AutoML, then we need to make sure there is a test frame (aka. the "leaderboard frame") to score on because cross-validation metrics will not be available.  So when the user specifies:
 
    1. **training**: The ``training_frame`` is split into training (80%), validation (10%) and leaderboard/test (10%).
-   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  Leaderboard frame as-is.
-   3. **training + validation**: The ``validation_frame`` is split into validation (50%) and leaderboard/test (50%).  Training frame as-is.
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (90%) and validation (10%).  Leaderboard frame as-is.
+   3. **training + validation**: The ``validation_frame`` is split in half to create a new validation set and a leaderboard/test.  Leave training frame as-is.
    4. **training + validation + leaderboard**: Leave frames as-is.
 
 
@@ -364,7 +364,7 @@ FAQ
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparamter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains five models.  It should be relatively fast to use (to generate predictions on new data) without much degredation in model performance when compared to the "All Models" ensemble.   
+  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degredation in model performance when compared to the "All Models" ensemble.   
 
 -  **How do I save AutoML runs?**
 
@@ -372,7 +372,7 @@ FAQ
 
 -  **Why don't I see XGBoost models when using AutoML in a multi-node H2O cluster?**
 
-  The multi-node XGBoost feature is experimental, so XGBoost is turned off by default for multi-node H2O clusters.
+  XGBoost is turned off by default for multi-node H2O clusters.
 
 
 Resources
