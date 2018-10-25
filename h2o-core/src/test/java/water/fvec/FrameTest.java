@@ -147,7 +147,8 @@ public class FrameTest extends TestUtil {
   }
 
   // This test keeps failing locally when we run the whole suite but green if we run it alone.
-  // Vec$ESPC.rowLayout is using shared state... might be a bug
+  // Vec$ESPC.rowLayout is using shared state... see jira PUBDEV-6019
+  @Ignore
   @Test
   public void testRowDeepSliceWithPredicateFrame() {
     Scope.enter();

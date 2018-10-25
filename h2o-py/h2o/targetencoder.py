@@ -94,8 +94,8 @@ class TargetEncoder(object):
         assert_is_type(holdout_type, "kfold", "loo", "none")
 
         # We need to make sure that frames are being sent in the same order
-        assert self._encodingMap.mapKeys['string'] == self._teColumns
-        encodingMapKeys = self._encodingMap.mapKeys['string']
+        assert self._encodingMap.map_keys['string'] == self._teColumns
+        encodingMapKeys = self._encodingMap.map_keys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, holdout_type,
                                             self._responseColumnName, self._foldColumnName,

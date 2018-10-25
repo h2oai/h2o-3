@@ -217,7 +217,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, counter++, protoModelKey);
+            model = buildModel(params, grid, ++counter, protoModelKey);
 
             if (model!=null) {
               model.fillScoringInfo(scoringInfo);

@@ -30,7 +30,7 @@ def test_target_encoding_fit_method():
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
 
     encodingMap = targetEncoder.fit(frame=trainingFrame)
-    assert encodingMap.mapKeys['string'] == teColumns
+    assert encodingMap.map_keys['string'] == teColumns
     assert encodingMap.frames[0]['num_rows'] == 583
 
 
@@ -103,10 +103,10 @@ def test_target_encoding_transform_none_blending():
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
     trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
-    
+
     targetEncoderWithBlending = TargetEncoder(x= teColumns, y= targetColumnName,
                                               blending_avg= True, inflection_point = 3, smoothing = 1)
-    
+
     targetEncoderWithBlending.fit(frame=trainingFrame)
 
     encodedFrameWithBlending = targetEncoderWithBlending.transform(frame=trainingFrame, holdout_type="none", seed=1234, is_train_or_valid=True)

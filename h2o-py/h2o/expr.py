@@ -125,6 +125,9 @@ class ExprNode(object):
         if 'key' in res:
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
+        if 'map_keys' in res:
+            self._cache.map_keys = res['map_keys']
+            self._cache.frames = res['frames']
         return self
 
     def _optimize(self):
