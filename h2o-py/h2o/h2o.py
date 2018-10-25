@@ -146,7 +146,7 @@ def version_check():
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
-         extra_classpath=None, jvm_custom_args=None, **kwargs):
+         extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -190,6 +190,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(strict_version_check, bool, None)
     assert_is_type(extra_classpath, [str], None)
     assert_is_type(jvm_custom_args, [str], None)
+    assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
 
@@ -261,7 +262,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath,
-                                  jvm_custom_args=jvm_custom_args)
+                                  jvm_custom_args=jvm_custom_args, bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:

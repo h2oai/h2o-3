@@ -28,10 +28,8 @@ try {
                     def scmEnv = null
                     dir(env.BUILD_NUMBER_DIR) {
                         deleteDir()
-                        retry(5) {
-                            timeout(1) {
-                                scmEnv = checkout scm
-                            }
+                        retryWithTimeout(60, 5) {
+                            scmEnv = checkout scm
                         }
 
                         env.THIS_BUILD_GIT_HASH_LONG = sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()

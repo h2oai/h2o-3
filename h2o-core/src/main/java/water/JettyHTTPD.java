@@ -14,6 +14,7 @@ import water.api.RequestServer;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
+import water.server.RequestAuthExtension;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.StringUtils;
@@ -117,13 +118,26 @@ public class JettyHTTPD extends AbstractHTTPD {
     context.addServlet(PutKeyServlet.class,   "/3/PutKey");
     context.addServlet(RequestServer.class,   "/");
 
+
+    final List<Handler> extHandlers = new ArrayList<Handler>();
+    extHandlers.add(new AuthenticationHandler());
+    // here we wrap generic authentication handlers into jetty-aware wrappers
+    for (final RequestAuthExtension requestAuthExtension : ExtensionManager.getInstance().getAuthExtensions()) {
+      extHandlers.add(new AbstractHandler() {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+          if (requestAuthExtension.handle(target, request, response)) {
+            baseRequest.setHandled(true);
+          }
+        }
+      });
+    }
+    //
+    extHandlers.add(context);
+
     // Handlers that can only be invoked for an authenticated user (if auth is enabled)
     HandlerCollection authHandlers = new HandlerCollection();
-    authHandlers.setHandlers(new Handler[]{
-            new AuthenticationHandler(),
-            new ExtensionHandler1(),
-            context,
-    });
+    authHandlers.setHandlers(extHandlers.toArray(new Handler[extHandlers.size()]));
 
     // LoginHandler handles directly login requests and delegates the rest to the authHandlers
     LoginHandler loginHandler = new LoginHandler("/login", "/loginError");
@@ -157,23 +171,6 @@ public class JettyHTTPD extends AbstractHTTPD {
   @Override
   protected void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
     sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, message);
-  }
-
-  @SuppressWarnings("unused")
-  protected void handle1(String target,
-                         Request baseRequest,
-                         HttpServletRequest request,
-                         HttpServletResponse response) throws IOException, ServletException {}
-
-  public class ExtensionHandler1 extends AbstractHandler {
-    public ExtensionHandler1() {}
-
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException, ServletException {
-      H2O.getJetty().handle1(target, baseRequest, request, response);
-    }
   }
 
   public class LoginHandler extends HandlerWrapper {
