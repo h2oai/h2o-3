@@ -49,7 +49,7 @@ def test_target_encoding_transform_kfold():
 
     targetEncoder.fit(trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="kfold", seed=1234, is_train_or_valid=True)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -69,7 +69,7 @@ def test_target_encoding_transform_loo():
 
     targetEncoder.fit(frame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="loo", seed=1234, is_train_or_valid=True)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, holdout_type="loo", seed=1234, is_train_or_valid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -89,7 +89,7 @@ def test_target_encoding_transform_none():
 
     targetEncoder.fit(frame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=1234, is_train_or_valid=True)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, holdout_type="none", seed=1234, is_train_or_valid=True)
 
     teColumnsEncoded = list(map(lambda x: x+"_te", teColumns))
     frameWithEncodingsOnly = encodedFrame[teColumnsEncoded]
@@ -109,7 +109,7 @@ def test_target_encoding_transform_none_blending():
     
     targetEncoderWithBlending.fit(frame=trainingFrame)
 
-    encodedFrameWithBlending = targetEncoderWithBlending.transform(frame=trainingFrame, strategy="none", seed=1234, is_train_or_valid=True)
+    encodedFrameWithBlending = targetEncoderWithBlending.transform(frame=trainingFrame, holdout_type="none", seed=1234, is_train_or_valid=True)
 
     frameWithBlendedEncodingsOnly = encodedFrameWithBlending[teColumnsEncoded]
 
@@ -118,7 +118,7 @@ def test_target_encoding_transform_none_blending():
 
     targetEncoderWithoutBlending.fit(frame=trainingFrame)
 
-    encodedFrameWithoutBlending = targetEncoderWithoutBlending.transform(frame=trainingFrame, strategy="none", seed=1234, is_train_or_valid=True)
+    encodedFrameWithoutBlending = targetEncoderWithoutBlending.transform(frame=trainingFrame, holdout_type="none", seed=1234, is_train_or_valid=True)
     encodedFrameWithoutBlendingOnly = encodedFrameWithoutBlending[teColumnsEncoded]
 
     try:
@@ -144,16 +144,16 @@ def test_target_encoding_seed_is_working():
 
     targetEncoder.fit(frame=trainingFrame)
 
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234, is_train_or_valid=True)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, holdout_type="none", noise=noiseTest, seed=1234, is_train_or_valid=True)
 
     encodingsOnly = encodedFrame[teColumnsEncoded]
 
     # Second transformation with the same seed 1234
-    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1234, is_train_or_valid=True)
+    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, holdout_type="none", noise=noiseTest, seed=1234, is_train_or_valid=True)
     encodingsOnly2 = encodedFrame2[teColumnsEncoded]
 
     # Third  transformation with another seed 1235
-    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=noiseTest, seed=1235, is_train_or_valid=True)
+    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, holdout_type="none", noise=noiseTest, seed=1235, is_train_or_valid=True)
     encodingsOnly3 = encodedFrame3[teColumnsEncoded]
 
     # Comparing results
@@ -183,16 +183,16 @@ def test_target_encoding_default_noise_is_applied():
     targetEncoder.fit(frame=trainingFrame)
 
     seedTest = 1234
-    encodedFrame = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest, is_train_or_valid=True)
+    encodedFrame = targetEncoder.transform(frame=trainingFrame, holdout_type="none", noise=0.0, seed=seedTest, is_train_or_valid=True)
 
     encodingsOnly = encodedFrame[teColumnsEncoded]
 
     # Second transformation without specifying noise. Default will be applied.
-    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, strategy="none", seed=seedTest, is_train_or_valid=True)
+    encodedFrame2 = targetEncoder.transform(frame=trainingFrame, holdout_type="none", seed=seedTest, is_train_or_valid=True)
     encodingsOnly2 = encodedFrame2[teColumnsEncoded]
 
     # Third  transformation with zero noise
-    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, strategy="none", noise=0.0, seed=seedTest, is_train_or_valid=True)
+    encodedFrame3 = targetEncoder.transform(frame=trainingFrame, holdout_type="none", noise=0.0, seed=seedTest, is_train_or_valid=True)
     encodingsOnly3 = encodedFrame3[teColumnsEncoded]
 
     # Comparing results

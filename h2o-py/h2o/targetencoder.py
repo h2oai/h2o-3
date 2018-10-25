@@ -30,9 +30,9 @@ class TargetEncoder(object):
 
     targetEncoder.fit(frame)
 
-    encodedValid = targetEncoder.transform(frame=frame, strategy="kfold", seed=1234, is_train_or_valid=True)
+    encodedValid = targetEncoder.transform(frame=frame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
 
-    encodedTest = targetEncoder.transform(frame=testFrame, strategy="none", noise=0.0, seed=1234, is_train_or_valid=False)
+    encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
     """
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ class TargetEncoder(object):
         :param List[str] x: List of categorical column names that we want apply target encoding to
 
         :param str y: response column we will create encodings with
-        :param str fold_column: fold column if we want to use 'kfold' strategy
+        :param str fold_column: fold column if we want to use 'kfold' holdout_type
         :param boolean blending_avg: whether to use blending or not
         :param double inflection_point: parameter for blending. Used to calculate `lambda`. Parameter determines half of the minimal sample size
             for which we completely trust the estimate based on the sample in the particular level of categorical variable.
@@ -75,7 +75,7 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, is_train_or_valid, frame = None, strategy = None, noise = -1, seed = -1):
+    def transform(self, is_train_or_valid, frame = None, holdout_type = None, noise = -1, seed = -1):
         """
         Apply transformation to `te_columns` based on the encoding maps generated during `TargetEncoder.fit()` call.
         You must not pass encodings manually from `.fit()` method because they are being stored internally
@@ -83,21 +83,21 @@ class TargetEncoder(object):
 
         :param bool is_train_or_valid: explicitly specify type of the data.
         :param frame frame: to which frame we are applying target encoding transformations.
-        :param str strategy: Strategy to minimise data leakage introduced by target encoding's nature.
-            Supported strategies:
+        :param str holdout_type:
+            Supported options:
                 1) "kfold" - encodings for a fold are generated based on out-of-fold data.
                 2) "loo" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
-                3) "none" - none of the specific technics will be applied.
+                3) "none" - we do not holdout anything. Using whole frame for training
         :param float noise: amount of noise to add to the final target encodings.
         :param int seed: set to fixed value for reproducibility.
         """
-        assert_is_type(strategy, "kfold", "loo", "none")
+        assert_is_type(holdout_type, "kfold", "loo", "none")
 
         # We need to make sure that frames are being sent in the same order
         assert self._encodingMap.mapKeys['string'] == self._teColumns
         encodingMapKeys = self._encodingMap.mapKeys['string']
         encodingMapFramesKeys = list(map(lambda x: x['key']['name'], self._encodingMap.frames))
-        return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, strategy,
+        return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, holdout_type,
                                             self._responseColumnName, self._foldColumnName,
                                             self._blending, self._inflectionPoint, self._smoothing,
                                             noise, seed, is_train_or_valid))
