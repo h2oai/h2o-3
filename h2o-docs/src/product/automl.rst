@@ -117,14 +117,14 @@ Optional Miscellaneous Parameters
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
 
-If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
+If the user doesn't specify a ``validation_frame``, then one will be created automatically by randomly partitioning the training data.  The validation frame is required by and used exclusively for early stopping of the individual algorithms, the grid searches and the AutoML process itself.  
 
 By default, AutoML uses cross-validation for all models, and therefore we can use cross-validation metrics to generate the leaderboard.  If the ``leaderboard_frame`` is explicitly specified by the user, then that frame will be used to generate the leaderboard metrics instead of using cross-validation metrics. 
 
 For cross-validated AutoML, when the user specifies:
 
-   1. **training**: The ``training_frame`` is split into training (80%) and validation (20%).  
-   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  
+   1. **training**: The ``training_frame`` is split into training (90%) and validation (10%).  
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (90%) and validation (10%).  
    3. **training + validation**: Leave frames as-is.
    4. **training + validation + leaderboard**: Leave frames as-is.
 
@@ -132,8 +132,8 @@ For cross-validated AutoML, when the user specifies:
 If not using cross-validation (by setting ``nfolds = 0``) in AutoML, then we need to make sure there is a test frame (aka. the "leaderboard frame") to score on because cross-validation metrics will not be available.  So when the user specifies:
 
    1. **training**: The ``training_frame`` is split into training (80%), validation (10%) and leaderboard/test (10%).
-   2. **training + leaderboard**:  The ``training_frame`` is split into training (80%) and validation (20%).  Leaderboard frame as-is.
-   3. **training + validation**: The ``validation_frame`` is split into validation (50%) and leaderboard/test (50%).  Training frame as-is.
+   2. **training + leaderboard**:  The ``training_frame`` is split into training (90%) and validation (10%).  Leaderboard frame as-is.
+   3. **training + validation**: The ``validation_frame`` is split in half to create a new validation set and a leaderboard/test.  Leave training frame as-is.
    4. **training + validation + leaderboard**: Leave frames as-is.
 
 
