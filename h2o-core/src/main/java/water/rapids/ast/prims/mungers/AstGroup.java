@@ -34,7 +34,7 @@ import java.util.Arrays;
  */
 public class AstGroup extends AstPrimitive {
   public enum NAHandling {ALL, RM, IGNORE}
-  public int _totMedianCols = -1; // count total column numbers that need the median action
+  public int _numberOfMedianActionsNeeded = -1;
 
   // Functions handled by GroupBy
   public enum FCN {
@@ -270,11 +270,69 @@ public class AstGroup extends AstPrimitive {
     AstNumList groupby = check(ncols, asts[2]);
     final int[] gbCols = groupby.expand4();
 
-    // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...),
-    // then count by triples.
+    int validAggregatesCount = countNumberOfAggregates(fr, ncols, asts);
+
+    final AGG[] aggs = constructAggregates(fr, validAggregatesCount, env, asts);
+
+    return performGroupingWithAggregations(fr, gbCols, aggs, _numberOfMedianActionsNeeded);
+  }
+
+  public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs, int medianCount) {
+    IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, medianCount);
+    final G[] grps = gss.keySet().toArray(new G[gss.size()]);
+
+    applyOrdering(gbCols, grps);
+
+    calculateMediansForGRPS(fr, gbCols, aggs, gss, grps);
+
+    MRTask mrFill = prepareMRFillTask(grps, aggs, medianCount);
+
+    String[] fcNames = prepareFCNames(fr, aggs);
+
+    Frame f = buildOutput(gbCols, aggs.length, fr, fcNames, grps.length, mrFill);
+    return new ValFrame(f);
+  }
+
+  private MRTask prepareMRFillTask(final G[] grps, final AGG[] aggs, final int medianCount) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk[] c, NewChunk[] ncs) {
+        int start = (int) c[0].start();
+        for (int i = 0; i < c[0]._len; ++i) {
+          G g = grps[i + start];  // One Group per row
+          int j;
+          for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
+            ncs[j].addNum(g._gs[j]);
+          for (int a = 0; a < aggs.length; a++) {
+            if ((medianCount >=0) && g._isMedian[a])
+              ncs[j++].addNum(g._medians[a]);
+            else
+              ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
+          }
+        }
+      }
+    };
+  }
+
+  private String[] prepareFCNames(Frame fr, AGG[] aggs) {
+    String[] fcnames = new String[aggs.length];
+    for (int i = 0; i < aggs.length; i++) {
+      if (aggs[i]._fcn.toString() != "nrow") {
+        fcnames[i] = aggs[i]._fcn.toString() + "_" + fr.name(aggs[i]._col);
+      } else {
+        fcnames[i] = aggs[i]._fcn.toString();
+      }
+    }
+    return fcnames;
+  }
+
+
+
+  // Count of aggregates; knock off the first 4 ASTs (GB data [group-by] [order-by]...), then count by triples.
+  private int countNumberOfAggregates(Frame fr, int numberOfColumns, AstRoot asts[]) {
     int validGroupByCols = 0;
     for (int idx=3; idx < asts.length; idx+=3) {  // initial loop to count operations on valid columns, ignore String columns
-      AstNumList col = check(ncols, asts[idx + 1]);
+      AstNumList col = check(numberOfColumns, asts[idx + 1]);
       if (col.cnt() != 1) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int) col.min(); // Aggregate column
       if (fr.vec(agg_col).isString()) {
@@ -282,9 +340,14 @@ public class AstGroup extends AstPrimitive {
       } else
         validGroupByCols++;
     }
-    //int naggs = (asts.length - 3) / 3;
+    return validGroupByCols;
+  }
+
+  private AGG[] constructAggregates(Frame fr, int numberOfAggregates, Env env, AstRoot asts[]) {
+    AGG[] aggs = new AGG[numberOfAggregates];
+    int ncols  = fr.numCols();
+
     int countCols = 0;
-    final AGG[] aggs = new AGG[validGroupByCols];
     for (int idx = 3; idx < asts.length; idx += 3) {
       Val v = asts[idx].exec(env);
       String fn = v instanceof ValFun ? v.getFun().str() : v.getStr();
@@ -294,19 +357,17 @@ public class AstGroup extends AstPrimitive {
       int agg_col = (int) col.min(); // Aggregate column
       if (fcn == FCN.mode && !fr.vec(agg_col).isCategorical())
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
+
       NAHandling na = NAHandling.valueOf(asts[idx + 2].exec(env).getStr().toUpperCase());
       if (!fr.vec(agg_col).isString())
         aggs[countCols++] = new AGG(fcn, agg_col, na, (int) fr.vec(agg_col).max() + 1);
       if (fcn == FCN.median)
-        _totMedianCols = 0;
+        _numberOfMedianActionsNeeded = 0;
     }
-    int naggs = countCols;
+    return aggs;
+  }
 
-    // do the group by work now
-    IcedHashMap<G, String> gss = doGroups(fr, gbCols, aggs, _totMedianCols);
-    final G[] grps = gss.keySet().toArray(new G[gss.size()]);
-
-    // apply an ORDER by here...
+  private void applyOrdering(final int[] gbCols, G[] grps) {
     if (gbCols.length > 0)
       Arrays.sort(grps, new java.util.Comparator<G>() {
         // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
@@ -328,55 +389,26 @@ public class AstGroup extends AstPrimitive {
           throw H2O.unimpl();
         }
       });
+  }
 
+  private void calculateMediansForGRPS(Frame fr, int[] gbCols, AGG[] aggs, IcedHashMap<G, String> gss, G[] grps) {
     // median action exists, we do the following three things:
     // 1. Find out how many columns over all groups we need to perform median on
     // 2. Assign an index to the NewChunk that we will be storing the data for each median column for each group
     // 3. Fill out the NewChunk for each column of each group
-    if (_totMedianCols >= 0) {
+    if (_numberOfMedianActionsNeeded >= 0) {
       for (G g : grps) {
         for (int index = 0; index < g._isMedian.length; index++) {
           if (g._isMedian[index]) {
-            g._newChunkCols[index] = _totMedianCols++;
+            g._newChunkCols[index] = _numberOfMedianActionsNeeded++;
           }
         }
       }
 
-      BuildGroup buildMedians = new BuildGroup(gbCols, aggs, gss, grps, _totMedianCols);
-      Vec[] groupChunks = buildMedians.doAll(_totMedianCols, Vec.T_NUM, fr).close();
+      BuildGroup buildMedians = new BuildGroup(gbCols, aggs, gss, grps, _numberOfMedianActionsNeeded);
+      Vec[] groupChunks = buildMedians.doAll(_numberOfMedianActionsNeeded, Vec.T_NUM, fr).close();
       buildMedians.calcMedian(groupChunks);
     }
-    // Build the output!
-    String[] fcnames = new String[aggs.length];
-    for (int i = 0; i < aggs.length; i++) {
-      if (aggs[i]._fcn.toString() != "nrow") {
-        fcnames[i] = aggs[i]._fcn.toString() + "_" + fr.name(aggs[i]._col);
-      } else {
-        fcnames[i] = aggs[i]._fcn.toString();
-      }
-    }
-
-    MRTask mrfill = new MRTask() {
-      @Override
-      public void map(Chunk[] c, NewChunk[] ncs) {
-        int start = (int) c[0].start();
-        for (int i = 0; i < c[0]._len; ++i) {
-          G g = grps[i + start];  // One Group per row
-          int j;
-          for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
-          for (int a = 0; a < aggs.length; a++) {
-            if ((_totMedianCols>=0) && g._isMedian[a])
-              ncs[j++].addNum(g._medians[a]);
-            else
-              ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
-          }
-        }
-      }
-    };
-
-    Frame f = buildOutput(gbCols, naggs, fr, fcnames, grps.length, mrfill);
-    return new ValFrame(f);
   }
 
   // Argument check helper
@@ -415,6 +447,7 @@ public class AstGroup extends AstPrimitive {
 
   // Build output frame from the multi-column results
   public static Frame buildOutput(int[] gbCols, int noutCols, Frame fr, String[] fcnames, int ngrps, MRTask mrfill) {
+
     // Build the output!
     // the names of columns
     final int nCols = gbCols.length + noutCols;

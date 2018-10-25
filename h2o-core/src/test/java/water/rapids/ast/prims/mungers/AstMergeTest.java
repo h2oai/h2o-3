@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
@@ -20,6 +21,34 @@ public class AstMergeTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+
+  @Ignore
+  @Test(timeout = 100000) // This merge is not going to finish in reasonable time. Check if it is n*log(n)
+  public void AutoMergeAllLeftStressTest() {
+
+    long seed = 42L;
+
+    int numberOfRows = 1000000;
+    Frame fr = new TestFrameBuilder()
+            .withName("leftFrame")
+            .withColNames("ColA", "ColB")
+            .withVecTypes(Vec.T_NUM, Vec.T_STR)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 5, seed)
+            .withRandomBinaryDataForCol(1, numberOfRows, seed)
+            .build();
+
+    Frame frRight = new TestFrameBuilder()
+            .withName("rightFrame")
+            .withColNames("ColA_R", "ColB_R")
+            .withVecTypes(Vec.T_NUM, Vec.T_STR)
+            .withRandomIntDataForCol(0, numberOfRows, 0, 5, seed)
+            .withRandomBinaryDataForCol(1, numberOfRows, seed)
+            .build();
+
+    String tree = "(merge leftFrame rightFrame TRUE FALSE [0.0] [0.0] 'auto' )";
+    Rapids.exec(tree);
+    fr.delete();
+  }
 
   @Test
   public void mergeWithNaOnTheRightMapsToEverythingTest4() {
@@ -271,7 +300,6 @@ public class AstMergeTest extends TestUtil {
       Scope.exit();
     }
   }
-
 
   public void printFrames(Frame fr) {
     int numRows = (int) fr.numRows();
