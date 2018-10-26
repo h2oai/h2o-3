@@ -27,7 +27,7 @@ COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin scripts/install_j
 
 # Add HDP repository and install packages
 RUN apt-get update && \
-    apt-get install -y wget curl software-properties-common && \
+    apt-get install -y wget curl software-properties-common git && \
     chmod 700 /usr/sbin/add_hdp_repo.sh && \
     sync && \
     /usr/sbin/add_hdp_repo.sh $VERSION && \
