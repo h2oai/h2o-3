@@ -24,7 +24,7 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
 COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget software-properties-common && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget software-properties-common git && \
     wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
     apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
