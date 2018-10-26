@@ -265,8 +265,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
         if ip and not (ip == "localhost" or ip == "127.0.0.1"):
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port, name=name, extra_classpath=extra_classpath,
-                                  jvm_custom_args=jvm_custom_args, bind_to_localhost=bind_to_localhost)
+                                  min_mem_size=mmin, ice_root=ice_root, port=port, name=name,
+                                  extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
+                                  bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
