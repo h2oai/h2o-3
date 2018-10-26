@@ -12,12 +12,10 @@ compileJava {
 sourceSets {
   main {
     java {
-        srcDirs '../h2o-mapreduce-generic/src/main/java',
-                '../h2o-yarn-generic/src/main/java'
+        srcDirs '../h2o-mapreduce-generic/src/main/java'
     }
     resources {
-        srcDirs '../h2o-mapreduce-generic/src/main/resources',
-                '../h2o-yarn-generic/src/main/resources'
+        srcDirs '../h2o-mapreduce-generic/src/main/resources'
     }
   }
 }
