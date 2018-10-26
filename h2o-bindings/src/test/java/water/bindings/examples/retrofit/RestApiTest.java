@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import okhttp3.ResponseBody;
@@ -123,8 +123,8 @@ public class RestApiTest extends ExampleTestFixture {
         System.out.println("new GBM model: " + model);
     }
 
-    @After
-    public void tearDown() throws IOException {
+    @AfterClass
+    public static void tearDownClass() throws IOException {
         API.endSession();
     }
 
