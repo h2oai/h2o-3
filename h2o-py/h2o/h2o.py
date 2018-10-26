@@ -143,7 +143,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
+def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
          extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
@@ -153,6 +153,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
+    :param name: cloud name. If None while connecting to an existing cluster it will not check the cloud name.
+    If set then will connect only if the target cloud name matches. If no instance is found and decides to start a local
+    one then this will be used as the cloud name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
@@ -175,6 +178,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)
+    assert_is_type(name, str, None)
     assert_is_type(https, bool, None)
     assert_is_type(insecure, bool, None)
     assert_is_type(username, str, None)
@@ -192,7 +196,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
-                            "force_connect": bool})
+                            "force_connect": bool, "as_port": bool})
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None
@@ -248,20 +252,20 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     try:
-        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
-        if port and not str(port).endswith("+"):
+        if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
             port = str(port) + "+"
         if not start_h2o: raise
         if ip and not (ip == "localhost" or ip == "127.0.0.1"):
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath,
+                                  min_mem_size=mmin, ice_root=ice_root, port=port, name=name, extra_classpath=extra_classpath,
                                   jvm_custom_args=jvm_custom_args, bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)

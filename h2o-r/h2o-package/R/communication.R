@@ -615,7 +615,25 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (rv$httpStatusCode == 401)
     warning("401 Unauthorized Access.  Did you forget to provide a username and password?")
 
-  ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
+  if((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301)) {
+    res <- .h2o.fromJSON(
+             jsonlite::fromJSON(
+               .h2o.doRawGET(conn = conn, urlSuffix = .h2o.__CLOUD, h2oRestApiVersion = .h2o.__REST_API_VERSION)$payload,
+               simplifyDataFrame=FALSE
+             )
+           )
+
+    if(!is.na(conn@name) && res$cloud_name != conn@name) {
+        warning(sprintf("Trying to connect to cloud name [%s] but found [%s]!", conn@name, res$cloud_name))
+        return(FALSE)
+    }
+
+    # Make sure the cached name is always up to date and we don't use the name from the previous h2o.init() run.
+    .h2o.jar.env$name = conn@name
+
+    return(TRUE)
+  }
+  return(FALSE)
 }
 
 #'

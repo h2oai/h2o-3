@@ -62,7 +62,7 @@ class H2OLocalServer(object):
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, port="54321+", extra_classpath=None, verbose=True, jvm_custom_args=None,
+              ice_root=None, port="54321+", name=None, extra_classpath=None, verbose=True, jvm_custom_args=None,
               bind_to_localhost=True):
         """
         Start new H2O server on the local machine.
@@ -78,6 +78,7 @@ class H2OLocalServer(object):
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
+        :param name: name of the h2o cloud to be started
         :param extra_classpath List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
         :param jvm_custom_args Custom, user-defined arguments for the JVM H2O is instantiated in
@@ -89,6 +90,7 @@ class H2OLocalServer(object):
         """
         assert_is_type(jar_path, None, str)
         assert_is_type(port, None, int, str)
+        assert_is_type(name, None, str)
         assert_is_type(nthreads, -1, BoundInt(1, 4096))
         assert_is_type(enable_assertions, bool)
         assert_is_type(min_mem_size, None, int)
@@ -119,6 +121,7 @@ class H2OLocalServer(object):
         hs._jar_path = hs._find_jar(jar_path)
         hs._extra_classpath = extra_classpath
         hs._ice_root = ice_root
+        hs._name = name
         if not ice_root:
             hs._ice_root = tempfile.mkdtemp()
             hs._tempdir = hs._ice_root
@@ -175,6 +178,10 @@ class H2OLocalServer(object):
         """Port that the server is listening to."""
         return self._port
 
+    @property
+    def name(self):
+        """H2O cloud name."""
+        return self._name
 
     #-------------------------------------------------------------------------------------------------------------------
     # Private
@@ -185,6 +192,7 @@ class H2OLocalServer(object):
         self._scheme = None   # "http" or "https"
         self._ip = None
         self._port = None
+        self._name = None
         self._process = None
         self._verbose = None
         self._jar_path = None
@@ -216,14 +224,14 @@ class H2OLocalServer(object):
     @staticmethod
     def _jar_paths():
         """Produce potential paths for an h2o.jar executable."""
-        
+
         # PUBDEV-3534 hook to use arbitrary h2o.jar
         own_jar = os.getenv("H2O_JAR_PATH", "")
         if own_jar != "":
             if not os.path.isfile(own_jar):
                 raise H2OStartupError("Environment variable H2O_JAR_PATH is set to '%d' but file does not exists, unset environment variable or provide valid path to h2o.jar file." % own_jar)
             yield own_jar
-        
+
         # Check if running from an h2o-3 src folder (or any subfolder), in which case use the freshly-built h2o.jar
         cwd_chunks = os.path.abspath(".").split(os.path.sep)
         for i in range(len(cwd_chunks), 0, -1):
@@ -290,7 +298,11 @@ class H2OLocalServer(object):
         cmd += ["-baseport", str(baseport)] if baseport else []
         cmd += ["-ice_root", self._ice_root]
         cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
-        cmd += ["-name", "H2O_from_python_%s" % self._tmp_file("salt")]
+
+        if not self._name:
+            self._name = "H2O_from_python_%s" % self._tmp_file("salt")
+        cmd += ["-name", self._name]
+
         # Warning: do not change to any higher log-level, otherwise we won't be able to know which port the
         # server is listening to.
         cmd += ["-log_level", "INFO"]
