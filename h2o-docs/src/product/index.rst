@@ -62,6 +62,11 @@ Additional Resources:
 
    cross-validation
 
+.. toctree::
+   :maxdepth: 2
+
+   variable-importance
+
 .. toctree::   
    :maxdepth: 2
 

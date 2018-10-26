@@ -404,7 +404,7 @@ A confusion matrix is a table depicting performance of algorithm in terms of fal
 Variable Importances
 ''''''''''''''''''''
 
-Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm.
+Variable importances represent the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable’s importance depends on the algorithm. More information is available in the :ref:`variable-importance` section. 
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
