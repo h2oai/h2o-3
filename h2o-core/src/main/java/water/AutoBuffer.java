@@ -234,7 +234,11 @@ public final class AutoBuffer {
     _firstPage = true;
     _persist = 0;
 
-    if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES);
+    if( persist ) {
+      String[] typeMap = (H2O.CLOUD.leader() == H2O.SELF) ?
+              TypeMap.CLAZZES : FetchClazzes.fetchClazzes();
+      put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(typeMap);
+    }
     else put1(0);
   }
 
