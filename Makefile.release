@@ -1,19 +1,203 @@
+SHELL := /bin/bash
+THIS_FILE := $(lastword $(MAKEFILE_LIST))
+.PHONY : all
+
+PYTHON_VERSIONS := 2.7
+PYTHON_VERSIONS_EXPANDED := --py $(shell echo $(PYTHON_VERSIONS) | sed 's/\ /\ --py\ /g')
 ifeq ($(BUILD_NUMBER),)
-    $(error No build number set)
+$(error No build number set)
 endif
+ifneq ($(CI), 1)
+INTERACTIVE := -it
+endif
+ifeq ($(PARALLEL), true)
+PARALLEL_FLAG := --parallel
+endif
+
+BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD | tr '/\ ' '-')
+VERSION := $(shell cat gradle.properties | grep -Eo 'version=[0-9\.]+' | grep -Eo '[0-9\.]+')
+GRADLE_VERSION := $(shell cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | egrep -o '([0-9]+\.+)+[0-9]+')
+DOCKER_IMAGE_VERSION := $(shell cat scripts/jenkins/groovy/buildConfig.groovy | grep "DEFAULT_IMAGE_VERSION_TAG" | head -1 | egrep -o '[0-9]+')
+DOCKER_IMAGE := docker.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$(GRADLE_VERSION):$(DOCKER_IMAGE_VERSION)
+AWS_DOCKER_IMAGE := docker.h2o.ai/awscli
 
 .PHONY: build
 build: export BUILD_HADOOP=true
 build:
 	$(eval THIS_BUILD_GIT_HASH_LONG=`git rev-parse --verify HEAD`)
 	$(eval THIS_BUILD_GIT_HASH_SHORT=`git describe --always`)
-	$(eval BRANCH_NAME=`git rev-parse --abbrev-ref HEAD`)
-	$(eval VERSION=`cat gradle.properties | grep -Eo 'version=[0-9\.]+' | grep -Eo '[0-9\.]+'`)
-#	mkdir -p ci
-#	echo "BUILD_NUMBER=${BUILD_NUMBER}" > gradle/buildnumber.properties
-#	echo "BUILD_BRANCH_NAME=${BRANCH_NAME}" > gradle/git.properties
-#	echo "BUILD_HASH=${THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
-#	echo "BUILD_HASH_SHORT=${THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
-#	./gradlew clean
-#	./gradlew build -x test
+	mkdir -p ci
+	echo "BUILD_NUMBER=${BUILD_NUMBER}" > gradle/buildnumber.properties
+	echo "BUILD_BRANCH_NAME=${BRANCH_NAME}" > gradle/git.properties
+	echo "BUILD_HASH=${THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
+	echo "BUILD_HASH_SHORT=${THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
+	./gradlew clean
+	./gradlew build -x test $(PARALLEL_FLAG)
 	./gradlew buildH2oDevDist
+
+build_in_docker:
+	docker pull $(DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v /home/0xdiag/:/home/0xdiag:ro \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-e PARALLEL=$(PARALLEL) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/bash \
+		$(DOCKER_IMAGE) \
+		-c 'activate_java_8 && \
+			activate_R_3.4.1 && \
+			source /envs/h2o_env_python3.5/bin/activate && \
+			make -f $(THIS_FILE) build'
+ifeq ($(DO_RELEASE), true)
+S3_ROOT := s3://h2o-release/h2o
+else
+S3_ROOT := s3://test.0xdata.com/test-release/h2o
+endif
+s3_upload_in_docker:
+	docker pull $(AWS_DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-e DO_RELEASE=$(DO_RELEASE) \
+		-e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+		-e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/sh \
+		$(AWS_DOCKER_IMAGE) \
+		-c 'aws s3 sync target/ $(S3_ROOT)/$(BRANCH_NAME)/$(BUILD_NUMBER)/ --acl public-read'
+
+CONDA_S3_DIR := $(S3_ROOT)/$(BRANCH_NAME)/$(BUILD_NUMBER)/Python/Conda
+conda_upload_for_arch_and_py:
+	$(eval PKG_NAME := $(notdir $(wildcard cd h2o-py/build/conda/$(ARCH)/h2o-$(VERSION).$(BUILD_NUMBER)-py$(shell echo $(PY_VERSION) | tr -d .)_*.tar.bz2)))
+	cd h2o-py/build/conda && s3cmd --acl-public put $(ARCH)/$(PKG_NAME) $(CONDA_S3_DIR)/$(ARCH)/$(PKG_NAME)
+
+conda_py_%_upload_s3:
+	$(MAKE) -f $(THIS_FILE) ARCH=osx-64 PY_VERSION=$* conda_upload_for_arch_and_py
+	$(MAKE) -f $(THIS_FILE) ARCH=linux-32 PY_VERSION=$* conda_upload_for_arch_and_py
+	$(MAKE) -f $(THIS_FILE) ARCH=linux-64 PY_VERSION=$* conda_upload_for_arch_and_py
+	$(MAKE) -f $(THIS_FILE) ARCH=win-32 PY_VERSION=$* conda_upload_for_arch_and_py
+	$(MAKE) -f $(THIS_FILE) ARCH=win-64 PY_VERSION=$* conda_upload_for_arch_and_py
+
+conda_py_%_upload_s3_in_docker:
+	docker pull $(DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v `pwd`/conda-bld:$(HOME)/conda-bld \
+		-v /home/0xdiag/:/home/0xdiag:ro \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-e DO_RELEASE=$(DO_RELEASE) \
+                -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+                -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/bash \
+		$(DOCKER_IMAGE) \
+		-c 'activate_java_8 && \
+			activate_R_3.4.1 && \
+			source /envs/h2o_env_python3.5/bin/activate && \
+			echo "Calling Make" && \
+			make -f $(THIS_FILE) conda_py_$*_upload_s3'
+
+conda_upload_s3_all_in_docker: $(foreach py, $(PYTHON_VERSIONS), conda_py_$(py)_upload_s3_in_docker)
+
+conda_in_docker:
+	mkdir -p conda-bld
+	docker pull $(DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v `pwd`/conda-bld:$(HOME)/conda-bld \
+		-v /home/0xdiag/:/home/0xdiag:ro \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/bash \
+		$(DOCKER_IMAGE) \
+		-c 'activate_java_8 && \
+			activate_R_3.4.1 && \
+			source /envs/h2o_env_python3.5/bin/activate && \
+			make -f $(THIS_FILE) conda'
+
+conda:
+	cp -r h2o-py/conda h2o-py/build
+	cd h2o-py/build/conda && conda config --append channels conda-forge
+	cd h2o-py/build/conda && conda build h2o --output-folder "." --no-anaconda-upload $(PYTHON_VERSIONS_EXPANDED)
+	cd h2o-py/build/conda && conda convert `conda build h2o $(PYTHON_VERSIONS_EXPANDED) --output-folder "." --output | tail -$(words $(PYTHON_VERSIONS))` -p all
+
+conda_check_py_%_offline:
+	$(eval PKG_NAME := $(notdir $(wildcard cd h2o-py/build/conda/$(ARCH)/h2o-$(VERSION).$(BUILD_NUMBER)-py$(shell echo $* | tr -d .)_*.tar.bz2)))
+	conda create -y -n py$* python=$* tabulate future requests colorama
+	s3cmd get $(CONDA_S3_DIR)/linux-64/$(PKG_NAME)
+	source activate py$* && python --version && conda install $(PKG_NAME) --offline && python -c 'import h2o; actual_version = h2o.__version__; expected_version = "$(VERSION).$(BUILD_NUMBER)"; assert actual_version == expected_version, "Version should be %s but was %s" % (expected_version, actual_version)'
+
+conda_check_offline_all_in_docker: $(foreach py, $(PYTHON_VERSIONS), conda_check_py_$(py)_offline_in_docker)
+
+conda_check_py_%_offline_in_docker:
+	docker pull $(DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+                --rm \
+                -v `pwd`:/h2o-3 \
+                -v /home/0xdiag/:/home/0xdiag:ro \
+                -v /etc/passwd:/etc/passwd:ro \
+                -v /etc/group:/etc/group:ro \
+                -w /h2o-3 \
+                -e BUILD_NUMBER=$(BUILD_NUMBER) \
+                -e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+                -e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		-e ARCH=linux-64 \
+                -u `id -u`:`id -g` \
+                --entrypoint /bin/bash \
+                $(DOCKER_IMAGE) \
+                -c 'activate_java_8 && \
+                        activate_R_3.4.1 && \
+                        make -f $(THIS_FILE) conda_check_py_2.7_offline'
+
+pypi:
+	cd h2o-py/build/ && python setup.py sdist
+	cd h2o-py/build/ && s3cmd put --acl-public dist/h2o-$(VERSION).$(BUILD_NUMBER).tar.gz $(S3_ROOT)/$(BRANCH_NAME)/$(BUILD_NUMBER)/Python/
+
+pypi_in_docker:
+	docker pull $(DOCKER_IMAGE)
+	docker run $(INTERACTIVE) \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v /home/0xdiag/:/home/0xdiag:ro \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+		-e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/bash \
+		$(DOCKER_IMAGE) \
+		-c 'activate_java_8 && \
+			activate_R_3.4.1 && \
+			source /envs/h2o_env_python3.5/bin/activate && \
+			make -f $(THIS_FILE) pypi'
+
+release_in_docker:
+	$(MAKE) -f $(THIS_FILE) build_in_docker
+	$(MAKE) -f $(THIS_FILE) s3_upload_in_docker
+ifeq ($(CONDA), true)
+	$(MAKE) -f $(THIS_FILE) conda_in_docker
+	$(MAKE) -f $(THIS_FILE) conda_upload_s3_all_in_docker
+	$(MAKE) -f $(THIS_FILE) conda_check_offline_all_in_docker
+endif
+ifeq ($(PYPI), true)
+	$(MAKE) -f $(THIS_FILE) pypi_in_docker
+endif
