@@ -8,7 +8,7 @@ targetCompatibility = 1.7
 
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
-  compile project(':h2o-hadoop:h2o-' + hadoopVersion)
+  compile project(":h2o-hadoop:h2o-mapreduce-generic")
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
