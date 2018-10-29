@@ -11,7 +11,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static water.parser.DefaultParserProviders.ARFF_INFO;
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
 class CsvParser extends Parser {
@@ -59,7 +58,8 @@ class CsvParser extends Parser {
     boolean decimal = false;
     int fractionDigits = 0;
     int tokenStart = 0; // used for numeric token to backtrace if not successful
-    int colIdx = 0;
+    int columnCounter = 0;  // index into parsed columns only, exclude skipped columns.
+    int colIdx = 0; // count each actual column in the dataset including the skipped columns
     byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
     byte[] nonDataLineMarkers = nonDataLineMarkers();
@@ -80,10 +80,18 @@ class CsvParser extends Parser {
     dout.newLine();
 
     final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
+    int colIndexNum = _keepColumns.length-1;
+
+    if (_setup._parse_columns_indices==null) {  // _parse_columns_indices not properly set
+      _setup.setParseColumnIndices(_setup.getNumberColumns(), _setup.getSkippedColumns());
+    }
+    int parseIndexNum = _setup._parse_columns_indices.length-1;
 MAIN_LOOP:
     while (true) {
-      final boolean forcedCategorical = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_CAT;
-      final boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
+      final boolean forcedCategorical = forceable && colIdx < _setup._column_types.length &&
+              _setup._column_types[_setup._parse_columns_indices[columnCounter]] == Vec.T_CAT;
+      final boolean forcedString = forceable && colIdx  < _setup._column_types.length &&
+              _setup._column_types[_setup._parse_columns_indices[columnCounter]] == Vec.T_STR;
 
       switch (state) {
         // ---------------------------------------------------------------------
@@ -149,21 +157,24 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( !isNa &&
-              _setup.isNA(colIdx, str.toBufferedString())) {
+              _setup.isNA(columnCounter, str.toBufferedString())) {
             isNa = true;
           }
-          if (!isNa) {
-            dout.addStrCol(colIdx, str.toBufferedString());
+
+          if (!isNa && (colIdx <= colIndexNum) && _keepColumns[colIdx]) {
+            dout.addStrCol(columnCounter, str.toBufferedString());
             if (!isAllASCII)
-              dout.setIsAllASCII(colIdx, isAllASCII);
+              dout.setIsAllASCII(columnCounter, isAllASCII);
           } else {
-            dout.addInvalidCol(colIdx);
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx])
+              dout.addInvalidCol(columnCounter);
             isNa = false;
           }
           str.set(null, 0, 0);
           quotes = 0;
           isAllASCII = true;
-          ++colIdx;
+          if ((colIdx <= colIndexNum) &&  _keepColumns[colIdx++] && (columnCounter < parseIndexNum)) // only increment if not at the end
+            columnCounter++;
           state = SEPARATOR_OR_EOL;
           // fallthrough to SEPARATOR_OR_EOL
         // ---------------------------------------------------------------------
@@ -183,11 +194,13 @@ MAIN_LOOP:
           } else if (quoteCount > 2) {
             String err = "Unmatched quote char " + ((char) quotes);
             dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
-            colIdx = 0;
+            columnCounter=0;
+            colIdx=0;
             quotes = 0;
           } else if (colIdx != 0) {
             dout.newLine();
-            colIdx = 0;
+            columnCounter = 0;
+            colIdx=0;
           }
           state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
           if( !firstChunk )
@@ -229,11 +242,18 @@ MAIN_LOOP:
               break;
           } else if (c == CHAR_SEPARATOR) {
             // we have empty token, store as NaN
-            dout.addInvalidCol(colIdx++);
+
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx])
+              dout.addInvalidCol(columnCounter);
+
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx++] && (columnCounter < parseIndexNum)) {
+              columnCounter++;
+            }
             state = WHITESPACE_BEFORE_TOKEN;
             break;
           } else if (isEOL(c)) {
-            dout.addInvalidCol(colIdx++);
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx])
+              dout.addInvalidCol(columnCounter);
             state = EOL;
             continue MAIN_LOOP;
           }
@@ -250,7 +270,7 @@ MAIN_LOOP:
           // fallthrough to TOKEN
         // ---------------------------------------------------------------------
         case TOKEN:
-          if( dout.isString(colIdx) ) { // Forced already to a string col?
+          if( dout.isString(columnCounter) ) { // Forced already to a string col?
             state = STRING; // Do not attempt a number parse, just do a string parse
             str.set(bits, offset, 0);
             continue MAIN_LOOP;
@@ -321,16 +341,21 @@ MAIN_LOOP:
 
           if (c == CHAR_SEPARATOR && quotes == 0) {
             exp = exp - fractionDigits;
-            dout.addNumCol(colIdx,number,exp);
-            ++colIdx;
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx])
+              dout.addNumCol(columnCounter,number,exp);
+
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx++] && (columnCounter < parseIndexNum))
+              columnCounter++;
             // do separator state here too
             state = WHITESPACE_BEFORE_TOKEN;
             break;
           } else if (isEOL(c)) {
             exp = exp - fractionDigits;
-            dout.addNumCol(colIdx,number,exp);
+            if ((colIdx <= colIndexNum) && _keepColumns[colIdx])
+              dout.addNumCol(columnCounter,number,exp);
             // do EOL here for speedup reasons
-            colIdx = 0;
+            columnCounter=0;
+            colIdx=0;
             dout.newLine();
             state = (c == CHAR_CR) ? EXPECT_COND_LF : POSSIBLE_EMPTY_LINE;
             if( !firstChunk )

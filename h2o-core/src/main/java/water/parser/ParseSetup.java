@@ -35,9 +35,11 @@ public class ParseSetup extends Iced {
   int _number_columns;                 // Columns to parse
   String[] _column_names;
   byte[] _column_types;       // Column types
+  int[] _skipped_columns;     // column indices that are to be skipped
   String[][] _domains;        // Domains for each column (null if numeric)
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
+  int[] _parse_columns_indices; // store column indices to be parsed into the final file
 
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
@@ -59,7 +61,7 @@ public class ParseSetup extends Iced {
     this(ps._parse_type,
          ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
          ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
-         new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool);
+         new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool, ps._skipped_columns);
   }
 
 
@@ -68,17 +70,27 @@ public class ParseSetup extends Iced {
         false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0]);
   }
 
+  public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data, ParseWriter.ParseErr[] errs, int[] skipped_columns) {
+    this(parseType, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, errs, FileVec.DFLT_CHUNK_SIZE, skipped_columns);
+  }
+
+  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
+                    byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
+                    int chunkSize, int[] skipped_columns) {
+    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, chunkSize, null, skipped_columns);
+  }
+
 
   // This method was called during guess setup, lot of things are null, like ctypes.
   // when it is called again, it either contains the guess column types or it will have user defined column types
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize) {
-    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, chunkSize, null);
+    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, chunkSize, null, null);
   }
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
-                    int chunkSize, Key<DecryptionTool> decrypt_tool) {
+                    int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns) {
     _parse_type = parse_type;
     _separator = sep;
     _single_quotes = singleQuotes;
@@ -92,6 +104,27 @@ public class ParseSetup extends Iced {
     _chunk_size = chunkSize;
     _errs = errs;
     _decrypt_tool = decrypt_tool;
+    _skipped_columns = skipped_columns;
+    setParseColumnIndices(ncols, _skipped_columns);
+  }
+
+  public void setParseColumnIndices(int ncols, int[] skipped_columns) {
+    if (skipped_columns != null) {
+      int num_parse_columns = ncols - skipped_columns.length;
+      if (num_parse_columns >= 0) {
+        _parse_columns_indices = new int[num_parse_columns];
+        int counter = 0;
+        for (int index = 0; index < ncols; index++) {
+          if (!ArrayUtils.contains(skipped_columns, index)) {
+            _parse_columns_indices[counter++] = index;
+          }
+        }
+      }
+    } else if (ncols > 0) {
+      _parse_columns_indices = new int[ncols];
+      for (int index=0; index < ncols; index++)
+        _parse_columns_indices[index] = index;
+    }
   }
 
   /**
@@ -113,7 +146,7 @@ public class ParseSetup extends Iced {
          null,
          new ParseWriter.ParseErr[0],
          ps.chunk_size,
-         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null);
+         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns);
   }
 
   /**
@@ -152,6 +185,8 @@ public class ParseSetup extends Iced {
   public ParseSetup() {}
 
   public String[] getColumnNames() { return _column_names; }
+  public int[] getSkippedColumns() { return _skipped_columns; }
+  public int[] get_parse_columns_indices() { return _parse_columns_indices; }
   public String[][] getData() { return _data; }
 
   public String[] getColumnTypeStrings() {
@@ -213,10 +248,16 @@ public class ParseSetup extends Iced {
       ParseSetup ps = pp.createParserSetup(inputKeys, demandedSetup);
       if (demandedSetup._decrypt_tool != null)
         ps._decrypt_tool = demandedSetup._decrypt_tool;
+      ps.setSkippedColumns(demandedSetup.getSkippedColumns());
+      ps.setParseColumnIndices(demandedSetup.getNumberColumns(), demandedSetup.getSkippedColumns()); // final consistent check between skipped_columns and parse_columns_indices
       return ps;
     }
 
     throw new H2OIllegalArgumentException("Unknown parser configuration! Configuration=" + this);
+  }
+
+  public int getNumberColumns() {
+    return _number_columns;
   }
 
   public final DecryptionTool getDecryptionTool() {
@@ -748,6 +789,11 @@ public class ParseSetup extends Iced {
 
   public ParseSetup setColumnNames(String[] column_names) {
     this._column_names = column_names;
+    return this;
+  }
+
+  public ParseSetup setSkippedColumns(int[] skipped_columns) {
+    this._skipped_columns = skipped_columns;
     return this;
   }
 
