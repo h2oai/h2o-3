@@ -19,8 +19,6 @@ from io import StringIO
 from types import FunctionType
 
 import requests
-import pandas as pd
-import numpy as np
 import math
 
 import h2o
@@ -2569,6 +2567,8 @@ class H2OFrame(object):
 
     def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
         '''
+        This method requires that you import the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
         This method will convert an H2OFrame to a DMatrix that can be used by native XGBoost.  The H2OFrame contains
         numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
         column. There can be NAs in any columns.
@@ -2599,6 +2599,8 @@ class H2OFrame(object):
         :return: DMatrix that can be an input to a native XGBoost model
         '''
         import xgboost as xgb
+        import pandas as pd
+        import numpy as np
         from scipy.sparse import csr_matrix
 
         assert isinstance(predictors, list) or isinstance(predictors, tuple)
@@ -3428,6 +3430,9 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     :param nrows: number of rows of enum col
     :return: panda frame with enum col encoded correctly for native XGBoost
     """
+    import numpy as np
+    import pandas as pd
+    
     cmissingNames=[cname+".missing(NA)"]
     tempnp = np.zeros((nrows,1), dtype=np.int)
     # check for nan and assign it correct value
