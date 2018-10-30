@@ -412,6 +412,9 @@ class H2OEstimator(ModelBase):
 
     def convert_H2OXGBoostParams_2_XGBoostParams(self):
         '''
+        In order to use convert_H2OXGBoostParams_2_XGBoostParams and convert_H2OFrame_2_DMatrix, you must import
+        the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
         Given an H2OXGBoost model, this method will generate the corresponding parameters that should be used by
         native XGBoost in order to give exactly the same result, assuming that the same dataset
         (derived from h2oFrame) is used to train the native XGBoost model.
