@@ -42,7 +42,7 @@ This option specifies the encoding scheme to use for handling categorical featur
 
 **XGBoost**
 
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In XGBoost, the algorithm will automatically perform ``enum`` encoding. (default)
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In XGBoost, the algorithm will automatically perform ``one_hot_internal`` encoding. (default)
   - ``enum`` or ``Enum``: 1 column per categorical feature. Each category is a separate category; its name (or number) is irrelevant. For example, after the strings are mapped to integers for Enum, you can split {0, 1, 2, 3, 4, 5} as {0, 4, 5} and {1, 2, 3}.
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
