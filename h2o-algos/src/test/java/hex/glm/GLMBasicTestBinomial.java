@@ -488,7 +488,6 @@ public class GLMBasicTestBinomial extends TestUtil {
             -10.450169230334527};
 
     try {
-   //   train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
       train = parse_test_file("smalldata/glm_test/binomial_1000Rows.csv");
       String[] names = train._names;
       Vec[] en = train.remove(new int[] {0,1,2,3,4,5,6});

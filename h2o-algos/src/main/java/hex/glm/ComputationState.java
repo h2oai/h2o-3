@@ -557,8 +557,6 @@ public final class ComputationState {
     public double yy;
     public final double likelihood;
 
-
-
     public GramXY(Gram gram, double[] xy, double [] grads, double[] beta, int[] activeCols, int [] newActiveCols, double yy, double likelihood) {
       this.gram = gram;
       this.xy = xy;
@@ -568,6 +566,21 @@ public final class ComputationState {
       this.newCols = newActiveCols;
       this.yy = yy;
       this.likelihood = likelihood;
+    }
+
+    public final double [] getCODGradients(double l2pen){
+      int lastGradInd = xy.length-1;
+      if(grads == null){
+        grads = new double[xy.length];
+        for(int i = 0; i < lastGradInd; ++i)
+          grads[i] = xy[i] - l2pen * beta[i];
+        grads[lastGradInd] = xy[lastGradInd]; // intercept does not have l1/l2 penality
+      }
+      if(newCols != null) {
+        for (int i : newCols)
+          grads[i] = xy[i] - (i==lastGradInd?0:l2pen * beta[i]);
+      }
+      return grads;
     }
 
     public final double [] getCODGradients(){
@@ -630,7 +643,10 @@ public final class ComputationState {
   protected GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
     double obj_reg = _parms._obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
-    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass).doAll(activeData._adaptedFrame);
+    boolean useCODBM = s.equals(GLMParameters.Solver.COORDINATE_DESCENT) &&
+            (_glmw._family.equals(Family.binomial) || _glmw._family.equals(Family.multinomial));
+    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass,
+            useCODBM).doAll(activeData._adaptedFrame);
     gt._gram.mul(obj_reg);
     ArrayUtils.mult(gt._xy,obj_reg);
     int [] activeCols = activeData.activeCols();
@@ -685,7 +701,10 @@ public final class ComputationState {
         }
       }
       if(!weighted || matches) {
-        GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds, activeData, _glmw, beta).doAll(activeData._adaptedFrame); // dense
+        boolean useCODBM = s.equals(GLMParameters.Solver.COORDINATE_DESCENT) &&
+                (_glmw._family.equals(Family.binomial) || _glmw._family.equals(Family.multinomial));
+        GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds, activeData, _glmw, beta,
+                useCODBM, _activeClass).doAll(activeData._adaptedFrame); // dense
         for (double[] d : gt._gram)
           ArrayUtils.mult(d, obj_reg);
         ArrayUtils.mult(gt._xy, obj_reg);
