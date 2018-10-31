@@ -3559,7 +3559,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                      "{1}".format(temp1[rowInd][colInd],temp2[rowInd][colInd],rowInd,colInd)
 
     if returnResult:
         return True
@@ -3586,7 +3586,7 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                                                         "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                                                         "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
     if returnResult:
         return True

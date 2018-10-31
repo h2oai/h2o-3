@@ -569,13 +569,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case ologit:  // note, x is CDF not PDF
         case logit:
 //        case multinomial:
-          double div = (x * (1 - x));
-          if(div < 1e-6) return 1e6; // avoid numerical instability
+          double div = Math.max(1e-6, x * (1 - x));
           return 1.0 / div;
         case ologlog:
           double oneMx = 1.0-x;
-          double divsor = -1.0*oneMx*Math.log(oneMx);
-          return (divsor<1e-6)?1e6:(1.0/divsor);
+          double divsor = Math.max(1e-6, -1.0*oneMx*Math.log(oneMx));
+          return 1.0/divsor;
         case identity:
           return 1;
         case log:
@@ -721,10 +720,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
       double etaOff = eta + off;
       x.mu = linkInv(etaOff);
-      double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
+      double var = variance(x.mu);
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
+      likelihoodAndDeviance(y,x,w);
+      return x;
+    }
+
+    public GLMWeights computeWeightsCOD(double y, double eta, double off, double w, GLMWeights x) {
+      double etaOff = eta + off;
+      x.mu = linkInv(etaOff); // prob estimated response = 1
+      double temp = x.mu*(1-x.mu);
+      x.z = w*(y-x.mu);
+      x.w = w*Math.max(temp,1e-6);
       likelihoodAndDeviance(y,x,w);
       return x;
     }
