@@ -80,6 +80,9 @@ public abstract class Parser extends Iced {
         for (int colIdx : _setup._skipped_columns)
           if (colIdx < _setup._number_columns)
             _keepColumns[colIdx] = false;
+          else
+            throw new IllegalArgumentException("Skipped column index "+colIdx+" is illegal.  It exceeds the actual" +
+                    " number of columns in your file.");
       }
     }
   }

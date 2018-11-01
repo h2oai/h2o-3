@@ -409,8 +409,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
-    assert (skipped_columns==None) or isinstance(skipped_columns, list), \
-        "The skipped_columns should be an list of column names!"
+    assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
     if any(os.path.split(p)[0] == "~" for p in patharr):
@@ -577,7 +576,6 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         for w in j["warnings"]:
             warnings.warn(w)
     # TODO: really should be url encoding...
-    # TODO: clean up all this
     if destination_frame:
         j["destination_frame"] = destination_frame
 
