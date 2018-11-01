@@ -108,7 +108,7 @@ openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 mkdir -p target/Python
 
 name=""
-for f in h2o-py/dist/*
+for f in h2o-py/build/dist/*
 do
   name=${f##*/}
 done
