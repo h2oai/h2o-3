@@ -54,6 +54,7 @@ setRefClass("H2OConnectionMutableState",
 #' is not found at port 54321.
 #' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
 #' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
+#' @slot name A \code{character} value specifying the cloud name of the H2O cloud.
 #' @slot proxy A \code{character} specifying the proxy path of the H2O cloud.
 #' @slot https Set this to TRUE to use https instead of http.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
@@ -65,7 +66,7 @@ setRefClass("H2OConnectionMutableState",
 #' @aliases H2OConnection
 #' @export
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", proxy="character",
+         representation(ip="character", port="numeric", name="character", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
                         cookies="character",
@@ -73,6 +74,7 @@ setClass("H2OConnection",
                         mutable="H2OConnectionMutableState"),
          prototype(ip           = NA_character_,
                    port         = NA_integer_,
+                   name         = NA_character_,
                    proxy        = NA_character_,
                    https        = FALSE,
                    insecure     = FALSE,
@@ -90,6 +92,7 @@ setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 setMethod("show", "H2OConnection", function(object) {
   cat("IP Address:", object@ip,                 "\n")
   cat("Port      :", object@port,               "\n")
+  cat("Name      :", object@name,               "\n")
   cat("Session ID:", object@mutable$session_id, "\n")
   cat("Key Count :", object@mutable$key_count,  "\n")
 })
