@@ -20,6 +20,8 @@
 #' @param max_mem_size (Optional) A \code{character} string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
+#' @param log_dir (Optional) A directory where H2O server logs are stored. The default varies by OS.
+#' @param log_level (Optional) The level of logging of H2O server. The default is INFO.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 #' @param proxy (Optional) A \code{character} string specifying the proxy path.
 #' @param https (Optional) Set this to TRUE to use https instead of http.
@@ -59,7 +61,8 @@
 h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, startH2O = TRUE, forceDL = FALSE,
                      enable_assertions = TRUE, license = NULL, nthreads = -1,
                      max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
+                     ice_root = tempdir(), log_dir = NA_character_, log_level = NA_character_,
+                     strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
                      cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE,
                      extra_classpath = NULL, jvm_custom_args = NULL,
@@ -126,6 +129,10 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`license` must be of class character")
   if(!is.character(ice_root) || length(ice_root) != 1L || is.na(ice_root) || !nzchar(ice_root))
     stop("`ice_root` must be a non-empty character string")
+  if(!is.character(log_dir) && !nzchar(log_dir))
+    stop("`log_dir` must be a character string or NA_character_")
+  if(!is.character(log_level) && !nzchar(log_level))
+    stop("`log_level` must be a character string or NA_character_")
   if(!is.logical(strict_version_check) || length(strict_version_check) != 1L || is.na(strict_version_check))
     stop("`strict_version_check` must be TRUE or FALSE")
   if(!is.character(proxy) || !nzchar(proxy))
@@ -179,6 +186,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                     max_memory = max_mem_size, min_memory = min_mem_size,
                     enable_assertions = enable_assertions, forceDL = forceDL, license = license,
                     extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout,
+                    log_dir = log_dir, log_level = log_level,
                     jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost)
 
       count <- 0L
@@ -522,7 +530,7 @@ h2o.clusterStatus <- function() {
 .h2o.startJar <- function(ip = "localhost", port = 54321, name = NULL, nthreads = -1,
                           max_memory = NULL, min_memory = NULL,
                           enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
-                          ice_root, stdout, jvm_custom_args = NULL, bind_to_localhost) {
+                          ice_root, stdout, log_dir, log_level, jvm_custom_args = NULL, bind_to_localhost) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -601,6 +609,10 @@ h2o.clusterStatus <- function() {
   }
   args <- c(args, "-port", port)
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
+
+  if(!is.na(log_dir)) args <- c(args, "-log_dir", log_dir)
+  if(!is.na(log_level)) args <- c(args, "-log_level", log_level)
+
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
 

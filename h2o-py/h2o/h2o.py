@@ -144,8 +144,8 @@ def version_check():
 
 
 def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
-         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
+         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
+         enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
          extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
@@ -165,6 +165,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     :param start_h2o: If False, do not attempt to start an h2o server when connection to an existing one failed.
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
+    :param log_dir: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA.
+    Default is INFO. Ignored if connecting to an existing node.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
     :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
@@ -188,6 +191,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
     assert_is_type(ice_root, str, None)
+    assert_is_type(log_dir, str, None)
+    assert_is_type(log_level, str, None)
+    assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
     assert_is_type(enable_assertions, bool)
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
@@ -265,7 +271,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
         if ip and not (ip == "localhost" or ip == "127.0.0.1"):
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port, name=name,
+                                  min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
+                                  port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,

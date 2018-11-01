@@ -62,8 +62,8 @@ class H2OLocalServer(object):
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, port="54321+", name=None, extra_classpath=None, verbose=True, jvm_custom_args=None,
-              bind_to_localhost=True):
+              ice_root=None, log_dir=None, log_level=None, port="54321+", name=None, extra_classpath=None,
+              verbose=True, jvm_custom_args=None, bind_to_localhost=True):
         """
         Start new H2O server on the local machine.
 
@@ -74,6 +74,9 @@ class H2OLocalServer(object):
         :param enable_assertions: If True, pass `-ea` option to the JVM.
         :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
         :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
+        :param log_dir: Directory for H2O logs to be stored if a new instance is started. Default directory is determined
+        by H2O internally.
+        :param log_level: The logger level for H2O if a new instance is started.
         :param ice_root: A directory where H2O stores its temporary files. Default location is determined by
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
@@ -95,6 +98,9 @@ class H2OLocalServer(object):
         assert_is_type(enable_assertions, bool)
         assert_is_type(min_mem_size, None, int)
         assert_is_type(max_mem_size, None, BoundInt(1 << 25))
+        assert_is_type(log_dir, str, None)
+        assert_is_type(log_level, str, None)
+        assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
         assert_is_type(ice_root, None, I(str, os.path.isdir))
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
@@ -129,7 +135,7 @@ class H2OLocalServer(object):
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size, jvm_custom_args=jvm_custom_args,
-                          bind_to_localhost=bind_to_localhost)
+                          bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level)
         if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
@@ -257,7 +263,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
 
-    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost):
+    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, log_dir=None, log_level=None):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -298,6 +304,12 @@ class H2OLocalServer(object):
         cmd += ["-baseport", str(baseport)] if baseport else []
         cmd += ["-ice_root", self._ice_root]
         cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
+
+        if log_dir:
+            cmd += ["-log_dir", log_dir]
+
+        if log_level:
+            cmd += ["-log_level", log_level]
 
         if not self._name:
             self._name = "H2O_from_python_%s" % self._tmp_file("salt")

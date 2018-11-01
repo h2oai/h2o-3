@@ -4,7 +4,10 @@ sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 import h2o
 from h2o.utils.typechecks import assert_is_type
-from h2o.exceptions import H2OConnectionError, H2OServerError
+from h2o.exceptions import H2OConnectionError, H2OServerError, H2OValueError
+import tempfile
+import shutil
+import os
 
 def h2oinit():
     """
@@ -75,10 +78,56 @@ def h2oinitname():
     except H2OConnectionError as e:
         print("error message type is {0} and the error message is {1}\n".format(e.__class__.__name__, e.args[0]))
         assert_is_type(e, H2OConnectionError)
+        h2o.cluster().shutdown()
+
+
+def h2oinit_default_log_dir():
+    tmpdir = tempfile.mkdtemp()
+    try:
+        h2o.init(strict_version_check=False, name="default_log", ice_root=tmpdir)
+    except H2OConnectionError as e:  # some errors are okay like version mismatch
+        print("error message type is {0} and the error message is {1}\n".format(e.__class__.__name__, e.args[0]))
+    finally:
+        assert os.path.exists(os.path.join(tmpdir, "h2ologs")) == True
+        shutil.rmtree(tmpdir)
+        h2o.cluster().shutdown()
+
+
+def h2oinit_custom_log_dir():
+    tmpdir = tempfile.mkdtemp()
+    tmpdir_logs = tempfile.mkdtemp()
+    try:
+        h2o.init(strict_version_check=False, name="custom_log", ice_root=tmpdir, log_dir=tmpdir_logs)
+    except H2OConnectionError as e:  # some errors are okay like version mismatch
+        print("error message type is {0} and the error message is {1}\n".format(e.__class__.__name__, e.args[0]))
+    finally:
+        assert os.path.exists(os.path.join(tmpdir, "h2ologs")) == False
+        assert any(".log" in log for log in os.listdir(tmpdir_logs))
+        shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir_logs)
+        h2o.cluster().shutdown()
+
+
+def h2oinit_fail_invalid_log_level():
+    try:
+        h2o.init(strict_version_check=False, log_level="BAD_LOG_LEVEL")
+        assert False, "Should fail to start an h2o instance with an invalid log level."
+    except H2OConnectionError as e:  # some errors are okay like version mismatch
+        assert False, "Should fail to start an h2o instance with an invalid log level but H2OConnectionError was thrown."
+    except H2OValueError:
+        print("H2OValueError properly thrown")
+        return
+    finally:
+        h2o.cluster().shutdown()
+
+
+# None of the tests below need a pre initialized instance
+h2oinit_default_log_dir()
+h2oinit_custom_log_dir()
+h2oinit_fail_invalid_log_level()
+h2oinitname()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oinit)
-    h2oinitname()
 else:
     h2oinit()
-    h2oinitname()
