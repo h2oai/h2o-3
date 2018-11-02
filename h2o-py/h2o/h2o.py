@@ -533,10 +533,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
-    :param column_names: A list of column names for the file.
+    :param column_names: A list of column names for the file. If skipped_columns are specified, only list column names
+         of columns that are not skipped.
     :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
-        one will be guessed. The possible types a column may have are:
+        one will be guessed. If skipped_columns are specified, only list column types of columns that are not skipped.
+        The possible types a column may have are:
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
