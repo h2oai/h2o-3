@@ -96,7 +96,7 @@ artifacts {
 
 // We just need Shadow Jar
 jar {
-enabled = false
+  enabled = false
 }
 
 build.dependsOn shadowJar
