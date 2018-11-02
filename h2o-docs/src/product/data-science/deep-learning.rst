@@ -12,7 +12,7 @@ Quick Start and Additional Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * `Deep Learning Booklet <http://h2o.ai/resources>`__
 * Deep Learning in H2O Tutorial (R): `[GitHub] <https://htmlpreview.github.io/?https://github.com/ledell/sldm4-h2o/blob/master/sldm4-deeplearning-h2o.html>`__
-* H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <http://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
+* H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <https://www.h2o.ai/blog/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
 * Top 10 tips and tricks `[Youtube] <https://www.youtube.com/watch?v=LM255qs8Zsk/>`__
 * NYC Tour Deep Learning Panel: Tensorflow, Mxnet, Caffe `[Youtube] <https://www.youtube.com/watch?v=KWdkVoKJG3U/>`__
@@ -378,7 +378,7 @@ FAQ
 
  The maximum time between scoring (``score_interval``, default = 5 seconds) and the maximum fraction of time spent scoring (``score_duty_cycle``) independently of loss function, backpropagation, etc.
 
- Of course, using more training or validation samples will increase the time for scoring, as well as scoring more frequently. For more information about how this affects runtime, refer to the `Deep Learning Performance Guide <http://h2o.ai/blog/2015/02/deep-learning-performance/>`__.
+ Of course, using more training or validation samples will increase the time for scoring, as well as scoring more frequently. For more information about how this affects runtime, refer to the `Deep Learning Performance Guide <https://www.h2o.ai/blog/deep-learning-performance/>`__.
 
 -  **How does the validation frame affect the built neuron network?**
 
@@ -433,7 +433,7 @@ Deep Learning Tuning Guide
 The Definitive Performance Tuning Guide for H2O Deep Learning
 
 * `R <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd>`__
-* `Blog <http://blog.h2o.ai/2015/08/deep-learning-performance-august/>`__
+* `Blog <https://www.h2o.ai/blog/deep-learning-performance-august/>`__
 
 References
 ~~~~~~~~~~
@@ -479,7 +479,7 @@ decks <http://www.slideshare.net/0xdata/presentations?order=latest>`__
 
 `Candel, Arno. "The Definitive Performance Tuning Guide for H2O Deep
 Learning." H2O.ai, Inc.
-(2015). <http://h2o.ai/blog/2015/02/deep-learning-performance/>`__
+(2015). <http://www.h2o.ai/blog/deep-learning-performance/>`__
 
 `Niu, Feng, et al. "Hogwild!: A lock-free approach to parallelizing
 stochastic gradient descent." Advances in Neural Information Processing

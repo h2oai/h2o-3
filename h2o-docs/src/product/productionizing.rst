@@ -72,9 +72,9 @@ Resource     Location
 =========    ==================================================================================================
 Git repos    https://github.com/h2oai/app-ask-craig
 
-Blogs        http://blog.h2o.ai/2015/06/ask-craig-sparkling-water/
+Blogs        https://www.h2o.ai/blog/ask-craig-sparkling-water/
 
-             http://blog.h2o.ai/2015/07/ask-craig-sparkling-water-2/
+             https://www.h2o.ai/blog/ask-craig-sparkling-water-2/
 
 Slides       http://www.slideshare.net/0xdata/sparkling-water-ask-craig
 
