@@ -257,7 +257,7 @@ Getting Started with Sparkling Water
 
    -  `Sparkling Water GBM Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/CitiBikeSharingDemo.scala>`_: Go here to view a demo that uses Scala to create a GBM model.
 
-   - `Sparkling Water on YARN <http://blog.h2o.ai/2014/11/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
+   - `Sparkling Water on YARN <https://www.h2o.ai/blog/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
@@ -268,11 +268,11 @@ Getting Started with Sparkling Water
 Sparkling Water Blog Posts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `How Sparkling Water Brings H2O to Spark <http://blog.h2o.ai/2014/09/how-sparkling-water-brings-h2o-to-spark/>`_
+-  `How Sparkling Water Brings H2O to Spark <https://www.h2o.ai/blog/how-sparkling-water-brings-h2o-to-spark/>`_
 
--  `H2O - The Killer App on Spark <http://blog.h2o.ai/2014/06/h2o-killer-application-spark/>`_
+-  `H2O - The Killer App on Spark <https://www.h2o.ai/blog/h2o-killer-application-spark/>`_
 
--  `In-memory Big Data: Spark + H2O <http://blog.h2o.ai/2014/03/spark-h2o/>`_
+-  `In-memory Big Data: Spark + H2O <https://www.h2o.ai/blog/spark-h2o/>`_
 
 Sparkling Water Meetup Slide Decks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -392,9 +392,9 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 
 -  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
 
--  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
+-  `Hacking Algos <https://www.h2o.ai/blog/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
 
--  `KV Store Guide <http://blog.h2o.ai/2014/05/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
+-  `KV Store Guide <https://www.h2o.ai/blog/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
 
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an `Atlassian account <https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com>`__.
 

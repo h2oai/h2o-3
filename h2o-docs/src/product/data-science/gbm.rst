@@ -335,7 +335,7 @@ GBM Tuning Guide
 * `R <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd>`__
 * `Python <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb>`__
 * `H2O Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow>`__
-* `Blog <http://blog.h2o.ai/2016/06/h2o-gbm-tuning-tutorial-for-r/>`__
+* `Blog <http://www.h2o.ai/blog/h2o-gbm-tuning-tutorial-for-r/>`__
 
 References
 ~~~~~~~~~~

@@ -14,7 +14,7 @@ The second module, `h2o-ext-xgboost <https://github.com/h2oai/h2o-3/tree/master/
 
 XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementation will only be available if the system itself supports it. (It has the right version of libraries.) If the requirements are not satisfied, XGBoost will use a fallback that is single core only. Multi-node support is currently available as a Beta feature.
 
-Refer to the `XGBoost in H2O Machine Learning Platform <https://blog.h2o.ai/2017/06/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
+Refer to the `XGBoost in H2O Machine Learning Platform <https://www.h2o.ai/blog/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
 Defining an XGBoost Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -293,7 +293,7 @@ FAQs
 
 -  **How are categorical columns handled?**
 
-  By default, XGBoost will create N+1 new cols for categorical features with N levels (i.e., ``categorical_encoding="one_hot_internal"``).
+  By default, XGBoost will create N+1 new cols for categorical features with N levels (i.e., ``categorical_encoding="one_hot_internal"``). 
 
 -  **Why does my H2O cloud on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
