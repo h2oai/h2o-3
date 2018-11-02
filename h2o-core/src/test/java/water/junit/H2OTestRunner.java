@@ -40,6 +40,10 @@ public class H2OTestRunner {
     jcore.addListener(new TextListener(jsystem));
     // Add XML generator listener
     jcore.addListener(new XMLTestReporter());
+
+    // Add listener that kills JVM when there is an unhandled exception
+    jcore.addListener(new FatalCrashListener());
+    //
     Result result = jcore.run(classes.toArray(new Class[0]));
     for (Failure each : missingClasses) {
       System.err.println("FAIL Missing class in H2OTestRunner: " + each);
