@@ -94,4 +94,9 @@ artifacts {
   archives shadowJar
 }
 
-jar.finalizedBy shadowJar
+// We just need Shadow Jar
+jar {
+enabled = false
+}
+
+build.dependsOn shadowJar
