@@ -1,16 +1,16 @@
 package water.bindings.examples;
 
+import com.google.gson.*;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 import water.bindings.pojos.*;
 import water.bindings.proxies.retrofit.*;
-import com.google.gson.*;
-import retrofit2.*;
-import retrofit2.http.*;
-import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.Call;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Example of using generated Java bindings for REST API.
@@ -103,6 +103,7 @@ public class Example {
                                                                   null,
                                                                   null,
                                                                   null,
+                                                                  null,
                                                                   0,
                                                                   0,
                                                                   0,
@@ -124,6 +125,7 @@ public class Example {
                                                    parseSetupBody.numberColumns,
                                                    parseSetupBody.columnNames,
                                                    parseSetupBody.columnTypes,
+                                                   parseSetupBody.skippedColumns,
                                                    null, // domains
                                                    parseSetupBody.naStrings,
                                                    parseSetupBody.chunkSize,

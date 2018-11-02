@@ -3,7 +3,6 @@ package water.parser;
 import water.Futures;
 import water.Iced;
 import water.fvec.AppendableVec;
-import water.fvec.C1Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -27,15 +26,60 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   ParseErr [] _errs = new ParseErr[0];
   private final Vec.VectorGroup _vg;
   private long _errCnt;
+  int[] _parse_columns_indices;
 
-  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
-    _ctypes = ctypes;           // Required not-null
-    _vecs = avs;
-    _nvs = new NewChunk[avs.length];
-    for(int i = 0; i < avs.length; ++i)
-      _nvs[i] = _vecs[i].chunkForChunkIdx(cidx);
-    _categoricals = categoricals;
-    _nCols = avs.length;
+  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize,
+                         AppendableVec[] avs) {
+    this(vg, cidx, categoricals, ctypes, chunkSize, avs, null);
+  }
+  // note that if parse_columns_indices==null, it implies all columns are parsed.
+  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize,
+                         AppendableVec[] avs, int[] parse_columns_indices) {
+
+    boolean ctypesShrunk = false;
+         // Required not-null
+    if ((parse_columns_indices!=null) && (categoricals!=null) &&
+            (parse_columns_indices.length == categoricals.length)) { // for nextChunk() calls in gzip/zip parser
+      _ctypes = ctypes;
+      _categoricals = categoricals;
+      _vecs = avs;
+      _parse_columns_indices = parse_columns_indices;
+      int num_parse_columns=parse_columns_indices.length;
+      _nvs = new NewChunk[num_parse_columns];
+      for (int i = 0; i < num_parse_columns; ++i) {
+        _nvs[i] = avs[i].chunkForChunkIdx(cidx);
+      }
+    } else {
+      if (parse_columns_indices == null) {
+        parse_columns_indices = new int[avs.length];
+        _ctypes = ctypes;
+        _categoricals = categoricals;
+        _vecs = avs;
+        for (int index = 0; index < avs.length; index++)
+          parse_columns_indices[index] = index;
+      } else {
+        int parseColNum = parse_columns_indices.length;
+        _ctypes = ctypes == null ? null : new byte[parseColNum]; // svmlight file can have ctypes=null
+        _categoricals = categoricals == null ? null : new Categorical[parseColNum]; // svmlight file can have categoricals==null
+        ctypesShrunk = (categoricals==null)? avs.length <= parse_columns_indices.length:
+                avs.length < categoricals.length; // may not be the same if user sets skipped_columns already.
+        _vecs = new AppendableVec[parseColNum];
+        for (int index = 0; index < parse_columns_indices.length; index++) {
+          if (ctypes != null)       // happens with SVMlight
+            _ctypes[index] = ctypes[parse_columns_indices[index]];
+          if (categoricals != null)   // happens with SVMlight
+            _categoricals[index] = categoricals[parse_columns_indices[index]]; // categoricals calculated for all columns
+          _vecs[index] = ctypesShrunk?avs[index]:avs[parse_columns_indices[index]];
+        }
+      }
+      _parse_columns_indices = parse_columns_indices;
+      int num_parse_columns = parse_columns_indices.length;
+      _nvs = new NewChunk[num_parse_columns];
+      for (int i = 0; i < num_parse_columns; ++i) {
+        _nvs[i] = ctypesShrunk?avs[i].chunkForChunkIdx(cidx):avs[parse_columns_indices[i]].chunkForChunkIdx(cidx);
+      }
+    }
+    _nCols = _nvs.length; // actual columns being passed, exclude skipped columns.
     _cidx = cidx;
     _vg = vg;
     _chunkSize = chunkSize;
@@ -75,7 +119,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return this;
   }
   @Override public FVecParseWriter nextChunk(){
-    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs);
+    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs, _parse_columns_indices);
   }
 
   @Override public void newLine() {

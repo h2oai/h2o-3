@@ -33,6 +33,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   @API(help="Column names", direction=API.Direction.INOUT)
   public String[] column_names = null;
 
+  @API(help="Skipped columns indices", direction=API.Direction.INOUT)
+  public int[] skipped_columns = null;
+
   @API(help="Value types for columns", direction=API.Direction.INOUT)
   public String[] column_types = null;
 

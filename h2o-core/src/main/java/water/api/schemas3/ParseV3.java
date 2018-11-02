@@ -35,6 +35,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Value types for columns")
   public String[] column_types;
 
+  @API(help="Skipped columns indices", direction=API.Direction.INOUT)
+  public int[] skipped_columns;
+
   @API(help="Domains for categorical columns")
   public String[][] domains;
 
