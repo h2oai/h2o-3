@@ -12,13 +12,14 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
-  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs){
-    super(vg, cidx, null, null, chunkSize, avs);
+  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs, int[] parse_columns_indices){
+    super(vg, cidx, null, null, chunkSize, avs, parse_columns_indices);
     _vg = vg;
     _vecIdStart = vecIdStart;
-    _nvs = new NewChunk[avs.length];
-    for(int i = 0; i < _nvs.length; ++i)
-      _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
+    int numParseCols = parse_columns_indices.length;
+    _nvs = new NewChunk[numParseCols];
+    for(int i = 0; i < numParseCols; ++i)
+      _nvs[i] = new NewChunk(_vecs[_parse_columns_indices[i]], _cidx, true);
     _col = 0;
   }
 

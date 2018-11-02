@@ -7,11 +7,7 @@ import water.api.schemas3.ParseSVMLightV3;
 import water.api.schemas3.ParseV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.parser.ParseDataset;
-import water.parser.ParseSetup;
-import water.parser.ParseWriter;
-import water.parser.ParserInfo;
-import water.parser.ParserService;
+import water.parser.*;
 
 class ParseHandler extends Handler {
   // Entry point for parsing.
@@ -26,20 +22,31 @@ class ParseHandler extends Handler {
                                       parse.domains, parse.na_strings,
                                       null,
                                       new ParseWriter.ParseErr[0], parse.chunk_size,
-                                      parse.decrypt_tool != null ? parse.decrypt_tool.key() : null);
+                                      parse.decrypt_tool != null ? parse.decrypt_tool.key() : null, parse.skipped_columns);
 
     if (parse.source_frames == null) throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");
     Key[] srcs = new Key[parse.source_frames.length];
     for (int i = 0; i < parse.source_frames.length; i++)
       srcs[i] = parse.source_frames[i].key();
 
+    if ((setup.getParseType().name().toLowerCase().equals("svmlight") ||
+            (setup.getParseType().name().toLowerCase().equals("avro") ))
+            && ((setup.getSkippedColumns() != null) && (setup.getSkippedColumns().length >0)))
+      throw new H2OIllegalArgumentException("Parser: skipped_columns are not supported for SVMlight or Avro parsers.");
+
+    if (setup.getSkippedColumns() !=null &&
+            ((setup.get_parse_columns_indices()==null) || (setup.get_parse_columns_indices().length==0)))
+      throw new H2OIllegalArgumentException("Parser:  all columns in the file are skipped and no H2OFrame" +
+              " can be returned."); // Need this to send error message to R
+
     parse.job = new JobV3(ParseDataset.parse(
-        parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking
-        )._job);
+            parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking
+    )._job);
     if (parse.blocking) {
       Frame fr = DKV.getGet(parse.destination_frame.key());
       parse.rows = fr.numRows();
     }
+
     return parse;
   }
 
