@@ -1,0 +1,13 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+ARG GRADLE_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-build-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
+
+RUN mkdir /usr/opt/graal
+RUN cd /usr/opt/graal
+RUN wget https://github.com/oracle/graal/releases/download/vm-1.0.0-rc8/graalvm-ce-1.0.0-rc8-linux-amd64.tar.gz
+RUN tar -xz graalvm-ce-1.0.0-rc8-linux-amd64.tar.gz
+
+ENV \
+  JAVA_HOME=/usr/opt/graal/graalvm-ce-1.0.0-rc8/ \
+  PATH=/usr/opt/graal/graalvm-ce-1.0.0-rc8/bin:${PATH}
