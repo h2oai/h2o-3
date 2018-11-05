@@ -4143,3 +4143,24 @@ def checkCorrectSkips(originalFullFrame, csvfile, skipped_columns):
                                                                prob=1, tol=1e-10, returnResult=False)
             skipCounter = skipCounter + 1
 
+
+def checkCorrectSkipsFolder(originalFullFrame, csvfile, skipped_columns):
+    skippedFrameIF = h2o.import_file(csvfile, skipped_columns=skipped_columns)  # this two frames should be the same
+    skipCounter = 0
+    typeDict = originalFullFrame.types
+    frameNames = originalFullFrame.names
+    for cindex in range(len(frameNames)):
+        if cindex not in skipped_columns:
+            print("Checking column {0}...".format(cindex))
+            if typeDict[frameNames[cindex]] == u'enum':
+                compare_frames_local_onecolumn_NA_enum(originalFullFrame[cindex],
+                                                                    skippedFrameIF[skipCounter], prob=1, tol=1e-10,
+                                                                    returnResult=False)
+            elif typeDict[frameNames[cindex]] == u'string':
+                compare_frames_local_onecolumn_NA_string(originalFullFrame[cindex],
+                                                                      skippedFrameIF[skipCounter], prob=1,
+                                                                      returnResult=False)
+            else:
+                compare_frames_local_onecolumn_NA(originalFullFrame[cindex], skippedFrameIF[skipCounter],
+                                                               prob=1, tol=1e-10, returnResult=False)
+            skipCounter = skipCounter + 1
