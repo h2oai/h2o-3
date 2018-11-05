@@ -16,9 +16,10 @@
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
 #' @param col.names (Optional) An H2OFrame object containing a
-#'        single delimited line with the column names for the file.
+#'        single delimited line with the column names for the file.  If skipped_columns are specified,
+#'        only list column names of columns that are not skipped.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
-#'        over columns.
+#'        over columns.  If skipped_columns are specified, only list column types of columns that are not skipped.
 #' @param na.strings (Optional) H2O will interpret these strings as missing.
 #' @param blocking (Optional) Tell H2O parse call to block synchronously instead
 #'        of polling.  This can be faster for small datasets but loses the

@@ -326,6 +326,10 @@ public class TestUtil extends Iced {
     return parse_test_file(Key.make(), fname);
   }
 
+  public static Frame parse_test_file( String fname, int[] skipped_columns) {
+    return parse_test_file(Key.make(), fname, skipped_columns);
+  }
+
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
       return NFSFileVec.make(fname);
@@ -336,31 +340,61 @@ public class TestUtil extends Iced {
   }
 
   public static Frame parse_test_file( Key outputKey, String fname) {
-    return parse_test_file(outputKey, fname, null);
+    return parse_test_file(outputKey, fname, new int[]{});
+  }
+
+  public static Frame parse_test_file( Key outputKey, String fname, int[] skippedColumns) {
+    return parse_test_file(outputKey, fname, null, skippedColumns);
   }
 
   public static Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
     return parse_test_file(Key.make(), fname, transformer);
   }
 
+  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parse_test_file(Key.make(), fname, transformer, skippedColumns);
+  }
+
   public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer) {
+    return parse_test_file(outputKey, fname, transformer, null);
+  }
+
+  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
+    if (skippedColumns != null) {
+      guessedSetup.setSkippedColumns(skippedColumns);
+      guessedSetup.setParseColumnIndices(guessedSetup.getNumberColumns(), skippedColumns);
+    }
+
     if (transformer != null)
       guessedSetup = transformer.transformSetup(guessedSetup);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+    return parse_test_file(outputKey, fname, guessSetup, null);
+  }
+
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
+    if (skippedColumns != null) {
+      guessParseSetup.setSkippedColumns(skippedColumns);
+      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
+    }
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
-    return parse_test_file(fname, na_string, check_header, column_types, null);
+    return parse_test_file(fname, na_string, check_header, column_types, null, null);
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+    return parse_test_file( fname, na_string, check_header, column_types, transformer,null);
+  }
+
+  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
@@ -368,6 +402,10 @@ public class TestUtil extends Iced {
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
         check_header,0,null,null,null,null,null));
+    if (skippedColumns != null) {
+      p.setSkippedColumns(skippedColumns);
+      p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
+    }
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -397,6 +435,13 @@ public class TestUtil extends Iced {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
+    return parse_test_folder(fname, null);
+  }
+
+  /** Find & parse a folder of CSV files.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  protected Frame parse_test_folder( String fname, int[] skippedColumns ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -406,9 +451,19 @@ public class TestUtil extends Iced {
         keys.add(NFSFileVec.make(f)._key);
     Key[] res = new Key[keys.size()];
     keys.toArray(res);
-    return ParseDataset.parse(Key.make(), res);
+    return ParseDataset.parse(skippedColumns, Key.make(), res);
   }
-
+  /**
+   * Parse a folder with csv files when a single na_string is specified.
+   *
+   * @param fname name of folder
+   * @param na_string string for NA in a column
+   * @return
+   */
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
+                                            ParseSetupTransformer transformer) {
+    return parse_test_folder(fname, na_string, check_header, column_types, transformer, null);
+  }
 
   /**
    * Parse a folder with csv files when a single na_string is specified.
@@ -417,7 +472,8 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
+                                            ParseSetupTransformer transformer, int[] skipped_columns) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -431,8 +487,11 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-        check_header,0,null,null,null,null,null));
-
+            check_header,0,null,null,null,null,null));
+    if (skipped_columns != null) {
+      p.setSkippedColumns(skipped_columns);
+      p.setParseColumnIndices(p.getNumberColumns(), skipped_columns);
+    }
     // add the na_strings into p.
     if (na_string != null) {
       int column_number = p.getColumnTypes().length;
@@ -456,6 +515,7 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(Key.make(), res, true, p);
 
   }
+
 
 
   /** A Numeric Vec from an array of ints
