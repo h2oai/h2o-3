@@ -9,11 +9,34 @@ build:
 	$(eval THIS_BUILD_GIT_HASH_SHORT=`git describe --always`)
 	$(eval BRANCH_NAME=`git rev-parse --abbrev-ref HEAD`)
 	$(eval VERSION=`cat gradle.properties | grep -Eo 'version=[0-9\.]+' | grep -Eo '[0-9\.]+'`)
-#	mkdir -p ci
-#	echo "BUILD_NUMBER=${BUILD_NUMBER}" > gradle/buildnumber.properties
-#	echo "BUILD_BRANCH_NAME=${BRANCH_NAME}" > gradle/git.properties
-#	echo "BUILD_HASH=${THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
-#	echo "BUILD_HASH_SHORT=${THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
-#	./gradlew clean
-#	./gradlew build -x test
+	mkdir -p ci
+	echo "BUILD_NUMBER=${BUILD_NUMBER}" > gradle/buildnumber.properties
+	echo "BUILD_BRANCH_NAME=${BRANCH_NAME}" > gradle/git.properties
+	echo "BUILD_HASH=${THIS_BUILD_GIT_HASH_LONG}" >> gradle/git.properties
+	echo "BUILD_HASH_SHORT=${THIS_BUILD_GIT_HASH_SHORT}" >> gradle/git.properties
+	./gradlew clean
+	./gradlew build -x test
 	./gradlew buildH2oDevDist
+
+.PHONY: build_in_docker
+build_in_docker:
+	$(eval GRADLE_VERSION := `cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | egrep -o '([0-9]+\.+)+[0-9]+'`)
+	$(eval DOCKER_IMAGE_VERSION := `cat scripts/jenkins/groovy/buildConfig.groovy | grep "DEFAULT_IMAGE_VERSION_TAG" | head -1 | egrep -o '[0-9]+'`)
+	$(eval DOCKER_IMAGE := docker.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$(GRADLE_VERSION):$(DOCKER_IMAGE_VERSION))
+	docker pull $(DOCKER_IMAGE)
+	docker run \
+		--rm \
+		-v `pwd`:/h2o-3 \
+		-v /home/0xdiag/:/home/0xdiag:ro \
+		-v /etc/passwd:/etc/passwd:ro \
+		-v /etc/group:/etc/group:ro \
+		-w /h2o-3 \
+		-e BUILD_NUMBER=$(BUILD_NUMBER) \
+		-u `id -u`:`id -g` \
+		--entrypoint /bin/bash \
+		$(DOCKER_IMAGE) \
+		-c 'activate_java_8 && \
+			activate_R_3.4.1 && \
+			source /envs/h2o_env_python3.5/bin/activate && \
+			make -f Makefile.release build'
+		
