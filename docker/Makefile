@@ -267,3 +267,18 @@ dev-release-gradle-%:
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push docker.h2o.ai/opsh2oai/h2o-3/dev-release-gradle-$*$(GPU_SUFFIX):$(VERSION)
 endif
+
+ifneq ($(CI), 1)
+dev-graal-%: dev-build-gradle-$(GRADLE_VERSION)
+endif
+dev-graal-%:
+	docker build -t docker.h2o.ai/opsh2oai/h2o-3/dev-graal-$*$(GPU_SUFFIX):$(VERSION) \
+	-f jenkins-images/Dockerfile-graal \
+	--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+	--build-arg FROM_VERSION=$(VERSION) \
+	--build-arg GRADLE_VERSION=$(GRADLE_VERSION) \
+	--build-arg INSTALL_GRAAL_VERSION=$* \
+	.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push docker.h2o.ai/opsh2oai/h2o-3/dev-graal-$*$(GPU_SUFFIX):$(VERSION)
+endif
