@@ -42,6 +42,19 @@ public class ParseTestORCCSV extends TestUtil {
 		}
 
 		@Test
+		public void testSkippedAllColumns() {
+			Scope.enter();
+			try {
+				int[] skipped_columns = new int[]{0,1};
+				 Frame f1 = parse_test_file(orcFiles[0], skipped_columns);
+				 assert 1==2:"orc skipped all columns test failed...";
+			} catch(Exception ex) {
+				System.out.println("Skipped all columns test passed!");
+			} finally {
+				Scope.exit();
+			}
+		}
+		@Test
 		public void testParseOrcCsvFiles() {
 				Scope.enter();
 				DateTimeZone currTimeZn = ParseTime.getTimezone();
