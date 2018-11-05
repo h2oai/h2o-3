@@ -86,7 +86,6 @@ if (System.getProperty("user.name").equals("jenkins")
   // Include selected/all Hadoop targets
   if (System.getenv("BUILD_HADOOP") != "false") {
     targets.each { name ->
-      include "h2o-hadoop:h2o-${name}"
       include "h2o-hadoop:h2o-${name}-assembly"
     }
   }
