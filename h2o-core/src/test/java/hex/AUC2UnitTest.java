@@ -8,7 +8,7 @@ import water.exceptions.H2OIllegalArgumentException;
 
 
 
-public class AUC2Test {
+public class AUC2UnitTest {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();

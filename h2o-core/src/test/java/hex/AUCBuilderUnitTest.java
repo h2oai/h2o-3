@@ -6,9 +6,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.zip.GZIPInputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
-public class AUCBuilderTest {
+public class AUCBuilderUnitTest {
 
   @Test
   public void testPerRow() {
@@ -29,7 +30,7 @@ public class AUCBuilderTest {
 
     long t = 0, t_old = 0;
 
-    try (GZIPInputStream gz = new GZIPInputStream(AUCBuilderTest.class.getResourceAsStream("aucbuilder.csv.gz"))) {
+    try (GZIPInputStream gz = new GZIPInputStream(AUCBuilderUnitTest.class.getResourceAsStream("aucbuilder.csv.gz"))) {
       BufferedReader br = new BufferedReader(new InputStreamReader(gz));
       String line;
       int i = 0;

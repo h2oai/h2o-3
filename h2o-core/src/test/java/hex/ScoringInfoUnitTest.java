@@ -10,7 +10,7 @@ import water.util.TwoDimTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ScoringInfoTest {
+public class ScoringInfoUnitTest {
 
 
     @Test
