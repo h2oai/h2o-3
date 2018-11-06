@@ -168,9 +168,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   static boolean removeClient(H2ONode node){
       // Before we remove the Client, stop the sending thread
+      boolean ret = INTERN.remove(node._key, node);
       node.stopSendThread();
       Log.info("Removing client: " + node.toDebugString());
-      return INTERN.remove(node._key, node);
+      return ret;
   }
 
 
