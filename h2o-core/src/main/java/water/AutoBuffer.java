@@ -183,10 +183,10 @@ public final class AutoBuffer {
     _read = true;
     _firstPage = true;
     _chan = null;
-    boolean isClient = AutoBuffer.decodeIsClient(getUniqueId());
-    char uniqueId = AutoBuffer.decodeUniqueId(getUniqueId());
-    _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, uniqueId);
-    _h2o.uniqueMetaId = uniqueId;
+    boolean isClient = AutoBuffer.decodeIsClient(getTimestamp());
+    short timestamp = getTimestamp();
+    _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, timestamp);
+    _h2o.timestamp = timestamp;
     _persist = 0;               // No persistance
   }
 
@@ -979,8 +979,8 @@ public final class AutoBuffer {
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
   int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
-  // Get unique ID in next 2 bytes
-  char getUniqueId() { return getSz(1+2).getChar(1);}
+  // Get node timestamp in next 2 bytes
+  short getTimestamp() { return getSz(1+2).getShort(1);}
   // Get the port in next 2 bytes
   int getPort( ) { return getSz(1+2+2).getChar(1+2); }
   // Get the task# in the next 4 bytes
@@ -1000,7 +1000,7 @@ public final class AutoBuffer {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putChar(AutoBuffer.calculateNodeUniqueMeta());
+    _bb.putShort(AutoBuffer.calculateNodeTimestamp());
     _bb.putChar((char)senderPort);
     return this;
   }
@@ -1018,56 +1018,42 @@ public final class AutoBuffer {
   }
 
   /**
-   * Select last 15 bytes from the jvm boot start time and return it as char
+   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
+   * 1 to be able to distinguish between client and node as -0 is the same as 0.
    */
-  public static char createUniqueId(long jvmStartTime){
-    byte availableBits = 15;
-    int bitMask = (1 << availableBits) - 1;
-
-    // we set the lower 15 bits, the 1 bit is currently set to 0 which means we are not a client
-    return (char) (jvmStartTime & bitMask);
+  public static short createTimestamp(long jvmStartTime){
+    int bitMask = (1 << 15) - 1;
+    // select the lower 15 bits
+    short timestamp = (short) (jvmStartTime & bitMask);
+    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
+    return timestamp == 0 ? 1 : timestamp;
   }
 
 
-  private static char CLIENT_CODE_MASK = (char) (1 << 15);
-  private static char CLIENT_DECODE_MASK = (char) (Math.pow(2, 15) - 1);
   /**
-   * Calculate node metadata from Current's node information. We use start of jvm boot time and information whether
+   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
    * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
    */
-  static char calculateNodeUniqueMeta() {
-    return calculateNodeUniqueMeta(createUniqueId(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
+  static short calculateNodeTimestamp() {
+    return calculateNodeTimestamp(createTimestamp(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
   }
 
   /**
-   * Calculate node metadata from the provided information. We use start of jvm boot time and information whether
-   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
+   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
+   * we are client or not.
    *
-   * @param uniqueId  unique Id created by createUniqueId.
+   * The negative timestamp represents a client node, the positive one a regular H2O node
+   *
+   * @param timestamp  timestamp created by createTimestamp.
    * @param amIClient true if this node is client, otherwise false
    */
-  static char calculateNodeUniqueMeta(char uniqueId, boolean amIClient) {
-    // we have 2 bytes -> 16 bits to represent this information
-    // we use highest 1 bit to tell us whether we are client or not
-    // the last 15 bits are used to distinguish new clients by a unique ID
-
-    // if we are client set the 1 bit to one by doing OR with number 65356, in binary 1 and 15 zeros
-    if (amIClient) {
-      return (char) (uniqueId | CLIENT_CODE_MASK);
-    } else {
-      return uniqueId;
-    }
+  static short calculateNodeTimestamp(short timestamp, boolean amIClient) {
+    //if we are client, return negative timestamp, otherwise positive
+    return amIClient ? (short) -timestamp : timestamp;
   }
 
-  static boolean decodeIsClient(char nodeMeta) {
-    return ((nodeMeta >> 15) & 1) == 1;
-  }
-  static char decodeUniqueId(char nodeMeta) {
-    if (decodeIsClient(nodeMeta)) {
-      return (char) (nodeMeta & CLIENT_DECODE_MASK);
-    } else {
-      return nodeMeta;
-    }
+  static boolean decodeIsClient(short timestamp) {
+    return timestamp < 0;
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
@@ -1076,7 +1062,7 @@ public final class AutoBuffer {
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2+4);
-    _bb.put((byte)ctrl).putChar(calculateNodeUniqueMeta()).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    _bb.put((byte)ctrl).putShort(calculateNodeTimestamp()).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 
