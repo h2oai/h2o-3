@@ -243,9 +243,7 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip
-    pip install tabulate
-    pip install wheel
+    pip install grip 'colorama>=0.3.8' future tabulate wheel
 
 ##### Step 3: Install JDK
 
@@ -366,7 +364,7 @@ Install pip package manager:
 
 Next install required pakcages:
 
-    sudo pip install requests   
+    sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
 
 ##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
