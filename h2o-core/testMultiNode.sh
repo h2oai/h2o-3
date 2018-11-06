@@ -97,7 +97,11 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # methods within a class can still reorder due to junit?
 # '/usr/bin/sort' needed to avoid windows native sort when run in cygwin
 
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT | /usr/bin/sort > $OUTDIR/all_tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') \
+    | grep -v $JUNIT_TESTS_SLOW \
+    | grep -v $JUNIT_TESTS_BOOT \
+    | grep -v 'UnitTest.java$' \
+    | /usr/bin/sort > $OUTDIR/all_tests.txt
 
 set -f # no globbing
 if [ foo"$DOONLY" = foo ]; then
