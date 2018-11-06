@@ -101,7 +101,7 @@ public class TCPReceiverThread extends Thread {
         int chanType = bb.get(); // 1 - small , 2 - big
         short timestamp = bb.getShort(); // read timestamp
         int port = bb.getChar(); // read port
-        boolean isClient = AutoBuffer.decodeIsClient(timestamp);
+        boolean isClient = H2O.decodeIsClient(timestamp);
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
           if(H2O.SELF.getSecurityManager().securityEnabled) {
