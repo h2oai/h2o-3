@@ -183,7 +183,7 @@ public final class AutoBuffer {
     _read = true;
     _firstPage = true;
     _chan = null;
-    boolean isClient = AutoBuffer.decodeIsClient(getTimestamp());
+    boolean isClient = H2O.decodeIsClient(getTimestamp());
     short timestamp = getTimestamp();
     _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, timestamp);
     _h2o.timestamp = timestamp;
@@ -1004,7 +1004,7 @@ public final class AutoBuffer {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putShort(AutoBuffer.calculateNodeTimestamp());
+    _bb.putShort(H2O.SELF.timestamp);
     _bb.putChar((char)senderPort);
     return this;
   }
@@ -1021,52 +1021,13 @@ public final class AutoBuffer {
     return putUdp(type, H2O.H2O_PORT);
   }
 
-  /**
-   * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
-   * 1 to be able to distinguish between client and node as -0 is the same as 0.
-   */
-  public static short createTimestamp(long jvmStartTime){
-    int bitMask = (1 << 15) - 1;
-    // select the lower 15 bits
-    short timestamp = (short) (jvmStartTime & bitMask);
-    // if the timestamp is 0 return 1 to be able to distinguish between positive and negative values
-    return timestamp == 0 ? 1 : timestamp;
-  }
-
-
-  /**
-   * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
-   * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
-   */
-  static short calculateNodeTimestamp() {
-    return calculateNodeTimestamp(createTimestamp(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
-  }
-
-  /**
-   * Calculate node timestamp from the provided information. We use start of jvm boot time and information whether
-   * we are client or not.
-   *
-   * The negative timestamp represents a client node, the positive one a regular H2O node
-   *
-   * @param timestamp  timestamp created by createTimestamp.
-   * @param amIClient true if this node is client, otherwise false
-   */
-  static short calculateNodeTimestamp(short timestamp, boolean amIClient) {
-    //if we are client, return negative timestamp, otherwise positive
-    return amIClient ? (short) -timestamp : timestamp;
-  }
-
-  static boolean decodeIsClient(short timestamp) {
-    return timestamp < 0;
-  }
-
   AutoBuffer putTask(UDP.udp type, int tasknum) {
     return putUdp(type).put4(tasknum);
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2+4);
-    _bb.put((byte)ctrl).putShort(calculateNodeTimestamp()).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    _bb.put((byte)ctrl).putShort(H2O.SELF.timestamp).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 

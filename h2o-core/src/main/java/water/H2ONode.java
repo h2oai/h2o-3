@@ -318,7 +318,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
     bb.put((byte)2);
-    bb.putShort(AutoBuffer.calculateNodeTimestamp());
+    bb.putShort(H2O.SELF.timestamp);
     bb.putChar((char)H2O.H2O_PORT);
     bb.put((byte)0xef);
     bb.flip();
@@ -369,7 +369,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
     sock.socket().setTcpNoDelay(true);
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
-    bb.put(tcpType).putShort(AutoBuffer.calculateNodeTimestamp()).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
+    bb.put(tcpType).putShort(H2O.SELF.timestamp).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
 
     ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
 
