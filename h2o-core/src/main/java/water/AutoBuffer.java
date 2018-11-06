@@ -980,6 +980,10 @@ public final class AutoBuffer {
   // Get the 1st control byte
   int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
   // Get node timestamp in next 2 bytes
+
+  // the timestamp is on purpose where port was previously.
+  // In code, getPort is used to skip bytes before the value and the bytes for port itself.
+  // This ensures getPort will still have the same side-effect except we skip also the timestamp which is desired
   short getTimestamp() { return getSz(1+2).getShort(1);}
   // Get the port in next 2 bytes
   int getPort( ) { return getSz(1+2+2).getChar(1+2); }
