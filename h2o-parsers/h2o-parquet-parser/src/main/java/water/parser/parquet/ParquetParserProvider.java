@@ -33,7 +33,16 @@ public class ParquetParserProvider extends BinaryParserProvider {
 
   @Override
   public ParseSetup guessFinalSetup(ByteVec v, byte[] bits, ParseSetup ps) {
-    return ParquetParser.guessDataSetup(v, (ParquetParser.ParquetParseSetup) ps);
+    boolean[] keepColumns=null;
+    int[] parseColumnIndices = ps.get_parse_columns_indices();
+    if (parseColumnIndices!= null) {
+      int numCols = ps.getNumberColumns();
+      keepColumns = new boolean[numCols];
+      for (int cindex:parseColumnIndices) {
+        keepColumns[cindex]=true;
+      }
+    }
+    return ParquetParser.guessDataSetup(v, (ParquetParser.ParquetParseSetup) ps, keepColumns);
   }
 
   @Override

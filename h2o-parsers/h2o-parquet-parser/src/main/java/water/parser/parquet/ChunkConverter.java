@@ -9,17 +9,9 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
-import water.DKV;
-import water.Iced;
-import water.Key;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.parser.ParseWriter;
-import water.util.IcedInt;
-import water.util.Log;
 import water.util.StringUtils;
-
-import static water.H2OConstants.MAX_STR_LEN;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -33,19 +25,29 @@ import static water.H2OConstants.MAX_STR_LEN;
  */
 class ChunkConverter extends GroupConverter {
 
-  private final WriterDelegate _writer;
+  private final WriterDelegate _writer; // this guy actually performs the writing.
   private final Converter[] _converters;
+  private final boolean[] _keepColumns;
 
   private long _currentRecordIdx = -1;
 
-  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer) {
+  ChunkConverter(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepcolumns) {
     _writer = writer;
-    int colIdx = 0;
+    _keepColumns = keepcolumns;
+
+    int colIdx = 0; // index to columns actually parsed
     _converters = new Converter[chunkSchema.length];
+    int trueColumnIndex = 0;  // count all columns including the skipped ones
     for (Type parquetField : parquetSchema.getFields()) {
       assert parquetField.isPrimitive();
-      _converters[colIdx] = newConverter(colIdx, chunkSchema[colIdx], parquetField.asPrimitiveType());
-      colIdx++;
+      if (_keepColumns[trueColumnIndex]) {
+        _converters[trueColumnIndex] = newConverter(colIdx, chunkSchema[trueColumnIndex], parquetField.asPrimitiveType());
+        colIdx++;
+      } else {
+        _converters[trueColumnIndex] = nullConverter(chunkSchema[trueColumnIndex], parquetField.asPrimitiveType());
+      }
+
+      trueColumnIndex++;
     }
   }
 
@@ -67,6 +69,60 @@ class ChunkConverter extends GroupConverter {
 
   long getCurrentRecordIdx() {
     return _currentRecordIdx;
+  }
+
+  private PrimitiveConverter nullConverter(byte vecType, PrimitiveType parquetType) {
+    switch (vecType) {
+      case Vec.T_BAD:
+      case Vec.T_CAT:
+      case Vec.T_STR:
+      case Vec.T_UUID:
+      case Vec.T_TIME:
+      case Vec.T_NUM:
+          boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
+          return new NullStringConverter(dictSupport);
+      default:
+        throw new UnsupportedOperationException("Unsupported type " + vecType);
+    }
+  }
+
+  private static class NullStringConverter extends PrimitiveConverter {
+    private final boolean _dictionarySupport;
+
+    NullStringConverter(boolean dictionarySupport) {
+      _dictionarySupport = dictionarySupport;
+    }
+
+    @Override
+    public void addBinary(Binary value) { ; }
+
+    @Override
+    public boolean hasDictionarySupport() {
+      return _dictionarySupport;
+    }
+
+    @Override
+    public void setDictionary(Dictionary dictionary) {
+    }
+
+    @Override
+    public void addValueFromDictionary(int dictionaryId) {
+    }
+
+    @Override
+    public void addBoolean(boolean value) { }
+
+    @Override
+    public void addDouble(double value) { }
+
+    @Override
+    public void addFloat(float value) { }
+
+    @Override
+    public void addInt(int value) { }
+
+    @Override
+    public void addLong(long value) { }
   }
 
   private PrimitiveConverter newConverter(int colIdx, byte vecType, PrimitiveType parquetType) {
