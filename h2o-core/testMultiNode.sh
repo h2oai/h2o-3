@@ -9,9 +9,9 @@ else
     JACOCO_ENABLED=false
 fi
 
-# Clean out any old sandbox, make a new one
-OUTDIR=sandbox
-rm -fr $OUTDIR; mkdir -p $OUTDIR
+## Clean out any old sandbox, make a new one
+#OUTDIR=sandbox
+#rm -fr $OUTDIR; mkdir -p $OUTDIR
 
 # Check for os
 SEP=:
