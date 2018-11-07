@@ -36,7 +36,7 @@ public class ParseTestAvro extends TestUtil {
   public void testSkippedColumns() {
     try { // specify skipped columns, not allowed!
       Frame f1 = parse_test_file("smalldata/parser/avro/sequence100k.avro", new int[]{0,1});
-      assert 1==2:"Parser should have thrown an exception but did not!";
+      fail("Parser should have thrown an exception but did not!");
     } catch(Exception ex) { // this should fail
       System.out.println("Done, Avro parsers should not specify skipped_columns");
     }
