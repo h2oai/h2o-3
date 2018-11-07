@@ -1,0 +1,90 @@
+buildscript {
+    repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.psxpaul:gradle-execfork-plugin:0.1.6"
+    }
+}
+apply plugin: 'java'
+apply plugin: com.github.psxpaul.ExecForkPlugin
+
+task prepareDaemonTasks {
+    clusterSize.times { number ->
+        String dependentTask = "startDaemon_" + (number)
+        if (number == 0) {
+            dependentTask = null
+        }
+        task ("startDaemon_${number + 1}", type: com.github.psxpaul.task.ExecFork, dependsOn: dependentTask) {
+            commandLine = 'java'
+            args = [ '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath, 'water.H2O', '-name', "junit_cluster_${clusterName}", '-baseport', '43000', '-ga_opt_out' ]
+            standardOutput = "$buildDir/h2o_${number + 1}.log"
+            errorOutput = "$buildDir/h2o_${number + 1}.err"
+            waitForOutput = "Cloud of size ${number + 1} formed"
+            timeout = 20
+        }
+    }
+    task "startDaemons", dependsOn: "startDaemon_" + (clusterSize)
+}
+
+task prepareDirs {
+    delete "${projectDir}/sandbox"
+    delete fileTree(buildDir) { include '**/h2o_*.log', '**/h2o_*.err' }
+    file("${projectDir}/sandbox").mkdirs()
+}
+
+task testMultiNodeNew(type: Exec, dependsOn: ['prepareDaemonTasks', 'startDaemons', 'prepareDirs']) {
+    // Discover all test files for project
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'find', "${projectDir}/src/test/java", '-name', '*.java'
+        standardOutput = stdout
+    }
+    def testFiles = stdout.toString().split(System.lineSeparator())
+
+    // transform file name to java class name
+    def tests = testFiles.collect {
+        it.replaceAll("${projectDir}/src/test/java/", '').replaceAll('\\.java$', '').replaceAll('/', '.')
+    }
+    tests = tests.findAll {
+        it != "water.AAA_PreCloudLock" &&
+                it != "water.parser.ParseProgressTest" &&
+                it != "water.fvec.WordCountBigTest"
+    }
+
+    def ignoreList = System.getenv('IGNORE')
+    if (ignoreList) {
+        // Remove ignored tests
+        tests = tests.findAll {
+            !ignoreList.contains(it)
+        }
+    }
+
+    def doOnly = System.getenv('DOONLY')
+    if (doOnly) {
+        // Remove all except DOONLY
+        tests = tests.findAll {
+            doOnly.contains(it)
+        }
+    }
+
+    tests.sort()
+
+    doFirst {
+        println "Running ${project.name} multinode tests (${tests.size()} test classes)"
+        new File("${buildDir}/tests.txt").text = tests.join(System.lineSeparator())
+    }
+
+    // assemble command for command line
+    def cmd = ['java', '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath]
+    cmd += ["-Dbuild.id=${System.getenv('BUILD_ID') ?: ''}", "-Djob.name=${System.getenv('JOB_NAME') ?: ''}", "-Dgit.commit=${System.getenv('GIT_COMMIT') ?: ''}", "-Dgit.branch=${System.getenv('GIT_BRANCH') ?: ''}", "-Dai.h2o.name=junit_cluster_${clusterName}", "-Dai.h2o.baseport=43000", "-Dai.h2o.ga_opt_out=yes", "water.junit.H2OTestRunner", "water.AAA_PreCloudLock"]
+    cmd += tests
+    // print command to file, for debugging
+    new File("${buildDir}/jvm_cmd.txt").text = cmd.join(' ')
+    // execute tests
+    commandLine cmd
+    // redirect stdout to file
+    standardOutput new FileOutputStream("${buildDir}/h2o-tests-log.out")
+}

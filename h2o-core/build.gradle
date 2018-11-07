@@ -1,5 +1,4 @@
 apply plugin: 'java'
-apply plugin: "com.github.psxpaul.execfork"
 
 //
 // H2O Core Module
@@ -74,35 +73,12 @@ jar {
 // enough), we get NO output for the test run.  So instead we need to arrange a
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
-task prepareDirs() {
-  delete "${projectDir}/sandbox"
-  delete fileTree(buildDir) { include '**/h2o_*.log', '**/h2o_*.err' }
-  file("${projectDir}/sandbox").mkdirs()
-}
 
-void prepareDaemonTasks(final int count) {
-  def clusterName = System.currentTimeMillis()
-  count.times { number ->
-    String dependentTask = "startDaemon_" + (number)
-    if (number == 0) {
-      dependentTask = null
-    }
-    task ("startDaemon_" + (number + 1), type: com.github.psxpaul.task.ExecFork, dependsOn: dependentTask) {
-      commandLine = 'nice'
-      args = [ 'java', '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath, 'water.H2O', '-name', "junit_cluster_${clusterName}", '-baseport', '43000', '-ga_opt_out' ]
-      standardOutput = "$buildDir/h2o_${number + 1}.log"
-      errorOutput = "$buildDir/h2o_${number + 1}.err"
-      waitForOutput = "Cloud of size ${number + 1} formed"
-      timeout = 20
-    }
-  }
-  task "startDaemons", dependsOn: "startDaemon_" + (count)
+ext {
+  clusterName = System.currentTimeMillis()
+  clusterSize = 5
 }
-prepareDaemonTasks 5
-
-task testMultiNodeNew(type: Exec, dependsOn: 'startDaemons') {
-  commandLine 'sleep', '5'
-}
+apply from: "${rootDir}/gradle/testUtils.gradle"
 
 test {
   dependsOn smalldataCheck, cpLibs, testMultiNodeNew, testJar
