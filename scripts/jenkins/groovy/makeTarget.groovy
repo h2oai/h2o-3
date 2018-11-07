@@ -89,8 +89,8 @@ def call(final pipelineContext, final Closure body) {
 
 private void execMake(final String buildAction, final String h2o3dir) {
   sh """
-    export JAVA_HOME=/usr/lib/jvm/java-${env.JAVA_VERSION}-oracle
-    export PATH=\${JAVA_HOME}/bin:\${PATH}
+    # export JAVA_HOME=/usr/lib/jvm/java-${env.JAVA_VERSION}-oracle
+    # export PATH=\${JAVA_HOME}/bin:\${PATH}
 
     cd ${h2o3dir}
     echo "Linking small and bigdata"

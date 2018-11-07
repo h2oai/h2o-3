@@ -17,6 +17,7 @@ class BuildConfig {
   public static final int DEFAULT_IMAGE_VERSION_TAG = 5
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
+  public static final String GRAAL_IMAGE_NAME = DOCKER_REGISTRY + '/opsh2oai/h2o-3/dev-graal-1.0.0-rc8:' + '6' // FIXME + DEFAULT_IMAGE_VERSION_TAG
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
   private static final String HADOOP_IMAGE_VERSION_TAG = '51'
