@@ -165,7 +165,16 @@ public class AUC2 extends Iced {
     _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
   }
-  
+
+  // empty AUC, helps avoid NPE in edge cases
+  AUC2() {
+    _nBins = 0;
+    _ths = _tps = _fps = new double[0];
+    _p =_n = 0;
+    _auc = _gini = _pr_auc = Double.NaN;
+    _max_idx = -1;
+  }
+
   public double pr_auc() {
     checkRecallValidity();
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
