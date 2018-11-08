@@ -175,7 +175,14 @@ public class AUC2 extends Iced {
     _max_idx = -1;
   }
 
+  private boolean isEmpty() {
+    return _nBins == 0;
+  }
+
   public double pr_auc() {
+    if (isEmpty()) {
+      return Double.NaN;
+    }
     checkRecallValidity();
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
