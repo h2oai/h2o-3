@@ -40,7 +40,7 @@
 #' @param tweedie_link_power Tweedie link power Defaults to 1.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
-#'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
+#'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS",
 #'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to
 #'        AUTO.
 #' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
