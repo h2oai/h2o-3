@@ -127,8 +127,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
-    if (null == criterion || criterion.equals(""))
+    if (null == criterion || criterion.equals("")) {
       throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+    }
 
     Method method = null;
     Object obj = null;
