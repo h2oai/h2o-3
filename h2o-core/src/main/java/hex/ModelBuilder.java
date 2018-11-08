@@ -906,9 +906,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
-    if(_parms._ignore_const_cols)
+    if(_parms._ignore_const_cols && _parms._checkpoint == null) {
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) {
+        @Override
+        protected boolean filter(Vec v) {
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst();
           boolean skipString = ignoreStringColumns() && v.isString();
@@ -916,7 +917,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           boolean skip = isBad || skipConst || skipString || skipUuid;
           return skip;
         }
-      }.doIt(_train,"Dropping bad and constant columns: ",expensive);
+      }.doIt(_train, "Dropping bad and constant columns: ", expensive);
+
+
+    } else if(_parms._checkpoint != null){ // If there is a checkpoint, keep exactly the same columns
+      final Model checkpointedModel = _parms._checkpoint.get();
+      assert checkpointedModel != null;
+
+      // Avoid O(n) lookup
+      final Set<String> checkpointNames = new HashSet<>(checkpointedModel._output._names.length);
+      for (String col : checkpointedModel._output._names){
+        checkpointNames.add(col);
+      }
+
+      // Number of columns skipped equals to the difference in sizes of those columns
+      // Missing columns check is done later
+      final int[] removedIdxs = new int[_train._names.length - checkpointedModel._output._names.length];
+      int removedIxsPointer = 0;
+      for (int i = 0; i < _train._names.length; i++) {
+        if(!checkpointNames.contains(_train._names[i])){
+          removedIdxs[removedIxsPointer++] = i;
+        }
+      }
+
+      _train.remove(removedIdxs);
+    }
+
   }
 
   /**
