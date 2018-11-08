@@ -54,6 +54,7 @@ ansiColor('xterm') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                         docker.image('docker.h2o.ai/s3cmd').inside("-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-7/x64-linux/jdk1.7.0_80.zip"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'
@@ -61,107 +62,66 @@ ansiColor('xterm') {
             }
         }
 
-        def devBaseStageName = 'Build dev-base'
-        buildSummary.stageWithSummary(devBaseStageName) {
-            node(DEFAULT_LABEL) {
-                buildSummary.refreshStage(devBaseStageName)
-                dir('dev-base') {
-                    deleteDir()
-                    unstash 'docker-sources'
-                    pullPreviousVersionIfRequired(pipelineContext, 'dev-base')
-                    sh """
-                        docker build \
-                            -t ${IMAGE_NAME_PREFIX}/dev-base${GPU_SUFFIX}:${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                            -f jenkins-images/Dockerfile-base \
-                            --build-arg FROM_IMAGE=${params.useGPU ? GPU_BASE_IMAGE : UBUNTU_BASE_IMAGE} \
-                            .
-                        docker push ${IMAGE_NAME_PREFIX}/dev-base${GPU_SUFFIX}:${pipelineContext.getBuildConfig().getDefaultImageVersion()}
-                    """
-                }
-            }
-        }
+        buildInParallel(pipelineContext, ['dev-base'])
+        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
+        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
 
-        JDK_BASE_IMAGES = [
-            'dev-jdk-8-base': [dockerfile: 'Dockerfile-jdk-8-base'],
-            'dev-jdk-others-base': [dockerfile: 'Dockerfile-jdk-others-base', buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]],
-        ]
-        buildInParallel(pipelineContext, JDK_BASE_IMAGES)
-
-        COMPONENT_BASE_IMAGES = [
-            'dev-python-base': [dockerfile: 'Dockerfile-python-base'],
-            'dev-r-base': [dockerfile: 'Dockerfile-r-base'],
-        ]
-        buildInParallel(pipelineContext, COMPONENT_BASE_IMAGES)
-
-        def componentImages = [:]
+        def componentImages = []
         PYTHON_VERSIONS.each {version ->
-            componentImages["dev-python-${version}"] = [dockerfile: 'Dockerfile-python', buildArgs: ["PYTHON_VERSION=${version}", "H2O_BRANCH=${params.h2oBranch}"]]
+            componentImages += "dev-python-${version}"
         }
         R_VERSION.each {version ->
-            componentImages["dev-r-${version}"] = [dockerfile: 'Dockerfile-r', buildArgs: ["R_VERSION=${version}"]]
+            componentImages += "dev-r-${version}"
         }
         JDK_VERSIONS.each {version ->
-            componentImages["dev-jdk-${version}"] = [dockerfile: 'Dockerfile-jdk-others', buildArgs: ["JAVA_VERSION=${version}"]]
+            componentImages += "dev-jdk-${version}"
         }
         buildInParallel(pipelineContext, componentImages)
 
-        BUILD_BASE_IMAGE = [
-            "dev-build-base": [
-                dockerfile: 'Dockerfile-build-base',
-                buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]
+        buildInParallel(pipelineContext, ["dev-build-base"])
+        buildInParallel(pipelineContext, ["dev-build-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
+        buildInParallel(
+            pipelineContext,
+            [
+                "dev-build-hadoop-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"
             ]
-        ]
-        buildInParallel(pipelineContext, BUILD_BASE_IMAGE)
+        )
+        buildInParallel(pipelineContext, ["dev-release-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
 
-        BUILD_IMAGE = [
-            "dev-build-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
-                dockerfile: 'Dockerfile-build',
-                buildArgs: ["H2O_BRANCH=${params.h2oBranch}"]
-            ]
-        ]
-        buildInParallel(pipelineContext, BUILD_IMAGE)
-
-        BUILD_HADOOP_IMAGE = [
-            "dev-build-hadoop-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
-                dockerfile: 'Dockerfile-build-hadoop',
-                buildArgs: ["GRADLE_VERSION=${pipelineContext.getBuildConfig().getCurrentGradleVersion()}", "H2O_BRANCH=${params.h2oBranch}"]
-            ]
-        ]
-        buildInParallel(pipelineContext, BUILD_HADOOP_IMAGE)
-
-        RELEASE_IMAGE = [
-            "dev-release-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}": [
-                dockerfile: 'Dockerfile-release',
-                buildArgs: ["GRADLE_VERSION=${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"]
-            ]
-        ]
-        buildInParallel(pipelineContext, RELEASE_IMAGE)
+        def componentJdkImages = []
+        PYTHON_VERSIONS.each {version ->
+            JDK_VERSIONS.each {jdkVersion ->
+                componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
+            }
+        }
+        R_VERSION.each {version ->
+            JDK_VERSIONS.each {jdkVersion ->
+                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+            }
+        }
+        buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
-private buildInParallel(final pipelineContext, final images) {
-    parallel(images.collectEntries { image, config ->
+private buildInParallel(final pipelineContext, final targets) {
+    parallel(targets.collectEntries { target ->
         [
-            image, {
-                def buildImageStageName = "Build ${image}"
+            target, {
+                def buildImageStageName = "Build ${target}"
                 buildSummary.stageWithSummary(buildImageStageName) {
                     node (DEFAULT_LABEL) {
                         buildSummary.refreshStage(buildImageStageName)
-                        dir (image) {
+                        dir (target) {
                             deleteDir()
                             unstash 'docker-sources'
-                            pullPreviousVersionIfRequired(pipelineContext, image)
-                            config.buildArgs = config.buildArgs ?: []
-                            def buildArgsStr = config.buildArgs.collect{ arg -> "--build-arg ${arg}"}.join(' ')
+                            pullPreviousVersionIfRequired(pipelineContext, target)
                             sh """
-                                docker build \
-                                    -t ${IMAGE_NAME_PREFIX}/${image}:${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    -f jenkins-images/${config.dockerfile} \
-                                    --build-arg FROM_VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    --build-arg GPU_SUFFIX=${GPU_SUFFIX} \
-                                    ${buildArgsStr} \
-                                    .
-                                docker push ${IMAGE_NAME_PREFIX}/${image}:${pipelineContext.getBuildConfig().getDefaultImageVersion()}
+                                make \
+                                    H2O_BRANCH=${params.h2oBranch} \
+                                    VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                    GPU=${params.useGPU} \
+                                    PUSH=true \
+                                    ${target}
                             """
                         }
                     }
