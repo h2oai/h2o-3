@@ -11,31 +11,7 @@ buildscript {
 apply plugin: 'java'
 apply plugin: com.github.psxpaul.ExecForkPlugin
 
-task prepareDaemonTasks {
-    clusterSize.times { number ->
-        String dependentTask = "startDaemon_" + (number)
-        if (number == 0) {
-            dependentTask = null
-        }
-        task ("startDaemon_${number + 1}", type: com.github.psxpaul.task.ExecFork, dependsOn: dependentTask) {
-            commandLine = 'java'
-            args = [ '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath, 'water.H2O', '-name', "junit_cluster_${clusterName}", '-baseport', '43000', '-ga_opt_out' ]
-            standardOutput = "$buildDir/h2o_${number + 1}.log"
-            errorOutput = "$buildDir/h2o_${number + 1}.err"
-            waitForOutput = "Cloud of size ${number + 1} formed"
-            timeout = 20
-        }
-    }
-    task "startDaemons", dependsOn: "startDaemon_" + (clusterSize)
-}
-
-task prepareDirs {
-    delete "${projectDir}/sandbox"
-    delete fileTree(buildDir) { include '**/h2o_*.log', '**/h2o_*.err' }
-    file("${projectDir}/sandbox").mkdirs()
-}
-
-task testMultiNodeNew(type: Exec, dependsOn: ['prepareDaemonTasks', 'startDaemons', 'prepareDirs']) {
+List getTests() {
     // Discover all test files for project
     def stdout = new ByteArrayOutputStream()
     exec {
@@ -45,46 +21,100 @@ task testMultiNodeNew(type: Exec, dependsOn: ['prepareDaemonTasks', 'startDaemon
     def testFiles = stdout.toString().split(System.lineSeparator())
 
     // transform file name to java class name
-    def tests = testFiles.collect {
-        it.replaceAll("${projectDir}/src/test/java/", '').replaceAll('\\.java$', '').replaceAll('/', '.')
+    def tests = testFiles.collect { fileName ->
+        fileName.replaceAll("${projectDir}/src/test/java/", '').replaceAll('\\.java$', '').replaceAll('/', '.')
     }
-    tests = tests.findAll {
-        it != "water.AAA_PreCloudLock" &&
-                it != "water.parser.ParseProgressTest" &&
-                it != "water.fvec.WordCountBigTest"
+    tests = tests.findAll { testName ->
+        testName != "water.AAA_PreCloudLock" &&
+                testName != "hex.AAA_PreCloudLock" &&
+                testName != "water.parser.ParseProgressTest" &&
+                testName != "water.fvec.WordCountBigTest"
     }
 
     def ignoreList = System.getenv('IGNORE')
     if (ignoreList) {
         // Remove ignored tests
-        tests = tests.findAll {
-            !ignoreList.contains(it)
+        tests = tests.findAll { testName ->
+            !ignoreList.contains(testName)
         }
     }
 
     def doOnly = System.getenv('DOONLY')
     if (doOnly) {
         // Remove all except DOONLY
-        tests = tests.findAll {
-            doOnly.contains(it)
+        tests = tests.findAll { testName ->
+            doOnly.contains(testName)
         }
     }
 
     tests.sort()
+    return tests
+}
 
-    doFirst {
-        println "Running ${project.name} multinode tests (${tests.size()} test classes)"
-        new File("${buildDir}/tests.txt").text = tests.join(System.lineSeparator())
+enum ExecutionModes {
+    SINGLE_NODE("single_node_${System.currentTimeMillis()}"),
+    MULTI_NODE("multi_node_${System.currentTimeMillis()}")
+
+    private final String clusterName
+
+    ExecutionModes(final clusterName) {
+        this.clusterName = clusterName
     }
+
+    String getClusterName() {
+        return clusterName
+    }
+}
+
+def executeTests(final ExecutionModes mode) {
+    def tests = getTests()
+    println "Running ${project.name} multinode tests (${tests.size()} test classes)"
+    new File("${buildDir}/tests.txt").text = tests.join(System.lineSeparator())
 
     // assemble command for command line
     def cmd = ['java', '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath]
-    cmd += ["-Dbuild.id=${System.getenv('BUILD_ID') ?: ''}", "-Djob.name=${System.getenv('JOB_NAME') ?: ''}", "-Dgit.commit=${System.getenv('GIT_COMMIT') ?: ''}", "-Dgit.branch=${System.getenv('GIT_BRANCH') ?: ''}", "-Dai.h2o.name=junit_cluster_${clusterName}", "-Dai.h2o.baseport=43000", "-Dai.h2o.ga_opt_out=yes", "water.junit.H2OTestRunner", "water.AAA_PreCloudLock"]
+    cmd += ["-Dbuild.id=${System.getenv('BUILD_ID') ?: ''}", "-Djob.name=${System.getenv('JOB_NAME') ?: ''}", "-Dgit.commit=${System.getenv('GIT_COMMIT') ?: ''}", "-Dgit.branch=${System.getenv('GIT_BRANCH') ?: ''}", "-Dai.h2o.name=junit_cluster_${mode.clusterName}", "-Dai.h2o.baseport=43000", "-Dai.h2o.ga_opt_out=yes", "water.junit.H2OTestRunner", "water.AAA_PreCloudLock"]
     cmd += tests
     // print command to file, for debugging
-    new File("${buildDir}/jvm_cmd.txt").text = cmd.join(' ')
+    new File("${buildDir}/jvm_cmd_${mode}.txt").text = cmd.join(' ')
     // execute tests
-    commandLine cmd
-    // redirect stdout to file
-    standardOutput new FileOutputStream("${buildDir}/h2o-tests-log.out")
+    exec {
+        commandLine cmd
+        // redirect stdout to file
+        output = new FileOutputStream("${buildDir}/h2o-tests-${mode}-log.out")
+    }
+}
+
+task testMultiNodeNew(dependsOn: ['prepareDaemonTasks', "startDaemon_${multiNodeClusterSize - 1}"]) {
+    doLast {
+        executeTests ExecutionModes.MULTI_NODE
+    }
+}
+
+task testSingleNodeNew(dependsOn: ['prepareDaemonTasks']) {
+    doLast {
+        executeTests ExecutionModes.SINGLE_NODE
+    }
+}
+
+task prepareDaemonTasks() {
+    delete "${projectDir}/sandbox"
+    delete fileTree(buildDir) { include '**/h2o_*.log', '**/h2o_*.err' }
+    file("${projectDir}/sandbox").mkdirs()
+
+    (multiNodeClusterSize - 1).times { number ->
+        String dependentTask = "startDaemon_" + (number)
+        if (number == 0) {
+            dependentTask = null
+        }
+        task ("startDaemon_${number + 1}", type: com.github.psxpaul.task.ExecFork, dependsOn: dependentTask) {
+            commandLine = 'java'
+            args = [ '-Xmx3g', '-Xms3g', '-ea', '-cp', sourceSets.test.runtimeClasspath.asPath, 'water.H2O', '-name', "junit_cluster_${ExecutionModes.MULTI_NODE.getClusterName()}", '-baseport', '43000', '-ga_opt_out' ]
+            standardOutput = "$buildDir/h2o_${number + 1}.log"
+            errorOutput = "$buildDir/h2o_${number + 1}.err"
+            waitForOutput = "Cloud of size ${number + 1} formed"
+            timeout = 20
+            stopAfter = testMultiNodeNew
+        }
+    }
 }

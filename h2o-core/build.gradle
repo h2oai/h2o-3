@@ -75,8 +75,7 @@ jar {
 // level) to files - then scrape the files later for test results.
 
 ext {
-  clusterName = System.currentTimeMillis()
-  clusterSize = 5
+  multiNodeClusterSize = 5
 }
 apply from: "${rootDir}/gradle/testUtils.gradle"
 
