@@ -81,7 +81,9 @@ def executeTests(final ExecutionModes mode) {
     exec {
         commandLine cmd
         // redirect stdout to file
-        output = new FileOutputStream("${buildDir}/h2o-tests-${mode}-log.out")
+        def fileOutputStream = new FileOutputStream("${buildDir}/h2o-tests-${mode}-log.out")
+        standardOutput = fileOutputStream
+        errorOutput = fileOutputStream
     }
 }
 
