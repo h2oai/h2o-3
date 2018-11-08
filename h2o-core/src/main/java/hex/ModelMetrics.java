@@ -154,16 +154,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     if (null == method)
       throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
 
-    double c;
     try {
-      c = (double) method.invoke(obj);
+      return (double) method.invoke(obj);
     } catch (Exception e) {
+      Log.err(e);
       throw new H2OIllegalArgumentException(
               "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
-              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method, e
+              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e.getMessage()
       );
     }
-    return c;
   }
 
 
