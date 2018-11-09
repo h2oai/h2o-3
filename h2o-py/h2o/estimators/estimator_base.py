@@ -452,7 +452,7 @@ class H2OEstimator(ModelBase):
 
     def _check_and_save_parm(self, parms, parameter_name, parameter_value):
         """
-        If a parameter is not stored in parms dict save them there (even though the value is None).
+        If a parameter is not stored in parms dict save it there (even though the value is None).
         Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
         """
         if parameter_name not in parms:
