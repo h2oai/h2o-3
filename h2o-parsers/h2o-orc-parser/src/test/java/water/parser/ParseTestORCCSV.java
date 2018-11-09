@@ -8,7 +8,7 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -41,6 +41,19 @@ public class ParseTestORCCSV extends TestUtil {
 				TestUtil.stall_till_cloudsize(5);
 		}
 
+		@Test
+		public void testSkippedAllColumns() {
+			Scope.enter();
+			try {
+				int[] skipped_columns = new int[]{0,1};
+				 Frame f1 = parse_test_file(orcFiles[0], skipped_columns);
+				 fail("orc skipped all columns test failed...");
+			} catch(Exception ex) {
+				System.out.println("Skipped all columns test passed!");
+			} finally {
+				Scope.exit();
+			}
+		}
 		@Test
 		public void testParseOrcCsvFiles() {
 				Scope.enter();
