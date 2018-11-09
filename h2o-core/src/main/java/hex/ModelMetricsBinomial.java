@@ -210,12 +210,14 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
-      AUC2 auc = null;
+      final AUC2 auc;
       if (_wcount > 0) {
         sigma = weightedSigma();
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         auc = new AUC2(_auc);
+      } else {
+        auc = new AUC2();
       }
       ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
