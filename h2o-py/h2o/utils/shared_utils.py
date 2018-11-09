@@ -174,7 +174,7 @@ def _handle_numpy_array(python_obj, header):
 
 
 def _handle_pandas_data_frame(python_obj, header):
-    data = _handle_python_lists(python_obj.as_matrix().tolist(), -1)[1]
+    data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
     return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
