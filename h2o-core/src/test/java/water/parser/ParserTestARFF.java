@@ -4,20 +4,17 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-
-import static water.parser.ParserTest.makeByteVec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import static water.parser.ParserTest.makeByteVec;
 
 public class ParserTestARFF extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -136,6 +133,46 @@ public class ParserTestARFF extends TestUtil {
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
+    }
+  }
+
+  // test some skipped_columns
+  @Test public void testSimpleSkippedColumns() {
+    Scope.enter();
+    Frame k1 = null, k2 = null, k3=null, k4=null;
+    try {
+      int[] skipped_columns = new int[] {0,2};
+      k2 = parse_test_file("smalldata/junit/arff/iris.arff");
+      k3 = parse_test_file("smalldata/junit/arff/iris.arff", skipped_columns);
+      k4 = parse_test_file("smalldata/junit/iris.csv", skipped_columns);
+      k1 = parse_test_file("smalldata/junit/iris.csv");
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k3, k4));
+      Assert.assertTrue("parsed values do not match!", !(TestUtil.isBitIdentical(k1, k4)));
+      Assert.assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
+      Scope.track(k1, k2, k3, k4);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  // test all skipped_columns
+  @Test public void testSimpleSkippedColumnsAll() {
+    Scope.enter();
+    Frame k1 = null, k2 = null;
+    try {
+      k2 = parse_test_file("smalldata/junit/arff/iris.arff");
+      Scope.track(k2);
+      int[] skipped_columns = new int[k2.numCols()];
+      for (int cindex=0; cindex<k2.numCols(); cindex++)
+        skipped_columns[cindex]=cindex;
+      k1 = parse_test_file("smalldata/junit/iris.csv", skipped_columns);
+      Assert.assertTrue("Exception should have been thrown!", 1 == 2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+    } catch(Exception ex) {
+      System.out.println(ex);
+    } finally {
+      Scope.exit();
     }
   }
 

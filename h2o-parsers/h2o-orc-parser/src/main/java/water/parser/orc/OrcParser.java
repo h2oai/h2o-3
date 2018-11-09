@@ -494,6 +494,11 @@ public class OrcParser extends Parser {
       this.orcFileReader = orcReader;
       this.columnTypesString = columntypes;
       this.toInclude = toInclude;
+      int[] skippedColumns = this.getSkippedColumns();
+      if (skippedColumns != null) {
+        for (int cindex:skippedColumns)
+          this.toInclude[cindex]=false; // set skipped columns to be false in order not to read it in.
+      }
       this.allColumnNames = allColNames;
     }
 
