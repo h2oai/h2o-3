@@ -12,10 +12,7 @@ import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -1620,5 +1617,36 @@ public class Frame extends Lockable<Frame> {
 
   public Frame sort(int[] cols, int[] ascending) {
     return Merge.sort(this, cols, ascending);
+  }
+
+  /**
+   * A structure for fast lookup in the set of frame's vectors.
+   * Purpose of this class is to avoid multiple O(n) searches in {@link Frame}'s vectors.
+   *
+   * @return An instance of {@link FrameVecRegistry}
+   */
+  public FrameVecRegistry frameVecRegistry() {
+    return new FrameVecRegistry();
+  }
+
+  public class FrameVecRegistry {
+    private LinkedHashMap<String, Vec> vecMap;
+
+    private FrameVecRegistry() {
+      vecMap = new LinkedHashMap<>(_vecs.length);
+      for (int i = 0; i < _vecs.length; i++) {
+        vecMap.put(_names[i], _vecs[i]);
+      }
+    }
+
+    /**
+     * Finds a Vec by column name
+     *
+     * @param colName Column name to search for, case-sensitive
+     * @return An instance of {@link Vec}, if found. Otherwise null.
+     */
+    public Vec findByColName(final String colName) {
+      return vecMap.get(colName);
+    }
   }
 }
