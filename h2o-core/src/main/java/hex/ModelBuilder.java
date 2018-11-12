@@ -1105,6 +1105,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       for (final String warning : warnings){
           warn("_checkpoint", warning);
       }
+      separateFeatureVecs(); // set MB's fields (like response)
     } else {
       // Drop all non-numeric columns (e.g., String and UUID).  No current algo
       // can use them, and otherwise all algos will then be forced to remove
