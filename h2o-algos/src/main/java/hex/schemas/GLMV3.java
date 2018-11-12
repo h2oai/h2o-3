@@ -17,7 +17,7 @@ import water.api.schemas3.StringPairV3;
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
   public static final class GLMParametersV3 extends ModelParametersSchemaV3<GLMParameters, GLMParametersV3> {
-    static public String[] fields = new String[]{
+     public static final String[] fields = new String[] {
             "model_id",
             "training_frame",
             "validation_frame",
@@ -61,6 +61,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "interactions",
             "interaction_pairs",
             "obj_reg",
+           "export_checkpoints_dir",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",

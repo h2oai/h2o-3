@@ -25,6 +25,7 @@
 #' @param u_name Frame key to save left singular vectors
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
@@ -49,7 +50,8 @@ h2o.svd <- function(training_frame, x, destination_key,
                     keep_u = TRUE,
                     u_name = NULL,
                     use_all_factor_levels = TRUE,
-                    max_runtime_secs = 0
+                    max_runtime_secs = 0,
+                    export_checkpoints_dir = NULL
                     ) 
 {
 
@@ -106,6 +108,8 @@ h2o.svd <- function(training_frame, x, destination_key,
     parms$use_all_factor_levels <- use_all_factor_levels
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('svd', parms, h2oRestApiVersion = 99) 
 }

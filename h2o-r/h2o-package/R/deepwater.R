@@ -101,6 +101,7 @@
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
 #'        "dataset". Defaults to auto.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -162,7 +163,8 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "dataset")
+                          problem_type = c("auto", "image", "dataset"),
+                          export_checkpoints_dir = NULL
                           ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -320,6 +322,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$hidden_dropout_ratios <- hidden_dropout_ratios
   if (!missing(problem_type))
     parms$problem_type <- problem_type
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }

@@ -201,6 +201,10 @@ public abstract class Persist {
     throw new RuntimeException("Not implemented");
   }
 
+  public String getParent(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
   public boolean isDirectory(String path) {
     throw new RuntimeException("Not implemented");
   }
@@ -231,7 +235,7 @@ public abstract class Persist {
    * @param overwrite  overwrite destination file
    * @return output stream
    *
-   * @throws IOException  in case of underlying FS error
+   * @throws water.api.FSIOException in case of underlying FS error
    */
   public OutputStream create(String path, boolean overwrite) {
     throw new RuntimeException("Not implemented");

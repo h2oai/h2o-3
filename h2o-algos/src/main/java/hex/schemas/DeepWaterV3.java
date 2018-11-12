@@ -76,6 +76,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "input_dropout_ratio",
         "hidden_dropout_ratios",
         "problem_type",
+        "export_checkpoints_dir"
     };
 
     /**

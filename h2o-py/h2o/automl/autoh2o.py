@@ -58,6 +58,7 @@ class H2OAutoML(object):
       ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
       ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
       ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+    :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
 
     :examples:
     >>> import h2o
@@ -98,7 +99,8 @@ class H2OAutoML(object):
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
-                 sort_metric="AUTO"):
+                 sort_metric="AUTO",
+                 export_checkpoints_dir=None):
 
         # Check if H2O jar contains AutoML
         try:
@@ -205,6 +207,10 @@ class H2OAutoML(object):
             self.sort_metric = None
         else:
             self.sort_metric = sort_metric
+
+        if export_checkpoints_dir is not None:
+            assert_is_type(export_checkpoints_dir,str)
+            self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
 
     #---------------------------------------------------------------------------
     # Basic properties

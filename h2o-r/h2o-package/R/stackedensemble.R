@@ -31,6 +31,7 @@
 #' @param metalearner_params Parameters for metalearner algorithm Defaults to NULL.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 #'        Defaults to -1 (time-based random number).
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
 #' 
 #' # See example R code here:
@@ -47,6 +48,7 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
                                 metalearner_fold_column = NULL,
                                 keep_levelone_frame = FALSE,
                                 seed = -1,
+                                export_checkpoints_dir = NULL,
                                 metalearner_params = NULL 
                                 ) 
 {
@@ -119,6 +121,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   model <- .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99)
   # Convert metalearner_params back to list if not NULL

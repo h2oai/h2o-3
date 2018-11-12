@@ -25,7 +25,8 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
                 "sample_rate",
                 "col_sample_rate_change_per_level",
                 "col_sample_rate_per_tree",
-                "categorical_encoding"
+                "categorical_encoding",
+                "export_checkpoints_dir"
         };
 
         // Input fields
