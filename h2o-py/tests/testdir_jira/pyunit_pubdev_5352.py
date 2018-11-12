@@ -13,6 +13,10 @@ def pubdev_5352():
     drf_checkpoint = H2ORandomForestEstimator(model_id='drf_checkpoint',checkpoint=drf, ntrees=4, seed=1234)
     drf_checkpoint.train(x=predictors, y=target, training_frame=new_data)
 
+    assert drf_checkpoint.ntrees == 4
+
+
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_5352)
