@@ -55,7 +55,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                       "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major",
                       "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
                       "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
-                      "elastic_averaging_moving_rate", "elastic_averaging_regularization"}
+                      "elastic_averaging_moving_rate", "elastic_averaging_regularization", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -1390,6 +1390,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def elastic_averaging_regularization(self, elastic_averaging_regularization):
         assert_is_type(elastic_averaging_regularization, None, numeric)
         self._parms["elastic_averaging_regularization"] = elastic_averaging_regularization
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
 

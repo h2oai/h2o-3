@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-automl.get.automl.test <- function() {
+automl.checkpoints.test <- function() {
 
     # Load data and split into train, valid and test sets
     train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
@@ -17,6 +17,8 @@ automl.get.automl.test <- function() {
     train[,y] <- as.factor(train[,y])
     test[,y] <- as.factor(test[,y])
     max_models <- 3
+    checkpoints_dir <- tempfile()
+    print(checkpoints_dir)
 
     aml1 <- h2o.automl(y = y,
                         training_frame = train,
@@ -25,23 +27,24 @@ automl.get.automl.test <- function() {
                         stopping_tolerance=0.001, 
                         stopping_metric="AUC", 
                         max_models=max_models, 
+                        export_checkpoints_dir=checkpoints_dir,
                         seed=1234)
 
-    #Use h2o.getAutoML to get previous automl instance
-    get_aml1 <- h2o.getAutoML(aml1@project_name)
-    
-    print("Leader model ID/project_name for original automl object")
-    print(aml1@leader@model_id)
-    print(aml1@project_name)
-    print("Leader model ID/project_name after fetching original automl object")
-    print(get_aml1@leader@model_id)
-    print(get_aml1@project_name)
-    
-    
-    expect_equal(aml1@project_name, get_aml1@project_name)
-    expect_equal(aml1@leader@model_id, get_aml1@leader@model_id)
-    expect_equal(aml1@leaderboard, get_aml1@leaderboard)
+    saved_models <- list.files(checkpoints_dir)
+    leader_models <- c()
+    for (m in saved_models) {
+      if (!grepl("_cv", m)) {
+        leader_models <- c(leader_models, m)
+      }
+    }
+    num_files <- length(leader_models)
+    unlink(checkpoints_dir, recursive = TRUE)
 
+    print(leader_models)
+    print(aml1@leaderboard)
+    
+    expect_true(num_files > 0)
+    expect_equal(num_files, nrow(aml1@leaderboard))
 }
 
-doTest("AutoML h2o.getAutoML Test", automl.get.automl.test)
+doTest("AutoML checkpoints export Test", automl.checkpoints.test)

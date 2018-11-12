@@ -46,6 +46,7 @@
 #'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
 #'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification,
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
+#' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  
 #' @return An \linkS4class{H2OAutoML} object.
@@ -78,7 +79,8 @@ h2o.automl <- function(x, y, training_frame,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
-                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"))
+                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
+                       export_checkpoints_dir = NULL)
 {
 
   tryCatch({
@@ -230,6 +232,10 @@ h2o.automl <- function(x, y, training_frame,
   build_control$keep_cross_validation_predictions <- keep_cross_validation_predictions
   build_control$keep_cross_validation_models <- keep_cross_validation_models
   build_control$keep_cross_validation_fold_assignment <- nfolds !=0  && keep_cross_validation_fold_assignment
+
+  if (!is.null(export_checkpoints_dir)) {
+    build_control$export_checkpoints_dir <- export_checkpoints_dir
+  }
 
   # Create the parameter list to POST to the AutoMLBuilder 
   if (length(build_models) == 0) {

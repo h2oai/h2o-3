@@ -35,6 +35,7 @@
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
@@ -61,7 +62,8 @@ h2o.prcomp <- function(training_frame, x,
                        compute_metrics = TRUE,
                        impute_missing = FALSE,
                        seed = -1,
-                       max_runtime_secs = 0
+                       max_runtime_secs = 0,
+                       export_checkpoints_dir = NULL
                        ) 
 {
 
@@ -114,6 +116,8 @@ h2o.prcomp <- function(training_frame, x,
     parms$seed <- seed
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('pca', parms, h2oRestApiVersion = 3) 
 }

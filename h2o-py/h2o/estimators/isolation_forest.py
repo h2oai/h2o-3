@@ -31,7 +31,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
                       "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
                       "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
-                      "col_sample_rate_per_tree", "categorical_encoding"}
+                      "col_sample_rate_per_tree", "categorical_encoding", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -299,5 +299,20 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 

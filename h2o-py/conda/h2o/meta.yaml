@@ -1,4 +1,4 @@
-{% set data = load_setup_py_data() %}
+{% set data >= load_setup_py_data() %}
 
 package:
   name: h2o
@@ -23,6 +23,34 @@ requirements:
     - future >=0.15.2
     - tabulate >=0.7.5
     - requests >=2.10
+
+  test:
+    - pip >= 9.0.3
+    - colorama >= 0.3.9
+    - future >= 0.16.0
+    - requests >= 2.18.4
+    - tabulate >= 0.8.2
+    - slam >= 0.6.0
+    - cython >= 0.27.3
+    - twine >= 1.10.0
+    - urllib3 >= 1.22
+    - grip >= 4.4.0
+    - wheel >= 0.30.0
+    - numpy >= 1.13.3
+    - scipy >= 1.0.0
+    - pandas >= 0.22.0
+    - statsmodels >= 0.8.0
+    - patsy >= 0.5.0
+    - sklearn
+    - scikit-learn >= 0.19.1
+    - six >= 1.11.0
+    - seaborn >= 0.8.1
+    - matplotlib >= 2.1.1
+    - sphinx >= 1.6.6
+    - numpydoc >= 0.7.0
+    - recommonmark >= 0.4.0
+    - sphinx-rtd-theme >= 0.2.4
+    - sphinxcontrib-osexample >= 0.1.1
 
 about:
   home: https://github.com/h2oai/h2o-3.git

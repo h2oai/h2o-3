@@ -29,6 +29,7 @@
 #'        training.
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.coxph <- function(x, event_column, training_frame,
                       model_id = NULL,
@@ -44,7 +45,8 @@ h2o.coxph <- function(x, event_column, training_frame,
                       interactions = NULL,
                       interaction_pairs = NULL,
                       interactions_only = NULL,
-                      use_all_factor_levels = FALSE
+                      use_all_factor_levels = FALSE,
+                      export_checkpoints_dir = NULL
                       ) 
 {
 
@@ -115,6 +117,8 @@ h2o.coxph <- function(x, event_column, training_frame,
     parms$interactions_only <- interactions_only
   if (!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('coxph', parms, h2oRestApiVersion = 3) 
 }

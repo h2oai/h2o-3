@@ -50,6 +50,7 @@
 #' @param eps_prob Cutoff below which probability is replaced with min_prob.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
 #'          response, and a Gaussian distribution of numeric predictors with mean and standard         deviation
 #'          computed from the training dataset. When building a naive Bayes classifier,         every row in the
@@ -89,7 +90,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            min_prob = 0.001,
                            eps_prob = 0,
                            compute_metrics = TRUE,
-                           max_runtime_secs = 0
+                           max_runtime_secs = 0,
+                           export_checkpoints_dir = NULL
                            ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -177,6 +179,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('naivebayes', parms, h2oRestApiVersion = 3) 
 }

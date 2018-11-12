@@ -309,6 +309,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public String _custom_metric_func = null;
 
+    /**
+     * Directory where generated models will be exported
+     */
+    public String _export_checkpoints_dir;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
@@ -2445,7 +2450,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param location target path, it can be on local filesystem, HDFS, S3...
    * @param force If true, overwrite already existing file
    * @return URI representation of the target location
-   * @throws IOException when writing fails
+   * @throws water.api.FSIOException when writing fails
    */
   public URI exportBinaryModel(String location, boolean force) throws IOException {
     OutputStream os = null;

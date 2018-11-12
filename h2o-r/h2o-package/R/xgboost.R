@@ -46,6 +46,7 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -110,6 +111,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                         quiet_mode = TRUE,
+                        export_checkpoints_dir = NULL,
                         ntrees = 50,
                         max_depth = 6,
                         min_rows = 1,
@@ -225,6 +227,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

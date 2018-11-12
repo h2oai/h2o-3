@@ -39,7 +39,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -862,5 +862,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 

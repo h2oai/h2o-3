@@ -34,6 +34,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "tweedie_power",
         "categorical_encoding",
         "quiet_mode",
+        "export_checkpoints_dir",
 
         // model specific
         "ntrees",

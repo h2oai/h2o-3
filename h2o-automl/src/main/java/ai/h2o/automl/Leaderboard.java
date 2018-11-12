@@ -213,7 +213,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
     // This can happen if a grid or model build timed out:
-    if (null == newModels || newModels.length < 1) {
+    if (null == newModels || newModels.length == 0) {
       return;
     }
 
@@ -285,25 +285,25 @@ public class Leaderboard extends Keyed<Leaderboard> {
         Model[] updating_models = new Model[updating.models.length];
         modelsForModelKeys(updating.models, updating_models);
 
-        updating.sort_metrics = getSortMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+        updating.sort_metrics = getMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
 
         if (aModel._output.isBinomialClassifier()) { // Binomial case
-          updating.auc = getOtherMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.auc = getMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else if (aModel._output.isMultinomialClassifier()) { //Multinomial Case
-          updating.mean_per_class_error = getOtherMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         } else { //Regression Case
-          updating.mean_residual_deviance= getOtherMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getOtherMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mae = getOtherMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmsle = getOtherMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mean_residual_deviance= getMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mae = getMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmsle = getMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         }
 
         // If we're updated leader let this know so that it can notify the user
@@ -425,28 +425,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /** Return the number of models in this Leaderboard. */
   int getModelCount() { return getModelKeys().length; }
 
-  /*
-  long[] getTimestamps(Model[] models) {
-    long[] timestamps = new long[models.length];
-    int i = 0;
-    for (Model m : models)
-      timestamps[i++] = m._output._end_time;
-    return timestamps;
-  }
-  */
-
-  double[] getSortMetrics() {
-    return getSortMetrics(this.sort_metric, this.leaderboard_set_metrics, this.leaderboardFrame, this.getModels());
-  }
-
-  private static double[] getOtherMetrics(String other_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
+  private static double[] getMetrics(String metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] other_metrics = new double[models.length];
     int i = 0;
     for (Model m : models) {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
         //System.out.println("@@@@@@@@@@@@@ Leaderboard frame metrics @@@@@@@@@@@@@");
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), metric);
       } else {
         // otherwise use cross-validation metrics
         //System.out.println("@@@@@@@@@@@@@ Cross-validation frame metrics @@@@@@@@@@@@@");
@@ -454,31 +440,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
         long model_checksum = m.checksum();
         Key frame_key = m._output._cross_validation_metrics.frame()._key;
         long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), other_metric);
+        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), metric);
       }
     }
     return other_metrics;
-  }
-
-  private static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
-    double[] sort_metrics = new double[models.length];
-    int i = 0;
-    for (Model m : models) {
-      // If leaderboard frame exists, get metrics from there
-      if (leaderboardFrame != null) {
-        //System.out.println("@@@@@@@@@@@@@ Leaderboard frame metrics (other) @@@@@@@@@@@@@");
-        sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
-      } else {
-        // otherwise use cross-validation metrics
-        //System.out.println("@@@@@@@@@@@@@ Cross-validation frame metrics (other) @@@@@@@@@@@@@");
-        Key model_key = m._key;
-        long model_checksum = m.checksum();
-        Key frame_key = m._output._cross_validation_metrics.frame()._key;
-        long frame_checksum = m._output._cross_validation_metrics.frame().checksum();
-        sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, frame_key, frame_checksum)), sort_metric);
-      }
-    }
-    return sort_metrics;
   }
 
   /**
@@ -547,27 +512,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return sb.toString();
   }
 
-  String timeTsv() {
-    String fieldSeparator = "\\t";
-    String lineSeparator = "\\n";
-
-    StringBuffer sb = new StringBuffer();
-    //sb.append("Time").append(fieldSeparator).append("Error").append(lineSeparator);
-    sb.append("Error").append(lineSeparator);
-
-    Model[] models = getModels();
-    for (int i = models.length - 1; i >= 0; i--) {
-      // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
-      Model m = models[i];
-      //sb.append(timestampFormat.format(m._output._end_time));
-      //sb.append(fieldSeparator);
-
-      sb.append(defaultMetricForModel(m));
-      sb.append(lineSeparator);
-    }
-    return sb.toString();
-  }
-
   private static String[] colHeaders(String metric, String[] other_metric) {
     String[] headers = ArrayUtils.append(new String[]{"model_id",metric},other_metric);
     return headers;
@@ -625,8 +569,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%.6f"
   };
 
-  private static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, int length, Model[] models) {
-    assert sort_metric != null || (sort_metric == null && length == 0) :
+  private static TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, int length, Model[] models) {
+    assert sort_metric != null || length == 0 :
         "sort_metrics needs to be always not-null for non-empty array!";
 
     String[] rowHeaders = new String[length];
@@ -808,7 +752,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   private String toString(String fieldSeparator, String lineSeparator) {
-    //return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true, false);
     return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true);
   }
 

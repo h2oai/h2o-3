@@ -134,6 +134,7 @@
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -232,6 +233,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001,
+                             export_checkpoints_dir = NULL,
                              verbose = FALSE 
                              ) 
 {
@@ -443,6 +445,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$elastic_averaging_moving_rate <- elastic_averaging_moving_rate
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

@@ -25,7 +25,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
                       "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
-                      "max_runtime_secs"}
+                      "max_runtime_secs", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -205,6 +205,21 @@ class H2OWord2vecEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
 

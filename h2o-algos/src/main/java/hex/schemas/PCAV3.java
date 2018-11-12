@@ -10,23 +10,24 @@ import water.api.schemas3.ModelParametersSchemaV3;
 public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
 
   public static final class PCAParametersV3 extends ModelParametersSchemaV3<PCAParameters, PCAParametersV3> {
-    static public String[] fields = new String[] {
-      "model_id",
-      "training_frame",
-      "validation_frame",
-      "ignored_columns",
-      "ignore_const_cols",
-      "score_each_iteration",
-      "transform",
-      "pca_method",
-      "pca_impl",
-      "k",
-      "max_iterations",
-      "use_all_factor_levels",
-      "compute_metrics",
-      "impute_missing",
-      "seed",
-      "max_runtime_secs"
+    static public String[] fields = new String[]{
+        "model_id",
+        "training_frame",
+        "validation_frame",
+        "ignored_columns",
+        "ignore_const_cols",
+        "score_each_iteration",
+        "transform",
+        "pca_method",
+        "pca_impl",
+        "k",
+        "max_iterations",
+        "use_all_factor_levels",
+        "compute_metrics",
+        "impute_missing",
+        "seed",
+        "max_runtime_secs",
+        "export_checkpoints_dir"
     };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class

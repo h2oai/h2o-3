@@ -82,6 +82,7 @@
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param distribution Distribution. This argument is deprecated and has no use for Random Forest.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -131,6 +132,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              calibration_frame = NULL,
                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                              custom_metric_func = NULL,
+                             export_checkpoints_dir = NULL,
                              verbose = FALSE 
                              ) 
 {
@@ -259,6 +261,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$distribution <- 'AUTO'
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

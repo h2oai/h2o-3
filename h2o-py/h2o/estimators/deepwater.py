@@ -40,7 +40,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "backend", "image_shape", "channels", "sparse", "gpu", "device_id", "cache_data",
                       "network_definition_file", "network_parameters_file", "mean_image_file",
                       "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
-                      "hidden_dropout_ratios", "problem_type"}
+                      "hidden_dropout_ratios", "problem_type", "export_checkpoints_dir"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -1000,6 +1000,21 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def problem_type(self, problem_type):
         assert_is_type(problem_type, None, Enum("auto", "image", "dataset"))
         self._parms["problem_type"] = problem_type
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
 
