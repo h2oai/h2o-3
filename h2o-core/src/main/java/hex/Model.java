@@ -1152,8 +1152,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;  // count of columns that were replaced with NA
-    for( int i=0; i<names.length; i++ ) {
-      Vec vec = test.vec(names[i]); // Search in the given validation set
+    final Frame.FrameVecRegistry frameVecRegistry = test.frameVecRegistry();
+    for (int i = 0; i < names.length; i++) {
+      Vec vec = frameVecRegistry.findByColName(names[i]); // Search in the given validation set
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
