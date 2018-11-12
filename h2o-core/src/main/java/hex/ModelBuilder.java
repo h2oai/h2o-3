@@ -906,10 +906,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     // Drop all-constant and all-bad columns.
-    if(_parms._ignore_const_cols && _parms._checkpoint == null) {
+    if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override
-        protected boolean filter(Vec v) {
+        @Override protected boolean filter(Vec v) {
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst();
           boolean skipString = ignoreStringColumns() && v.isString();
@@ -917,32 +916,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           boolean skip = isBad || skipConst || skipString || skipUuid;
           return skip;
         }
-      }.doIt(_train, "Dropping bad and constant columns: ", expensive);
-
-
-    } else if(_parms._checkpoint != null){ // If there is a checkpoint, keep exactly the same columns
-      final Model checkpointedModel = _parms._checkpoint.get();
-      assert checkpointedModel != null;
-
-      // Avoid O(n) lookup
-      final Set<String> checkpointNames = new HashSet<>(checkpointedModel._output._names.length);
-      for (String col : checkpointedModel._output._names){
-        checkpointNames.add(col);
-      }
-
-      // Number of columns skipped equals to the difference in sizes of those columns
-      // Missing columns check is done later
-      final int[] removedIdxs = new int[_train._names.length - checkpointedModel._output._names.length];
-      int removedIxsPointer = 0;
-      for (int i = 0; i < _train._names.length; i++) {
-        if(!checkpointNames.contains(_train._names[i])){
-          removedIdxs[removedIxsPointer++] = i;
-        }
-      }
-
-      _train.remove(removedIdxs);
-    }
-
+      }.doIt(_train,"Dropping bad and constant columns: ",expensive);
   }
 
   /**
@@ -1121,13 +1095,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    // Drop all non-numeric columns (e.g., String and UUID).  No current algo
-    // can use them, and otherwise all algos will then be forced to remove
-    // them.  Text algos (grep, word2vec) take raw text columns - which are
-    // numeric (arrays of bytes).
-    ignoreBadColumns(separateFeatureVecs(), expensive);
-    ignoreInvalidColumns(separateFeatureVecs(), expensive);
+    if(_parms._checkpoint != null){
+      if(DKV.get(_parms._checkpoint) == null){
+          error("_checkpoint", "Checkpoint has to point to existing model!");
+      }
+      // Do not ignore bad columns, as only portion of the training data might be supplied (e.g. continue from checkpoint)
+      final Model checkpointedModel = _parms._checkpoint.get();
+      final String[] warnings = checkpointedModel.adaptTestForTrain(_train, expensive, false);
+      for (final String warning : warnings){
+          warn("_checkpoint", warning);
+      }
+    } else {
+      // Drop all non-numeric columns (e.g., String and UUID).  No current algo
+      // can use them, and otherwise all algos will then be forced to remove
+      // them.  Text algos (grep, word2vec) take raw text columns - which are
+      // numeric (arrays of bytes).
+      ignoreBadColumns(separateFeatureVecs(), expensive);
+    }
     checkResponseVariable();
+    ignoreInvalidColumns(separateFeatureVecs(), expensive);
 
     // Rebalance train and valid datasets (after invalid/bad columns are dropped)
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
@@ -1274,10 +1260,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {
       for (String name : _train._names)
         assert(ArrayUtils.contains(_valid._names, name)) : "Internal error during categorical encoding: training column " + name + " not in validation frame with columns " + Arrays.toString(_valid._names);
-    }
-
-    if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
-      error("_checkpoint", "Checkpoint has to point to existing model!");
     }
 
     if (_parms._stopping_tolerance < 0) {
