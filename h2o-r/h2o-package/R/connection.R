@@ -206,9 +206,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
           cat(paste(readLines(stdout), collapse="\n"), "\n")
           print(tmpConn@ip)
           print(tmpConn@port)
-        }
-        rv <- .h2o.doRawGET(conn = tmpConn, urlSuffix = "")
-        if (!quiet) {
+          rv <- .h2o.doRawGET(conn = tmpConn, urlSuffix = "")
           print(rv$curlError)
           print(rv$httpStatusCode)
           print(rv$curlErrorMessage)
@@ -223,10 +221,12 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   conn <- new("H2OConnection", ip = ip, port = port, name = .h2o.jar.env$name, proxy = proxy, https = https, insecure = insecure,
     username = username, password = password,cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
-  if (!quiet) cat(" Connection successful!\n\n")
   .h2o.jar.env$port <- port #Ensure right port is called when quitting R
-  if (!quiet) h2o.clusterInfo()
-  if (!quiet) cat("\n")
+  if (!quiet) {
+    cat(" Connection successful!\n\n")
+    h2o.clusterInfo()
+    cat("\n")
+  }
 
   if( strict_version_check && !nchar(Sys.getenv("H2O_DISABLE_STRICT_VERSION_CHECK"))) {
     verH2O <- h2o.getVersion()
