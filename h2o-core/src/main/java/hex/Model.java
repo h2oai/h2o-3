@@ -1096,9 +1096,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param interactionBldr Column names to create pairwise interactions with
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
-  public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionBuilder interactionBldr, ToEigenVec tev,
-                                           IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(final Frame test, final String[] origNames, final String[][] origDomains,
+                                           String[] names, String[][] domains, final Parameters parms,
+                                           final boolean expensive, final boolean computeMetrics,
+                                           final InteractionBuilder interactionBldr, final ToEigenVec tev,
+                                           final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
+          throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
     if (catEncoded && origNames==null) return msg;
@@ -1224,39 +1227,51 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
 
-    boolean haveCategoricalPredictors = false;
     if (expensive && checkCategoricals && !catEncoded) {
-      for (int i=0; i<test.numCols(); ++i) {
-        if (test.names()[i].equals(response)) continue;
-        if (test.names()[i].equals(weights)) continue;
-        if (test.names()[i].equals(offset)) continue;
-        if (test.names()[i].equals(fold)) continue;
-        // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
-        if (test.vec(i).cardinality() > 0) {
-          haveCategoricalPredictors = true;
-          break;
-        }
-        // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
-        int whichCol = ArrayUtils.find(names, test.name(i));
-        if (whichCol >= 0 && domains[whichCol] != null) {
-          haveCategoricalPredictors = true;
-          break;
-        }
+      final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
+
+      // check if we first need to expand categoricals before calling this method again
+      if (hasCategoricalPredictors) {
+        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        toDelete.put(updated._key, "categorically encoded frame");
+        test.restructure(updated.names(), updated.vecs()); //updated in place
+        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
+        msgs.addAll(Arrays.asList(msg2));
+        return msgs.toArray(new String[msgs.size()]);
       }
-    }
-    // check if we first need to expand categoricals before calling this method again
-    if (expensive && !catEncoded && haveCategoricalPredictors) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
-      toDelete.put(updated._key, "categorically encoded frame");
-      test.restructure(updated.names(), updated.vecs()); //updated in place
-      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
-      msgs.addAll(Arrays.asList(msg2));
-      return msgs.toArray(new String[msgs.size()]);
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
 
     return msgs.toArray(new String[msgs.size()]);
+  }
+
+  private static boolean hasCategoricalPredictors(final Frame frame, final String responseName,
+                                           final String wieghtsName, final String offsetName,
+                                           final String foldName, final String[] names,
+                                           final String[][] domains) {
+
+    boolean haveCategoricalPredictors = false;
+    for (int i = 0; i < frame.numCols(); ++i) {
+      if (frame.names()[i].equals(responseName)) continue;
+      if (frame.names()[i].equals(wieghtsName)) continue;
+      if (frame.names()[i].equals(offsetName)) continue;
+      if (frame.names()[i].equals(foldName)) continue;
+      // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
+      if (frame.vec(i).get_type() == Vec.T_CAT) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+      // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
+      int whichCol = ArrayUtils.find(names, frame.name(i)); // TODO: speedup this O(n) search
+      if (whichCol >= 0 && domains[whichCol] != null) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+    }
+
+    return haveCategoricalPredictors;
+
   }
 
 
