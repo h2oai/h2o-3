@@ -28,10 +28,7 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1252,6 +1249,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                            final String[][] domains) {
 
     boolean haveCategoricalPredictors = false;
+    final Map<String, Integer> namesIndicesMap = new HashMap<>(names.length);
+
+    for (int i = 0; i < names.length; i++) {
+      namesIndicesMap.put(names[i], i);
+    }
+
     for (int i = 0; i < frame.numCols(); ++i) {
       if (frame.names()[i].equals(responseName)) continue;
       if (frame.names()[i].equals(wieghtsName)) continue;
@@ -1263,7 +1266,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         break;
       }
       // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
-      int whichCol = ArrayUtils.find(names, frame.name(i)); // TODO: speedup this O(n) search
+      final int whichCol = namesIndicesMap.get(frame.name(i));
       if (whichCol >= 0 && domains[whichCol] != null) {
         haveCategoricalPredictors = true;
         break;
