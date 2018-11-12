@@ -1111,9 +1111,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // them.  Text algos (grep, word2vec) take raw text columns - which are
       // numeric (arrays of bytes).
       ignoreBadColumns(separateFeatureVecs(), expensive);
+      ignoreInvalidColumns(separateFeatureVecs(), expensive);
+      checkResponseVariable();
     }
-    checkResponseVariable();
-    ignoreInvalidColumns(separateFeatureVecs(), expensive);
 
     // Rebalance train and valid datasets (after invalid/bad columns are dropped)
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
