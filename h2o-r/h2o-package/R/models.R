@@ -469,12 +469,12 @@ h2o.predict <- function(object, newdata, ...){
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
-#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
-#' h2o.predict(prostate.gbm, prostate.hex)
-#' h2o.predict_leaf_node_assignment(prostate.gbm, prostate.hex)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+#' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
+#' h2o.predict(prostate_gbm, prostate)
+#' h2o.predict_leaf_node_assignment(prostate_gbm, prostate)
 #' }
 #' @export
 predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Path", "Node_ID"), ...) {
@@ -558,12 +558,12 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
-#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
-#' h2o.predict(prostate.gbm, prostate.hex)
-#' h2o.staged_predict_proba(prostate.gbm, prostate.hex)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+#' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
+#' h2o.predict(prostate_gbm, prostate)
+#' h2o.staged_predict_proba(prostate_gbm, prostate)
 #' }
 #' @export
 staged_predict_proba.H2OModel <- function(object, newdata, ...) {
@@ -605,17 +605,17 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
-#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
-#' h2o.performance(model = prostate.gbm, newdata=prostate.hex)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+#' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
+#' h2o.performance(model = prostate_gbm, newdata=prostate)
 #' 
 #' ## If model uses balance_classes
 #' ## the results from train = TRUE will not match the results from newdata = prostate.hex
-#' prostate.gbm.balanced <- h2o.gbm(3:9, "CAPSULE", prostate.hex, balance_classes = TRUE)
-#' h2o.performance(model = prostate.gbm.balanced, newdata = prostate.hex)
-#' h2o.performance(model = prostate.gbm.balanced, train = TRUE)
+#' prostate_gbm_balanced <- h2o.gbm(3:9, "CAPSULE", prostate, balance_classes = TRUE)
+#' h2o.performance(model = prostate_gbm_balanced, newdata = prostate)
+#' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
 h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL) {
@@ -687,12 +687,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
-#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
-#' pred <- h2o.predict(prostate.gbm, prostate.hex)[,3] ## class-1 probability
-#' h2o.make_metrics(pred,prostate.hex$CAPSULE)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+#' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
+#' pred <- h2o.predict(prostate_gbm, prostate)[,3] ## class-1 probability
+#' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
 h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL) {
@@ -747,12 +747,12 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL)
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.auc(perf)
 #' }
 #' @export
@@ -813,12 +813,12 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.pr_auc(perf)
 #' }
 #' @export
@@ -878,12 +878,12 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.mean_per_class_error(perf)
 #' h2o.mean_per_class_error(model, train=TRUE)
 #' }
@@ -940,13 +940,13 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' p.sid <- h2o.runif(prostate.hex)
-#' prostate.train <- h2o.assign(prostate.hex[p.sid > .2,], "prostate.train")
-#' prostate.glm <- h2o.glm(x=3:7, y=2, training_frame=prostate.train)
-#' aic.basic <- h2o.aic(prostate.glm)
-#' print(aic.basic)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' p.sid <- h2o.runif(prostate)
+#' prostate_train <- prostate[p.sid > .2,]
+#' prostate_glm <- h2o.glm(x=3:7, y=2, training_frame=prostate_train)
+#' aic_basic <- h2o.aic(prostate_glm)
+#' print(aic_basic)
 #' }
 #' @export
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
@@ -1006,7 +1006,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.glm(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.glm(x=2:5, y=1, training_frame=fr)
 #'
 #' h2o.r2(m)
 #' }
@@ -1067,7 +1067,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
 #'
 #' h2o.mean_residual_deviance(m)
 #' }
@@ -1129,12 +1129,12 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.giniCoef(perf)
 #' }
 #' @export
@@ -1236,12 +1236,12 @@ h2o.coef_norm <- function(object) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.mse(perf)
 #' }
 #' @export
@@ -1309,12 +1309,12 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.rmse(perf)
 #' }
 #' @export
@@ -1378,7 +1378,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
 #'
 #' h2o.mae(m)
 #' }
@@ -1439,7 +1439,7 @@ h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
 #'
 #' h2o.rmsle(m)
 #' }
@@ -1684,12 +1684,12 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' perf <- h2o.performance(model, hex)
+#' prostate[,2] <- as.factor(hprostateex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' perf <- h2o.performance(model, prostate)
 #' h2o.F1(perf)
 #' }
 #' @export
@@ -2294,17 +2294,17 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
-#' hex[,2] <- as.factor(hex[,2])
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
 #' model <- h2o.gbm(x = 3:9, y = 2, distribution = "bernoulli",
-#'                  training_frame = hex, validation_frame = hex, nfolds=3)
+#'                  training_frame = prostate, validation_frame = prostate, nfolds=3)
 #' h2o.gainsLift(model)              ## extract training metrics
 #' h2o.gainsLift(model, valid=TRUE)  ## extract validation metrics (here: the same)
 #' h2o.gainsLift(model, xval =TRUE)  ## extract cross-validation metrics
-#' h2o.gainsLift(model, newdata=hex) ## score on new data (here: the same)
+#' h2o.gainsLift(model, newdata=prostate) ## score on new data (here: the same)
 #' # Generating a ModelMetrics object
-#' perf <- h2o.performance(model, hex)
+#' perf <- h2o.performance(model, prostate)
 #' h2o.gainsLift(perf)               ## extract from existing metrics object
 #' }
 #' @export
@@ -2381,13 +2381,13 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.uploadFile(prosPath)
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
-#' h2o.confusionMatrix(model, hex)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
+#' h2o.confusionMatrix(model, prostate)
 #' # Generating a ModelMetrics object
-#' perf <- h2o.performance(model, hex)
+#' perf <- h2o.performance(model, prostate)
 #' h2o.confusionMatrix(perf)
 #' }
 #' @export
@@ -2638,17 +2638,17 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' hex <- h2o.importFile(prosPath)
-#' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' h2o.varimp_plot(model)
 #'
 #' # for deep learning set the variable_importance parameter to TRUE
-#' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex,
+#' iris_hf <- as.h2o(iris)
+#' iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf,
 #' variable_importances = TRUE)
-#' h2o.varimp_plot(iris.dl)
+#' h2o.varimp_plot(iris_dl)
 #' }
 #' @export
 h2o.varimp_plot <- function(model, num_of_features = NULL){
@@ -2716,13 +2716,13 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 #' library(h2o)
 #' h2o.init()
 #'
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.importFile(prosPath)
-#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
-#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'                          training_frame = prostate.hex, family = "binomial",
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#'                          training_frame = prostate, family = "binomial",
 #'                          nfolds = 0, alpha = 0.5, lambda_search = FALSE)
-#' h2o.std_coef_plot(prostate.glm)
+#' h2o.std_coef_plot(prostate_glm)
 #' }
 #' @export
 h2o.std_coef_plot <- function(model, num_of_features = NULL){
@@ -3082,17 +3082,17 @@ h2o.cross_validation_predictions <- function(object) {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prostate.path <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prostate.path, destination_frame = "prostate.hex")
-#' prostate.hex[, "CAPSULE"] <- as.factor(prostate.hex[, "CAPSULE"] )
-#' prostate.hex[, "RACE"] <- as.factor(prostate.hex[,"RACE"] )
-#' prostate.gbm <- h2o.gbm(x = c("AGE","RACE"),
-#'                        y = "CAPSULE",
-#'                        training_frame = prostate.hex,
-#'                        ntrees = 10,
-#'                        max_depth = 5,
-#'                        learn_rate = 0.1)
-#' h2o.partialPlot(object = prostate.gbm, data = prostate.hex, cols = c("AGE", "RACE"))
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"] )
+#' prostate[, "RACE"] <- as.factor(prostate[,"RACE"] )
+#' prostate_gbm <- h2o.gbm(x = c("AGE","RACE"),
+#'                         y = "CAPSULE",
+#'                         training_frame = prostate,
+#'                         ntrees = 10,
+#'                         max_depth = 5,
+#'                         learn_rate = 0.1)
+#' h2o.partialPlot(object = prostate_gbm, data = prostate, cols = c("AGE", "RACE"))
 #' }
 #' @export
 
@@ -3238,24 +3238,24 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
-#'                                hidden = c(100, 200), epochs = 5)
-#' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
-#' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
-#' head(prostate.deepfeatures_layer1)
-#' head(prostate.deepfeatures_layer2)
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' prostate = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate,
+#'                             hidden = c(100, 200), epochs = 5)
+#' prostate_deepfeatures_layer1 = h2o.deepfeatures(prostate_dl, prostate, layer = 1)
+#' prostate_deepfeatures_layer2 = h2o.deepfeatures(prostate_dl, prostate, layer = 2)
+#' head(prostate_deepfeatures_layer1)
+#' head(prostate_deepfeatures_layer2)
 #'
 #' #if (h2o.deepwater.available()) {
-#' #  prostate.dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate.hex,
+#' #  prostate_dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate,
 #' #                              hidden = c(100, 200), epochs = 5)
-#' #  prostate.deepfeatures_layer1 =
-#' #    h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc1_w")
-#' #  prostate.deepfeatures_layer2 =
-#' #    h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc2_w")
-#' #  head(prostate.deepfeatures_layer1)
-#' #  head(prostate.deepfeatures_layer2)
+#' #  prostate_deepfeatures_layer1 =
+#' #    h2o.deepfeatures(prostate_dl, prostate, layer = "fc1_w")
+#' #  prostate_deepfeatures_layer2 =
+#' #    h2o.deepfeatures(prostate_dl, prostate, layer = "fc2_w")
+#' #  head(prostate_deepfeatures_layer1)
+#' #  head(prostate_deepfeatures_layer2)
 #' #}
 #' }
 #' @export

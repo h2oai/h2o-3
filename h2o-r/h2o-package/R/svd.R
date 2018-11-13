@@ -6,7 +6,7 @@
 #' Singular value decomposition of an H2O data frame using the power method
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param destination_key (Optional) The unique hex key assigned to the resulting model.
+#' @param destination_key (Optional) The unique key assigned to the resulting model.
 #'                        Automatically generated if none is provided.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame.
@@ -32,9 +32,9 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.svd(training_frame = australia.hex, nv = 8)
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
+#' h2o.svd(training_frame = australia, nv = 8)
 #' }
 #' @export
 h2o.svd <- function(training_frame, x, destination_key,

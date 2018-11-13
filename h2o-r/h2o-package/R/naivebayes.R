@@ -61,9 +61,9 @@
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-#' votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
-#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
 #' }
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
