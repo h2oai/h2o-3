@@ -4,9 +4,11 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.quiet.init <- function() {
   
-  # We don't reinitialize h2o, but instead call h2o.init again, and see if there is any output.
+  # We call h2o.init, and see if there is any output.
+  # In a normal test, h2o.init will have been called before, but the output 
+  # the first and the second time this function gets called is comparable
   
-  expect_silent(h2o.init(quiet = T))
+  expect_silent(h2o.init(quiet = TRUE))
   
 }
 
