@@ -141,13 +141,13 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   # setup the parse parameters here
   parseSetup.params <- list()
 
+  if (!is.null(skipped_columns)) {
+    skipped_columns = sort(skipped_columns)
+  }
+  
   # Prep srcs: must be of the form [src1,src2,src3,...]
   parseSetup.params$source_frames <- .collapse.char(sapply(data, function (d) attr(d, "id")))
   parseSetup.params$skipped_columns <- paste0("[", paste (skipped_columns, collapse = ','), "]")
-
-  if (!is.null(skipped_columns)) {
-    sort(skipped_columns)
-  }
 
   # check the header
   if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
@@ -197,12 +197,10 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   if( !is.null(col.types) ) { # list of enums
     if (typeof(col.types) == "character") {
       if (!is.null(skipped_columns)) {
-        skipped_columns=sort(skipped_columns)
-        countSkippedColumns = 1
         countParsedColumns = 1
         for (cind in c(1:parseSetup$number_columns)) {
-          if (cind==(skipped_columns[countSkippedColumns]+1)) { # belongs to columns skipped
-            countSkippedColumns=countSkippedColumns+1
+          if ((cind-1) %in% skipped_columns) { # belongs to columns skipped
+            parseSetup$col_type[cind]=NA
           } else { #column indices to be parsed
             parseSetup$col_type[cind] = col.types[countParsedColumns]
             countParsedColumns = countParsedColumns+1
