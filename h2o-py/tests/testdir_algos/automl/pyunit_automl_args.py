@@ -29,6 +29,12 @@ def import_dataset():
     # print(aml.leaderboard)
     # assert aml.leaderboard.nrows == 0, "with all algos excluded, leaderboard is not empty"
 
+def get_partitioned_model_names(leaderboard):
+    model_names = [leaderboard[i, 0] for i in range(0, (leaderboard.nrows))]
+    se_model_names = [m for m in model_names if m.startswith('StackedEnsemble')]
+    non_se_model_names = [m for m in model_names if m not in se_model_names]
+    return model_names, non_se_model_names, se_model_names
+
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
     ds = import_dataset()
@@ -132,17 +138,12 @@ def test_predict_on_train_set():
     
 
 def test_nfolds_param():
-    # TO DO: Clean up amodel creation below, should grep to get the DRF like we do in the runit
     print("Check nfolds is passed through to base models")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_nfolds3", nfolds=3, max_models=3, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard, hoping that it's not an SE model
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last
-    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
-    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
-      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['nfolds']['actual'] == 3
 
 
@@ -151,10 +152,8 @@ def test_nfolds_eq_0():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_nfolds0", nfolds=0, max_models=3, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard (which should not be an SE model) and verify that nfolds = 0
-    # we assume that if one model correctly used nfolds = 0, then they all do, but we could add an extra check for this
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    assert type(amodel) is not h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['nfolds']['actual'] == 0
 
 
@@ -164,12 +163,8 @@ def test_balance_classes():
     aml = H2OAutoML(project_name="py_aml_balance_classes_etc", max_models=3,
                     balance_classes=True, class_sampling_factors=[0.2, 1.4], max_after_balance_size=3.0, seed=1)
     aml.train(y=ds['target'], training_frame=ds['train'])
-    # grab the last model in the leaderboard, hoping that it's not an SE model
-    amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-1,0])
-    # if you get a stacked ensemble, take the second to last
-    # right now, if the last is SE, then second to last must be non-SE, but when we add multiple SEs, this will need to be updated
-    if type(amodel) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator:
-      amodel = h2o.get_model(aml.leaderboard[aml.leaderboard.nrows-2,0])
+    _, non_se, _ = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
     assert amodel.params['balance_classes']['actual'] == True
     assert amodel.params['max_after_balance_size']['actual'] == 3.0
     assert amodel.params['class_sampling_factors']['actual'] == [0.2, 1.4]
@@ -213,7 +208,7 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
 def test_automl_stops_after_max_runtime_secs():
     print("Check that automl gets interrupted after `max_runtime_secs`")
     max_runtime_secs = 30
-    cancel_tolerance_secs = 5+3   # should work for most cases given current mechanism, +3 due to SE which currently ignore max_runtime_secs
+    cancel_tolerance_secs = 5+5   # should work for most cases given current mechanism, +5 due to SE which currently ignore max_runtime_secs
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_max_runtime_secs", seed=1, max_runtime_secs=max_runtime_secs)
     start = time.time()
