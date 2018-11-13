@@ -11,17 +11,17 @@ def pubdev_3451():
     # In a normal test, h2o.init will have been called before, but the output 
     # the first and the second time this function gets called is comparable
     
-	# Setup a trap
-	stdout_backup = sys.stdout
-	text_trap = io.StringIO()
-	sys.stdout = text_trap
+    # Setup a trap
+    stdout_backup = sys.stdout
+    text_trap = io.StringIO()
+    sys.stdout = text_trap
     
-	# Run function, expecting no output
-	#h2o.init(quiet = True)
-	init(quiet = True, strict_version_check = False)
-	
-	# Restore stdout
-	sys.stdout = stdout_backup
+    # Run function, expecting no output
+    #h2o.init(quiet = True)
+    init(quiet = True, strict_version_check = False)
+    
+    # Restore stdout
+    sys.stdout = stdout_backup
 
     assert text_trap.getvalue() == ""
 
