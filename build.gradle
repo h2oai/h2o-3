@@ -381,4 +381,3 @@ if (project.hasProperty("jacocoCoverage")) {
     apply from: "$rootDir/gradle/jacoco.gradle"
     build.finalizedBy jacocoAgentLink
 }
-
