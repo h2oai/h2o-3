@@ -643,7 +643,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Monotonic constrains - FIXME!!!
 
-        Type: ``List[tuple]``.
+        Type: ``List[KeyValue]``.
         """
         return self._parms.get("monotone_constraints")
 
