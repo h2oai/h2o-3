@@ -641,7 +641,8 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def monotone_constraints(self):
         """
-        Monotonic constrains - FIXME!!!
+        A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+        decreasing constraint.
 
         Type: ``dict``.
         """
