@@ -65,6 +65,11 @@ def grid_cars_NB():
     assert size_of_grid_space ==  actual_size, "Expected size of grid to be {0}, but got {1}" \
                                                "".format(size_of_grid_space,actual_size)
 
+    print("Check correct type value....")
+    model_type = cars_nb_grid[0].type
+    true_model_type = "classifier"
+    assert model_type == true_model_type, "Type of model ({0}) is incorrect, expected value is {1}.".format(model_type, true_model_type)
+
     print("Duplicate-entries-in-grid-space check")
     new_grid_space = copy.deepcopy(grid_space)
     for name in list(grid_space.keys()):
