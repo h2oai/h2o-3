@@ -24,7 +24,7 @@ public class IsolationForestMojoReader extends SharedTreeMojoReader<IsolationFor
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.30";
   }
 
 }
