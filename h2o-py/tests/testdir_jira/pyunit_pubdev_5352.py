@@ -10,7 +10,7 @@ def pubdev_5352():
     train, new_data = mnist_original.split_frame(ratios=[.5], seed=1234)
     drf = H2ORandomForestEstimator(model_id='drf', ntrees=3, seed=1234)
     drf.train(x=predictors, y=target, training_frame=train)
-    drf_checkpoint = H2ORandomForestEstimator(model_id='drf_checkpoint',checkpoint=drf, ntrees=4, seed=1234)
+    drf_checkpoint = H2ORandomForestEstimator(model_id='drf_checkpoint',checkpoint=drf.model_id, ntrees=4, seed=1234)
     drf_checkpoint.train(x=predictors, y=target, training_frame=new_data)
 
     assert drf_checkpoint.ntrees == 4
