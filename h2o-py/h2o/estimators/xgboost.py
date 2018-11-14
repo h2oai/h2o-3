@@ -643,13 +643,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Monotonic constrains - FIXME!!!
 
-        Type: ``List[KeyValue]``.
+        Type: ``dict``.
         """
         return self._parms.get("monotone_constraints")
 
     @monotone_constraints.setter
     def monotone_constraints(self, monotone_constraints):
-        assert_is_type(monotone_constraints, None, [tuple])
+        assert_is_type(monotone_constraints, None, dict)
         self._parms["monotone_constraints"] = monotone_constraints
 
 
