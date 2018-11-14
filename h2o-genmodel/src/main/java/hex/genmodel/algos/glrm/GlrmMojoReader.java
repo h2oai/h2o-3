@@ -79,4 +79,8 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
     return glrmModel;
   }
 
+  @Override public String mojoVersion() {
+    return "1.10";
+  }
+
 }

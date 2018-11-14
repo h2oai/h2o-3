@@ -25,4 +25,8 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
   protected GbmMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     return new GbmMojoModel(columns, domains, responseColumn);
   }
+
+  @Override public String mojoVersion() {
+    return "1.30";
+  }
 }

@@ -49,6 +49,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected abstract M makeModel(String[] columns, String[][] domains, String responseColumn);
 
+  /**
+   * Version of the mojo file produced. Follows the <code>major.minor</code>
+   * format, where <code>minor</code> is a 2-digit number. For example "1.00",
+   * "2.05", "2.13". See README in mojoland repository for more details.
+   */
+  public abstract String mojoVersion();
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Interface for subclasses
@@ -147,6 +154,8 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._priorClassDistrib = readkv("prior_class_distrib");
     _model._modelClassDistrib = readkv("model_class_distrib");
     _model._offsetColumn = readkv("offset_column");
+    _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
+    check_mojo_version();
     readModelData();
   }
 
@@ -238,6 +247,12 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     <T> T parse(T defVal) { return (T) ParseUtils.tryParse(_val, defVal); }
     @Override
     public String toString() { return _val; }
+  }
+
+  private void check_mojo_version() throws IOException {
+    if(_model._mojo_version > Double.parseDouble(mojoVersion())){
+      throw new IOException(String.format("The model MOJO version (%.2f) is higher than the current h2o version (%s) supports. Please, use the older version of h2o to load MOJO model.", _model._mojo_version, mojoVersion()));
+    }
   }
 
 }

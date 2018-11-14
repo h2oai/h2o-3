@@ -46,4 +46,8 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     return Boolean.getBoolean("sys.ai.h2o.xgboost.scoring.java.enable");
   }
 
+  @Override public String mojoVersion() {
+    return "1.00";
+  }
+
 }
