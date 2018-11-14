@@ -158,11 +158,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       Map<String, Integer> constraints = new HashMap<>(_monotone_constraints.length);
       for (KeyValue constraint : _monotone_constraints) {
         final double val = constraint.getValue();
-        if (val < 0) {
-          constraints.put(constraint.getKey(), -1);
-        } else if (val > 0) {
-          constraints.put(constraint.getKey(), 1);
+        if (val == 0) {
+          continue;
         }
+        if (constraints.containsKey(constraint.getKey())) {
+          throw new IllegalStateException("Duplicate definition of constraint for feature '" + constraint.getKey() + "'.");
+        }
+        final int direction = val < 0 ? -1 : 1;
+        constraints.put(constraint.getKey(), direction);
       }
       return constraints;
     }
@@ -330,12 +333,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     Map<String, Integer> monotoneConstraints = p.monotoneConstraints();
     if (! monotoneConstraints.isEmpty()) {
+      int constraintsUsed = 0;
       StringBuilder sb = new StringBuilder();
       sb.append("(");
       for (String coef : coefNames) {
         final String direction;
         if (monotoneConstraints.containsKey(coef)) {
           direction = monotoneConstraints.get(coef).toString();
+          constraintsUsed++;
         } else {
           direction = "0";
         }
@@ -344,6 +349,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
       sb.replace(sb.length()-1, sb.length(), ")");
       params.put("monotone_constraints", sb.toString());
+      assert constraintsUsed == monotoneConstraints.size();
     }
 
     Log.info("XGBoost Parameters:");
