@@ -117,7 +117,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double colsample_bytree;
 
-    @API(help = "Monotonic constrains - FIXME!!!", level = API.Level.secondary, gridable = false)
+    @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
 
     @API(help="(same as max_delta_step) Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
