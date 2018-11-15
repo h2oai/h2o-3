@@ -31,6 +31,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
 
+    int _responseColumn; // indicates the response column index, do not use, internal only
+
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
@@ -42,9 +44,10 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       if(impl.isStandardized()){
         int n = impl.nclasses();
         String [] cols = new String[n*2];
+        String[] classNames = impl._domains[_responseColumn];
         for(int i = 0; i < n; ++i) {
-          cols[i] = "Coefs_class_" + i;
-          cols[n+i] = "Std_Coefs_class_" + i;
+          cols[i] = "Coefs_class_" + classNames[i];
+          cols[n+i] = "Std_Coefs_class_" + classNames[i];
         }
         String [] colTypes = new String[cols.length];
         Arrays.fill(colTypes, "double");
