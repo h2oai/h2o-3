@@ -24,7 +24,7 @@ public class SQLManagerIntegTest extends TestUtil {
   private static final File BUILD_DIR = new File("build").getAbsoluteFile();
 
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public TemporaryFolder tmp = new TemporaryFolder(BUILD_DIR);
 
   private String connectionString;
 
