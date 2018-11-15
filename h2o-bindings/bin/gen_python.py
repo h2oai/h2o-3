@@ -21,6 +21,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.types["Object"] = "object"
         self.types["VecSpecifier"] = "str"
         self.types["StringPair"] = "tuple"
+        self.types["KeyValue"] = "tuple"
         self.make_array = lambda vtype: "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)

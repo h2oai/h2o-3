@@ -290,13 +290,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info()._dataInfoKey.get();
+        DataInfo dataInfo = model.model_info().dataInfo();
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
         featureMapFile = createFeatureMapFile(featureMap);
 
-        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
 
         setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();

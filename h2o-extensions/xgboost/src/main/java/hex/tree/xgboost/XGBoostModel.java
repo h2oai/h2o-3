@@ -90,6 +90,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
     public double _colsample_bytree = 1.0;
 
+    public KeyValue[] _monotone_constraints;
+
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
 
@@ -149,6 +151,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       return incompat;
     }
 
+    Map<String, Integer> monotoneConstraints() {
+      if (_monotone_constraints == null || _monotone_constraints.length == 0) {
+        return Collections.emptyMap();
+      }
+      Map<String, Integer> constraints = new HashMap<>(_monotone_constraints.length);
+      for (KeyValue constraint : _monotone_constraints) {
+        final double val = constraint.getValue();
+        if (val < 0) {
+          constraints.put(constraint.getKey(), -1);
+        } else if (val > 0) {
+          constraints.put(constraint.getKey(), 1);
+        }
+      }
+      return constraints;
+    }
+
   }
 
   @Override
@@ -170,7 +188,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info._dataInfoKey = dinfo._key;
   }
 
-  public static BoosterParms createParams(XGBoostParameters p, int nClasses) {
+  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -310,6 +328,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     params.put("nthread", nthread);
 
+    Map<String, Integer> monotoneConstraints = p.monotoneConstraints();
+    if (! monotoneConstraints.isEmpty()) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("(");
+      for (String coef : coefNames) {
+        final String direction;
+        if (monotoneConstraints.containsKey(coef)) {
+          direction = monotoneConstraints.get(coef).toString();
+        } else {
+          direction = "0";
+        }
+        sb.append(direction);
+        sb.append(",");
+      }
+      sb.replace(sb.length()-1, sb.length(), ")");
+      params.put("monotone_constraints", sb.toString());
+    }
+
     Log.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
       Log.info(" " + s.getKey() + " = " + s.getValue());
@@ -418,7 +454,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private BigScorePredict setupBigScorePredictNative() {
-    BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses());
+    DataInfo di = model_info()._dataInfoKey.get();
+    assert di != null;
+    BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
     return new XGBoostBigScorePredict(boosterParms);
   }
 
