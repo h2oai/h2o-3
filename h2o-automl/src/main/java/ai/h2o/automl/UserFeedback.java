@@ -24,9 +24,6 @@ public class UserFeedback extends Keyed<UserFeedback> {
     }
   }
 
-  private UserFeedback() {
-  }
-
   public static String idForRun(Key<AutoML> runKey) {
     if (null == runKey)
       return "AutoML_Feedback_dummy";

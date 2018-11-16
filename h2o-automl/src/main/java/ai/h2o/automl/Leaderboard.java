@@ -117,11 +117,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   private long leaderboardFrameChecksum;
 
-  /** HIDEME! */
-  private Leaderboard() {
-    throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
-  }
-
   /**
    *
    */
