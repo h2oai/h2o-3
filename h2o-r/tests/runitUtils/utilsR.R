@@ -1148,25 +1148,20 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
 
     if (mode == 0)  {
         # use both name and type
-        f1 <<-
-        h2o.importFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
-        f2 <<-
-        h2o.uploadFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
+        f1 <- h2o.importFile(parsePath, col.names = colnames, col.types = coltypes, skipped_columns=skippedColumns)
     } else if (mode == 1) {
-        f1 <<- h2o.importFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
-        f2 <<- h2o.uploadFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
+        f1 <- h2o.uploadFile(parsePath, col.names = colnames, skipped_columns=skippedColumns)
     } else {
-        f1 <<- h2o.importFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
-        f2 <<- h2o.uploadFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
+        f1 <- h2o.importFile(parsePath, col.types = coltypes, skipped_columns=skippedColumns)
     }
 
     expect_true(h2o.nrow(originalFile) == h2o.nrow(f1))
-    expect_true(h2o.nrow(f2) == h2o.nrow(f1))
+  #  expect_true(h2o.nrow(f2) == h2o.nrow(f1))
     cfullnames <- names(originalFile)
     originalR <- as.data.frame(originalFile)
     f1R <- as.data.frame(f1)
-    f2R <- as.data.frame(f2)
-    cskipnames <- names(f2R)
+  #  f2R <- as.data.frame(f2)
+    cskipnames <- names(f1R)
     skipcount <- 1
     rowNum <- h2o.nrow(f1)
     for (ind in c(1:length(cfullnames))) {
@@ -1176,10 +1171,10 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
             for (rind in c(1:rowNum)) {
                 if (is.na(originalR[rind, ind])) {
                     expect_true(
-                    is.na(f2R[rind, skipcount]),
+                    is.na(f1R[rind, skipcount]),
                     info = paste0(
                     "expected NA but received: ",
-                    f2R[rind, skipcount],
+                    f1R[rind, skipcount],
                     " in row: ",
                     rind,
                     " with column name: ",
@@ -1189,20 +1184,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                     sep = " "
                     )
                     )
-                    expect_true(
-                    is.na(f2R[rind, skipcount]),
-                    info = paste0(
-                    "expected NA but received: ",
-                    f2R[rind, skipcount],
-                    " in row: ",
-                    rind,
-                    " with column name: ",
-                    cfullnames[ind],
-                    " and skipped column name ",
-                    cskipnames[skipcount],
-                    sep = " "
-                    )
-                    )
+
                 } else if (is.numeric(originalR[rind, ind])) {
                     if (allFrameTypes[ind] == 'time') {
                         expect_true(
@@ -1221,22 +1203,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                         sep = " "
                         )
                         )
-                        expect_true(
-                        abs(originalR[rind, ind] - f2R[rind, skipcount]) < 10,
-                        info = paste0(
-                        "expected: ",
-                        originalR[rind, ind],
-                        " but received: ",
-                        f2R[rind, skipcount],
-                        " in row: ",
-                        rind,
-                        " with column name: ",
-                        cfullnames[ind],
-                        " and skipped column name ",
-                        cskipnames[skipcount],
-                        sep = " "
-                        )
-                        )
+
                     } else {
                         expect_true(
                         abs(originalR[rind, ind] - f1R[rind, skipcount]) < 1e-10,
@@ -1245,22 +1212,6 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                         originalR[rind, ind],
                         " but received: ",
                         f1R[rind, skipcount],
-                        " in row: ",
-                        rind,
-                        " with column name: ",
-                        cfullnames[ind],
-                        " and skipped column name ",
-                        cskipnames[skipcount],
-                        sep = " "
-                        )
-                        )
-                        expect_true(
-                        abs(originalR[rind, ind] - f2R[rind, skipcount]) < 1e-10,
-                        info = paste0(
-                        "expected: ",
-                        originalR[rind, ind],
-                        " but received: ",
-                        f2R[rind, skipcount],
                         " in row: ",
                         rind,
                         " with column name: ",
@@ -1289,23 +1240,6 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
                     sep = " "
                     )
                     )
-                    expect_true(
-                    originalR[rind, ind] == f2R[rind, skipcount],
-                    info = paste0(
-                    "expected: ",
-                    originalR[rind, ind],
-                    " but received: ",
-                    f2R[rind, skipcount],
-                    " in row: ",
-                    rind,
-                    " with column name: ",
-                    cfullnames[ind],
-                    " and skipped column name ",
-                    cskipnames[skipcount],
-                    sep = " "
-                    )
-                    )
-
                 }
             }
 
