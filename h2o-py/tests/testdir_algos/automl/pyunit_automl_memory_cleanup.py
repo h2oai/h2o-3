@@ -140,7 +140,7 @@ def test_suite_clean_cv_predictions():
 
     def test_SE_retraining_fails_when_param_disabled():
         print("\n=== disabling "+kcvp+" and retraining ===")
-        total_runs = 20
+        total_runs = 4
         aml = setup_and_train(False)  # first run
         _, _, first_se = get_partitioned_model_names(aml.leaderboard)
         first_bof = next(m for m in first_se if re.search(r'_BestOfFamily_', m))
@@ -184,11 +184,11 @@ def test_suite_clean_cv_predictions():
 
 
     return [
-        # test_default_behaviour,
-        # test_param_enabled,
-        # test_param_disabled,
+        test_default_behaviour,
+        test_param_enabled,
+        test_param_disabled,
         test_SE_retraining_fails_when_param_disabled,
-        # test_SE_retraining_works_when_param_enabled
+        test_SE_retraining_works_when_param_enabled
     ]
 
 
@@ -274,7 +274,7 @@ def test_suite_clean_cv_models():
 
 tests = list(iter.chain.from_iterable([
     test_suite_clean_cv_predictions(),
-    # test_suite_clean_cv_models(),
+    test_suite_clean_cv_models(),
 ]))
 
 
