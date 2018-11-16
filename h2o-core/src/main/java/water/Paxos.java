@@ -58,7 +58,7 @@ public abstract class Paxos {
         ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
       }
     }
-    
+
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
       return 0;

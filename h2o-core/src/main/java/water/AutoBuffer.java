@@ -146,10 +146,10 @@ public final class AutoBuffer {
 
   /** Make an AutoBuffer to write to an H2ONode.  Requests for full buffer will
    *  open a TCP socket and roll through writing to the target.  Smaller
-   *  requests will send via UDP.  Small requests get ordered by priority, so 
+   *  requests will send via UDP.  Small requests get ordered by priority, so
    *  that e.g. NACK and ACKACK messages have priority over most anything else.
    *  This helps in UDP floods to shut down flooding senders. */
-  private byte _msg_priority; 
+  private byte _msg_priority;
   AutoBuffer( H2ONode h2o, byte priority ) {
     // If UDP goes via TCP, we write into a HBB up front, because this will be copied again
     // into a large outgoing buffer.
@@ -186,7 +186,6 @@ public final class AutoBuffer {
     boolean isClient = H2O.decodeIsClient(getTimestamp());
     short timestamp = getTimestamp();
     _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, timestamp);
-    _h2o.timestamp = timestamp;
     _persist = 0;               // No persistance
   }
 
@@ -326,7 +325,7 @@ public final class AutoBuffer {
     ByteBuffer make() {
       while( true ) {             // Repeat loop for DBB OutOfMemory errors
         ByteBuffer bb=null;
-        synchronized(_bbs) { 
+        synchronized(_bbs) {
           int sz = _bbs.size();
           if( sz > 0 ) { bb = _bbs.remove(sz-1); _cached++; _numer++; }
         }
@@ -348,7 +347,7 @@ public final class AutoBuffer {
       // Heuristic: keep the ratio of BB's made to cache-hits at a fixed level.
       // Free to GC if ratio is high, free to internal cache if low.
       long ratio = _numer/(_denom+1);
-      synchronized(_bbs) { 
+      synchronized(_bbs) {
         if( ratio < 100 || _bbs.size() < _goal ) { // low hit/miss ratio or below goal
           bb.clear();           // Clear-before-add
           _bbs.add(bb);
@@ -778,10 +777,10 @@ public final class AutoBuffer {
     put(kd);
     return kd == null ? this : kd.writeAll_impl(this);
   }
-  public Keyed getKey(Key k, Futures fs) { 
+  public Keyed getKey(Key k, Futures fs) {
     return k==null ? null : getKey(fs); // Key is null ==> read nothing
   }
-  public Keyed getKey(Futures fs) { 
+  public Keyed getKey(Futures fs) {
     Keyed kd = get(Keyed.class);
     if( kd == null ) return null;
     DKV.put(kd,fs);
@@ -1004,7 +1003,7 @@ public final class AutoBuffer {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putShort(H2O.SELF.timestamp);
+    _bb.putShort(H2O.SELF._timestamp);
     _bb.putChar((char)senderPort);
     return this;
   }
@@ -1027,7 +1026,7 @@ public final class AutoBuffer {
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2+2+4);
-    _bb.put((byte)ctrl).putShort(H2O.SELF.timestamp).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    _bb.put((byte)ctrl).putShort(H2O.SELF._timestamp).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 

@@ -1,5 +1,6 @@
 package water;
 
+import sun.util.resources.is.CalendarData_is;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.network.SocketChannelFactory;
@@ -37,7 +38,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
 
-  transient short timestamp;
+  public transient short _timestamp;
+  public transient boolean _client;
+
   public boolean _removed_from_cloud;
 
   public void stopSendThread(){
@@ -150,7 +153,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   static H2ONode[] getClients(){
     ArrayList<H2ONode> clients = new ArrayList<>();
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue()._heartbeat._client) {
+      if (entry.getValue()._client) {
         clients.add(entry.getValue());
       }
     }
@@ -159,7 +162,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   static H2ONode getClientByIPPort(String ipPort){
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
-      if (entry.getValue()._heartbeat._client && entry.getValue().getIpPortString().equals(ipPort)) {
+      if (entry.getValue()._client && entry.getValue().getIpPortString().equals(ipPort)) {
         return entry.getValue();
       }
     }
@@ -212,7 +215,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       UnsafeUtils.set8(b, 8, UnsafeUtils.get8(bs, off + 8));
     }
     port = UnsafeUtils.get2(bs,off + H2Okey.SIZE_OF_IP) & 0xFFFF;
-    try { return intern(InetAddress.getByAddress(b),port); } 
+    try { return intern(InetAddress.getByAddress(b),port); }
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
 
@@ -256,7 +259,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       if( H2O.CLOUD_MULTICAST_IF != null && !H2O.CLOUD_MULTICAST_IF.supportsMulticast() ) {
         Log.info("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " doesn't support multicast");
 //        H2O.CLOUD_MULTICAST_IF = null;
-      } 
+      }
       if( H2O.CLOUD_MULTICAST_IF != null && !H2O.CLOUD_MULTICAST_IF.isUp() ) {
         throw new RuntimeException("Selected H2O.CLOUD_MULTICAST_IF: "+H2O.CLOUD_MULTICAST_IF+ " is not up and running");
       }
@@ -272,11 +275,18 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public String toDebugString() {
     String base = _key.toString();
-    if (_heartbeat._client) {
-      return base + "(watchdog=" + _heartbeat._watchdog_client + ", cloud_name_hash=" + _heartbeat._cloud_name_hash + ")";
-    } else {
+    if (! _client) {
       return base;
     }
+    StringBuilder sb = new StringBuilder(base);
+    sb.append("(");
+    sb.append("timestamp=").append(_timestamp);
+    if (_heartbeat != null) {
+      sb.append(", ").append("watchdog=").append(_heartbeat._watchdog_client);
+      sb.append(", ").append("cloud_name_hash=").append(_heartbeat._cloud_name_hash);
+    }
+    sb.append(")");
+    return sb.toString();
   }
 
   @Override public int hashCode() { return _key.hashCode(); }
@@ -318,7 +328,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert res && !sock2.isConnectionPending() && sock2.isBlocking() && sock2.isConnected() && sock2.isOpen();
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
     bb.put((byte)2);
-    bb.putShort(H2O.SELF.timestamp);
+    bb.putShort(H2O.SELF._timestamp);
     bb.putChar((char)H2O.H2O_PORT);
     bb.put((byte)0xef);
     bb.flip();
@@ -369,7 +379,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
     sock.socket().setTcpNoDelay(true);
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
-    bb.put(tcpType).putShort(H2O.SELF.timestamp).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
+    bb.put(tcpType).putShort(H2O.SELF._timestamp).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
 
     ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
 
@@ -390,12 +400,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     volatile boolean _stopRequested;
     private ByteChannel _chan;  // Lazily made on demand; closed & reopened on error
     private final ByteBuffer _bb; // Reusable output large buffer
-  
+
     public UDP_TCP_SendThread(){
       super("UDP-TCP-SEND-" + H2ONode.this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
-  
+
     /** Send small message to this node.  Passes the message on to a private msg
      *  q, prioritized by the message priority.  MSG queue is served by sender
      *  thread, message are continuously extracted, buffered together and sent
@@ -407,7 +417,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       assert bb.position()==0 && bb.limit() > 0;
       // Secret back-channel priority: the position field (capped at bb.limit);
       // this is to avoid making Yet Another Object per send.
-  
+
       // Priority can exceed position.  "interesting" priorities are everything
       // above H2O.MIN_HI_PRIORITY and things just above 0; priorities in the
       // middl'n range from 10 to MIN_HI are really rare.  Need to compress
@@ -416,16 +426,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       else if( msg_priority >= 10 ) msg_priority = 10;
       if( msg_priority > bb.limit() ) msg_priority = (byte)bb.limit();
       bb.position(msg_priority);
-  
-      _msgQ.put(bb); 
+
+      _msgQ.put(bb);
     }
-  
+
     private final PriorityBlockingQueue<ByteBuffer> _msgQ
       = new PriorityBlockingQueue<>(11,new Comparator<ByteBuffer>() {
           // Secret back-channel priority: the position field (capped at bb.limit)
           @Override public int compare( ByteBuffer bb1, ByteBuffer bb2 ) { return bb1.position() - bb2.position(); }
         });
-  
+
     @Override public void run(){
       try {
         while (!_stopRequested) {            // Forever loop
@@ -451,7 +461,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         _chan = null;
       }
     }
-  
+
     void sendBuffer(){
       int retries = 0;
       _bb.flip();                 // limit set to old position; position set to 0
@@ -480,7 +490,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       }
       _bb.clear();            // Position set to 0; limit to capacity
     }
-  
+
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
       return H2ONode.openChan(TCPReceiverThread.TCP_SMALL, _socketFactory, _key.getAddress(), _key.getPort());
@@ -490,13 +500,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
   private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong<>();
-  void taskPut(int tnum, RPC rpc ) { 
-    _tasks.put(tnum,rpc); 
+  void taskPut(int tnum, RPC rpc ) {
+    _tasks.put(tnum,rpc);
     if( rpc._dt instanceof TaskPutKey ) _tasksPutKey.put(tnum,(TaskPutKey)rpc._dt);
   }
   RPC taskGet(int tnum) { return _tasks.get(tnum); }
-  void taskRemove(int tnum) { 
-    _tasks.remove(tnum); 
+  void taskRemove(int tnum) {
+    _tasks.remove(tnum);
     _tasksPutKey.remove(tnum);
   }
   Collection<RPC> tasks() { return _tasks.values(); }
@@ -505,7 +515,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // True if there is a pending PutKey against this Key.  Totally a speed
   // optimization in the case of a large number of pending Gets are flooding
   // the tasks() queue, each needing to scan the tasks queue for pending
-  // PutKeys to the same Key.  Legal to always 
+  // PutKeys to the same Key.  Legal to always
   private final NonBlockingHashMapLong<TaskPutKey> _tasksPutKey = new NonBlockingHashMapLong<>();
   TaskPutKey pendingPutKey( Key k ) {
     for( TaskPutKey tpk : _tasksPutKey.values() )

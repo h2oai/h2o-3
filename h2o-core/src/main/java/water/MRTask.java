@@ -300,7 +300,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Compute a permissible node index on which to launch remote work. */
   private int addShift( int x ) { x += _nlo; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
   private int subShift( int x ) { x -= _nlo; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
-  private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._heartbeat._client; return 0; }
+  private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._client; return 0; }
 
   // Profiling support.  Time for each subpart of a single M/R task, plus any
   // nested MRTasks.  All numbers are CTM stamps or millisecond times.

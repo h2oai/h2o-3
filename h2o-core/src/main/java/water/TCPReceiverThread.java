@@ -50,16 +50,24 @@ public class TCPReceiverThread extends Thread {
   }
 
   public static H2ONode processNewNode(InetAddress inetAddress, int port, boolean isClient, short timestamp) {
-    H2ONode node = H2O.getClientByIPPort(inetAddress.getHostAddress() + ":" + (port - 1));
-    if (!H2O.ARGS.client && isClient && node != null && node.timestamp != timestamp) {
-      // don't do this check in case we are the client
-      H2ONode.removeClient(node);
-    }
     H2ONode h2o = H2ONode.intern(inetAddress, port);
-    if(!H2O.ARGS.client && ((node == null && isClient) || (node != null && isClient && node.timestamp != timestamp))){
-      Log.info("New client discovered: " + h2o.toDebugString());
+    if (h2o._timestamp == 0) { // new node found
+      h2o._timestamp = timestamp;
+      h2o._client = isClient;
+      if (isClient) {
+        Log.info("New client discovered: " + h2o.toDebugString());
+      }
+      return h2o;
     }
-    h2o.timestamp = timestamp;
+    if (isClient && (h2o._timestamp != timestamp)) { // a client re-connected (from the same node)
+      final H2ONode old = h2o;
+      H2ONode.removeClient(old);
+      h2o = H2ONode.intern(inetAddress, port);
+      assert h2o != old;
+      h2o._timestamp = timestamp;
+      h2o._client = true;
+      Log.info("Client re-connected (from the same node): " + h2o.toDebugString());
+    }
     return h2o;
   }
 
@@ -308,7 +316,7 @@ public class TCPReceiverThread extends Thread {
     // Check cloud membership; stale ex-members are "fail-stop" - we mostly
     // ignore packets from them (except paxos packets).
     boolean is_member = cloud.contains(ab._h2o);
-    boolean is_client = ab._h2o._heartbeat._client;
+    boolean is_client = ab._h2o._client;
 
     // Some non-Paxos packet from a non-member.  Probably should record & complain.
     // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
