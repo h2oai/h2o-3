@@ -17,13 +17,15 @@ class ClientDisconnectCheckThread extends Thread {
    * This method checks whether the client is disconnected from this node due to some problem such as client or network
    * is unreachable.
    */
-  private void handleClientDisconnect(H2ONode node) {
-    if(node != H2O.SELF) {
-      Log.warn("Client " + node + " disconnected!");
+  private void handleClientDisconnect(H2ONode client) {
+    if(client != H2O.SELF) {
       if (H2O.isFlatfileEnabled()) {
-        H2O.removeNodeFromFlatfile(node);
+        H2O.removeNodeFromFlatfile(client);
       }
-      H2O.removeClient(node);
+      boolean removed = H2O.removeClient(client);
+      if (removed) {
+        Log.warn("Client " + client + " disconnected!");
+      }
     }
   }
 
