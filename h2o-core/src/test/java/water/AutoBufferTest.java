@@ -34,45 +34,6 @@ public class AutoBufferTest extends TestUtil {
   }
 
   @Test
-  public void decodeClientInfoNotClient(){
-    long bootTime = 1540375717281L;
-    short timestampWithoutNodeInfo = AutoBuffer.createTimestamp(bootTime);
-    assertEquals(timestampWithoutNodeInfo, 9633); // manually calculated -> took last 15 bits from bootTime
-    short timestamp = AutoBuffer.calculateNodeTimestamp(timestampWithoutNodeInfo, false);
-    assertEquals(timestamp, 9633);
-    assertFalse(AutoBuffer.decodeIsClient(timestamp));
-  }
-
-  @Test
-  public void decodeClientInfoClient(){
-    long bootTime = 1540375717281L;
-    short timestampWithoutNodeInfo = AutoBuffer.createTimestamp(bootTime);
-    assertEquals(timestampWithoutNodeInfo, 9633); // manually calculated -> took last 15 bits from bootTime
-    short timestamp = AutoBuffer.calculateNodeTimestamp(timestampWithoutNodeInfo, true);
-    assertEquals(timestamp, -9633);
-    assertTrue(AutoBuffer.decodeIsClient(timestamp));
-  }
-
-  @Test
-  public void decodeNotClientZeroTimestamp(){
-    long bootTime = 0L;
-    short timestampWithoutNodeInfo = AutoBuffer.createTimestamp(bootTime);
-    assertEquals(timestampWithoutNodeInfo, 1); // manually calculated -> took last 15 bits from bootTime
-    short timestamp = AutoBuffer.calculateNodeTimestamp(timestampWithoutNodeInfo, false);
-    assertEquals(timestamp, 1);
-    assertFalse(AutoBuffer.decodeIsClient(timestamp));
-  }
-  @Test
-  public void decodeClientZeroTimestamp(){
-    long bootTime = 0L;
-    short timestampWithoutNodeInfo = AutoBuffer.createTimestamp(bootTime);
-    assertEquals(timestampWithoutNodeInfo, 1); // manually calculated -> took last 15 bits from bootTime
-    short timestamp = AutoBuffer.calculateNodeTimestamp(timestampWithoutNodeInfo, true);
-    assertEquals(timestamp, -1);
-    assertTrue(AutoBuffer.decodeIsClient(timestamp));
-  }
-
-  @Test
   public void testOutputStreamBigDataSmallChunks() {
     final int dataSize = 100 * 1024;
     byte[] data = new byte[dataSize - 1];
@@ -103,7 +64,7 @@ public class AutoBufferTest extends TestUtil {
 
   @Test
   public void testNameOfClass() throws Exception {
-    
+
     byte[] bytes = AutoBuffer.javaSerializeWritePojo(new XYZZY());
     assertEquals("water.AutoBufferTest$XYZZY", AutoBuffer.nameOfClass(bytes));
     bytes[7] = 127;
