@@ -1,6 +1,5 @@
 package hex.genmodel;
 
-import hex.genmodel.algos.gbm.GbmMojoModel;
 import org.junit.Test;
 import java.io.IOException;
 import java.net.URL;
