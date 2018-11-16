@@ -19,7 +19,7 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
 
   public static class ColumnSpecsBase extends SchemaV3<Iced, ColumnSpecsBase> {
     @API(help="Column Name", direction=API.Direction.OUTPUT)
-    String name;
+    public String name; // allow reset of col header names so that I can undo the pythonize for GLM multinomial coeff names
     @API(help="Column Type", direction=API.Direction.OUTPUT)
     String type;
     @API(help="Column Format (printf)", direction=API.Direction.OUTPUT)
