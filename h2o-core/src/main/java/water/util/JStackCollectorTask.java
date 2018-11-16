@@ -67,7 +67,7 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
 
   @Override public void setupLocal() {
     _traces = new DStackTrace[H2O.CLOUD.size()];
-    if( H2O.SELF._heartbeat._client ) return; // Clients are not in the cloud, and do not get stack traces
+    if( H2O.SELF._client ) return; // Clients are not in the cloud, and do not get stack traces
     Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
 
     // Known to be interesting
