@@ -2205,7 +2205,7 @@ final public class H2O {
    * Select last 15 bytes from the jvm boot start time and return it as short. If the timestamp is 0, we increment it by
    * 1 to be able to distinguish between client and node as -0 is the same as 0.
    */
-  private static short createTimestamp(long jvmStartTime){
+  private static short truncateTimestamp(long jvmStartTime){
     int bitMask = (1 << 15) - 1;
     // select the lower 15 bits
     short timestamp = (short) (jvmStartTime & bitMask);
@@ -2219,7 +2219,7 @@ final public class H2O {
    * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
    */
   private static short calculateNodeTimestamp() {
-    return calculateNodeTimestamp(createTimestamp(TimeLine.JVM_BOOT_MSEC), H2O.ARGS.client);
+    return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
   }
 
   /**
@@ -2228,10 +2228,11 @@ final public class H2O {
    *
    * The negative timestamp represents a client node, the positive one a regular H2O node
    *
-   * @param timestamp  timestamp created by createTimestamp.
+   * @param bootTimestamp H2O node boot timestamp
    * @param amIClient true if this node is client, otherwise false
    */
-  private static short calculateNodeTimestamp(short timestamp, boolean amIClient) {
+  static short calculateNodeTimestamp(long bootTimestamp, boolean amIClient) {
+    short timestamp = truncateTimestamp(bootTimestamp);
     //if we are client, return negative timestamp, otherwise positive
     return amIClient ? (short) -timestamp : timestamp;
   }
