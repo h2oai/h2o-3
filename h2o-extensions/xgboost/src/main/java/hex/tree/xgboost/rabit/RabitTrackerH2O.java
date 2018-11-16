@@ -79,7 +79,11 @@ public class RabitTrackerH2O implements IRabitTracker {
     @Override
     public void stop() {
         if(null != this.trackerThread) {
-            this.trackerThread.interrupt();
+            try {
+                this.trackerThread.interrupt();
+            } catch (SecurityException e){
+                Log.err("Could not interrupt a thread in RabitTrackerH2O: " + trackerThread.toString());
+            }
             this.trackerThread.terminateSocketChannels();
             this.trackerThread = null;
 
