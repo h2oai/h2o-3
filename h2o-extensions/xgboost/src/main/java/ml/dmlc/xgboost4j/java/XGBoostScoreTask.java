@@ -38,7 +38,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                                                       Frame originalData,
                                                       boolean computeMetrics,
                                                       Model m) {
-        BoosterParms boosterParms = XGBoostModel.createParams(parms, output.nclasses());
+        BoosterParms boosterParms = XGBoostModel.createParams(parms, output.nclasses(), sharedmodel.dataInfo().coefNames());
         XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
                 output,
                 parms,

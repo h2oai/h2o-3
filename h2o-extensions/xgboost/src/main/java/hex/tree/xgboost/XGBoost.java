@@ -181,6 +181,25 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
     if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
+
+    if ((_train != null) && (_parms._monotone_constraints != null)) {
+      // we check that there are no duplicate definitions and constraints are defined only for numerical columns
+      Set<String> constrained = new HashSet<>();
+      for (KeyValue constraint : _parms._monotone_constraints) {
+        if (constrained.contains(constraint.getKey())) {
+          error("_monotone_constraints", "Feature '" + constraint.getKey() + "' has multiple constraints.");
+          continue;
+        }
+        constrained.add(constraint.getKey());
+        Vec v = _train.vec(constraint.getKey());
+        if (v == null) {
+          error("_monotone_constraints", "Invalid constraint - there is no column '" + constraint.getKey() + "' in the training frame.");
+        } else if (v.get_type() != Vec.T_NUM) {
+          error("_monotone_constraints", "Invalid constraint - column '" + constraint.getKey() +
+                  "' has type " + v.get_type_str() + ". Only numeric columns can have monotonic constraints.");
+        }
+      }
+    }
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -290,13 +309,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info()._dataInfoKey.get();
+        DataInfo dataInfo = model.model_info().dataInfo();
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
         featureMapFile = createFeatureMapFile(featureMap);
 
-        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
 
         setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
