@@ -16,7 +16,6 @@ pytest_flatfile-*
 sandbox*/
 syn_datasets
 build/
-lib/
 classes/
 h2o-web/src/main/resources/www/steam
 h2o-web/src/main/resources/www/flow

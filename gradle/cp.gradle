@@ -7,6 +7,6 @@ task cpLibs(type:Sync) {
     from { project.configurations.runtime.minus(skipFiles()) }
     from { project.configurations.testRuntime.minus(skipFiles()) }
     
-    into "$rootDir/lib"
+    into "$rootDir/build/lib"
 }
 

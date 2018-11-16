@@ -102,7 +102,7 @@ task copyGenModelJarToWebRoot(type: Copy) {
 
 task copyDeepWaterJarToWebRoot(type: Copy) {
   from {
-      file("${rootDir}/lib/deepwater-all.jar")
+      file("${rootDir}/build/lib/deepwater-all.jar")
   }
   into "src/main/resources/www/${h2oRESTApiVersion}/"
 }

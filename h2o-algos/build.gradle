@@ -6,8 +6,8 @@ description = "H2O Algorithms"
 dependencies {
   compile project(":h2o-core")
   // Include ad-hoc dependency represented by deepwater fat jar
-  if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
-      compile files("${rootDir}/lib/deepwater-all.jar")
+  if (file("${rootDir}/build/lib/deepwater-all.jar").exists()) {
+      compile files("${rootDir}/build/lib/deepwater-all.jar")
   }
 
   // Jama dependencies
