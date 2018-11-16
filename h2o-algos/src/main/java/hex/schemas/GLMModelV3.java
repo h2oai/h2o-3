@@ -22,6 +22,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
 
+    @API(help="Table of Coefficients with coefficients denoted with class names for GLM multinonimals only.")
+    TwoDimTableV3 coefficients_table_multinomials_with_class_names;  // same as coefficients_table but with real class names.
+
     @API(help="Standardized Coefficient Magnitudes")
     TwoDimTableV3 standardized_coefficient_magnitudes;
 
@@ -31,8 +34,6 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
 
-    int _responseColumn; // indicates the response column index, do not use, internal only
-
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
         return this; // no coefificients yet
@@ -41,14 +42,26 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
 
       coefficients_table = new TwoDimTableV3();
+      if (impl.nclasses() > 2) // only change coefficient names for multinomials
+        coefficients_table_multinomials_with_class_names = new TwoDimTableV3();
+
       if(impl.isStandardized()){
         int n = impl.nclasses();
-        String [] cols = new String[n*2];
-        String[] classNames = impl._domains[_responseColumn];
-        for(int i = 0; i < n; ++i) {
-          cols[i] = "Coefs_class_" + classNames[i];
-          cols[n+i] = "Std_Coefs_class_" + classNames[i];
+        String[] cols = new String[n*2];
+        String[] cols2=null;
+        if (n>2) {
+          cols2 = new String[n*2];
+          String[] classNames = impl._domains[impl.responseIdx()];
+          for (int i = 0; i < n; ++i) {
+            cols2[i] = "coefs_class_" + classNames[i];
+            cols2[n + i] = "std_coefs_class_" + classNames[i];
+          }
         }
+        for (int i = 0; i < n; ++i) {
+          cols[i] = "coefs_class_" +i;
+          cols[n + i] = "std_coefs_class_" +i;
+        }
+
         String [] colTypes = new String[cols.length];
         Arrays.fill(colTypes, "double");
         String [] colFormats = new String[cols.length];
@@ -67,6 +80,11 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
             }
           }
           coefficients_table.fillFromImpl(tdt);
+
+          if (n>2) {  // restore column names from pythonized ones
+            coefficients_table_multinomials_with_class_names.fillFromImpl(tdt);
+            revertCoeffNames(cols2, n, coefficients_table_multinomials_with_class_names);
+          }
           final double [] magnitudes = new double[betaNorm[0].length];
           for(int i = 0; i < betaNorm.length; ++i) {
             for (int j = 0; j < betaNorm[i].length; ++j) {
@@ -99,9 +117,18 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       } else {
         int n = impl.nclasses();
         String [] cols = new String[n];
-        for(int i = 0; i < n; ++i) {
-          cols[i] = "Coefs_class_" + i;
+        String [] cols2 = null;
+        if (n>2) {
+          String[] classNames = impl._domains[impl.responseIdx()];
+          cols2 = new String[n];
+          for (int i = 0; i < n; ++i) {
+            cols2[i] = "coefs_class_" + classNames[i];
+          }
         }
+          for (int i = 0; i < n; ++i) {
+            cols[i] = "coefs_class_" +i;
+          }
+
         String [] colTypes = new String[cols.length];
         Arrays.fill(colTypes, "double");
         String [] colFormats = new String[cols.length];
@@ -116,9 +143,26 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
             tdt.set(i + 1, c, beta[i]);
         }
         coefficients_table.fillFromImpl(tdt);
+        if (n>2) {  // restore column names from pythonized ones
+          coefficients_table_multinomials_with_class_names.fillFromImpl(tdt);
+          revertCoeffNames(cols2, n, coefficients_table_multinomials_with_class_names);
+        }
       }
+
       return this;
     }
+
+    public void revertCoeffNames(String[] colNames, int nclass, TwoDimTableV3 coeffs_table) {
+      String newName = coeffs_table.name+" with class names";
+      coeffs_table.name = newName;
+      boolean bothCoeffStd = colNames.length==(2*nclass);
+      for (int tableIndex = 1; tableIndex <= nclass;  tableIndex++) {
+        coeffs_table.columns[tableIndex].name = new String(colNames[tableIndex-1]);
+        if (bothCoeffStd)
+          coeffs_table.columns[tableIndex+nclass].name = new String(colNames[tableIndex-1+nclass]);
+      }
+    }
+
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
       super.fillFromImpl(impl);
