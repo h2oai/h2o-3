@@ -20,7 +20,7 @@ public class RabitTrackerH2O implements IRabitTracker {
 
     private Map<String, String> envs = new HashMap<>();
 
-    private RabitTrackerH2OThread trackerThread;
+    private volatile RabitTrackerH2OThread trackerThread;
 
     public RabitTrackerH2O(int workers) {
         super();
@@ -71,26 +71,28 @@ public class RabitTrackerH2O implements IRabitTracker {
             throw new IllegalStateException("Rabit tracker already started.");
         }
         RabitTrackerH2OThread trackerThread = new RabitTrackerH2OThread(this);
-        trackerThread.setDaemon(true);
-        trackerThread.start();
         this.trackerThread = trackerThread;
+        trackerThread.start();
         return true;
     }
 
     @Override
     public void stop() {
-        if(null != this.trackerThread) {
-            this.trackerThread.interrupt();
+        assert this.trackerThread != null;
+        try {
+                this.trackerThread.interrupt();
+            } catch (SecurityException e){
+                Log.err("Could not interrupt a thread in RabitTrackerH2O: " + trackerThread.toString());
+            }
             this.trackerThread.terminateSocketChannels();
             this.trackerThread = null;
 
-            try {
-                this.sock.close();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to close Rabit tracker socket.", e);
-            } finally {
-                this.port = 9091;
-            }
+
+        try {
+            this.sock.close();
+            this.port = 9091;
+        } catch (IOException e) {
+            Log.err("Failed to close Rabit tracker socket.", e);
         }
     }
 
@@ -208,7 +210,6 @@ public class RabitTrackerH2O implements IRabitTracker {
         while(null != this.trackerThread && this.trackerThread.isAlive()) {
             try {
                 this.trackerThread.join(timeout);
-                this.trackerThread = null;
             } catch (InterruptedException e) {
                 Log.debug("Rabit tracker thread got suddenly interrupted.", e);
             }

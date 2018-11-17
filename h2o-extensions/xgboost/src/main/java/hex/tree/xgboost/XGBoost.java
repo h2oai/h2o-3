@@ -314,7 +314,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
           waitOnRabitWorkers(rt);
         } finally {
-          rt.stop();
+          stopRabitTracker(rt);
         }
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
@@ -427,6 +427,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     private void waitOnRabitWorkers(IRabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
         rt.waitFor(0);
+      }
+    }
+
+    /**
+     *
+     * @param rt Rabit tracker to stop
+     */
+    private void stopRabitTracker(IRabitTracker rt){
+      if(H2O.CLOUD.size() > 1) {
+        rt.stop();
       }
     }
 
