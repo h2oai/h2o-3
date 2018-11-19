@@ -1565,8 +1565,6 @@ final public class H2O {
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
-    SELF._client = ARGS.client;
-    SELF._timestamp = calculateNodeTimestamp();
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -2219,7 +2217,7 @@ final public class H2O {
    * Calculate node timestamp from Current's node information. We use start of jvm boot time and information whether
    * we are client or not. We combine these 2 information and create a char(2 bytes) with this info in a single variable.
    */
-  private static short calculateNodeTimestamp() {
+  static short calculateNodeTimestamp() {
     return calculateNodeTimestamp(TimeLine.JVM_BOOT_MSEC, H2O.ARGS.client);
   }
 

@@ -120,7 +120,10 @@ public final class AutoBuffer {
    *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
    *  represents the case where the communication is coming from h2o node.
    *  */
-  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
+  public AutoBuffer(ByteChannel sock ) {
+    this(sock, null, (short) 0);
+  }
+  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress, short timestamp ) {
     _chan = sock;
     raisePriority();            // Make TCP priority high
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
@@ -129,7 +132,8 @@ public final class AutoBuffer {
     _firstPage = true;
     // Read Inet from socket, port from the stream, figure out H2ONode
     if(remoteAddress!=null) {
-      _h2o = H2ONode.intern(remoteAddress, getPort());
+      assert timestamp != 0;
+      _h2o = H2ONode.intern(remoteAddress, getPort(), timestamp);
     }else{
       // In case the communication originates from non-h2o node, we set _h2o node to null.
       // It is done for 2 reasons:
@@ -183,9 +187,7 @@ public final class AutoBuffer {
     _read = true;
     _firstPage = true;
     _chan = null;
-    boolean isClient = H2O.decodeIsClient(getTimestamp());
-    short timestamp = getTimestamp();
-    _h2o = TCPReceiverThread.processNewNode(pack.getAddress(), getPort(), isClient, timestamp);
+    _h2o = H2ONode.intern(pack.getAddress(), getPort(), getTimestamp());
     _persist = 0;               // No persistance
   }
 
