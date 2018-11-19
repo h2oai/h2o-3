@@ -220,6 +220,9 @@ class H2OGridSearch(backwards_compatible()):
         is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
+        if not is_unsupervised:
+            y = y if y in training_frame.names else training_frame.names[y]
+            self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
 
@@ -270,6 +273,8 @@ class H2OGridSearch(backwards_compatible()):
                 error_index += 1
 
         self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
+        for model in self.models:
+            model._estimator_type = self.model._estimator_type
 
         # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
         # sometimes no model is returned due to bad parameter values provided by the user.

@@ -28,10 +28,13 @@ def grid_cars_GBM():
     predictors = ["displacement","power","weight","acceleration","year"]
     if grid_space['distribution'][0] == 'bernoulli':
         response_col = "economy_20mpg"
+        true_model_type = "classifier"
     elif grid_space['distribution'][0] == 'gaussian':
         response_col = "economy"
+        true_model_type = "regressor"
     else:
         response_col = "cylinders"
+        true_model_type = "regressor"
 
     print("Predictors: {0}".format(predictors))
     print("Response: {0}".format(response_col))
@@ -50,6 +53,10 @@ def grid_cars_GBM():
         cars_gbm_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
     else:
         cars_gbm_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+
+    print("Check correct type value....")
+    model_type = cars_gbm_grid[0].type
+    assert model_type == true_model_type, "Type of model ({0}) is incorrect, expected value is {1}.".format(model_type, true_model_type)
 
     print("Performing various checks of the constructed grid...")
 
@@ -82,6 +89,7 @@ def grid_cars_GBM():
     print("Check that the hyper_params that were passed to grid, were used to construct the models...")
     for name in list(grid_space.keys()):
         pyunit_utils.expect_model_param(cars_gbm_grid, name, grid_space[name])
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(grid_cars_GBM)
