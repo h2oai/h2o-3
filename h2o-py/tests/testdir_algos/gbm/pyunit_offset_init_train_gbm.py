@@ -18,20 +18,20 @@ def offset_init_train_gbm():
     # offset_column passed in the train method
     gbm_train = H2OGradientBoostingEstimator(ntrees=1, max_depth=1, min_rows=1, learn_rate=1)
     gbm_train.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
-    predictions_train = gbm_train.predict(cars)
+    predictions_train = gbm_train.predict(cars).as_data_frame()
 
     # test offset_column passed in estimator init
     gbm_init = H2OGradientBoostingEstimator(ntrees=1, max_depth=1, min_rows=1, learn_rate=1, offset_column="x1")
     gbm_init.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars)
-    predictions_init = gbm_init.predict(cars)
+    predictions_init = gbm_init.predict(cars).as_data_frame()
 
     # test case the both offset column parameters are set the parameter in train will be used
-    gbm_init_train = H2OGradientBoostingEstimator(ntrees=1, max_depth=1, min_rows=1,learn_rate=1, offset_column="x1")
+    gbm_init_train = H2OGradientBoostingEstimator(ntrees=1, max_depth=1, min_rows=1,learn_rate=1, offset_column="x1-test")
     gbm_init_train.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
-    predictions_init_train = gbm_init_train.predict(cars)
+    predictions_init_train = gbm_init_train.predict(cars).as_data_frame()
 
-    assert predictions_train == predictions_init, "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in constructor."
-    assert predictions_train == predictions_init_train, "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in both constructor and init."
+    assert predictions_train.equals(predictions_init), "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in constructor."
+    assert predictions_train.equals(predictions_init_train), "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in both constructor and init."
 
 
 if __name__ == "__main__":
