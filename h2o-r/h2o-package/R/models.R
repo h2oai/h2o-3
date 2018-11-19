@@ -1006,7 +1006,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.glm(x=2:5, y=1, training_frame=fr)
+#' m <- h2o.glm(x = 2:5, y = 1, training_frame = fr)
 #'
 #' h2o.r2(m)
 #' }
@@ -1067,7 +1067,7 @@ h2o.r2 <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
+#' m <- h2o.deeplearning(x = 2:5, y = 1, training_frame = fr)
 #'
 #' h2o.mean_residual_deviance(m)
 #' }
@@ -1378,7 +1378,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
+#' m <- h2o.deeplearning(x = 2:5, y = 1, training_frame = fr)
 #'
 #' h2o.mae(m)
 #' }
@@ -1439,7 +1439,7 @@ h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5, y=1, training_frame=fr)
+#' m <- h2o.deeplearning(x = 2:5, y = 1, training_frame = fr)
 #'
 #' h2o.rmsle(m)
 #' }

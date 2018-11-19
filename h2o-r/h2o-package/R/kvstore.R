@@ -231,7 +231,7 @@ h2o.getModel <- function(model_id) {
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #'
 #' h2o.download_pojo(my_model)  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working
@@ -316,7 +316,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export

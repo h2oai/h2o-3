@@ -713,7 +713,7 @@ h2o.unique <- function(x) .newExpr("unique", x)
 #' summary(iris_hf)
 #'
 #' # Cut sepal length column into intervals determined by min/max/quantiles
-#' sepal_len_cut <- cut(iris_hf$sepal_len, c(4.2, 4.8, 5.8, 6, 8))
+#' sepal_len_cut <- cut(iris_hf$Sepal.Length, c(4.2, 4.8, 5.8, 6, 8))
 #' head(sepal_len_cut)
 #' summary(sepal_len_cut)
 #' }
