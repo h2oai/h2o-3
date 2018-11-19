@@ -42,6 +42,18 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public boolean _removed_from_cloud;
 
+  public synchronized void refresh(short timestamp) {
+    UDP_TCP_SendThread oldSendThread = _sendThread;
+
+    _timestamp = timestamp;
+    _last_heard_from = System.currentTimeMillis();
+    _client = H2O.decodeIsClient(timestamp);
+    _removed_from_cloud = false;
+
+    startSendThread();
+    oldSendThread._stopRequested = true; // dispose of old thread
+  }
+
   public void stopSendThread(){
     if(_sendThread != null) {
       _sendThread._stopRequested = true;
@@ -50,9 +62,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _removed_from_cloud = true;
   }
 
-  public void startSendThread(){
-    _sendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread
+  public UDP_TCP_SendThread startSendThread(){
+    UDP_TCP_SendThread st = new UDP_TCP_SendThread();
+    _sendThread = st; // Launch the UDP send thread
     _sendThread.start();
+    return st;
   }
 
   // A JVM is uniquely named by machine IP address and port#
@@ -126,11 +140,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // if the Home#/Replica# change for a Key due to an unrelated change in Cloud
   // membership.  The unique_idx is *per Node*; not all Nodes agree on the same
   // indexes.
-  private H2ONode( H2Okey key, short unique_idx ) {
+  private H2ONode( H2Okey key, short unique_idx, short timestamp) {
     _key = key;
     _unique_idx = unique_idx;
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
+    _timestamp = timestamp;
+    _client = H2O.decodeIsClient(timestamp);
 
     _security = H2OSecurityManager.instance();
     _socketFactory = SocketChannelFactory.instance(_security);
@@ -170,25 +186,32 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   static boolean removeClient(H2ONode node){
       // Before we remove the Client, stop the sending thread
-      boolean ret = INTERN.remove(node._key, node);
-      node.stopSendThread();
-      Log.info("Removing client: " + node.toDebugString());
-      return ret;
+      boolean removed = INTERN.remove(node._key, node);
+      if (removed) {
+        node.stopSendThread();
+        Log.info("Removing client: " + node.toDebugString());
+      }
+      return removed;
   }
 
 
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
-  static private H2ONode intern(H2Okey key) {
+  static private H2ONode intern(H2Okey key, short timestamp) {
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
       return h2o;
     }
     final int idx = UNIQUE.getAndIncrement();
     assert idx < Short.MAX_VALUE;
-    h2o = new H2ONode(key, (short) idx);
+    h2o = new H2ONode(key, (short) idx, timestamp);
+    h2o.startSendThread(); // never put in a H2ONode that cannot be used
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
+      if (timestamp != 0 && timestamp != old._timestamp) {
+        old.refresh(timestamp);
+      }
+      h2o.stopSendThread(); // expensive but shouldn't happen often
       return old;
     }
     synchronized (H2O.class) {
@@ -197,13 +220,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       }
       IDX[idx] = h2o;
     }
-    h2o.startSendThread();
     return h2o;
   }
 
-  public static H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
+  public static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
 
-  public static H2ONode intern( byte[] bs, int off ) {
+  public static H2ONode intern(InetAddress ip, int port) { return intern(ip, port, (short) 0); }
+
+  public static H2ONode intern(byte[] bs, int off) {
     byte[] b = new byte[H2Okey.SIZE_OF_IP]; // the size depends on version of selected IP stack
     int port;
     // The static constant should be optimized
@@ -266,7 +290,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       throw Log.throwErr(e);
     }
 
-    return intern(new H2Okey(local,H2O.H2O_PORT));
+    return intern(new H2Okey(local, H2O.H2O_PORT), H2O.calculateNodeTimestamp());
   }
 
   // Happy printable string
@@ -620,7 +644,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // Custom Serialization Class: H2OKey need to be built.
   public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
-  public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
+  public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab), (short) 0 ); }
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
   public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
 
