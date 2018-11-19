@@ -409,7 +409,7 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
 #' head(myframe, 20)
 #'
 #' # Create pairwise interactions
-#' pairwise <- h2o.interaction(myframe
+#' pairwise <- h2o.interaction(myframe,
 #'                             factors = list(c(1, 2), c("C2", "C3", "C4")),
 #'                             pairwise = TRUE, max_factors = 10, min_occurrence = 1)
 #' head(pairwise, 20)
@@ -2911,9 +2911,11 @@ h2o.sqrt <- function(x) {
 #' h2o.init()
 #' url <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv"
 #' smtrees_hf <- h2o.importFile(url)
-#' smtrees_df <- read.csv("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
-#' model <- h2o.gbm(x = c("girth", "height"), y = "vol", ntrees = 3, max_depth = 1, distribution = "gaussian", 
-#'                  min_rows = 2, learn_rate = .1, training_frame = smtrees_hf)
+#' smtrees_df <- read.csv(
+#'   "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv")
+#' model <- h2o.gbm(x = c("girth", "height"), y = "vol", ntrees = 3, max_depth = 1,
+#'                  distribution = "gaussian", min_rows = 2, learn_rate = .1,
+#'                  training_frame = smtrees_hf)
 #' pred <- as.data.frame(predict(model, newdata = smtrees_hf))
 #' diff <- pred - smtrees_df[, 4]
 #' diff_abs <- abs(diff)
@@ -4349,7 +4351,8 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' fr_with_nas = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' fr_with_nas = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6,
+#'                               cols = 2, seed = 123)
 #' fr <- h2o.fillna(fr_with_nas, "forward", axis = 1, maxlen = 2L)
 #' }
 #' @export
@@ -4785,7 +4788,8 @@ h2o.target_encode_create <- function(data, x, y, fold_column = NULL){
 #'                                         y = "age", mapping, holdout_type = "LeaveOneOut")
 #' # Apply mapping to a test dataset
 #' test_encode <- h2o.target_encode_apply(data = test, x = list(c("job"), c("job", "marital")), 
-#'                                        y = "age", target_encode_map = mapping, holdout_type = "None")
+#'                                        y = "age", target_encode_map = mapping,
+#'                                        holdout_type = "None")
 #' 
 #' }
 #' @export
