@@ -100,13 +100,6 @@ task copyGenModelJarToWebRoot(type: Copy) {
   rename { filename -> "h2o-genmodel.jar"}
 }
 
-task copyDeepWaterJarToWebRoot(type: Copy) {
-  from {
-      file("${rootDir}/build/lib/deepwater-all.jar")
-  }
-  into "src/main/resources/www/${h2oRESTApiVersion}/"
-}
-
 task deleteBowerModules(type: Delete) {
   delete 'lib'
 }
@@ -189,7 +182,6 @@ processResources.dependsOn copyExampleFlows
 processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
-processResources.dependsOn copyDeepWaterJarToWebRoot
 
 compileAndInstallDocFiles.dependsOn installNpmPackages
 compileAndInstallDocFiles.dependsOn ":h2o-bindings:runGenerateRESTAPIBindingsSrc"
