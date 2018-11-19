@@ -98,7 +98,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("keep_cross_validation_models")
 
