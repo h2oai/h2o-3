@@ -1,5 +1,6 @@
 @Library('test-shared-library@1.17') _
 
+import ai.h2o.ci.buildsummary.StagesSummary
 import ai.h2o.ci.BuildResult
 
 final String MODE_PR = 'MODE_PR'
@@ -14,6 +15,9 @@ def scmEnv = null
 
 final boolean prJob = env.CHANGE_BRANCH || env.ghprbPullId
 def mode = null
+
+buildSummary('https://github.com/h2oai/h2o-3', true)
+buildSummary.get().addStagesSummary(this, new StagesSummary())
 
 try {
   ansiColor('xterm') {

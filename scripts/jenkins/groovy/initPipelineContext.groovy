@@ -1,4 +1,3 @@
-import ai.h2o.ci.buildsummary.StagesSummary
 import ai.h2o.ci.buildsummary.DetailsSummary
 
 def call(final scmEnv, final String mode, final boolean ignoreChanges) {
@@ -11,10 +10,6 @@ def call(final scmEnv, final String mode, final boolean ignoreChanges, final Lis
 
     def pipelineContextFactory = load('h2o-3/scripts/jenkins/groovy/pipelineContext.groovy')
     def final pipelineContext = pipelineContextFactory('h2o-3', mode, scmEnv, ignoreChanges, gradleOpts)
-
-    buildSummary('https://github.com/h2oai/h2o-3', true)
-    buildSummary.get().addStagesSummary(this, new StagesSummary())
-
 
     DetailsSummary detailsSummary = new DetailsSummary()
     buildSummary.get().addDetailsSummary(this, detailsSummary)

@@ -1,5 +1,8 @@
 #! /usr/bin/groovy
 
+@Library('test-shared-library@1.17') _
+import ai.h2o.ci.buildsummary.StagesSummary
+
 final String NODE_LABEL = 'docker && !mr-0xc8'
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
 final String REGISTRY_PREFIX = "${params.dockerRegistry}"
@@ -20,9 +23,12 @@ properties(
     ]
 )
 
+buildSummary('https://github.com/h2oai/h2o-3', true)
+buildSummary.get().addStagesSummary(this, new StagesSummary())
+
 node (NODE_LABEL) {
     final String stageName = 'Checkout and Prepare'
-    stage (stageName) {
+    buildSummary.stageWithSummary(stageName) {
         def scmEnv = git credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea',
                 poll: false,
                 url: 'https://github.com/h2oai/h2o-3',
@@ -31,28 +37,9 @@ node (NODE_LABEL) {
         def pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
         pipelineContext = pipelineContextFactory('.', 'MODE_HADOOP', scmEnv, true)
 
-        try {
-            version = pipelineContext.getBuildConfig().getHadoopImageVersion()
-            currentBuild.displayName += " v${version}"
-
-            pipelineContext.getBuildSummary().addStageSummary(this, stageName, '')
-            pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
-
-            pipelineContext.getBuildSummary().addSection(this, 'docker-details', "<a href=\"${currentBuild.rawBuild.getAbsoluteUrl()}\" style=\"color: black;\">Details</a>", """
-                <ul>
-                <li><strong>Git Branch:</strong> ${env.BRANCH_NAME}</li>
-                <li><strong>Version:</strong> ${version}</li>
-                <li><strong>Force Overwrite:</strong> ${params.force}</li>
-                </ul>
-            """)
-
-            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/hadoop/**,docker/scripts/*')
-
-            pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
-        } catch (Exception e) {
-            pipelineContext.getBuildSummary().markStageFailed(this, stageName)
-            throw e
-        }
+        version = pipelineContext.getBuildConfig().getHadoopImageVersion()
+        currentBuild.displayName += " v${version}"
+        pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/hadoop/**,docker/scripts/*')
     }
 }
 
@@ -61,66 +48,48 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
         "Build images for ${distribution.name.toUpperCase()} ${distribution.version}", {
             node (pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
                 final String buildStageName = "Build ${distribution.name.toUpperCase()} ${distribution.version}"
-                stage(buildStageName) {
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
+                buildSummary.stageWithSummary(buildStageName) {
+                    final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
+                    final boolean conflict = pipelineContext.getUtils()
+                            .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                    if (conflict && !params.force) {
+                        error "Tag ${imageName}:${version} already exists in the repository"
+                    }
 
-                        final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
-                        final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
-                        if (conflict && !params.force) {
-                            error "Tag ${imageName}:${version} already exists in the repository"
+                    withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
+                            usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        dir("${imageName}.${version}") {
+                            pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                            sh """
+                                cd docker
+                                rm -f hadoop/common/ldap/jenkins.ldif
+                                cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
+
+                                docker build \
+                                    -t ${REGISTRY_PREFIX}/${imageName}:${version} \
+                                    -f hadoop/${distribution.name}/Dockerfile \
+                                    --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                                    --build-arg VERSION=${distribution.version} .
+
+                                docker build \
+                                    -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
+                                    -f hadoop/${distribution.name}/Dockerfile.kerberos \
+                                    --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
+                                    --build-arg PATH_PREFIX=hadoop/${distribution.name} .
+                            """
                         }
-
-                        withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                                usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                            dir("${imageName}.${version}") {
-                                pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
-                                sh """
-                                    cd docker
-                                    rm -f hadoop/common/ldap/jenkins.ldif
-                                    cp \${JENKINS_LDIF_PATH} hadoop/common/ldap/jenkins.ldif
-
-                                    docker build \
-                                        -t ${REGISTRY_PREFIX}/${imageName}:${version} \
-                                        -f hadoop/${distribution.name}/Dockerfile \
-                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} \
-                                        --build-arg VERSION=${distribution.version} .
-
-                                    docker build \
-                                        -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
-                                        -f hadoop/${distribution.name}/Dockerfile.kerberos \
-                                        --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
-                                        --build-arg PATH_PREFIX=hadoop/${distribution.name} .
-                                """
-                            }
-                        }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
-                        throw e
                     }
                 }
 
                 final String publishStageName = "Publish images for ${distribution.name.toUpperCase()} ${distribution.version}"
-                stage (publishStageName) {
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
-                        pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
-
-                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                            sh """
-                                docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version}
-                                docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}-krb:${version}
-                            """
-                            echo "###### Docker image ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version} built and pushed. ######"
-                        }
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, publishStageName)
-                        throw e
+                buildSummary.stageWithSummary(publishStageName) {
+                    withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        sh """
+                            docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+                            docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version}
+                            docker push ${REGISTRY_PREFIX}/${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}-krb:${version}
+                        """
+                        echo "###### Docker image ${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}:${version} built and pushed. ######"
                     }
                 }
             }
