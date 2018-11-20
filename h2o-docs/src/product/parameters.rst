@@ -91,6 +91,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/remove_collinear_columns
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
+   data-science/algo-params/sample_size
    data-science/algo-params/score_each_iteration
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
