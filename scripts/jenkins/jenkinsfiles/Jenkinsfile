@@ -1,10 +1,6 @@
 @Library('test-shared-library@1.17') _
 
-import ai.h2o.ci.buildsummary.StagesSummary
 import ai.h2o.ci.BuildResult
-
-buildSummary('https://github.com/h2oai/h2oai', true)
-buildSummary.get().addStagesSummary(this, new StagesSummary())
 
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'
@@ -13,7 +9,7 @@ final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
 def pipelineContext = null
-String result = BuildResult.FAILURE
+def result = BuildResult.FAILURE
 def scmEnv = null
 
 final boolean prJob = env.CHANGE_BRANCH || env.ghprbPullId
