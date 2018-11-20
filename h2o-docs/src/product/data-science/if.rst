@@ -30,7 +30,7 @@ Defining an Isolation Forest Model
 
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. This value defaults to 8.
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 8.
 
 -  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf (``nodesize`` in R).
 
