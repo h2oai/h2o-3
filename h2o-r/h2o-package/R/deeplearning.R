@@ -15,7 +15,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -152,7 +152,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
-                             keep_cross_validation_models = FALSE,
+                             keep_cross_validation_models = TRUE,
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),

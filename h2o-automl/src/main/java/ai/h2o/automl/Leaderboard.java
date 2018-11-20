@@ -117,11 +117,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   private long leaderboardFrameChecksum;
 
-  /** HIDEME! */
-  private Leaderboard() {
-    throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
-  }
-
   /**
    *
    */
@@ -569,14 +564,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%.6f"
   };
 
-  private static TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, int length, Model[] models) {
-    assert sort_metric != null || length == 0 :
+  private static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, Model[] models) {
+    assert sort_metric != null || models.length == 0 :
         "sort_metrics needs to be always not-null for non-empty array!";
 
-    String[] rowHeaders = new String[length];
-    for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
+    String[] rowHeaders = new String[models.length];
+    for (int i = 0; i < models.length; i++) rowHeaders[i] = "" + i;
 
-    if (sort_metric == null && length == 0) {
+    if (models.length == 0) {
       // empty TwoDimTable
       return new TwoDimTable(tableHeader,
               "no models in this leaderboard",
@@ -671,7 +666,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       this.other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
     }
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models.length, models);
+    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models);
 
     // %-s doesn't work in TwoDimTable.toString(), so fake it here:
     int maxModelIdLen = -1;

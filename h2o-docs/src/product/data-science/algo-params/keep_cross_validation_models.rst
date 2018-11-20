@@ -9,7 +9,7 @@
 Description
 ~~~~~~~~~~~
 
-N-fold cross-validation is used to validate a model internally, i.e., to estimate the model performance without having to sacrifice a validation split. When building cross-validated models, H2O builds ``nfolds+1`` models: ``nfolds`` cross-validated models and 1 overarching model over all of the training data. For example, if you specify ``nfolds=5``, then 6 models are built. The first 5 models are the cross-validation models and are built on 80% of the training data. You can save each of these models for further inspection by enabling the ``keep_cross_validation_models`` option. Note that this option is disabled by default.
+N-fold cross-validation is used to validate a model internally, i.e., to estimate the model performance without having to sacrifice a validation split. When building cross-validated models, H2O builds ``nfolds+1`` models: ``nfolds`` cross-validated models and 1 overarching model over all of the training data. For example, if you specify ``nfolds=5``, then 6 models are built. The first 5 models are the cross-validation models and are built on 80% of the training data. You can save each of these models for further inspection by enabling the ``keep_cross_validation_models`` option. Note that this option is enabled by default except for AutoML.
 
 More information is available in the `Cross-Validation <../../cross-validation.html>`__ section. 
 

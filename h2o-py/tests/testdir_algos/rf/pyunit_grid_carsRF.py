@@ -34,10 +34,13 @@ def grid_cars_RF():
     problem = random.randint(1,3)
     if problem == 1:
         response_col = "economy_20mpg"
+        true_model_type = "classifier"
     elif problem == 2:
         response_col = "economy"
+        true_model_type = "regressor"
     else:
         response_col = "cylinders"
+        true_model_type = "classifier"
 
     print("Predictors: {0}".format(predictors))
     print("Response: {0}".format(response_col))
@@ -69,6 +72,10 @@ def grid_cars_RF():
     actual_size = len(cars_rf_grid)
     assert size_of_grid_space ==  actual_size, "Expected size of grid to be {0}, but got {1}" \
                                                "".format(size_of_grid_space,actual_size)
+
+    print("Check correct type value....")
+    model_type = cars_rf_grid[0].type
+    assert model_type == true_model_type, "Type of model ({0}) is incorrect, expected value is {1}.".format(model_type, true_model_type)
 
     print("Duplicate-entries-in-grid-space check")
     new_grid_space = copy.deepcopy(grid_space)

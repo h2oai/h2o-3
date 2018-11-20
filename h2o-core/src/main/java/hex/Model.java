@@ -189,7 +189,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
-    public boolean _keep_cross_validation_models = false;
+    public boolean _keep_cross_validation_models = true;
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;

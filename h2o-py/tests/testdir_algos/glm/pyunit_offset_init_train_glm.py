@@ -18,20 +18,20 @@ def offset_init_train_glm():
     # offset_column passed in the train method
     glm_train = H2OGeneralizedLinearEstimator(family = "binomial")
     glm_train.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
-    predictions_train = glm_train.predict(cars)
+    predictions_train = glm_train.predict(cars).as_data_frame()
 
     # offset_column passed in estimator init
-    glm_init = H2OGeneralizedLinearEstimator(offset_column="x1", family = "binomial")
-    glm_init.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars)
-    predictions_init = glm_init.predict(cars)
+    glm_init = H2OGeneralizedLinearEstimator(offset_column="x1", family="binomial")
+    glm_init.train(x=list(range(2,8)), y="economy_20mpg", training_frame=cars)
+    predictions_init = glm_init.predict(cars).as_data_frame()
 
     # case the both offset column parameters are set and only the parameter in train will be used
-    glm_init_train = H2OGeneralizedLinearEstimator(offset_column="x1-test", family = "binomial")
+    glm_init_train = H2OGeneralizedLinearEstimator(offset_column="x1-test", family="binomial")
     glm_init_train.train(x=list(range(2,8)),y="economy_20mpg", training_frame=cars, offset_column="x1")
-    predictions_init_train = glm_init_train.predict(cars)
+    predictions_init_train = glm_init_train.predict(cars).as_data_frame()
 
-    assert predictions_train == predictions_init, "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in constructor."
-    assert predictions_train == predictions_init_train, "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in both constructor and init."
+    assert predictions_train.equals(predictions_init), "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in constructor."
+    assert predictions_train.equals(predictions_init_train), "Expected predictions of a model with offset_column in train method has to be same as predictions of a model with offset_column in both constructor and init."
 
 
 if __name__ == "__main__":
