@@ -23,8 +23,8 @@ public class XGBoostUpdater extends Thread {
   private final BoosterParms _boosterParms;
   private final Map<String, String> _rabitEnv;
 
-  private SynchronousQueue<BoosterCallable<?>> _in;
-  private SynchronousQueue<Object> _out;
+  private volatile SynchronousQueue<BoosterCallable<?>> _in;
+  private volatile SynchronousQueue<Object> _out;
 
   private Booster _booster;
 
