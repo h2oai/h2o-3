@@ -2185,7 +2185,7 @@ final public class H2O {
    * Forgets H2O client
    */
   static boolean removeClient(H2ONode client){
-    return H2ONode.removeClient(client);
+    return client.removeClient();
   }
 
   public static H2ONode[] getClients(){

@@ -42,31 +42,18 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public boolean _removed_from_cloud;
 
-  public synchronized void refresh(short timestamp) {
-    UDP_TCP_SendThread oldSendThread = _sendThread;
-
-    _timestamp = timestamp;
-    _last_heard_from = System.currentTimeMillis();
-    _client = H2O.decodeIsClient(timestamp);
-    _removed_from_cloud = false;
-
-    startSendThread();
-    oldSendThread._stopRequested = true; // dispose of old thread
-  }
-
-  public void stopSendThread(){
-    if(_sendThread != null) {
+  void stopSendThread() {
+    if (_sendThread != null) {
       _sendThread._stopRequested = true;
       _sendThread = null;
     }
     _removed_from_cloud = true;
   }
 
-  public UDP_TCP_SendThread startSendThread(){
-    UDP_TCP_SendThread st = new UDP_TCP_SendThread();
-    _sendThread = st; // Launch the UDP send thread
+  private void startSendThread() {
+    _sendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread
     _sendThread.start();
-    return st;
+    _removed_from_cloud = false;
   }
 
   // A JVM is uniquely named by machine IP address and port#
@@ -166,7 +153,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   static H2ONode IDX[] = new H2ONode[1];
 
   static H2ONode[] getClients(){
-    ArrayList<H2ONode> clients = new ArrayList<>();
+    ArrayList<H2ONode> clients = new ArrayList<>(INTERN.size());
     for( Map.Entry<H2Okey, H2ONode> entry : INTERN.entrySet()){
       if (entry.getValue()._client) {
         clients.add(entry.getValue());
@@ -184,16 +171,30 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return null;
   }
 
-  static boolean removeClient(H2ONode node){
-      // Before we remove the Client, stop the sending thread
-      boolean removed = INTERN.remove(node._key, node);
-      if (removed) {
-        node.stopSendThread();
-        Log.info("Removing client: " + node.toDebugString());
-      }
-      return removed;
+  private synchronized void refreshClient(short timestamp) {
+    assert timestamp != 0 && H2O.decodeIsClient(timestamp);
+
+    UDP_TCP_SendThread oldSendThread = _sendThread;
+
+    _client = true;
+    _timestamp = timestamp;
+    _last_heard_from = System.currentTimeMillis();
+
+    startSendThread();
+    oldSendThread._stopRequested = true; // Dispose of the old thread
   }
 
+  boolean removeClient() {
+    assert _timestamp == 0 || H2O.decodeIsClient(_timestamp);
+    boolean removed = INTERN.remove(_key, this);
+    if (removed) {
+      Log.info("Removing client: " + toDebugString());
+    } else {
+      Log.debug("Attempted to remove a client which was already superseded by another client: " + this.toDebugString());
+    }
+    stopSendThread(); // Stop the sending thread
+    return removed;
+  }
 
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
@@ -205,11 +206,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     final int idx = UNIQUE.getAndIncrement();
     assert idx < Short.MAX_VALUE;
     h2o = new H2ONode(key, (short) idx, timestamp);
-    h2o.startSendThread(); // never put in a H2ONode that cannot be used
+    h2o.startSendThread(); // never intern a H2ONode that cannot be used right away
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
-      if (timestamp != 0 && timestamp != old._timestamp) {
-        old.refresh(timestamp);
+      if (timestamp != 0 && timestamp != old._timestamp && H2O.decodeIsClient(timestamp)) {
+        old.refreshClient(timestamp);
       }
       h2o.stopSendThread(); // expensive but shouldn't happen often
       return old;
