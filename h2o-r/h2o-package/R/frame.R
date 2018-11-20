@@ -656,7 +656,7 @@ h2o.filterNACols <- function(data, frac=0.2) .eval.scalar(.newExpr("filterNACols
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate <- h2o.uploadFile(path = prostate)
+#' prostate <- h2o.uploadFile(path = prostate_path)
 #' summary(prostate)
 #'
 #' # Counts of the ages of all patients
@@ -4120,11 +4120,11 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'
 #' # Import iris dataset to H2O
 #' iris_hf <- as.h2o(iris)
-#' # Add function taking mean of sepal_len column
+#' # Add function taking mean of Sepal.Length column
 #' fun <- function(df) { sum(df[, 1], na.rm = TRUE) / nrow(df) }
-#' # Apply function to groups by class of flower
+#' # Apply function to groups by flower specie
 #' # uses h2o's ddply, since iris_hf is an H2OFrame object
-#' res <- h2o.ddply(iris, "class", fun)
+#' res <- h2o.ddply(iris_hf, "Species", fun)
 #' head(res)
 #' }
 #' @export

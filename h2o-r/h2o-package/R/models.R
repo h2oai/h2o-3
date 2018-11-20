@@ -1671,7 +1671,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(hprostateex[,2])
+#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.F1(perf)
@@ -3224,8 +3224,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' h2o.init()
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
-#' prostate = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate,
-#'                             hidden = c(100, 200), epochs = 5)
+#' prostate_dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate,
+#'                                hidden = c(100, 200), epochs = 5)
 #' prostate_deepfeatures_layer1 = h2o.deepfeatures(prostate_dl, prostate, layer = 1)
 #' prostate_deepfeatures_layer2 = h2o.deepfeatures(prostate_dl, prostate, layer = 2)
 #' head(prostate_deepfeatures_layer1)
