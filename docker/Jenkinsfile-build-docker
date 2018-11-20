@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@1.17') _
 import ai.h2o.ci.buildsummary.StagesSummary
 
 DEFAULT_LABEL = 'mr-0xc10'

@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@1.17') _
 
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'

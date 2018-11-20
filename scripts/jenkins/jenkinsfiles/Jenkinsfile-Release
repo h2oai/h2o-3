@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library@1.17') _
 
 def NODE_LABEL = 'master'
 
