@@ -269,19 +269,14 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
 
-
-    @property
-    def export_checkpoints_dir(self):
+    def transform(self, X, y=None, **params):
         """
-        Automatically export generated models to this directory.
+        Transform the given H2OFrame with the fitted PCA model.
 
-        Type: ``str``.
+        :param H2OFrame X: May contain NAs and/or categorical data.
+        :param H2OFrame y: Ignored for PCA. Should be None.
+        :param params: Ignored.
+
+        :returns: The input H2OFrame transformed by the Principal Components.
         """
-        return self._parms.get("export_checkpoints_dir")
-
-    @export_checkpoints_dir.setter
-    def export_checkpoints_dir(self, export_checkpoints_dir):
-        assert_is_type(export_checkpoints_dir, None, str)
-        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
-
+        return self.predict(X)
