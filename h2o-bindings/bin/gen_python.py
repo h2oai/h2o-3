@@ -555,6 +555,7 @@ def class_extra_for(algo):
         def transform(self, X, y=None, **params):
             \"\"\"
             Transform the given H2OFrame with the fitted PCA model.
+            This method has to be implemented to be used with sklearn.pipeline module.
 
             :param H2OFrame X: May contain NAs and/or categorical data.
             :param H2OFrame y: Ignored for PCA. Should be None.
