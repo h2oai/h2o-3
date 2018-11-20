@@ -550,6 +550,21 @@ def class_extra_for(algo):
 
             self.vec_size = self.pre_trained.dim[1] - 1;
         """
+    elif algo == "pca":
+        return """
+        def transform(self, X, y=None, **params):
+            \"\"\"
+            Transform the given H2OFrame with the fitted PCA model.
+
+            :param H2OFrame X: May contain NAs and/or categorical data.
+            :param H2OFrame y: Ignored for PCA. Should be None.
+            :param params: Ignored.
+
+            :returns: The input H2OFrame transformed by the Principal Components.
+            \"\"\"
+            return self.predict(X)
+        """
+
 
 def module_extra_for(algo):
     if algo == "deeplearning":
