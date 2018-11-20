@@ -81,8 +81,13 @@ public class XGBoostUpdater extends Thread {
     SynchronousQueue<?> outQ;
     while ((outQ = _out) != null) {
       T result = (T) outQ.poll(INACTIVE_CHECK_INTERVAL_SECS, TimeUnit.SECONDS);
-      if (result != null)
+      if (result != null) {
         return result;
+      } else {
+        throw new IllegalStateException(
+                String.format("Exceeded waiting interval of %d seconds for a task of type '%s' to finish on node '%s'. ",
+                        INACTIVE_CHECK_INTERVAL_SECS, callable, H2O.SELF));
+      }
     }
     throw new IllegalStateException("Cannot perform booster operation: updater is inactive on node " + H2O.SELF);
   }
