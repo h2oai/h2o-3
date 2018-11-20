@@ -49,12 +49,13 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
                         sh """
                             cd docker
                             
-                            docker build \
-                                -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
-                                -f ${xgbEnv.dockerfile} \
-                                --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
-                                --build-arg H2O_BRANCH=${params.gitBranch} \
-                                .
+                            # FIXME
+                            # docker build \
+                            #     -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
+                            #     -f ${xgbEnv.dockerfile} \
+                            #     --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
+                            #     --build-arg H2O_BRANCH=${params.gitBranch} \
+                            #     .
                         """
 
                     }
@@ -64,7 +65,8 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
                         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             sh """
                                 docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                docker push ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)}
+                                # FIXME 
+                                # docker push ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)}
                             """
                             echo "###### Docker image ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} built and pushed. ######"
                         }
