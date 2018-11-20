@@ -176,6 +176,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
     UDP_TCP_SendThread oldSendThread = _sendThread;
 
+    if (_timestamp != 0) {
+      Log.info("Client reconnected with a new timestamp=" + _timestamp + ", old client: " + toDebugString());
+    }
     _client = true;
     _timestamp = timestamp;
     _last_heard_from = System.currentTimeMillis();
@@ -190,7 +193,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     if (removed) {
       Log.info("Removing client: " + toDebugString());
     } else {
-      Log.debug("Attempted to remove a client which was already superseded by another client: " + this.toDebugString());
+      Log.debug("Attempted to remove a client which was already superseded by another client: " + toDebugString());
     }
     stopSendThread(); // Stop the sending thread
     return removed;
@@ -199,8 +202,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Create and/or re-use an H2ONode.  Each gets a unique dense index, and is
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
+    boolean isClient = H2O.decodeIsClient(timestamp);
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
+      if (isClient && timestamp != h2o._timestamp) {
+        h2o.refreshClient(timestamp);
+      }
       return h2o;
     }
     final int idx = UNIQUE.getAndIncrement();
@@ -209,7 +216,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     h2o.startSendThread(); // never intern a H2ONode that cannot be used right away
     H2ONode old = INTERN.putIfAbsent(key, h2o);
     if (old != null) {
-      if (timestamp != 0 && timestamp != old._timestamp && H2O.decodeIsClient(timestamp)) {
+      if (isClient && timestamp != old._timestamp) {
         old.refreshClient(timestamp);
       }
       h2o.stopSendThread(); // expensive but shouldn't happen often
