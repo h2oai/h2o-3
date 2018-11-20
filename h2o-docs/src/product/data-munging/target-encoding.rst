@@ -39,7 +39,8 @@ Train Baseline Model
 
 Start by training a model using the original data. Below we import our data into the H2O cluster:
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     library(h2o)
     h2o.init()
@@ -48,9 +49,18 @@ Start by training a model using the original data. Below we import our data into
     df <- h2o.importFile("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
     df$bad_loan <- as.factor(df$bad_loan)
 
+   .. code-block:: python
+
+    import h2o
+    h2o.init()
+
+    df = h2o.import_file("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
+    df['bad_loan'] = df['bad_loan'].asfactor()
+
 Randomly split the data into 75% training and 25% testing. We will use the testing data to evaluate how well the model performs.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     # Split Frame into training and testing
     splits <- h2o.splitFrame(df, seed = 1234, 
@@ -59,9 +69,15 @@ Randomly split the data into 75% training and 25% testing. We will use the testi
     train <- splits[[1]]
     test <- splits[[2]]
 
+   .. code-block:: python
+
+   # Split Frame into training and testing
+   train, test = df.split_frame(ratios=[0.75])
+
 Now train the baseline model. We will train a GBM model with early stopping.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     response <- "bad_loan"
     predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
@@ -77,11 +93,7 @@ Now train the baseline model. We will train a GBM model with early stopping.
                             stopping_tolerance = 0.001,
                             model_id = "gbm_baseline.hex")
 
-The AUC on the training and testing data is shown below:
-
-.. code:: r
-
-    # Get AUC
+    # Get the AUC on the training and testing data:
     train_auc <- h2o.auc(gbm_baseline, train = TRUE)
     valid_auc <- h2o.auc(gbm_baseline, valid = TRUE)
 
@@ -93,15 +105,51 @@ The AUC on the training and testing data is shown below:
     1   Training 0.8571747
     2 Validation 0.7198658
 
+   .. code-block:: python
+
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
+                  "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
+                  "verification_status", "term", "purpose", "home_ownership", 
+                  "addr_state"]
+    response = "bad_loan"
+
+    gbm_baseline=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                              ntrees=500,
+                                              sample_rate=0.8,
+                                              col_sample_rate=0.8,
+                                              seed=1234,
+                                              stopping_rounds=5,
+                                              stopping_metric="AUC",
+                                              stopping_tolerance=0.001,
+                                              model_id="gbm_baseline.hex")
+
+    gbm_baseline.train(x=predictors, y=response, training_frame=train,
+                       validation_frame=test)
+
+    # Get the AUC on the training and testing data:
+    train_auc = gbm_baseline.auc(train=True)
+    train_auc
+    0.751953970782117
+    valid_auc = gbm_baseline.auc(valid=True)
+    valid_auc
+    0.7065760092048288
+
 
 Our training data has much higher AUC than our validation data.
 
 The variables with the greatest importance are ``addr_state``, ``term``, and ``int_rate``. It makes sense that the ``int_rate`` has such high variable importance since this is related to loan default but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     # Variable Importance
     h2o.varimp_plot(gbm_baseline)
+
+   .. code-block:: python
+
+    # Variable Importance
+    gbm_baseline.varimp_plot()
 
 .. figure:: ../images/gbm_variable_importance1.png
    :alt: GBM Variable importance - first run
@@ -110,7 +158,9 @@ The variables with the greatest importance are ``addr_state``, ``term``, and ``i
 
 See if the AUC improves on the test data if we remove the ``addr_state`` predictor. This can indicate that the model is memorizing the training data.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
+
 
     predictors <- setdiff(predictors, "addr_state")
 
@@ -121,11 +171,7 @@ See if the AUC improves on the test data if we remove the ``addr_state`` predict
                             stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
                             model_id = "gbm_no_state.hex")
 
-The AUC for the baseline model and the model without ``addr_state`` are shown below:
-
-.. code:: r
-
-    # Get AUC
+    # Get the AUC for the baseline model and the model without ``addr_state``
     auc_baseline <- h2o.auc(gbm_baseline, valid = TRUE)
     auc_nostate <- h2o.auc(gbm_no_state, valid = TRUE)
 
