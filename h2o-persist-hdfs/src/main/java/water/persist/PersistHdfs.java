@@ -185,7 +185,7 @@ public final class PersistHdfs extends Persist {
           assert v.isPersisted();
         } finally {
           s.getWrappedStream().close();
-          FileUtils.close(s);
+          FileUtils.closeSilently(s);
         }
         return null;
       }

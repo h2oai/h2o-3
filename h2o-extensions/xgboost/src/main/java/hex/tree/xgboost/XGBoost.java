@@ -238,7 +238,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // Per driver instance
     final private String featureMapFileName = "featureMap" + UUID.randomUUID().toString() + ".txt";
     // Shared file to write list of features
-    private File featureMapFile = null;
+    private String featureMapFileAbsolutePath = null;
 
     @Override
     public void computeImpl() {
@@ -294,7 +294,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
-        featureMapFile = createFeatureMapFile(featureMap);
+        featureMapFileAbsolutePath = createFeatureMapFile(featureMap);
 
         BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
         model._output._native_parameters = boosterParms.toTwoDimTable();
@@ -366,7 +366,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // For feature importances - write out column info
-    private File createFeatureMapFile(String featureMap) {
+    private String createFeatureMapFile(String featureMap) {
       OutputStream os = null;
       try {
         File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
@@ -374,7 +374,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         os = new FileOutputStream(fmFile);
         os.write(featureMap.getBytes());
         os.close();
-        return fmFile;
+        return fmFile.getAbsolutePath();
       } catch (IOException e) {
         throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
       } finally {
@@ -486,7 +486,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, Integer>>() {
             @Override
             public Map<String, Integer> apply(Booster booster) throws XGBoostError {
-              return booster.getFeatureScore(featureMapFile.getAbsolutePath());
+              return booster.getFeatureScore(featureMapFileAbsolutePath);
             }
           }, booster);
         } finally {
