@@ -3173,7 +3173,7 @@ def model_run_time_sorted_by_time(model_list):
     return model_runtime_sec_list
 
 
-def model_seed_sorted_by_time(model_list):
+def model_seed_sorted(model_list):
     """
     This function is written to find the seed used by each model in the order of when the model was built.  The
     oldest model metric will be the first element.
@@ -3187,13 +3187,11 @@ def model_seed_sorted_by_time(model_list):
 
 
     for index in range(model_num):
-        model_index = int(model_list[index]._id.split('_')[-1]) - 1  # model names start at 1
-
         for pIndex in range(len(model_list.models[0]._model_json["parameters"])):
             if model_list.models[index]._model_json["parameters"][pIndex]["name"]=="seed":
-                model_seed_list[model_index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
+                model_seed_list[index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
                 break
-
+    model_seed_list.sort()
     return model_seed_list
 
 
