@@ -151,6 +151,7 @@ reference:
       - h2o.ischaracter
       - h2o.isfactor
       - h2o.isnumeric
+      - h2o.isolationForest
       - h2o.kfold_column
       - h2o.killMinus3
       - h2o.kmeans
@@ -311,7 +312,6 @@ reference:
       - is.factor 
       - is.h2o 
       - is.numeric
-      - h2o.isolationForest
       - Logical-or
       - ModelAccessors
       - names.H2OFrame
