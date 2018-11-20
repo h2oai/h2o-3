@@ -1,5 +1,11 @@
 @Library('test-shared-library@1.17') _
 
+import ai.h2o.ci.buildsummary.StagesSummary
+import ai.h2o.ci.BuildResult
+
+buildSummary('https://github.com/h2oai/h2oai', true)
+buildSummary.get().addStagesSummary(this, new StagesSummary())
+
 final String MODE_PR = 'MODE_PR'
 final String MODE_MASTER = 'MODE_MASTER'
 final String DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
@@ -7,7 +13,7 @@ final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
 def pipelineContext = null
-String result = 'FAILURE'
+String result = BuildResult.FAILURE
 def scmEnv = null
 
 final boolean prJob = env.CHANGE_BRANCH || env.ghprbPullId
@@ -91,14 +97,13 @@ try {
       }
 
       defineTestStages(pipelineContext)
-      result = 'SUCCESS'
+      result = BuildResult.SUCCESS
     }
   }
 } finally {
   if (pipelineContext != null) {
-    if (!prJob) {
-      pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
-    }
+    // FIXME ['michalk@h2o.ai', 'michalr@h2o.ai']
+    sendEmailNotif(result, buildSummary.get().toEmail(this), ['michalr@h2o.ai'])
     if (!pipelineContext.getHealthChecker().getHealthProblems().isEmpty()) {
       pipelineContext.getEmailer().sendEmail(this, 'WARNING', pipelineContext.getHealthChecker().toEmail(this, pipelineContext), ['michalr@h2o.ai'])
     }
