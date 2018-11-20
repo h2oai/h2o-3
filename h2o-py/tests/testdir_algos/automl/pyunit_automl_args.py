@@ -259,6 +259,9 @@ def test_automl_stops_after_max_runtime_secs():
     end = time.time()
     assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
+def test_no_model_takes_more_than_max_model_runtime_secs():
+    pass
+
 
 def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")

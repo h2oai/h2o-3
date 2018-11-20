@@ -47,7 +47,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     private double _max_runtime_secs = 0;
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    public double _stopping_tolerance = 0.001;
+    private double _stopping_tolerance = 0.001;
 
 
     /** Seed for the random choices of hyperparameter values.  Set to a value other than -1 to get a repeatable pseudorandom sequence. */
@@ -97,28 +97,28 @@ public class HyperSpaceSearchCriteria extends Iced {
       super(Strategy.RandomDiscrete);
     }
 
-    public void set_seed(long _seed) {
-      this._seed = _seed;
+    public void set_seed(long seed) {
+      this._seed = seed;
     }
 
-    public void set_max_models(int _max_models) {
-      this._max_models = _max_models;
+    public void set_max_models(int max_models) {
+      this._max_models = max_models;
     }
 
-    public void set_max_runtime_secs(double _max_runtime_secs) {
-      this._max_runtime_secs = _max_runtime_secs;
+    public void set_max_runtime_secs(double max_runtime_secs) {
+      this._max_runtime_secs = max_runtime_secs;
     }
 
-    public void set_stopping_rounds(int _stopping_rounds) {
-      this._stopping_rounds = _stopping_rounds;
+    public void set_stopping_rounds(int stopping_rounds) {
+      this._stopping_rounds = stopping_rounds;
     }
 
-    public void set_stopping_metric(ScoreKeeper.StoppingMetric _stopping_metric) {
-      this._stopping_metric = _stopping_metric;
+    public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
+      this._stopping_metric = stopping_metric;
     }
 
-    public void set_stopping_tolerance(double _stopping_tolerance) {
-      this._stopping_tolerance = _stopping_tolerance;
+    public void set_stopping_tolerance(double stopping_tolerance) {
+      this._stopping_tolerance = stopping_tolerance;
     }
   }
 }

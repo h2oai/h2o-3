@@ -272,17 +272,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       handleDatafileParameters(buildSpec);
 
-      if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance == -1) {
-        this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
-        userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
-            this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
-      } else {
-        userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
-        double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
-        if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance < 0.7 * default_tolerance) {
-          userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
-        }
+    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == -1) {
+      this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
+      userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
+              this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
+    } else {
+      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
+      double default_tolerance = RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() < 0.7 * default_tolerance){
+        userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
       }
+    }
 
       String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
       leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame, sort_metric);
@@ -753,7 +753,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Algo algo = work.algo;
     setCommonModelBuilderParams(baseParms);
 
-    RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
+    RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
     float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
     long maxAssignedTime = (long) Math.round(remainingWorkRatio * timeRemainingMs() / 1000);
     int maxAssignedModels = (int) Math.ceil(remainingWorkRatio * remainingModels());
@@ -828,6 +828,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
     params._seed = buildSpec.build_control.stopping_criteria.seed();
+    params._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_model_runtime_secs();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleParameters)) {

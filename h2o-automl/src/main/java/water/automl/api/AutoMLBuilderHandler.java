@@ -38,7 +38,7 @@ public class AutoMLBuilderHandler extends Handler {
           // double stopping_tolerance = (double)stopping_criteria.get("stopping_tolerance");
         } else {
           // default
-          buildSpec.build_control.stopping_criteria._stopping_tolerance = -1; // marker value which means "default"
+          buildSpec.build_control.stopping_criteria.set_stopping_tolerance(-1); // marker value which means "default"
         }
       }
     }

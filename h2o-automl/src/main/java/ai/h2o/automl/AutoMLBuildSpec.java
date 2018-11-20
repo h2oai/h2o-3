@@ -26,10 +26,13 @@ public class AutoMLBuildSpec extends Iced {
    */
   static final public class AutoMLBuildControl extends Iced {
     public AutoMLBuildControl() {
-      stopping_criteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      stopping_criteria = new AutoMLStoppingCriteria();
 
       // reasonable defaults:
+      stopping_criteria.set_max_models(0);
       stopping_criteria.set_max_runtime_secs(3600);
+      stopping_criteria.set_max_model_runtime_secs(0);
+
       stopping_criteria.set_stopping_rounds(3);
       stopping_criteria.set_stopping_tolerance(0.001);
       stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
@@ -41,7 +44,7 @@ public class AutoMLBuildSpec extends Iced {
      * of the training file name.
      */
     public String project_name = null;
-    public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
+    public AutoMLStoppingCriteria stopping_criteria;
 
     // Pass through to all algorithms
     public boolean balance_classes = false;
@@ -53,6 +56,87 @@ public class AutoMLBuildSpec extends Iced {
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
     public String export_checkpoints_dir = null;
+  }
+
+  public static final class AutoMLStoppingCriteria extends HyperSpaceSearchCriteria {
+
+    private RandomDiscreteValueSearchCriteria searchCriteria;
+    private double max_model_runtime_secs = 0;
+
+    public AutoMLStoppingCriteria() {
+      super(Strategy.RandomDiscrete);
+      searchCriteria = new RandomDiscreteValueSearchCriteria();
+    }
+
+    public double max_model_runtime_secs() {
+      return max_model_runtime_secs;
+    }
+
+    public void set_max_model_runtime_secs(double max_model_runtime_secs) {
+      this.max_model_runtime_secs = max_model_runtime_secs;
+    }
+
+    public long seed() {
+      return searchCriteria.seed();
+    }
+
+    public int max_models() {
+      return searchCriteria.max_models();
+    }
+
+    public double max_runtime_secs() {
+      return searchCriteria.max_runtime_secs();
+    }
+
+    public int stopping_rounds() {
+      return searchCriteria.stopping_rounds();
+    }
+
+    @Override
+    public ScoreKeeper.StoppingMetric stopping_metric() {
+      return searchCriteria.stopping_metric();
+    }
+
+    public double stopping_tolerance() {
+      return searchCriteria.stopping_tolerance();
+    }
+
+    public void set_seed(long seed) {
+      searchCriteria.set_seed(seed);
+    }
+
+    public void set_max_models(int max_models) {
+      searchCriteria.set_max_models(max_models);
+    }
+
+    public void set_max_runtime_secs(double max_runtime_secs) {
+      searchCriteria.set_max_runtime_secs(max_runtime_secs);
+    }
+
+    public void set_stopping_rounds(int stopping_rounds) {
+      searchCriteria.set_stopping_rounds(stopping_rounds);
+    }
+
+    public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
+      searchCriteria.set_stopping_metric(stopping_metric);
+    }
+
+    public void set_stopping_tolerance(double stopping_tolerance) {
+      searchCriteria.set_stopping_tolerance(stopping_tolerance);
+    }
+
+    public void set_default_stopping_tolerance_for_frame(Frame frame) {
+      searchCriteria.set_default_stopping_tolerance_for_frame(frame);
+    }
+
+    public static double default_stopping_tolerance_for_frame(Frame frame) {
+      return RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
+    }
+
+    RandomDiscreteValueSearchCriteria getSearchCriteria() {
+      return searchCriteria;
+    }
+
   }
 
   /**
