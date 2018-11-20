@@ -16,10 +16,24 @@ public class FileUtils {
    *
    * @param closeable files to close
    */
-  public static void close(Closeable...closeable) {
+  public static void closeSilently(Closeable...closeable) {
     for(Closeable c : closeable)
       try { if( c != null ) c.close(); } catch( IOException xe ) { }
   }
+
+  /**
+   * Closes given files, logging exceptions thrown during the process of closing.
+   *
+   * @param closeable files to close
+   */
+  public static void close(Closeable...closeable) {
+    for(Closeable c : closeable)
+      try { if( c != null ) c.close(); } catch( IOException ex ) {
+        Log.err(ex);
+      }
+  }
+
+
 
   public static void copyStream(InputStream is, OutputStream os, final int buffer_size) {
     try {
