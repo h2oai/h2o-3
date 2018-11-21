@@ -907,6 +907,8 @@ The available options vary depending on the selected model. If an option is only
 
 -  **col_sample_rate_per_tree**: (XGBoost) Specify the column subsampling rate per tree.
 
+-  **monotone_constraints**: (XGBoost) A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns.
+
 -  **score_tree_interval**: (XGBoost) Score the model after every so many trees.
 
 -  **min_split_improvement**: (XGBoost) Specify the minimum relative improvement in squared error reduction in order for a split to happen.
