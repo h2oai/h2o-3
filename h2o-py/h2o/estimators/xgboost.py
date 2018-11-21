@@ -33,10 +33,10 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "categorical_encoding", "quiet_mode", "ntrees", "max_depth", "min_rows", "min_child_weight",
                       "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                       "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
-                      "score_tree_interval", "min_split_improvement", "gamma", "nthread", "max_bins", "max_leaves",
-                      "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type", "normalize_type", "rate_drop",
-                      "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda", "reg_alpha",
-                      "dmatrix_type", "backend", "gpu_id"}
+                      "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma", "nthread",
+                      "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
+                      "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
+                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -610,6 +610,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_delta_step(self, max_delta_step):
         assert_is_type(max_delta_step, None, float)
         self._parms["max_delta_step"] = max_delta_step
+
+
+    @property
+    def monotone_constraints(self):
+        """
+        A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+        decreasing constraint.
+
+        Type: ``dict``.
+        """
+        return self._parms.get("monotone_constraints")
+
+    @monotone_constraints.setter
+    def monotone_constraints(self, monotone_constraints):
+        assert_is_type(monotone_constraints, None, dict)
+        self._parms["monotone_constraints"] = monotone_constraints
 
 
     @property

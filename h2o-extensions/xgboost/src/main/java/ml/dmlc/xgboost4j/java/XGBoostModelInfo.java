@@ -59,6 +59,10 @@ final public class XGBoostModelInfo extends Iced {
     return res;
   }
 
+  public DataInfo dataInfo() {
+    return _dataInfoKey.get();
+  }
+
   public XGBoostModel.XGBoostParameters parameters;
 
   /**

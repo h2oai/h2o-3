@@ -31,7 +31,7 @@ from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.shared_utils import stringify_list, print2
+from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics)
@@ -617,8 +617,11 @@ class H2OConnection(backwards_compatible()):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 value = stringify_list(value)
-            elif isinstance(value, dict) and "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
-                value = value["name"]
+            elif isinstance(value, dict):
+                if "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
+                    value = value["name"]
+                else:
+                    value = stringify_dict(value)
             else:
                 value = str(value)
             res[key] = value
