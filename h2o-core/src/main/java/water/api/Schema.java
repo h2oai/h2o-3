@@ -342,6 +342,21 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   /**
+   * Fills this Schema from the body content when available.
+   * By default the body is interpreted as JSON object.
+   *
+   * We use PojoUtils.fillFromJson() rather than just using "schema = Gson.fromJson(post_body)"
+   * so that we have defaults: we only overwrite fields that the client has specified.
+   *
+   * @param body the post body (can't be null), converted to JSON by default
+   * @return the filled schema
+   */
+  public S fillFromBody(String body) {
+    PojoUtils.fillFromJson(this, body);
+    return (S) this;
+  }
+
+  /**
    * Safe method to set the field on given schema object
    * @param o  schema object to modify
    * @param f  field to modify
