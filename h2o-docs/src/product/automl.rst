@@ -172,8 +172,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     print(lb, n = nrow(lb))  # Print all rows instead of default (6 rows)
 
     #                                                 model_id       auc   logloss mean_per_class_error      rmse       mse
-    # 1     StackedEnsemble_AllModels_AutoML_20181022_221411 0.7870176 0.5541308            0.3254615 0.4333729 0.1878121
-    # 2  StackedEnsemble_BestOfFamily_AutoML_20181022_221411 0.7857408 0.5553949            0.3265818 0.4340249 0.1883776
+    # 1       StackedEnsemble_AllModels_AutoML_20181022_221411 0.7870176 0.5541308            0.3254615 0.4333729 0.1878121
+    # 2    StackedEnsemble_BestOfFamily_AutoML_20181022_221411 0.7857408 0.5553949            0.3265818 0.4340249 0.1883776
     # 3          XGBoost_grid_1_AutoML_20181022_221411_model_3 0.7825571 0.5598532            0.3326678 0.4358508 0.1899659
     # 4                       XGBoost_1_AutoML_20181022_221411 0.7810665 0.5601261            0.3312270 0.4363277 0.1903818
     # 5                       XGBoost_3_AutoML_20181022_221411 0.7808475 0.5611616            0.3240078 0.4364818 0.1905164
@@ -242,8 +242,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     # model_id                                                    auc    logloss    mean_per_class_error      rmse       mse
     # -----------------------------------------------------  --------  ---------  ----------------------  --------  --------
-    # StackedEnsemble_AllModels_AutoML_20181022_213938     0.787952   0.553121                0.326584  0.432972  0.187465
-    # StackedEnsemble_BestOfFamily_AutoML_20181022_213938  0.786665   0.554442                0.326707  0.433626  0.188031
+    # StackedEnsemble_AllModels_AutoML_20181022_213938       0.787952   0.553121                0.326584  0.432972  0.187465
+    # StackedEnsemble_BestOfFamily_AutoML_20181022_213938    0.786665   0.554442                0.326707  0.433626  0.188031
     # XGBoost_grid_1_AutoML_20181022_213938_model_3          0.782557   0.559853                0.332668  0.435851  0.189966
     # XGBoost_1_AutoML_20181022_213938                       0.781066   0.560126                0.331227  0.436328  0.190382
     # XGBoost_3_AutoML_20181022_213938                       0.780847   0.561162                0.324008  0.436482  0.190516
