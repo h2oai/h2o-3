@@ -34,5 +34,9 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
 
         @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of predictors)/3.", gridable = true)
         public int mtries;
+
+        @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
+        public double sample_rate;
+
     }
 }
