@@ -2,19 +2,19 @@ package water.api;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class EnumValuesProvider<E extends Enum<E>> implements ValuesProvider {
 
-  private static final Enum<?>[] EMPTY = {};
   private String[] _values;
 
   public EnumValuesProvider(Class<E> clazz) {
-    this(clazz, (E[])EMPTY);
+    this(clazz, null);
   }
 
   public EnumValuesProvider(Class<E> clazz, E[] excluded) {
-    _values = getValuesOf(clazz, Arrays.asList(excluded));
+    _values = getValuesOf(clazz, excluded == null ? Collections.<E>emptyList() : Arrays.asList(excluded));
   }
 
   @Override
