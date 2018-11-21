@@ -685,7 +685,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, or Ordinal).
 
--  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. 
+-  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
 -  **link**: (GLM) Select a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, Ologit, Oprobit, or Ologlog).
 
@@ -810,9 +810,7 @@ The available options vary depending on the selected model. If an option is only
 
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
--  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs. 
-
-    **Note**: This option is deprecated.
+-  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
 
 -  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
@@ -851,6 +849,10 @@ The available options vary depending on the selected model. If an option is only
     - ``RMSLE``
     - ``AUC``
     - ``mean_per_class_error``
+
+-  **keep_cross_validation_predictions** (AutoML): Specify whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
+
+-  **keep_cross_validation_models** (AutoML): Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 
 -  **build_tree_one_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled.
 
@@ -941,11 +943,11 @@ The available options vary depending on the selected model. If an option is only
 
 **Expert Options**
 
--  **keep_cross_validation_models**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation models, check this checkbox.
+-  **keep_cross_validation_models**: (GLM, GBM, DL, DRF, K-Means, XGBoost) To keep the cross-validation models, check this checkbox.
 
--  **keep_cross_validation_predictions**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) To keep the cross-validation predictions, check this checkbox.
+-  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means, XGBoost) To keep the cross-validation predictions, check this checkbox.
 
--  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML) Enable this option to preserve the cross-validation fold assignment.
+-  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost) Enable this option to preserve the cross-validation fold assignment.
 
 -  **class_sampling_factors**: (DRF, GBM, DL, Naive-Bayes, AutoML) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
@@ -1254,13 +1256,13 @@ Interpreting Model Results
 .. figure:: images/Flow_ScoringHistory.png
    :alt: Scoring History example
 
-**Variable importances**: (GBM, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable.
+**Variable importances**: (GBM, DRF, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. Refer to the :ref:`variable-importance` section for more information.
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
 
 
-**Confusion Matrix**: (RF, GBM) Table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. The actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, ``0`` was predicted correctly 902 times, while ``8`` was predicted correctly 822 times and ``0`` was predicted as ``4`` once.
+**Confusion Matrix**: (DL) Table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. The actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, ``0`` was predicted correctly 902 times, while ``8`` was predicted correctly 822 times and ``0`` was predicted as ``4`` once.
 
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
@@ -1321,6 +1323,8 @@ Viewing Partial Dependence Plots
     :alt: Partial Dependence Summary
 
 --------------
+
+.. _predictions_flow:
 
 Predictions
 -----------
@@ -1672,6 +1676,8 @@ To access H2Ostream from Flow:
 4. Enter your question and click the red **Post** button. If you are requesting assistance for an error you experienced, be sure to include your logs. (Refer to `Downloading Logs`_.)
 
 You can also email your question to h2ostream@googlegroups.com.
+
+--------------
 
 .. |Flow - Hide Sidebar| image:: images/Flow_SidebarHide.png
 .. |Flow - Display Sidebar| image:: images/Flow_SidebarDisplay.png
