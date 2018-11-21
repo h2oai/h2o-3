@@ -60,6 +60,8 @@
 #' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
+#' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+#'        decreasing constraint.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
@@ -124,6 +126,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         colsample_bytree = 1,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
+                        monotone_constraints = NULL,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
@@ -253,6 +256,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
     parms$max_delta_step <- max_delta_step
+  if (!missing(monotone_constraints))
+    parms$monotone_constraints <- monotone_constraints
   if (!missing(score_tree_interval))
     parms$score_tree_interval <- score_tree_interval
   if (!missing(min_split_improvement))

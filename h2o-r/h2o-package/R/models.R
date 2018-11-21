@@ -304,8 +304,11 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
       if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else if (paramDef$type == "StringPair[]")
-        paramValue <- .collapse(sapply(paramValue, .collapse.tuple))
-      else
+        paramValue <- .collapse(sapply(paramValue, .collapse.tuple.string))
+      else if (paramDef$type == "KeyValue[]") {
+        f <- function(i) { .collapse.tuple.key_value(paramValue[i]) }
+        paramValue <- .collapse(sapply(seq(length(paramValue)), f))
+      } else
         paramValue <- .collapse(paramValue)
     }
   }
@@ -314,13 +317,26 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
   paramValue
 }
 
-.collapse.tuple <- function(x) {
+.escape.string <- function(xi) { paste0("\"", xi, "\"") }
+
+.collapse.tuple.string <- function(x) {
+  .collapse.tuple(x, .escape.string)
+}
+
+.collapse.tuple.key_value <- function(x) {
+  .collapse.tuple(list(
+    key = .escape.string(names(x)),
+    value = x[[1]]
+  ), identity)
+}
+
+.collapse.tuple <- function(x, escape) {
   names <- names(x)
   if (is.null(names))
     names <- letters[1:length(x)]
   r <- c()
   for (i in 1:length(x)) {
-    s <- paste0(names[i], ": \"", x[i], "\"")
+    s <- paste0(names[i], ": ", escape(x[i]))
     r <- c(r, s)
   }
   paste0("{", paste0(r, collapse = ","), "}")
