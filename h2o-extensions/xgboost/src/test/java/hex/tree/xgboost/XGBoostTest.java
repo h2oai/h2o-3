@@ -1450,6 +1450,24 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testMakeDataInfo() {
+    Scope.enter();
+    try {
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Scope.track(f);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._response_column = "year";
+      parms._train = f._key;
+
+      DataInfo dinfo = hex.tree.xgboost.XGBoost.makeDataInfo(f, null, parms, 1);
+      assertNotNull(dinfo._coefNames);
+    } finally {
+      Scope.exit();
+    }
+  }
+
   private static XGBoostModel trainWithConstraints(XGBoostModel.XGBoostParameters p, KeyValue... constraints) {
     XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) p.clone();
     parms._monotone_constraints = constraints;

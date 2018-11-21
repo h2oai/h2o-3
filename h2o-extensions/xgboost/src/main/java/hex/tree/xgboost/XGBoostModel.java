@@ -187,8 +187,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
-    model_info = new XGBoostModelInfo(parms);
-    model_info._dataInfoKey = dinfo._key;
+    model_info = new XGBoostModelInfo(parms, dinfo);
   }
 
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
