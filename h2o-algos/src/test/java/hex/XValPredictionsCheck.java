@@ -32,14 +32,17 @@ import static org.junit.Assert.assertEquals;
 public class XValPredictionsCheck extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void testXValPredictionsGBM() {
+  @Test public void testXValPredictions() {
     final int nfolds = 3;
     Frame tfr = null;
-    GBMModel gbm = null;
     try {
+      // Load data, hack frames
       tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = getFoldFrame(nfolds, tfr);
+      Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
+      tfr.add(foldId);
+      DKV.put(tfr);
 
+      // GBM
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
       parms._response_column = "class";
@@ -49,22 +52,10 @@ public class XValPredictionsCheck extends TestUtil {
       parms._distribution = DistributionFamily.multinomial;
       parms._keep_cross_validation_predictions=true;
       GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
+      GBMModel gbm = job.trainModel().get();
       checkModel(gbm, foldId.anyVec(),3);
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (gbm != null) gbm.delete();
-    }
-  }
 
-  @Test public void testXValPredictionsDRF() {
-    final int nfolds = 3;
-    Frame tfr = null;
-    DRFModel drf = null;
-    try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = getFoldFrame(nfolds, tfr);
-
+      // DRF
       DRFModel.DRFParameters parmsDRF = new DRFModel.DRFParameters();
       parmsDRF._train = tfr._key;
       parmsDRF._response_column = "class";
@@ -74,47 +65,20 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDRF._distribution = DistributionFamily.multinomial;
       parmsDRF._keep_cross_validation_predictions=true;
       DRF drfJob = new DRF(parmsDRF);
-      drf = drfJob.trainModel().get();
+      DRFModel drf = drfJob.trainModel().get();
       checkModel(drf, foldId.anyVec(),3);
 
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (drf != null) drf.delete();
-    }
-  }
-
-  @Test public void testXValPredictionsGLM() {
-    final int nfolds = 3;
-    Frame tfr = null;
-    GLMModel glm = null;
-    try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = getFoldFrame(nfolds, tfr);
-
+      // GLM
       GLMModel.GLMParameters parmsGLM = new GLMModel.GLMParameters();
       parmsGLM._train = tfr._key;
       parmsGLM._response_column = "sepal_len";
       parmsGLM._fold_column = "foldId";
       parmsGLM._keep_cross_validation_predictions=true;
       GLM glmJob = new GLM(parmsGLM);
-      glm = glmJob.trainModel().get();
+      GLMModel glm = glmJob.trainModel().get();
       checkModel(glm, foldId.anyVec(),1);
 
-    } finally {
-      if (tfr != null) tfr.remove();
-      if (glm != null) glm.delete();
-    }
-  }
-
-  @Test public void testXValPredictionsDL() {
-    final int nfolds = 3;
-    Frame tfr = null;
-    DeepLearningModel dl = null;
-    try {
-      // Load data, hack frames
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = getFoldFrame(nfolds, tfr);
-
+      // DL
       DeepLearningModel.DeepLearningParameters parmsDL = new DeepLearningModel.DeepLearningParameters();
       parmsDL._train = tfr._key;
       parmsDL._response_column = "class";
@@ -123,27 +87,21 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDL._fold_column = "foldId";
       parmsDL._keep_cross_validation_predictions=true;
       DeepLearning dlJob = new DeepLearning(parmsDL);
-      dl = dlJob.trainModel().get();
+      DeepLearningModel dl = dlJob.trainModel().get();
       checkModel(dl, foldId.anyVec(),3);
 
     } finally {
       if (tfr != null) tfr.remove();
-      if (dl != null) dl.delete();
     }
   }
 
-  private Frame getFoldFrame(int nfolds, Frame tfr) {
-    Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
-    tfr.add(foldId);
-    DKV.put(tfr);
-    return foldId;
-  }
-
-  private void checkModel(Model m, Vec foldId, int nclass) {
+  void checkModel(Model m, Vec foldId, int nclass) {
     if(!(m instanceof DRFModel)) // DRF does out of back instead of true training, nobs might be different
       assertEquals(m._output._training_metrics._nobs,m._output._cross_validation_metrics._nobs);
-
+    m.delete();
+    m.deleteCrossValidationModels();
     Key[] xvalKeys = m._output._cross_validation_predictions;
+    Key xvalKey = m._output._cross_validation_holdout_predictions_frame_id;
     final int[] id = new int[1];
     for(Key k: xvalKeys) {
       Frame preds = DKV.getGet(k);
@@ -165,5 +123,6 @@ public class XValPredictionsCheck extends TestUtil {
       id[0]++;
       preds.delete();
     }
+    xvalKey.remove();
   }
 }

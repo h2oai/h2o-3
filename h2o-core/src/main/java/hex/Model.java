@@ -613,11 +613,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-
+    
     public void setNames(String[] names) {
       _names = names;
     }
-
+    
     public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
@@ -1514,7 +1514,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /**
    * Post-process prediction frame.
-   *
+   * 
    * @param adaptFrm
    * @param predictFr
    * @return
@@ -1555,7 +1555,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
-
+    
     public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
@@ -1639,7 +1639,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       super.reduce(bs);
       if (_mb != null) _mb.reduce(bs._mb);
     }
-
+    
     @Override protected void postGlobal() {
       super.postGlobal();
       if(_mb != null) {
@@ -1722,9 +1722,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for( Key k : _output._model_metrics )
         k.remove(fs);
     cleanUp(_toDelete);
-    deleteCrossValidationModels();
-    deleteCrossValidationPreds();
-    deleteCrossValidationFoldAssignment();
     return super.remove_impl(fs);
   }
 
@@ -2294,15 +2291,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     if (_output._cross_validation_holdout_predictions_frame_id != null) {
       _output._cross_validation_holdout_predictions_frame_id.remove();
-    }
-  }
-
-  /**
-   * delete fold assignment from the output.
-   */
-  public void deleteCrossValidationFoldAssignment() {
-    if (_output._cross_validation_fold_assignment_frame_id != null) {
-      _output._cross_validation_fold_assignment_frame_id.remove();
     }
   }
 

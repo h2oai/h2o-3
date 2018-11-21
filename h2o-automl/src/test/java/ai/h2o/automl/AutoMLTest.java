@@ -1,9 +1,7 @@
 package ai.h2o.automl;
 
-import org.junit.Assert;
 import hex.Model;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -167,6 +165,10 @@ public class AutoMLTest extends water.TestUtil {
     } finally {
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.remove();
+      if(leader!=null) {
+        Frame cvFoldAssignmentFrame = DKV.getGet(leader._output._cross_validation_fold_assignment_frame_id);
+        cvFoldAssignmentFrame.delete();
+      }
     }
   }
 
