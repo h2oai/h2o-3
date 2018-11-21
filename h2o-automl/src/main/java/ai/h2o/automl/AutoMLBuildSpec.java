@@ -1,7 +1,7 @@
 package ai.h2o.automl;
 
 import hex.ScoreKeeper;
-import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.JobV3;
@@ -24,7 +24,8 @@ public class AutoMLBuildSpec extends Iced {
   /**
    * The specification of overall build parameters for the AutoML process.
    */
-  static final public class AutoMLBuildControl extends Iced {
+  public static final class AutoMLBuildControl extends Iced {
+
     public AutoMLBuildControl() {
       stopping_criteria = new AutoMLStoppingCriteria();
 
@@ -58,14 +59,16 @@ public class AutoMLBuildSpec extends Iced {
     public String export_checkpoints_dir = null;
   }
 
-  public static final class AutoMLStoppingCriteria extends HyperSpaceSearchCriteria {
+  public static final class AutoMLStoppingCriteria extends Iced {
 
-    private RandomDiscreteValueSearchCriteria searchCriteria;
+    public static int AUTO_STOPPING_TOLERANCE = -1;
+
+    private RandomDiscreteValueSearchCriteria _searchCriteria;
     private double max_model_runtime_secs = 0;
 
     public AutoMLStoppingCriteria() {
-      super(Strategy.RandomDiscrete);
-      searchCriteria = new RandomDiscreteValueSearchCriteria();
+      super();
+      _searchCriteria = new RandomDiscreteValueSearchCriteria();
     }
 
     public double max_model_runtime_secs() {
@@ -77,64 +80,63 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     public long seed() {
-      return searchCriteria.seed();
+      return _searchCriteria.seed();
     }
 
     public int max_models() {
-      return searchCriteria.max_models();
+      return _searchCriteria.max_models();
     }
 
     public double max_runtime_secs() {
-      return searchCriteria.max_runtime_secs();
+      return _searchCriteria.max_runtime_secs();
     }
 
     public int stopping_rounds() {
-      return searchCriteria.stopping_rounds();
+      return _searchCriteria.stopping_rounds();
     }
 
-    @Override
     public ScoreKeeper.StoppingMetric stopping_metric() {
-      return searchCriteria.stopping_metric();
+      return _searchCriteria.stopping_metric();
     }
 
     public double stopping_tolerance() {
-      return searchCriteria.stopping_tolerance();
+      return _searchCriteria.stopping_tolerance();
     }
 
     public void set_seed(long seed) {
-      searchCriteria.set_seed(seed);
+      _searchCriteria.set_seed(seed);
     }
 
     public void set_max_models(int max_models) {
-      searchCriteria.set_max_models(max_models);
+      _searchCriteria.set_max_models(max_models);
     }
 
     public void set_max_runtime_secs(double max_runtime_secs) {
-      searchCriteria.set_max_runtime_secs(max_runtime_secs);
+      _searchCriteria.set_max_runtime_secs(max_runtime_secs);
     }
 
     public void set_stopping_rounds(int stopping_rounds) {
-      searchCriteria.set_stopping_rounds(stopping_rounds);
+      _searchCriteria.set_stopping_rounds(stopping_rounds);
     }
 
     public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
-      searchCriteria.set_stopping_metric(stopping_metric);
+      _searchCriteria.set_stopping_metric(stopping_metric);
     }
 
     public void set_stopping_tolerance(double stopping_tolerance) {
-      searchCriteria.set_stopping_tolerance(stopping_tolerance);
+      _searchCriteria.set_stopping_tolerance(stopping_tolerance);
     }
 
     public void set_default_stopping_tolerance_for_frame(Frame frame) {
-      searchCriteria.set_default_stopping_tolerance_for_frame(frame);
+      _searchCriteria.set_default_stopping_tolerance_for_frame(frame);
     }
 
     public static double default_stopping_tolerance_for_frame(Frame frame) {
       return RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
     }
 
-    RandomDiscreteValueSearchCriteria getSearchCriteria() {
-      return searchCriteria;
+    public RandomDiscreteValueSearchCriteria getSearchCriteria() {
+      return _searchCriteria;
     }
 
   }
@@ -145,7 +147,7 @@ public class AutoMLBuildSpec extends Iced {
    * or the ID of an already-parsed Frame in the H2O cluster.  Paths are processed
    * as usual in H2O.
    */
-  static final public class AutoMLInput extends Iced {
+  public static final class AutoMLInput extends Iced {
 
     public Key<Frame> training_frame;
     public Key<Frame> validation_frame;

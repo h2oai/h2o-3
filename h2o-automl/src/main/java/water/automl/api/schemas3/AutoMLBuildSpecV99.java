@@ -3,11 +3,20 @@ package water.automl.api.schemas3;
 
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
-import hex.schemas.HyperSpaceSearchCriteriaV99;
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import hex.ScoreKeeper;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
 import water.api.schemas3.*;
+import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
+import water.util.JSONUtils;
+
+import water.util.PojoUtils;
+
+import java.util.Map;
+
+import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpecV99> {
@@ -20,16 +29,13 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
    * The specification of overall build parameters for the AutoML process.
    * TODO: this should have all the standard early-stopping functionality like Grid does.
    */
-  static final public class AutoMLBuildControlV99 extends Schema<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV99> {
-    public AutoMLBuildControlV99() {
-      super();
-    }
+  public static final class AutoMLBuildControlV99 extends Schema<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV99> {
 
     @API(help="Optional project name used to group models from multiple AutoML runs into a single Leaderboard; derived from the training data name if not specified.")
     public String project_name;
 
     @API(help="Model performance based stopping criteria for the AutoML run.", direction=API.Direction.INPUT)
-    public HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99 stopping_criteria;
+    public AutoMLStoppingCriteriaV99 stopping_criteria;
 
     @API(help="Number of folds for k-fold cross-validation (defaults to 5, must be >=2 or use 0 to disable). Disabling prevents Stacked Ensembles from being built.", direction=API.Direction.INPUT)
     public int nfolds;
@@ -66,8 +72,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
    * <p>
    * The user also specifies the response column and, optionally, an array of columns to ignore.
    */
-  static final public class AutoMLInputV99 extends Schema<AutoMLBuildSpec.AutoMLInput, AutoMLInputV99> {
-    public AutoMLInputV99() { super(); }
+  public static final class AutoMLInputV99 extends Schema<AutoMLBuildSpec.AutoMLInput, AutoMLInputV99> {
 
     @API(help = "ID of the training data frame.", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 training_frame;
@@ -84,32 +89,28 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "Response column",
             direction=API.Direction.INPUT,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
-            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"},
-            required = false
+            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"}
       )
     public FrameV3.ColSpecifierV3 response_column;
 
     @API(help = "Fold column (contains fold IDs) in the training frame. These assignments are used to create the folds for cross-validation of the models.",
             direction=API.Direction.INPUT,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
-            is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"},
-            required = false
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"}
     )
     public FrameV3.ColSpecifierV3 fold_column;
 
     @API(help = "Weights column in the training frame, which specifies the row weights used in model training.",
             direction=API.Direction.INPUT,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
-            is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"},
-            required = false
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"}
     )
     public FrameV3.ColSpecifierV3 weights_column;
 
     @API(help = "Names of columns to ignore in the training frame when building models.",
          direction=API.Direction.INPUT,
          is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
-         is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"},
-         required = false
+         is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"}
       )
     public String[] ignored_columns;
 
@@ -118,16 +119,51 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
   } // class AutoMLInputV99
 
+  public static final class AutoMLStoppingCriteriaV99 extends Schema<AutoMLStoppingCriteria, AutoMLStoppingCriteriaV99> {
+
+    @API(help = "Seed for random number generator; set to a value other than -1 for reproducibility.", direction = API.Direction.INOUT)
+    public long seed;
+
+    @API(help = "Maximum number of models to build (optional).", direction = API.Direction.INOUT)
+    public int max_models;
+
+    @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
+    public double max_runtime_secs;
+
+    @API(help = "Maximum time to spend on a single model (optional).", direction = API.Direction.INOUT)
+    public double max_model_runtime_secs;
+
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    public int stopping_rounds;
+
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", valuesProvider = StoppingMetricValuesProvider.class, level = API.Level.secondary, direction=API.Direction.INOUT)
+    public ScoreKeeper.StoppingMetric stopping_metric;
+
+    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    public double stopping_tolerance;
+
+    @Override
+    public AutoMLStoppingCriteria fillImpl(AutoMLStoppingCriteria impl) {
+      AutoMLStoppingCriteria filled = super.fillImpl(impl, new String[] {"_searchCriteria"});
+      PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_model_runtime_secs"});
+      return filled;
+    }
+
+    @Override
+    public AutoMLStoppingCriteriaV99 fillFromImpl(AutoMLStoppingCriteria impl) {
+      AutoMLStoppingCriteriaV99 schema = super.fillFromImpl(impl, new String[]{"_searchCriteria"});
+      PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_model_runtime_secs"});
+      return schema;
+    }
+  }
+
   public static final class AlgoProvider extends EnumValuesProvider<Algo> {
     public AlgoProvider() {
       super(Algo.class);
     }
   }
 
-  static final public class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
-    public AutoMLBuildModelsV99() {
-      super();
-    }
+  public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
 
     @API(help="A list of algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
     public Algo[] exclude_algos;
@@ -153,4 +189,23 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   @API(help="The AutoML Job key", direction=API.Direction.OUTPUT)
   public JobV3 job;
 
+
+  @Override
+  public AutoMLBuildSpecV99 fillFromBody(String body) {
+    AutoMLBuildSpecV99 schema = super.fillFromBody(body); //default JSON filling
+
+    // TODO: need to understand why we set stopping tolerance to AUTO iff stopping_criteria is provided without stopping_tolerance
+    Map<String, Object> json_body = JSONUtils.parse(body);
+    if (json_body.containsKey("build_control")) {
+      Map<String, Object> build_control = (Map)json_body.get("build_control");
+      if (build_control.containsKey("stopping_criteria")) {
+        Map<String, Object> stopping_criteria = (Map)build_control.get("stopping_criteria");
+
+        if (!stopping_criteria.containsKey("stopping_tolerance")) {
+          schema.build_control.stopping_criteria.stopping_tolerance = AUTO_STOPPING_TOLERANCE;
+        }
+      }
+    }
+    return schema;
+  }
 }

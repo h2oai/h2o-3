@@ -33,6 +33,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
+
 
 /**
  * H2O AutoML
@@ -272,7 +274,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       handleDatafileParameters(buildSpec);
 
-    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == -1) {
+    if (this.buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
       this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
       userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
               this.buildSpec.build_control.stopping_criteria.stopping_tolerance());
