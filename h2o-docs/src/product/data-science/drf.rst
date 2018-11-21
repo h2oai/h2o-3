@@ -330,11 +330,11 @@ FAQ
 
  ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
 
--  **How is variable importance calculated for DRF?**
+- **How is variable importance calculated for DRF?**
 
- Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result.
+  When calculating variable importances, H2O-3 looks at the squared error before and after the split using a particular variable. The difference is the improvement. H2O uses the improvement in squared error for each feature that was split on (rather than the accuracy). Each features improvement is then summed up at the end to get its total feature importance (and then scaled between 0-1).
 
--  **How is column sampling implemented for DRF?**
+- **How is column sampling implemented for DRF?**
 
   For an example model using:
 
@@ -350,7 +350,7 @@ FAQ
 
   ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
--  **Why does performance appear slower in DRF than in GBM?**
+- **Why does performance appear slower in DRF than in GBM?**
 
   With DRF, depth and size of trees can result in speed tradeoffs.
 

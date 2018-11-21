@@ -1254,7 +1254,7 @@ Interpreting Model Results
 .. figure:: images/Flow_ScoringHistory.png
    :alt: Scoring History example
 
-**Variable importances**: (GBM, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable.
+**Variable importances**: (GBM, DRF, DL) Represents the statistical significance of each variable in the data in terms of its affect on the model. Variables are listed in order of most to least importance. The percentage values represent the percentage of importance across all variables, scaled to 100%. The method of computing each variable's importance depends on the algorithm. To view the scaled importance value of a variable, use your mouse to hover over the bar representing the variable. Refer to the :ref:`variable-importance` section for more information.
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
@@ -1321,6 +1321,8 @@ Viewing Partial Dependence Plots
     :alt: Partial Dependence Summary
 
 --------------
+
+.. _predictions_flow:
 
 Predictions
 -----------
