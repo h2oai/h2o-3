@@ -37,7 +37,7 @@ Building a Decision Tree
 The Different Types of Decision Trees
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two types of decision trees: classification and regression. Classification trees predict a class through a voting system where the majority class within a leaf node wins; Regression trees predicts a numeric value calculated based on the target's distribution within a node. In addition to regression problems, regression trees can also be used to solve classification problems. 
+There are two types of decision trees: classification and regression. Classification trees predict a class through a voting system where the majority class within a leaf node wins; regression trees predicts a numeric value calculated based on the target's distribution within a node. In addition to regression problems, regression trees can also be used to solve classification problems. 
 
 H2O, in fact, only uses regression trees for all classes of problems (i.e. binary, multi-class, or regression). For binary or multi-class classification H2O applies the one-versus-all approach. 
 

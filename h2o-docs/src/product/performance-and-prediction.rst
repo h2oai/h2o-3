@@ -122,7 +122,7 @@ The following evaluation metrics are available for classification models:
 Absolute MCC (Matthews Correlation Coefficient)
 ###############################################
 
-Setting the `absolute_mcc` parameter sets the threshold for the model's confusion matrix to a value that generates the highest Matthews Correlation Coefficient. The MCC score provides a measure of how well a binary classifier detects true and false positives, and true and false negatives. The MCC is called a correlation coefficient because it indicates how correlated the actual and predicted values are; 1 indicates a perfect classifier, -1 indicates a classifier that predicts the opposite class from the actual value, and 0 means the classifier does no better than random guessing. 
+Setting the ``absolute_mcc`` parameter sets the threshold for the model's confusion matrix to a value that generates the highest Matthews Correlation Coefficient. The MCC score provides a measure of how well a binary classifier detects true and false positives, and true and false negatives. The MCC is called a correlation coefficient because it indicates how correlated the actual and predicted values are; 1 indicates a perfect classifier, -1 indicates a classifier that predicts the opposite class from the actual value, and 0 means the classifier does no better than random guessing. 
 
 .. math::
 	MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
@@ -361,12 +361,12 @@ Metric Comparison
 Stopping Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Stopping metric parameters are specified in conjunction with a stopping tolerance and a number of stopping rounds. A metric specified in the `stopping_metric <data-science/algo-pararms/stopping_metric.html>`__ option specifies the metric to consider when early stopping is specified. 
+Stopping metric parameters are specified in conjunction with a stopping tolerance and a number of stopping rounds. A metric specified with the `stopping_metric <data-science/algo-params/stopping_metric.html>`__ option specifies the metric to consider when early stopping is specified. 
 
 Misclassification
 '''''''''''''''''
 
-This parameter specifies that a model must improve its misclassification rate by a given amount (specified by the `stopping_tolerance` parameter) in order to continue iterating. The misclassification rate is the number of observations incorrectly classified divided by the total number of observations. 
+This parameter specifies that a model must improve its misclassification rate by a given amount (specified by the `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__ parameter) in order to continue iterating. The misclassification rate is the number of observations incorrectly classified divided by the total number of observations. 
 
 Lift Top Group
 ''''''''''''''
@@ -458,7 +458,7 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 
 **Notes**:
 
-- The partial dependence of a given feature :math:`Xj` (where :math:`j` is the column index)``
+- The partial dependence of a given feature is :math:`Xj` (where :math:`j` is the column index)
 - You can also change the equation to sum from 1 to N instead of 0 to N-1
 
 .. figure:: images/pdp_summary.png
