@@ -30,10 +30,19 @@ import java.util.List;
  * This is intended to be a singleton per H2O node.
  */
 public class JettyHTTPD extends AbstractHTTPD {
+
+  /**
+   * Adds headers that disable browser-side Cross-Origin Resource checks - allows requests
+   * to this server from any origin.
+   */
+  private static final String DISABLE_CORS_KEY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "disable.cors";
+
   //------------------------------------------------------------------------------------------
   // Object-specific things.
   //------------------------------------------------------------------------------------------
   private static volatile boolean _acceptRequests = false;
+
+  private static final boolean _disableCors = Boolean.TRUE.toString().equals(System.getProperty(DISABLE_CORS_KEY));
 
   /**
    * Create bare Jetty object.
@@ -176,6 +185,11 @@ public class JettyHTTPD extends AbstractHTTPD {
   private static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
     if (xhrRequest) {
       response.setHeader("Cache-Control", "no-cache");
+    }
+    if (_disableCors) {
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.setHeader("Access-Control-Allow-Headers", "*");
+      response.setHeader("Access-Control-Allow-Methods", "*");
     }
     response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
