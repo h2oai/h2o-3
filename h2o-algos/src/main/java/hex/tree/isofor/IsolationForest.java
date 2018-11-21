@@ -77,7 +77,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {
       if (_parms._sample_size <= 0) {
-        error("_sample_size", "Sample size needs to be a positive integer number but it is" + _parms._sample_size);
+        error("_sample_size", "Sample size needs to be a positive integer number but it is " + _parms._sample_size);
       } else if (_train != null && _train.numRows() > 0) {
         _parms._sample_rate = _parms._sample_size /  (double) _train.numRows();
       }
