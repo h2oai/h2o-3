@@ -1,17 +1,21 @@
 package ai.h2o.automl;
 
 import org.junit.Assert;
+import hex.Model;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 
 import java.util.Date;
 import java.util.Random;
 
-import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class AutoMLTest extends water.TestUtil {
 
@@ -37,9 +41,9 @@ public class AutoMLTest extends water.TestUtil {
       int count_se = 0, count_non_se = 0;
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
-      Assert.assertEquals("wrong amount of standard models", 3, count_non_se);
-      Assert.assertEquals("wrong amount of SE models", 2, count_se);
-      Assert.assertEquals(3+2, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of SE models", 2, count_se);
+      assertEquals(3+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
@@ -71,9 +75,9 @@ public class AutoMLTest extends water.TestUtil {
       int count_se = 0, count_non_se = 0;
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
-      Assert.assertEquals("wrong amount of standard models", 3, count_non_se);
-      Assert.assertEquals("no Stacked Ensemble expected if cross-validation is disabled", 0, count_se);
-      Assert.assertEquals(3, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("no Stacked Ensemble expected if cross-validation is disabled", 0, count_se);
+      assertEquals(3, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.deleteWithChildren();
@@ -138,27 +142,57 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-
-  @Ignore //reenable in PUBDEV-5956
-  @Test public void KeepCrossValidationFoldAssignmentTest() {
-    AutoML aml=null;
-    Frame fr=null;
+  @Test public void KeepCrossValidationFoldAssignmentEnabledTest() {
+    AutoML aml = null;
+    Frame fr = null;
+    Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
 
       aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
 
-      assertTrue(aml.leader() !=null && aml.leader()._parms._keep_cross_validation_fold_assignment);
-      assertTrue(aml.leader() !=null && aml.leader()._output._cross_validation_fold_assignment_frame_id != null);
+      leader = aml.leader();
+
+      assertTrue(leader !=null && leader._parms._keep_cross_validation_fold_assignment);
+      assertNotNull(leader._output._cross_validation_fold_assignment_frame_id);
+
     } finally {
-      // cleanup
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.remove();
+    }
+  }
+
+  @Test public void KeepCrossValidationFoldAssignmentDisabledTest() {
+    AutoML aml = null;
+    Frame fr = null;
+    Model leader = null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
+      autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
+
+      aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      AutoML.startAutoML(aml);
+      aml.get();
+
+      leader = aml.leader();
+
+      assertTrue(leader !=null && !leader._parms._keep_cross_validation_fold_assignment);
+      assertNull(leader._output._cross_validation_fold_assignment_frame_id);
+
+    } finally {
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.delete();
     }
