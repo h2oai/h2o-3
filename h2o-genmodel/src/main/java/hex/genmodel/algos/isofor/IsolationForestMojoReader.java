@@ -23,4 +23,8 @@ public class IsolationForestMojoReader extends SharedTreeMojoReader<IsolationFor
     return new IsolationForestMojoModel(columns, domains, responseColumn);
   }
 
+  @Override public String mojoVersion() {
+    return "1.30";
+  }
+
 }

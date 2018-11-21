@@ -68,4 +68,8 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
     protected StackedEnsembleMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
         return new StackedEnsembleMojoModel(columns, domains, responseColumn);
     }
+
+    @Override public String mojoVersion() {
+        return "1.00";
+    }
 }

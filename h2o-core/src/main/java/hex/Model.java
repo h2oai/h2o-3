@@ -2441,7 +2441,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       is.close();
       return model;
     } finally {
-      FileUtils.close(is);
+      FileUtils.closeSilently(is);
     }
   }
 
@@ -2462,7 +2462,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 
@@ -2484,7 +2484,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 
