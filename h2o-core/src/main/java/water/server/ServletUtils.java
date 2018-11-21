@@ -166,29 +166,6 @@ public class ServletUtils {
     }
   }
 
-  public static boolean isXhrRequest(final HttpServletRequest request) {
-    final String requestedWithHeader = request.getHeader("X-Requested-With");
-    return "XMLHttpRequest".equals(requestedWithHeader);
-  }
-
-  public static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
-    if (xhrRequest) {
-      response.setHeader("Cache-Control", "no-cache");
-    }
-    response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
-    response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
-    response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
-    response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
-    response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
-  }
-
-  private static String sanatizeContextPath(String context_path) {
-    if(null == context_path || context_path.isEmpty()) {
-      return "/";
-    }
-    return context_path + "/";
-  }
-
   @SuppressWarnings("unused")
   public static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
     Log.httpd(method, request.getRequestURI(), getStatus(), System.currentTimeMillis() - getStartMillis());
