@@ -1,3 +1,5 @@
+.. _pojo_quickstart:
+
 POJO Quick Start
 ----------------
 
@@ -119,15 +121,18 @@ Extracting Models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
--  **From the H2O Flow Web UI:**
+From the H2O Flow Web UI
+''''''''''''''''''''''''
 
-   When viewing a model, click the **Download POJO** button at the top of the model cell, as shown in the example in the Quick start section. You can also preview the POJO inside Flow, but it will only show the first thousand lines or so in the web browser, truncating large models.
+When viewing a model, click the **Download POJO** button at the top of the model cell, as shown in the example in the Quick start section. You can also preview the POJO inside Flow, but it will only show the first thousand lines or so in the web browser, truncating large models.
 
--  **From R:**
+From R or Python
+''''''''''''''''
 
-   The following code snippet shows an example of H2O building a model and downloading its corresponding POJO from an R script.
+The following code snippets show an example of H2O building a model and downloading its corresponding POJO from an R script and a Python script.
 
-   ::
+.. example-code::
+   .. code-block:: r
 
 	    library(h2o)
 	    h2o.init()
@@ -140,11 +145,7 @@ Generated models can be extracted from H2O in the following ways:
 	                    family = "binomial")
 	    h2o.download_pojo(model)
 
--  **From Python:**
-
-   The following code snippet shows an example of building a model and downloading its corresponding POJO from a Python script.
-
-	::
+   .. code-block:: python
 
 	    import h2o
 	    h2o.init()
