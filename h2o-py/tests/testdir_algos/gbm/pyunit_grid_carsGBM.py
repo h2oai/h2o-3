@@ -29,11 +29,11 @@ def grid_cars_GBM():
     if grid_space['distribution'][0] == 'bernoulli':
         response_col = "economy_20mpg"
         true_model_type = "classifier"
-    elif grid_space['distribution'][0] == 'gaussian':
-        response_col = "economy"
-        true_model_type = "regressor"
-    else:
+    elif grid_space['distribution'][0] == 'multinomial':
         response_col = "cylinders"
+        true_model_type = "classifier"
+    else:
+        response_col = "economy"
         true_model_type = "regressor"
 
     print("Predictors: {0}".format(predictors))
