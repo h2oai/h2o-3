@@ -2,6 +2,86 @@
 
 ## H2O
 
+### Xia (3.22.0.2) - 11/21/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3281'>PUBDEV-3281</a>] - Fixed an issue that caused ARFF parser to parse some file incorrectly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4737'>PUBDEV-4737</a>] - When performing a grid search in Python, fixed an issue that caused all models to return a model.type of "supervised."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5352'>PUBDEV-5352</a>] - When running DRF in the Python client, checkpointing on new data now works correctly. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5869'>PUBDEV-5869</a>] - Fixed an issue that caused the confusion matrix recall and precision values to be switched.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6036'>PUBDEV-6036</a>] -  In the Python client, fixed an issue that caused the `offset_column` parameter to be ignored when it was passed in the GLM train statement.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6042'>PUBDEV-6042</a>] - The H2O Tree Handler now works correctly on Isolation Forest models.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6046'>PUBDEV-6046</a>] - When running AutoML, fixed an issue that resulted in a "Failed to get metric: auc from ModelMetrics type BinomialGLM" message.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6050'>PUBDEV-6050</a>] - In Flow, Precision and Recall definitions are no longer inverted in the confusion matrix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6052'>PUBDEV-6052</a>] - Fixed the error message that displays when converting from a pandas dataframe to an h2oframe in Python 3.6.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6054'>PUBDEV-6054</a>] - In XGBoost, fixed an issue that resulted in a "Maximum amount of file descriptors hit" message.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6060'>PUBDEV-6060</a>] - Fixed the description of sample_rate in Isolation Forest. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6063'>PUBDEV-6063</a>] - Cross validation models are no longer deleted by default.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6065'>PUBDEV-6065</a>] - When viewing an AutoML leaderboard, fixed an issue that resulted in an ArrayIndexOutOfBoundsException if `sort_metric` was specified but no model was built.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5766'>PUBDEV-5766</a>] - Added monotonicity constraints to H2O XGBoost.
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6039'>PUBDEV-6039</a>] -  When generating MOJOs, h2o-genmodel.jar now includes a check for MOJO version 1.3 to determine whether the ho2-genmodel.jar and the MOJO version can work together. Prior versions of h2o-3 did not include MOJO 1.3, and as a result, MOJOs silently returned predicted values executed on an empty vector. 
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5705'>PUBDEV-5705</a>] - With a new `skipped_columns` option, users can now specify to drop specific columns before parsing. Note that this functionality is not supported for SVMLight or Avro file formats. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6062'>PUBDEV-6062</a>] - The GLM multinomial coefficient table now includes the original levels as column names.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3216'>PUBDEV-3216</a>] - Created new Performance & Prediction and Variable Importance sections in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5313'>PUBDEV-5313</a>] - Updatd the default value of `categorical_encoding` for XGBoost. This defaults to Auto (which is one_hot_encoding).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6012'>PUBDEV-6012</a>] - In the parameter entry for `weights_column`, updated the example to exclude the weight column in the list of predictors.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6016'>PUBDEV-6016</a>] - In the DRF FAQ, updated the "What happens when you try to predict on a categorical level not seen during training?" question.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6025'>PUBDEV-6025</a>] - TargetingEncoder is now included in the Python module docs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6041'>PUBDEV-6041</a>] - In GLM, updated the documentation to indicate that coordinate_descent is no longer experimental. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6064'>PUBDEV-6064</a>] - Added default values for `max_depth`, `sample_size`, and `sample_rate`. Also added a parameter description entry for `sample_size`, showing an Isolation Forest example.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6086'>PUBDEV-6086</a>] - Added the new `monotone_constraints` option to the XGBoost chapter.
+</li>
+</ul>
+
+
 ### Xia (3.22.0.1) - 10/26/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/1/index.html</a>
