@@ -36,6 +36,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6065'>PUBDEV-6065</a>] - When viewing an AutoML leaderboard, fixed an issue that resulted in an ArrayIndexOutOfBoundsException if `sort_metric` was specified but no model was built.
 </li>
 </ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5766'>PUBDEV-5766</a>] - Added monotonicity constraints to H2O XGBoost. (STILL OPEN)
+</li>
+</ul>
                 
 <h4>Task</h4>
 
