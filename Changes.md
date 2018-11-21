@@ -77,6 +77,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6064'>PUBDEV-6064</a>] - Added default values for `max_depth`, `sample_size`, and `sample_rate`. Also added a parameter description entry for `sample_size`, showing an Isolation Forest example.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6086'>PUBDEV-6086</a>] - Added the new `monotone_constraints` option to the XGBoost chapter. (STILL OPEN)
+</li>
 </ul>
 
 
