@@ -141,11 +141,11 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, seed=123456)
+#' iris_hf <- as.h2o(iris)
+#' iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=123456)
 #' 
 #' # now make a prediction
-#' predictions <- h2o.predict(iris.dl, iris.hex)
+#' predictions <- h2o.predict(iris_dl, iris_hf)
 #' }
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
@@ -467,14 +467,14 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
-#' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
-#' head(prostate.anon)
-#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
-#' head(prostate.anon.per.feature)
+#' prostate_anon = h2o.anomaly(prostate_dl, prostate)
+#' head(prostate_anon)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' head(prostate_anon_per_feature)
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {

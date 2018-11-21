@@ -57,8 +57,8 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
-#' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(path = ausPath)
+#' australia_path = system.file("extdata", "australia.csv", package = "h2o")
+#' australia = h2o.importFile(path = australia_path)
 #' h2o.stopLogging()
 #' }
 #' @export
@@ -86,8 +86,8 @@ h2o.startLogging <- function(file) {
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
-#' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(path = ausPath)
+#' australia_path = system.file("extdata", "australia.csv", package = "h2o")
+#' australia = h2o.importFile(path = australia_path)
 #' h2o.stopLogging()
 #' }
 #' @export
@@ -108,8 +108,8 @@ h2o.stopLogging <- function() {
 #' library(h2o)
 #' h2o.init()
 #' h2o.startLogging()
-#' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(path = ausPath)
+#' australia_path = system.file("extdata", "australia.csv", package = "h2o")
+#' australia = h2o.importFile(path = australia_path)
 #' h2o.stopLogging()
 #' h2o.clearLog()
 #' }
@@ -132,8 +132,8 @@ h2o.clearLog <- function() {
 #' h2o.init()
 #'
 #' h2o.startLogging()
-#' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(path = ausPath)
+#' australia_path = system.file("extdata", "australia.csv", package = "h2o")
+#' australia = h2o.importFile(path = australia_path)
 #' h2o.stopLogging()
 #'
 #' # Not run to avoid windows being opened during R CMD check

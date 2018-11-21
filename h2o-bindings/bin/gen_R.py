@@ -556,24 +556,24 @@ def help_example_for(algo):
         return """\donttest{
             library(h2o)
             h2o.init()
-            iris.hex <- as.h2o(iris)
-            iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, seed=123456)
+            iris_hf <- as.h2o(iris)
+            iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=123456)
 
             # now make a prediction
-            predictions <- h2o.predict(iris.dl, iris.hex)
+            predictions <- h2o.predict(iris_dl, iris_hf)
             }"""
     if algo == "gbm":
         return """\donttest{
         library(h2o)
         h2o.init()
 
-        # Run regression GBM on australia.hex data
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
+        # Run regression GBM on australia data
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
         independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
                          "maxsoilmoist", "Max_czcs")
         dependent <- "runoffnew"
-        h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
+        h2o.gbm(y = dependent, x = independent, training_frame = australia,
                 ntrees = 3, max_depth = 3, min_rows = 2)
         }"""
     if algo == "glm":
@@ -581,67 +581,67 @@ def help_example_for(algo):
         h2o.init()
 
         # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-        prostatePath = system.file("extdata", "prostate.csv", package = "h2o")
-        prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
-        h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex,
+        prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+        prostate = h2o.importFile(path = prostate_path)
+        h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
                 family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 
         # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
-        myX = setdiff(colnames(prostate.hex), c("ID", "DPROS", "DCAPS", "VOL"))
-        h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
+        predictors = setdiff(colnames(prostate), c("ID", "DPROS", "DCAPS", "VOL"))
+        h2o.glm(y = "VOL", x = predictors, training_frame = prostate, family = "gaussian",
                 nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 
 
         # GLM variable importance
         # Also see:
         #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
-        data.hex = h2o.importFile(
-          path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv",
-          destination_frame = "data.hex")
-        myX = 1:20
-        myY="y"
-        my.glm = h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial", standardize=TRUE,
-                         lambda_search=TRUE)
+        bank = h2o.importFile(
+          path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+        predictors = 1:20
+        target="y"
+        glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
+                      lambda_search=TRUE)
+        h2o.std_coef_plot(glm, num_of_features = 20)
         }"""
     if algo == "glrm":
         return """\donttest{
             library(h2o)
             h2o.init()
-            ausPath <- system.file("extdata", "australia.csv", package="h2o")
-            australia.hex <- h2o.uploadFile(path = ausPath)
-            h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1",
+            australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+            australia <- h2o.uploadFile(path = australia_path)
+            h2o.glrm(training_frame = australia, k = 5, loss = "Quadratic", regularization_x = "L1",
                      gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
             }"""
     if algo == "kmeans":
         return """\donttest{
         library(h2o)
         h2o.init()
-        prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-        prostate.hex <- h2o.uploadFile(path = prosPath)
-        h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
+        prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+        prostate <- h2o.uploadFile(path = prostate_path)
+        h2o.kmeans(training_frame = prostate, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
         }"""
     if algo == "naivebayes":
         return """\donttest{
         h2o.init()
-        votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-        votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
-        h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+        votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+        votes <- h2o.uploadFile(path = votes_path, header = TRUE)
+        h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
         }"""
     if algo == "pca":
         return """\donttest{
         library(h2o)
         h2o.init()
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
-        h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
+        h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
         }"""
     if algo == "svd":
         return """\donttest{
         library(h2o)
         h2o.init()
-        ausPath <- system.file("extdata", "australia.csv", package="h2o")
-        australia.hex <- h2o.uploadFile(path = ausPath)
-        h2o.svd(training_frame = australia.hex, nv = 8)
+        australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+        australia <- h2o.uploadFile(path = australia_path)
+        h2o.svd(training_frame = australia, nv = 8)
         }"""
     if algo == "stackedensemble":
         return """
@@ -678,7 +678,7 @@ def help_extra_params_for(algo):
             #'           If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics. """
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
-            #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
+            #' @param destination_key (Optional) The unique key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
     elif algo == "word2vec":
         return None
@@ -837,14 +837,14 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-            #' prostate.hex = h2o.importFile(path = prosPath)
-            #' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
+            #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+            #' prostate = h2o.importFile(path = prostate_path)
+            #' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
             #'                                hidden = c(10, 10), epochs = 5)
-            #' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
-            #' head(prostate.anon)
-            #' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
-            #' head(prostate.anon.per.feature)
+            #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
+            #' head(prostate_anon)
+            #' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+            #' head(prostate_anon_per_feature)
             #' }
             #' @export
             h2o.anomaly <- function(object, data, per_feature=FALSE) {
@@ -1043,12 +1043,11 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-            #' iris.hex <- h2o.uploadFile(path = irisPath)
-            #' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+            #' iris_hf <- as.h2o(iris)
+            #' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, transform = "STANDARDIZE",
             #'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
-            #' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
-            #' head(iris.rec)
+            #' iris_rec <- h2o.reconstruct(iris_glrm, iris_hf, reverse_transform = TRUE)
+            #' head(iris_rec)
             #' }
             #' @export
             h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
@@ -1076,12 +1075,11 @@ def help_afterword_for(algo):
             #' \donttest{
             #' library(h2o)
             #' h2o.init()
-            #' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-            #' iris.hex <- h2o.uploadFile(path = irisPath)
-            #' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic",
+            #' iris_hf <- as.h2o(iris)
+            #' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, loss = "Quadratic",
             #'                       multi_loss = "Categorical", max_iterations = 1000)
-            #' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
-            #' head(iris.parch)
+            #' iris_parch <- h2o.proj_archetypes(iris_glrm, iris_hf)
+            #' head(iris_parch)
             #' }
             #' @export
             h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {

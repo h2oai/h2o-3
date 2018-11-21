@@ -54,9 +54,9 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.glrm(training_frame = australia.hex, k = 5, loss = "Quadratic", regularization_x = "L1",
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
+#' h2o.glrm(training_frame = australia, k = 5, loss = "Quadratic", regularization_x = "L1",
 #' gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' }
 #' @export
@@ -241,12 +241,11 @@ h2o.glrm <- function(training_frame, cols = NULL,
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
-#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, transform = "STANDARDIZE",
+#' iris_hf <- as.h2o(iris)
+#' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, transform = "STANDARDIZE",
 #'                       loss = "Quadratic", multi_loss = "Categorical", max_iterations = 1000)
-#' iris.rec <- h2o.reconstruct(iris.glrm, iris.hex, reverse_transform = TRUE)
-#' head(iris.rec)
+#' iris_rec <- h2o.reconstruct(iris_glrm, iris_hf, reverse_transform = TRUE)
+#' head(iris_rec)
 #' }
 #' @export
 h2o.reconstruct <- function(object, data, reverse_transform=FALSE) {
@@ -274,12 +273,11 @@ h2o.getFrame(key)
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
-#' iris.hex <- h2o.uploadFile(path = irisPath)
-#' iris.glrm <- h2o.glrm(training_frame = iris.hex, k = 4, loss = "Quadratic",
+#' iris_hf <- as.h2o(iris)
+#' iris_glrm <- h2o.glrm(training_frame = iris_hf, k = 4, loss = "Quadratic",
 #'                       multi_loss = "Categorical", max_iterations = 1000)
-#' iris.parch <- h2o.proj_archetypes(iris.glrm, iris.hex)
-#' head(iris.parch)
+#' iris_parch <- h2o.proj_archetypes(iris_glrm, iris_hf)
+#' head(iris_parch)
 #' }
 #' @export
 h2o.proj_archetypes <- function(object, data, reverse_transform=FALSE) {

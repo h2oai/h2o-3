@@ -43,9 +43,9 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
-#' h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
+#' h2o.prcomp(training_frame = australia, k = 8, transform = "STANDARDIZE")
 #' }
 #' @export
 h2o.prcomp <- function(training_frame, x,
