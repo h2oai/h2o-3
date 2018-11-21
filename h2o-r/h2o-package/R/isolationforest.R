@@ -21,9 +21,11 @@
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
 #'        predictors)/3. Defaults to -1.
-#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate
-#'        will be used instead. Defaults to 256.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to -1.
+#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. Only one of parameters
+#'        sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will be ignored.
+#'        Defaults to 256.
+#' @param sample_rate Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be in range from 0.0
+#'        to 1.0. If set to -1, sample_rate is disabled and sample_size will be used instead. Defaults to -1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",

@@ -64,5 +64,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
 
         @API(help = "For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.", level = API.Level.expert)
         public boolean binomial_double_trees;
+
+        @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
+        public double sample_rate;
     }
 }
