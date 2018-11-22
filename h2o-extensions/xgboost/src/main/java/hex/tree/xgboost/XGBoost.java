@@ -231,6 +231,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
     }
+    dinfo.coefNames(); // cache the coefficient names
+    assert dinfo._coefNames != null;
     return dinfo;
   }
 
