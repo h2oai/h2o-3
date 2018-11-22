@@ -61,7 +61,7 @@ public class AutoMLBuildSpec extends Iced {
 
   public static final class AutoMLStoppingCriteria extends Iced {
 
-    public static int AUTO_STOPPING_TOLERANCE = -1;
+    public static final int AUTO_STOPPING_TOLERANCE = -1;
 
     private RandomDiscreteValueSearchCriteria _searchCriteria;
     private double max_model_runtime_secs = 0;

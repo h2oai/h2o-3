@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -190,6 +192,44 @@ public class AutoMLTest extends water.TestUtil {
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.delete();
     }
+  }
+
+
+  @Test public void test_individual_model_max_runtime() {
+    AutoML aml=null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+
+      int max_model_runtime_secs = 5;
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_model_runtime_secs(max_model_runtime_secs);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      Pattern buildDuration = Pattern.compile("build in (\\d+)s");
+      for (UserFeedbackEvent event : aml.userFeedback().feedbackEvents) {
+        Matcher matcher = buildDuration.matcher(event.getMessage());
+        if (matcher.find()) {
+          int duration = Integer.parseInt(matcher.group(1));
+          assertTrue("this model took longer than required: "+event.getMessage(),
+              Math.abs(max_model_runtime_secs - duration) < 1);
+        }
+      }
+
+      // no assertion, we just want to check leaked keys
+    } finally {
+      // Cleanup
+      if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.delete();
+    }
+
   }
 
   @Test public void KeepCrossValidationFoldAssignmentEnabledTest() {

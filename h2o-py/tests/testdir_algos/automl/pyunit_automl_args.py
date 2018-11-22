@@ -10,12 +10,12 @@ This test is used to check arguments passed into H2OAutoML along with different 
 """
 max_models = 2
 
-def import_dataset():
+def import_dataset(seed=0):
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     target = "CAPSULE"
     df[target] = df[target].asfactor()
     #Split frames
-    fr = df.split_frame(ratios=[.8,.1])
+    fr = df.split_frame(ratios=[.8,.1], seed=seed)
     #Set up train, validation, and test sets
     return dict(train=fr[0], valid=fr[1], test=fr[2], target=target, target_idx=1)
 
@@ -260,7 +260,21 @@ def test_automl_stops_after_max_runtime_secs():
     assert abs(end-start - max_runtime_secs) < cancel_tolerance_secs, end-start
 
 def test_no_model_takes_more_than_max_model_runtime_secs():
-    pass
+    """
+    currently disabled: there's no way to test this param here as soon as userfeedback is not available on client side
+    """
+    print("Check that individual model get interrupted after `max_model_runtime_secs`")
+    max_runtime_secs = 60
+    max_model_runtime_secs = 2
+    ds = import_dataset(seed=1)
+    aml = H2OAutoML(project_name="py_aml_max_model_runtime_secs", seed=1,
+                    max_model_runtime_secs=max_model_runtime_secs, max_runtime_secs=max_runtime_secs,
+                    max_models=10, exclude_algos=['DeepLearning'])
+    start = time.time()
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    end = time.time()
+    print(end - start)
+    print(aml.leaderboard)
 
 
 def test_stacked_ensembles_are_trained_after_timeout():
@@ -335,6 +349,7 @@ pyunit_utils.run_tests([
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
     test_automl_stops_after_max_runtime_secs,
+    # test_no_model_takes_more_than_max_model_runtime_secs,
     test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,

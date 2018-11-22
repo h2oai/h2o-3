@@ -576,16 +576,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     jobs.add(subJob);
 
     long lastWorkedSoFar = 0;
-    int gridLastCount = 0;
+    Set<Key<Model>> lastGridModels = new HashSet<>();
+    long lastGridModelCreation = subJob.start_time();
 
     while (subJob.isRunning()) {
       if (null != parentJob) {
         if (parentJob.stop_requested()) {
-          userFeedback.info(Stage.ModelTraining, "AutoML job cancelled; skipping " + name);
+          userFeedback.info(stage, "AutoML job cancelled; skipping " + name);
           subJob.stop();
         }
         if (!ignoreTimeout && timingOut()) {
-          userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + name);
+          userFeedback.info(stage, "AutoML: out of time; skipping " + name);
           subJob.stop();
         }
       }
@@ -598,10 +599,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (JobType.HyperparamSearch == work.type) {
         Grid grid = (Grid)subJob._result.get();
         int gridCount = grid.getModelCount();
-        if (gridCount > gridLastCount) {
-          userFeedback.info(Stage.ModelTraining, "Built: " + gridCount + " models for search: " + name);
-          this.addModels(grid.getModelKeys());
-          gridLastCount = gridCount;
+        if (gridCount > lastGridModels.size()) {
+          userFeedback.info(stage, "Built: " + gridCount + " models for search: " + name);
+          long now = System.currentTimeMillis();
+          long durationSinceLastGridModels = now - lastGridModelCreation;
+          lastGridModelCreation = now;
+          Key<Model>[] gridModels = grid.getModelKeys();
+          this.addModels(gridModels);
+          Set<Key<Model>> newGridModels = new HashSet<>(Arrays.asList(gridModels));
+          newGridModels.removeAll(lastGridModels);
+          for (Key<Model> mod : newGridModels) {
+            long buildDuration = millisToSec((double)durationSinceLastGridModels / newGridModels.size());
+            userFeedback.info(stage, mod + " build in "+ buildDuration +"s (approximation)");
+          }
+          lastGridModels.addAll(newGridModels);
         }
       }
 
@@ -617,25 +628,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // pick up any stragglers:
     if (JobType.HyperparamSearch == work.type) {
       if (subJob.isCrashed()) {
-        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+        userFeedback.warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        userFeedback.info(stage, name + " cancelled");
+        userFeedback.warn(stage, name + " cancelled");
       } else {
         Grid grid = (Grid) subJob.get();
         int gridCount = grid.getModelCount();
-        if (gridCount > gridLastCount) {
-          userFeedback.info(Stage.ModelTraining, "Built: " + gridCount + " models for search: " + name);
-          this.addModels(grid.getModelKeys());
+        if (gridCount > lastGridModels.size()) {
+          userFeedback.info(stage, "Built: " + gridCount + " models for search: " + name);
+          long now = System.currentTimeMillis();
+          long durationSinceLastGridModels = now - lastGridModelCreation;
+          Key<Model>[] gridModels = grid.getModelKeys();
+          this.addModels(gridModels);
+          Set<Key<Model>> newGridModels = new HashSet<>(Arrays.asList(gridModels));
+          newGridModels.removeAll(lastGridModels);
+          for (Key<Model> mod : newGridModels) {
+            long buildDuration = millisToSec((double)durationSinceLastGridModels / newGridModels.size());
+            userFeedback.info(stage, mod + " build in "+ buildDuration +"s (approximation)");
+          }
+          lastGridModels.addAll(newGridModels);
         }
         userFeedback.info(stage, name + " complete");
       }
     } else if (JobType.ModelBuild == work.type) {
       if (subJob.isCrashed()) {
-        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+        userFeedback.warn(stage, name + " failed: " + subJob.ex().toString());
       } else if (subJob.get() == null) {
-        userFeedback.info(stage, name + " cancelled");
+        userFeedback.warn(stage, name + " cancelled");
       } else {
         userFeedback.info(stage, name + " complete");
+        long buildDuration = millisToSec(subJob.end_time() - subJob.start_time());
+        userFeedback.info(stage, subJob._result + " build in "+buildDuration+"s");
         this.addModel((Model) subJob.get());
       }
     }
@@ -645,7 +668,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       parentJob.update(work.share - lastWorkedSoFar);
     }
     work.consume();
-
     jobs.remove(subJob);
   }
 
@@ -703,9 +725,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (ignoreLimits)
       builder._parms._max_runtime_secs = 0;
     else if (builder._parms._max_runtime_secs == 0)
-      builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
+      builder._parms._max_runtime_secs = millisToSec(timeRemainingMs());
     else
-      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, Math.round(timeRemainingMs() / 1000.0));
+      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, millisToSec(timeRemainingMs()));
 
     setStoppingCriteria(parms, defaults);
 
@@ -757,7 +779,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
     float remainingWorkRatio = (float) work.share / workAllocations.remainingWork();
-    long maxAssignedTime = (long) Math.round(remainingWorkRatio * timeRemainingMs() / 1000);
+    long maxAssignedTime = millisToSec(remainingWorkRatio * timeRemainingMs());
     int maxAssignedModels = (int) Math.ceil(remainingWorkRatio * remainingModels());
 
     if (searchCriteria.max_runtime_secs() == 0)
@@ -795,7 +817,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         gridKey,
         baseParms,
         searchParms,
-        new GridSearch.SimpleParametersBuilderFactory(),
+        new GridSearch.SimpleParametersBuilderFactory<>(),
         searchCriteria
     );
   }
@@ -1486,6 +1508,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     for (Model model : leaderboard().getModels()) {
         model.deleteCrossValidationPreds();
     }
+  }
+
+  private long millisToSec(double millis) {
+    return Math.round(millis / 1000.);
   }
 
 }
