@@ -180,18 +180,19 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
        * Factory method to create an instance based on the given HyperSpaceSearchCriteria instance.
        */
       public static <MP extends Model.Parameters, C extends HyperSpaceSearchCriteria>
-        HyperSpaceWalker create(MP params,
-                                              Map<String, Object[]> hyperParams,
-                                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                            C search_criteria) {
+        HyperSpaceWalker<MP, ? extends HyperSpaceSearchCriteria> create(MP params,
+                                                                        Map<String, Object[]> hyperParams,
+                                                                        ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                                                        C search_criteria) {
         HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
 
-        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian)
+        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian) {
           return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
-        else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete )
+        } else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete ) {
           return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
-        else
+        } else {
           throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
+        }
       }
     }
 

@@ -64,6 +64,8 @@ Optional Miscellaneous Parameters
 
 - `max_after_balance_size <data-science/algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). Defaults to 5.0.  (The value can be less than 1.0).
 
+- **max_model_runtime_secs**: Specify the max amount of time dedicated to the training of an individual model in the AutoML run. Defaults to 0 (disabled). Note that using this parameter can affect AutoML reproducibility.
+
 - `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping of the grid searches and individual models. Defaults to ``"AUTO"``.  The available options are:
 
     - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression

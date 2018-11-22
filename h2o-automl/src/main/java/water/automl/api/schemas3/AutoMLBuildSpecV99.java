@@ -130,7 +130,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
     public double max_runtime_secs;
 
-    @API(help = "Maximum time to spend on a single model (optional).", direction = API.Direction.INOUT)
+    @API(help = "Maximum time to spend on an individual model (optional).", direction = API.Direction.INOUT)
     public double max_model_runtime_secs;
 
     @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
