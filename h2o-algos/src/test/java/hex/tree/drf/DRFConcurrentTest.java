@@ -18,8 +18,9 @@ public class DRFConcurrentTest extends TestUtil  {
     Scope.enter();
     try {
       Frame fr = parse_test_file(Key.make("prostate_single.hex"), "smalldata/logreg/prostate.csv");
-      Scope.track(fr);
       fr.remove("ID").remove();
+      Scope.track(fr);
+      DKV.put(fr);
       buildXValDRF(fr, "AGE");
     } finally {
       Scope.exit();
@@ -33,6 +34,7 @@ public class DRFConcurrentTest extends TestUtil  {
       Frame fr = parse_test_file(Key.make("prostate_concurrent.hex"), "smalldata/logreg/prostate.csv");
       Scope.track(fr);
       fr.remove("ID").remove();
+      DKV.put(fr);
       TrainSingleFun fun = new TrainSingleFun(fr);
       H2O.submitTask(new LocalMR(fun, 100)).join();
     } finally {
