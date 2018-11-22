@@ -29,7 +29,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6054'>PUBDEV-6054</a>] - In XGBoost, fixed an issue that resulted in a "Maximum amount of file descriptors hit" message.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6060'>PUBDEV-6060</a>] -         Description of sample_rate in Isolation Forest is misleading (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6060'>PUBDEV-6060</a>] - Fixed the description of sample_rate in Isolation Forest. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6063'>PUBDEV-6063</a>] - Cross validation models are no longer deleted by default.
 </li>
@@ -40,7 +40,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5766'>PUBDEV-5766</a>] - Added monotonicity constraints to H2O XGBoost. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5766'>PUBDEV-5766</a>] - Added monotonicity constraints to H2O XGBoost.
 </li>
 </ul>
                 
@@ -63,7 +63,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3216'>PUBDEV-3216</a>] -         Create a Performance and Prediction section in User Guide (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3216'>PUBDEV-3216</a>] - Created new Performance & Prediction and Variable Importance sections in the User Guide.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5313'>PUBDEV-5313</a>] - Updatd the default value of `categorical_encoding` for XGBoost. This defaults to Auto (which is one_hot_encoding).
 </li>
@@ -77,7 +77,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6064'>PUBDEV-6064</a>] - Added default values for `max_depth`, `sample_size`, and `sample_rate`. Also added a parameter description entry for `sample_size`, showing an Isolation Forest example.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6086'>PUBDEV-6086</a>] - Added the new `monotone_constraints` option to the XGBoost chapter. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6086'>PUBDEV-6086</a>] - Added the new `monotone_constraints` option to the XGBoost chapter.
 </li>
 </ul>
 
