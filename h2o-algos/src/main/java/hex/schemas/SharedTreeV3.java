@@ -72,9 +72,6 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.expert, gridable = false)
     public boolean build_tree_one_node;
 
-    @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
-    public double sample_rate;
-
     @API(help = "A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree", level = API.Level.expert, gridable = true)
     public double[] sample_rate_per_class;
 

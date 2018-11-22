@@ -227,8 +227,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @property
     def sample_size(self):
         """
-        Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate will
-        be used instead.
+        Number of randomly sampled observations used to train each Isolation Forest tree. Only one of parameters
+        sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will be ignored.
 
         Type: ``int``  (default: ``256``).
         """
@@ -243,7 +243,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @property
     def sample_rate(self):
         """
-        Row sample rate per tree (from 0.0 to 1.0)
+        Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be in range from 0.0 to
+        1.0. If set to -1, sample_rate is disabled and sample_size will be used instead.
 
         Type: ``float``  (default: ``-1``).
         """
