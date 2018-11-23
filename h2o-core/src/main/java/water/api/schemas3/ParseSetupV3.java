@@ -76,6 +76,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   @API(help="Key-reference to an initialized instance of a Decryption Tool")
   public KeyV3.DecryptionToolKeyV3 decrypt_tool;
 
+  @API(help = "Length of the first line of the parsed file", direction = API.Direction.OUTPUT, level = API.Level.expert)
+  public int first_line_len;
+
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
     ParseSetup parseSetup = fillImpl(impl, new String[] {"parse_type"});

@@ -24,6 +24,8 @@ class ParseHandler extends Handler {
                                       new ParseWriter.ParseErr[0], parse.chunk_size,
                                       parse.decrypt_tool != null ? parse.decrypt_tool.key() : null, parse.skipped_columns);
 
+    setup._firstLineLen = parse.first_line_len;
+
     if (parse.source_frames == null) throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");
     Key[] srcs = new Key[parse.source_frames.length];
     for (int i = 0; i < parse.source_frames.length; i++)

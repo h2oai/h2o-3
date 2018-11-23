@@ -774,7 +774,23 @@ public final class ParseDataset {
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       if (localSetup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
-        byte[] bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size));
+        byte[] bits = zips;
+        if (localSetup._firstLineLen > localSetup._chunk_size) {
+          int nChunks = localSetup._firstLineLen / localSetup._chunk_size;
+          if (localSetup._firstLineLen % localSetup._chunk_size > 0) nChunks++;
+          nChunks = Math.min(nChunks, vec.nChunks());
+          bits = MemoryManager.malloc1(nChunks * localSetup._chunk_size);
+          int writtenBytesAmount = 0;
+          for (int i = 0; i < nChunks; i++) {
+            final byte[] decrompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
+            int copyLen = decrompressedBytes.length + writtenBytesAmount > localSetup._firstLineLen ? localSetup._firstLineLen - writtenBytesAmount : decrompressedBytes.length;
+            System.arraycopy(decrompressedBytes, 0, bits, writtenBytesAmount, copyLen);
+            writtenBytesAmount += copyLen;
+          }
+        } else {
+          bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(bits, cpr, localSetup._chunk_size));
+        }
+
         localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(bits, localSetup);
       }
       // Parse the file

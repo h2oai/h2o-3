@@ -44,6 +44,7 @@ public class ParseSetup extends Iced {
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
   Key<DecryptionTool> _decrypt_tool;
+  public int _firstLineLen; // Length of the first line in the data parsed, if aplicable
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
@@ -150,7 +151,7 @@ public class ParseSetup extends Iced {
   }
 
   /**
-   * Create a ParseSetup with all parameters except chunk size.
+   * Create a ParseSetup with all parameters except chunk size and first line length
    *
    * Typically used by file type parsers for returning final valid results
    * _chunk_size will be set later using results from all files.
@@ -160,6 +161,17 @@ public class ParseSetup extends Iced {
                     String[][] domains, String[][] naStrings, String[][] data){
     this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
         domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE);
+  }
+
+
+  public ParseSetup(final ParserInfo parseType, final byte sep, final boolean singleQuotes, final int checkHeader,
+                    final int ncols, final String[] columnNames, final byte[] ctypes,
+                    final String[][] domains, final String[][] naStrings, final String[][] data,
+                    final int firstLineLen) {
+    this(parseType, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
+            domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE);
+    _firstLineLen = firstLineLen;
+
   }
   public ParseSetup(ParserInfo parseType, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,

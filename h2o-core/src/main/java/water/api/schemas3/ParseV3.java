@@ -56,6 +56,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Key-reference to an initialized instance of a Decryption Tool")
   public KeyV3.DecryptionToolKeyV3 decrypt_tool;
 
+  @API(help = "Length of the first line of the parsed file", direction = API.Direction.INPUT, level = API.Level.expert)
+  public int first_line_len;
+
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
   public JobV3 job;

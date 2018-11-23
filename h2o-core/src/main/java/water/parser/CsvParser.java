@@ -774,7 +774,7 @@ MAIN_LOOP:
     }
 
     // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
+    ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data, lines[0].length());
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
