@@ -878,10 +878,10 @@ public final class ParseDataset {
       bits = MemoryManager.malloc1(localSetup._firstLineLen);
       int writtenBytesAmount = 0;
       for (int i = 0; i < nChunks; i++) {
-        final byte[] decrompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
-        final int copyLen = decrompressedBytes.length + writtenBytesAmount > localSetup._firstLineLen ?
-                localSetup._firstLineLen - writtenBytesAmount : decrompressedBytes.length;
-        System.arraycopy(decrompressedBytes, 0, bits, writtenBytesAmount, copyLen);
+        final byte[] decompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
+        final int copyLen = decompressedBytes.length + writtenBytesAmount > localSetup._firstLineLen ?
+                localSetup._firstLineLen - writtenBytesAmount : decompressedBytes.length;
+        System.arraycopy(decompressedBytes, 0, bits, writtenBytesAmount, copyLen);
         writtenBytesAmount += copyLen;
       }
 
