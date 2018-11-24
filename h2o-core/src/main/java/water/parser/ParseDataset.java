@@ -861,6 +861,8 @@ public final class ParseDataset {
      * Extracts exactly the right amount of header data (bytes) from given {@link ByteVec}.
      * Based on first line length observation in earlier phases (guessSetup).
      *
+     * Works both for compressed and uncompressed {@link ByteVec}.
+     *
      * @param localSetup     Local copy of {@link ParseSetup}. Not modified.
      * @param decryptionTool A pre-configured instance of {@link DecryptionTool}
      * @param vec            An instance of {@link ByteVec} with all the data chunks of underlying dataset.
