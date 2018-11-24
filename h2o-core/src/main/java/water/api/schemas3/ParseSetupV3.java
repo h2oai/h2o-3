@@ -77,7 +77,7 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   public KeyV3.DecryptionToolKeyV3 decrypt_tool;
 
   @API(help = "Length of the first line of the parsed file", direction = API.Direction.OUTPUT, level = API.Level.expert)
-  public int first_line_len;
+  public int first_line_len = -1;
 
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
