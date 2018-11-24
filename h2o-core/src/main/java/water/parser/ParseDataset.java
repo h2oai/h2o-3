@@ -776,17 +776,10 @@ public final class ParseDataset {
       if (localSetup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
         byte[] bits = zips;
         if (localSetup._firstLineLen > localSetup._chunk_size) {
-          int nChunks = localSetup._firstLineLen / localSetup._chunk_size;
-          if (localSetup._firstLineLen % localSetup._chunk_size > 0) nChunks++;
-          nChunks = Math.min(nChunks, vec.nChunks());
-          bits = MemoryManager.malloc1(nChunks * localSetup._chunk_size);
-          int writtenBytesAmount = 0;
-          for (int i = 0; i < nChunks; i++) {
-            final byte[] decrompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
-            int copyLen = decrompressedBytes.length + writtenBytesAmount > localSetup._firstLineLen ? localSetup._firstLineLen - writtenBytesAmount : decrompressedBytes.length;
-            System.arraycopy(decrompressedBytes, 0, bits, writtenBytesAmount, copyLen);
-            writtenBytesAmount += copyLen;
-          }
+          // If length of first line is known (from guess phase) and chunk size is smaller,
+          // there is a possibility of not being able to load enough data to check the whole header.
+          // Therefore, more bytes are loaded here.
+          bits = extractHeaderBytes(localSetup, decryptionTool, vec);
         } else {
           bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(bits, cpr, localSetup._chunk_size));
         }
@@ -861,6 +854,38 @@ public final class ParseDataset {
         // Rebuild identical exception and stack trace, but add key to msg
         throw pe0.resetMsg(pe0.getMessage()+" for "+key);
       }
+    }
+
+
+    /**
+     * Extracts exactly the right amount of header data (bytes) from given {@link ByteVec}.
+     * Based on first line length observation in earlier phases (guessSetup).
+     *
+     * @param localSetup     Local copy of {@link ParseSetup}. Not modified.
+     * @param decryptionTool A pre-configured instance of {@link DecryptionTool}
+     * @param vec            An instance of {@link ByteVec} with all the data chunks of underlying dataset.
+     *                       Compressed or uncompressed.
+     * @return A byte array containing uncompressed header data (data from the beginning of the {@link ByteVec} given).
+     * Size of returned byte array is based on first line length stored in local {@link ParseSetup} handed to this method.
+     */
+    private byte[] extractHeaderBytes(final ParseSetup localSetup, final DecryptionTool decryptionTool,
+                                      final ByteVec vec) {
+      assert localSetup._firstLineLen > 0;
+      final byte[] bits;
+      int nChunks = localSetup._firstLineLen / localSetup._chunk_size;
+      if (localSetup._firstLineLen % localSetup._chunk_size > 0) nChunks++;
+      nChunks = Math.min(nChunks, vec.nChunks());
+      bits = MemoryManager.malloc1(localSetup._firstLineLen);
+      int writtenBytesAmount = 0;
+      for (int i = 0; i < nChunks; i++) {
+        final byte[] decrompressedBytes = decryptionTool.decryptFirstBytes(vec.chunkForChunkIdx(i).getBytes());
+        final int copyLen = decrompressedBytes.length + writtenBytesAmount > localSetup._firstLineLen ?
+                localSetup._firstLineLen - writtenBytesAmount : decrompressedBytes.length;
+        System.arraycopy(decrompressedBytes, 0, bits, writtenBytesAmount, copyLen);
+        writtenBytesAmount += copyLen;
+      }
+
+      return bits;
     }
 
     // Reduce: combine errors from across files.
