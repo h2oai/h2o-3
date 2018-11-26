@@ -169,9 +169,9 @@ automl.args.test <- function() {
                     project_name = "aml9",
     )
     models <- get_partitioned_models(aml)
-    amodel <- h2o.getModel(grep("DRF", models$non_se, value = TRUE))
-    amodel_fold_column <- amodel@parameters$fold_column$column_name
-    expect_equal(amodel_fold_column, fold_column)
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    base_model_fold_column <- base_model@parameters$fold_column$column_name
+    expect_equal(base_model_fold_column, fold_column)
     ensemble <- h2o.getModel(models$se[1])
     ensemble_fold_column <- ensemble@parameters$metalearner_fold_column$column_name
     expect_equal(ensemble_fold_column, fold_column)
@@ -192,9 +192,9 @@ automl.args.test <- function() {
                     max_models = max_models,
                     project_name = "aml10"
     )
-    amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml)$non_se, value = TRUE))
-    amodel_weights_column <- amodel@parameters$weights_column$column_name
-    expect_equal(amodel_weights_column, weights_column)
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    base_model_weights_column <- base_model@parameters$weights_column$column_name
+    expect_equal(base_model_weights_column, weights_column)
   }
 
   test_fold_column_with_weights_column <- function() {
@@ -212,11 +212,11 @@ automl.args.test <- function() {
                     max_models = max_models,
                     project_name = "aml11",
     )
-    amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml)$non_se, value = TRUE))
-    amodel_fold_column <- amodel@parameters$fold_column$column_name
-    expect_equal(amodel_fold_column, fold_column)
-    amodel_weights_column <- amodel@parameters$weights_column$column_name
-    expect_equal(amodel_weights_column, weights_column)
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    base_model_fold_column <- base_model@parameters$fold_column$column_name
+    expect_equal(base_model_fold_column, fold_column)
+    base_model_weights_column <- base_model@parameters$weights_column$column_name
+    expect_equal(base_model_weights_column, weights_column)
   }
 
   test_nfolds_set_to_base_model <- function() {
@@ -228,8 +228,8 @@ automl.args.test <- function() {
                     max_models = max_models,
                     project_name = "aml12"
     )
-    amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml)$non_se, value = TRUE))
-    expect_equal(amodel@parameters$nfolds, 3)
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    expect_equal(base_model@parameters$nfolds, 3)
   }
 
   test_nfolds_eq_0 <- function() {
@@ -241,9 +241,8 @@ automl.args.test <- function() {
                     max_models = max_models,
                     project_name = "aml13",
     )
-    # Check that leaderboard does not contain any SEs
-    amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml)$non_se, value = TRUE))
-    expect_equal(amodel@allparameters$nfolds, 0)
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    expect_equal(base_model@allparameters$nfolds, 0)
   }
 
   test_stacked_ensembles_trained <- function() {
@@ -271,11 +270,10 @@ automl.args.test <- function() {
                     class_sampling_factors = c(0.2, 1.4),
                     project_name = "aml15",
     )
-    # Check that a model (DRF) has balance_classes args set properly
-    amodel <- h2o.getModel(grep("DRF", get_partitioned_models(aml)$non_se, value = TRUE))
-    expect_equal(amodel@parameters$balance_classes, TRUE)
-    expect_equal(amodel@parameters$max_after_balance_size, 3.0)
-    expect_equal(amodel@parameters$class_sampling_factors, c(0.2, 1.4))
+    base_model <- h2o.getModel(get_partitioned_models(aml)$non_se[1])
+    expect_equal(base_model@parameters$balance_classes, TRUE)
+    expect_equal(base_model@parameters$max_after_balance_size, 3.0)
+    expect_equal(base_model@parameters$class_sampling_factors, c(0.2, 1.4))
   }
 
   test_keep_cv_models_and_keep_cv_predictions <- function() {
