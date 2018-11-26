@@ -38,9 +38,9 @@
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()
-#' iris.hex <- as.h2o(iris)
-#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris.hex,
-#'                  hyper_params = list(ntrees = c(1,2,3)))
+#' iris_hf <- as.h2o(iris)
+#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris_hf,
+#'                  hyper_params = list(ntrees = c(1, 2, 3)))
 #' # Get grid summary
 #' summary(grid)
 #' # Fetch grid models
@@ -177,9 +177,9 @@ h2o.grid <- function(algorithm,
 #' library(h2o)
 #' library(jsonlite)
 #' h2o.init()
-#' iris.hex <- as.h2o(iris)
+#' iris_hf <- as.h2o(iris)
 #' h2o.grid("gbm", grid_id = "gbm_grid_id", x = c(1:4), y = 5,
-#'          training_frame = iris.hex, hyper_params = list(ntrees = c(1,2,3)))
+#'          training_frame = iris_hf, hyper_params = list(ntrees = c(1, 2, 3)))
 #' grid <- h2o.getGrid("gbm_grid_id")
 #' # Get grid summary
 #' summary(grid)

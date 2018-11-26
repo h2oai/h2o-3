@@ -185,7 +185,7 @@ public final class PersistHdfs extends Persist {
           assert v.isPersisted();
         } finally {
           s.getWrappedStream().close();
-          FileUtils.close(s);
+          FileUtils.closeSilently(s);
         }
         return null;
       }
@@ -460,6 +460,12 @@ public final class PersistHdfs extends Persist {
     catch (IOException e) {
       throw new HDFSIOException(path, CONF.toString(), e);
     }
+  }
+
+  @Override
+  public String getParent(String path) {
+    Path p = new Path(path);
+    return p.getParent().toUri().toString();
   }
 
   @Override

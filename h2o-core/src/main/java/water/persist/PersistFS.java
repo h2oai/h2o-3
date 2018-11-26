@@ -79,6 +79,11 @@ public final class PersistFS extends Persist {
     }
   }
 
+  @Override
+  public boolean delete(String path) {
+    return new File(URI.create(path)).delete();
+  }
+
   @Override public void delete(Value v) {
     getFile(v).delete();        // Silently ignore errors
     // Attempt to delete empty containing directory
@@ -170,6 +175,11 @@ public final class PersistFS extends Persist {
   @Override
   public boolean exists(String path) {
     return new File(URI.create(path)).exists();
+  }
+
+  @Override
+  public String getParent(String path) {
+    return new File(URI.create(path)).getParentFile().toURI().toString();
   }
 
   @Override

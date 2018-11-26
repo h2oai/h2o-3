@@ -52,6 +52,9 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Whether to keep cross-validation assignments.", direction=API.Direction.INPUT)
     public boolean keep_cross_validation_fold_assignment;
 
+    @API(help = "Path to a directory where every generated model will be stored.", direction = API.Direction.INOUT)
+    public String export_checkpoints_dir;
+
   } // class AutoMLBuildControlV99
 
   /**

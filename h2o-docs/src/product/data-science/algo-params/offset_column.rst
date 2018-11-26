@@ -14,7 +14,6 @@ When used with distributions/family-link functions, the offset corrections are a
 
 **Notes**: 
 
-- An offset column can only be used for regression problems.
 - This option is not applicable for multinomial distributions
 - The offset column cannot be the same as the `fold_column <fold_column.html>`__. 
 - This option can be specified in XGBoost, but it is not supported.
@@ -96,7 +95,7 @@ Example
 
 	# try using the `offset_column` parameter:
 	# initialize the estimator then train the model
-	boston_gbm = H2OGradientBoostingEstimator(offset_column = "offset_column", seed = 1234)
+	boston_gbm = H2OGradientBoostingEstimator(offset_column = "offset", seed = 1234)
 	boston_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
 	# print the mse for validation set

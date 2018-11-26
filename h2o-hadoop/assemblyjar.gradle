@@ -7,13 +7,8 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 dependencies {
-  if (project.hasProperty('notYarn')) {
-    compile('org.apache.hadoop:hadoop-core:' + hadoopMavenArtifactVersion)
-  }
-  else {
-    compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
-  }
-  compile project(':h2o-hadoop:h2o-' + hadoopVersion)
+  compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
+  compile project(":h2o-hadoop:h2o-mapreduce-generic")
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
@@ -99,4 +94,9 @@ artifacts {
   archives shadowJar
 }
 
-jar.finalizedBy shadowJar
+// We just need Shadow Jar
+jar {
+  enabled = false
+}
+
+build.dependsOn shadowJar

@@ -243,9 +243,7 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip
-    pip install tabulate
-    pip install wheel
+    pip install grip 'colorama>=0.3.8' future tabulate wheel
 
 ##### Step 3: Install JDK
 
@@ -354,18 +352,32 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+##### Step 4. Install python and the required packages:
 
+Install python:
 
-##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
+    brew install python
+
+Install pip package manager:
+
+    sudo easy_install pip
+
+Next install required pakcages:
+
+    sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
+
+##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
 OS X should already have Git installed. To download and update h2o-3 source codes:
 
     git clone https://github.com/h2oai/h2o-3
 
-##### Step 5. Run the top-level gradle build:
+##### Step 6. Run the top-level gradle build:
 
     cd h2o-3
     ./gradlew build
+
+Note: on a regular machine it may take very long time (about an hour) to run all the tests.
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 

@@ -181,6 +181,25 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
     if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
+
+    if ((_train != null) && (_parms._monotone_constraints != null)) {
+      // we check that there are no duplicate definitions and constraints are defined only for numerical columns
+      Set<String> constrained = new HashSet<>();
+      for (KeyValue constraint : _parms._monotone_constraints) {
+        if (constrained.contains(constraint.getKey())) {
+          error("_monotone_constraints", "Feature '" + constraint.getKey() + "' has multiple constraints.");
+          continue;
+        }
+        constrained.add(constraint.getKey());
+        Vec v = _train.vec(constraint.getKey());
+        if (v == null) {
+          error("_monotone_constraints", "Invalid constraint - there is no column '" + constraint.getKey() + "' in the training frame.");
+        } else if (v.get_type() != Vec.T_NUM) {
+          error("_monotone_constraints", "Invalid constraint - column '" + constraint.getKey() +
+                  "' has type " + v.get_type_str() + ". Only numeric columns can have monotonic constraints.");
+        }
+      }
+    }
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -212,6 +231,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
     }
+    dinfo.coefNames(); // cache the coefficient names
+    assert dinfo._coefNames != null;
     return dinfo;
   }
 
@@ -238,7 +259,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // Per driver instance
     final private String featureMapFileName = "featureMap" + UUID.randomUUID().toString() + ".txt";
     // Shared file to write list of features
-    private File featureMapFile = null;
+    private String featureMapFileAbsolutePath = null;
 
     @Override
     public void computeImpl() {
@@ -290,13 +311,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info()._dataInfoKey.get();
+        DataInfo dataInfo = model.model_info().dataInfo();
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
-        featureMapFile = createFeatureMapFile(featureMap);
+        featureMapFileAbsolutePath = createFeatureMapFile(featureMap);
 
-        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses());
+        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
 
         setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
@@ -314,7 +335,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
           waitOnRabitWorkers(rt);
         } finally {
-          rt.stop();
+          stopRabitTracker(rt);
         }
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
@@ -366,7 +387,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // For feature importances - write out column info
-    private File createFeatureMapFile(String featureMap) {
+    private String createFeatureMapFile(String featureMap) {
       OutputStream os = null;
       try {
         File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
@@ -374,7 +395,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         os = new FileOutputStream(fmFile);
         os.write(featureMap.getBytes());
         os.close();
-        return fmFile;
+        return fmFile.getAbsolutePath();
       } catch (IOException e) {
         throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
       } finally {
@@ -430,6 +451,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
+    /**
+     *
+     * @param rt Rabit tracker to stop
+     */
+    private void stopRabitTracker(IRabitTracker rt){
+      if(H2O.CLOUD.size() > 1) {
+        rt.stop();
+      }
+    }
+
     // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
     // Therefore don't use RabitTracker envs for 1 node
     private Map<String, String> getWorkerEnvs(IRabitTracker rt) {
@@ -476,7 +507,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, Integer>>() {
             @Override
             public Map<String, Integer> apply(Booster booster) throws XGBoostError {
-              return booster.getFeatureScore(featureMapFile.getAbsolutePath());
+              return booster.getFeatureScore(featureMapFileAbsolutePath);
             }
           }, booster);
         } finally {

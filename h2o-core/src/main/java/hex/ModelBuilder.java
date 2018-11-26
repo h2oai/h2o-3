@@ -3,6 +3,8 @@ package hex;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.api.FSIOException;
+import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -10,6 +12,7 @@ import water.rapids.ast.prims.advmath.AstKFold;
 import water.udf.CFuncRef;
 import water.util.*;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -213,6 +216,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        saveModelCheckpointIfConfigured();
       } finally {
         setFinalState();
         _parms.read_unlock_frames(_job);
@@ -231,6 +235,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
+    }
+  }
+
+  private void saveModelCheckpointIfConfigured() {
+    Model model = _result.get();
+    if (model != null && !StringUtils.isNullOrEmpty(model._parms._export_checkpoints_dir)) {
+      try {
+        model.exportBinaryModel(model._parms._export_checkpoints_dir + "/" + model._key.toString(), true);
+      } catch (FSIOException | HDFSIOException | IOException e) {
+        throw new H2OIllegalArgumentException("export_checkpoints_dir", "saveModelIfConfigured", e);
+      }
     }
   }
 
@@ -1095,13 +1110,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    // Drop all non-numeric columns (e.g., String and UUID).  No current algo
-    // can use them, and otherwise all algos will then be forced to remove
-    // them.  Text algos (grep, word2vec) take raw text columns - which are
-    // numeric (arrays of bytes).
-    ignoreBadColumns(separateFeatureVecs(), expensive);
-    ignoreInvalidColumns(separateFeatureVecs(), expensive);
-    checkResponseVariable();
+    if(_parms._checkpoint != null){
+      if(DKV.get(_parms._checkpoint) == null){
+          error("_checkpoint", "Checkpoint has to point to existing model!");
+      }
+      // Do not ignore bad columns, as only portion of the training data might be supplied (e.g. continue from checkpoint)
+      final Model checkpointedModel = _parms._checkpoint.get();
+      final String[] warnings = checkpointedModel.adaptTestForTrain(_train, expensive, false);
+      for (final String warning : warnings){
+          warn("_checkpoint", warning);
+      }
+      separateFeatureVecs(); // set MB's fields (like response)
+    } else {
+      // Drop all non-numeric columns (e.g., String and UUID).  No current algo
+      // can use them, and otherwise all algos will then be forced to remove
+      // them.  Text algos (grep, word2vec) take raw text columns - which are
+      // numeric (arrays of bytes).
+      ignoreBadColumns(separateFeatureVecs(), expensive);
+      ignoreInvalidColumns(separateFeatureVecs(), expensive);
+      checkResponseVariable();
+    }
 
     // Rebalance train and valid datasets (after invalid/bad columns are dropped)
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
@@ -1111,8 +1139,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Check that at least some columns are not-constant and not-all-NAs
-    if( _train.numCols() == 0 )
-      error("_train","There are no usable columns to generate model");
+    if (_train.numCols() == 0)
+      error("_train", "There are no usable columns to generate model");
 
     if(isSupervised()) {
       if(_response != null) {
@@ -1250,10 +1278,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert(ArrayUtils.contains(_valid._names, name)) : "Internal error during categorical encoding: training column " + name + " not in validation frame with columns " + Arrays.toString(_valid._names);
     }
 
-    if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
-      error("_checkpoint", "Checkpoint has to point to existing model!");
-    }
-
     if (_parms._stopping_tolerance < 0) {
       error("_stopping_tolerance", "Stopping tolerance must be >= 0.");
     }
@@ -1286,6 +1310,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
+    }
+    if (!StringUtils.isNullOrEmpty(_parms._export_checkpoints_dir)) {
+      if(!H2O.getPM().isWritableDirectory(_parms._export_checkpoints_dir)) {
+        error("_export_checkpoints_dir", "Checpoints directory path must point to a writable path.");
+      }
     }
   }
 

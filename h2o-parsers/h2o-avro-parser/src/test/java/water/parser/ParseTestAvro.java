@@ -2,7 +2,6 @@ package water.parser;
 
 
 import com.google.common.io.Files;
-
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.file.DataFileWriter;
@@ -12,17 +11,16 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.TestUtil;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
-
-import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.StringUtils;
 
 /**
  * Test suite for Avro parser.
@@ -33,6 +31,16 @@ public class ParseTestAvro extends TestUtil {
 
   @BeforeClass
   static public void setup() { TestUtil.stall_till_cloudsize(5); }
+
+  @Test
+  public void testSkippedColumns() {
+    try { // specify skipped columns, not allowed!
+      Frame f1 = parse_test_file("smalldata/parser/avro/sequence100k.avro", new int[]{0,1});
+      fail("Parser should have thrown an exception but did not!");
+    } catch(Exception ex) { // this should fail
+      System.out.println("Done, Avro parsers should not specify skipped_columns");
+    }
+  }
 
   @Test
   public void testParseSimple() {

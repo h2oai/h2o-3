@@ -18,33 +18,29 @@
  */
 package water.parser.parquet;
 
-import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
-
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.compat.RowGroupFilter;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-
-import static org.apache.parquet.format.converter.ParquetMetadataConverter.MetadataFilter;
-
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import water.fvec.Vec;
 import water.parser.ParseWriter;
 import water.persist.VecDataInputStream;
+import water.persist.VecFileSystem;
 import water.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Arrays;
+
 import static org.apache.parquet.bytes.BytesUtils.readIntLittleEndian;
+import static org.apache.parquet.format.converter.ParquetMetadataConverter.MetadataFilter;
 import static org.apache.parquet.format.converter.ParquetMetadataConverter.NO_FILTER;
 import static org.apache.parquet.hadoop.ParquetFileReader.PARQUET_READ_PARALLELISM;
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
-
-import water.persist.VecFileSystem;
 
 /**
  * Implementation of Parquet Reader working on H2O's Vecs.
@@ -60,19 +56,21 @@ public class VecParquetReader implements Closeable {
   private final Vec vec;
   private final ParquetMetadata metadata;
   private final WriterDelegate writer;
-  private final byte[] chunkSchema;
+  private final byte[] chunkSchema; // contains column types of all columns, not just the skipped one
 
   private ParquetReader<Long> reader;
+  private boolean[] _keepColumns;
 
-  public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema) {
-    this(vec, metadata, new WriterDelegate(writer, chunkSchema.length), chunkSchema);
+  public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema, boolean[] keepcolumns, int parseColumnNumber) {
+    this(vec, metadata, new WriterDelegate(writer, parseColumnNumber), chunkSchema, keepcolumns);
   }
 
-  VecParquetReader(Vec vec, ParquetMetadata metadata, WriterDelegate writer, byte[] chunkSchema) {
+  VecParquetReader(Vec vec, ParquetMetadata metadata, WriterDelegate writer, byte[] chunkSchema, boolean[] keepcolumns) {
     this.vec = vec;
     this.metadata = metadata;
     this.writer = writer;
     this.chunkSchema = chunkSchema;
+    _keepColumns = keepcolumns;
   }
 
   /**
@@ -91,7 +89,7 @@ public class VecParquetReader implements Closeable {
     assert reader == null;
     Configuration conf = VecFileSystem.makeConfiguration(vec);
     conf.setInt(PARQUET_READ_PARALLELISM, 1); // disable parallelism (just one virtual file!)
-    ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema);
+    ChunkReadSupport crSupport = new ChunkReadSupport(writer, chunkSchema, _keepColumns);
     ParquetReader.Builder<Long> prBuilder = ParquetReader.builder(crSupport, VecFileSystem.VEC_PATH)
             .withConf(conf)
             .withFilter(new FilterCompat.Filter() {

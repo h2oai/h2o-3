@@ -20,7 +20,8 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
             "init_learning_rate",
             "epochs",
             "pre_trained",
-            "max_runtime_secs"
+            "max_runtime_secs",
+            "export_checkpoints_dir"
     };
 
     /**

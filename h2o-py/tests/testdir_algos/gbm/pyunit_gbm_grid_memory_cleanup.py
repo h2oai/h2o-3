@@ -105,9 +105,10 @@ def test_keep_cross_validation_models_on_gbm_grid():
         tot, cv = len(keys['models']), len(keys['cv_models'])
         print("total grid models in memory = {tot}, among which {cv} CV models".format(tot=tot, cv=cv))
         assert tot > 0, "no grid models left in memory"
-        assert cv == 0, "{cv} CV models were not cleaned from memory".format(cv=cv)
+        expected = len(grid_search.models) * nfolds
+        assert cv == expected, "missing CV models in memory, got {actual}, expected {expected}".format(actual=cv, expected=expected)
         for m in grid_search.models:
-            assert not m.cross_validation_models(), "unexpected cv models for model "+m
+            assert m.cross_validation_models(), "missing cv models for model "+m
 
     def test_property_enabled():
         print("\n=== enabling "+kcvm+" ===")

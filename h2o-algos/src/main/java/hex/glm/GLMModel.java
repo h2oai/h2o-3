@@ -316,7 +316,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    public GLMParameters(){
+    public GLMParameters() {
       this(Family.gaussian, Link.family_default);
       assert _link == Link.family_default;
       _stopping_rounds = 3;
@@ -948,13 +948,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      */
     public double [][] vcov(){return _vcov;}
 
-    
     @Override
     public int nclasses() {
       return _nclasses;
     }
-
-
 
     @Override
     public String[] classNames() {

@@ -28,10 +28,7 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -192,7 +189,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
-    public boolean _keep_cross_validation_models = false;
+    public boolean _keep_cross_validation_models = true;
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
@@ -311,6 +308,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Reference to custom metric function.
      */
     public String _custom_metric_func = null;
+
+    /**
+     * Directory where generated models will be exported
+     */
+    public String _export_checkpoints_dir;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -1096,9 +1098,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param interactionBldr Column names to create pairwise interactions with
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
-  public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, InteractionBuilder interactionBldr, ToEigenVec tev,
-                                           IcedHashMap<Key, String> toDelete, boolean catEncoded) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(final Frame test, final String[] origNames, final String[][] origDomains,
+                                           String[] names, String[][] domains, final Parameters parms,
+                                           final boolean expensive, final boolean computeMetrics,
+                                           final InteractionBuilder interactionBldr, final ToEigenVec tev,
+                                           final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
+          throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
     if (catEncoded && origNames==null) return msg;
@@ -1152,8 +1157,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;  // count of columns that were replaced with NA
-    for( int i=0; i<names.length; i++ ) {
-      Vec vec = test.vec(names[i]); // Search in the given validation set
+    final Frame.FrameVecRegistry frameVecRegistry = test.frameVecRegistry();
+    for (int i = 0; i < names.length; i++) {
+      Vec vec = frameVecRegistry.findByColName(names[i]); // Search in the given validation set
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
@@ -1223,39 +1229,57 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
 
-    boolean haveCategoricalPredictors = false;
     if (expensive && checkCategoricals && !catEncoded) {
-      for (int i=0; i<test.numCols(); ++i) {
-        if (test.names()[i].equals(response)) continue;
-        if (test.names()[i].equals(weights)) continue;
-        if (test.names()[i].equals(offset)) continue;
-        if (test.names()[i].equals(fold)) continue;
-        // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
-        if (test.vec(i).cardinality() > 0) {
-          haveCategoricalPredictors = true;
-          break;
-        }
-        // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
-        int whichCol = ArrayUtils.find(names, test.name(i));
-        if (whichCol >= 0 && domains[whichCol] != null) {
-          haveCategoricalPredictors = true;
-          break;
-        }
+      final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
+
+      // check if we first need to expand categoricals before calling this method again
+      if (hasCategoricalPredictors) {
+        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        toDelete.put(updated._key, "categorically encoded frame");
+        test.restructure(updated.names(), updated.vecs()); //updated in place
+        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
+        msgs.addAll(Arrays.asList(msg2));
+        return msgs.toArray(new String[msgs.size()]);
       }
-    }
-    // check if we first need to expand categoricals before calling this method again
-    if (expensive && !catEncoded && haveCategoricalPredictors) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
-      toDelete.put(updated._key, "categorically encoded frame");
-      test.restructure(updated.names(), updated.vecs()); //updated in place
-      String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
-      msgs.addAll(Arrays.asList(msg2));
-      return msgs.toArray(new String[msgs.size()]);
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
 
     return msgs.toArray(new String[msgs.size()]);
+  }
+
+  private static boolean hasCategoricalPredictors(final Frame frame, final String responseName,
+                                           final String wieghtsName, final String offsetName,
+                                           final String foldName, final String[] names,
+                                           final String[][] domains) {
+
+    boolean haveCategoricalPredictors = false;
+    final Map<String, Integer> namesIndicesMap = new HashMap<>(names.length);
+
+    for (int i = 0; i < names.length; i++) {
+      namesIndicesMap.put(names[i], i);
+    }
+
+    for (int i = 0; i < frame.numCols(); ++i) {
+      if (frame.names()[i].equals(responseName)) continue;
+      if (frame.names()[i].equals(wieghtsName)) continue;
+      if (frame.names()[i].equals(offsetName)) continue;
+      if (frame.names()[i].equals(foldName)) continue;
+      // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
+      if (frame.vec(i).get_type() == Vec.T_CAT) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+      // or a equally named column of the training set is categorical, but the test column isn't (e.g., numeric column provided to be converted to a factor)
+      final int whichCol = namesIndicesMap.get(frame.name(i));
+      if (whichCol >= 0 && domains[whichCol] != null) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+    }
+
+    return haveCategoricalPredictors;
+
   }
 
 
@@ -2417,7 +2441,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       is.close();
       return model;
     } finally {
-      FileUtils.close(is);
+      FileUtils.closeSilently(is);
     }
   }
 
@@ -2426,7 +2450,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param location target path, it can be on local filesystem, HDFS, S3...
    * @param force If true, overwrite already existing file
    * @return URI representation of the target location
-   * @throws IOException when writing fails
+   * @throws water.api.FSIOException when writing fails
    */
   public URI exportBinaryModel(String location, boolean force) throws IOException {
     OutputStream os = null;
@@ -2438,7 +2462,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 
@@ -2460,7 +2484,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       os.close();
       return targetUri;
     } finally {
-      FileUtils.close(os);
+      FileUtils.closeSilently(os);
     }
   }
 

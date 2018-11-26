@@ -54,44 +54,50 @@
 #'        datasets but loses the progress bar.
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
+#' @param skipped_columns a list of column indices to be skipped during parsing.
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
 #' \donttest{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' class(prostate.hex)
-#' summary(prostate.hex)
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' class(prostate)
+#' summary(prostate)
 #'
 #' #Import files with a certain regex pattern by utilizing h2o.importFolder()
 #' #In this example we import all .csv files in the directory prostate_folder
-#' prosPath = system.file("extdata", "prostate_folder", package = "h2o")
-#' prostate_pattern.hex = h2o.importFolder(path = prosPath, pattern = ".*.csv",
-#'                         destination_frame = "prostate.hex")
-#' class(prostate_pattern.hex)
-#' summary(prostate_pattern.hex)
+#' prostate_path = system.file("extdata", "prostate_folder", package = "h2o")
+#' prostate_pattern = h2o.importFolder(path = prostate_path, pattern = ".*.csv")
+#' class(prostate_pattern)
+#' summary(prostate_pattern)
 #' }
 
 
 #' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL) {
+                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings, decrypt_tool=decrypt_tool)
+                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL) {
+                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
-
+  if (!is.null(skipped_columns) && (length(skipped_columns) > 0)) {
+    for (a in c(1:length(skipped_columns))) {
+      if (!is.numeric(skipped_columns[a]))
+        stop("Skipped column indices must be integers from 1 to number of columns in your datafile.")
+      skipped_columns[a] = skipped_columns[a]-1   # change index to be from 0 to ncol-1
+    }
+  }
   if(length(path) > 1L) {
     destFrames <- c()
     fails <- c()
@@ -115,7 +121,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
 if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
-            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool) )
+            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -136,9 +142,16 @@ h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = T
 #' @export
 h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL, decrypt_tool=NULL) {
+                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
+  if (length(skipped_columns) > 0) { # check to make sure only valid column indices are here
+    for (a in c(1:length(skipped_columns))) {
+      if (!is.numeric(skipped_columns[a]))
+        stop("Skipped column indices must be integers from 1 to number of columns in your datafile.")
+      skipped_columns[a] <- skipped_columns[a]-1
+    }
+  }
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
@@ -162,7 +175,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     if (verbose) pt <- proc.time()[[3]]
     ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
                         col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
-                        decrypt_tool = decrypt_tool)
+                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns)
     if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
     ans
   } else {
@@ -276,12 +289,12 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()
-#' # prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' # prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
-#' # prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' # glmmodel.path = h2o.saveModel(prostate.glm, dir = "/Users/UserName/Desktop")
-#' # glmmodel.load = h2o.loadModel(glmmodel.path)
+#' # prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate = h2o.importFile(path = prostate_path)
+#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # glmmodel_path = h2o.saveModel(prostate_glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel_load = h2o.loadModel(glmmodel_path)
 #' }
 #' @export
 h2o.loadModel <- function(path) {

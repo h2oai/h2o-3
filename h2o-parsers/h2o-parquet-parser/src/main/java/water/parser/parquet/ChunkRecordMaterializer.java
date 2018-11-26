@@ -3,7 +3,6 @@ package water.parser.parquet;
 import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.RecordMaterializer;
 import org.apache.parquet.schema.MessageType;
-import water.parser.ParseWriter;
 
 /**
  * Implementation of Parquet's RecordMaterializer for Chunks
@@ -16,8 +15,8 @@ class ChunkRecordMaterializer extends RecordMaterializer<Long> {
 
   private ChunkConverter _converter;
 
-  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer) {
-    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer);
+  ChunkRecordMaterializer(MessageType parquetSchema, byte[] chunkSchema, WriterDelegate writer, boolean[] keepColumns) {
+    _converter = new ChunkConverter(parquetSchema, chunkSchema, writer, keepColumns);
   }
 
   @Override

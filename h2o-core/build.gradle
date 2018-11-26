@@ -13,6 +13,7 @@ dependencies {
   compile "gov.nist.math:jama:1.0.3"
   compile 'org.javassist:javassist:3.23.1-GA'
   compile "org.apache.commons:commons-math3:3.3"
+  compile "commons-codec:commons-codec:1.9"
   compile "commons-io:commons-io:2.4"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"

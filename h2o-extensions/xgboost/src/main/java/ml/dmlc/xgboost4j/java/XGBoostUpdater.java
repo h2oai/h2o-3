@@ -23,8 +23,8 @@ public class XGBoostUpdater extends Thread {
   private final BoosterParms _boosterParms;
   private final Map<String, String> _rabitEnv;
 
-  private SynchronousQueue<BoosterCallable<?>> _in;
-  private SynchronousQueue<Object> _out;
+  private volatile SynchronousQueue<BoosterCallable<?>> _in;
+  private volatile SynchronousQueue<Object> _out;
 
   private Booster _booster;
 
@@ -79,10 +79,16 @@ public class XGBoostUpdater extends Thread {
     if (! inQ.offer(callable, WORK_START_TIMEOUT_SECS, TimeUnit.SECONDS))
       throw new IllegalStateException("XGBoostUpdater couldn't start work on task " + callable + " in "  + WORK_START_TIMEOUT_SECS + "s.");
     SynchronousQueue<?> outQ;
+    int i = 0;
     while ((outQ = _out) != null) {
+      i++;
       T result = (T) outQ.poll(INACTIVE_CHECK_INTERVAL_SECS, TimeUnit.SECONDS);
-      if (result != null)
+      if (result != null) {
         return result;
+      } else if (i > 5) {
+        Log.warn(String.format("Exceeded waiting interval of %d seconds for a task of type '%s' to finish on node '%s'. ",
+                INACTIVE_CHECK_INTERVAL_SECS * i, callable, H2O.SELF));
+      }
     }
     throw new IllegalStateException("Cannot perform booster operation: updater is inactive on node " + H2O.SELF);
   }

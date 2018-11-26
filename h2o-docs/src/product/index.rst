@@ -14,7 +14,7 @@ We're glad you're interested in learning more about H2O. If you have questions o
 Additional Resources:
 
 - See how are customers are using H2O at https://www.h2o.ai/customers/.
-- Keep up to date with the H2O latest blogs at https://blog.h2o.ai/.
+- Keep up to date with the latest H2O blogs at https://www.h2o.ai/blog/.
 - Review projects, applications, research papers, tutorials, courses, and books that use H2O at https://github.com/h2oai/awesome-h2o.
 
 .. toctree::
@@ -62,6 +62,11 @@ Additional Resources:
 
    cross-validation
 
+.. toctree::
+   :maxdepth: 2
+
+   variable-importance
+
 .. toctree::   
    :maxdepth: 2
 
@@ -71,6 +76,7 @@ Additional Resources:
    :maxdepth: 2
 
    checkpointing-models
+   performance-and-prediction
 
 .. toctree::
    :maxdepth: 2

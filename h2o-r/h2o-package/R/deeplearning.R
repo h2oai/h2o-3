@@ -15,7 +15,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
@@ -98,7 +98,7 @@
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 #'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -134,24 +134,25 @@
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, seed=123456)
+#' iris_hf <- as.h2o(iris)
+#' iris_dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris_hf, seed=123456)
 #' 
 #' # now make a prediction
-#' predictions <- h2o.predict(iris.dl, iris.hex)
+#' predictions <- h2o.predict(iris_dl, iris_hf)
 #' }
 #' @export
 h2o.deeplearning <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,
-                             keep_cross_validation_models = FALSE,
+                             keep_cross_validation_models = TRUE,
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
@@ -206,7 +207,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              classification_stop = 0,
                              regression_stop = 1e-06,
                              stopping_rounds = 5,
-                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                              stopping_tolerance = 0,
                              max_runtime_secs = 0,
                              score_validation_sampling = c("Uniform", "Stratified"),
@@ -232,6 +233,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001,
+                             export_checkpoints_dir = NULL,
                              verbose = FALSE 
                              ) 
 {
@@ -443,6 +445,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$elastic_averaging_moving_rate <- elastic_averaging_moving_rate
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
@@ -463,14 +467,14 @@ h2o.deeplearning <- function(x, y, training_frame,
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, training_frame = prostate.hex, autoencoder = TRUE,
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
 #'                                hidden = c(10, 10), epochs = 5)
-#' prostate.anon = h2o.anomaly(prostate.dl, prostate.hex)
-#' head(prostate.anon)
-#' prostate.anon.per.feature = h2o.anomaly(prostate.dl, prostate.hex, per_feature=TRUE)
-#' head(prostate.anon.per.feature)
+#' prostate_anon = h2o.anomaly(prostate_dl, prostate)
+#' head(prostate_anon)
+#' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature=TRUE)
+#' head(prostate_anon_per_feature)
 #' }
 #' @export
 h2o.anomaly <- function(object, data, per_feature=FALSE) {

@@ -143,9 +143,9 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
-         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
+def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
+         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
+         enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
          extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
@@ -153,6 +153,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
+    :param name: cloud name. If None while connecting to an existing cluster it will not check the cloud name.
+    If set then will connect only if the target cloud name matches. If no instance is found and decides to start a local
+    one then this will be used as the cloud name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
@@ -162,6 +165,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param start_h2o: If False, do not attempt to start an h2o server when connection to an existing one failed.
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
+    :param log_dir: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA.
+    Default is INFO. Ignored if connecting to an existing node.
     :param enable_assertions: Enable assertions in Java for the new h2o server.
     :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
@@ -175,6 +181,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(url, str, None)
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)
+    assert_is_type(name, str, None)
     assert_is_type(https, bool, None)
     assert_is_type(insecure, bool, None)
     assert_is_type(username, str, None)
@@ -184,6 +191,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
     assert_is_type(ice_root, str, None)
+    assert_is_type(log_dir, str, None)
+    assert_is_type(log_level, str, None)
+    assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
     assert_is_type(enable_assertions, bool)
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
@@ -192,7 +202,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
-                            "force_connect": bool})
+                            "force_connect": bool, "as_port": bool})
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None
@@ -248,21 +258,23 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     try:
-        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
-        if port and not str(port).endswith("+"):
+        if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
             port = str(port) + "+"
         if not start_h2o: raise
         if ip and not (ip == "localhost" or ip == "127.0.0.1"):
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath,
-                                  jvm_custom_args=jvm_custom_args, bind_to_localhost=bind_to_localhost)
+                                  min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
+                                  port=port, name=name,
+                                  extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
+                                  bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
@@ -294,7 +306,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None):
+                na_strings=None, skipped_columns=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -323,6 +335,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
           Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -339,14 +352,17 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert (skipped_columns==None) or isinstance(skipped_columns, list), \
+        "The skipped_columns should be an list of column names!"
+
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, pattern=None):
+                na_strings=None, pattern=None, skipped_columns=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -382,6 +398,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         of column names to strings which are to be interpreted as missing values.
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.
+    :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -404,6 +421,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
     if any(os.path.split(p)[0] == "~" for p in patharr):
@@ -412,7 +430,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     if not parse:
         return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
@@ -508,7 +526,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
-                column_types=None, na_strings=None):
+                column_types=None, na_strings=None, skipped_columns=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -523,10 +541,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
-    :param column_names: A list of column names for the file.
+    :param column_names: A list of column names for the file. If skipped_columns are specified, only list column names
+         of columns that are not skipped.
     :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
-        one will be guessed. The possible types a column may have are:
+        one will be guessed. If skipped_columns are specified, only list column types of columns that are not skipped.
+        The possible types a column may have are:
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
@@ -541,6 +561,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
@@ -569,16 +590,38 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         for w in j["warnings"]:
             warnings.warn(w)
     # TODO: really should be url encoding...
-    # TODO: clean up all this
     if destination_frame:
         j["destination_frame"] = destination_frame
+
+    parse_column_len = len(j["column_types"]) if skipped_columns is None else (len(j["column_types"])-len(skipped_columns))
+    tempColumnNames = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
+    useType = [True]*len(tempColumnNames)
+    if skipped_columns is not None:
+        useType = [True]*len(tempColumnNames)
+
+        for ind in range(len(tempColumnNames)):
+            if ind in skipped_columns:
+                useType[ind]=False
+
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
-        if len(column_names) != len(j["column_types"]): raise ValueError(
-            "length of col_names should be equal to the number of columns: %d vs %d"
-            % (len(column_names), len(j["column_types"])))
+        if (skipped_columns is not None) and len(skipped_columns)>0:
+            if (len(column_names)) != parse_column_len:
+                raise ValueError(
+                    "length of col_names should be equal to the number of columns parsed: %d vs %d"
+                    % (len(column_names), parse_column_len))
+        else:
+            if len(column_names) != len(j["column_types"]): raise ValueError(
+                "length of col_names should be equal to the number of columns: %d vs %d"
+                % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
-    if column_types is not None:
+        counter = 0
+        for ind in range(len(tempColumnNames)):
+            if useType[ind]:
+                tempColumnNames[ind]=column_names[counter]
+                counter=counter+1
+
+    if (column_types is not None): # keep the column types to include all columns
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names,
             # use type provided by backend
@@ -588,18 +631,28 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 "names specified in col_types is not a subset of the column names")
             idx = 0
             column_types_list = []
-            for name in j["column_names"]:
+
+            for name in tempColumnNames: # column_names may have already been changed
                 if name in column_types:
                     column_types_list.append(column_types[name])
                 else:
                     column_types_list.append(j["column_types"][idx])
                 idx += 1
+
             column_types = column_types_list
+
         elif isinstance(column_types, list):
-            if len(column_types) != len(j["column_types"]): raise ValueError(
-                "length of col_types should be equal to the number of columns")
-            column_types = [column_types[i] if column_types[i] else j["column_types"][i] for i in
-                            range(len(column_types))]
+            if len(column_types) != parse_column_len: raise ValueError(
+                "length of col_types should be equal to the number of parsed columns")
+            # need to expand it out to all columns, not just the parsed ones
+            column_types_list = j["column_types"]
+            counter = 0
+            for ind in range(len(j["column_types"])):
+                if useType[ind] and (column_types[counter]!=None):
+                    column_types_list[ind]=column_types[counter]
+                    counter=counter+1
+
+            column_types = column_types_list
         else:  # not dictionary or list
             raise ValueError("col_types should be a list of types or a dictionary of column names to types")
         j["column_types"] = column_types
@@ -624,6 +677,13 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             raise ValueError(
                 "na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
                 "names to strings which are to be interpreted as missing values")
+
+    if skipped_columns is not None:
+        if isinstance(skipped_columns, list):
+            j["skipped_columns"] = []
+            for colidx in skipped_columns:
+                if (colidx < 0): raise ValueError("skipped column index cannot be negative")
+                j["skipped_columns"].append(colidx)
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))

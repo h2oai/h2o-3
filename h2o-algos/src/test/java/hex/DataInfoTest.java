@@ -6,6 +6,9 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 
@@ -351,6 +354,50 @@ public class DataInfoTest extends TestUtil {
         di.dropInteractions();
         di.remove();
       }
+    }
+  }
+
+  @Test public void testCoefNames() throws IOException { // just test that it works at all
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    DataInfo dinfo = null;
+    try {
+      dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              Model.InteractionSpec.allPairwise(new String[]{fr.name(8),fr.name(16),fr.name(2)})  // interactions
+      );
+
+      Assert.assertNull(dinfo._coefNames); // coef names are not populated at first
+      final String[] cn = dinfo.coefNames();
+      Assert.assertNotNull(cn);
+      Assert.assertArrayEquals(cn, dinfo._coefNames); // coef names are cached after first accessed
+
+      DKV.put(dinfo);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      dinfo.writeAll(new AutoBuffer(baos, true)).close();
+      baos.close();
+
+      ByteArrayInputStream input = new ByteArrayInputStream(baos.toByteArray());
+      DataInfo deserialized = (DataInfo) Keyed.readAll(new AutoBuffer(input));
+      Assert.assertNotNull(deserialized);
+      Assert.assertArrayEquals(cn, deserialized._coefNames); // coef names were preserved in the deserialized object
+    } finally {
+      if (dinfo != null) {
+        dinfo.dropInteractions();
+        dinfo.remove();
+      }
+      fr.delete();
     }
   }
 

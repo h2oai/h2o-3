@@ -127,11 +127,17 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
-    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+    if (null == criterion || criterion.equals("")) {
+      throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+    }
+
     Method method = null;
+    Object obj = null;
+    criterion = criterion.toLowerCase();
     ConfusionMatrix cm = mm.cm();
     try {
-      method = mm.getClass().getMethod(criterion.toLowerCase());
+      method = mm.getClass().getMethod(criterion);
+      obj = mm;
     }
     catch (Exception e) {
       // fall through
@@ -139,7 +145,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     if (null == method && null != cm) {
       try {
-        method = cm.getClass().getMethod(criterion.toLowerCase());
+        method = cm.getClass().getMethod(criterion);
+        obj = cm;
       }
       catch (Exception e) {
         // fall through
@@ -148,20 +155,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     if (null == method)
       throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
 
-    double c;
     try {
-      c = (double) method.invoke(mm);
-    } catch(Exception fallthru) {
-      try {
-        c = (double)method.invoke(cm);
-      } catch (Exception e) {
-        throw new H2OIllegalArgumentException(
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e
-        );
-      }
+      return (double) method.invoke(obj);
+    } catch (Exception e) {
+      Log.err(e);
+      throw new H2OIllegalArgumentException(
+              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
+              "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e.getMessage()
+      );
     }
-    return c;
   }
 
 

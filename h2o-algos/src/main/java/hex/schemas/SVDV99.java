@@ -24,7 +24,8 @@ public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV9
         "keep_u",
         "u_name",
         "use_all_factor_levels",
-        "max_runtime_secs"
+        "max_runtime_secs",
+        "export_checkpoints_dir"
     };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of categorical class

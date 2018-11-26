@@ -11,7 +11,9 @@ import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.*;
@@ -20,6 +22,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -44,6 +47,9 @@ public class XGBoostTest extends TestUtil {
 
   @Parameterized.Parameter(1)
   public String confJavaPredict;
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Before
   public void setupMojoJavaScoring() {
@@ -1381,6 +1387,93 @@ public class XGBoostTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testMonotoneConstraints() {
+    Scope.enter();
+    try {
+      final String response = "power (hp)";
+
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
+      DKV.put(Scope.track(f));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._ignored_columns = new String[]{"name"};
+      parms._seed = 42;
+
+      XGBoostModel.XGBoostParameters noConstrParams = (XGBoostModel.XGBoostParameters) parms.clone();
+      XGBoostModel noConstrModel = new hex.tree.xgboost.XGBoost(noConstrParams).trainModel().get();
+      Scope.track_generic(noConstrModel);
+
+      assertTrue(ArrayUtils.contains(noConstrModel._output._varimp._names, "cylinders"));
+
+      XGBoostModel.XGBoostParameters constrParams = (XGBoostModel.XGBoostParameters) parms.clone();
+      constrParams._monotone_constraints = new KeyValue[] {new KeyValue("cylinders", -1)};
+      XGBoostModel constrModel = new hex.tree.xgboost.XGBoost(constrParams).trainModel().get();
+      Scope.track_generic(constrModel);
+
+      // we essentially eliminated the effect of the feature by setting an inverted constraint
+      assertFalse(ArrayUtils.contains(constrModel._output._varimp._names, "cylinders"));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testValidateMonotoneConstraints() {
+    Scope.enter();
+    try {
+      final String response = "power (hp)";
+
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Scope.track(f);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._seed = 42;
+
+      thrown.expect(H2OModelBuilderIllegalArgumentException.class);
+      thrown.expectMessage(CoreMatchers.containsString(
+              "Details: ERRR on field: _monotone_constraints: Invalid constraint - column 'name' has type Enum. Only numeric columns can have monotonic constraints."));
+      Model m = trainWithConstraints(parms, new KeyValue("name", -1));
+      assertNotNull(m); // shouldn't be reached
+      assertFalse(true);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMakeDataInfo() {
+    Scope.enter();
+    try {
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Scope.track(f);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._response_column = "year";
+      parms._train = f._key;
+
+      DataInfo dinfo = hex.tree.xgboost.XGBoost.makeDataInfo(f, null, parms, 1);
+      assertNotNull(dinfo._coefNames);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static XGBoostModel trainWithConstraints(XGBoostModel.XGBoostParameters p, KeyValue... constraints) {
+    XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) p.clone();
+    parms._monotone_constraints = constraints;
+    XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+    Scope.track_generic(model);
+    return model;
   }
 
   private static XGBoostMojoModel getMojo(XGBoostModel model) throws IOException {

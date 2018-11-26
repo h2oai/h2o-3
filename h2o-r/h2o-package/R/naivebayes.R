@@ -24,7 +24,7 @@
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param training_frame Id of the training data frame.
@@ -50,6 +50,7 @@
 #' @param eps_prob Cutoff below which probability is replaced with min_prob.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
 #'          response, and a Gaussian distribution of numeric predictors with mean and standard         deviation
 #'          computed from the training dataset. When building a naive Bayes classifier,         every row in the
@@ -60,9 +61,9 @@
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' votesPath <- system.file("extdata", "housevotes.csv", package="h2o")
-#' votes.hex <- h2o.uploadFile(path = votesPath, header = TRUE)
-#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes, laplace = 3)
 #' }
 #' @export
 h2o.naiveBayes <- function(x, y, training_frame,
@@ -71,7 +72,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            seed = -1,
                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                            fold_column = NULL,
-                           keep_cross_validation_models = FALSE,
+                           keep_cross_validation_models = TRUE,
                            keep_cross_validation_predictions = FALSE,
                            keep_cross_validation_fold_assignment = FALSE,
                            validation_frame = NULL,
@@ -89,7 +90,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            min_prob = 0.001,
                            eps_prob = 0,
                            compute_metrics = TRUE,
-                           max_runtime_secs = 0
+                           max_runtime_secs = 0,
+                           export_checkpoints_dir = NULL
                            ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -177,6 +179,8 @@ h2o.naiveBayes <- function(x, y, training_frame,
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('naivebayes', parms, h2oRestApiVersion = 3) 
 }

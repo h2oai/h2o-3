@@ -11,3 +11,4 @@ pyunit_INTERNAL_HDFS_import_folder_orc.py
 pyunit_INTERNAL_HDFS_baddata_orc.py
 pyunit_INTERNAL_HADOOP_download_logs.py
 pyunit_INTERNAL_XGBoostEstimation.py
+pyunit_INTERNAL_HDFS_PUBDEV_5705_drop_columns_parser_orc_large.py

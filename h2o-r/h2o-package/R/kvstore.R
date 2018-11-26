@@ -33,8 +33,8 @@
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.ls()
 #' }
 #' @export
@@ -54,8 +54,8 @@ h2o.ls <- function() {
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' prosPath <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.ls()
 #' h2o.removeAll()
 #' h2o.ls()
@@ -128,9 +128,9 @@ h2o.getFrame <- function(id) {
 #' library(h2o)
 #' h2o.init()
 #'
-#' iris.hex <- as.h2o(iris, "iris.hex")
-#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@model_id
-#' model.retrieved <- h2o.getModel(model_id)
+#' iris_hf <- as.h2o(iris)
+#' model_id <- h2o.gbm(x = 1:4, y = 5, training_frame = iris_hf)@@model_id
+#' model_retrieved <- h2o.getModel(model_id)
 #' }
 #' @export
 h2o.getModel <- function(model_id) {
@@ -231,7 +231,7 @@ h2o.getModel <- function(model_id) {
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #'
 #' h2o.download_pojo(my_model)  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working
@@ -316,7 +316,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' library(h2o)
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
-#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export

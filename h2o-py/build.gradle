@@ -31,11 +31,20 @@ task createVersionFiles() {
     }
 }
 
-
 task verifyDependencies(type: Exec) {
-    commandLine getOsSpecificCommandLine([pythonexe,
-                                          "scripts/verify_requirements.py",
-                                          "--metayaml", "conda/h2o/meta.yaml"])
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "scripts/verify_requirements.py",
+            "--metayaml", "conda/h2o/meta.yaml",
+            "--kind", "build"
+    ])
+}
+
+task verifyTestDependencies(type: Exec) {
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "scripts/verify_requirements.py",
+            "--metayaml", "conda/h2o/meta.yaml",
+            "--kind", "test"
+    ])
 }
 
 task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
@@ -65,7 +74,7 @@ task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, c
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
 
-task smokeTest(type: Exec, dependsOn: build) {
+task smokeTest(type: Exec, dependsOn: [verifyTestDependencies]) {
     workingDir testsPath
     List<String> args = [pythonexe, '../../scripts/run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {

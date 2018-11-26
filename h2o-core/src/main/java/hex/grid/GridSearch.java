@@ -1,6 +1,9 @@
 package hex.grid;
 
-import hex.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelParametersBuilderFactory;
+import hex.ScoringInfo;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -12,8 +15,6 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -218,8 +219,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
             //// build the model!
             model = buildModel(params, grid, ++counter, protoModelKey);
-
-            if (model!=null) {
+            if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
               ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
@@ -398,9 +398,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final MP params,
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-      final HyperSpaceSearchCriteria search_criteria) {
+      final HyperSpaceSearchCriteria searchCriteria) {
 
-    return startGridSearch(destKey, BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
+    return startGridSearch(
+        destKey,
+        BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, searchCriteria)
+    );
   }
 
 
@@ -421,15 +424,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
    */
-  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
-                                                                        final MP params,
-                                                                        final Map<String, Object[]> hyperParams) {
+  public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
+      final Key<Grid> destKey,
+      final MP params,
+      final Map<String, Object[]> hyperParams
+  ) {
     return startGridSearch(
-            destKey,
-            params,
-            hyperParams,
-            new SimpleParametersBuilderFactory<MP>(),
-            new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+        destKey,
+        params,
+        hyperParams,
+        new SimpleParametersBuilderFactory<MP>(),
+        new HyperSpaceSearchCriteria.CartesianSearchCriteria());
   }
 
   /**
@@ -445,7 +450,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
-      final HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+      final HyperSpaceWalker<MP, ?> hyperSpaceWalker
+    ) {
     // Compute key for destination object representing grid
     MP params = hyperSpaceWalker.getParams();
     Key<Grid> gridKey = destKey != null ? destKey

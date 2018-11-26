@@ -1,4 +1,4 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes,
+def call(final context, final String mode, final String commitMessage, final changes,
          final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
          final String xgbVersion, final String gradleVersion) {
   def buildConfig = new BuildConfig()
@@ -14,7 +14,7 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  private static final int DEFAULT_IMAGE_VERSION_TAG = 4
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 5
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/s3cmd'
 
@@ -74,7 +74,7 @@ class BuildConfig {
   private String xgbVersion
   private String gradleVersion
 
-  void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
+  void initialize(final context, final String mode, final String commitMessage, final changes,
                   final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
                   final String xgbVersion, final String gradleVersion) {
     this.mode = mode
@@ -290,7 +290,7 @@ class BuildConfig {
     return gradleVersion
   }
 
-  private void detectChanges(List<String> changes) {
+  private void detectChanges(changes) {
     markAllComponentsForSkip()
 
     changesMap[COMPONENT_ANY] = true

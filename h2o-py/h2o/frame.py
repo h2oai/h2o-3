@@ -19,8 +19,6 @@ from io import StringIO
 from types import FunctionType
 
 import requests
-import pandas as pd
-import numpy as np
 import math
 
 import h2o
@@ -58,7 +56,7 @@ class H2OFrame(object):
     #-------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
-                 column_names=None, column_types=None, na_strings=None):
+                 column_names=None, column_types=None, na_strings=None, skipped_columns=None):
         """
         Create a new H2OFrame object, possibly from some other object.
 
@@ -105,7 +103,7 @@ class H2OFrame(object):
         self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
-                                       column_names, column_types, na_strings)
+                                       column_names, column_types, na_strings, skipped_columns)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -118,7 +116,7 @@ class H2OFrame(object):
 
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
-                              column_names=None, column_types=None, na_strings=None):
+                              column_names=None, column_types=None, na_strings=None, skipped_columns=None):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
             self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
@@ -146,7 +144,7 @@ class H2OFrame(object):
         else:
             csv_writer.writerows(data_to_write)
         tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
         os.remove(tmp_path)  # delete the tmp file
 
 
@@ -311,24 +309,24 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
+    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
-        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+        self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns)
         return self
 
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
-        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings)
+        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns)
         return self
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None):
-        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
+               na_strings=None, skipped_columns=None):
+        setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns)
         return self._parse_raw(setup)
 
 
@@ -344,6 +342,7 @@ class H2OFrame(object):
              "delete_on_done": True,
              "blocking": False,
              "column_types": None,
+             "skipped_columns":None
              }
 
         if setup["column_names"]: p["column_names"] = None
@@ -2569,6 +2568,8 @@ class H2OFrame(object):
 
     def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
         '''
+        This method requires that you import the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
         This method will convert an H2OFrame to a DMatrix that can be used by native XGBoost.  The H2OFrame contains
         numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
         column. There can be NAs in any columns.
@@ -2599,6 +2600,8 @@ class H2OFrame(object):
         :return: DMatrix that can be an input to a native XGBoost model
         '''
         import xgboost as xgb
+        import pandas as pd
+        import numpy as np
         from scipy.sparse import csr_matrix
 
         assert isinstance(predictors, list) or isinstance(predictors, tuple)
@@ -3428,6 +3431,9 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     :param nrows: number of rows of enum col
     :return: panda frame with enum col encoded correctly for native XGBoost
     """
+    import numpy as np
+    import pandas as pd
+    
     cmissingNames=[cname+".missing(NA)"]
     tempnp = np.zeros((nrows,1), dtype=np.int)
     # check for nan and assign it correct value

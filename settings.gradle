@@ -14,7 +14,6 @@ include 'h2o-persist-s3'
 include 'h2o-persist-http'
 include 'h2o-docs'
 include 'h2o-hadoop:h2o-mapreduce-generic'
-include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 include 'h2o-bindings'
 include 'h2o-test-integ'
@@ -86,7 +85,6 @@ if (System.getProperty("user.name").equals("jenkins")
   // Include selected/all Hadoop targets
   if (System.getenv("BUILD_HADOOP") != "false") {
     targets.each { name ->
-      include "h2o-hadoop:h2o-${name}"
       include "h2o-hadoop:h2o-${name}-assembly"
     }
   }

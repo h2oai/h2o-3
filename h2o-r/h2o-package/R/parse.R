@@ -16,9 +16,10 @@
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
 #' @param col.names (Optional) An H2OFrame object containing a
-#'        single delimited line with the column names for the file.
+#'        single delimited line with the column names for the file.  If skipped_columns are specified,
+#'        only list column names of columns that are not skipped.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
-#'        over columns.
+#'        over columns.  If skipped_columns are specified, only list column types of columns that are not skipped.
 #' @param na.strings (Optional) H2O will interpret these strings as missing.
 #' @param blocking (Optional) Tell H2O parse call to block synchronously instead
 #'        of polling.  This can be faster for small datasets but loses the
@@ -28,22 +29,23 @@
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param chunk_size size of chunk of (input) data in bytes
+#' @param skipped_columns a list of column indices to be excluded from parsing
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
 h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL,
-                         decrypt_tool = NULL) {
+                         decrypt_tool = NULL, skipped_columns = NULL) {
   # Check and parse col.types in case col.types is supplied col.name = col.type vec
   if( length(names(col.types)) > 0 & typeof(col.types) != "list" ) {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types = NULL,
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
-                                   decrypt_tool = decrypt_tool)
+                                   decrypt_tool = decrypt_tool, skipped_columns=skipped_columns)
     idx = match(names(col.types), parse.params$column_names)
     parse.params$column_types[idx] = as.character(col.types)
   } else {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types,
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
-                                   decrypt_tool = decrypt_tool)
+                                   decrypt_tool = decrypt_tool, skipped_columns=skipped_columns)
   }
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
@@ -62,7 +64,8 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
             chunk_size = parse.params$chunk_size,
             delete_on_done = parse.params$delete_on_done,
             blocking = blocking,
-            decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool)
+            decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool),
+            skipped_columns = paste0("[", paste(parse.params$skipped_columns, collapse=','), "]")
             )
 
   # Perform the parse
@@ -124,7 +127,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
 #' @seealso \link{h2o.parseRaw}
 #' @export
 h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
-                           na.strings = NULL, parse_type = NULL, chunk_size = NULL, decrypt_tool = NULL) {
+                           na.strings = NULL, parse_type = NULL, chunk_size = NULL, decrypt_tool = NULL, skipped_columns=NULL) {
 
   # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
@@ -138,8 +141,13 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   # setup the parse parameters here
   parseSetup.params <- list()
 
+  if (!is.null(skipped_columns)) {
+    skipped_columns = sort(skipped_columns)
+  }
+  
   # Prep srcs: must be of the form [src1,src2,src3,...]
   parseSetup.params$source_frames <- .collapse.char(sapply(data, function (d) attr(d, "id")))
+  parseSetup.params$skipped_columns <- paste0("[", paste (skipped_columns, collapse = ','), "]")
 
   # check the header
   if( is.na(header) && is.null(col.names) ) parseSetup.params$check_header <-  0
@@ -156,16 +164,51 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   if( !is.null(decrypt_tool) ) parseSetup.params$decrypt_tool <- .decrypt_tool_id(decrypt_tool)
 
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
+  parsedColLength <- parseSetup$number_columns
+  if (!is.null(skipped_columns)) {
+    parsedColLength <- parsedColLength-length(skipped_columns)
+  }
+
+  tempColNames <- parseSetup$column_names
   # set the column names
   if (!is.null(col.names)) {
-    parseSetup$column_names <- if(is.H2OFrame(col.names)) colnames(col.names) else col.names
-    if (!is.null(parseSetup$column_names) && (length(parseSetup$column_names) != parseSetup$number_columns)) {
-                  stop("length of col.names must equal to the number of columns in dataset") } }
+    parseSetup$column_names <-
+      if (is.H2OFrame(col.names))
+        colnames(col.names)
+    else
+      col.names
+    if (!is.null(parseSetup$column_names) &&
+        (length(parseSetup$column_names) != parsedColLength)) {
+      stop("length of col.names must equal to the number of columns in dataset")
+    }
+    # change column names to what the user specified
+    if (!is.null(skipped_columns)) {
+      countParsedColumns = 1
+      for (cind in c(1:parseSetup$number_columns)) {
+        if (!((cind-1) %in% skipped_columns)) {
+          tempColNames[cind] = col.names[countParsedColumns]
+          countParsedColumns = countParsedColumns + 1
+        }
+      }
+    }
+  }
 
   # set col.types
-  if( !is.null(col.types) ) {
+  if( !is.null(col.types) ) { # list of enums
     if (typeof(col.types) == "character") {
+      if (!is.null(skipped_columns)) {
+        countParsedColumns = 1
+        for (cind in c(1:parseSetup$number_columns)) {
+          if ((cind-1) %in% skipped_columns) { # belongs to columns skipped
+            parseSetup$col_type[cind]=NA
+          } else { #column indices to be parsed
+            parseSetup$col_type[cind] = col.types[countParsedColumns]
+            countParsedColumns = countParsedColumns+1
+          }
+        }
+      } else {
         parseSetup$column_types <- col.types
+      }
     } else if ((typeof(col.types) == "list")) {
         list.names <- names(col.types)
         by.col.name <- ("by.col.name" %in% list.names)
@@ -174,9 +217,9 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
         if (by.col.name && typeof(col.types$by.col.name) != "character") stop("`by.col.name` must be character vector.")
         if (by.col.idx  && typeof(col.types$by.col.idx) != "double")     stop("`by.col.idx` must be vector of doubles.")
 
+        c <- 1
         if (by.col.name) {
             lapply(col.types$by.col.name, function(n) {
-                c <- 1
                 valid_col_name <- FALSE
                 if (is.null(parseSetup$column_names)) {
                     valid_col_name <- .valid.generated.col(n,parseSetup$number_columns)
@@ -184,15 +227,14 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
                     valid_col_name <- n %in% parseSetup$column_names }
                 if (!valid_col_name) stop("by.col.name must be a subset of the actual column names")
                 if (is.null(parseSetup$column_names)) {
-                    parseSetup$column_types[[as.numeric(substring(n,2))]] <<- col.types$types[c]
+                    parseSetup$column_types[as.numeric(substring(n,2))] <<- col.types$types[[c]]
                 } else {
-                    parseSetup$column_types[[which(n == parseSetup$column_names)]] <<- col.types$types[c] }
-                c <- c + 1 })
+                    parseSetup$column_types[which(n == tempColNames)] <<- col.types$types[[c]] }
+                c <<- c + 1 })
         } else {
-            c <- 1
             lapply(col.types$by.col.idx, function (i) {
-                parseSetup$column_types[[i]] <<- col.types$types[c]
-                c <- c + 1 })
+                parseSetup$column_types[i]<<- col.types$types[[c]]
+                c <<- c + 1 })
         }
     } else { stop("`col.types` must be a character vector or list") }
   }
@@ -224,7 +266,8 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
         chunk_size         = parseSetup$chunk_size,
         delete_on_done     = TRUE,
         warnings           = parseSetup$warnings,
-        decrypt_tool       = parseSetup$decrypt_tool
+        decrypt_tool       = parseSetup$decrypt_tool,
+        skipped_columns    = parseSetup$skipped_columns
         )
 }
 
@@ -246,14 +289,14 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' ksPath <- system.file("extdata", "keystore.jks", package = "h2o")
-#' keystore <- h2o.importFile(path = ksPath, parse = FALSE) # don't parse, keep as a binary file
+#' ks_path <- system.file("extdata", "keystore.jks", package = "h2o")
+#' keystore <- h2o.importFile(path = ks_path, parse = FALSE) # don't parse, keep as a binary file
 #' cipher <- "AES/ECB/PKCS5Padding"
 #' pwd <- "Password123"
-#' kAlias <- "secretKeyAlias"
-#' dt <- h2o.decryptionSetup(keystore, key_alias = kAlias, password = pwd, cipher_spec = cipher)
-#' dataPath <- system.file("extdata", "prostate.csv.aes", package = "h2o")
-#' data <- h2o.importFile(dataPath, decrypt_tool = dt)
+#' alias <- "secretKeyAlias"
+#' dt <- h2o.decryptionSetup(keystore, key_alias = alias, password = pwd, cipher_spec = cipher)
+#' data_path <- system.file("extdata", "prostate.csv.aes", package = "h2o")
+#' data <- h2o.importFile(data_path, decrypt_tool = dt)
 #' summary(data)
 #' }
 #' @export

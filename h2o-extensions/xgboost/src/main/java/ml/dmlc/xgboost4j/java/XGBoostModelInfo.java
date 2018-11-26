@@ -16,8 +16,20 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
+  public final XGBoostModel.XGBoostParameters _parameters; // not used, kept for debugging purposes
+  public final Key<DataInfo> _dataInfoKey;
+
   public String _featureMap;
   public byte[] _boosterBytes; // internal state of native backend
+
+  /**
+   * Main constructor
+   * @param origParams Model parameters
+   */
+  public XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, DataInfo dinfo) {
+    _parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
+    _dataInfoKey = dinfo._key;
+  }
 
   public String getFeatureMap() {
     return _featureMap;
@@ -26,8 +38,6 @@ final public class XGBoostModelInfo extends Iced {
   public void setFeatureMap(String featureMap) {
     _featureMap = featureMap;
   }
-
-  public Key<DataInfo> _dataInfoKey;
 
   public void setBoosterBytes(byte[] boosterBytes) {
     _boosterBytes = boosterBytes;
@@ -59,14 +69,8 @@ final public class XGBoostModelInfo extends Iced {
     return res;
   }
 
-  public XGBoostModel.XGBoostParameters parameters;
-
-  /**
-   * Main constructor
-   * @param origParams Model parameters
-   */
-  public XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams) {
-    parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
+  public DataInfo dataInfo() {
+    return _dataInfoKey.get();
   }
 
 }

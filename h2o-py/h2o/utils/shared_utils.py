@@ -143,6 +143,10 @@ def _handle_python_lists(python_obj, check_header):
     return header, python_obj
 
 
+def stringify_dict(d):
+    return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
+
+
 def stringify_list(arr):
     return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
@@ -174,7 +178,7 @@ def _handle_numpy_array(python_obj, header):
 
 
 def _handle_pandas_data_frame(python_obj, header):
-    data = _handle_python_lists(python_obj.as_matrix().tolist(), -1)[1]
+    data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
     return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):

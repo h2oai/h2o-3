@@ -7,7 +7,7 @@ class H2OTree():
     Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest).
     """
 
-    def __init__(self, model, tree_number, tree_class):
+    def __init__(self, model, tree_number, tree_class=None):
         params = {"model": model.model_id,
                   "tree_number": tree_number,
                   "tree_class": tree_class}
@@ -138,7 +138,7 @@ class H2OTree():
         string_levels = len(self._left_children) * [None]
 
         if type(model) is H2OXGBoostEstimator:
-            return string_levels;
+            return string_levels
 
         for i in range(0, len(self._left_children)):
             if (self._features[i] is None): continue

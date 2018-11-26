@@ -1,10 +1,13 @@
 package water.util;
 
-import org.eclipse.jetty.io.EofException;
 import water.Key;
-import water.fvec.NFSFileVec;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 
 /**
@@ -16,10 +19,24 @@ public class FileUtils {
    *
    * @param closeable files to close
    */
-  public static void close(Closeable...closeable) {
+  public static void closeSilently(Closeable...closeable) {
     for(Closeable c : closeable)
       try { if( c != null ) c.close(); } catch( IOException xe ) { }
   }
+
+  /**
+   * Closes given files, logging exceptions thrown during the process of closing.
+   *
+   * @param closeable files to close
+   */
+  public static void close(Closeable...closeable) {
+    for(Closeable c : closeable)
+      try { if( c != null ) c.close(); } catch( IOException ex ) {
+        Log.err(ex);
+      }
+  }
+
+
 
   public static void copyStream(InputStream is, OutputStream os, final int buffer_size) {
     try {
@@ -32,7 +49,7 @@ public class FileUtils {
         os.write(bytes, 0, count);
       }
     }
-    catch(EofException eofe) {
+    catch(EOFException eofe) {
       // no problem
     }
     catch(Exception ex) {

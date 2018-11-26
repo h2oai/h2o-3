@@ -15,6 +15,7 @@ For scoring, all computed metrics will take the observation weights into account
 
 - Weights can be specified as integers or as non-integers.
 - The weights column cannot be the same as the `fold_column <fold_column.html>`__. 
+- If a weights column is specified as both a feature (predictor) and a weight, the column will be used for weights only.
 - Example unit test scripts are available on GitHub:
 
   - https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/gbm/pyunit_weights_gbm.py
@@ -52,7 +53,7 @@ Example
 	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
+	predictors <- c("displacement","power","acceleration","year")
 	response <- "economy_20mpg"
 
 	# create a new column that specifies the weights
@@ -90,7 +91,7 @@ Example
 	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
 	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
+	predictors = ["displacement","power","acceleration","year"]
 	response = "economy_20mpg"
 
 	# create a new column that specifies the weights

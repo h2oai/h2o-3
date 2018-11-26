@@ -18,7 +18,7 @@
 #' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -58,7 +58,7 @@
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 #'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
-#'        "mean_per_class_error". Defaults to AUTO.
+#'        "mean_per_class_error", "custom", "custom_increasing". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -91,6 +91,7 @@
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -98,13 +99,13 @@
 #' library(h2o)
 #' h2o.init()
 #' 
-#' # Run regression GBM on australia.hex data
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(path = ausPath)
+#' # Run regression GBM on australia data
+#' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
+#' australia <- h2o.uploadFile(path = australia_path)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst",
 #' "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"
-#' h2o.gbm(y = dependent, x = independent, training_frame = australia.hex,
+#' h2o.gbm(y = dependent, x = independent, training_frame = australia,
 #' ntrees = 3, max_depth = 3, min_rows = 2)
 #' }
 #' @export
@@ -112,7 +113,7 @@ h2o.gbm <- function(x, y, training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
-                    keep_cross_validation_models = FALSE,
+                    keep_cross_validation_models = TRUE,
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     score_each_iteration = FALSE,
@@ -134,7 +135,7 @@ h2o.gbm <- function(x, y, training_frame,
                     nbins_cats = 1024,
                     r2_stopping = 1.797693135e+308,
                     stopping_rounds = 0,
-                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
                     max_runtime_secs = 0,
                     seed = -1,
@@ -159,6 +160,7 @@ h2o.gbm <- function(x, y, training_frame,
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
                     custom_metric_func = NULL,
+                    export_checkpoints_dir = NULL,
                     verbose = FALSE 
                     ) 
 {
@@ -300,6 +302,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$calibration_frame <- calibration_frame
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

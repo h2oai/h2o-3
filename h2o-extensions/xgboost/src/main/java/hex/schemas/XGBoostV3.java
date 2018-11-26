@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
+import water.api.schemas3.KeyValueV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 
 
@@ -34,6 +35,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "tweedie_power",
         "categorical_encoding",
         "quiet_mode",
+        "export_checkpoints_dir",
 
         // model specific
         "ntrees",
@@ -46,6 +48,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "col_sample_rate", "colsample_bylevel",
         "col_sample_rate_per_tree", "colsample_bytree",
         "max_abs_leafnode_pred", "max_delta_step",
+
+        "monotone_constraints",
 
         "score_tree_interval",
         "min_split_improvement", "gamma",
@@ -113,6 +117,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double colsample_bytree;
 
+    @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", level = API.Level.secondary)
+    public KeyValueV3[] monotone_constraints;
+
     @API(help="(same as max_delta_step) Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
     public float max_abs_leafnode_pred;
     @API(help="(same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
@@ -158,7 +165,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
     public float reg_alpha;
-    
+
     // no special support for missing value right now - missing value are handled by XGBoost internally
     //@API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
     //public XGBoostParameters.MissingValuesHandling missing_values_handling;

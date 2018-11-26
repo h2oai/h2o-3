@@ -42,7 +42,7 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help = "Grid search parameters.", direction = API.Direction.INOUT)
   public IcedHashMap<String, Object[]> hyper_parameters;
 
-  @API(help = "Destination id for this grid; auto-generated if not specified.", required = false, direction = API.Direction.INOUT)
+  @API(help = "Destination id for this grid; auto-generated if not specified.", direction = API.Direction.INOUT)
   public KeyV3.GridKeyV3 grid_id;
 
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
@@ -117,8 +117,10 @@ public class GridSearchSchema<G extends Grid<MP>,
       search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
     }
 
-
-    if (parms.containsKey("grid_id")) { grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id"))); parms.remove("grid_id"); }
+    if (parms.containsKey("grid_id")) {
+      grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
+      parms.remove("grid_id");
+    }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad
     // parameters (on purpose, many hyper-param points in the grid might be

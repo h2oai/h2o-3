@@ -21,13 +21,16 @@
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
 #'        predictors)/3. Defaults to -1.
-#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, sample_rate
-#'        will be used instead. Defaults to 256.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to -1.
+#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. Only one of parameters
+#'        sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will be ignored.
+#'        Defaults to 256.
+#' @param sample_rate Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be in range from 0.0
+#'        to 1.0. If set to -1, sample_rate is disabled and sample_size will be used instead. Defaults to -1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
 h2o.isolationForest <- function(training_frame, x,
                                 model_id = NULL,
@@ -45,7 +48,8 @@ h2o.isolationForest <- function(training_frame, x,
                                 sample_rate = -1,
                                 col_sample_rate_change_per_level = 1,
                                 col_sample_rate_per_tree = 1,
-                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
+                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                export_checkpoints_dir = NULL
                                 ) 
 {
 
@@ -94,6 +98,8 @@ h2o.isolationForest <- function(training_frame, x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   # Error check and build model
   .h2o.modelJob('isolationforest', parms, h2oRestApiVersion = 3) 
 }

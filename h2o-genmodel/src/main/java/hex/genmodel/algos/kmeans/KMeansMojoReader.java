@@ -30,4 +30,6 @@ public class KMeansMojoReader extends ModelMojoReader<KMeansMojoModel> {
     return new KMeansMojoModel(columns, domains, responseColumn);
   }
 
+  @Override public String mojoVersion() { return "1.00"; }
+
 }

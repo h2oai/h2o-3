@@ -1,8 +1,8 @@
 package water.api;
 
-import water.JettyHTTPD;
 import water.Key;
 import water.fvec.UploadFileVec;
+import water.server.ServletUtils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +15,7 @@ public class PostFileServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-    String uri = JettyHTTPD.getDecodedUri(request);
+    String uri = ServletUtils.getDecodedUri(request);
 
     try {
       String destination_frame = request.getParameter("destination_frame");
@@ -31,7 +31,7 @@ public class PostFileServlet extends HttpServlet {
       // JSON Payload returned is:
       //     { "destination_frame": "key_name", "total_bytes": nnn }
       //
-      InputStream is = JettyHTTPD.extractPartInputStream(request, response);
+      InputStream is = ServletUtils.extractPartInputStream(request, response);
       if (is == null) {
         return;
       }
@@ -45,9 +45,9 @@ public class PostFileServlet extends HttpServlet {
       response.setContentType("application/json");
       response.getWriter().write(responsePayload);
     } catch (Exception e) {
-      JettyHTTPD.sendErrorResponse(response, e, uri);
+      ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      JettyHTTPD.logRequest("POST", request, response);
+      ServletUtils.logRequest("POST", request, response);
     }
   }
 }

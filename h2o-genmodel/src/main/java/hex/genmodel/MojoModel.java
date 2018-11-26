@@ -18,6 +18,7 @@ public abstract class MojoModel extends GenModel {
   public double _defaultThreshold;
   public double[] _priorClassDistrib;
   public double[] _modelClassDistrib;
+  public double _mojo_version;
 
   /**
    * Primary factory method for constructing MojoModel instances.

@@ -33,14 +33,14 @@ h2o.findSynonyms <- function(word2vec, word, count = 20) {
 #'
 #' # Build a dummy word2vec model
 #' data <- as.character(as.h2o(c("a", "b", "a")))
-#' w2v.model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
+#' w2v_model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
 #'
 #' # Transform words to vectors without aggregation
 #' sentences <- as.character(as.h2o(c("b", "c", "a", NA, "b")))
-#' h2o.transform(w2v.model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
+#' h2o.transform(w2v_model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
 #'
 #' # Transform words to vectors and return average vector for each sentence
-#' h2o.transform(w2v.model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
+#' h2o.transform(w2v_model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
 #' }
 #' @export
 h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE")) {
@@ -69,10 +69,10 @@ h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE
 #'
 #' # Build a dummy word2vec model
 #' data <- as.character(as.h2o(c("a", "b", "a")))
-#' w2v.model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
+#' w2v_model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
 #'
 #' # Transform words to vectors and return average vector for each sentence
-#' h2o.toFrame(w2v.model) # -> Frame made of 2 rows and 2 columns
+#' h2o.toFrame(w2v_model) # -> Frame made of 2 rows and 2 columns
 #' }
 #' @export
 h2o.toFrame <- function(word2vec) {

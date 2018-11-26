@@ -1,12 +1,10 @@
 package hex.tree;
 
-import hex.example.ExampleModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
-import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.apache.commons.lang.ArrayUtils;
@@ -195,12 +193,12 @@ public class TreeHandlerTest extends TestUtil {
 
             // Invalid tree index
             args.tree_number = 1;
-            args.tree_class = "Iris-setosa";
+            args.tree_class = tfr.vec(parms._response_column).domain()[0];
             args.model = new KeyV3.ModelKeyV3(model._key);
             try {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e) {
-                assertTrue(e.getMessage().contains("There is no such tree number."));
+                assertEquals("Invalid tree index: 1. Tree index must be in range [0, 0].", e.getMessage());
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
@@ -225,7 +223,7 @@ public class TreeHandlerTest extends TestUtil {
             try {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e){
-                assertTrue(e.getMessage().contains("Tree number must be greater than 0."));
+                assertTrue(e.getMessage().contains("Invalid tree number: " + args.tree_number + ". Tree number must be >= 0."));
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);
@@ -265,7 +263,7 @@ public class TreeHandlerTest extends TestUtil {
             try {
                 treeHandler.getTree(3, args);
             } catch (IllegalArgumentException e) {
-                assertTrue(e.getMessage().contains("There are no tree classes for regression."));
+                assertTrue(e.getMessage().contains("There are no tree classes for Regression."));
                 exceptionThrown = true;
             }
             assertTrue(exceptionThrown);

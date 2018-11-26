@@ -20,6 +20,10 @@ public class TreeHandler extends Handler {
 
     public TreeV3 getTree(final int version, final TreeV3 args) {
 
+        if (args.tree_number < 0) {
+            throw new IllegalArgumentException("Invalid tree number: " + args.tree_number + ". Tree number must be >= 0.");
+        }
+
         final Keyed possibleModel = args.model.key().get();
         if (possibleModel == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
 
@@ -34,21 +38,16 @@ public class TreeHandler extends Handler {
             assert sharedTreeGraph.subgraphArray.size() == 1;
             sharedTreeSubgraph = sharedTreeGraph.subgraphArray.get(0);
 
-            if (ModelCategory.Regression.equals(((Model)possibleModel)._output.getModelCategory())) {
+            if (! ((Model)possibleModel)._output.isClassifier()) {
                 args.tree_class = null; // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
             }
         } else {
             final SharedTreeModel model = (SharedTreeModel) possibleModel;
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = (SharedTreeModel.SharedTreeOutput) model._output;
             final int treeClass = getResponseLevelIndex(args.tree_class, sharedTreeOutput);
-            validateArgs(args, sharedTreeOutput, treeClass);
             sharedTreeSubgraph = model.getSharedTreeSubgraph(args.tree_number, treeClass);
             // Class may not be provided by the user, should be always filled correctly on output. NULL for regression.
-            if (ModelCategory.Regression.equals(sharedTreeOutput.getModelCategory())) {
-                args.tree_class = null;
-            } else {
-                args.tree_class = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()][treeClass];
-            }
+            args.tree_class = sharedTreeOutput.isClassifier() ? sharedTreeOutput.classNames()[treeClass] : null;
         }
 
 
@@ -68,47 +67,33 @@ public class TreeHandler extends Handler {
     }
 
     private static int getResponseLevelIndex(final String categorical, final SharedTreeModel.SharedTreeOutput sharedTreeOutput) {
-        final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
         final String trimmedCategorical = categorical != null ? categorical.trim() : ""; // Trim the categorical once - input from the user
 
-        switch (sharedTreeOutput.getModelCategory()) {
-            case Binomial:
-                if (!trimmedCategorical.isEmpty() && !trimmedCategorical.equals(responseColumnDomain[0])) {
-                    throw new IllegalArgumentException("For binomial, only one tree class has been built per each iteration: " + responseColumnDomain[0]);
-                } else {
-                    return 0;
-                }
-            case Regression:
-                if (!trimmedCategorical.isEmpty())
-                    throw new IllegalArgumentException("There are no tree classes for regression.");
-                return 0; // There is only one tree for regression
-            default:
-                for (int i = 0; i < responseColumnDomain.length; i++) {
-                    // User is supposed to enter the name of the categorical level correctly, not ignoring case
-                    if (trimmedCategorical.equals(responseColumnDomain[i])) return i;
-                }
+        if (! sharedTreeOutput.isClassifier()) {
+            if (!trimmedCategorical.isEmpty())
+                throw new IllegalArgumentException("There are no tree classes for " + sharedTreeOutput.getModelCategory() + ".");
+            return 0; // There is only one tree for non-classification models
         }
-        return -1;
+
+        final String[] responseColumnDomain = sharedTreeOutput._domains[sharedTreeOutput.responseIdx()];
+        if (sharedTreeOutput.getModelCategory() == ModelCategory.Binomial) {
+            if (!trimmedCategorical.isEmpty() && !trimmedCategorical.equals(responseColumnDomain[0])) {
+                throw new IllegalArgumentException("For binomial, only one tree class has been built per each iteration: " + responseColumnDomain[0]);
+            } else {
+                return 0;
+            }
+        } else {
+            for (int i = 0; i < responseColumnDomain.length; i++) {
+                // User is supposed to enter the name of the categorical level correctly, not ignoring case
+                if (trimmedCategorical.equals(responseColumnDomain[i]))
+                    return i;
+            }
+            throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + trimmedCategorical);
+        }
     }
 
     /**
-     * @param args An instance of {@link TreeV3} input arguments to validate
-     * @param output An instance of {@link SharedTreeModel.SharedTreeOutput} to validate input arguments against
-     * @param responseLevelIndex
-     */
-    private static void validateArgs(TreeV3 args, SharedTreeModel.SharedTreeOutput output, final int responseLevelIndex) {
-        if (args.tree_number < 0) throw new IllegalArgumentException("Tree number must be greater than 0.");
-
-        if (args.tree_number > output._treeKeys.length - 1)
-            throw new IllegalArgumentException("There is no such tree number.");
-
-        if (responseLevelIndex < 0)
-            throw new IllegalArgumentException("There is no such tree class. Given categorical level does not exist in response column: " + args.tree_class.trim());
-    }
-
-
-    /**
-     * Converts H2O-3's internal representation of a boosted tree in a form of {@link SharedTreeSubgraph} to a format
+     * Converts H2O-3's internal representation of a tree in a form of {@link SharedTreeSubgraph} to a format
      * expected by H2O clients.
      *
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert

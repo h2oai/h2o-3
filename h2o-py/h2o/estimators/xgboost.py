@@ -30,13 +30,13 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "score_each_iteration", "fold_assignment", "fold_column", "response_column", "ignored_columns",
                       "ignore_const_cols", "offset_column", "weights_column", "stopping_rounds", "stopping_metric",
                       "stopping_tolerance", "max_runtime_secs", "seed", "distribution", "tweedie_power",
-                      "categorical_encoding", "quiet_mode", "ntrees", "max_depth", "min_rows", "min_child_weight",
-                      "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
-                      "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
-                      "score_tree_interval", "min_split_improvement", "gamma", "nthread", "max_bins", "max_leaves",
-                      "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type", "normalize_type", "rate_drop",
-                      "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda", "reg_alpha",
-                      "dmatrix_type", "backend", "gpu_id"}
+                      "categorical_encoding", "quiet_mode", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows",
+                      "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate",
+                      "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred",
+                      "max_delta_step", "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma",
+                      "nthread", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
+                      "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
+                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -98,7 +98,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("keep_cross_validation_models")
 
@@ -285,13 +285,14 @@ class H2OXGBoostEstimator(H2OEstimator):
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``, ``"custom_increasing"``
+        (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -400,6 +401,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def quiet_mode(self, quiet_mode):
         assert_is_type(quiet_mode, None, bool)
         self._parms["quiet_mode"] = quiet_mode
+
+
+    @property
+    def export_checkpoints_dir(self):
+        """
+        Automatically export generated models to this directory.
+
+        Type: ``str``.
+        """
+        return self._parms.get("export_checkpoints_dir")
+
+    @export_checkpoints_dir.setter
+    def export_checkpoints_dir(self, export_checkpoints_dir):
+        assert_is_type(export_checkpoints_dir, None, str)
+        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
     @property
@@ -610,6 +626,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_delta_step(self, max_delta_step):
         assert_is_type(max_delta_step, None, float)
         self._parms["max_delta_step"] = max_delta_step
+
+
+    @property
+    def monotone_constraints(self):
+        """
+        A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+        decreasing constraint.
+
+        Type: ``dict``.
+        """
+        return self._parms.get("monotone_constraints")
+
+    @monotone_constraints.setter
+    def monotone_constraints(self, monotone_constraints):
+        assert_is_type(monotone_constraints, None, dict)
+        self._parms["monotone_constraints"] = monotone_constraints
 
 
     @property

@@ -1,18 +1,17 @@
 package water;
 
 import water.init.HostnameGuesser;
-import water.init.NetworkInit;
+import water.server.Credentials;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
-import java.security.UnrecoverableKeyException;
 
 public class ProxyStarter {
 
-  public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo,
+  public static String start(String[] args, Credentials credentials, String proxyTo,
                              boolean useHostname) {
     if (! proxyTo.endsWith("/"))
       proxyTo = proxyTo + "/";
@@ -41,7 +40,7 @@ public class ProxyStarter {
     return hostname;
   }
 
-  private static JettyProxy initializeProxy(H2O.BaseArgs args, JettyProxy.Credentials credentials, String proxyTo) {
+  private static JettyProxy initializeProxy(H2O.BaseArgs args, Credentials credentials, String proxyTo) {
     int proxyPort = args.port == 0 ? args.baseport : args.port;
 
     JettyProxy proxy = new JettyProxy(args, credentials, proxyTo);
@@ -93,7 +92,7 @@ public class ProxyStarter {
 
   // just for local testing
   public static void main(String[] args) {
-    JettyProxy.Credentials cred = JettyProxy.Credentials.make(System.getProperty("user.name"), "Heslo123");
+    Credentials cred = Credentials.make(System.getProperty("user.name"), "Heslo123");
     String url = start(args, cred, "https://localhost:54321/", false);
     System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }

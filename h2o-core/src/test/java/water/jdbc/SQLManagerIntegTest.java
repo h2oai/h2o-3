@@ -12,16 +12,19 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 public class SQLManagerIntegTest extends TestUtil {
 
+  private static final File BUILD_DIR = new File("build").getAbsoluteFile();
+
   @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
+  public TemporaryFolder tmp = new TemporaryFolder(BUILD_DIR);
 
   private String connectionString;
 
@@ -32,13 +35,14 @@ public class SQLManagerIntegTest extends TestUtil {
 
   @BeforeClass
   public static void initDB() throws ClassNotFoundException {
+    System.setProperty("derby.stream.error.file", new File(BUILD_DIR, "SQLManagerIntegTest.derby.log").getAbsolutePath());
     Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
   }
 
   @Before
   public void createTable() throws Exception  {
-    connectionString = "jdbc:derby:" + tmp.newFolder("derby").getAbsolutePath() + "/myDB";
-    try (Connection conn = DriverManager.getConnection(connectionString + ";create=true");
+    connectionString = String.format("jdbc:derby:%s/SQLManagerIntegTest_DB;create=true", tmp.newFolder("derby").getAbsolutePath());
+    try (Connection conn = DriverManager.getConnection(connectionString);
          Statement stmt = conn.createStatement()) {
 
       stmt.executeUpdate("CREATE TABLE TestData (ID INT PRIMARY KEY, NAME VARCHAR(12))");

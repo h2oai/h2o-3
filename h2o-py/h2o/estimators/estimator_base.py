@@ -182,10 +182,9 @@ class H2OEstimator(ModelBase):
                             raise H2OValueError("Column %s not in the training frame" % xi)
                         xset.add(xi)
             x = list(xset)
-
-            parms["offset_column"] = offset_column
-            parms["fold_column"] = fold_column
-            parms["weights_column"] = weights_column
+            self._check_and_save_parm(parms, "offset_column", offset_column)
+            self._check_and_save_parm(parms, "weights_column", weights_column)
+            self._check_and_save_parm(parms, "fold_column", fold_column)
 
         if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
 
@@ -412,6 +411,9 @@ class H2OEstimator(ModelBase):
 
     def convert_H2OXGBoostParams_2_XGBoostParams(self):
         '''
+        In order to use convert_H2OXGBoostParams_2_XGBoostParams and convert_H2OFrame_2_DMatrix, you must import
+        the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
         Given an H2OXGBoost model, this method will generate the corresponding parameters that should be used by
         native XGBoost in order to give exactly the same result, assuming that the same dataset
         (derived from h2oFrame) is used to train the native XGBoost model.
@@ -447,3 +449,16 @@ class H2OEstimator(ModelBase):
         paramsSet = self.full_parameters
 
         return nativeXGBoostParams, paramsSet['ntrees']['actual_value']
+
+    def _check_and_save_parm(self, parms, parameter_name, parameter_value):
+        """
+        If a parameter is not stored in parms dict save it there (even though the value is None).
+        Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
+        """
+        if parameter_name not in parms:
+            parms[parameter_name] = parameter_value
+        elif parameter_value is not None and parms[parameter_name] != parameter_value:
+            parms[parameter_name] = parameter_value
+            warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method. The last passed value \"%s\" is used." % (parameter_name, parameter_value), UserWarning, stacklevel=2)
+
+

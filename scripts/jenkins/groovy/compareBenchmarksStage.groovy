@@ -56,42 +56,42 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'gbm-client': [
             'paribas': [
                 50: [
-                    'train_time_min': 12,
-                    'train_time_max': 16
+                    'train_time_min': 8,
+                    'train_time_max': 12
                 ],
                 200: [
-                    'train_time_min': 60,
-                    'train_time_max': 90
+                    'train_time_min': 28,
+                    'train_time_max': 40
                 ]
             ],
             'homesite': [
                 50: [
-                    'train_time_min': 12,
-                    'train_time_max': 16
+                    'train_time_min': 9,
+                    'train_time_max': 14
                 ],
                 200: [
-                    'train_time_min': 49,
-                    'train_time_max': 73
+                    'train_time_min': 38,
+                    'train_time_max': 50
                 ]
             ],
             'redhat': [
                 50: [
-                    'train_time_min': 32,
-                    'train_time_max': 40
+                    'train_time_min': 28,
+                    'train_time_max': 32
                 ],
                 200: [
-                    'train_time_min': 175,
-                    'train_time_max': 215
+                    'train_time_min': 125,
+                    'train_time_max': 140
                 ]
             ],
             'springleaf': [
                 50: [
-                    'train_time_min': 65,
-                    'train_time_max': 78
+                    'train_time_min': 55,
+                    'train_time_max': 68
                 ],
                 200: [
-                    'train_time_min': 570,
-                    'train_time_max': 615
+                    'train_time_min': 460,
+                    'train_time_max': 505
                 ]
             ],
             'higgs': [

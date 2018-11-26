@@ -44,4 +44,8 @@ public class Word2VecMojoReader extends ModelMojoReader<Word2VecMojoModel> {
     return new Word2VecMojoModel(columns, domains, responseColumn);
   }
 
+  @Override public String mojoVersion() {
+    return "1.00";
+  }
+
 }
