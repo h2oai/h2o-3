@@ -60,14 +60,6 @@ test.parseSkippedColumnsARFF<- function() {
   skipall <- onePermute
   skip99Per <- onePermute[1:floor(h2o.ncol(f1) * 0.99)]
 
-  # test skipall for h2o.importFile
-  e <-
-    tryCatch(
-      assertCorrectSkipColumns(fileName, fullFrameR, skipall, TRUE, h2o.getTypes(f1)),
-      error = function(x)
-        x
-    )
-  print(e)
   # test skipall for h2o.uploadFile
   e2 <-
     tryCatch(
@@ -80,7 +72,6 @@ test.parseSkippedColumnsARFF<- function() {
   # skip 99% of the columns randomly
   print("Testing skipping 99% of columns")
   assertCorrectSkipColumns(fileName, fullFrameR, skip99Per, TRUE, h2o.getTypes(f1)) # test importFile
-  assertCorrectSkipColumns(fileName, fullFrameR, skip99Per, FALSE, h2o.getTypes(f1)) # test uploadFile
 }
 
 
