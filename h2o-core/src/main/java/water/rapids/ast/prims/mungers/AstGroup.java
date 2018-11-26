@@ -450,8 +450,6 @@ public class AstGroup extends AstPrimitive {
 
     // Build the output!
     // the names of columns
-    // Build the output!
-    // the names of columns
     final int nCols = gbCols.length + noutCols;
     String[] names = new String[nCols];
     String[][] domains = new String[nCols][];
