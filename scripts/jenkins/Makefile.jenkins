@@ -163,18 +163,18 @@ pack-r-generated-docs:
 test-package-js:
 	zip -q -r test-package-js \
 		$(JENKINS_MAKEFILE_PATH) tests/ignoreFlowSmokeTestList scripts/run.py \
-		h2o-web/lib/h2o-flow/build/js/headless-test.js
+		h2o-web
 
-test-phantom-js-smoke:
+test-flow-headless-smoke:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
 
-test-phantom-js-small:
+test-flow-headless-small:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
 
-test-phantom-js-medium:
+test-flow-headless-medium:
 	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
 
-test-phantom-js:
+test-flow-headless:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
 
 test-info:

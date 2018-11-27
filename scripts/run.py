@@ -958,14 +958,14 @@ class Test(object):
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
-        # return ["phantomjs", test_name]
+        # return ["node", test_name]
         if g_perf:
-            return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+            return ["node", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
                    str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
         
         else:
-            return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+            return ["node", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
 
     def _scrape_output_for_seed(self):
