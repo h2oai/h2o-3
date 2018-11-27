@@ -7,17 +7,15 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.Lockable;
-import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -200,27 +198,42 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
+      autoMLBuildSpec.input_spec.response_column = "diabetesMed";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
-      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
-      int max_model_runtime_secs = 5;
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+      int max_model_runtime_secs = 10;
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DRF};
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_model_runtime_secs(max_model_runtime_secs);
-      autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
+      autoMLBuildSpec.build_control.keep_cross_validation_models = true; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
-      Pattern buildDuration = Pattern.compile("build in (\\d+)s");
-      for (UserFeedbackEvent event : aml.userFeedback().feedbackEvents) {
-        Matcher matcher = buildDuration.matcher(event.getMessage());
-        if (matcher.find()) {
-          int duration = Integer.parseInt(matcher.group(1));
-          assertTrue("this model took longer than required: "+event.getMessage(),
-              Math.abs(max_model_runtime_secs - duration) < 1);
+      int tolerance = (autoMLBuildSpec.build_control.nfolds + 1) * 2; //generously adding 2s tolerance for each model
+      for (Key<Model> key : aml.leaderboard().getModelKeys()) {
+        Model model = key.get();
+        double duration = model._output._run_time;
+        Log.info(key + " build duration (s): "+ duration / 1e3);
+        if (model._output._cross_validation_models != null) {
+          for (Key<Model> kcv : model._output._cross_validation_models) {
+            Model cv = kcv.get();
+            long cv_duration = cv._output._run_time;
+            Log.info(kcv + " build duration (s): "+ cv_duration / 1e3);
+            duration += cv_duration;
+          }
+          Log.info(key + " added build duration (s): "+ duration / 1e3);
         }
+        duration = model._output._total_run_time / 1e3;
+        Log.info(key + " model total build duration (s): "+ duration);
+        assertTrue(key + " took longer than required: "+ duration,
+            duration - max_model_runtime_secs < tolerance);
+        model.deleteCrossValidationModels();
       }
 
       // no assertion, we just want to check leaked keys
@@ -229,7 +242,6 @@ public class AutoMLTest extends water.TestUtil {
       if(aml!=null) aml.deleteWithChildren();
       if(fr != null) fr.delete();
     }
-
   }
 
   @Test public void KeepCrossValidationFoldAssignmentEnabledTest() {
