@@ -937,50 +937,6 @@ public class DTree extends Iced {
       }
     }
 
-    double nLeft = wlo[best];
-    double nRight = whi[best];
-
-    // For categorical (unordered) predictors, we sorted the bins by average
-    // prediction then found the optimal split on sorted bins
-    IcedBitSet bs = null;       // In case we need an arbitrary bitset
-    if( idxs != null ) {        // We sorted bins; need to build a bitset
-      int off = (int)hs._min;
-      bs = new IcedBitSet(nbins,off);
-      for( int i=best; i<nbins; i++ )
-        bs.set(idxs[i] + off);
-
-      // Throw empty (unseen) categorical buckets into the majority direction (should behave like NAs during testing)
-      int nonEmptyThatWentRight = 0;
-      int nonEmptyThatWentLeft = 0;
-      for (int i=0; i<nbins; i++) {
-        if (hs.w(i) > 0) {
-          if (bs.contains(i + off))
-            nonEmptyThatWentRight++;
-          else
-            nonEmptyThatWentLeft++;
-        }
-      }
-      boolean shouldGoLeft = nonEmptyThatWentLeft >= nonEmptyThatWentRight;
-      for (int i=0; i<nbins; i++) {
-        assert(bs.isInRange(i + off));
-        if (hs.w(i) == 0) {
-          if (bs.contains(i + off) && shouldGoLeft) {
-            bs.clear(i + off);
-          }
-          if (!bs.contains(i + off) && !shouldGoLeft) {
-            bs.set(i + off);
-          }
-        }
-      }
-
-      if (bs.cardinality()==0 || bs.cardinality()==bs.size()) {
-        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no separation of categoricals possible");
-        return null;
-      }
-
-      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
-    }
-
     if( best==0 && nasplit== DHistogram.NASplitDir.None) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no optimal split found:\n" + hs);
       return null;
@@ -992,6 +948,8 @@ public class DTree extends Iced {
       return null;
     }
 
+    double nLeft = wlo[best];
+    double nRight = whi[best];
     double predLeft = wYlo[best];
     double predRight = wYhi[best];
 
@@ -1022,6 +980,17 @@ public class DTree extends Iced {
       return null;
     }
 
+    // For categorical (unordered) predictors, we sorted the bins by average
+    // prediction then found the optimal split on sorted bins
+    IcedBitSet bs = null;       // In case we need an arbitrary bitset
+    if( idxs != null ) {        // We sorted bins; need to build a bitset
+      final int off = (int) hs._min;
+      bs = new IcedBitSet(nbins, off);
+      equal = fillBitSet(hs, off, idxs, best, nbins, bs);
+      if (equal < 0)
+        return null;
+    }
+
     // if still undecided (e.g., if there are no NAs in training), pick a good default direction for NAs in test time
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
@@ -1030,4 +999,41 @@ public class DTree extends Iced {
     if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
     return split;
   }
+
+  private static byte fillBitSet(DHistogram hs, int off, int[] idxs, int best, int nbins, IcedBitSet bs) {
+    for( int i=best; i<nbins; i++ )
+      bs.set(idxs[i] + off);
+
+    // Throw empty (unseen) categorical buckets into the majority direction (should behave like NAs during testing)
+    int nonEmptyThatWentRight = 0;
+    int nonEmptyThatWentLeft = 0;
+    for (int i=0; i<nbins; i++) {
+      if (hs.w(i) > 0) {
+        if (bs.contains(i + off))
+          nonEmptyThatWentRight++;
+        else
+          nonEmptyThatWentLeft++;
+      }
+    }
+    boolean shouldGoLeft = nonEmptyThatWentLeft >= nonEmptyThatWentRight;
+    for (int i=0; i<nbins; i++) {
+      assert(bs.isInRange(i + off));
+      if (hs.w(i) == 0) {
+        if (bs.contains(i + off) && shouldGoLeft) {
+          bs.clear(i + off);
+        }
+        if (!bs.contains(i + off) && !shouldGoLeft) {
+          bs.set(i + off);
+        }
+      }
+    }
+
+    if (bs.cardinality()==0 || bs.cardinality()==bs.size()) {
+      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no separation of categoricals possible");
+      return -1;
+    }
+
+    return (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
+  }
+
 }
