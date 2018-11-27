@@ -35,7 +35,6 @@ dependencies {
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testCompileOnly 'javax.servlet:servlet-api:2.5'
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
