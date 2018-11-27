@@ -32,7 +32,7 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',timeoutValue: 20,
+      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
@@ -148,7 +148,7 @@ def call(final pipelineContext) {
       timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS', target: 'test-phantom-js',
+      stageName: 'Flow Headless', target: 'test-flow-headless',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
@@ -240,11 +240,11 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
+      stageName: 'Flow Headless Small', target: 'test-flow-headless-small',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
+      stageName: 'Flow Headless Medium', target: 'test-flow-headless-medium',
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ]
   ]
