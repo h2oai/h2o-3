@@ -33,14 +33,7 @@ def runComparisonTests(autoEncoder, probleyType):
     test = df[:NTESTROWS, :]
     x = list(set(df.names) - {"response"})
 
-    if autoEncoder:
-        try:
-            deeplearningModel = build_save_model(params, x, train) # build and save mojo model
-        except Exception as err:
-            print("Autoencoder was not tested due to error {0}".format(err)) # print out error here
-            return
-    else:
-        deeplearningModel = build_save_model(params, x, train) # build and save mojo model
+    deeplearningModel = build_save_model(params, x, train) # build and save mojo model
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(deeplearningModel, TMPDIR, MOJONAME)  # load model and perform predict
     pred_pojo = pyunit_utils.pojo_predict(deeplearningModel, TMPDIR, MOJONAME)
