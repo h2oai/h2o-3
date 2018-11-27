@@ -111,6 +111,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
+    if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
     if(_parms._lambda_search) {
       _xval_test_deviances = new double[_parms._lambda.length];
       _xval_test_sd = new double [_parms._lambda.length];
@@ -515,7 +516,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _lmax = lmax(ginfo._gradient);
       _state.setLambdaMax(_lmax);
-      _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
       if (_parms._lambda_min_ratio == -1) {
         _parms._lambda_min_ratio = (_nobs >> 4) > _dinfo.fullN() ? 1e-4 : 1e-2;
         if(_parms._alpha[0] == 0)
@@ -553,10 +553,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
-      // clone2 so that I don't change instance which is in the DKV directly
-      // (clone2 also shallow clones _output)
-      _model.clone2().delete_and_lock(_job._key);
+      buildModel();
     }
+  }
+
+  // FIXME: contrary to other models, GLM output duration includes computation of CV models:
+  //  ideally the model should be instantiated in the #computeImpl() method instead of init
+  private void buildModel() {
+    _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+    // clone2 so that I don't change instance which is in the DKV directly
+    // (clone2 also shallow clones _output)
+    _model.clone2().delete_and_lock(_job._key);
   }
 
   protected static final long WORK_TOTAL = 1000000;
@@ -1211,6 +1218,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         init(true);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+//      buildModel();
+      _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
       if(_parms._lambda_search) {
         if (_parms._family == Family.ordinal)
           _nullDevTrain = new GLMResDevTaskOrdinal(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
@@ -1260,7 +1269,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(!_parms._lambda_search)
         updateProgress(false);
       // lambda search loop
-      for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
+      for (int i = 0; i < _parms._lambda.length && !stop_requested(); ++i) {  // lambda search
         if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
           break;
         Submodel sm = computeSubmodel(i,_parms._lambda[i]);
@@ -1291,6 +1300,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           scoreAndUpdateModel(); // update partial results
         }
         _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
+      }
+      if (stop_requested()) {
+        if (timeout()) {
+          Log.info("Stopping GLM training because of timeout");
+        } else {
+          throw new Job.JobCancelledException();
+        }
       }
       if(_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
@@ -1331,7 +1347,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(false);
-        return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
+        return !stop_requested() && _state._iter < _parms._max_iterations;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         if(gginfo._gradient == null)
@@ -1342,7 +1358,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           updateProgress(true);
         boolean converged = _state.converged();
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
-        return !timeout() && !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations;
+        return !stop_requested() && !converged && _state._iter < _parms._max_iterations;
       }
     }
 
@@ -1353,7 +1369,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         updateProgress(true);
       boolean converged = _state.converged();
       if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations ;
+      return !stop_requested() && !converged && _state._iter < _parms._max_iterations ;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;

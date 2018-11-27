@@ -43,10 +43,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
-  private long _start_time; //start time in msecs - only used for time-based stopping
+  private Countdown _build_model_countdown;
+  private Countdown _build_step_countdown;
+  private void startClock() {
+    _build_model_countdown = new Countdown((long)(_parms._max_runtime_secs * 1000), true);
+  }
   protected boolean timeout() {
-    assert(_start_time > 0) : "Must set _start_time for each individual model.";
-    return _parms._max_runtime_secs > 0 && System.currentTimeMillis() - _start_time > (long) (_parms._max_runtime_secs * 1e3);
+    return _build_step_countdown != null ? _build_step_countdown.timedOut() : _build_model_countdown.timedOut();
   }
   protected boolean stop_requested() {
     return _job.stop_requested() || timeout();
@@ -236,6 +239,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       res._output._job = _job;
       res._output.stopClock();
     }
+    Log.info("Completing model "+ reskey);
   }
 
   private void saveModelCheckpointIfConfigured() {
@@ -298,7 +302,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   final public Job<M> trainModel() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-    _start_time = System.currentTimeMillis();
+    startClock();
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
@@ -339,7 +343,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       setTrain(fr);
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-    _start_time = System.currentTimeMillis();
+    startClock();
     if( !nFoldCV() ) trainModelImpl().compute2();
     else computeCrossValidation();
     return _result.get();
@@ -389,10 +393,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Each model can override this logic, based on parameters, dataset size, etc.
    * @return How many models to train in parallel during cross-validation
    */
-  protected int nModelsInParallel() {
-    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
-    return 1; //safe fallback
+  protected int nModelsInParallel(int folds) {
+    return nModelsInParallel(folds, 1);
+  }
+
+  protected int nModelsInParallel(int folds, int defaultParallelization) {
+    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
+    if (_train.byteSize() < 1e6) return folds; //for small data, parallelize over CV models
+    // TODO: apply better heuristic, estimating parallelization based on H2O.getCloudSize() and H2O.ARGS.nthreads
+    return defaultParallelization;
+  }
+
+  private double maxRuntimeSecsPerModel(int cvModelsCount, int parallelization) {
+    return cvModelsCount > 0
+        ? _parms._max_runtime_secs / Math.ceil((double)cvModelsCount / parallelization + 1)
+//        ? _parms._max_runtime_secs * cvModelsCount / (cvModelsCount + 1) / Math.ceil((double)cvModelsCount / parallelization)
+        : _parms._max_runtime_secs;
   }
 
   // Work for each requested fold
@@ -412,7 +428,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
-    final Integer N = nFoldWork();
+    final int N = nFoldWork();
     init(false);
     ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
@@ -434,7 +450,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
       // Step 6: Build the main model
-      buildMainModel();
+      long time_allocated_to_main_model = (long)(maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
+      buildMainModel(time_allocated_to_main_model);
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
@@ -536,6 +553,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     List<Frame> cvFramesForFailedModels = new ArrayList<>();
+    double cv_max_runtime_secs = maxRuntimeSecsPerModel(N, nModelsInParallel(N));
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
@@ -558,6 +576,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
+      cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
 
       // Error-check all the cross-validation Builders before launching any
@@ -591,7 +610,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(), 0 /*no job updates*/);
+    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/);
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
@@ -617,7 +636,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new Job.JobCancelledException();
       }
       Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
-      modelBuilders[i]._start_time = System.currentTimeMillis();
+      modelBuilders[i].startClock();
       submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
       if(++nRunning == parallelization) { //piece-wise advance in training the models
         while (nRunning > 0) try {
@@ -692,16 +711,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 6: build the main model
-  private void buildMainModel() {
+  private void buildMainModel(long max_runtime_millis) {
     if (_job.stop_requested()) {
       Log.info("Skipping main model");
       throw new Job.JobCancelledException();
     }
     assert _job.isRunning();
     Log.info("Building main model.");
-    _start_time = System.currentTimeMillis();
+    Log.info("Remaining time for main model (ms): " + max_runtime_millis);
+    _build_step_countdown = new Countdown(max_runtime_millis, true);
     H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
     mm.join();  // wait for completion
+    _build_step_countdown = null;
   }
 
   // Step 7: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
@@ -760,6 +781,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.info(count+" CV models were removed");
     }
 
+    mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
   }
