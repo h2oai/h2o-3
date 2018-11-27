@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 ######################################################################################
 pubdev.3847.test <-
   function() {
-      file <- locate("smalldata/gbm_test/pubdev-3847.zip")
+      file <- locate("smalldata/jira/pubdev_3847.csv")
       data <- h2o.importFile(file, destination_frame = "pubdev3847.data", parse = FALSE)
       response <- "class"
       features <- setdiff(names(data), response)
@@ -19,10 +19,12 @@ pubdev.3847.test <-
       nfolds <- 2
       min_split_improvement <- 1e-04
 
-      model <- h2o.gbm(x = features,y = response,training_frame = data,model_id ="amodel",ntrees = ntrees,
+      for (i in 1:100){
+          model <- h2o.gbm(x = features,y = response,training_frame = data,model_id ="amodel",ntrees = ntrees,
                         max_depth =max_depth ,min_rows = min_rows,learn_rate = learn_rate,
                         sample_rate =sample_rate ,col_sample_rate_per_tree =col_sample_rate_per_tree ,
                         nfolds = nfolds,min_split_improvement = min_split_improvement)
+      }
   }
 
 doTest("PUBDEV-3847", pubdev.3847.test)

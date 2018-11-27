@@ -7,7 +7,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 # Turn the PUBDEV-3847 issue into the test and check if it fails
 def test_pubdev_3847():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/pubdev-3847.zip"), destination_frame="train")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/pubdev_3847.csv"), destination_frame="train")
     train.describe()
 
     ntrees = 100
@@ -21,7 +21,8 @@ def test_pubdev_3847():
     response = "class"
     features = train.col_names.remove(response)
 
-    my_gbm = H2OGradientBoostingEstimator(ntrees=ntrees,
+    for i in range(1,100):
+        my_gbm = H2OGradientBoostingEstimator(ntrees=ntrees,
                                           max_depth=max_depth,
                                           min_rows=min_rows,
                                           learn_rate=learn_rate,
@@ -29,7 +30,7 @@ def test_pubdev_3847():
                                           col_sample_rate_per_tree=col_sample_rate_per_tree,
                                           nfolds=nfolds,
                                           min_split_improvement=min_split_improvement)
-    my_gbm.train(x=features, y=response, training_frame=train, validation_frame=train)
+        my_gbm.train(x=features, y=response, training_frame=train, validation_frame=train)
 
 
 if __name__ == "__main__":
