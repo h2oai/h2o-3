@@ -24,6 +24,7 @@ import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.OSUtils;
 import water.util.PrettyPrint;
+import water.webserver.iface.WebServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -414,9 +415,6 @@ final public class H2O {
       return hdfs_skip;
     }
 
-    public static int getSysPropInt(String suffix, int defaultValue) {
-      return Integer.getInteger(SYSTEM_PROP_PREFIX + suffix, defaultValue);
-    }
   }
 
   public static void parseFailed(String message) {
@@ -752,7 +750,7 @@ final public class H2O {
 
 
   public static void closeAll() {
-    try { H2O.getJetty().stop(); } catch( Exception ignore ) { }
+    try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
     try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
@@ -1489,12 +1487,12 @@ final public class H2O {
   // as part of joining the cluster so all nodes have the same value.
   public static final long CLUSTER_ID = System.currentTimeMillis();
 
-  private static JettyHTTPD jetty;
-  public static void setJetty(JettyHTTPD value) {
-    jetty = value;
+  private static WebServer webServer;
+  public static void setWebServer(WebServer value) {
+    webServer = value;
   }
-  public static JettyHTTPD getJetty() {
-    return jetty;
+  public static WebServer getWebServer() {
+    return webServer;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
@@ -1560,7 +1558,7 @@ final public class H2O {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
               "  1. Open a terminal and run 'ssh -L 55555:localhost:"
               + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-              "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+              "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
     // Create the starter Cloud with 1 member
@@ -1631,7 +1629,7 @@ final public class H2O {
    */
   public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
-      jetty.acceptRequests();
+      NetworkInit.h2oHttpView.acceptRequests();
     }
   }
 
