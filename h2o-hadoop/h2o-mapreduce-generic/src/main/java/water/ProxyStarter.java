@@ -109,7 +109,7 @@ public class ProxyStarter {
 
   // just for local testing
   public static void main(String[] args) {
-    Credentials cred = Credentials.make(System.getProperty("user.name"), "Heslo123");
+    Credentials cred = new Credentials(System.getProperty("user.name"), "Heslo123");
     String url = start(args, cred, "https://localhost:54321/", false);
     System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }

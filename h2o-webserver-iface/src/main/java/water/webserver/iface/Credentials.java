@@ -13,7 +13,7 @@ public class Credentials {
   private final String _user;
   private final String _password;
 
-  private Credentials(String _user, String _password) {
+  public Credentials(String _user, String _password) {
     this._user = _user;
     this._password = _password;
   }
@@ -28,10 +28,6 @@ public class Credentials {
 
   public String toDebugString() {
     return "Credentials[_user='" + _user + "', _password='" + _password + "']";
-  }
-
-  public static Credentials make(String user, String password) {
-    return new Credentials(user, password);
   }
 
   /**

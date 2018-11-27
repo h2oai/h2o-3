@@ -167,7 +167,7 @@ public class h2odriver extends Configured implements Tool {
   volatile String flatfileContent = null;
 
   private static Credentials make(String user) {
-    return Credentials.make(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
+    return new Credentials(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
   }
 
   public void setShutdownRequested() {
