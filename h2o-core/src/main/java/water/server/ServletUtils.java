@@ -23,6 +23,13 @@ import java.util.Arrays;
  * Utilities supporting HTTP server-side functionality, without depending on specific version of Jetty, or on Jetty at all.
  */
 public class ServletUtils {
+
+  /**
+   * Adds headers that disable browser-side Cross-Origin Resource checks - allows requests
+   * to this server from any origin.
+   */
+  private static final boolean DISABLE_CORS = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "disable.cors");
+
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
@@ -168,6 +175,11 @@ public class ServletUtils {
   public static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
     if (xhrRequest) {
       response.setHeader("Cache-Control", "no-cache");
+    }
+    if (DISABLE_CORS) {
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.setHeader("Access-Control-Allow-Headers", "*");
+      response.setHeader("Access-Control-Allow-Methods", "*");
     }
     response.setHeader("X-h2o-build-project-version", H2O.ABV.projectVersion());
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
