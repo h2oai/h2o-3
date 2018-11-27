@@ -552,9 +552,9 @@ def class_extra_for(algo):
         """
     elif algo == "pca":
         return """
-        def transform(self, X, y=None, **params):
+        def fit_transform(self, X, y=None, **params):
             \"\"\"
-            Transform the given H2OFrame with the fitted PCA model.
+            Fit and transform the given H2OFrame with the fitted PCA model.
             This method has to be implemented to be used with sklearn.pipeline module.
 
             :param H2OFrame X: May contain NAs and/or categorical data.
@@ -563,7 +563,7 @@ def class_extra_for(algo):
 
             :returns: The input H2OFrame transformed by the Principal Components.
             \"\"\"
-            return self.predict(X)
+            return self.fit(X, y, **params).predict(X)
         """
 
 
