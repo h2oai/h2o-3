@@ -465,7 +465,9 @@ public class AstGroup extends AstPrimitive {
     }
     Vec v = Vec.makeZero(ngrps); // dummy layout vec
     // Convert the output arrays into a Frame, also doing the post-pass work
-    return mrfill.doAll(types, new Frame(v)).outputFrame(names, domains);
+    Frame f =  mrfill.doAll(types, new Frame(v)).outputFrame(names, domains);
+    v.remove();
+    return f;
   }
 
   // Description of a single aggregate, including the reduction function, the
