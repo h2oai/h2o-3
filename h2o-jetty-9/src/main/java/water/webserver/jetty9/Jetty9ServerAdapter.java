@@ -1,4 +1,4 @@
-package water.webserver.jetty8;
+package water.webserver.jetty9;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -21,19 +21,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-class Jetty8ServerAdapter implements WebServer {
-  private final Jetty8Helper helper;
+class Jetty9ServerAdapter implements WebServer {
+  private final Jetty9Helper helper;
   private final H2OHttpView h2oHttpView;
   private Server jettyServer;
 
-  private Jetty8ServerAdapter(Jetty8Helper helper, H2OHttpView h2oHttpView) {
+  private Jetty9ServerAdapter(Jetty9Helper helper, H2OHttpView h2oHttpView) {
     this.helper = helper;
     this.h2oHttpView = h2oHttpView;
   }
 
   static WebServer create(final H2OHttpView h2oHttpView) {
-    final Jetty8Helper helper = new Jetty8Helper(h2oHttpView);
-    return new Jetty8ServerAdapter(helper, h2oHttpView);
+    final Jetty9Helper helper = new Jetty9Helper(h2oHttpView);
+    return new Jetty9ServerAdapter(helper, h2oHttpView);
   }
 
   @Override

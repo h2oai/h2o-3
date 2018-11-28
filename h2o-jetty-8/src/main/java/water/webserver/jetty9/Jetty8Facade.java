@@ -1,4 +1,4 @@
-package water.webserver.jetty8;
+package water.webserver.jetty9;
 
 import water.webserver.iface.Credentials;
 import water.webserver.iface.H2OHttpView;

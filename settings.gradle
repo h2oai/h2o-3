@@ -29,6 +29,7 @@ include 'h2o-ext-xgboost'
 include 'h2o-ext-krbstandalone'
 include 'h2o-webserver-iface'
 include 'h2o-jetty-8'
+include 'h2o-jetty-9'
 include 'h2o-ext-jython-cfunc'
 
 // GRPC support

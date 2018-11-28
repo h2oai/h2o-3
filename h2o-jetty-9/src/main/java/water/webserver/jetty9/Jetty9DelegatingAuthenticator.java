@@ -1,4 +1,4 @@
-package water.webserver.jetty8;
+package water.webserver.jetty9;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -16,12 +16,12 @@ import javax.servlet.http.HttpServletRequest;
  * The decision is made based on user's "User-Agent". Browser clients will use Form based
  * authentication, all other clients will use basic auth.
  */
-class Jetty8DelegatingAuthenticator implements Authenticator {
+class Jetty9DelegatingAuthenticator implements Authenticator {
 
   private BasicAuthenticator _basicAuth;
   private FormAuthenticator _formAuth;
 
-  Jetty8DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
+  Jetty9DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
     _basicAuth = basicAuth;
     _formAuth = formAuth;
   }
@@ -35,6 +35,11 @@ class Jetty8DelegatingAuthenticator implements Authenticator {
   @Override
   public String getAuthMethod() {
     return "FORM_PREFERRED";
+  }
+
+  @Override
+  public void prepareRequest(ServletRequest request) {
+    // Do nothing
   }
 
   @Override

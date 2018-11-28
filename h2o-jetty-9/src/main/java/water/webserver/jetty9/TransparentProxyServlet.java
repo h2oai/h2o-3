@@ -1,7 +1,7 @@
-package water.webserver.jetty8;
+package water.webserver.jetty9;
 
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.servlets.ProxyServlet;
+import org.eclipse.jetty.proxy.ProxyServlet;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -19,8 +19,10 @@ public class TransparentProxyServlet extends ProxyServlet.Transparent {
     _basicAuth = config.getInitParameter("BasicAuth");
   }
 
-  @Override
+
+
+
   protected void customizeExchange(HttpExchange exchange, HttpServletRequest request) {
-    exchange.setRequestHeader("Authorization", _basicAuth);
+    exchange.getRequest().header("Authorization", _basicAuth);
   }
 }

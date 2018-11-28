@@ -51,7 +51,7 @@ dependencies {
   testCompile "org.apache.derby:derby:10.14.2.0"
 
   // Jetty needs to be here for tests
-  runtimeOnly project(':h2o-jetty-8')
+  runtimeOnly project(':h2o-jetty-9')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
