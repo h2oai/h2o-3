@@ -453,16 +453,19 @@ public class AstGroup extends AstPrimitive {
     final int nCols = gbCols.length + noutCols;
     String[] names = new String[nCols];
     String[][] domains = new String[nCols][];
+    byte[] types = new byte[nCols];
     for (int i = 0; i < gbCols.length; i++) {
       names[i] = fr.name(gbCols[i]);
       domains[i] = fr.domains()[gbCols[i]];
+      types[i] = fr.vec(names[i]).get_type();
     }
-    for (int i = 0; i < fcnames.length; i++)
+    for (int i = 0; i < fcnames.length; i++) {
       names[i + gbCols.length] = fcnames[i];
+      types[i + gbCols.length] = Vec.T_NUM;
+    }
     Vec v = Vec.makeZero(ngrps); // dummy layout vec
-
     // Convert the output arrays into a Frame, also doing the post-pass work
-    Frame f = mrfill.doAll(nCols, Vec.T_NUM, new Frame(v)).outputFrame(names, domains);
+    Frame f =  mrfill.doAll(types, new Frame(v)).outputFrame(names, domains);
     v.remove();
     return f;
   }
