@@ -40,11 +40,6 @@ public abstract class FileVec extends ByteVec {
     setChunkSize((int)length()/n);
   }
 
-  @Override
-  public int chunkLen(int cidx) {
-    return (int) (_len / _chunkSize);
-  }
-
   /**
    * Chunk size must be positive, 1G or less, and a power of two.
    * Any values that aren't a power of two will be reduced to the
