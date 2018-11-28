@@ -1,4 +1,4 @@
-package water.webserver.jetty8;
+package water.webserver.jetty9;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;

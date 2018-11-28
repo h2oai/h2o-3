@@ -16,7 +16,7 @@ configurations {
 // Dependencies
 dependencies {
     compile project(":h2o-app")
-    runtime project(":h2o-jetty-8")
+    runtime project(":h2o-jetty-9")
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
     compile project(":h2o-persist-gcs")
