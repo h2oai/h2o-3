@@ -4960,7 +4960,7 @@ h2o.target_encode_fit <- function (fr, x, y, fold_column)
     } else {
         fold_column_name <- fold_column
     }
-    encoding_map <- .eval.driver(.newExprMap("target.encoder.fit", fr, x, .quote(y), .quote(fold_column_name)))
+    encoding_map <- .eval.driver(.newExprMap("target.encoder.fit", fr, unlist(x), .quote(y), .quote(fold_column_name)))
     return(encoding_map)
 }
 

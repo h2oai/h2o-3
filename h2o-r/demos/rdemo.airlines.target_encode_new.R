@@ -43,7 +43,7 @@ loo_valid <- valid
 loo_test <- test
 
 # Create Leave One Out Encoding Map
-encoding_map <- h2o.target_encode_fit(full_train, unlist(te_cols), "IsDepDelayed")
+encoding_map <- h2o.target_encode_fit(full_train, te_cols, "IsDepDelayed")
 
 
 # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
@@ -62,7 +62,7 @@ loo_valid <- h2o.target_encode_transform(frame=loo_valid, x = te_cols, y = "IsDe
 loo_test <- h2o.target_encode_transform(frame=loo_test, x = te_cols, y = "IsDepDelayed",
                                         encoding_map=encoding_map, holdout_type = "None",
                                         blending=TRUE, inflection_point = 10, smoothing=5,
-                                        is_train_or_valid=TRUE,
+                                        is_train_or_valid=FALSE,
                                         noise=0, seed = 1234)
 
 print("Run GBM with Leave One Out Target Encoding")
@@ -78,39 +78,52 @@ h2o.varimp_plot(loo_gbm)
 
 
 
-# ############################################## KFold ###################################################################
-# print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
-#
-# # For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
-# # There is possible data leakage since we are creating the encoding map on the training and applying it to the training
-# # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
-#
-# cv_train <- full_train
-# cv_valid <- valid
-# cv_test <- test
-# cv_train$fold <- h2o.kfold_column(cv_train, nfolds = 5, seed = 1234)
-#
-# # Create Encoding Map
-# encoding_map <- h2o.target_encode_create(cv_train, te_cols, "IsDepDelayed", "fold")
+############################################## KFold ###################################################################
+print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
 
-# # Apply Encoding Map on Training, Validation, Testing Data
-# cv_train <- h2o.target_encode_apply(cv_train, x = te_cols,  y = "IsDepDelayed", encoding_map, holdout_type = "KFold", fold_column = "fold", seed = 1234)
-# cv_valid <- h2o.target_encode_apply(cv_valid, x = te_cols, y = "IsDepDelayed", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
-# cv_test <- h2o.target_encode_apply(cv_test, x = te_cols, y = "IsDepDelayed", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
-#
-# print("Run GBM with Cross Validation Target Encoding")
-# cvte_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
-#                     training_frame = cv_train, validation_frame = cv_valid,
-#                     ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm",
-#                     # Early Stopping
-#                     stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-#                     seed = 1)
-#
-# h2o.varimp_plot(cvte_gbm)
-#
-#
-#
-#
+# For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
+# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
+# To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
+
+kfold_train <- full_train
+kfold_valid <- valid
+kfold_test <- test
+kfold_train$fold <- h2o.kfold_column(kfold_train, nfolds = 5, seed = 1234)
+
+# Create Encoding Map
+encoding_map <- h2o.target_encode_fit(kfold_train, te_cols, "IsDepDelayed", "fold")
+
+# Apply Encoding Map on Training, Validation, Testing Data
+kfold_train <- h2o.target_encode_transform(frame=kfold_train, x = te_cols, y = "IsDepDelayed",
+                                        encoding_map=encoding_map, holdout_type = "KFold", fold_column = "fold",
+                                        blending=TRUE, inflection_point = 10, smoothing=5,
+                                        is_train_or_valid=TRUE,
+                                        noise=-1, seed = 1234)
+
+kfold_valid <- h2o.target_encode_transform(frame=kfold_valid, x = te_cols, y = "IsDepDelayed",
+                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
+                                        blending=TRUE, inflection_point = 10, smoothing=5,
+                                        is_train_or_valid=TRUE,
+                                        noise=0, seed = 1234)
+
+kfold_test <- h2o.target_encode_transform(frame=kfold_test, x = te_cols, y = "IsDepDelayed",
+                                        encoding_map=encoding_map, holdout_type = "None", fold_column = "fold",
+                                        blending=TRUE, inflection_point = 10, smoothing=5,
+                                        is_train_or_valid=FALSE,
+                                        noise=0, seed = 1234)
+
+print("Run GBM with Cross Validation Target Encoding")
+kfold_te_gbm <- h2o.gbm(x = myX, y = "IsDepDelayed",
+                    training_frame = kfold_train, validation_frame = kfold_valid,
+                    ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm",
+                    # Early Stopping
+                    stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                    seed = 1)
+
+h2o.varimp_plot(kfold_te_gbm)
+
+
+
 # ############################################## None holdout ############################################################
 # print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Holdout Data")
 #
@@ -143,6 +156,6 @@ h2o.varimp_plot(loo_gbm)
 print("Compare AUC of GBM with different types of target encoding")
 print(paste0("Default GBM AUC: ", round(h2o.auc(h2o.performance(default_gbm, test)), 3)))
 print(paste0("LOO GBM AUC: ", round(h2o.auc(h2o.performance(loo_gbm, loo_test)), 3)))
-# print(paste0("CV TE GBM AUC: ", round(h2o.auc(h2o.performance(cvte_gbm, cv_test)), 3)))
+print(paste0("KFold TE GBM AUC: ", round(h2o.auc(h2o.performance(kfold_te_gbm, kfold_test)), 3)))
 # print(paste0("Holdout GBM AUC: ", round(h2o.auc(h2o.performance(holdout_gbm, holdout_test)), 3)))
 
