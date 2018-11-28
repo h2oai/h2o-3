@@ -66,7 +66,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
             blocking = blocking,
             decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool),
             skipped_columns = paste0("[", paste(parse.params$skipped_columns, collapse=','), "]"),
-            first_line_len = parse.params$first_line_len
+            first_chunk_len = parse.params$first_chunk_len
             )
 
   # Perform the parse
@@ -269,7 +269,7 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
         warnings           = parseSetup$warnings,
         decrypt_tool       = parseSetup$decrypt_tool,
         skipped_columns    = parseSetup$skipped_columns,
-        first_line_len     = parseSetup$first_line_len
+        first_chunk_len     = parseSetup$first_chunk_len
         )
 }
 

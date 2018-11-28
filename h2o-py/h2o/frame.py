@@ -343,12 +343,12 @@ class H2OFrame(object):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "first_line_len": setup["first_line_len"]
+             "first_chunk_len": setup["first_chunk_len"]
              }
 
         if setup["column_names"]: p["column_names"] = None
         if setup["na_strings"]: p["na_strings"] = None
-        p["first_line_len"] = setup["first_line_len"]
+        p["first_chunk_len"] = setup["first_chunk_len"]
 
         p.update({k: v for k, v in viewitems(setup) if k in p})
 

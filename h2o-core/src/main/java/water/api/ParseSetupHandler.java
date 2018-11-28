@@ -102,7 +102,7 @@ public class ParseSetupHandler extends Handler {
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
     p.parse_type = ps.getParseType() != null ? ps.getParseType().name() : GUESS_INFO.name();
-    p.first_line_len = ps._firstLineLen;
+    p.first_chunk_len = ps._firstLineLen;
     return p;
   }
 }

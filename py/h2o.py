@@ -578,7 +578,7 @@ class H2O(object):
             'parse_type': setup_result['parse_type'],
             'separator': setup_result['separator'],
             'single_quotes': setup_result['single_quotes'],
-            'first_line_len': setup_result['first_line_len'],
+            'first_chunk_len': setup_result['first_chunk_len'],
             'check_header': setup_result['check_header'],
             'number_columns': setup_result['number_columns'],
             'column_names': setup_result['column_names'], # gets stringified inside __do_json_request()
