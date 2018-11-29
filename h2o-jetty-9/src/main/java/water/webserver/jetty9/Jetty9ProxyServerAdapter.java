@@ -52,7 +52,7 @@ class Jetty9ProxyServerAdapter implements ProxyServer {
   private void registerHandlers(HandlerWrapper handlerWrapper, ServletContextHandler context, Credentials credentials, String proxyTo) {
     // setup authenticating proxy servlet (each request is forwarded with BASIC AUTH)
     final ServletHolder proxyServlet = new ServletHolder(TransparentProxyServlet.class);
-    proxyServlet.setInitParameter("ProxyTo", proxyTo);
+    proxyServlet.setInitParameter("proxyTo", proxyTo); // Jetty 9 requires starting with small case letter
     proxyServlet.setInitParameter("Prefix", "/");
     proxyServlet.setInitParameter("BasicAuth", credentials.toBasicAuth());
     context.addServlet(proxyServlet, "/*");
