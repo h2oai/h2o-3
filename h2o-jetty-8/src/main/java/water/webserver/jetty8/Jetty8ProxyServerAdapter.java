@@ -1,4 +1,4 @@
-package water.webserver.jetty9;
+package water.webserver.jetty8;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
