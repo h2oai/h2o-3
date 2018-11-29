@@ -3,6 +3,7 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -183,22 +184,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
 
     if ((_train != null) && (_parms._monotone_constraints != null)) {
-      // we check that there are no duplicate definitions and constraints are defined only for numerical columns
-      Set<String> constrained = new HashSet<>();
-      for (KeyValue constraint : _parms._monotone_constraints) {
-        if (constrained.contains(constraint.getKey())) {
-          error("_monotone_constraints", "Feature '" + constraint.getKey() + "' has multiple constraints.");
-          continue;
-        }
-        constrained.add(constraint.getKey());
-        Vec v = _train.vec(constraint.getKey());
-        if (v == null) {
-          error("_monotone_constraints", "Invalid constraint - there is no column '" + constraint.getKey() + "' in the training frame.");
-        } else if (v.get_type() != Vec.T_NUM) {
-          error("_monotone_constraints", "Invalid constraint - column '" + constraint.getKey() +
-                  "' has type " + v.get_type_str() + ". Only numeric columns can have monotonic constraints.");
-        }
-      }
+      TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
   }
 

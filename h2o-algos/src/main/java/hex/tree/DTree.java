@@ -286,6 +286,16 @@ public class DTree extends Iced {
       return cnt == 0 ? null : nhists;
     }
 
+    public Constraints nextLevelConstraints(Constraints currentConstraints, int way, double splat, SharedTreeModel.SharedTreeParameters parms) {
+      Constraint constraint = currentConstraints.getColumnConstraint(_col);
+      if (constraint == null) {
+        return currentConstraints; // didn't split on a column with constraints => no need to modify them
+      }
+      double mid = (_p0 + _p1) / 2;
+      Constraint newConstraint = new Constraint(constraint, way, mid);
+      return currentConstraints.withNewConstraint(_col, newConstraint);
+    }
+
     @Override public String toString() {
       return "Splitting: col=" + _col + " type=" + ((int)_equal == 0 ? " < " : "bitset")
               + ", splitpoint=" + _bin + ", nadir=" + _nasplit.toString() + ", se0=" + _se0 + ", se1=" + _se1 + ", n0=" + _n0 + ", n1=" + _n1;
@@ -298,11 +308,13 @@ public class DTree extends Iced {
   // any split-decision.
   public static class UndecidedNode extends Node {
     public transient DHistogram[] _hs; //(up to) one histogram per column
+    public transient Constraints _cs;
     public final int _scoreCols[];      // A list of columns to score; could be null for all
-    public UndecidedNode( DTree tree, int pid, DHistogram[] hs ) {
+    public UndecidedNode( DTree tree, int pid, DHistogram[] hs, Constraints cs ) {
       super(tree,pid);
       assert hs.length==tree._ncols;
       _hs = hs; //these histograms have no bins yet (just constructed)
+      _cs = cs;
       _scoreCols = scoreCols();
     }
 
@@ -446,12 +458,12 @@ public class DTree extends Iced {
     transient int _nnodes = 0; // Number of nodes in this subtree
 
     // Make a correctly flavored Undecided
-    public UndecidedNode makeUndecidedNode(DHistogram hs[]) {
-      return new UndecidedNode(_tree, _nid, hs);
+    public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs) {
+      return new UndecidedNode(_tree, _nid, hs, cs);
     }
 
     // Pick the best column from the given histograms
-    public Split bestCol(UndecidedNode u, DHistogram hs[]) {
+    public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) { // FIXME
       DTree.Split best = null;
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
@@ -468,7 +480,7 @@ public class DTree extends Iced {
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        FindSplits fs = new FindSplits(hs, col, u._nid);
+        FindSplits fs = new FindSplits(hs, cs, col, u._nid);
         findSplits.add(fs);
         if (isSmall) fs.compute();
       }
@@ -482,13 +494,14 @@ public class DTree extends Iced {
     }
 
     public final class FindSplits extends RecursiveAction {
-      public FindSplits(DHistogram[] hs, int col, UndecidedNode node) {
-        this(hs, col, node._nid);
+      public FindSplits(DHistogram[] hs, Constraints cs, int col, UndecidedNode node) {
+        this(hs, cs, col, node._nid);
       }
-      private FindSplits(DHistogram[] hs, int col, int nid) {
-        _hs = hs; _col = col; _nid = nid;
+      private FindSplits(DHistogram[] hs, Constraints cs, int col, int nid) {
+        _hs = hs; _cs = cs; _col = col; _nid = nid;
       }
       final DHistogram[] _hs;
+      final Constraints _cs;
       final int _col;
       final int _nid;
       DTree.Split _s;
@@ -496,15 +509,16 @@ public class DTree extends Iced {
         computeSplit();
       }
       public final DTree.Split computeSplit() {
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows);
+        Constraint constraint = _cs != null ? _cs.getColumnConstraint(_col) : null;
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, constraint);
         return _s;
       }
     }
 
-    public DecidedNode(UndecidedNode n, DHistogram hs[]) {
+    public DecidedNode(UndecidedNode n, DHistogram hs[], Constraints cs) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
       _nids = new int[2];           // Split into 2 subsets
-      _split = bestCol(n,hs);  // Best split-point for this tree
+      _split = bestCol(n,hs,cs);  // Best split-point for this tree
       if( _split == null) {
         // Happens because the predictor columns cannot split the responses -
         // which might be because all predictor columns are now constant, or
@@ -517,9 +531,10 @@ public class DTree extends Iced {
       for(int way = 0; way <2; way++ ) { // left / right
         // Create children histograms, not yet populated, but the ranges are set
         DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms); //maintains the full range for NAvsREST
+        Constraints ncs = cs != null ? _split.nextLevelConstraints(cs, way, _splat, _tree._parms) : null;
         assert nhists==null || nhists.length==_tree._ncols;
         // Assign a new (yet undecided) node to each child, and connect this (the parent) decided node and the newly made histograms to it
-        _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists)._nid;
+        _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs)._nid;
       }
     }
 
@@ -758,7 +773,7 @@ public class DTree extends Iced {
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
 
-  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, Constraint constraint) {
     if(hs._vals == null) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
       return null; // TODO: there are empty leafs?
@@ -978,6 +993,21 @@ public class DTree extends Iced {
     if (nLeft < min_rows || nRight < min_rows) {
       if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate min_rows limit.");
       return null;
+    }
+
+    if (constraint != null) {
+      if (constraint._direction * predLeft / nLeft > constraint._direction * predRight / nRight) {
+        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint.");
+        return null;
+      }
+      if (!Double.isNaN(constraint._min) && constraint._direction * predLeft / nLeft > constraint._direction * constraint._min) {
+        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint (min value).");
+        return null;
+      }
+      if (!Double.isNaN(constraint._max) && constraint._direction * predRight / nRight > constraint._direction * constraint._max) {
+        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint (max value).");
+        return null;
+      }
     }
 
     // For categorical (unordered) predictors, we sorted the bins by average
