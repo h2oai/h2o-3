@@ -30,9 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static hex.genmodel.utils.DistributionFamily.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.fvec.FVecTest.makeByteVec;
 
 public class GBMTest extends TestUtil {
@@ -3276,7 +3274,40 @@ public class GBMTest extends TestUtil {
       }
       Scope.exit();
     }
+  }
 
+  @Test
+  public void testMonotoneConstraintsInverse() {
+    Scope.enter();
+    try {
+      final String response = "power (hp)";
+
+      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
+      DKV.put(Scope.track(f));
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._ignored_columns = new String[]{"name"};
+      parms._seed = 42;
+
+      GBMModel.GBMParameters noConstrParams = (GBMModel.GBMParameters) parms.clone();
+      GBMModel noConstrModel = new GBM(noConstrParams).trainModel().get();
+      Scope.track_generic(noConstrModel);
+
+      assertTrue(noConstrModel._output._varimp.toMap().get("cylinders") > 0);
+
+      GBMModel.GBMParameters constrParams = (GBMModel.GBMParameters) parms.clone();
+      constrParams._monotone_constraints = new KeyValue[] {new KeyValue("cylinders", -1)};
+      GBMModel constrModel = new GBM(constrParams).trainModel().get();
+      Scope.track_generic(constrModel);
+
+      // we essentially eliminated the effect of the feature by setting an inverted constraint
+      assertEquals(constrModel._output._varimp.toMap().get("cylinders"), 0, 0);
+    } finally {
+      Scope.exit();
+    }
   }
 
 }
