@@ -7,6 +7,7 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstBuiltin;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstStr;
 import water.rapids.ast.params.AstStrList;
 import water.rapids.vals.ValMapFrame;
 
@@ -39,7 +40,7 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
   public ValMapFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
     Frame trainFrame = getTrainingFrame(env, stk, asts);
-    String[] teColumnsToEncode = getTEColumns(asts);
+    String[] teColumnsToEncode = getTEColumns(env, stk, asts);
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withImputationForOriginalColumns = true; // Default fo now
@@ -58,11 +59,14 @@ public class AstTargetEncoderFit extends AstBuiltin<AstTargetEncoderFit> {
     return stk.track(asts[1].exec(env)).getFrame();
   }
 
-  private String[] getTEColumns(AstRoot asts[]) {
+  private String[] getTEColumns(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
     if (asts[2] instanceof AstStrList) {
       AstStrList teColumns = ((AstStrList) asts[2]);
       return teColumns._strs;
+    } else if( asts[2] instanceof AstStr) {
+      String teColumn = stk.track(asts[2].exec(env)).getStr();
+      return new String[]{teColumn};
     }
     else throw new IllegalStateException("Couldn't parse `teColumns` parameter");
   }

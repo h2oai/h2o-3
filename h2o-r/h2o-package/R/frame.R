@@ -4946,6 +4946,14 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     node
 }
 
+.arrayArgumentHelper <- function (arr) {
+    if(length(arr) == 1) {
+        arr <- .quote(arr)
+    } else {
+        arr <- unlist(arr)
+    }
+    return(arr)
+}
 #' Description goes here
 #'
 #' @param fr TODD
@@ -4960,7 +4968,13 @@ h2o.target_encode_fit <- function (fr, x, y, fold_column)
     } else {
         fold_column_name <- fold_column
     }
-    encoding_map <- .eval.driver(.newExprMap("target.encoder.fit", fr, unlist(x), .quote(y), .quote(fold_column_name)))
+    if(length(x) == 1) {
+        x <- .quote(x)
+    } else {
+        x <- unlist(x)
+    }
+
+    encoding_map <- .eval.driver(.newExprMap("target.encoder.fit", fr, x, .quote(y), .quote(fold_column_name)))
     return(encoding_map)
 }
 
@@ -4991,10 +5005,8 @@ h2o.target_encode_transform <- function (encoding_map=NULL, fold_column, is_trai
 
     frameKeys <- attr(encoding_map, "frames")
     emFrameKeys <- lapply(frameKeys, function(x) x$key$name )
-    # (target.encoder.transform [Origin, Dest] list (_98870931b09af55630c8d795fc5248a0 , _876e497ac97a4bb5675ea4263d8443fc )
-    #  (tmp= RTMP_sid_a33a_5 (rbind train.hex te_holdout.hex ) ) list (Origin , Dest ) LeaveOneOut IsDepDelayed  TRUE 10.0 5.0 -1.0 1234.0 TRUE )
 
-    transformed <- .eval.driver(.newExpr("target.encoder.transform", emKeys, unlist(emFrameKeys), frame, unlist(x), .quote(holdout_type),
+    transformed <- .eval.driver(.newExpr("target.encoder.transform", .arrayArgumentHelper(emKeys), .arrayArgumentHelper(emFrameKeys), frame, .arrayArgumentHelper(x), .quote(holdout_type),
     .quote(y), .quote(fold_column_name), blending, inflection_point, smoothing, noise, seed, is_train_or_valid)
     )
     return(transformed)
