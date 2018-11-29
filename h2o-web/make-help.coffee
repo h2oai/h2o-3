@@ -7,7 +7,7 @@ fiction = require 'fiction'
 stripHtmlTags = (html) ->
   _text = ''
   parser = new htmlparser.Parser
-    ontext: (text) -> _text += text
+    context: (text) -> _text += text
   parser.write html
   parser.end()
   _text

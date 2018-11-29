@@ -34,6 +34,10 @@ static def checkPrerequisite(name) {
   return 0
 }
 
+static def getCoffeePath() {
+    '.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee'
+}
+
 task checkClientPrerequisites {
     doLast {
         def nodeInstallationInstruction = """\
@@ -132,7 +136,11 @@ task copyExampleFlows(type: Copy) {
 }
 
 task compileHelpFiles(type: Exec) {
-  commandLine = getOsSpecificCommandLine([ 'node', 'make-help.js', "$rootDir/h2o-docs/src/product/flow/README.md", "$rootDir/h2o-web/src/main/resources/www/flow/help" ])
+  commandLine = getOsSpecificCommandLine([
+          getCoffeePath(), 'make-help.coffee', 
+          "$rootDir/h2o-docs/src/product/flow/README.md", 
+          "$rootDir/h2o-web/src/main/resources/www/flow/help" 
+  ])
 }
 
 task copyHelpImages(type: Copy) {
@@ -151,17 +159,18 @@ task compileAndInstallDocFiles(type: Exec) {
         file("${buildDir}/tmp").mkdirs()
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-web_compileAndInstallDocFiles.out")
     }
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
     def projectVersion = bv.getProjectVersion()
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
-    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'rest-api-reference.coffee',
-                                            "--project_version=" + projectVersion,
-                                            "--branch_name=" + branchName,
-                                            "--build_number=" + buildNumber,
-                                            "--last_commit_hash=" + lastCommitHash
-                                           ])
+    commandLine = getOsSpecificCommandLine([
+             getCoffeePath(), 'rest-api-reference.coffee',
+             "--project_version=" + projectVersion,
+             "--branch_name=" + branchName,
+             "--build_number=" + buildNumber,
+             "--last_commit_hash=" + lastCommitHash
+    ])
 }
 
 task deleteDocFiles(type: Delete) {
