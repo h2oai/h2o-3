@@ -42,7 +42,6 @@ class Jetty9Helper {
         System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
 
         final Server jettyServer = new Server();
-        //TODO send name in headers
 
         final ServerConnector connector;
         final String proto;
@@ -73,6 +72,7 @@ class Jetty9Helper {
         final ArrayList<ConnectionFactory> connectionFactories = new ArrayList<>();
         ConnectionFactory connectionFactory = new HttpConnectionFactory();
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSendServerVersion(true);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
