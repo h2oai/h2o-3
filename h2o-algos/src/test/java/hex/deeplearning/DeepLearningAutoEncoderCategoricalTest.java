@@ -1,6 +1,11 @@
 package hex.deeplearning;
 
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -11,6 +16,8 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.Log;
+
+import java.io.IOException;
 
 public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
   static final String PATH = "smalldata/airlines/AirlinesTrain.csv.zip";
@@ -76,6 +83,29 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     Log.info(sb.toString());
 
     Assert.assertEquals(l2vec.mean(), mymodel.mse(), 1e-8*mymodel.mse());
+
+    try {
+      DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
+      EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
+      AutoEncoderModelPrediction tmpPrediction;
+      RowData tmpRow;
+      double calcNormMse = 0;
+      for (int r = 0; r < train.numRows(); r++) {
+        tmpRow = new RowData();
+        for (int c = 0; c < train.numCols(); c++) {
+          tmpRow.put(train.names()[c], train.vec(c).at(r));
+        }
+        tmpPrediction = model.predictAutoEncoder(tmpRow);
+        calcNormMse += tmpPrediction.mse;
+      }
+      double mojoMeanError = calcNormMse/train.numRows();
+      sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
+      Assert.assertTrue("Mean reconstruction error should be the same from model and mojo model.", mojoMeanError == mymodel.mse());
+    } catch (IOException error) {
+      sb.append("IOError: ").append(error.toString()).append("\n");
+    } catch (PredictException error){
+      sb.append("PredictException: ").append(error.toString()).append("\n");
+    }
 
     // Create reconstruction
     Log.info("Creating full reconstruction.");

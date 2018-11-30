@@ -327,9 +327,9 @@ public class EasyPredictModelWrapper implements Serializable {
     p.original = expandRawData(rawData, output.length);
     p.reconstructed = output;
     p.reconstructedRowData = reconstructedToRowData(output);
-    p.mse = 1;
     if (m instanceof DeeplearningMojoModel){
-      p.mse =  calculateReconstructionError(p.original, p.reconstructed, ((DeeplearningMojoModel)m)._normmul);
+      DeeplearningMojoModel mojoModel = ((DeeplearningMojoModel)m);
+      p.mse =  calculateReconstructionError(p.original, p.reconstructed, mojoModel._normmul, mojoModel._nums);
     }
     return p;
   }
@@ -387,11 +387,16 @@ public class EasyPredictModelWrapper implements Serializable {
     return result;
   }
 
-  private double calculateReconstructionError(double [] original, double [] reconstructed, double [] normmul){
+  private double calculateReconstructionError(double [] original, double [] reconstructed, double [] normmul, int numNumeric){
     double l2 = 0;
-    for (int i = 0; i < original.length; i++)
-      l2 += Math.pow((reconstructed[i] - original[i]) * normmul[i], 2);
-    return  l2 / original.length;
+    int numIndex = 0;
+    double norm = 0;
+    for (int i = 0; i < numNumeric; i++) {
+      numIndex = i + (original.length - numNumeric);
+      norm = (normmul != null) ? normmul[i] : 1;
+      l2 += Math.pow((reconstructed[numIndex] - original[numIndex]) * norm, 2);
+    }
+    return  l2 / numNumeric;
   }
 
   /**
