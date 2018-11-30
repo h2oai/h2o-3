@@ -10,13 +10,10 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.deeplearning.DeepLearningModel;
 
-import java.io.IOError;
 import java.io.IOException;
 import java.util.HashSet;
 
