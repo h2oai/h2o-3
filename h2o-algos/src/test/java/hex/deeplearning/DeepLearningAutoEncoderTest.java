@@ -1,5 +1,9 @@
 package hex.deeplearning;
 
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,7 +13,11 @@ import water.parser.ParseDataset;
 import water.util.FileUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.deeplearning.DeepLearningModel;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.util.HashSet;
 
 public class DeepLearningAutoEncoderTest extends TestUtil {
@@ -151,12 +159,35 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Assert.assertTrue(outliers.contains(new Long(21)));
           Assert.assertTrue(outliers.contains(new Long(22)));
           Assert.assertTrue(outliers.size() == 3);
+
+          try {
+            DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
+            EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
+            AutoEncoderModelPrediction tmpPrediction;
+            RowData tmpRow;
+            double calcNormMse = 0;
+            for (int r = 0; r < train.numRows(); r++) {
+              tmpRow = new RowData();
+              for (int c = 0; c < train.numCols(); c++) {
+                tmpRow.put(train.names()[c], train.vec(c).at(r));
+              }
+              tmpPrediction = model.predictAutoEncoder(tmpRow);
+              calcNormMse += tmpPrediction.mse;
+            }
+            double mojoMeanError = calcNormMse/train.numRows();
+            sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
+            Assert.assertTrue("Mean reconstruction error should be the same from model and mojo model.", mojoMeanError == mean_l2);
+          } catch (IOException error) {
+            sb.append("IOError: ").append(error.toString()).append("\n");
+          } catch (PredictException error){
+            sb.append("PredictException: ").append(error.toString()).append("\n");
+          }
         } finally {
           Log.info(sb);
           // cleanup
-          if (mymodel!=null) mymodel.delete();
-          if (l2_frame_train!=null) l2_frame_train.delete();
-          if (l2_frame_test!=null) l2_frame_test.delete();
+          if (mymodel != null) mymodel.delete();
+          if (l2_frame_train != null) l2_frame_train.delete();
+          if (l2_frame_test != null) l2_frame_test.delete();
         }
       }
     } finally {

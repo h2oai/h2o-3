@@ -25,15 +25,5 @@ public class AutoEncoderModelPrediction extends AbstractPrediction {
    */
   public RowData reconstructedRowData;
 
-  /**
-   * Calculates average reconstruction error (MSE).
-   * @return average reconstruction error = ||original - reconstructed||^2 / length(original)
-   */
-  public double calcMSE() {
-    double l2 = 0;
-    for (int i = 0; i < original.length; i++)
-      l2 += Math.pow((reconstructed[i] - original[i]), 2);
-    return l2 / original.length;
-  }
-
+  public double mse;
 }
