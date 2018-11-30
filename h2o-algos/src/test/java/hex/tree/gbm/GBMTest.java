@@ -12,10 +12,7 @@ import org.junit.Test;
 import water.*;
 import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.*;
@@ -24,10 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
@@ -783,7 +777,7 @@ public class GBMTest extends TestUtil {
         parms._balance_classes = true;
         parms._seed = 0;
         parms._build_tree_one_node = true;
-        
+
         // Build a first model; all remaining models should be equal
         GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
@@ -3308,6 +3302,64 @@ public class GBMTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testMonotoneConstraintSingleSplit() {
+    checkMonotonic(2);
+  }
+
+  @Test
+  public void testMonotoneConstraintMultiSplit() {
+    checkMonotonic(5);
+  }
+
+  private static void checkMonotonic(int depth) {
+    try {
+      Scope.enter();
+      int len = 10000;
+      Frame train = makeSinFrame(len);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = "y";
+      parms._train = train._key;
+      parms._seed = 42;
+      parms._max_depth = depth;
+      parms._monotone_constraints = new KeyValue[]{new KeyValue("x", 1)};
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      Frame scored = Scope.track(gbm.score(train));
+      double last = -1;
+      for (int i = 0; i < len; i++) {
+        double pred = scored.vec(0).at(i);
+        assertTrue("pred = " + pred + " > " + last, pred >= last);
+        last = pred;
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static Frame makeSinFrame(final int len) {
+    Vec blueprint = Scope.track(Vec.makeZero(len));
+    Frame train = new MRTask() {
+      @Override
+      public void map(Chunk c, NewChunk ncX, NewChunk ncY) {
+        for (int i = 0; i < c._len; i++) {
+          Random r = RandomUtils.getRNG(c.start() + i);
+          double x = (c.start() + i) / (double) len * Math.PI / 2;
+          double noise = Math.abs(r.nextDouble()) * 0.1;
+          double y = Math.sin(x) + noise;
+          ncX.addNum(x);
+          ncY.addNum(y);
+        }
+      }
+    }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, blueprint)
+            .outputFrame(Key.<Frame>make(), new String[]{"x", "y"}, null);
+    Scope.track(train);
+    return train;
   }
 
 }
