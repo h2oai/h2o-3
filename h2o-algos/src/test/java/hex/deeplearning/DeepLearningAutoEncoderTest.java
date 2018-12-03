@@ -142,7 +142,8 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
 
           // print stats and potential outliers
-          sb.append("The following test points are reconstructed with an error greater than ").append(mult).append(" times the mean reconstruction error of the training data:\n");
+          sb.append("The following test points are reconstructed with an error greater than ").append(mult)
+                  .append(" times the mean reconstruction error of the training data:\n");
           HashSet<Long> outliers = new HashSet<>();
           for (long i = 0; i < l2_test.length(); i++) {
             if (l2_test.at(i) > thresh_test) {
@@ -157,6 +158,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Assert.assertTrue(outliers.contains(new Long(22)));
           Assert.assertTrue(outliers.size() == 3);
 
+          // check if reconstruction error is the same from model and mojo model too. Testcase for PUBDEV-6030.
           try {
             DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
             EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
@@ -173,11 +175,12 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
             }
             double mojoMeanError = calcNormMse/train.numRows();
             sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
-            Assert.assertTrue("Mean reconstruction error should be the same from model and mojo model.", mojoMeanError == mean_l2);
+            Assert.assertTrue("Mean reconstruction error should be the same from model compate to mojo model " +
+                    "reconstruction error.", mojoMeanError == mean_l2);
           } catch (IOException error) {
-            sb.append("IOError: ").append(error.toString()).append("\n");
+            Assert.fail("IOException when testing mojo mean reconstruction error: "+error.toString());
           } catch (PredictException error){
-            sb.append("PredictException: ").append(error.toString()).append("\n");
+            Assert.fail("PredictException when testing mojo mean reconstruction error: "+error.toString());
           }
         } finally {
           Log.info(sb);
