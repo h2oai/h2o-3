@@ -53,6 +53,58 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ]
             ]
         ],
+        'glm': [
+            'paribas': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 3.0,
+                    'train_time_max': 5.7
+                ],
+                IRLSM: [
+                    'train_time_min': 4.0,
+                    'train_time_max': 6.0
+                ]
+            ],
+            'homesite': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 35,
+                    'train_time_max': 46
+                ],
+                IRLSM: [
+                    'train_time_min': 63,
+                    'train_time_max': 73
+                ]
+            ],
+            'redhat': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 34,
+                    'train_time_max': 40
+                ],
+                IRLSM: [
+                    'train_time_min': 34,
+                    'train_time_max': 42
+                ]
+            ],
+            'springleaf': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 140,
+                    'train_time_max': 160
+                ],
+                IRLSM: [
+                    'train_time_min': 260,
+                    'train_time_max': 284
+                ]
+            ],
+            'higgs': [
+                COORDINATE_DESCENT: [
+                    'train_time_min': 40.0,
+                    'train_time_max': 50
+                ],
+                IRLSM: [
+                    'train_time_min': 56,
+                    'train_time_max': 70
+                ]
+            ]
+        ],
         'gbm-client': [
             'paribas': [
                 50: [
@@ -183,24 +235,38 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 }
                 def datasetValues = EXPECTED_VALUES[line.algorithm][line.dataset]
                 if (datasetValues) {
-                    def ntreesValues = datasetValues[Integer.parseInt(line.ntrees)]
-                    if (ntreesValues) {
-                        def minValue = ntreesValues["${column}_min"]
+                    def interval
+                    def testCaseKey
+                    def testCaseValue
+                    if (line.ntrees) {
+                        interval = datasetValues[Integer.parseInt(line.ntrees)]
+                        testCaseKey = 'ntrees'
+                        testCaseValue = line.ntrees
+                    } else if (line.solver) {
+                        interval = datasetValues[line.solver]
+                        testCaseKey = 'solver'
+                        testCaseValue = line.solver
+                    } else {
+                        error "Cannot find usable key to get expected interval. Supported keys are ntrees and solver"
+                    }
+                    if (interval) {
+                        def minValue = interval["${column}_min"]
                         if (minValue == null) {
-                            error("Minimum for ${column} for ${line.dataset} with ${line.ntrees} trees cannot be found")
+                            error("Minimum for ${column} for ${line.dataset} cannot be found")
                         }
-                        def maxValue = ntreesValues["${column}_max"]
+                        def maxValue = interval["${column}_max"]
                         if (maxValue == null) {
-                            error("Maximum for ${column} for ${line.dataset} with ${line.ntrees} trees cannot be found")
+                            error("Maximum for ${column} for ${line.dataset} cannot be found")
                         }
                         def lineValue = Double.parseDouble(line[column])
-                        echo "Checking ${column} for ${line.dataset} with ${line.ntrees} trees"
+                        echo "Checking ${column} for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
                         if ((lineValue < minValue) || (lineValue > maxValue)) {
                             echo "Check failed. Expected interval is ${minValue}..${maxValue}. Actual value ${lineValue}"
                             failures += [
                                     algorithm: line.algorithm,
                                     dataset: line.dataset,
-                                    ntrees: line.ntrees,
+                                    testCaseKey: testCaseKey,
+                                    testCaseValue: testCaseValue,
                                     column: column,
                                     min: minValue,
                                     max: maxValue,
@@ -210,7 +276,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                             echo "Check OK!"
                         }
                     } else {
-                        error "Cannot find EXPECTED_VALUES for ${line.dataset} with ${line.ntrees} trees"
+                        error "Cannot find EXPECTED_VALUES for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
                     }
                 } else {
                     error "Cannot find EXPECTED_VALUES for ${line.dataset}"
@@ -272,7 +338,7 @@ def trimQuotes(final String text) {
 def failuresToText(final failures, final String joinStr='\n') {
     result = []
     for (failure in failures) {
-        result += "Check of ${failure.column} for ${failure.dataset} with ${failure.ntrees}. Expected interval is ${failure.min}..${failure.max}. Actual value is ${failure.value}"
+        result += "Check of ${failure.column} for ${failure.dataset} with ${failure.testCaseKey} = ${failure.testCaseValue}. Expected interval is ${failure.min}..${failure.max}. Actual value is ${failure.value}"
     }
     return result.join(joinStr)
 }
@@ -289,7 +355,7 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
             <tr>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.algorithm}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.column}</td>
-                <td style="${benchmarksSummary.TD_STYLE}">${failure.dataset.capitalize()} ${failure.ntrees} Trees</td>
+                <td style="${benchmarksSummary.TD_STYLE}">${failure.dataset.capitalize()} ${failure.testCaseKey} = ${failure.testCaseValue}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.value}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.min}</td>
                 <td style="${benchmarksSummary.TD_STYLE}">${failure.max}</td>
