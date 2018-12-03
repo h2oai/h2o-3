@@ -115,14 +115,19 @@ public final class AutoBuffer {
   static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
 
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
+   *  in this case without additional arguments, the requests comes from outside the H2O cluster
+   *
+   *  */
+  public AutoBuffer(ByteChannel sock ) {
+    this(sock, null, (short) 0);
+  }
+
+  /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
    *  figure the originating H2ONode from the first few bytes read.
    *
    *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
    *  represents the case where the communication is coming from h2o node.
    *  */
-  public AutoBuffer(ByteChannel sock ) {
-    this(sock, null, (short) 0);
-  }
   public AutoBuffer( ByteChannel sock, InetAddress remoteAddress, short timestamp ) {
     _chan = sock;
     raisePriority();            // Make TCP priority high
