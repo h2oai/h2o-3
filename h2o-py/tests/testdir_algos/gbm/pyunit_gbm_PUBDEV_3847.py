@@ -4,6 +4,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from random import randint
 
 # Turn the PUBDEV-3847 issue into the test and check if it fails
 def test_pubdev_3847():
@@ -21,7 +22,10 @@ def test_pubdev_3847():
     response = "class"
     features = train.col_names.remove(response)
 
+    print("Train 100 GBM models to test if it fails.")
     for i in range(1,100):
+        seed = randint(1000, 2000)
+        print(i, ": train model with random seed: ",seed)
         my_gbm = H2OGradientBoostingEstimator(ntrees=ntrees,
                                           max_depth=max_depth,
                                           min_rows=min_rows,
@@ -29,7 +33,7 @@ def test_pubdev_3847():
                                           sample_rate=sample_rate,
                                           col_sample_rate_per_tree=col_sample_rate_per_tree,
                                           nfolds=nfolds,
-                                          min_split_improvement=min_split_improvement)
+                                          min_split_improvement=min_split_improvement, seed=seed)
         my_gbm.train(x=features, y=response, training_frame=train, validation_frame=train)
 
 
