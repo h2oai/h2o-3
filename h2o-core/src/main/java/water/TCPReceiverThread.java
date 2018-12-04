@@ -76,7 +76,7 @@ public class TCPReceiverThread extends Thread {
         }
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
-        ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+        ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
         ByteChannel wrappedSocket = socketChannelFactory.serverChannel(sock);
         bb.limit(bb.capacity());
         bb.position(0);
@@ -85,7 +85,8 @@ public class TCPReceiverThread extends Thread {
         }
         bb.flip();
         int chanType = bb.get(); // 1 - small , 2 - big
-        int port = bb.getChar();
+        short timestamp = bb.getShort(); // read timestamp
+        int port = bb.getChar(); // read port
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
           if(H2O.SELF.getSecurityManager().securityEnabled) {
@@ -103,14 +104,13 @@ public class TCPReceiverThread extends Thread {
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
-          H2ONode h2o = H2ONode.intern(inetAddress, port);
-          new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
+          new UDP_TCP_ReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
           break;
         case TCP_BIG:
-          new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
+          new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress, timestamp), inetAddress, timestamp).start();
           break;
         case TCP_EXTERNAL:
-          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket, null)).start();
+          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket)).start();
           break;
         default:
           throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
@@ -131,13 +131,15 @@ public class TCPReceiverThread extends Thread {
   static class TCPReaderThread extends Thread {
     public ByteChannel _sock;
     public AutoBuffer _ab;
-    private final InetAddress address;
+    private final InetAddress _address;
+    private final short _timestamp;
 
-    public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address) {
+    public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address, short timestamp) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
       _sock = sock;
       _ab = ab;
-      this.address = address;
+      _address = address;
+      _timestamp = timestamp;
       setPriority(MAX_PRIORITY-1);
     }
 
@@ -169,7 +171,7 @@ public class TCPReceiverThread extends Thread {
         // Reuse open sockets for the next task
         try {
           if( !_sock.isOpen() ) break;
-          _ab = new AutoBuffer(_sock, address);
+          _ab = new AutoBuffer(_sock, _address, _timestamp);
         } catch( Exception e ) {
           // Exceptions here are *normal*, this is an idle TCP connection and
           // either the OS can time it out, or the cloud might shutdown.  We
@@ -292,7 +294,7 @@ public class TCPReceiverThread extends Thread {
     // Check cloud membership; stale ex-members are "fail-stop" - we mostly
     // ignore packets from them (except paxos packets).
     boolean is_member = cloud.contains(ab._h2o);
-    boolean is_client = ab._h2o._heartbeat._client;
+    boolean is_client = ab._h2o._client;
 
     // Some non-Paxos packet from a non-member.  Probably should record & complain.
     // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
