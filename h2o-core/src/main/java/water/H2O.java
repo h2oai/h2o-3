@@ -1955,7 +1955,6 @@ final public class H2O {
     // Validate arguments
     validateArguments();
 
-    // Create Timestamp for SELF
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 

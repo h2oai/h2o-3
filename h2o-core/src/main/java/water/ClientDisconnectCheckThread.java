@@ -22,10 +22,7 @@ class ClientDisconnectCheckThread extends Thread {
       if (H2O.isFlatfileEnabled()) {
         H2O.removeNodeFromFlatfile(client);
       }
-      boolean removed = H2O.removeClient(client);
-      if (removed) {
-        Log.warn("Client " + client + " disconnected!");
-      }
+      H2O.removeClient(client);
     }
   }
 
