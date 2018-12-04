@@ -2,6 +2,7 @@ package hex.genmodel.algos.ensemble;
 
 import hex.genmodel.MojoModel;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 public class StackedEnsembleMojoModel extends MojoModel {
@@ -47,7 +48,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
      * internal order of features. Therefore, the scored row's values must be re-mapped to the internal order of each
      * model.
      */
-    static class StackedEnsembleMojoSubModel {
+    static class StackedEnsembleMojoSubModel implements Serializable {
 
         final MojoModel _mojoModel;
         final int[] _mapping; // Mapping. If null, no mapping is required.
