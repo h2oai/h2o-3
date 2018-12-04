@@ -209,6 +209,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         h2o.refreshClient(timestamp);
       }
       return h2o;
+    } else {
+      if (isClient) {
+        Log.info("New client connected, timestamp=" + timestamp);
+      }
     }
     final int idx = UNIQUE.getAndIncrement();
     assert idx < Short.MAX_VALUE;
