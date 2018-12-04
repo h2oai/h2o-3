@@ -15,6 +15,7 @@ dependencies {
   compile 'javax.xml.bind:jaxb-api:2.3.0'
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-jetty-${defaultJettyVersion}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

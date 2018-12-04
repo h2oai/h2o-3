@@ -7,6 +7,7 @@ dependencies {
     compile 'com.google.cloud:google-cloud-storage:1.19.0'
     testCompile "junit:junit:${junitVersion}"
     testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testCompile project(":h2o-jetty-${defaultJettyVersion}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

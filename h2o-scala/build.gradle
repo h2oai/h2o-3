@@ -8,6 +8,7 @@ dependencies {
   compile "org.scala-lang:scala-library:$scalaVersion"
   
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-jetty-${defaultJettyVersion}")
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.scalatest:scalatest_${scalaBaseVersion}:2.2.1"
 }

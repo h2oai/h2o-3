@@ -51,6 +51,7 @@ dependencies {
 
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-jetty-${defaultJettyVersion}")
   // We need correct version of MapRe Hadoop to run JUnits
   testRuntime("org.apache.hadoop:hadoop-client:$defaultHadoopClientVersion") {
       exclude module: "jasper-runtime"

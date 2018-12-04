@@ -36,6 +36,7 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testCompileOnly 'javax.servlet:servlet-api:2.5'
+  testCompile project(":h2o-jetty-${defaultJettyVersion}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

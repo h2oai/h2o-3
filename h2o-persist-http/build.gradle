@@ -6,6 +6,7 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.18.0"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-jetty-${defaultJettyVersion}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

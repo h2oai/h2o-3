@@ -7,6 +7,7 @@ dependencies {
     compile project(":h2o-core")
     compile project(":h2o-algos")
     testCompile project(path: ":h2o-core", configuration: "testArchives")
+    testCompile project(":h2o-jetty-${defaultJettyVersion}")
     testCompile project(path: ":h2o-algos", configuration: "testArchives")
 }
 
