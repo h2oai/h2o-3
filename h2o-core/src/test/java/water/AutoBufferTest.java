@@ -64,7 +64,7 @@ public class AutoBufferTest extends TestUtil {
 
   @Test
   public void testNameOfClass() throws Exception {
-    
+
     byte[] bytes = AutoBuffer.javaSerializeWritePojo(new XYZZY());
     assertEquals("water.AutoBufferTest$XYZZY", AutoBuffer.nameOfClass(bytes));
     bytes[7] = 127;

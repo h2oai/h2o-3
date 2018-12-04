@@ -33,7 +33,6 @@ public class UDPClientEvent extends UDP {
             client._heartbeat = ce.clientHeartBeat;
 
             H2O.addNodeToFlatfile(ce.clientNode);
-            H2O.reportClient(ce.clientNode);
           }
           break;
         // Regular disconnect event also doesn't have any effect in multicast mode.

@@ -115,12 +115,20 @@ public final class AutoBuffer {
   static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
 
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
+   *  in this case without additional arguments, the requests comes from outside the H2O cluster
+   *
+   *  */
+  public AutoBuffer(ByteChannel sock ) {
+    this(sock, null, (short) 0);
+  }
+
+  /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
    *  figure the originating H2ONode from the first few bytes read.
    *
    *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
    *  represents the case where the communication is coming from h2o node.
    *  */
-  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
+  public AutoBuffer( ByteChannel sock, InetAddress remoteAddress, short timestamp ) {
     _chan = sock;
     raisePriority();            // Make TCP priority high
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
@@ -129,7 +137,8 @@ public final class AutoBuffer {
     _firstPage = true;
     // Read Inet from socket, port from the stream, figure out H2ONode
     if(remoteAddress!=null) {
-      _h2o = H2ONode.intern(remoteAddress, getPort());
+      assert timestamp != 0;
+      _h2o = H2ONode.intern(remoteAddress, getPort(), timestamp);
     }else{
       // In case the communication originates from non-h2o node, we set _h2o node to null.
       // It is done for 2 reasons:
@@ -146,10 +155,10 @@ public final class AutoBuffer {
 
   /** Make an AutoBuffer to write to an H2ONode.  Requests for full buffer will
    *  open a TCP socket and roll through writing to the target.  Smaller
-   *  requests will send via UDP.  Small requests get ordered by priority, so 
+   *  requests will send via UDP.  Small requests get ordered by priority, so
    *  that e.g. NACK and ACKACK messages have priority over most anything else.
    *  This helps in UDP floods to shut down flooding senders. */
-  private byte _msg_priority; 
+  private byte _msg_priority;
   AutoBuffer( H2ONode h2o, byte priority ) {
     // If UDP goes via TCP, we write into a HBB up front, because this will be copied again
     // into a large outgoing buffer.
@@ -183,7 +192,7 @@ public final class AutoBuffer {
     _read = true;
     _firstPage = true;
     _chan = null;
-    _h2o = H2ONode.intern(pack.getAddress(), getPort());
+    _h2o = H2ONode.intern(pack.getAddress(), getPort(), getTimestamp());
     _persist = 0;               // No persistance
   }
 
@@ -323,7 +332,7 @@ public final class AutoBuffer {
     ByteBuffer make() {
       while( true ) {             // Repeat loop for DBB OutOfMemory errors
         ByteBuffer bb=null;
-        synchronized(_bbs) { 
+        synchronized(_bbs) {
           int sz = _bbs.size();
           if( sz > 0 ) { bb = _bbs.remove(sz-1); _cached++; _numer++; }
         }
@@ -345,7 +354,7 @@ public final class AutoBuffer {
       // Heuristic: keep the ratio of BB's made to cache-hits at a fixed level.
       // Free to GC if ratio is high, free to internal cache if low.
       long ratio = _numer/(_denom+1);
-      synchronized(_bbs) { 
+      synchronized(_bbs) {
         if( ratio < 100 || _bbs.size() < _goal ) { // low hit/miss ratio or below goal
           bb.clear();           // Clear-before-add
           _bbs.add(bb);
@@ -467,7 +476,7 @@ public final class AutoBuffer {
   // Need a sock for a big read or write operation.
   // See if we got one already, else open a new socket.
   private void tcpOpen() throws IOException {
-    assert _firstPage && _bb.limit() >= 1+2+4; // At least something written
+    assert _firstPage && _bb.limit() >= 1+2+2+4; // At least something written
     assert _chan == null;
 //    assert _bb.position()==0;
     _chan = _h2o.getTCPSocket();
@@ -775,10 +784,10 @@ public final class AutoBuffer {
     put(kd);
     return kd == null ? this : kd.writeAll_impl(this);
   }
-  public Keyed getKey(Key k, Futures fs) { 
+  public Keyed getKey(Key k, Futures fs) {
     return k==null ? null : getKey(fs); // Key is null ==> read nothing
   }
-  public Keyed getKey(Futures fs) { 
+  public Keyed getKey(Futures fs) {
     Keyed kd = get(Keyed.class);
     if( kd == null ) return null;
     DKV.put(kd,fs);
@@ -976,13 +985,18 @@ public final class AutoBuffer {
   // Utility functions to handle common UDP packet tasks.
   // Get the 1st control byte
   int  getCtrl( ) { return getSz(1).get(0)&0xFF; }
-  // Get the port in next 2 bytes
-  int  getPort( ) { return getSz(1+2).getChar(1); }
-  // Get the task# in the next 4 bytes
-  int  getTask( ) { return getSz(1+2+4).getInt(1+2); }
-  // Get the flag in the next 1 byte
-  int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
+  // Get node timestamp in next 2 bytes
 
+  // the timestamp is on purpose where port was previously.
+  // In code, getPort is used to skip bytes before the value and the bytes for port itself.
+  // This ensures getPort will still have the same side-effect except we skip also the timestamp which is desired
+  short getTimestamp() { return getSz(1+2).getShort(1);}
+  // Get the port in next 2 bytes
+  int getPort( ) { return getSz(1+2+2).getChar(1+2); }
+  // Get the task# in the next 4 bytes
+  int  getTask( ) { return getSz(1+2+2+4).getInt(1+2+2); }
+  // Get the flag in the next 1 byte
+  int  getFlag( ) { return getSz(1+2+2+4+1).get(1+2+2+4); }
   /**
    * Write UDP into the ByteBuffer with custom sender's port number
    *
@@ -993,10 +1007,15 @@ public final class AutoBuffer {
    * @param senderPort port of the sender of the datagram
    */
   AutoBuffer putUdp(UDP.udp type, int senderPort){
+    return putUdp(type, senderPort, H2O.SELF._timestamp);
+  }
+
+  AutoBuffer putUdp(UDP.udp type, int senderPort, short timestamp){
     assert _bb.position() == 0;
-    putSp(_bb.position()+1+2);
+    putSp(_bb.position()+1+2+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putChar((char)senderPort    );
+    _bb.putShort(timestamp);
+    _bb.putChar((char)senderPort);
     return this;
   }
 
@@ -1008,8 +1027,8 @@ public final class AutoBuffer {
    *
    * @param type type of the UDP datagram
    */
-  AutoBuffer putUdp (UDP.udp type) {
-    return putUdp(type, H2O.H2O_PORT); // Outgoing port is always the sender's (me) port
+  AutoBuffer putUdp(UDP.udp type) {
+    return putUdp(type, H2O.H2O_PORT);
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
@@ -1017,8 +1036,8 @@ public final class AutoBuffer {
   }
   AutoBuffer putTask(int ctrl, int tasknum) {
     assert _bb.position() == 0;
-    putSp(_bb.position()+1+2+4);
-    _bb.put((byte)ctrl).putChar((char)H2O.H2O_PORT).putInt(tasknum);
+    putSp(_bb.position()+1+2+2+4);
+    _bb.put((byte)ctrl).putShort(H2O.SELF._timestamp).putChar((char)H2O.H2O_PORT).putInt(tasknum);
     return this;
   }
 
