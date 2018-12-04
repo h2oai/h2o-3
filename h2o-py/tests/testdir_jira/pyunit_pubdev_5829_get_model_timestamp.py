@@ -16,7 +16,7 @@ def test_api_returns_the_same_timestamp():
     # Import prostate_train.csv as numpy array for scikit comparison
     trainData = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
 
-    ntrees = 100
+    ntrees = 1
     learning_rate = 0.1
     depth = 5
     min_rows = 10
