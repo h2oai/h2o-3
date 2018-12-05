@@ -16,36 +16,22 @@ import java.net.URL;
  */
 public class StackedEnsembleSerializableMojoTest {
 
-    private MojoModel deserialize(final byte[] buffer) {
+    private MojoModel deserialize(final byte[] buffer) throws IllegalStateException {
         final ByteArrayInputStream in = new ByteArrayInputStream(buffer);
-        try {
-            final ObjectInputStream objectIn = new ObjectInputStream(in);
+        try (final ObjectInputStream objectIn = new ObjectInputStream(in)){
             return (MojoModel) objectIn.readObject();
         } catch (IOException | ClassNotFoundException e) {
             throw new IllegalStateException(e);
-        } finally {
-            try {
-                in.close();
-            } catch (IOException e) {
-                Assert.fail(e.toString());
-            }
         }
     }
 
-    private byte[] serialize(final Serializable input) {
+    private byte[] serialize(final Serializable input) throws IllegalStateException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            final ObjectOutputStream objectOutput = new ObjectOutputStream(out);
+        try(final ObjectOutputStream objectOutput = new ObjectOutputStream(out)) {
             objectOutput.writeObject(input);
             return out.toByteArray();
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            try {
-                out.close();
-            } catch (IOException e) {
-                Assert.fail(e.toString());
-            }
         }
     }
 
