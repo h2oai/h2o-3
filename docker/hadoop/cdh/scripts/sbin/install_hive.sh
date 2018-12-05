@@ -9,7 +9,7 @@ fi
 
 cd /home/hive
 
-if [ ${HIVE_VERSION} = '2.1.1-cdh6.0.0']; then
+if [ "${HIVE_VERSION}" = '2.1.1-cdh6.0.0' ]; then
     apt-get install -y hive-server2
     sudo -E -u hive ln -s /usr/lib/hive ${HIVE_HOME}
 else

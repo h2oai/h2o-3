@@ -7,7 +7,7 @@ sudo -E -u hdfs hadoop fs -chmod a+w /user/hive/warehouse
 sudo -E -u hdfs hadoop fs -chmod a+w /tmp
 
 cd /home/hive
-if [${HIVE_VERSION} == '2.1.1-cdh6.0.0']; then
+if [ "${HIVE_VERSION}" = '2.1.1-cdh6.0.0' ]; then
     service hive-server2 start
 else
     sudo -E -u hive nohup ${HIVE_HOME}/bin/hiveserver2 > /home/hive/hive.log & sleep 15
