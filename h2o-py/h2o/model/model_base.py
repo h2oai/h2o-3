@@ -34,6 +34,7 @@ class ModelBase(backwards_compatible()):
         self._job = None  # used when _future is True
         self._have_pojo = False
         self._have_mojo = False
+        self._timestamp = None
 
 
     @property
@@ -107,6 +108,11 @@ class ModelBase(backwards_compatible()):
     def have_mojo(self):
         """True, if export to MOJO is possible"""
         return self._have_mojo
+
+    @property
+    def timestamp(self):
+        """Model identifier."""
+        return self._timestamp
 
 
     def __repr__(self):

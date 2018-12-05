@@ -257,6 +257,7 @@ class H2OEstimator(ModelBase):
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type
+        m._timestamp = model_json.get('timestamp', None)
 
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
