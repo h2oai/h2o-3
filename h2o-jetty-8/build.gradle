@@ -1,3 +1,5 @@
+description = "Brings Jetty 8 as the HTTP implementation used in H2O server-side"
+
 dependencies {
     compile project(":h2o-webserver-iface")
     compile 'org.eclipse.jetty:jetty-server:8.1.17.v20150415'
