@@ -57,7 +57,24 @@ testTEColumnAsString <- function() {
     Log.info("Expect that both of the calls to `h2o.target_encode_fit` should not cause error")
 }
 
+testHoldoutTypeValidation <- function() {
+    data <- getTitanicData()
+    column <- "embarked"
+    te_cols <- list(column)
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+    Log.info("Expect that holdout_type will be converted to `loo` and no error will be throwned")
+    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
+
+    # Log.info("Expect that holdout_type will be converted to `kfold` and no error will be throwned")
+    # transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "KFold",   is_train_or_valid=TRUE)
+    #
+    # Log.info("Expect that holdout_type will be converted to `None` and no error will be throwned")
+    # transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "None",   is_train_or_valid=TRUE)
+
+}
+
 doTestAndContinue("Test target encoding exposed from Java", test)
-doTestAndContinue("Test that target_encode_fit is also accepting te column as a string(not array with single element)", testTEColumnAsString)
+doTestAndContinue("Test that target_encode_fit is also accepting te column as a string(not array with single element", testTEColumnAsString)
+doTestAndContinue("Test holdout_type validation", testHoldoutTypeValidation)
 PASS()
 

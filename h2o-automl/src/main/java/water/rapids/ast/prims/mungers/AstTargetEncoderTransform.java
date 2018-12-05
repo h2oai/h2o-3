@@ -45,16 +45,15 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     String targetColumnName = getTargetColumnName(env, stk, asts);
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
-    double inflectionPoint = getInflectionPoint(env, stk, asts);
-    double smoothing = getSmoothing(env, stk, asts);
+
+    BlendingParams params = getBlendingParams(env, stk, asts, withBlending);
+
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
     boolean isTainOrValidSet =  getIsTrainOrValidSet(env, stk, asts);
     boolean withImputationForOriginalColumns = true;
 
-    BlendingParams params = new BlendingParams(inflectionPoint, smoothing);
-
-    TargetEncoder tec = new TargetEncoder(teColumnsToEncode, params);
+    TargetEncoder tec = params == null ? new TargetEncoder(teColumnsToEncode) : new TargetEncoder(teColumnsToEncode, params);
 
     Map<String, Frame> encodingMap = reconstructEncodingMap(encodingMapKeys, encodingMapFrames);
 
@@ -65,6 +64,15 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
               foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed, isTainOrValidSet));
     }
+  }
+
+  private BlendingParams getBlendingParams(Env env, Env.StackHelp stk, AstRoot[] asts, boolean withBlending) {
+    if(withBlending) {
+      double inflectionPoint = getInflectionPoint(env, stk, asts);
+      double smoothing = getSmoothing(env, stk, asts);
+      return new BlendingParams(inflectionPoint, smoothing);
+    }
+    return null;
   }
 
   private Map<String, Frame> reconstructEncodingMap(String[] encodingMapKeys, Frame[] encodingMapFrames) {
