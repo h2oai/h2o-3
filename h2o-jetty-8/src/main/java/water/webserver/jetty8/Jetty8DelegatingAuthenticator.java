@@ -2,7 +2,6 @@ package water.webserver.jetty8;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 
@@ -18,17 +17,17 @@ import javax.servlet.http.HttpServletRequest;
  */
 class Jetty8DelegatingAuthenticator implements Authenticator {
 
-  private BasicAuthenticator _basicAuth;
+  private Authenticator _primaryAuth;
   private FormAuthenticator _formAuth;
 
-  Jetty8DelegatingAuthenticator(BasicAuthenticator basicAuth, FormAuthenticator formAuth) {
-    _basicAuth = basicAuth;
+  Jetty8DelegatingAuthenticator(Authenticator primaryAuth, FormAuthenticator formAuth) {
+    _primaryAuth = primaryAuth;
     _formAuth = formAuth;
   }
 
   @Override
   public void setConfiguration(AuthConfiguration configuration) {
-    _basicAuth.setConfiguration(configuration);
+    _primaryAuth.setConfiguration(configuration);
     _formAuth.setConfiguration(configuration);
   }
 
@@ -43,7 +42,7 @@ class Jetty8DelegatingAuthenticator implements Authenticator {
     if (isBrowserAgent((HttpServletRequest) request))
       return _formAuth.validateRequest(request, response, mandatory);
     else
-      return _basicAuth.validateRequest(request, response, mandatory);
+      return _primaryAuth.validateRequest(request, response, mandatory);
   }
 
   private static boolean isBrowserAgent(HttpServletRequest request) {

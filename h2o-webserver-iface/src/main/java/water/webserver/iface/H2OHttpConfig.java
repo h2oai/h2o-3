@@ -18,6 +18,8 @@ public class H2OHttpConfig {
 
   public String login_conf;
 
+  public String spnego_properties;
+
   public boolean form_auth;
 
   public int session_timeout; // parsed value (in minutes)

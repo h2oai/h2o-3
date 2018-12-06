@@ -162,16 +162,22 @@ final public class H2O {
             "          Use Jetty HashLoginService\n" +
             "\n" +
             "    -ldap_login\n" +
-            "          Use Jetty LdapLoginService\n" +
+            "          Use Jetty Ldap login module\n" +
             "\n" +
             "    -kerberos_login\n" +
-            "          Use Kerberos LoginService\n" +
+            "          Use Jetty Kerberos login module\n" +
+            "\n" +
+            "    -spnego_login\n" +
+            "          Use Jetty SPNEGO login service\n" +
             "\n" +
             "    -pam_login\n" +
-            "          Use PAM LoginService\n" +
+            "          Use Jetty PAM login module\n" +
             "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
+            "\n" +
+            "    -spnego_properties <filename>\n" +
+            "          SPNEGO login module configuration file\n" +
             "\n" +
             "    -form_auth\n" +
             "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
@@ -233,17 +239,23 @@ final public class H2O {
     /** -hash_login enables HashLoginService */
     public boolean hash_login = false;
 
-    /** -ldap_login enables LdapLoginService */
+    /** -ldap_login enables ldaploginmodule */
     public boolean ldap_login = false;
 
-    /** -kerberos_login enables KerberosLoginService */
+    /** -kerberos_login enables krb5loginmodule */
     public boolean kerberos_login = false;
 
-    /** -pam_login enables PAMLoginService */
+    /** -kerberos_login enables SpnegoLoginService */
+    public boolean spnego_login = false;
+
+    /** -pam_login enables pamloginmodule */
     public boolean pam_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -spnego_properties is SPNEGO configuration file on local filesystem */
+    public String spnego_properties = null;
 
     /** -form_auth enables Form-based authentication */
     public boolean form_auth = false;
@@ -610,12 +622,19 @@ final public class H2O {
       else if (s.matches("kerberos_login")) {
         trgt.kerberos_login = true;
       }
+      else if (s.matches("spnego_login")) {
+        trgt.spnego_login = true;
+      }
       else if (s.matches("pam_login")) {
         trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.login_conf = args[i];
+      }
+      else if (s.matches("spnego_properties")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.spnego_properties = args[i];
       }
       else if (s.matches("form_auth")) {
         trgt.form_auth = true;
@@ -673,12 +692,13 @@ final public class H2O {
     if (ARGS.hash_login) login_arg_count++;
     if (ARGS.ldap_login) login_arg_count++;
     if (ARGS.kerberos_login) login_arg_count++;
+    if (ARGS.spnego_login) login_arg_count++;
     if (ARGS.pam_login) login_arg_count++;
     if (login_arg_count > 1) {
-      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login and -pam_login");
+      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login, -spnego_login and -pam_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login || ARGS.spnego_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
@@ -686,6 +706,15 @@ final public class H2O {
       if (H2O.ARGS.form_auth) {
         parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
                 "Pick a LoginService by specifying '-<method>_login' option.");
+      }
+    }
+
+    if (ARGS.spnego_login) {
+      if (H2O.ARGS.spnego_properties == null) {
+        parseFailed("Must specify -spnego_properties argument");
+      }
+      if (H2O.ARGS.form_auth) {
+        parseFailed("Form-based authentication not supported when SPNEGO login is enabled.");
       }
     }
 
