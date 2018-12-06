@@ -73,8 +73,47 @@ testHoldoutTypeValidation <- function() {
 
 }
 
+
+testIndexesToNames <- function() {
+    data <- getTitanicData()
+
+    Log.info("Expect that if we pass fold_column as INDEX to the target_encode_fit method we will get encoding map with folds.")
+    te_cols <- list("embarked")
+    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived", 15)
+    frameKeys <- attr(encoding_map, "frames")
+    emFrameKeys <- lapply(frameKeys, function(x) x$key$name )
+    encodingMapFrame <- h2o.getFrame(emFrameKeys[[1]])
+    expect_that(TRUE, equals("fold" %in% colnames(encodingMapFrame)))
+
+    Log.info("Expect that we can pass te columns as INDEXES to the target_encode_fit method")
+    te_cols <- list(10, 11) # cabin, embarked
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+    mapKeys <- attr(encoding_map, "map_keys")
+    emKeys <- mapKeys$string
+    expect_that(TRUE, equals("embarked" %in% emKeys && "cabin" %in% emKeys))
+
+    Log.info("Expect that we can pass response column as INDEX to the target_encode_fit method")
+    te_cols <- list( 11) # embarked
+    response_col <- 2 # "survived"
+    encoding_map <- h2o.target_encode_fit(data, te_cols, response_col)
+    frameKeys <- attr(encoding_map, "frames")
+    emFrameKeys <- lapply(frameKeys, function(x) x$key$name )
+    encodingMapFrame <- h2o.getFrame(emFrameKeys[[1]])
+    expect_that(270, equals(encodingMapFrame$denominator[1,1]))
+
+    Log.info("Expect that we can pass INDEXES to the `target_encode_fit` and `target_encode_transform` methods")
+    te_cols <- list( 11) # embarked
+    response_col <- 2 # "survived"
+    encoding_map <- h2o.target_encode_fit(data, te_cols, response_col)
+    transformed <- h2o.target_encode_transform(data, te_cols, response_col, encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
+
+}
+
+
 doTestAndContinue("Test target encoding exposed from Java", test)
 doTestAndContinue("Test that target_encode_fit is also accepting te column as a string(not array with single element", testTEColumnAsString)
 doTestAndContinue("Test holdout_type validation", testHoldoutTypeValidation)
+doTestAndContinue("Test indexes to names conversion", testIndexesToNames)
 PASS()
 
