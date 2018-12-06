@@ -202,6 +202,7 @@ public class NetworkInit {
     config.loginType = parseLoginType(args);
     configureLoginType(config.loginType, args.login_conf);
     config.login_conf = args.login_conf;
+    config.spnego_properties = args.spnego_properties;
     config.form_auth = args.form_auth;
     config.session_timeout = args.session_timeout;
     config.user_name = args.user_name;
@@ -221,6 +222,8 @@ public class NetworkInit {
       loginType = LoginType.LDAP;
     } else if (args.kerberos_login) {
       loginType = LoginType.KERBEROS;
+    } else if (args.spnego_login) {
+      loginType = LoginType.SPNEGO;
     } else if (args.pam_login) {
       loginType = LoginType.PAM;
     } else {
@@ -238,7 +241,7 @@ public class NetworkInit {
     }
     if (loginType.needToCheckUserName()) {
       // LDAP, KERBEROS, PAM
-      Log.info(String.format("Configuring JAASLoginService (with %s)", loginType));
+      Log.info(String.format("Configuring LoginService (with %s)", loginType));
       System.setProperty("java.security.auth.login.config", loginConf);
     } else {
       // HASH only

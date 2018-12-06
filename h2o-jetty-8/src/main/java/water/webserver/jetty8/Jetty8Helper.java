@@ -8,8 +8,10 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SpnegoLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -91,14 +93,21 @@ class Jetty8Helper {
 
     // REFER TO http://www.eclipse.org/jetty/documentation/9.1.4.v20140401/embedded-examples.html#embedded-secured-hello-handler
     final LoginService loginService;
+    final Authenticator primaryAuthenticator;
     switch (config.loginType) {
       case HASH:
         loginService = new HashLoginService("H2O", config.login_conf);
+        primaryAuthenticator = new BasicAuthenticator();
         break;
       case LDAP:
       case KERBEROS:
       case PAM:
         loginService = new JAASLoginService(config.loginType.jaasRealm);
+        primaryAuthenticator = new BasicAuthenticator();
+        break;
+      case SPNEGO:
+        loginService = new SpnegoLoginService(config.loginType.jaasRealm, config.spnego_properties);
+        primaryAuthenticator = new SpnegoAuthenticator();
         break;
       default:
         throw new UnsupportedOperationException(config.loginType + ""); // this can never happen
@@ -140,11 +149,10 @@ class Jetty8Helper {
     // Authentication / Authorization
     final Authenticator authenticator;
     if (config.form_auth) {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator();
       FormAuthenticator formAuthenticator = new FormAuthenticator("/login", "/loginError", false);
-      authenticator = new Jetty8DelegatingAuthenticator(basicAuthenticator, formAuthenticator);
+      authenticator = new Jetty8DelegatingAuthenticator(primaryAuthenticator, formAuthenticator);
     } else {
-      authenticator = new BasicAuthenticator();
+      authenticator = primaryAuthenticator;
     }
     security.setLoginService(loginService);
     security.setAuthenticator(authenticator);
