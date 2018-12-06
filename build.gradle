@@ -19,7 +19,6 @@ buildscript {
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
-        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
@@ -29,6 +28,7 @@ buildscript {
 plugins {
     id "java"
     id "com.github.hierynomus.license" version "0.14.0"
+    id "net.ltgt.apt" version "0.19"
 }
 
 //
@@ -290,11 +290,6 @@ subprojects {
             apply from: "$rootDir/gradle/ubench.gradle"
         }
     }
-}
-
-task wrapper(type: Wrapper) {
-  gradleVersion = '4.10'
-  distributionType = Wrapper.DistributionType.ALL
 }
 
 //
