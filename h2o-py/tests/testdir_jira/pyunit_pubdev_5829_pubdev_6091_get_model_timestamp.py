@@ -25,11 +25,15 @@ def test_api_timestamp():
                                            model_id="test_timestamp")
     gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
 
-    assert gbm_h2o.timestamp is not None
     model = h2o.get_model(model_id="test_timestamp")
-    assert gbm_h2o.timestamp == model.timestamp
     models = h2o.api("GET /3/Models")
     assert model._model_json['timestamp'] == models["models"][0]["timestamp"], "Timestamp should be the same."
+
+    assert gbm_h2o.start_time is not None and gbm_h2o.start_time > 0
+    assert gbm_h2o.end_time is not None and gbm_h2o.end_time > 0
+    assert gbm_h2o.run_time is not None and gbm_h2o.run_time > 0
+
+    assert gbm_h2o.end_time - gbm_h2o.start_time == gbm_h2o.run_time
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_api_timestamp)
