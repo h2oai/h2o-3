@@ -95,6 +95,7 @@ public class CustomHttpFilterTest extends TestUtil {
     when(request.getParameterMap()).thenReturn(new HashMap<String, String[]>());
 
     when(response.getOutputStream()).thenReturn(new ServletOutputStream() {
+
       @Override public void write(int b) throws IOException {
       }
     });

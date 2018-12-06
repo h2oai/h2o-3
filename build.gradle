@@ -78,6 +78,7 @@ ext {
       project(':h2o-ext-krbstandalone'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
+      project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
     ]
 
@@ -105,6 +106,7 @@ ext {
       project(':h2o-ext-krbstandalone'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
+      project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
     ]
 
