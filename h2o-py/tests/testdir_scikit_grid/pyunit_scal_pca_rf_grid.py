@@ -29,7 +29,9 @@ def scale_pca_rf_pipe():
             "pca__k":                 randint(2, iris[1:].shape[1]),
             "rf__ntrees":             randint(50,60),
             "rf__max_depth":          randint(4,8),
-            "rf__min_rows":           randint(5,10),}
+            "rf__min_rows":           randint(5,10),
+            "pca__transform":         ["none", "standardize"],
+            }
 
   custom_cv = H2OKFold(iris, n_folds=5, seed=42)
   random_search = RandomizedSearchCV(pipe, params,
@@ -60,7 +62,7 @@ def scale_pca_rf_pipe_new_import():
 
   # build  transformation pipeline using sklearn's Pipeline and H2O transforms
   pipe = Pipeline([("standardize", H2OScaler()),
-                 ("pca", H2OPCA()),
+                 ("pca", H2OPCA().init_for_pipeline()),
                  ("rf", H2ORandomForestEstimator())])
 
   params = {"standardize__center":    [True, False],             # Parameters to test
@@ -68,7 +70,9 @@ def scale_pca_rf_pipe_new_import():
           "pca__k":                 randint(2, iris[1:].shape[1]),
           "rf__ntrees":             randint(50,60),
           "rf__max_depth":          randint(4,8),
-          "rf__min_rows":           randint(5,10),}
+          "rf__min_rows":           randint(5,10),
+          "pca__transform":         ["none", "standardize"],
+          }
 
   custom_cv = H2OKFold(iris, n_folds=5, seed=42)
   random_search = RandomizedSearchCV(pipe, params,

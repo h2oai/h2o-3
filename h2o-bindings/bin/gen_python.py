@@ -552,18 +552,24 @@ def class_extra_for(algo):
         """
     elif algo == "pca":
         return """
-        def fit_transform(self, X, y=None, **params):
+        def init_for_pipeline(self):
             \"\"\"
-            Fit and transform the given H2OFrame with the fitted PCA model.
-            This method has to be implemented to be used with sklearn.pipeline module.
+            Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
 
-            :param H2OFrame X: May contain NAs and/or categorical data.
-            :param H2OFrame y: Ignored for PCA. Should be None.
-            :param params: Ignored.
-
-            :returns: The input H2OFrame transformed by the Principal Components.
+            :returns: H2OPCA object
             \"\"\"
-            return self.fit(X, y, **params).predict(X)
+            from h2o.transforms.decomposition import H2OPCA
+            return H2OPCA(model_id=self.model_id,
+                            k=self.k,
+                            max_iterations=self.max_iterations,
+                            seed=self.seed,
+                            transform="None" if self.transform is None else self.transform,
+                            use_all_factor_levels=False if self.use_all_factor_levels is None else self.use_all_factor_levels,
+                            pca_method="GramSVD" if self.pca_method is None else self.pca_method,
+                            pca_impl="mtj_evd_symmmatrix" if self.pca_impl is None else self.pca_impl,
+                            ignore_const_cols=True if self.ignore_const_cols is None else self.ignore_const_cols,
+                            impute_missing=False if self.impute_missing is None else self.impute_missing,
+                            compute_metrics=True if self.compute_metrics is None else self.compute_metrics)
         """
 
 
