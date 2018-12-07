@@ -62,7 +62,7 @@ testHoldoutTypeValidation <- function() {
     column <- "embarked"
     te_cols <- list(column)
     encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
-    Log.info("Expect that holdout_type ]LeaveOneOut] will be converted to `loo` and no error will be throwned")
+    Log.info("Expect that holdout_type `LeaveOneOut` will be converted to `loo` and no error will be throwned")
     transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
 
     Log.info("Expect that holdout_type FKold will be converted to `kfold` and no error will be throwned")
@@ -115,10 +115,40 @@ testIndexesToNames <- function() {
 
 }
 
+testNoiseParameter <- function() {
+    .check_vector_is_within_range <- function(vectorFrame, range) {
+        for(i in length(vectorFrame)){
+            expect_lt(vectorFrame[i,1], range)
+        }
+    }
+    data <- getTitanicData()
+    te_cols <- list("embarked")
+
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+
+    Log.info("Expect that noise will be added if we are using noise parameter. Default noise is 0.01")
+    transformed_without_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
+    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, noise = 0, seed = 1234)
+
+    transformed_with_default_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
+    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, seed = 1234)
+
+    transformed_with_noise <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,
+    holdout_type = "LeaveOneOut", is_train_or_valid=TRUE, noise = 0.015, seed = 1234)
+    diff <- transformed_with_noise$embarked_te - transformed_without_noise$embarked_te
+
+    .check_vector_is_within_range(diff$embarked_te, 0.01)
+
+    diffWithDefaultNoise <- transformed_with_default_noise$embarked_te - transformed_without_noise$embarked_te
+    .check_vector_is_within_range(diffWithDefaultNoise$embarked_te, 0.01)
+
+}
+
 
 doTestAndContinue("Test target encoding exposed from Java", test)
 doTestAndContinue("Test that target_encode_fit is also accepting te column as a string(not array with single element", testTEColumnAsString)
 doTestAndContinue("Test holdout_type validation", testHoldoutTypeValidation)
 doTestAndContinue("Test indexes to names conversion", testIndexesToNames)
+doTestAndContinue("Test noise parameter", testNoiseParameter)
 PASS()
 
