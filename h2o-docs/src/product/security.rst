@@ -353,8 +353,8 @@ standalone H2O using your Keystore:
 
 ----------------
 
-Kerberos Authentication
-~~~~~~~~~~~~~~~~~~~~~~~
+Kerberos Authentication (via HTTP Basic)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Kerberos H2O Client Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -477,6 +477,138 @@ Example:
 ::
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+
+----------------
+
+Kerberos Authentication (via kinit/SPNEGO)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kerberos H2O Client Side
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Flow Web UI Client
+''''''''''''''''''
+
+Modern browsers support kerberos authentication out of the box.
+When attempting to reach Flow the server will respond with 401 with negotiate header
+and the browser will use last key acquired via kinit on the client machine.
+
+R Client
+''''''''
+
+Currently SPNEGO authentication is not supported in R client.
+
+Python Client
+'''''''''''''
+
+For Python, connecting to H2O with authentication is similar:
+
+::
+
+    from h2o.auth import SpnegoAuth
+
+    h2o.connect(ip = "a.b.c.d", port = 54321, auth = SpnegoAuth(service_principal = "HTTP/h2o_server@EXAMPLE.COM"))
+
+Connecting to SPNEGO configured H2O server is currently possible only via h2o.connect (h2o.init not supported).
+Read below on what to specify as service_principal.
+
+Kerberos H2O Server Side
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the machine running the H2O server a keytab file must be created containing the key for
+the service principal used by this server. The same service principal must be used in the client
+code when connecting to the server.
+
+You must provide configuration files for the SPNEGO login module:
+
+Example **spnego.conf**:
+
+::
+
+    com.sun.security.jgss.initiate {
+        com.sun.security.auth.module.Krb5LoginModule required
+        principal="HTTP/h2o_server@EXAMPLE.COM"
+        keyTab="/srv/h2o.keytab"
+        useKeyTab=true
+        storeKey=true
+        isInitiator=false;
+    };
+
+    com.sun.security.jgss.accept {
+        com.sun.security.auth.module.Krb5LoginModule required
+        principal="HTTP/h2o_server@EXAMPLE.COM"
+        keyTab="/srv/h2o.keytab"
+        useKeyTab=true
+        storeKey=true
+        isInitiator=false;
+    };
+
+Example **spnego.properties**:
+
+::
+
+    targetName=HTTP/h2o_server@EXAMPLE.COM
+
+
+Standalone H2O
+''''''''''''''
+
+The following options are required for SPNEGO authentication:
+
+::
+
+    -spnego_login
+          Use Jetty SPNEGO Login Service
+
+    -user_name <username>
+          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
+
+    -login_conf <filename>
+          path to spnego.conf file, see example above
+
+    -spnego_properties <filename>
+          path to spnego.properties file, see example above
+
+Example:
+
+::
+
+    java -Djavax.security.auth.useSubjectCredsOnly=false -jar h2o.jar \
+        -spnego_login -user_name pricipal@DOMAIN \
+        -login_conf /path/to/spnego.conf \
+        -spnego_properties /path/to/spnego.properties
+
+
+H2O on Hadoop
+'''''''''''''
+
+The following options are available:
+
+::
+
+
+    -spnego_login
+          Use Jetty SPNEGO Login Service
+
+    -user_name <username>
+          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
+
+    -login_conf <filename>
+          path to spnego.conf file, see example above
+
+    -spnego_properties <filename>
+          path to spnego.properties file, see example above
+
+
+Example:
+
+::
+
+    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
+        -spnego_login -user_name pricipal@DOMAIN \
+        -login_conf /path/to/spnego.conf \
+        -spnego_properties /path/to/spnego.properties
+
 
 ----------------
 
