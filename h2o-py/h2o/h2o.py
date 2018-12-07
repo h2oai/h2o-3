@@ -53,8 +53,9 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None  # type: H2OConnection
 
+
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None,cookies=None, verbose=True, config=None):
+            proxy=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -84,7 +85,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
-                                     proxy=proxy,cookies=cookies,
+                                     proxy=proxy, cookies=cookies,
                                      verbose=verbose)
         if verbose:
             h2oconn.cluster.show_status()
