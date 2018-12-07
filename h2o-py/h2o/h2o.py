@@ -68,8 +68,8 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
-    :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
-                 authenticator objects.
+    :param auth: Either a (username, password) pair for basic authentication, an instance of h2o.auth.SpnegoAuth
+                 or one of the requests.auth authenticator objects.
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
