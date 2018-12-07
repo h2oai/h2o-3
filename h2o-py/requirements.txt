@@ -2,6 +2,8 @@ pip
 colorama>=0.3.8
 future
 requests
+winkerberos >= 0.5.0; sys.platform == 'win32'
+pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'
 tabulate
 slam
 cython
