@@ -62,14 +62,19 @@ testHoldoutTypeValidation <- function() {
     column <- "embarked"
     te_cols <- list(column)
     encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
-    Log.info("Expect that holdout_type will be converted to `loo` and no error will be throwned")
+    Log.info("Expect that holdout_type ]LeaveOneOut] will be converted to `loo` and no error will be throwned")
     transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "LeaveOneOut",   is_train_or_valid=TRUE)
 
-    # Log.info("Expect that holdout_type will be converted to `kfold` and no error will be throwned")
-    # transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "KFold",   is_train_or_valid=TRUE)
-    #
-    # Log.info("Expect that holdout_type will be converted to `None` and no error will be throwned")
-    # transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "None",   is_train_or_valid=TRUE)
+    Log.info("Expect that holdout_type FKold will be converted to `kfold` and no error will be throwned")
+    data <- getTitanicData()
+    data$fold <- h2o.kfold_column(data, nfolds = 5, seed = 1234)
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived", fold_column="fold")
+    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "KFold", fold_column="fold",  is_train_or_valid=TRUE)
+
+    Log.info("Expect that holdout_type None will be converted to `none` and no error will be throwned")
+    data <- getTitanicData()
+    encoding_map <- h2o.target_encode_fit(data, te_cols, "survived")
+    transformed <- h2o.target_encode_transform(data, te_cols, "survived", encoding_map, blended_avg=FALSE,  holdout_type = "None", is_train_or_valid=TRUE)
 
 }
 
