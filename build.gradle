@@ -131,7 +131,7 @@ ext {
       project(':h2o-core'),
       project(':h2o-algos')
     ]
-    
+
     // Apt required
     // Only Java projects which needs to register core/rest/schema extensions
     aptProjects = [
@@ -200,7 +200,7 @@ allprojects {
 // Hence we need here string toBoolean call
 def applyFindbugsPlugin = rootProject.hasProperty("runFindbugs") ? rootProject.runFindbugs.toBoolean() : false
 
-// 
+//
 // Common configuration for all subprojects
 //
 subprojects {
@@ -258,9 +258,9 @@ subprojects {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
             project.testMultiNode.enabled = project.ext.isCi
         }
-        // Analyze dependencies 
+        // Analyze dependencies
         //apply plugin: 'ca.cutterslade.analyze'
-        
+
         // Apt preprocessor
         if (project in aptProjects) {
             apply from: "$rootDir/gradle/apt.gradle"
@@ -298,7 +298,7 @@ subprojects {
 ext {
     // Collect all artifacts produced by all projects in this project - all "archives" artifacts
     allArchives = subprojects.findAll().inject(
-            files(), { acc, pj -> 
+            files(), { acc, pj ->
           if (pj in publishedProjects)
             acc + pj.configurations.archives.allArtifacts.getFiles()
           else
@@ -322,7 +322,7 @@ apply from: "gradle/s3sync.gradle"
 
 // This task is used by the Jenkins on test.h2o.ai.
 //
-// It creates a directory called 'target', copies everything to be released 
+// It creates a directory called 'target', copies everything to be released
 // there, and everything in that directory gets uploaded to S3.
 //
 // See ~jenkins/bin/buildh2odev.sh.
@@ -344,11 +344,11 @@ task buildH2oDevDist(type: Exec) {
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
-    
+
     commandLine './make-dist.sh'
 }
 
-task dist(dependsOn: buildH2oDevDist) 
+task dist(dependsOn: buildH2oDevDist)
 
 //
 // Additional clean tasks to get squeaky clean.
