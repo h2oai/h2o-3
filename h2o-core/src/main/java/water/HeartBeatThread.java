@@ -35,7 +35,7 @@ public class HeartBeatThread extends Thread {
   static private char HB_VERSION;
 
   // Timeout in msec for all kinds of I/O operations on unresponsive clients.
-  // Endlessly retry until this timeout, and then declare the client "dead", 
+  // Endlessly retry until this timeout, and then declare the client "dead",
   // and toss out all in-flight client ops
   static public final int CLIENT_TIMEOUT=1000;
 

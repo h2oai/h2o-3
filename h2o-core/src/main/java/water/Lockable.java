@@ -12,13 +12,13 @@ import java.util.Arrays;
  *  <em>distributed</em> locking, the normal Java locks do not work.  Because
  *  we cannot enforce good behavior, this is a <em>cooperative</em> scheme
  *  only.
- *  
+ *
  *  Supports: <ul>
  *    <li>lock-and-delete-old-and-update (for new Keys)</li>
  *    <li>lock-and-delete                (for removing old Keys)</li>
  *    <li>unlock</li>
  *  </ul>
- *  
+ *
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  *  @version 1.0
  */
@@ -51,7 +51,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   // (3)                                            old.remove onSuccess
   // (4)  new        <--update success <--       new+job-locked
 
-  /** Write-lock {@code this._key} by {@code job_key}.  
+  /** Write-lock {@code this._key} by {@code job_key}.
    *  Throws IAE if the Key is already locked.
    *  @return the old POJO mapped to this Key, generally for deletion. */
   public Lockable write_lock() { return write_lock((Key<Job>)null); }
@@ -61,7 +61,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     return ((PriorWriteLock)new PriorWriteLock(job_key).invoke(_key))._old;
   }
 
-  /** Write-lock {@code this._key} by {@code job_key}, and delete any prior mapping.  
+  /** Write-lock {@code this._key} by {@code job_key}, and delete any prior mapping.
    *  Throws IAE if the Key is already locked.
    *  @return self, locked by job_key */
   public T delete_and_lock( ) { return delete_and_lock((Key<Job>)null); }
@@ -76,9 +76,9 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   }
 
   /** Write-lock key and delete; blocking.
-   *  Throws IAE if the key is already locked.  
+   *  Throws IAE if the key is already locked.
    */
-  public static void delete( Key key ) { 
+  public static void delete( Key key ) {
     Value val = DKV.get(key);
     if( val==null ) return;
     ((Lockable)val.get()).delete();
@@ -91,7 +91,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
    *  is that `delete` first write-locks `this`.
    */
   public final void delete( ) { delete(null,new Futures()).blockForPending(); }
-  /** Write-lock 'this' and delete. 
+  /** Write-lock 'this' and delete.
    *  Throws IAE if the _key is already locked.
    *
    *  Subclasses that need custom deletion logic should override {@link #remove_impl(Futures)}.
@@ -133,10 +133,10 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
       ((Lockable)val.get()).read_lock(job_key); // Lockable being locked
   }
   /** Atomically get a read-lock on this, preventing future deletes or updates */
-  public void read_lock( Key<Job> job_key ) { 
+  public void read_lock( Key<Job> job_key ) {
     if( _key != null ) {
       Log.debug("shared-read-lock "+_key+" by job "+job_key);
-      new ReadLock(job_key).invoke(_key); 
+      new ReadLock(job_key).invoke(_key);
     }
   }
 
@@ -158,9 +158,9 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
    *  to upgrade a write-locked Model to a newer version with more training iterations. */
   public T update( ) { return update((Key<Job>)null); }
   public T update( Job job ) { return (T)update(job._key); }
-  public T update( Key<Job> job_key ) { 
+  public T update( Key<Job> job_key ) {
     Log.debug("update write-locked "+_key+" by job "+job_key);
-    new Update(job_key).invoke(_key); 
+    new Update(job_key).invoke(_key);
     return (T)this;             // Flow-coding
   }
 
@@ -209,7 +209,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
 
   // -----------
   // Accessors for locking state.  Minimal self-checking; primitive results
-  private boolean is_locked(Key<Job> job_key) { 
+  private boolean is_locked(Key<Job> job_key) {
     if( _lockers==null ) return false;
     for( int i=(_lockers.length==1?0:1); i<_lockers.length; i++ ) {
       Key k = _lockers[i];
@@ -220,8 +220,8 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   private boolean is_wlocked() { return _lockers!=null && _lockers.length==1; }
   private boolean is_wlocked(Key<Job> job_key) { return is_wlocked() && (_lockers[0] == job_key || (_lockers[0] != null && _lockers[0].equals(job_key))); }
   private boolean is_unlocked() { return _lockers== null; }
-  private void set_write_lock( Key<Job> job_key ) { 
-    _lockers=new Key[]{job_key}; 
+  private void set_write_lock( Key<Job> job_key ) {
+    _lockers=new Key[]{job_key};
     assert is_locked(job_key);
   }
   private void set_read_lock(Key<Job> job_key) {

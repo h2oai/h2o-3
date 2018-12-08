@@ -21,10 +21,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    protected int _off;
    protected int _len;
 
-   public BufferedString(byte[] buf, int off, int len) { 
-     _buf = buf;  
-     _off = off;  
-     _len = len; 
+   public BufferedString(byte[] buf, int off, int len) {
+     _buf = buf;
+     _off = off;
+     _len = len;
      assert len >= 0 :  "Bad length in constructor " + len;
    }
 
@@ -72,7 +72,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      return hash;
    }
 
-   // TODO(vlad): make sure that this method is not as destructive as it now is (see tests) 
+   // TODO(vlad): make sure that this method is not as destructive as it now is (see tests)
    void addChar() {
      _len++;
    }
@@ -198,7 +198,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   // has been stripped, please do not re-insert them.  In particular, the
   // hashcode and equals calls are made millions (billions?) of times a second
   // when parsing categoricals.
-  public final byte [] getBuffer() {return _buf;} 
+  public final byte [] getBuffer() {return _buf;}
   public final int getOffset() {return _off;}
   public final int length() {return _len;}
 

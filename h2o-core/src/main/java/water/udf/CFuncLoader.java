@@ -20,7 +20,7 @@ abstract public class CFuncLoader {
 
   /**
    * Instantiate demanded function.
-   * 
+   *
    * @param jfuncName  function name - this is target language specific!
    * @param targetKlazz  requested function Java interface
    * @param classLoader  classloader to use for function search

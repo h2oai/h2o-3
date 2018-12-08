@@ -83,8 +83,8 @@ public final class PersistS3 extends Persist {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
         Log.debug(
-            "Unable to load AWS credentials from file " + credentials + 
-                "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() + 
+            "Unable to load AWS credentials from file " + credentials +
+                "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() +
                 ", size=" + credentials.length() + "; problem: " + e.getMessage());
         throw new AmazonClientException(
             "PersistS3. Unable to load AWS credentials from file " + credentials + ": " + e.getMessage());

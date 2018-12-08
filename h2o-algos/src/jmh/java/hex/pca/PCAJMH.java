@@ -12,22 +12,22 @@ import static water.TestUtil.parse_test_file;
 import static water.TestUtil.stall_till_cloudsize;
 
 public class PCAJMH {
-  
+
   PCAModel.PCAParameters paramsQuasar;
   protected PCAModel pcaModel;
   protected Frame trainingFrame;
   protected String hexKey = "input_data.hex";
   protected String dataSetFilePath = "smalldata/pca_test/SDSS_quasar.txt";
 //	protected String dataSetFilePath = "bigdata/laptop/jira/re0.wc.arff.csv";
-  
+
   public void setup() {
     water.util.Log.setLogLevel(logLevel);
     stall_till_cloudsize(1);
-    
+
     trainingFrame = null;
     double missing_fraction = 0.75;
     long seed = 12345;
-    
+
     try {
       // TODO update following comment
     /* NOTE get the data this way
@@ -41,7 +41,7 @@ public class PCAJMH {
       FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frame._key, seed, missing_fraction);
       j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
       DKV.remove(frame._key); // Delete the frame header (not the data)
-      
+
       paramsQuasar = new PCAModel.PCAParameters();
       paramsQuasar._train = trainingFrame._key;
       paramsQuasar._k = 4;
@@ -57,7 +57,7 @@ public class PCAJMH {
       throw e;
     }
   }
-  
+
   public void tearDown() {
     if (pcaModel != null) {
       pcaModel.remove();
@@ -66,7 +66,7 @@ public class PCAJMH {
       trainingFrame.delete();
     }
   }
-  
+
   boolean tryToTrain() {
     try {
       pcaModel = new PCA(paramsQuasar).trainModel().get();
@@ -75,7 +75,7 @@ public class PCAJMH {
     }
     return true;
   }
-  
+
   boolean tryToScore() {
     try {
       pcaModel.score(trainingFrame);
@@ -84,5 +84,5 @@ public class PCAJMH {
     }
     return true;
   }
-  
+
 }

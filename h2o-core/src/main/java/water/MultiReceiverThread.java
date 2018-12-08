@@ -54,7 +54,7 @@ class MultiReceiverThread extends Thread {
         if( sock == null ) {
           sock = new MulticastSocket(H2O.CLOUD_MULTICAST_PORT);
           if( H2O.CLOUD_MULTICAST_IF != null ) {
-            try { 
+            try {
               sock.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
             } catch( SocketException e ) {
               Log.err("Exception calling setNetworkInterface, Multicast Interface, Group, Port - "+

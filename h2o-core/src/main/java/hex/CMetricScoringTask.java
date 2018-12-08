@@ -8,7 +8,7 @@ import water.udf.CMetricFunc;
  * Custom metric scoring task.
  *
  * The task provides support to load and invoke custom model metric
- * defined via {@link water.udf.CFunc}. 
+ * defined via {@link water.udf.CFunc}.
  *
  * @param <T>  self type
  */
@@ -64,7 +64,7 @@ public class CMetricScoringTask<T extends CMetricScoringTask<T>> extends CFuncTa
       result = null;
     }
   }
-  
+
   public CustomMetric getComputedCustomMetric() {
     return result;
   }

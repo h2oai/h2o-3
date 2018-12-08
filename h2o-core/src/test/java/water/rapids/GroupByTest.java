@@ -247,7 +247,7 @@ public class GroupByTest extends TestUtil {
     System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
     System.out.println(v_gb.toString());
     v_gb.getFrame().delete();
-    
+
     long start2 = System.currentTimeMillis();
     Val v_tb = Rapids.exec("(table cov FALSE)");
     System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
@@ -256,7 +256,7 @@ public class GroupByTest extends TestUtil {
 
     ids.delete();
     Keyed.remove(Key.make("cov"));
-  }    
+  }
 
 
   private void chkDim( Frame fr, int col, int row ) {
@@ -264,11 +264,11 @@ public class GroupByTest extends TestUtil {
     Assert.assertEquals(row,fr.numRows());
   }
   private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
-  private void chkFr( Frame fr, int col, int row, double exp, double tol ) { 
+  private void chkFr( Frame fr, int col, int row, double exp, double tol ) {
     if( Double.isNaN(exp) ) assertTrue(fr.vec(col).isNA(row));
-    else                    Assert.assertEquals(exp, fr.vec(col).at(row),tol); 
+    else                    Assert.assertEquals(exp, fr.vec(col).at(row),tol);
   }
-  private void chkFr( Frame fr, int col, int row, String exp ) { 
+  private void chkFr( Frame fr, int col, int row, String exp ) {
     String[] dom = fr.vec(col).domain();
     Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
   }

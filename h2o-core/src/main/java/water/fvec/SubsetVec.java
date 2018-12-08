@@ -29,16 +29,16 @@ public class SubsetVec extends WrappedVec {
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(_subsetRowsKey);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     ab.getKey(_subsetRowsKey,fs);
     return super.readAll_impl(ab,fs);
   }
 
-  // 
+  //
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
     final Vec _masterVec;

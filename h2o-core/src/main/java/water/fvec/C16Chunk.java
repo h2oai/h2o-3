@@ -21,7 +21,7 @@ public class C16Chunk extends Chunk {
     }
     return lo;
   }
-  @Override protected long at16h_impl(int idx) { 
+  @Override protected long at16h_impl(int idx) {
     long hi = hiAt(idx);
     if (hi == _HI_NA && loAt(idx) == _LO_NA) {
       throw new IllegalArgumentException("at16h but value is missing at " + idx);

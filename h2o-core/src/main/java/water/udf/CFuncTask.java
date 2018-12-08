@@ -13,7 +13,7 @@ abstract public class CFuncTask<T extends CFunc, S extends CFuncTask<T,S>> exten
   public CFuncTask(CFuncRef cFuncRef) {
     this.cFuncRef = cFuncRef;
   }
-  
+
   @Override
   protected void setupLocal() {
     if (cFuncRef != null) {

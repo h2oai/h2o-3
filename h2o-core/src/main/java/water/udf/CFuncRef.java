@@ -7,7 +7,7 @@ import water.Key;
 
 public class CFuncRef extends Iced<CFuncRef> {
   public static final CFuncRef NOP = null;
-  
+
   public final String keyName;
 
   public final String funcName;

@@ -117,7 +117,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       if (MSBnodeHeader[fromNode] == null) continue;
       // magically this works, given the outer for loop through global
       // chunk.  Relies on LINE_ANCHOR_1 above.
-      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];   
+      int numRowsToCopy = MSBnodeHeader[fromNode]._MSBnodeChunkCounts[oxChunkIdx[fromNode]++];
       // _MSBnodeChunkCounts is a vector of the number of contributions from
       // each Vec chunk.  Since each chunk is length int, this must less than
       // that, so int The set of data corresponding to the Vec chunk
@@ -163,7 +163,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     assert _x.length == _o.length;  // i.e. aligned batch size between x and o (think 20 bytes keys and 8 bytes of long in o)
     // Seems like no deep clone available in Java. Maybe System.arraycopy but
     // maybe that needs target to be allocated first
-    for (int i=0; i<_x.length; i++) {    
+    for (int i=0; i<_x.length; i++) {
       _xtmp[i] = Arrays.copyOf(_x[i], _x[i].length);
       _otmp[i] = Arrays.copyOf(_o[i], _o[i].length);
     }
@@ -200,7 +200,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   }
 
   static Key getSortedOXHeaderKey(boolean isLeft, int MSBvalue) {
-    // This guy has merges together data from all nodes and its data is not "from" 
+    // This guy has merges together data from all nodes and its data is not "from"
     // any particular node.  Therefore node number should not be in the key.
     return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
@@ -322,7 +322,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       final long tmp = thisHist[c];
       // important to skip zeros for logic below to undo cumulate.  Worth the
       // branch to save a deeply iterative memset back to zero
-      if (tmp == 0) continue;  
+      if (tmp == 0) continue;
       thisHist[c] = rollSum;
       rollSum += tmp;
     }

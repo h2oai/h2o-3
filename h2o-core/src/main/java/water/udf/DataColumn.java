@@ -19,7 +19,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
   public DataColumn() {
     type = Vec.T_BAD;
   }
-  
+
   public abstract T get(long idx);
 
   public abstract void set(long idx, T value);
@@ -64,7 +64,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
     if (vec == null) vec = DKV.get(vecKey).get();
     return vec;
   }
-  
+
   @Override public String toString() {
     return "DataColumn(type=" + type + ", factory=" + chunkFactory + ", vec=" + vec() + ")";
   }

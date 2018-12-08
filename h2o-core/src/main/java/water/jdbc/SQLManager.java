@@ -32,7 +32,7 @@ public class SQLManager {
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
   /**
-   * @param connection_url (Input) 
+   * @param connection_url (Input)
    * @param table (Input)
    * @param select_query (Input)
    * @param username (Input)

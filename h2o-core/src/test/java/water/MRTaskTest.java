@@ -57,7 +57,7 @@ public class MRTaskTest extends TestUtil {
   // Test speed of calling 1M map calls
   @Test
   public void testMillionMaps() {
-    // 
+    //
     final int iters = 20;
     // Brutal 1-row-per-chunk, forced to 1M chunks
     //final long nchunks = 1000000L;
@@ -94,7 +94,7 @@ public class MRTaskTest extends TestUtil {
     zeros.remove();
   }
   private static MRTask manyMaps(Vec vec) {
-    return new MRTask() { 
+    return new MRTask() {
       @Override public void map(Chunk cs[]) { }
     }.profile().doAll(vec);
   }

@@ -129,7 +129,7 @@ import java.util.UUID;
  *  existing Vec and initialized to e.g. zero.  Such Vecs are often used as
  *  temps, and usually immediately set to interest values in a later MRTask
  *  pass.
- * 
+ *
  *  <p>Example creation of temp Vecs:<pre>
  *    Vec tmp0 = vec.makeZero();         // New Vec with same VectorGroup and layout as vec, filled with zero
  *    Vec tmp1 = vec.makeCon(mean);      // Filled with 'mean'
@@ -156,7 +156,7 @@ import java.util.UUID;
  */
 public class Vec extends Keyed<Vec> {
   public interface Holder { Vec vec(); }
-  
+
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
@@ -216,10 +216,10 @@ public class Vec extends Keyed<Vec> {
   public final double sparseRatio() {
     return rollupStats()._nzCnt/(double)length();
   }
-  /** True if this is a UUID column.  
+  /** True if this is a UUID column.
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
-  /** True if this is a String column.  
+  /** True if this is a String column.
    *  @return true if this is a String column.  */
   public final boolean isString (){ return _type==T_STR; }
   /** True if this is a numeric column, excluding categorical and time types.
@@ -324,7 +324,7 @@ public class Vec extends Keyed<Vec> {
   public static Vec makeZero( long len, boolean redistribute ) {
     return makeCon(0L,len,redistribute);
   }
-  /** Make a new zero-filled vector with the given row count. 
+  /** Make a new zero-filled vector with the given row count.
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
 
@@ -353,7 +353,7 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x, len, log_rows_per_chunk, true, type);
   }
 
-  /** Make a new constant vector with the given row count. 
+  /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, boolean redistribute) {
     return makeCon(x,len,redistribute, T_NUM);
@@ -706,8 +706,8 @@ public class Vec extends Keyed<Vec> {
     Key<Vec>[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
     for(int i = 0; i < vs.length; ++i)
-      vs[i] = new Vec(keys[i],_rowLayout, 
-                      domains== null ? null : domains[i], 
+      vs[i] = new Vec(keys[i],_rowLayout,
+                      domains== null ? null : domains[i],
                       types  == null ? T_NUM: types[i]);
     new MRTask() {
       @Override protected void setupLocal() {
@@ -806,27 +806,27 @@ public class Vec extends Keyed<Vec> {
 
   // ======= Rollup Stats ======
 
-  /** Vec's minimum value 
+  /** Vec's minimum value
    *  @return Vec's minimum value */
   public double min()  { return mins()[0]; }
-  /** Vec's 5 smallest values 
+  /** Vec's 5 smallest values
    *  @return Vec's 5 smallest values */
   public double[] mins(){ return rollupStats()._mins; }
-  /** Vec's maximum value 
+  /** Vec's maximum value
    *  @return Vec's maximum value */
   public double max()  { return maxs()[0]; }
-  /** Vec's 5 largest values 
+  /** Vec's 5 largest values
    *  @return Vec's 5 largeest values */
   public double[] maxs(){ return rollupStats()._maxs; }
-  /** True if the column contains only a constant value and it is not full of NAs 
+  /** True if the column contains only a constant value and it is not full of NAs
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
   /** True if the column contains only NAs
    *  @return True if the column contains only NAs */
   public final boolean isBad() { return naCnt()==length(); }
-  /** Vecs's mean 
+  /** Vecs's mean
    *  @return Vec's mean */
-  public double mean() { 
+  public double mean() {
     return rollupStats()._mean; }
   /** Vecs's standard deviation
    *  @return Vec's standard deviation */
@@ -867,7 +867,7 @@ public class Vec extends Keyed<Vec> {
    *  histogram is computed on first use and cached thereafter.
    *  @return A set of histogram bins, or null for String columns */
   public long[] bins() { return RollupStats.get(this, true)._bins;      }
-  /** Optimistically return the histogram bins, or null if not computed 
+  /** Optimistically return the histogram bins, or null if not computed
    *  @return the histogram bins, or null if not computed */
   public long[] lazy_bins() { return rollupStats()._bins; }
   /** The {@code base} for a simple and cheap histogram of the Vec, useful
@@ -882,7 +882,7 @@ public class Vec extends Keyed<Vec> {
   public double stride()    { return RollupStats.get(this,true).h_stride(); }
 
   /** A simple and cheap percentiles of the Vec, useful for getting a broad
-   *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}. 
+   *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}.
    *  @return A set of percentiles */
   public double[] pctiles() { return RollupStats.get(this, true)._pctiles;   }
 
@@ -1003,7 +1003,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
   // Filled in lazily and racily... but all writers write the exact identical Key
-  public Key rollupStatsKey() { 
+  public Key rollupStatsKey() {
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
     return _rollupStatsKey;
   }
@@ -1031,7 +1031,7 @@ public class Vec extends Keyed<Vec> {
     return cidx < nChunks() ? chunkForChunkIdx(cidx) : null;
   }
 
-  /** Make a new random Key that fits the requirements for a Vec key. 
+  /** Make a new random Key that fits the requirements for a Vec key.
    *  @return A new random Vec Key */
   public static Key<Vec> newKey(){return newKey(Key.make());}
 
@@ -1052,7 +1052,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Make a ESPC-group key.  */
-  private static Key espcKey(Key key) { 
+  private static Key espcKey(Key key) {
     byte [] bits = key._kb.clone();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
@@ -1109,14 +1109,14 @@ public class Vec extends Keyed<Vec> {
   // ======= Direct Data Accessors ======
 
   /** Fetch element the slow way, as a long.  Floating point values are
-   *  silently rounded to an integer.  Throws if the value is missing. 
+   *  silently rounded to an integer.  Throws if the value is missing.
    *  @return {@code i}th element as a long, or throw if missing */
   public final long  at8( long i ) { return chunkForRow(i).at8_abs(i); }
 
   /** Fetch element the slow way, as a double, or Double.NaN is missing.
    *  @return {@code i}th element as a double, or Double.NaN if missing */
   public final double at( long i ) { return chunkForRow(i).at_abs(i); }
-  /** Fetch the missing-status the slow way. 
+  /** Fetch the missing-status the slow way.
    *  @return the missing-status the slow way */
   public final boolean isNA(long row){ return chunkForRow(row).isNA_abs(row); }
 
@@ -1368,7 +1368,7 @@ public class Vec extends Keyed<Vec> {
     }
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     int ncs = nChunks();
     for( int i=0; i<ncs; i++ )
       DKV.put(chunkKey(i),ab.get(Chunk.class),fs,true); // Push chunk remote; do not cache local
@@ -1456,24 +1456,24 @@ public class Vec extends Keyed<Vec> {
    *  Each vector is member of exactly one group.  Default group of one vector
    *  is created for each vector.  Group of each vector can be retrieved by
    *  calling group() method;
-   *  
+   *
    *  The expected mode of operation is that user wants to add new vectors
    *  matching the source.  E.g. parse creates several vectors (one for each
    *  column) which are all colocated and are colocated with the original
    *  bytevector.
-   *  
+   *
    *  To do this, user should first ask for the set of keys for the new vectors
    *  by calling addVecs method on the target group.
-   *  
+   *
    *  Vectors in the group will have the same keys except for the prefix which
    *  specifies index of the vector inside the group.  The only information the
    *  group object carries is its own key and the number of vectors it
    *  contains (deleted vectors still count).
-   *  
+   *
    *  Because vectors (and chunks) share the same key-pattern with the group,
    *  default group with only one vector does not have to be actually created,
    *  it is implicit.
-   *  
+   *
    *  @author tomasnykodym
    */
   public static class VectorGroup extends Keyed<VectorGroup> {
@@ -1485,7 +1485,7 @@ public class Vec extends Keyed<Vec> {
 
     // New empty VectorGroup (no Vecs handed out)
     public VectorGroup() { super(init_key()); _len = 0; }
-    static private Key init_key() { 
+    static private Key init_key() {
       byte[] bits = new byte[26];
       bits[0] = Key.GRP;
       bits[1] = -1;
@@ -1568,7 +1568,7 @@ public class Vec extends Keyed<Vec> {
     // Return current VectorGroup index; used for tests
     public int len() { return _len; }
 
-    /** True if two VectorGroups are equal 
+    /** True if two VectorGroups are equal
      *  @return True if two VectorGroups are equal */
     @Override public boolean equals( Object o ) {
       return o instanceof VectorGroup && ((VectorGroup)o)._key.equals(_key);
@@ -1675,7 +1675,7 @@ public class Vec extends Keyed<Vec> {
       for( int i=0; i<espcs.length; i++ ) if( espc==espcs[i] ) return i;
       // Check for a local deep equals next:
       for( int i=0; i<espcs.length; i++ )
-        if( espc.length==espcs[i].length && Arrays.equals(espc,espcs[i]) ) 
+        if( espc.length==espcs[i].length && Arrays.equals(espc,espcs[i]) )
           return i;
       return -1;                // No match
     }
@@ -1698,7 +1698,7 @@ public class Vec extends Keyed<Vec> {
         idx = find_espc(espc, local._espcs); // Retry
         if( idx != -1 ) return idx;
       }
-      
+
       // Send the ESPC over to the ESPC master, and request it get
       // inserted.
       new TAtomic<ESPC>() {

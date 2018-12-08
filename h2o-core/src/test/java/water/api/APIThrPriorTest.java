@@ -17,7 +17,7 @@ import java.util.Properties;
 /** Test that short, interactive work runs at a higher priority than long
  *  running model-building work. */
 public class APIThrPriorTest extends TestUtil {
-  @BeforeClass static public void setup() { 
+  @BeforeClass static public void setup() {
     stall_till_cloudsize(5);
     H2O.finalizeRegistration();
   }
@@ -33,7 +33,7 @@ public class APIThrPriorTest extends TestUtil {
       vec = Vec.makeZero(100);
 
       // Basic test plan:
-  
+
       // Start a "long running model-builder job".  This job will start using the
       // nomial model-builder strategy, then block in the driver "as if" it's
       // working hard.  Imagine DL slamming all cores.  We record the F/J
@@ -47,12 +47,12 @@ public class APIThrPriorTest extends TestUtil {
       // TODO: Make a more sophisticated builder that launches a MRTask internally,
       // which blocks on ALL NODES - before we begin doing rollups.  Then check
       // the rollups priorities ON ALL NODES, not just this one.
-    
+
       // Build and launch the builder
       BogusModel.BogusParameters parms = new BogusModel.BogusParameters();
       blder = new Bogus(parms);
       job = blder.trainModel();
-  
+
       // Block till the builder sets _driver_priority, and is blocked on state==1
       synchronized(blder) {
         while( blder._state == 0 ) try { blder.wait(); } catch (InterruptedException ignore) { }
@@ -60,7 +60,7 @@ public class APIThrPriorTest extends TestUtil {
       }
       int driver_prior = blder._driver_priority;
       Properties urlparms;
-  
+
       // Now that the builder is blocked at some priority, do some GUI work which
       // needs to be at a higher priority.  It comes in on a non-FJ thread
       // (probably Nano or Jetty) but anything that hits the F/J queue needs to

@@ -96,8 +96,8 @@ public class BufferedStringTest {
     BufferedString sut = new BufferedString(source);
     final byte[] expected = source.getBytes("UTF8");
     final byte[] actual = sut.getBuffer();
-    assertArrayEquals("Failed. expected " + Arrays.toString(expected) + 
-                      ", got " + Arrays.toString(actual), 
+    assertArrayEquals("Failed. expected " + Arrays.toString(expected) +
+                      ", got " + Arrays.toString(actual),
         expected, actual);
   }
 

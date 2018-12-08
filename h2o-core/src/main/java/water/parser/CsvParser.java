@@ -660,7 +660,7 @@ MAIN_LOOP:
     if( columnNames != null ) return columnNames.length;
     int longest = 0;            // Longest line
     for( String[] s : data ) if( s.length > longest ) longest = s.length;
-    if( longest == data[0].length ) 
+    if( longest == data[0].length )
       return longest; // 1st line is longer than all the rest; take it
 
     // we don't have lines of same length, pick the most common length

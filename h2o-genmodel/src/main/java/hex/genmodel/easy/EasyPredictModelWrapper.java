@@ -41,10 +41,10 @@ import java.util.Map;
  * with the data quality.
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
- * 
+ *
  * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
  * in the process of {@link Config} creation.
- * 
+ *
  * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
  *
@@ -808,7 +808,7 @@ public class EasyPredictModelWrapper implements Serializable {
         if (Double.isNaN(value)) {
           // If this point is reached, the original value remains NaN.
           errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
-        } 
+        }
         rawData[index] = value;
       }
       else {

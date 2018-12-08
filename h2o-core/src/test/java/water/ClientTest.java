@@ -7,7 +7,7 @@ import water.fvec.Frame;
 
 public class ClientTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(3); }
-  
+
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a
   // value for it, get the value for it, delete it.
@@ -48,7 +48,7 @@ public class ClientTest extends TestUtil {
         public void compute2() {
           _fr = parse_test_file(Key.make("covtype.hex"),"../../datasets/UCI/UCI-large/covtype/covtype.data");
           tryComplete();
-        } 
+        }
       }).get()._fr;
     System.out.println("Server loaded file");
     try {

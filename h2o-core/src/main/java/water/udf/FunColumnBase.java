@@ -12,7 +12,7 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
    * deserialization :(
    */
   public FunColumnBase() {}
-  
+
   FunColumnBase(Column<?> master) {
     this.master = master;
   }
@@ -24,7 +24,7 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
   @Override public long size() { return master.size(); }
 
   public abstract T get(long idx);
-  
+
   @Override public T apply(long idx) { return get(idx); }
 
   @Override public T apply(Long idx) { return get(idx); }

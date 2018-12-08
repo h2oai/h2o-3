@@ -29,7 +29,7 @@ import sun.misc.Unsafe;
  * in-between.  Linear scaling up to all cpus has been observed on a 32-way Sun
  * US2 box, 32-way Sun Niagra box, 8-way Intel box and a 4-way Power box.
  *
- * <p><strong>The main benefit of this class</strong> over using plain 
+ * <p><strong>The main benefit of this class</strong> over using plain
  * org.cliffc.high_scale_lib.NonBlockingHashMap with {@link Long} keys is
  * that it avoids the auto-boxing and unboxing costs.  Since auto-boxing is
  * <em>automatic</em>, it is easy to accidentally cause auto-boxing and negate

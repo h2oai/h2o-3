@@ -28,7 +28,7 @@ public class TypedFrame<X> extends Frame {
     length = -1;
     function = null;
   }
-  
+
   public TypedFrame(BaseFactory<X> factory, long length, Function<Long, X> function) {
     super();
     this.factory = factory;
@@ -41,18 +41,18 @@ public class TypedFrame<X> extends Frame {
       @Override protected Vec buildZeroVec() { return factory.buildZeroVec(column); }
     };
   }
-  
+
   public final static class EnumFrame extends TypedFrame<Integer> {
     private final String[] domain;
-    
+
     public EnumFrame(long length, Function<Long, Integer> function, String[] domain) {
       super(Enums.enums(domain), length, function);
       this.domain = domain;
     }
   }
-  
+
   protected Vec buildZeroVec() { return factory.buildZeroVec(length); }
-  
+
   protected Vec makeVec() throws IOException {
     final Vec vec0 = buildZeroVec();
     MRTask task = new MRTask() {
@@ -77,5 +77,5 @@ public class TypedFrame<X> extends Frame {
   public DataColumn<X> newColumn() throws IOException {
     return newColumn(makeVec());
   }
-  
+
 }

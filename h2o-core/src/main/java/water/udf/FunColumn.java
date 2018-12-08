@@ -27,7 +27,7 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
     this.f = f;
     this.xs = xs;
   }
-  
+
   @Override public TypedChunk<Y> chunkAt(int i) {
     return new FunChunk(xs.chunkAt(i));
   }
@@ -42,10 +42,10 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
    */
   public class FunChunk extends DependentChunk<Y> {
     private final TypedChunk<X> cx;
-  
-    public FunChunk(TypedChunk<X> cx) { 
+
+    public FunChunk(TypedChunk<X> cx) {
       super(cx);
-      this.cx = cx; 
+      this.cx = cx;
     }
 
     @Override public Vec vec() { return FunColumn.this.vec(); }

@@ -14,7 +14,7 @@ import java.util.Date;
  */
 public class Dates extends DataColumns.BaseFactory<Date> {
   public static final water.udf.specialized.Dates Dates = new Dates();
-  
+
   public Dates() {
     super(Vec.T_TIME, "Time");
   }
@@ -24,11 +24,11 @@ public class Dates extends DataColumns.BaseFactory<Date> {
      * for deserialization
      */
     public DateChunk(){}
-    
+
     public DateChunk(Chunk c) {
       super(c);
     }
-    
+
     @Override
     public Date get(int idx) {
       return isNA(idx) ? null : new Date(c.at8(idx));
@@ -40,7 +40,7 @@ public class Dates extends DataColumns.BaseFactory<Date> {
       else c.set(idx, value.getTime());
     }
   }
-  
+
   @Override
   public DataChunk<Date> apply(final Chunk c) {
     return new DateChunk(c);
@@ -62,8 +62,8 @@ public class Dates extends DataColumns.BaseFactory<Date> {
       else vec().set(idx, value.getTime());
     }
   }
-  
-  
+
+
   @Override
   public DataColumn<Date> newColumn(final Vec vec) {
     if (vec.get_type() != Vec.T_TIME && vec.get_type() != Vec.T_NUM)

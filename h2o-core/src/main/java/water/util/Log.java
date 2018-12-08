@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** Log for H2O. 
+/** Log for H2O.
  *
  *  OOME: when the VM is low on memory, OutOfMemoryError can be thrown in the
  *  logging framework while it is trying to print a message. In this case the
@@ -42,7 +42,7 @@ abstract public class Log {
   private static String _preHeader;
   // A little bit of startup buffering
   private static ArrayList<String> INIT_MSGS = new ArrayList<>();
-  
+
   public static byte valueOf( String slvl ) {
     if( slvl == null ) return -1;
     slvl = slvl.toLowerCase();
@@ -54,17 +54,17 @@ abstract public class Log {
     if( slvl.startsWith("trace") ) return TRACE;
     return -1;
   }
-  
+
   public static void init(String sLvl, boolean quiet) {
     int lvl = valueOf(sLvl);
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
   }
-  
+
   public static void setLogLevel(String sLvl, boolean quiet) {
     init(sLvl, quiet);
   }
-  
+
   public static void setLogLevel(String sLvl) {
     setLogLevel(sLvl, true);
   }
@@ -72,21 +72,21 @@ abstract public class Log {
   public static void trace( Object... objs ) { log(TRACE,objs); }
 
   public static void debug( Object... objs ) { log(DEBUG,objs); }
-  
+
   public static void info ( Object... objs ) { log(INFO ,objs); }
-  
+
   public static void warn ( Object... objs ) { log(WARN ,objs); }
-  
+
   public static void err  ( Object... objs ) { log(ERRR ,objs); }
-  
+
   public static void err(Throwable ex) {
     StringWriter sw = new StringWriter();
     ex.printStackTrace(new PrintWriter(sw));
     err(sw.toString());
   }
-  
+
   public static void fatal( Object... objs ) { log(FATAL,objs); }
-  
+
   public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
 
   public static void httpd( String msg ) {
@@ -239,8 +239,8 @@ abstract public class Log {
   public static String getLogFilePath(String level) throws Exception {
     return getLogDir() + File.separator + getLogFileName(level);
   }
-  
-  
+
+
   private static void setLog4jProperties(String logDir, java.util.Properties p) throws Exception {
     LOG_DIR = logDir;
 
@@ -395,7 +395,7 @@ abstract public class Log {
         PropertyConfigurator.configure(p);
       }
     }
-    
+
     return (_logger = LogManager.getLogger("water.default"));
   }
 
@@ -408,7 +408,7 @@ abstract public class Log {
     }
     return r;
   }
-  
+
   static String padRight(String stringToPad, int size) {
     StringBuilder strb = new StringBuilder(stringToPad);
     while( strb.length() < size )
@@ -481,7 +481,7 @@ abstract public class Log {
   }
 
   public static boolean getQuiet() { return _quiet; }
-  
+
   public static void setQuiet(boolean q) {
     _quiet = q;
   }

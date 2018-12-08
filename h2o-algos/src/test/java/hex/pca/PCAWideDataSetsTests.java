@@ -35,20 +35,20 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public Random _rand = new Random();
 		public PCAModel _golden = null;	//
 		private PCAParameters pcaParameters;
-	
+
 		@Parameters
 		public static PCAImplementation[] parametersForSvdImplementation() {
 			return hex.pca.PCAImplementation.values();
 		}
-		
+
 		@Parameter
 		public PCAImplementation PCAImplementation;
-		
+
 		@BeforeClass
 		public static void setup() {
 				stall_till_cloudsize(1);
 		}
-		
+
 		@Before
 		public void setupPcaParameters() {
 			pcaParameters = new PCAParameters();

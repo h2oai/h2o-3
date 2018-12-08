@@ -138,7 +138,7 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
       }
     }
   }
-  
+
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)

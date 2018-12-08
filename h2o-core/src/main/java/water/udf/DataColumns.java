@@ -77,7 +77,7 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-// TODO(vlad): figure out if we should support UUIDs  
+// TODO(vlad): figure out if we should support UUIDs
 //  public static final Factory<UUID> UUIDs = new Factory<UUID>(Vec.T_UUID) {
 //
 //    @Override public DataChunk<UUID> apply(final Chunk c) {

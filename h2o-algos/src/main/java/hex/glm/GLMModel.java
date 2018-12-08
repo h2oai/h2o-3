@@ -948,7 +948,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      */
     public double [][] vcov(){return _vcov;}
 
-    
+
     @Override
     public int nclasses() {
       return _nclasses;

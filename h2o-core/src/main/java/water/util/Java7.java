@@ -3,7 +3,7 @@ package water.util;
 /**
  * The following code replaces Java 7 Objects class, while Java 7
  * is not always available.
- * 
+ *
  * Created by vpatryshev on 3/1/17.
  */
 public class Java7 {

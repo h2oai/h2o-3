@@ -29,7 +29,7 @@ public class UnfoldingFrame<X> extends Frame {
     function = null;
     width = -1;
   }
-  
+
   public UnfoldingFrame(ColumnFactory<X> factory, long len, Function<Long, List<X>> function, int width) {
     super();
     this.factory = factory;
@@ -52,10 +52,10 @@ public class UnfoldingFrame<X> extends Frame {
 
   static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
     private final String[] domain;
-    
+
     /** for deserialization */
     public UnfoldingEnumFrame() {domain = null; }
-    
+
     public UnfoldingEnumFrame(long length, Function<Long, List<Integer>> function, int width, String[] domain) {
       super(enums(domain), length, function, width);
       this.domain = domain;
@@ -73,11 +73,11 @@ public class UnfoldingFrame<X> extends Frame {
       }
     };
   }
-  
+
   protected Vec buildZeroVec() {
     return DataColumns.buildZeroVec(len, factory.typeCode());
   }
-  
+
   protected List<Vec> makeVecs() throws IOException {
     Vec[] vecs = new Vec[width];
 
@@ -88,7 +88,7 @@ public class UnfoldingFrame<X> extends Frame {
     MRTask task = new MRTask() {
       @Override
       public void map(Chunk[] cs) {
-        int size = cs[0].len(); // TODO(vlad): find a solution for empty  
+        int size = cs[0].len(); // TODO(vlad): find a solution for empty
         long start = cs[0].start();
         for (int r = 0; r < size; r++) {
           long i = r + start;
@@ -96,11 +96,11 @@ public class UnfoldingFrame<X> extends Frame {
           for (int j = 0; j < cs.length; j++) {
             DataChunk<X> tc = factory.apply(cs[j]);
             tc.set(r, j < values.size() ? values.get(j) : null);
-          }          
+          }
         }
       }
     };
-    
+
     MRTask mrTask = task.doAll(vecs);
     return Arrays.asList(mrTask._fr.vecs());
   }
@@ -112,5 +112,5 @@ public class UnfoldingFrame<X> extends Frame {
     for (Vec vec : vecs) result.add(factory.newColumn(vec));
     return result;
   }
-  
+
 }

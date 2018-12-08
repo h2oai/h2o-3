@@ -32,9 +32,9 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     assert xs.isCompatibleWith(ys) : "Columns 1 and 2 must be compatible: " + xs + ", " + ys;
     assert xs.isCompatibleWith(zs) : "Columns 1 and 3 must be compatible: " + xs + ", " + zs;
   }
-  
-  @Override public T get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx), zs.apply(idx)); 
+
+  @Override public T get(long idx) {
+    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx), zs.apply(idx));
   }
 
   @Override

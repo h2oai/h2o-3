@@ -75,12 +75,12 @@ public class RandomUtils {
     // CNC: PCG expects the output to be an *unsigned* int which Java does not
     // support.  Instead we're returning a signed int, and the caller has to
     // figure out the sign-extension.
-    @Override public int nextInt() { 
+    @Override public int nextInt() {
       long oldstate = _state;
       _state = oldstate * 6364136223846793005L + _inc;
       int xorshifted = (int)(((oldstate >>> 18) ^ oldstate) >>> 27);
       int rot = (int)(oldstate >>> 59);
-      return (xorshifted >>> rot) | (xorshifted << ((-rot) & 31));      
+      return (xorshifted >>> rot) | (xorshifted << ((-rot) & 31));
     }
     @Override public long nextLong() { return (((long)nextInt())<<32) | (((long)nextInt())&0xFFFFFFFFL); }
 

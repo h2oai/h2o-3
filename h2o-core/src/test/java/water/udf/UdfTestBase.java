@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 /**
- * All test functionality specific for udf (not actually), 
+ * All test functionality specific for udf (not actually),
  * not kosher enough to be allowed for the general public
  */
 public class UdfTestBase extends TestUtil {
@@ -24,9 +24,9 @@ public class UdfTestBase extends TestUtil {
     ClassLoader loader = getClass().getClassLoader();
     loader.setDefaultAssertionStatus(true);
   }
-  
+
   int requiredCloudSize() { return 1; }
-  
+
   @Before
   public void hi() {
     stall_till_cloudsize(requiredCloudSize());
@@ -34,8 +34,8 @@ public class UdfTestBase extends TestUtil {
   }
 
   @After
-  public void bye() { 
-    Scope.exit(); 
+  public void bye() {
+    Scope.exit();
   }
 
   protected static Vec willDrop(Vec v) { return Scope.track(v); }

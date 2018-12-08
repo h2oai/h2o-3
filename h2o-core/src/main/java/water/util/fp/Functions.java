@@ -34,11 +34,11 @@ public class Functions {
 
     @Override public Z apply(X x) { return g.apply(f.apply(x)); }
   }
-  
+
   public static <X,Y,Z> Function<X, Z> compose(final Function<Y, Z> g, final Function<X,Y> f) {
     return new Composition<>(f, g);
   }
-  
+
   public static <X> Function<X, X> identity() {
     return new Function<X, X>() {
       @Override public X apply(X x) { return x; }
@@ -50,7 +50,7 @@ public class Functions {
       public T apply(Long i) { return list.get(i.intValue()); }
     };
   }
-  
+
   public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
     List<Y> ys = new LinkedList<>();
     for (X x : xs) ys.add(f.apply(x));
@@ -86,7 +86,7 @@ public class Functions {
       return Objects.equals(separator, other.separator);
     }
   }
-  
+
   public static Unfoldable<String, String> splitBy(final String separator) {
     return new StringSplitter(separator);
   }

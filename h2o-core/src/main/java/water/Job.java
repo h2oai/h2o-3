@@ -53,7 +53,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     assert key==null || clz_of_T!=null;
     _result = key;              // Result (destination?) key
     _typeid = clz_of_T==null ? 0 : TypeMap.getIcedId(clz_of_T);
-    _description = desc; 
+    _description = desc;
   }
 
   /** Create a Job when a warning already exists due to bad model_id
@@ -117,7 +117,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
    *  to isStopped and stop_requested.  Also, an exception may be posted. */
   private volatile boolean _stop_requested; // monotonic change from false to true
   public boolean stop_requested() { update_from_remote(); return _stop_requested; }
-  public void stop() { 
+  public void stop() {
     if( !_stop_requested )      // fast path cutout
       new JAtomic() {
         @Override boolean abort(Job job) { return job._stop_requested; }
@@ -228,7 +228,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // exceptionally" - it is marked "completed" before the onExComplete logic
     // runs.  It is then notified, and wait'ers wake up - before the
     // onExComplete runs; onExComplete runs on in another thread, so wait'ers
-    // are racing with the onExComplete.  
+    // are racing with the onExComplete.
 
     // We want wait'ers to *wait* until the task's onExComplete runs, AND Job's
     // onExComplete runs (marking the Job as stopped, with an error).  So we
@@ -243,7 +243,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
     // Barrier2 is an empty class, and vacuously runs in parallel with wait'ers
     // of Barrier2 - all callers of Job.get().
-    _barrier = new Barrier2(); 
+    _barrier = new Barrier2();
     fjtask.setCompleter(new Barrier1(_barrier));
 
     // These next steps must happen in-order:
@@ -355,13 +355,13 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if (_ex!=null)
       throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
-    return _result==null ? null : _result.get(); 
+    return _result==null ? null : _result.get();
   }
 
   // --------------
   // Atomic State Updaters.  Atomically change state on the home node.  They
   // also update the *this* object from the freshest remote state, meaning the
-  // *this* object changes after these calls.  
+  // *this* object changes after these calls.
   // NO OTHER CHANGES HAPPEN TO JOB FIELDS.
 
   private abstract static class JAtomic extends TAtomic<Job> {
@@ -392,7 +392,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
     if(! Arrays.equals(_warns, remote._warns)) differ = true;
     if( differ )
-      synchronized(this) { 
+      synchronized(this) {
         _stop_requested = remote._stop_requested;
         _start_time= remote._start_time;
         _end_time  = remote._end_time  ;

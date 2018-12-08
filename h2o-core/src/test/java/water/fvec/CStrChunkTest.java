@@ -109,7 +109,7 @@ public class CStrChunkTest extends TestUtil {
     final BufferedString bufferedString = c.atStr(new BufferedString(), 102);
     Assert.assertTrue("Sparse string has values: expected `bar`, got " + bufferedString, bufferedString.equalsAsciiString("bar"));
   }
-  
+
   @Test
   public void test_lstrip() {
     final List<String> content = Arrays.asList(

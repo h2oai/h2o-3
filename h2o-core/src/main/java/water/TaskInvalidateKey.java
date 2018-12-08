@@ -8,7 +8,7 @@ class TaskInvalidateKey extends TaskPutKey {
     assert newval._key != null && key.home();
     // Prevent the new Value from being overwritten by Yet Another PUT by
     // read-locking it.  It's safe to read, but not to over-write, until this
-    // invalidate completes on the *prior* value.  
+    // invalidate completes on the *prior* value.
     newval.read_lock();// block further writes until all invalidates complete
     fs.add(RPC.call(h2o,new TaskInvalidateKey(key,newval)));
   }

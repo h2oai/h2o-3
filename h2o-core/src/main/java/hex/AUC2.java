@@ -121,7 +121,7 @@ public class AUC2 extends Iced {
 
   /** @return maximum F1 */
   public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
-  
+
   public Function<Integer, Double> forCriterion(final ThresholdCriterion tc) {
     return new Function<Integer, Double>() {
       public Double apply(Integer i) {
@@ -155,7 +155,7 @@ public class AUC2 extends Iced {
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
     double p=0, n=0;
-    for( int i=0; i<_nBins; i++ ) { 
+    for( int i=0; i<_nBins; i++ ) {
       p += _tps[i]; _tps[i] = p;
       n += _fps[i]; _fps[i] = n;
     }
@@ -353,7 +353,7 @@ public class AUC2 extends Iced {
 
       // Merge elements with least squared-error increase until we get fewer
       // than _nBins and no duplicates.  May require many merges.
-      while( _n > _nBins || dups() ) 
+      while( _n > _nBins || dups() )
         mergeOneBin();
     }
 
@@ -439,7 +439,7 @@ public class AUC2 extends Iced {
       throw new IllegalArgumentException("Actuals are either 0 or 1");
     if( vprob.min() < 0 || vprob.max() > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
-    // Horrible data replication into array of structs, to sort.  
+    // Horrible data replication into array of structs, to sort.
     Pair[] ps = new Pair[(int)vprob.length()];
     Vec.Reader rprob = vprob.new Reader();
     Vec.Reader racts = vacts.new Reader();
@@ -464,7 +464,7 @@ public class AUC2 extends Iced {
         }
       });
 
-    // Compute Area Under Curve.  
+    // Compute Area Under Curve.
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
     int tp0=0, fp0=0, tp1=0, fp1=0;
@@ -478,7 +478,7 @@ public class AUC2 extends Iced {
       }
       if( p._act==1 ) tp1++; else fp1++;
     }
-    area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
+    area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle +
     area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
 
     // Descale

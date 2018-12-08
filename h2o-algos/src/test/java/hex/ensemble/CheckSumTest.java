@@ -19,10 +19,10 @@ import hex.StackedEnsembleModel;
  * The main purpose of this test is to ensure the checksum() of a training frame is preserved throughout the
  * stacked ensemble process. An issue is known with fold_column causing checksum() issues and also calling the
  * wrong score method. However, stacked ensembles does not need fold column to be passed in explicitly. Rather, a user
- * just needs to pass in the training frame, response name, and the base models. 
+ * just needs to pass in the training frame, response name, and the base models.
  */
 public class CheckSumTest extends TestUtil {
-    
+
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
     @Test public void checkSumTest() {
@@ -106,8 +106,8 @@ public class CheckSumTest extends TestUtil {
                 stackedEnsembleModel._output._metalearner.remove();
             }
             Scope.exit();
-        } 
+        }
     }
 
-    
+
 }

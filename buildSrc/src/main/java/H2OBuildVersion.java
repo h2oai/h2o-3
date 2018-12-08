@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public class H2OBuildVersion {
   // Marker for development build
   private static final String DEVEL_BUILD_NUMBER = "99999";
-  
+
   // Passed in by caller.
   File _rootDir;
   String _versionFromGradle;

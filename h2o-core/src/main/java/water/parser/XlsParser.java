@@ -34,11 +34,11 @@ class XlsParser extends Parser {
     void concat( int off, int size ) throws IOException {
       readAtLeast(off+size);
       if( _off == _lim ) {      // Empty Buf, so concat is really assign
-        _off = off; _lim = off+size; 
+        _off = off; _lim = off+size;
         return;
       }
       if( off == _lim ) {       // Adjacent, so just extend
-        _lim += size; 
+        _lim += size;
         return;
       }
       _bbuf = Arrays.copyOfRange(_bbuf,_off,_lim+size);
@@ -100,9 +100,9 @@ class XlsParser extends Parser {
    *  (http://sourceforge.net/projects/phpexcelreader)
    *  Based on the Java version by Andy Khan (http://www.andykhan.com).  Now
    *  maintained by David Sanders.  Reads only Biff 7 and Biff 8 formats.
-   * 
+   *
    *  PHP versions 4 and 5
-   * 
+   *
    *  LICENSE: This source file is subject to version 3.0 of the PHP license
    *  that is available through the world-wide-web at the following URI:
    *  http://www.php.net/license/3_0.txt.  If you did not receive a copy of
@@ -147,7 +147,7 @@ class XlsParser extends Parser {
     _is = is;
     // Check for magic first
     readAtLeast(IDENTIFIER_OLE.length);
-    for( int i=0; i<IDENTIFIER_OLE.length; i++ ) 
+    for( int i=0; i<IDENTIFIER_OLE.length; i++ )
       if( _buf[i] != IDENTIFIER_OLE[i] )
         throw new ParseDataset.H2OParseException("Not a valid XLS file, lacks correct starting bits (aka magic number).");
 
@@ -240,7 +240,7 @@ class XlsParser extends Parser {
     }
   }
 
-  
+
   private Buf getWorkBook() throws IOException {
     if( _wrkbook._size < SMALL_BLOCK_THRESHOLD ) {
       Buf rootdata = __readData(_rootentry._startBlock);
@@ -503,12 +503,12 @@ class XlsParser extends Parser {
           ? data.getStr(pos+9, data.get2(pos+6)*(data.get1(pos+8) == 0 ? 1 : 2))
           : data.getStr(pos+7, data.get1(pos+6)*2);
         int indexCode = data.get2(pos+4);
-        while( indexCode >= _formatRecords.length ) 
+        while( indexCode >= _formatRecords.length )
           _formatRecords = Arrays.copyOf(_formatRecords,_formatRecords.length<<1);
         _formatRecords[indexCode] = formatString;
         break;
       }
-      case SPREADSHEET_EXCEL_READER_TYPE_FONT: 
+      case SPREADSHEET_EXCEL_READER_TYPE_FONT:
         break; // While the original php file parsed the font here, H2O just wants the data
       case SPREADSHEET_EXCEL_READER_TYPE_PALETTE:
         break; // While the original php file parsed the color palaette info here, H2O just wants the data
@@ -525,7 +525,7 @@ class XlsParser extends Parser {
         else if( indexCode < _formatRecords.length && _formatRecords[indexCode] != null )
           t = XF.Type.Other;
         _xfRecords.add(new XF(indexCode,t));
-        break; 
+        break;
       }
       case SPREADSHEET_EXCEL_READER_TYPE_NINETEENFOUR:
         _nineteenFour = data.get1(pos+4) == 1;
@@ -541,7 +541,7 @@ class XlsParser extends Parser {
       default:
         // nothing; ignore this block typed
       }
-      
+
       pos += length + 4;
       code = data.get2(pos);
       length = data.get2(pos+2);
@@ -555,12 +555,12 @@ class XlsParser extends Parser {
 
   // ------------------------------
   // A single Excel Sheet
-  private class Sheet { 
+  private class Sheet {
     final String _name;
     final Buf _data;
     final int _offset;
     final ParseWriter _dout;
-    
+
     int _numRows, _numCols;
     String[] _labels;
     int _currow = 0;
@@ -588,9 +588,9 @@ class XlsParser extends Parser {
         }
       }
       // Advance to the next row
-      while( _currow < row ) { 
+      while( _currow < row ) {
         _currow++;              // Next row internally
-        // Forward collected row to _dout.  
+        // Forward collected row to _dout.
         for( int i=0; i<_ds.length; i++ ) {
           if( _labels[i] != null ) { _dout.addStrCol(i,new BufferedString(_labels[i])); _labels[i] = null; }
           else { _dout.addNumCol(i,_ds[i]); _ds[i] = Double.NaN; }
@@ -807,7 +807,7 @@ class XlsParser extends Parser {
           //}
           //linkData['desc'] = udesc;
           //linkData['link'] = this->_encodeUTF16(ulink);
-          //for (r=row; r<=row2; r++) { 
+          //for (r=row; r<=row2; r++) {
           //  for (c=column; c<=column2; c++) {
           //    this['cellsInfo'][r+1][c+1]['hyperlink'] = linkData;
           //  }

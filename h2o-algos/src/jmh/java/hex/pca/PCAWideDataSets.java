@@ -32,7 +32,7 @@ public class PCAWideDataSets {
 		setPCAImplementation(pcaImplementation);
 		setup();
 	}
-	
+
 	public void setDataSetCase(int customDataSetCase) {
 		if (customDataSetCase <= 0 || customDataSetCase > numberOfModels) {
 			throw new IllegalArgumentException("Illegal data set case!");
@@ -40,7 +40,7 @@ public class PCAWideDataSets {
 			this.dataSetCase = customDataSetCase;
 		}
 	}
-	
+
 	public void setup() {
 		water.util.Log.setLogLevel(logLevel);
 		final String _smallDataSet = "smalldata/pca_test/decathlon.csv";
@@ -85,7 +85,7 @@ public class PCAWideDataSets {
 				break;
 		}
 	}
-	
+
 	private PCA preparePCAModel(String datafile, boolean addNAs, boolean removeColumns,
 	                            DataInfo.TransformType transformType) {
 		trainingFrame = parse_test_file(Key.make(datafile), datafile);
@@ -100,7 +100,7 @@ public class PCAWideDataSets {
 			trainingFrame.vec(5).setNA(20);
 		}
 		DKV.put(trainingFrame);
-		
+
 		PCAModel.PCAParameters parameters = new PCAModel.PCAParameters();
 		parameters._train = trainingFrame._key;
 		parameters._k = 3;
@@ -110,12 +110,12 @@ public class PCAWideDataSets {
 		parameters._pca_implementation = getPCAImplementation();
 		parameters._impute_missing = false;
 		parameters._seed = 12345;
-		
+
 		PCA pcaParametersWide = new PCA(parameters);
 		pcaParametersWide.setWideDataset(true);  // force to treat dataset as wide even though it is not.
 		return pcaParametersWide;
 	}
-	
+
 	public void tearDown() throws Exception {
 		if (trainingFrame != null) {
 			trainingFrame.delete();
@@ -128,7 +128,7 @@ public class PCAWideDataSets {
 		}
 		water.H2O.getJetty().stop();
 	}
-	
+
 	public boolean train() {
 		try {
 			pcaModel = pca.trainModel().get();
@@ -138,7 +138,7 @@ public class PCAWideDataSets {
 		}
 		return true;
 	}
-	
+
 	public boolean score() {
 		try {
 			pcaScore = pcaModel.score(trainingFrame);

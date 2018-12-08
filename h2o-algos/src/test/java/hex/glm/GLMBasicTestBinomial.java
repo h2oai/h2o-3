@@ -1109,7 +1109,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 
 
   @Test
-  public void testPValues(){    
+  public void testPValues(){
 //    1) NON-STANDARDIZED
 
 //    summary(m)

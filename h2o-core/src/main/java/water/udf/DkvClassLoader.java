@@ -38,13 +38,13 @@ class DkvClassLoader extends ClassLoader {
   public DkvClassLoader(String jarKeyName, ClassLoader parent) {
     this(Key.make(jarKeyName), parent);
   }
-  
+
   public DkvClassLoader(Key jarKey, ClassLoader parent) {
     super(parent);
     this.jarKey = jarKey;
     this.jarCache = buildJarCache(jarKey);
   }
-  
+
   @Override
   protected Class<?> findClass(String name) throws ClassNotFoundException {
     try {
@@ -114,7 +114,7 @@ class DkvClassLoader extends ClassLoader {
   }
 
   final class DkvUrlStreamHandler extends URLStreamHandler {
-    
+
     public static final String PROTO = "dkv";
 
     @Override

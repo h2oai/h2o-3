@@ -11,7 +11,7 @@ public class JavaCFuncLoader extends CFuncLoader {
   public String getLang() {
     return "java";
   }
-  
+
   @Override
   public <F> F load(String jfuncName, Class<? extends F> targetKlazz, ClassLoader classLoader) {
     try {

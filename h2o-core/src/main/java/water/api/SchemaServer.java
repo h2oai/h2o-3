@@ -198,7 +198,7 @@ public class SchemaServer {
     for (Schema schema : schemas) {
       register(schema);
     }
-        
+
     Log.info("Registered: " + schemas().size() + " schemas in " + (System.currentTimeMillis() - startTime) + "ms");
     schemas_registered = true;
   }

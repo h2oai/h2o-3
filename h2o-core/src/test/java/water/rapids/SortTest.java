@@ -280,7 +280,7 @@ public class SortTest extends TestUtil {
           fr.vec(colIndex).set(_rand.nextInt((int)fr.numRows()), Double.NEGATIVE_INFINITY);
         }
       }
-      
+
       Scope.track(fr);
       sortedInt = fr.sort(new int[]{colIndex});
       Scope.track(sortedInt);

@@ -38,7 +38,7 @@ public class QuantileTest extends TestUtil {
       if( kmm != null ) kmm.delete();
     }
   }
-  
+
   @Test public void testAllNAS() {
     QuantileModel kmm = null;
     Frame fr = null;
@@ -75,7 +75,7 @@ public class QuantileTest extends TestUtil {
     } finally {
       if( fr  != null ) fr .remove();
       if( kmm != null ) kmm.delete();
-    }    
+    }
   }
 
   @Test public void testInts() {

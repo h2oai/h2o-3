@@ -284,7 +284,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *
    *  @return String value or null if missing. */
   public final BufferedString atStr(BufferedString bStr, int i) { return _chk2 == null ? atStr_impl(bStr, i) : _chk2.atStr_impl(bStr, i); }
-  
+
   public String stringAt(int i) {
     return atStr(new BufferedString(), i).toString();
   }
@@ -645,7 +645,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   }
 
   //NA sparse methods:
-  
+
   /** Sparse Chunks have a significant number of NAs, and support for
    *  skipping over large runs of NAs in a row.
    *  @return true if this Chunk is sparseNA.  */

@@ -13,19 +13,19 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
    * Deserializaiton only
    */
   public DataChunk() {}
-  
+
   public DataChunk(Chunk c) { this.c = c; }
 
   @Override public Chunk rawChunk() { return c; }
-  
+
   @Override public boolean isNA(int i) { return c.isNA(i); }
 
   @Override public long start() { return c.start(); }
   @Override public int length() { return c.len(); }
 
   public abstract void set(int idx, T value);
-  
+
   @Override public int cidx() { return c.cidx(); }
-  
+
   @Override public Vec vec() { return c.vec(); }
 }

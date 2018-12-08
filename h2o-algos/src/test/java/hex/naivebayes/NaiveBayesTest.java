@@ -95,7 +95,7 @@ public class NaiveBayesTest extends TestUtil {
       parms._compute_metrics = true;
 
       model = new NaiveBayes(parms).trainModel().get();
-        
+
       // Done building model; produce a score column with class assignments
       score = model.score(train);
       Assert.assertTrue(model.testJavaScoring(train,score,1e-6));

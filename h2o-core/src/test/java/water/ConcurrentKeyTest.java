@@ -7,7 +7,7 @@ import water.fvec.Frame;
 
 public class ConcurrentKeyTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  
+
   // Test rapid key create/delete during parse
   @Test public void testParse() {
     for( int i=0; i<25; i++ ) { // Small data to keep it fast

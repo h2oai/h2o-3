@@ -21,14 +21,14 @@ public class WordCountTest extends TestUtil {
 
   protected void doWordCount(File file) throws IOException {
     NFSFileVec nfs=NFSFileVec.make(file);
-  
+
     System.out.printf("\nProgress: 00 percent");
     final long start = System.currentTimeMillis();
     NonBlockingHashMap<VStr,VStr> words = new WordCount().doAll(nfs)._words;
     final long time_wc = System.currentTimeMillis();
     VStr[] vss = new VStr[words.size()];
     System.out.println("\nWC takes "+(time_wc-start)+"msec for "+vss.length+" words");
-  
+
     // Faster version of toArray - because calling toArray on a 16M entry array
     // is slow.
     // Start the walk at slot 2, because slots 0,1 hold meta-data
@@ -42,16 +42,16 @@ public class WordCountTest extends TestUtil {
     }
     final long time_ary = System.currentTimeMillis();
     System.out.println("WC toArray "+(time_ary-time_wc)+"msec for "+cnt+" words");
-  
+
     Arrays.sort(vss,0,cnt,null);
     final long time_sort = System.currentTimeMillis();
     System.out.println("WC sort "+(time_sort-time_ary)+"msec for "+cnt+" words");
-  
+
     System.out.println("Found "+cnt+" unique words.");
     System.out.println(Arrays.toString(vss));
     nfs.remove(new Futures()).blockForPending();
   }
-  
+
   private static class WordCount extends MRTask<WordCount> {
     static NonBlockingHashMap<VStr,VStr> WORDS;
     static AtomicLong PROGRESS;
@@ -63,7 +63,7 @@ public class WordCountTest extends TestUtil {
       if( 'a'<=b && b<='z' ) return b;
       return -1;
     }
-  
+
     @Override public void map( Chunk bv ) {
       _words = WORDS;
       final int len = bv._len;
@@ -106,14 +106,14 @@ public class WordCountTest extends TestUtil {
       vs._len = 0;              // re-use VStr (since not added to NBHM)
       return vs;
     }
-  
+
     @Override public void reduce( WordCount wc ) {
       if( _words != wc._words )
         throw H2O.unimpl();
     }
-  
+
     public final AutoBuffer write_impl(AutoBuffer ab) {
-      if( _words != null ) 
+      if( _words != null )
         for( VStr key : WORDS.keySet() )
           ab.put2((char)key._len).putA1(key._cs,key._off,key._off+key._len).put4(key._cnt);
       return ab.put2((char)65535); // End of map marker
@@ -137,8 +137,8 @@ public class WordCountTest extends TestUtil {
     }
     @Override protected void copyOver(WordCount wc) { _words = wc._words; }
   }
-  
-  
+
+
   // A word, and a count of occurences.  Typically the '_cs' buf is shared
   // amongst many VStr's, all using different off/len pairs.
   private static class VStr implements Comparable<VStr> {
@@ -166,9 +166,9 @@ public class WordCountTest extends TestUtil {
       while( !_cntUpdater.compareAndSet(this,r,r+d) )
         r = _cnt;
     }
-  
+
     public String toString() { return new String(_cs,_off,_len)+"="+_cnt; }
-  
+
     @Override public int compareTo(VStr vs) {
       int f = vs._cnt - _cnt; // sort by freq
       if( f != 0 ) return f;

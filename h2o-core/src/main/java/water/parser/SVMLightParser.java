@@ -21,7 +21,7 @@ class SVMLightParser extends Parser {
 
   SVMLightParser( ParseSetup ps, Key jobkey ) { super(ps, jobkey); }
 
-  /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
+  /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
   public static ParseSetup guessSetup(byte [] bits) {

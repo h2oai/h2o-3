@@ -72,7 +72,7 @@ public class UnknownHeartbeatTest extends TestUtil{
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    
+
     ArrayList<Object[]> shutdown_success = ext.getData("shutdown_ignored");
     assertEquals(2, shutdown_success.size());
   }

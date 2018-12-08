@@ -106,7 +106,7 @@ public class AstFillNA extends AstPrimitive {
       }
     }
   }
-  
+
   private static class FillBackwardTaskRow extends MRTask<FillBackwardTaskRow> {
     private final int _maxLen;
 

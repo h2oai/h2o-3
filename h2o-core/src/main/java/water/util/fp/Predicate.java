@@ -15,7 +15,7 @@ public abstract class Predicate<X> implements Function<X, Boolean> {
   public <Y extends X> List<Y> filter(List<Y> xs) {
     List<Y> result = new LinkedList<>();
     for (Y x : xs) if (apply(x)) result.add(x);
-    
+
     return result;
   }
 }

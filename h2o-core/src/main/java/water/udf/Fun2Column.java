@@ -23,7 +23,7 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
   public Fun2Column() {
     f = null; xs = null; ys = null;
   }
-  
+
   public Fun2Column(Function2<X, Y, Z> f, Column<X> xs, Column<Y> ys) {
     super(xs);
     this.f = f;
@@ -31,9 +31,9 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     this.ys = ys;
     assert xs.isCompatibleWith(ys) : "Columns must be compatible: " + xs + ", " + ys;
   }
-  
-  @Override public Z get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx)); 
+
+  @Override public Z get(long idx) {
+    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx));
   }
 
   @Override

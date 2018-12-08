@@ -19,10 +19,10 @@ import java.util.Map;
 
 abstract class AbstractEntry<TypeK,TypeV> implements Map.Entry<TypeK,TypeV> {
   /** Strongly typed key */
-  protected final TypeK _key; 
+  protected final TypeK _key;
   /** Strongly typed value */
   protected       TypeV _val;
-  
+
   public AbstractEntry(final TypeK key, final TypeV val) { _key = key;        _val = val; }
   public AbstractEntry(final Map.Entry<TypeK,TypeV> e  ) { _key = e.getKey(); _val = e.getValue(); }
   /** Return "key=val" string */
@@ -38,14 +38,14 @@ abstract class AbstractEntry<TypeK,TypeV> implements Map.Entry<TypeK,TypeV> {
     final Map.Entry e = (Map.Entry)o;
     return eq(_key, e.getKey()) && eq(_val, e.getValue());
   }
-  
+
   /** Compute <code>"key.hashCode() ^ val.hashCode()"</code> */
   public int hashCode() {
-    return 
+    return
       ((_key == null) ? 0 : _key.hashCode()) ^
       ((_val == null) ? 0 : _val.hashCode());
   }
-  
+
   private static boolean eq(final Object o1, final Object o2) {
     return (o1 == null ? o2 == null : o1.equals(o2));
   }

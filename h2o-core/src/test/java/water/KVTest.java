@@ -63,7 +63,7 @@ public class KVTest extends TestUtil {
   // ---
   // Issue a slew of remote puts, then issue a DFJ job on the array of keys.
   @Test public void testRemoteBitSet() throws Exception {
-    long start = System.currentTimeMillis(); 
+    long start = System.currentTimeMillis();
     Futures fs = new Futures();
     // Issue a slew of remote key puts
     Key[] keys = new Key[32];
@@ -138,7 +138,7 @@ public class KVTest extends TestUtil {
     }
     System.out.println("MultiMbFile "+(System.currentTimeMillis()-start));
   }
-  
+
   // Byte-wise histogram
   public static class ByteHisto extends MRTask<ByteHisto> {
     int[] _x;
@@ -167,7 +167,7 @@ public class KVTest extends TestUtil {
     // Remote-put operation
     DKV.put(key,v1);
     DKV.write_barrier();
-  
+
     // Atomically run this function on a clone of the bits from the existing
     // Key and install the result as the new Value.  This function may run
     // multiple times if there are collisions.
@@ -181,7 +181,7 @@ public class KVTest extends TestUtil {
     DKV.remove(key);            // Cleanup after test
     System.out.println("RemoteAtomic "+(System.currentTimeMillis()-start));
   }
-  
+
   public static class Atomic2 extends Atomic {
     @Override public Value atomic( Value val ) {
       byte[] bits1 = val.memOrLoad();

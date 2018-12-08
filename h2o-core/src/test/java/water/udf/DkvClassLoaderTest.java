@@ -24,7 +24,7 @@ import static water.udf.JFuncUtils.loadTestJar;
  * Test DkvClassLoader.
  */
 public class DkvClassLoaderTest extends TestUtil {
-  
+
   @BeforeClass
   static public void setup() { stall_till_cloudsize(1); }
 

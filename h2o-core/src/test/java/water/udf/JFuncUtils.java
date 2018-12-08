@@ -102,7 +102,7 @@ public class JFuncUtils {
                                                    final String[] skipClassNames) {
     return getSkippingClassloader(parent, skipClassNames, new String[] {});
   }
-  
+
   public static ClassLoader getSkippingClassloader(ClassLoader parent,
                                                    final String[] skipClassNames,
                                                    final String[] skipResources) {

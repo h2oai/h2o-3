@@ -70,9 +70,9 @@ class FindHandler extends Handler {
     final long _row;
     final double[] _ds;
     long _prev, _next;
-    Find( long row, double[] ds ) { 
+    Find( long row, double[] ds ) {
       super((byte)(H2O.GUI_PRIORITY - 2));
-      _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE; 
+      _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE;
     }
     @Override public void map( Chunk cs[] ) {
       for( int col = 0; col<cs.length; col++ ) {

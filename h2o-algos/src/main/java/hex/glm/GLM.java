@@ -1479,7 +1479,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     int P = xy.length - 1;
     double maxDiff = 0;
 //    // CD loop
-    while (iter1++ < Math.max(P,500)) { 
+    while (iter1++ < Math.max(P,500)) {
       maxDiff = 0;
       for (int i = 0; i < activeData._cats; ++i) {
         for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
@@ -1801,7 +1801,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return "GLM grad info: likelihood = " + _likelihood + super.toString();
     }
   }
-  
+
   /**
    * Gradient and line search computation for L_BFGS and also L_BFGS solver wrapper (for ADMM)
    */

@@ -38,7 +38,7 @@ public class FPTest {
   @Test
   public void testOption() throws Exception {
     Option<String> sut1 = Some("Hello Junit");
-    
+
 //  should not compile
 //  sut.get();
 
@@ -48,25 +48,25 @@ public class FPTest {
     assertFalse(sui1.hasNext());
     assertFalse(sut1.isEmpty());
     assertTrue(sut1.nonEmpty());
-    
+
     assertTrue(None.isEmpty());
     assertFalse(None.nonEmpty());
     assertFalse(None.iterator().hasNext());
-    
+
     Option<String> sut2 = Option("Hello Junit");
     assertEquals(sut1, sut2);
     assertNotEquals(Option("Hello JuniT"), sut1);
-    
+
     Option<String> sut3 = Option(null);
     assertEquals(None, sut3);
 
     Option<Integer> sut4 = sut1.flatMap(
-        new Function<String, Option<Integer>>() { 
-          public Option<Integer> apply(String s) { 
+        new Function<String, Option<Integer>>() {
+          public Option<Integer> apply(String s) {
             return Option(s.length() - 1); } });
-    
+
     assertEquals(Option(10), sut4);
-    
+
     Option<?> sute = Option(None);
   }
 
@@ -75,7 +75,7 @@ public class FPTest {
     Option<String> sut1 = Some("Hello Junit");
     Option<Option<String>> sutopt = Option(sut1);
     assertEquals(sut1, flatten(sutopt));
-    
+
     assertEquals(None, flatten(Option(None)));
     assertEquals(None, flatten((Option<Option<Object>>)None));
   }

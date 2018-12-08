@@ -42,7 +42,7 @@ public class ExternalFrameUtilsTest {
                       ari(1234, 4567), getElemSizes(ar(EXPECTED_VECTOR, EXPECTED_VECTOR), ari(1234, 4567)));
     assertArrayEquals("Size of a two vec and primitive element should match passed vector lenghts and 1",
                       ari(1234, 1, 4567), getElemSizes(ar(EXPECTED_VECTOR, EXPECTED_BYTE, EXPECTED_VECTOR), ari(1234, 4567)));
-    
+
   }
 
   @Test
@@ -54,7 +54,7 @@ public class ExternalFrameUtilsTest {
     assertArrayEquals("Boolean type is mapped to vector numeric type",
                       ar(T_NUM),
                       vecTypesFromExpectedTypes(ar(EXPECTED_BOOL), EMPTY_ARI));
-    
+
     assertArrayEquals("String type is mapped to vector string type",
                       ar(T_STR),
                       vecTypesFromExpectedTypes(ar(EXPECTED_STRING), EMPTY_ARI));
@@ -70,7 +70,7 @@ public class ExternalFrameUtilsTest {
     assertArrayEquals("Vector type is mapped to array of vector numeric types",
                       ar(T_NUM, T_NUM, T_NUM),
                       vecTypesFromExpectedTypes(ar(EXPECTED_VECTOR), ari(3)));
-    
+
     assertArrayEquals("Two vector types are mapped to array of vector numeric types",
                       ar(T_NUM, T_NUM, T_NUM, T_NUM, T_NUM),
                       vecTypesFromExpectedTypes(ar(EXPECTED_VECTOR, EXPECTED_VECTOR), ari(3, 2)));

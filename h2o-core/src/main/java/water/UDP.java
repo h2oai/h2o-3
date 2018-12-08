@@ -35,7 +35,7 @@ public abstract class UDP {
     fetchack(false,new UDPFetchAck(),H2O.FETCH_ACK_PRIORITY), // a class/id fetch ACK
     ack   (false,new UDPAck (),H2O.ACK_PRIORITY),  // a generic ACK for a UDP async task
     nack  (false,new UDPNack(),H2O.ACK_PRIORITY),  // a generic NACK
-    
+
     // These packets all imply some sort of request/response handshake.
     // We'll hang on to these packets; filter out dup sends and auto-reply
     // identical result ACK packets.

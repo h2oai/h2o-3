@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 
 /**
  * Tests for SetOfBytes
- * 
+ *
  * Created by vpatryshev on 1/13/17.
  */
 public class SetOfBytesTest {
@@ -26,9 +26,9 @@ public class SetOfBytesTest {
     assertFalse(sut.contains(-129));
     assertFalse(sut.contains(Integer.MIN_VALUE));
     assertFalse(sut.contains(Integer.MAX_VALUE));
-    
+
     for (int i = 0; i < 256; i++) assertFalse(new SetOfBytes("").contains(i));
-    
+
     SetOfBytes sut1 = new SetOfBytes("Hello World!");
     assertTrue(sut1.contains('!'));
     assertTrue(sut1.contains(' '));

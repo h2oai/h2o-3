@@ -21,7 +21,7 @@ public class DCTTransformer extends Transformer<Frame> {
   }
 
   @Override protected Job<Frame> execImpl() {
-    if (_dimensions.length != 3) 
+    if (_dimensions.length != 3)
       throw new H2OIllegalArgumentException("Need 3 dimensions (width/height/depth): WxHxD (1D: Wx1x1, 2D: WxHx1, 3D: WxHxD)");
     if (ArrayUtils.minValue(_dimensions) < 1)
       throw new H2OIllegalArgumentException("Dimensions must be >= 1");

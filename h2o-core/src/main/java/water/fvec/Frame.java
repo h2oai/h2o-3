@@ -156,7 +156,7 @@ public class Frame extends Lockable<Frame> {
       names[i] = defaultColName(i);
       _keys[i] = vecs[i]._key;
     }
-    
+
     setNames(names);
   }
 

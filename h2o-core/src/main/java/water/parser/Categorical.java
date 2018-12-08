@@ -12,10 +12,10 @@ import water.util.PrettyPrint;
  *  Basically a wrapper around non blocking hash map.
  *  In the first pass, we just collect set of unique strings per column
  *  (if there are less than MAX_CATEGORICAL_COUNT unique elements).
- *  
+ *
  *  After pass1, the keys are sorted and indexed alphabetically.
  *  In the second pass, map is used only for lookup and never updated.
- *  
+ *
  *  Categorical objects are shared among threads on the local nodes!
  *
  * @author tomasnykodym
@@ -51,7 +51,7 @@ public final class Categorical extends Iced {
   }
 
   int getTokenId( BufferedString str ) { return _map.get(str); }
-  
+
   int maxId() { return _maxId == -1 ? _id.get() : _maxId; }
   int size() { return _map.size(); }
   boolean isMapFull() { return maxDomainExceeded; }

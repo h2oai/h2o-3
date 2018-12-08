@@ -36,7 +36,7 @@ public class Triple<V> {
   static public <V> List<Triple<V>> product(V[] v1s, V[] v2s, V[] v3s) {
     List<Triple<V>> out = new ArrayList<>(v1s.length*v2s.length*v3s.length);
     for (V v1 : v1s) for (V v2 : v2s) for (V v3 : v3s) out.add(new Triple<>(v1,v2,v3));
-    
+
     return out;
   }
 }

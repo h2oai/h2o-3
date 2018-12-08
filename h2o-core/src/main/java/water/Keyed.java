@@ -19,7 +19,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return remove_impl(fs);
   }
 
-  /** Override to remove subparts, but not self, of composite Keyed objects.  
+  /** Override to remove subparts, but not self, of composite Keyed objects.
    *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
   protected Futures remove_impl( Futures fs ) { return fs; }
@@ -45,7 +45,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
 
   /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
    *  overwriting what was there before.  */
-  public static Keyed readAll(AutoBuffer ab) { 
+  public static Keyed readAll(AutoBuffer ab) {
     Futures fs = new Futures();
     Keyed k = ab.getKey(fs);
     fs.blockForPending();       // Settle out all internal Key puts

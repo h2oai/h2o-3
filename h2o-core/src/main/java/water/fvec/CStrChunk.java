@@ -85,7 +85,7 @@ public class CStrChunk extends Chunk {
     while (byteAt(off + len) != 0) len++;
     return len;
   }
-  
+
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
@@ -193,7 +193,7 @@ public class CStrChunk extends Chunk {
     }
     return nc;
   }
-  
+
   /**
    * Optimized substring() method for a buffer of only ASCII characters.
    * The presence of UTF-8 multi-byte characters would give incorrect results
@@ -245,7 +245,7 @@ public class CStrChunk extends Chunk {
     }
     return nc;
   }
-  
+
   public NewChunk asciiEntropy(NewChunk nc) {
     nc.alloc_doubles(_len);
     for (int i = 0; i < _len; i++) {

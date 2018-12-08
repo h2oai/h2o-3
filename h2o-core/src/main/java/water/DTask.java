@@ -56,7 +56,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
     // can't use fork() to keep correct priority level
     H2O.submitTask(this);
   }
-  
+
   /** 2nd top-level execution hook.  After the primary task has received a
    * result (ACK) and before we have sent an ACKACK, this method is executed on
    * the <em>local vm</em>.  Transients from the local vm are available here. */

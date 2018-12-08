@@ -358,7 +358,7 @@ public class NetworkInit {
         list.add(entry);
       }
     } catch( Exception e ) { H2O.die(e.toString()); }
-    finally { 
+    finally {
       if( br != null ) try { br.close(); } catch( IOException ie ) { }
     }
     return list;

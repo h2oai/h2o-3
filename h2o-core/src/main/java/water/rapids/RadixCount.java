@@ -17,7 +17,7 @@ class RadixCount extends MRTask<RadixCount> {
   private final BigInteger _base;
   // used to determine the unique DKV names since DF._key is null now and
   // before only an RTMP name anyway
-  private final boolean _isLeft; 
+  private final boolean _isLeft;
   private final int _id_maps[][];
   private final int _ascending;
 
@@ -97,7 +97,7 @@ class RadixCount extends MRTask<RadixCount> {
 
   @Override protected void closeLocal() {
     DKV.put(getKey(_isLeft, _col, H2O.SELF), _counts, _fs, true);
-    // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  
+    // just the MSB counts per chunk on this node.  Most of this spine will be empty here.
     // TODO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
   }

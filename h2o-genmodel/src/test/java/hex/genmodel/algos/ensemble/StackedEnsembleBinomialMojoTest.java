@@ -86,7 +86,7 @@ public class StackedEnsembleBinomialMojoTest {
         assertNotNull(subModel._mojoModel);
         double[] originalRow = new double[]{1, 2, 3};
         final double[] remappedRow = subModel.remapRow(originalRow);
-        
+
         assertNotEquals(originalRow, remappedRow); // Resulting remapped row should not be a reference to the same array
         assertEquals(originalRow.length, remappedRow.length);
         for (int i = 0; i < originalRow.length; i++) {

@@ -62,7 +62,7 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
         // before the invalidates, and the invoker might then do a DKV.get()
         // and get his original value - instead of inval & fetching afresh.
         if (val1 != null) val1.blockTillNoReaders(); // Prior XTN that made val1 may not yet have settled out; block for it
-        break; 
+        break;
       }
       assert val1 != val2;      // No returning the same Value
       // Attempt atomic update

@@ -193,7 +193,7 @@ public class KVSpeedTest extends TestUtil {
 
   private long logTime( long start, String msg, int ncloud ) {
     long now = System.currentTimeMillis();
-    double msec_op = (double)(now-start)/NKEYS/ncloud;    
+    double msec_op = (double)(now-start)/NKEYS/ncloud;
     System.out.println(msg+" "+ PrettyPrint.usecs((long)(msec_op*1000.0))+"/op");
     return now;
   }

@@ -24,7 +24,7 @@ public class TableTest extends TestUtil {
       Keyed.remove(Key.make("hex"));
     }
   }
-  
+
 
   @Test public void testBasicDdply() {
     Frame fr = null;

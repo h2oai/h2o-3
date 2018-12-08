@@ -79,7 +79,7 @@ public class FileUtils {
 
     return false;
   }
-  
+
   /** Hunt for files in likely places.  Null if cannot find.
    *  @param fname filename
    *  @return      Found file or null */
@@ -107,7 +107,7 @@ public class FileUtils {
   private static void check(boolean cond, String msg) throws IOException{
     if (!cond) throw new IOException(msg);
   }
-  
+
   private static void checkFileEntry(String name, File file) throws IOException {
     check(file != null, "File not found: " + name);
     check(file.exists(), "File should exist: "  + name);

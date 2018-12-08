@@ -24,7 +24,7 @@ public class PCAJMHScoring extends PCAJMH {
   @Param({"JAMA", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX"})
   private PCAImplementation PCAImplementation;
   private boolean isTrained;
-  
+
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
         .include(PCAJMHScoring.class.getSimpleName())
@@ -32,19 +32,19 @@ public class PCAJMHScoring extends PCAJMH {
 
     new Runner(opt).run();
   }
-  
+
   @Setup(Level.Iteration)
   public void setup() {
   	super.setup();
     paramsQuasar._pca_implementation = PCAImplementation;
     isTrained = tryToTrain();
   }
-  
+
   @TearDown(Level.Iteration)
   public void tearDown() {
   	super.tearDown();
   }
-  
+
   @Benchmark
   public boolean measureQuasarScoring() throws Exception {
   	if (!isTrained) {
@@ -55,5 +55,5 @@ public class PCAJMHScoring extends PCAJMH {
     }
     return true;
   }
-  
+
 }

@@ -40,7 +40,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
                     "GLRM - fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)",
             values = { "GramSVD", "Power", "Randomized", "GLRM" })   // TODO: pull out of categorical class
     public PCAParameters.Method pca_method;
-  
+
     @API(
             help =  "Specify the implementation to use for computing PCA (via SVD or EVD): " +
                     "MTJ_EVD_DENSEMATRIX - eigenvalue decompositions for dense matrix using MTJ; " +
@@ -52,7 +52,7 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
                     "MTJ - https://github.com/fommil/matrix-toolkits-java/",
             values = { "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA" })
     public PCAImplementation pca_impl;
-    
+
     @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true)
     public int k;
 

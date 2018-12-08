@@ -170,7 +170,7 @@ public class Merge {
 
     BigInteger rightS = BigInteger.valueOf(256L<<riteShift);
     long leftMSBto = riteBase.add(rightS).subtract(BigInteger.ONE).subtract(leftBase).shiftRight(leftShift).longValue();
-    // -1 because the 256L<<riteShift is one after the max extent.  
+    // -1 because the 256L<<riteShift is one after the max extent.
     // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
 
     // deal with the left range above the right maximum, if any.  For doubles, -1 from shift to avoid negative outcome
@@ -341,7 +341,7 @@ public class Merge {
     long t0 = System.nanoTime();
     RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
-    idxTask.join(); 
+    idxTask.join();
     System.out.println("***\n*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
     return idxTask;
   }

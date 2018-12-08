@@ -12,7 +12,7 @@ import water.udf.DataColumns;
  */
 public class Doubles extends DataColumns.BaseFactory<Double> {
   public static final water.udf.specialized.Doubles Doubles = new Doubles();
-   
+
   public Doubles() {
     super(Vec.T_NUM, "Doubles");
   }
@@ -33,7 +33,7 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
     /**
      * deserialization wants it
      */
-    public DoubleChunk() {}    
+    public DoubleChunk() {}
     DoubleChunk(Chunk c) {
       super(c);
     }
@@ -51,7 +51,7 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
      */
     public Column() {}
     Column(Vec vec, ColumnFactory<Double> factory) {
-      super(vec, factory);      
+      super(vec, factory);
     }
     public Double get(long idx) { return vec().at(idx); }
 

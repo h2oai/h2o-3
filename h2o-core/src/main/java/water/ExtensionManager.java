@@ -16,7 +16,7 @@ public class ExtensionManager {
 
   /** System property to force enable/disable named REST API extension */
   private static String PROP_TOGGLE_REST_EXT = H2O.OptArgs.SYSTEM_PROP_PREFIX + "ext.rest.toggle.";
-  
+
   /** System property to force enable/disable named Core extension */
   private static String PROP_TOGGLE_CORE_EXT = H2O.OptArgs.SYSTEM_PROP_PREFIX + "ext.core.toggle.";
 

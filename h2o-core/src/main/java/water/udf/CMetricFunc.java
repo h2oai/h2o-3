@@ -30,7 +30,7 @@ public interface CMetricFunc extends CFunc {
 
   /**
    * Combine two map-call results together.
-   * 
+   *
    * @param l a result of map call
    * @param r a result of map call
    * @return  combined results

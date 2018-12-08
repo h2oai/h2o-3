@@ -20,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAJMHTraining extends PCAJMH {
-  
+
   @Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
   private PCAImplementation PCAImplementation;
-  
+
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
         .include(PCAJMHTraining.class.getSimpleName())
@@ -31,18 +31,18 @@ public class PCAJMHTraining extends PCAJMH {
 
     new Runner(opt).run();
   }
-  
+
   @Setup(Level.Iteration)
   public void setup() {
   	super.setup();
     paramsQuasar._pca_implementation = PCAImplementation;
   }
-  
+
   @TearDown(Level.Iteration)
   public void tearDown() {
   	super.tearDown();
   }
-  
+
   @Benchmark
   public boolean measureQuasarTraining() throws Exception {
     if (!tryToTrain()) {

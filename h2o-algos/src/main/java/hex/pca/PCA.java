@@ -142,7 +142,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       String[] colHeaders = new String[_parms._k];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-  
+
       assert rowNames.length == pca._output._eigenvectors_raw.length;
       for (int i = 0; i < colHeaders.length; i++) {
         colHeaders[i] = "PC" + String.valueOf(i + 1);
@@ -247,7 +247,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
       buildTables(pca, dinfo.coefNames());
     }
-  
+
     // Main worker thread
     @Override
     public void computeImpl() {
@@ -455,8 +455,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(_job);
-  
-  
+
+
       } catch (Exception e) {
         throw new RuntimeException(e);
       } finally {

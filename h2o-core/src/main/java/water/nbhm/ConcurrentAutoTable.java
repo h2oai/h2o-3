@@ -47,7 +47,7 @@ public class ConcurrentAutoTable implements Serializable {
   /** Atomically set the sum of the striped counters to specified value.
    *  Rather more expensive than a simple store, in order to remain atomic.
    */
-  public void set( long x ) { 
+  public void set( long x ) {
     CAT newcat = new CAT(null,4,x);
     // Spin until CAS works
     while( !CAS_cat(_cat,newcat) );
@@ -74,7 +74,7 @@ public class ConcurrentAutoTable implements Serializable {
    * Return the counter's {@code long} value converted to a string.
    */
   public String toString() { return _cat.toString(0); }
-  
+
   /**
    * A more verbose print than {@link #toString}, showing internal structure.
    * Useful for debugging.
@@ -112,7 +112,7 @@ public class ConcurrentAutoTable implements Serializable {
     //int index;
     //while((index = hash & ((1 << nbits) - 1)) > max) {// May retry on
     //  hash = (hash >>> nbits) | (hash << (33 - nbits)); // non-power-2 m
-    //}    
+    //}
 
     // You would think that System.identityHashCode on the current thread
     // would be a good hash fcn, but actually on SunOS 5.8 it is pretty lousy
@@ -125,7 +125,7 @@ public class ConcurrentAutoTable implements Serializable {
 
   // --- CAT -----------------------------------------------------------------
   private static class CAT implements Serializable {
-    
+
     // Unsafe crud: get a function which will CAS arrays
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
     private static final int _Lbase  = _unsafe.arrayBaseOffset(long[].class);
@@ -137,7 +137,7 @@ public class ConcurrentAutoTable implements Serializable {
     private final static boolean CAS( long[] A, int idx, long old, long nnn ) {
       return _unsafe.compareAndSwapLong( A, rawIndex(A,idx), old, nnn );
     }
-   
+
     volatile long _resizers;    // count of threads attempting a resize
     static private final AtomicLongFieldUpdater<CAT> _resizerUpdater =
       AtomicLongFieldUpdater.newUpdater(CAT.class, "_resizers");
@@ -153,7 +153,7 @@ public class ConcurrentAutoTable implements Serializable {
       _t = new long[sz];
       _t[0] = init;
     }
-    
+
     // Only add 'x' to some slot in table, hinted at by 'hash', if bits under
     // the mask are all zero.  The sum can overflow or 'x' can contain bits in
     // the mask.  Value is CAS'd so no counts are lost.  The CAS is attempted
@@ -200,7 +200,7 @@ public class ConcurrentAutoTable implements Serializable {
       master.CAS_cat(this,newcat);
       return old;
     }
-    
+
 
     // Return the current sum of all things in the table, stripping off mask
     // before the add.  Writers can be updating the table furiously, so the
@@ -239,7 +239,7 @@ public class ConcurrentAutoTable implements Serializable {
       }
       if( _next != null ) _next.all_or(mask);
     }
-    
+
     public void all_and( long mask ) {
       long[] t = _t;
       for( int i=0; i<t.length; i++ ) {
@@ -251,21 +251,21 @@ public class ConcurrentAutoTable implements Serializable {
       }
       if( _next != null ) _next.all_and(mask);
     }
-    
+
     // Set/stomp all table slots.  No CAS.
     public void all_set( long val ) {
       long[] t = _t;
-      for( int i=0; i<t.length; i++ ) 
+      for( int i=0; i<t.length; i++ )
         t[i] = val;
       if( _next != null ) _next.all_set(val);
     }
 
     String toString( long mask ) { return Long.toString(sum(mask)); }
-    
-    public void print() { 
+
+    public void print() {
       long[] t = _t;
       System.out.print("["+t[0]);
-      for( int i=1; i<t.length; i++ ) 
+      for( int i=1; i<t.length; i++ )
         System.out.print(","+t[i]);
       System.out.print("]");
       if( _next != null ) _next.print();

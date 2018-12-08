@@ -14,7 +14,7 @@ public abstract class Icer<T extends Freezable> {
     _new=iced;
   }
   final T theFreezable() { return _new; }
-  protected AutoBuffer write    (AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
+  protected AutoBuffer write    (AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; }
   protected AutoBuffer writeJSON(AutoBuffer ab, T ice) { return ab.put1('{').put1('}'); }
   protected T read    (AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
   protected T readJSON(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }

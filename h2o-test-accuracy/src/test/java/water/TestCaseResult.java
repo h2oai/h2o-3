@@ -54,7 +54,7 @@ public class TestCaseResult {
               Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
     }
   }
-  
+
   private String makeSQLCmd() {
     AccuracyTestingSuite.summaryLog.println("Making the sql statement.");
     String sql = String.format("insert into %s values(%s, ", resultsDBTableName, testCaseId);

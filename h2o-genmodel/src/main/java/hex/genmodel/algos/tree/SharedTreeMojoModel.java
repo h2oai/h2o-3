@@ -18,7 +18,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
-    
+
     private ScoreTree _scoreTree;
 
     /**

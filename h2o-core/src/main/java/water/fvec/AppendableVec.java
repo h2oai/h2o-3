@@ -25,7 +25,7 @@ public class AppendableVec extends Vec {
   public AppendableVec( Key<Vec> key, byte type ) { this(key, new long[4], type, 0); }
 
   public AppendableVec( Key<Vec> key, long[] tmp_espc, byte type, int chunkOff) {
-    super( key, -1/*no rowLayout yet*/, null, type ); 
+    super( key, -1/*no rowLayout yet*/, null, type );
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
   }

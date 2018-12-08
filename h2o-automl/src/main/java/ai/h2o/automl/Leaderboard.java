@@ -811,5 +811,5 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public String toString() {
     return toString(" ; ", " | ");
   }
-  
+
 }

@@ -115,7 +115,7 @@ public class ParserTest2 extends TestUtil {
     }
   }
 
-  
+
  @Test public void testSingleQuotes(){
     String[] data  = new String[]{"'Tomass,test,first,line'\n'Tomas''s,test2',test2\nlast,'line''","s, trailing, piece'"};
     String[][] expectFalse = new String[][] { ar("'Tomass"  ,"test"  ,"first","line'"),
@@ -164,7 +164,7 @@ public class ParserTest2 extends TestUtil {
      if( fr != null ) fr.delete();
    }
   }
-  
+
   // Test very sparse data
   @Test public void testSparse() {
     // Build 100 zero's and 1 one.
@@ -176,7 +176,7 @@ public class ParserTest2 extends TestUtil {
     for( int i=0; i<50; i++ ) sb.append("0.0\n");
     Key k = ParserTest.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
-  
+
     // Build 100 zero's and 1 non-zero.
     exp = new double[101][1];
     exp[50][0] = 2;
@@ -202,7 +202,7 @@ public class ParserTest2 extends TestUtil {
       k = ParserTest.makeByteVec(sb.toString());
       ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
     }
-  
+
     // Build 100000 zero's and some one's
     sb = new StringBuilder();
     exp = new double[100100][1];
@@ -214,7 +214,7 @@ public class ParserTest2 extends TestUtil {
     }
     k = ParserTest.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,100100);
-  
+
     // Build 100 zero's, then 100 mix of -1001 & 1001's (to force a
     // sparse-short, that finally inflates to a full dense-short).
     sb = new StringBuilder();
@@ -225,7 +225,7 @@ public class ParserTest2 extends TestUtil {
     k = ParserTest.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,200);
   }
-  
+
   // test correctnes of sparse chunks
   // added after failing to encode properly following data as
   // 0s were not considered when computing compression strategy and then
@@ -266,7 +266,7 @@ public class ParserTest2 extends TestUtil {
         "6334,  0,0,0,0,0\n" +
         "0,     0,0,0,0,0\n" +
         "0,     0,0,0,0,0\n";
-  
+
     double[][] exp = new double[][] {
         ard(0,0,0,0,0,0),
         ard(0,0,0,0,0,0),

@@ -79,8 +79,8 @@ import sun.misc.Unsafe;
  * @author Cliff Click
  * @param <TypeK> the type of keys maintained by this map
  * @param <TypeV> the type of mapped values
- * 
- *  @author Prashant Deva 
+ *
+ *  @author Prashant Deva
  *  Modified from original NonBlockingHashMap to use identity equality.
  *  Uses System.identityHashCode() to calculate hashMap.
  *  Key equality is compared using '=='.
@@ -287,17 +287,17 @@ public class NonBlockingIdentityHashMap<TypeK, TypeV>
 
   /** Returns the number of key-value mappings in this map.
    *  @return the number of key-value mappings in this map */
-  @Override 
+  @Override
   public int     size       ( )                       { return chm(_kvs).size(); }
   /** Returns <tt>size() == 0</tt>.
    *  @return <tt>size() == 0</tt> */
-  @Override 
+  @Override
   public boolean isEmpty    ( )                       { return size() == 0;      }
 
   /** Tests if the key in the table using the <tt>equals</tt> method.
    * @return <tt>true</tt> if the key is in the table using the <tt>equals</tt> method
    * @throws NullPointerException if the specified key is null  */
-  @Override 
+  @Override
   public boolean containsKey( Object key )            { return get(key) != null; }
 
   /** Legacy method testing if some key maps into the specified value in this

@@ -110,7 +110,7 @@ public class DimensionReductionUtils {
     /**
      * This function will tranform the eigenvectors calculated for a matrix T(A) to the ones calculated for
      * matrix A.
-     * 
+     *
      * @param dinfo
      * @param vEigenIn
      * @return transformed eigenvectors

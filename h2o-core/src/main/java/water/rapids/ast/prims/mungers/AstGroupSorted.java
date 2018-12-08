@@ -89,12 +89,12 @@ public class AstGroupSorted {
 
     // feasibly, that we could move by byte 5 and then skip the next byte.  Too
     // complex case though and rare so simplify
-    new MoveByFirstByte(5, o, x, counts, keySize).doAll(groupCols);  
+    new MoveByFirstByte(5, o, x, counts, keySize).doAll(groupCols);
     System.out.println("Time to MoveByFirstByte: " + (System.nanoTime() - t0) / 1e9); t0 = System.nanoTime();
 
     // Add check that this first split is reasonable.  e.g. if it were just 2,
     // it definitely would not be enough.  90 is enough though.  Need to fill
-    // L2 with pages.  
+    // L2 with pages.
     // for counted completer 0:255
     long groups[][] = new long[256][];  //  at most MAXVEC groups per radix, currently
     long nGroup[] = new long[257];   // one extra to make undo of cumulate easier

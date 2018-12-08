@@ -163,7 +163,7 @@ public class AstNumList extends AstParameter {
     return this;
   }
 
-  // Expand the compressed form into an array of ints; 
+  // Expand the compressed form into an array of ints;
   // often used for unordered column lists
   public int[] expand4() {
     // Count total values
@@ -182,7 +182,7 @@ public class AstNumList extends AstParameter {
     return sort().expand4();
   }
 
-  // Expand the compressed form into an array of longs; 
+  // Expand the compressed form into an array of longs;
   // often used for unordered row lists
   public long[] expand8() {
     // Count total values

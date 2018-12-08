@@ -23,5 +23,5 @@ public class KeyToString extends TestUtil {
     k = Key.make("Hi There");
     assertTrue(k.toString().equals("Hi There"));
   }
-  
+
 }

@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 
 /**
  * Tests for Functions.
- * 
+ *
  * Created by vpatryshev on 12/13/16.
  */
 public class FunctionsTest {
@@ -24,10 +24,10 @@ public class FunctionsTest {
     Function<Integer, Long> f1 = new Function<Integer, Long>() {
       @Override public Long apply(Integer i) { return i-2L; }
     };
-    
+
     Function<Integer, String> h = compose(g, f);
     Function<Integer, String> h1 = compose(g, f1);
-    
+
     assertFalse(h.equals(h1));
     assertTrue(h.equals(compose(g, f)));
 
@@ -54,7 +54,7 @@ public class FunctionsTest {
     Function<Integer, String> f = new Function<Integer, String>() {
       @Override public String apply(Integer i) { return "<<" + i + ">>"; }
     };
-    
+
     assertFalse(map(Collections.<Integer>emptyList(), f).iterator().hasNext());
     assertEquals(Arrays.asList("<<2>>","<<3>>","<<5>>","<<7>>"), map(Arrays.asList(2,3,5,7), f));
   }
@@ -72,7 +72,7 @@ public class FunctionsTest {
     assertEquals(Arrays.asList(" "), splitBy(":").apply(" :"));
     assertEquals(Arrays.asList("", " "), splitBy(":").apply(": "));
   }
-  
+
   @Test
   public void testAUC() throws Exception {
     Function<Integer, Double> c = constant(5.);

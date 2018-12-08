@@ -906,7 +906,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // with a higher reprobe rate
       //if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
       //  newsz = oldlen<<1;    // Double size
-      
+
       // Last (re)size operation was very recent?  Then double again
       // despite having few live keys; slows down resize operations
       // for tables subject to a high key churn rate - but do not

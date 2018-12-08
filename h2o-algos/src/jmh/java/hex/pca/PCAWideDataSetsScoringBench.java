@@ -23,7 +23,7 @@ import static water.TestUtil.stall_till_cloudsize;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAWideDataSetsScoringBench {
-	
+
 	private PCAWideDataSets pcaWideDataSetsBench;
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
@@ -34,20 +34,20 @@ public class PCAWideDataSetsScoringBench {
 		Options opt = new OptionsBuilder()
 			.include(PCAWideDataSetsScoringBench.class.getSimpleName())
 			.build();
-		
+
 		new Runner(opt).run();
 	}
-	
+
 	@Setup(Level.Invocation)
 	public void setup() {
 		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
-		
+
 		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase, PCAImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
 	}
-	
+
 	@Benchmark
 	public boolean measureWideDataSetsBenchScoringCase() throws Exception {
 		if (!pcaWideDataSetsBench.score()) {
@@ -55,10 +55,10 @@ public class PCAWideDataSetsScoringBench {
 		}
 		return true;
 	}
-	
+
 	@TearDown(Level.Invocation)
 	public void tearDown() throws Exception {
 		pcaWideDataSetsBench.tearDown();
 	}
-	
+
 }

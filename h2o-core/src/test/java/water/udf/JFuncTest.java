@@ -36,7 +36,7 @@ public class JFuncTest extends TestUtil {
                           cl, testFuncKlazz.getClassLoader());
       Assert.assertNotEquals("Test func and actual code cannot be loaded by the same classloader",
                              TestCFunc2.class.getClassLoader(), testFuncKlazz.getClassLoader());
-      
+
       CFunc2 testFunc = (CFunc2) testFuncKlazz.newInstance();
       CFunc2 codeFunc = new TestCFunc2();
 

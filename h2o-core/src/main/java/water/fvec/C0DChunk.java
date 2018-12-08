@@ -58,7 +58,7 @@ public class C0DChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
-  
+
   @Override public boolean isSparseNA(){return Double.isNaN(_con);}
   @Override public int sparseLenNA() {return  Double.isNaN(_con)?0:_len;}
   @Override public int getSparseDoubles(double [] vals, int [] ids, double NA){

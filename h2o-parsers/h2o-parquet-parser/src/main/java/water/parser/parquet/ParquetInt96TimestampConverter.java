@@ -2,7 +2,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      Copyright H20.ai Limited
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * This class is equivalent of @see org.apache.hadoop.hive.ql.io.parquet.timestamp.NanoTime,
  * which produces less intermediate objects during decoding.
- * 
+ *
  * This class is a modified version of ParquetTimestampUtils from Presto project.
  */
 final class ParquetInt96TimestampConverter {

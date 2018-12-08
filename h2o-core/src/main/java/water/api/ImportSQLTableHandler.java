@@ -26,7 +26,7 @@ public class ImportSQLTableHandler extends Handler {
              importSqlTable.username, importSqlTable.password, importSqlTable.columns,
              sqlFetchMode);
     return new JobV3().fillFromImpl(j);
-    
+
   }
 
 }

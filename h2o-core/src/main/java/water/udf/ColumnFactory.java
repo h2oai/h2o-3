@@ -10,7 +10,7 @@ import java.util.List;
  * General-case factory for columns
  */
 public interface ColumnFactory<T> extends ChunkFactory<T> {
-  
+
   DataColumn<T> newColumn(Vec vec);
 
   DataColumn<T> newColumn(long length, final Function<Long, T> f) throws IOException;

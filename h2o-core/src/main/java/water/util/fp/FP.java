@@ -4,7 +4,7 @@ import java.util.*;
 
 /**
  * Elements of Functional Programming (known as FP) in Java
- * 
+ *
  * @see <a href="https://en.wikipedia.org/wiki/Functional_programming">Wikipedia</a>
  * for details
  */
@@ -23,9 +23,9 @@ public class FP {
     boolean nonEmpty();
     <U> Option<U> flatMap(Function<T, Option<U>> f);
   }
-  
+
   public final static Option<?> None = new Option<Object>() {
-    
+
     @Override public boolean isEmpty() { return true; }
 
     @Override public boolean nonEmpty() { return false; }
@@ -38,15 +38,15 @@ public class FP {
     @Override public Iterator<Object> iterator() {
       return Collections.emptyList().iterator();
     }
-    
+
     @Override public String toString() { return "None"; }
 
     @Override public int hashCode() { return -1; }
   };
-  
+
   public final static class Some<T> implements Option<T> {
     private List<T> contents;
-    
+
     public Some(T t) { contents = Collections.singletonList(t); }
 
     @Override public boolean isEmpty() { return false; }
@@ -68,7 +68,7 @@ public class FP {
     @Override public String toString() { return "Some(" + get() + ")"; }
 
     @Override public boolean equals(Object o) {
-      return this == o || 
+      return this == o ||
              (o instanceof Some && equal(get(), (((Some<?>) o).get())));
     }
 

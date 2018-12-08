@@ -26,7 +26,7 @@ public class NonBlockingHashSet<E> extends AbstractSet<E> implements Serializabl
   /** Make a new empty {@link NonBlockingHashSet}.  */
   public NonBlockingHashSet() { super(); _map = new NonBlockingHashMap<>(); }
 
-  /** Add {@code o} to the set.  
+  /** Add {@code o} to the set.
    *  @return <tt>true</tt> if {@code o} was added to the set, <tt>false</tt>
    *  if {@code o} was already in the set.  */
   public boolean add( final E o ) { return _map.putIfAbsent(o,V) == null; }
@@ -37,7 +37,7 @@ public class NonBlockingHashSet<E> extends AbstractSet<E> implements Serializabl
  /**  @return Returns the match for {@code o} if {@code o} is in the set.  */
   public E get( final E o ) { return _map.getk(o); }
 
-  /** Remove {@code o} from the set.  
+  /** Remove {@code o} from the set.
    * @return <tt>true</tt> if {@code o} was removed to the set, <tt>false</tt>
    * if {@code o} was not in the set.
    */

@@ -982,7 +982,7 @@ public class DataInfo extends Keyed<DataInfo> {
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
-      
+
       if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
         val = val - 1;
       }
@@ -1157,7 +1157,7 @@ public class DataInfo extends Keyed<DataInfo> {
         if(_skipMissing && isMissing){
           row.predictors_bad = true;
           continue;
-        }         
+        }
         int cid = getCategoricalId(i,isMissing? -1:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;

@@ -705,7 +705,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         for( int col = 0; col < N; col++ )
           if( _isCats[col] != null )
             _cats[clu][col][(int)values[col]]++; // Histogram the cats
-          else 
+          else
             _cMeans[clu][col] += values[col]; // Sum the column centers
         _size[clu]++;
         // Track worst row

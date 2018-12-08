@@ -36,7 +36,7 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
      * deserialization :(
      */
     EnumChunk() {}
-    
+
     EnumChunk(Chunk c) { super(c); }
     @Override
     public Integer get(int idx) {
@@ -69,8 +69,8 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
      * deserialization :(
      */
     public Column() { domain = null; }
-    
-    Column(Vec v, Enums factory) { 
+
+    Column(Vec v, Enums factory) {
       super(v, factory);
       domain = factory.domain;
       assert domain != null && domain.length > 0 : "Need a domain for enums";
@@ -91,7 +91,7 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
       vec().set(idx, value);
     }
   }
-  
+
   @Override
   public DataColumn<Integer> newColumn(final Vec vec) {
     if (vec.get_type() != Vec.T_CAT)

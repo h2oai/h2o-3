@@ -30,7 +30,7 @@ public class PutKeyServlet extends HttpServlet {
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
     String uri = JettyHTTPD.getDecodedUri(request);
-    
+
     try {
       String destKey = paramDestinationKey(request, response);
       Boolean overwrite = paramOverwrite(request, response, true);
@@ -54,7 +54,7 @@ public class PutKeyServlet extends HttpServlet {
         DKV.put(key, new Value(key, ba));
         bytesStored = ba.length;
       }
-      
+
       String responsePayload = "{ " +
           "\"destination_key\": \"" + destKey + "\", " +
           "\"total_bytes\": " + bytesStored + " " +

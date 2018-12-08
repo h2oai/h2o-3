@@ -54,7 +54,7 @@ public class AstRankWithinGroupBy extends AstPrimitive {
       sortAsc = new int[]{(int) ((AstNum) asts[4]).getNum()};  // R client can send 1 element for some reason
     String newcolname = asts[5].str();
     Boolean sortColsOrder = ((AstNum) asts[6]).getNum()==1;
-    
+
     assert sortAsc.length==sortcols.length;
     SortnGrouby sortgroupbyrank = new SortnGrouby(fr, groupbycols, sortcols, sortAsc, newcolname);
     sortgroupbyrank.doAll(sortgroupbyrank._groupedSortedOut);  // sort and add rank column

@@ -7,8 +7,8 @@ import water.*;
 public class SubsetChunk extends Chunk {
   final Chunk _data;          // All the data
   final Chunk _rows;          // The selected rows
-  public SubsetChunk( Chunk data, Chunk rows, Vec subset_vec ) { 
-    _data = data; _rows = rows; 
+  public SubsetChunk( Chunk data, Chunk rows, Vec subset_vec ) {
+    _data = data; _rows = rows;
     set_len(rows._len);
     _start = rows._start; _vec = subset_vec; _cidx = rows._cidx;
     _mem = new byte[0];

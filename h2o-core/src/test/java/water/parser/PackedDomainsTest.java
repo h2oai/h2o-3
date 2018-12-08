@@ -7,7 +7,7 @@ import static water.parser.PackedDomains.*;
 
 /**
  * Test suite for PackedDomains
- * 
+ *
  * Created by vpatryshev on 4/12/17.
  */
 public class PackedDomainsTest {
@@ -45,7 +45,7 @@ public class PackedDomainsTest {
         new BufferedString("∞"),
         new BufferedString(""),
         new BufferedString("X")});
-    
+
     assertArrayEquals(pack("", "abc", "∞", "", "X"), packed);
   }
 

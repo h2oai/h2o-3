@@ -16,15 +16,15 @@ public class ImportSQLTest extends TestUtil{
   private String conUrl = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false";
   String user = "root";
   String password = "0xdata";
-  
+
   //postgresql
 //  String conUrl = "jdbc:postgresql://mr-0xf2/ingestSQL";
 //  String user = "postgres";
 //  String password = "postgres";
-  
+
   String select_query = "";
   String columns = "*";
-  
+
   @BeforeClass
   static public void setup() {stall_till_cloudsize(1);}
 
@@ -40,15 +40,15 @@ public class ImportSQLTest extends TestUtil{
     assertTrue(sql_f.numCols() == 2);
     sql_f.delete();
   }
-  
+
   @Ignore @Test
   public void allSQLTypes() {
     String table = "allSQLTypes";
     Frame sql_f = SQLManager.importSqlTable(conUrl, table, select_query, user, password, columns, SqlFetchMode.DISTRIBUTED).get();
     sql_f.delete();
-    
+
   }
-  
+
   @Ignore @Test
   public void airlines() {
     String conUrl = "jdbc:mysql://localhost:3306/menagerie?&useSSL=false";

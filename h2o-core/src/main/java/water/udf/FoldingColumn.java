@@ -18,8 +18,8 @@ import static water.util.Java7.*;
 public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   private final Foldable<X, Y> f;
   private final Column<X>[] columns;
-      
-  @Override public int rowLayout() { 
+
+  @Override public int rowLayout() {
     return columns.length > 0 ? columns[0].rowLayout() : 0;
   }
 
@@ -29,7 +29,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   public FoldingColumn() {
     f = null; columns = null;
   }
-  
+
   public FoldingColumn(Foldable<X, Y> f, Column<X>... columns) {
     super(columns.length == 0 ? null : columns[0]);
     assert columns.length > 0 : "Require at least one column for folding";
@@ -51,18 +51,18 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     this.f = f;
     this.columns = (Column<X>[])Lists.newArrayList(columns).toArray();
   }
-  
+
   @Override public Y get(long idx) {
     Y y = f.initial();
     for (Column<X> col : columns) y = f.apply(y, col.apply(idx));
-    return y; 
+    return y;
   }
 
   @Override
   public TypedChunk<Y> chunkAt(int i) {
     List<TypedChunk<X>> chunks = new LinkedList<>();
     for (Column<X> c : columns) chunks.add(c.chunkAt(i));
-            
+
     return new FunChunk(chunks);
   }
 
@@ -73,7 +73,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
 
   private class FunChunk extends DependentChunk<Y> {
     private final List<TypedChunk<X>> chunks;
-    
+
     public FunChunk(List<TypedChunk<X>> chunks) {
       super(chunks.get(0));
       this.chunks = chunks;

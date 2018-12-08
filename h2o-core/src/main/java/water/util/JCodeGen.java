@@ -386,7 +386,7 @@ public class JCodeGen {
 
   // Compiler loaded???
   public static boolean canCompile() { return COMPILER!=null; }
-  
+
   public static Class compile(String class_name, String java_text) throws Exception {
     if( COMPILER==null ) throw new UnsupportedOperationException("Unable to launch an internal instance of javac");
     // Wrap input string up as a file-like java source thing

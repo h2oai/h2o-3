@@ -22,9 +22,9 @@ import static water.util.FileUtils.*;
  * Test for UDF
  */
 public class UdfTest extends UdfTestBase {
-  
+
   int requiredCloudSize() { return 2; }
-  
+
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
@@ -148,7 +148,7 @@ public class UdfTest extends UdfTestBase {
     Column<String> y = new FunColumn<>(new Function<Integer, String>() {
       public String apply(Integer i) { return domain[i]; }
     }, x);
-    
+
     assertEquals("Red", y.apply(0));
     assertEquals("Red", y.apply(42));
     assertEquals("White", y.apply(100));
@@ -186,7 +186,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> y2 = willDrop(new FunColumn<>(PureFunctions.SQUARE, y));
     Column<Double> z1 = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, y2));
     Column<Double> z2 = willDrop(new Fun2Column<>(PureFunctions.X2_PLUS_Y2, x, y));
-    
+
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
     assertEquals(100000.3387062632, z1.apply(20000), 0.000001);
@@ -203,7 +203,7 @@ public class UdfTest extends UdfTestBase {
       // the following exposes a problem. nulls being returned.
       if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
       Double actual = materialized.apply(i);
-      
+
       if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
     }
   }
@@ -229,7 +229,7 @@ public class UdfTest extends UdfTestBase {
     } catch (AssertionError ae) {
       // as designed
     }
-    
+
     try {
       Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
       fail("Column incompatibility should be detected");
@@ -328,7 +328,7 @@ public class UdfTest extends UdfTestBase {
     } catch (AssertionError ae) {
       // good, good!
     }
-    
+
     Column<Double> materialized = Doubles.materialize(r);
 
     for (int i = 0; i < 100000; i++) {
@@ -371,7 +371,7 @@ public class UdfTest extends UdfTestBase {
 
     // now check that we have the right data
     for (int i = 0; i < lines.size(); i++) {
-      // since we specified width (10), the rest of the list is filled with nulls; have to ignore them. 
+      // since we specified width (10), the rest of the list is filled with nulls; have to ignore them.
       // It's important to have the same width for the whole frame.
       String actual = StringUtils.join(" ", Predicate.NOT_NULL.filter(split.apply(i)));
       // so, have we lost any data?
@@ -387,7 +387,7 @@ public class UdfTest extends UdfTestBase {
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
     UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
     List<DataColumn<String>> columns = frame.materialize();
-    
+
     for (int i = 0; i < lines.size(); i++) {
       List<String> fromColumns = new ArrayList<>(10);
       for (int j = 0; j < 10; j++) {
@@ -397,7 +397,7 @@ public class UdfTest extends UdfTestBase {
       String actual = StringUtils.join(" ", fromColumns);
       assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
     }
-    
+
     assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
   }
 }

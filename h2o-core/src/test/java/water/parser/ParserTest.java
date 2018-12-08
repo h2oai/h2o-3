@@ -307,7 +307,7 @@ public class ParserTest extends TestUtil {
   }
 
   @Test public void testMajoritySep() {
-    String data = 
+    String data =
       "a,b,c,d,e,f,g,h,i,j,k,space 1,l,space 2,m,space 3,n,o,p,q,r,s,t,u,v,w,x,y,z\n"+ // 26+3 cols, exactly 3 spaces
       "1,2,3,4,5,6,7,8,9,0,1,catag 1,2,catag 2,3,catag 3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9\n"; // a few extra cols, exactly 3 spaces
     Key k1 = ParserTest.makeByteVec(data);

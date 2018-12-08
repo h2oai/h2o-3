@@ -50,7 +50,7 @@ public abstract class AtomicUtils {
     static public boolean CAS( double[] ds, int i, double old, double newd ) {
       return _unsafe.compareAndSwapLong(ds,rawIndex(ds,i), Double.doubleToRawLongBits(old), Double.doubleToRawLongBits(newd) );
     }
-      
+
     static public void add( double ds[], int i, double y ) {
       double old;
       while( !CAS(ds,i,old=ds[i],old+y) ) ;

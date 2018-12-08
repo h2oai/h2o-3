@@ -541,7 +541,7 @@ public final class ParseDataset {
       }
       Log.trace("Done locally collecting domains on each node.");
     }
-    
+
     @Override
     public void reduce(final GatherCategoricalDomainsTask other) {
       if (_packedDomains == null) {

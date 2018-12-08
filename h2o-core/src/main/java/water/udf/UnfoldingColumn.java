@@ -15,7 +15,7 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   private final Unfoldable<X, Y> f;
   private final Column<X> column;
   private int requiredSize;
-  
+
   @Override public long size() { return column.size(); }
 
   @Override public int rowLayout() { return column.rowLayout(); }
@@ -27,7 +27,7 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     f = null;
     column = null;
   }
-  
+
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column) {
     super(column);
     this.f = f;
@@ -41,7 +41,7 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     this.column = column;
     this.requiredSize = requiredSize;
   }
-  
+
   public List<Y> get(long idx) {
     List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.apply(idx));
     if (requiredSize == 0 || raw.size() == requiredSize) return raw;

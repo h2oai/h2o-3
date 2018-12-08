@@ -23,7 +23,7 @@ public interface RestApiExtension {
   void registerEndPoints(RestApiContext context);
 
   /**
-   * 
+   *
    * @param context
    */
   void registerSchemas(RestApiContext context);

@@ -19,7 +19,7 @@ import static water.udf.specialized.Strings.*;
  * Test for UDF
  */
 public class SerializabilityTest extends UdfTestBase {
-  
+
   public int requiredCloudSize() { return 1; }
 
   @SuppressWarnings("unchecked")
@@ -30,7 +30,7 @@ public class SerializabilityTest extends UdfTestBase {
     boolean eq = c.equals(copy); // for debugging
     assertEquals(c, copy);
   }
-  
+
   @Test
   public void testDoubleColumnSerializable() throws Exception {
     Column<Double> c = someDoubles();

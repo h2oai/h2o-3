@@ -22,7 +22,7 @@ public class JythonCFuncTest extends TestUtil {
   static public void setup() {
     stall_till_cloudsize(1);
   }
-  
+
   @Test
   public void testPyFunc2InvocationFromResources() throws Exception {
     String[] functionResources = ar("py/test_cfunc2.py", "py/__init__.py");

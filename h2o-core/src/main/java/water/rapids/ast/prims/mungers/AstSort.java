@@ -27,7 +27,7 @@ public class AstSort extends AstPrimitive {
       sortAsc = ((AstNumList) asts[3]).expand4();
     else
       sortAsc = new int[]{(int) ((AstNum) asts[3]).getNum()};  // R client can send 1 element for some reason
-    
+
     assert sortAsc.length==cols.length;
     return new ValFrame(Merge.sort(fr,cols, sortAsc));
   }

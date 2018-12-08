@@ -38,24 +38,24 @@ public class PCAImputeMissingTrainingBench {
 	private PCAParameters paramsImputeMissing;
 	private PCAModel pcaModel;
 	private Frame trainingFrame;
-	
+
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder()
 			.include(PCAImputeMissingTrainingBench.class.getSimpleName())
 			.build();
-		
+
 		new Runner(opt).run();
 	}
-	
+
 	@Setup(Level.Invocation)
 	public void setup() {
 		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
-		
+
 		trainingFrame = null;
 		double missing_fraction = 0.75;
 		long seed = 12345;
-		
+
 		try {
 			trainingFrame = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
 			// Add missing values to the training data
@@ -64,7 +64,7 @@ public class PCAImputeMissingTrainingBench {
 			FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frame._key, seed, missing_fraction);
 			j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
 			DKV.remove(frame._key); // Delete the frame header (not the data)
-			
+
 			paramsImputeMissing = new PCAParameters();
 			paramsImputeMissing._train = trainingFrame._key;
 			paramsImputeMissing._k = 4;
@@ -73,7 +73,7 @@ public class PCAImputeMissingTrainingBench {
 			paramsImputeMissing._pca_implementation = PCAImplementation;
 			paramsImputeMissing._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
 			paramsImputeMissing._seed = seed;
-			
+
 			train();
 		} catch (RuntimeException e) {
 			if (trainingFrame != null) {
@@ -83,7 +83,7 @@ public class PCAImputeMissingTrainingBench {
 			throw e;
 		}
 	}
-	
+
 	@Benchmark
 	public boolean measureImputeMissingTraining() throws Exception {
 		if (!train()) {
@@ -91,7 +91,7 @@ public class PCAImputeMissingTrainingBench {
 		}
 		return true;
 	}
-	
+
 	@TearDown(Level.Invocation)
 	public void tearDown() {
 		if (pcaModel != null) {
@@ -101,7 +101,7 @@ public class PCAImputeMissingTrainingBench {
 			trainingFrame.delete();
 		}
 	}
-	
+
 	private boolean train() {
 		try {
 			pcaModel = new PCA(paramsImputeMissing).trainModel().get();
@@ -110,5 +110,5 @@ public class PCAImputeMissingTrainingBench {
 		}
 		return true;
 	}
-	
+
 }

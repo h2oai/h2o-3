@@ -74,7 +74,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
     // Version-specific unwind from the Iced back into the Schema
     return result;
   }
-  
+
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
     // TODO: version handling
     StringBuffer sb = new StringBuffer();

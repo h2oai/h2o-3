@@ -228,8 +228,8 @@ abstract class ZipUtil {
       // There is generally no way to avod this exception, we have to ignore it here
       Log.trace(eof);
     } catch( IOException ioe ) {
-      throw Log.throwErr(ioe); 
-    } finally { 
+      throw Log.throwErr(ioe);
+    } finally {
       try { if( is != null ) is.close(); } catch( IOException ignore ) { }
     }
 

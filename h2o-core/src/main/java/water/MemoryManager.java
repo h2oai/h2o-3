@@ -142,7 +142,7 @@ abstract public class MemoryManager {
         else {
           skipThisLogMessageToAvoidSpammingTheLogs = true;
         }
-      } else { 
+      } else {
         m = "MemGood:   "; // Cache is low enough, room for POJO allocation - full steam ahead!
       }
     }
@@ -269,7 +269,7 @@ abstract public class MemoryManager {
 
   // Allocates memory with cache management
   public static byte   [] malloc1 (int size) { return malloc1(size,false); }
-  public static byte   [] malloc1 (int size, boolean force) 
+  public static byte   [] malloc1 (int size, boolean force)
                                              { return (byte   [])malloc(size,size*1, 1,null,0,force); }
   public static short  [] malloc2 (int size) { return (short  [])malloc(size,size*2L, 2,null,0); }
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4L, 4,null,0); }

@@ -32,7 +32,7 @@ public class ModelAdaptTest extends TestUtil {
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
-    
+
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
@@ -67,7 +67,7 @@ public class ModelAdaptTest extends TestUtil {
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
-    
+
     Frame tst = new Frame();
     tst.add("cat", cat.makeCon(Double.NaN)); // All NAN/missing column
     Frame adapt = new Frame(tst);
@@ -90,7 +90,7 @@ public class ModelAdaptTest extends TestUtil {
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
-    
+
     Frame tst = new Frame();
     tst.add("dog",vec(2, 3, 2, 3));
     Frame adapt = new Frame(tst);

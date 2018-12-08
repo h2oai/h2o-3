@@ -50,7 +50,7 @@ public class RefCntTest extends TestUtil {
     for( Vec vec : py_2.vecs() ) vec.mean(); // Verify we can compute rollups on all cols; will crash if some cols are deleted
     int key3 = DKV.<Vec.VectorGroup>getGet(vg._key).len(); // Pull latest value from DKV (no caching allowed)
     Assert.assertEquals(key2+1,key3); // Exactly 1 new vector
-    
+
     // Start a series of computations that append columns
     Rapids.exec("(tmp= py_3 (append py_2 (month (cols_py py_2 \"Date\")) \"Month\"))",session);
     Frame py_3 = DKV.getGet(Key.make("py_3"));
@@ -65,7 +65,7 @@ public class RefCntTest extends TestUtil {
     for( Vec vec : py_4.vecs() ) vec.mean(); // Verify we can compute rollups on all cols; will crash if some cols are deleted
     int key5 = DKV.<Vec.VectorGroup>getGet(vg._key).len(); // Pull latest value from DKV (no caching allowed)
     Assert.assertEquals(key4 + 2, key5); // Exactly 2 new vector, for two ops: "year" and "+1900".
-    
+
     Rapids.exec("(, (rm py_3) (tmp= py_5 (append py_4 (week (cols_py py_4 \"Date\")) \"WeekNum\")))",session);
     Frame py_5 = DKV.getGet(Key.make("py_5"));  py_3 = null;
     for( Vec vec : py_5.vecs() ) vec.mean(); // Verify we can compute rollups on all cols; will crash if some cols are deleted

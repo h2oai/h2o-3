@@ -517,10 +517,10 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   @Ignore
   @Test public void testAutoRebalance() {
-    
+
     //First pass to warm up
     boolean warmUp = true;
     if (warmUp) {
@@ -556,13 +556,13 @@ public class DRFTest extends TestUtil {
         Scope.exit();
       }
     }
-    
-    
+
+
     int[] max_depths = {2,5,10,15,20};
     int[] chunks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
     boolean[] rebalanceMes = {true};
     int[] ntrees = {10};
-    
+
     int totalLength = chunks.length*max_depths.length*rebalanceMes.length*ntrees.length;
     double[] executionTimes = new double[totalLength];
     int[] outputchunks = new int[totalLength];
@@ -586,12 +586,12 @@ public class DRFTest extends TestUtil {
             parms._mtries = -1;
             parms._min_rows = 10;
             parms._seed = 1234;
-            
+
             parms._ntrees = ntree;
             parms._max_depth = max_depth;
 //            parms._rebalance_me = rebalanceMe;
 //            parms._nchunks = chunk;
-            
+
             // Build a first model
             DRF job = new DRF(parms);
             DRFModel drf = job.trainModel().get();
@@ -618,7 +618,7 @@ public class DRFTest extends TestUtil {
     }
     String fileName = "/Users/ludirehak/Desktop/DRFTestRebalance3.txt";
     //R code for plotting: plot(chunks,execution_time,t='n',main='Execution Time of DRF on Rebalanced Data');
-    // for (i in 1:length(unique(max_depth))) {s = which(max_depth ==unique(max_depth)[i]); 
+    // for (i in 1:length(unique(max_depth))) {s = which(max_depth ==unique(max_depth)[i]);
     // points(chunks[s],execution_time[s],col=i)};
     // legend('topright', legend= c('max_depth',unique(max_depth)),col = 0:length(unique(max_depth)),pch=1);
     try {
@@ -636,7 +636,7 @@ public class DRFTest extends TestUtil {
     }
 
   }
-  
+
   // PUBDEV-2476 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testChunks() {
     Frame tfr;

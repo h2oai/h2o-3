@@ -169,7 +169,7 @@ public class AstVariance extends AstPrimitive {
       for (int y = 0; y < ncoly; y++)
         cvs[y] = new CoVarTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(frx));
 
-      // 1-col returns scalar 
+      // 1-col returns scalar
       if (ncolx == 1 && ncoly == 1) {
         return new ValNum(cvs[0].getResult()._covs[0] / (fry.numRows() - 1));
       }
@@ -223,7 +223,7 @@ public class AstVariance extends AstPrimitive {
       // 1 task with all Xs and Ys
       CoVarTaskCompleteObs cvs = new CoVarTaskCompleteObs(ymeans, xmeans).doAll(new Frame(fry).add(frx));
 
-      // 1-col returns scalar 
+      // 1-col returns scalar
       if (ncolx == 1 && ncoly == 1) {
         return new ValNum(cvs._covs[0][0] / (fry.numRows() - 1 - NACount));
       }
@@ -321,7 +321,7 @@ public class AstVariance extends AstPrimitive {
             xvals[x] = xval;
           }
         }
-        //add is true iff row has been traversed and found no NAs among yvals and xvals  
+        //add is true iff row has been traversed and found no NAs among yvals and xvals
         if (add) {
           ArrayUtils.add(_xsum, xvals);
           ArrayUtils.add(_ysum, yvals);
@@ -385,7 +385,7 @@ public class AstVariance extends AstPrimitive {
             xvals[x] = xval;
           }
         }
-        //add is true iff row has been traversed and found no NAs among yvals and xvals  
+        //add is true iff row has been traversed and found no NAs among yvals and xvals
         if (add) {
           for (int y = 0; y < ncoly; y++) {
             _covs_y = _covs[y];

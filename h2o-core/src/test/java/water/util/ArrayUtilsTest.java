@@ -193,7 +193,7 @@ public class ArrayUtilsTest extends TestUtil {
       encodeAsInt(bs, 2);
       fail("Should not work");
     } catch (Throwable ignore) {}
-    
+
     bs[0] = (byte)0xfe;
     assertEquals(0xfe, encodeAsInt(bs, 0));
     bs[1] = (byte)0xca;
@@ -212,7 +212,7 @@ public class ArrayUtilsTest extends TestUtil {
       decodeAsInt(1, bs, 3);
       fail("Should not work");
     } catch (Throwable ignore) {}
-    
+
     try {
       decodeAsInt(256, bs, 4);
       fail("Should not work");
@@ -222,6 +222,6 @@ public class ArrayUtilsTest extends TestUtil {
     assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,0,0,5}, decodeAsInt(0xcafe, bs, 0));
     assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,(byte)0xde,0,5}, decodeAsInt(0xdecafe, bs, 0));
     assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,(byte)0xde,(byte)0x80,5}, decodeAsInt(0x80decafe, bs, 0));
-    
+
   }
 }

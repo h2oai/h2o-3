@@ -503,10 +503,10 @@ public class VecUtils {
 
   /**
    * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
-   * 
-   * Categoricals may have the same values after munging, and should have the same domain index in the numerical chunk 
-   * representation. Unify categoricals that are the same by remapping their domain indices. 
-   * 
+   *
+   * Categoricals may have the same values after munging, and should have the same domain index in the numerical chunk
+   * representation. Unify categoricals that are the same by remapping their domain indices.
+   *
    * Could be more efficient with a vec copy and replace domain indices as needed. PUBDEV-2587
    */
 
@@ -564,7 +564,7 @@ public class VecUtils {
       for (int i = 0; i < _u.length;++i)
         if (_u[i])
           _d[id++]=i;
-      Arrays.sort(_d); //is this necessary? 
+      Arrays.sort(_d); //is this necessary?
     }
 
     /** Returns exact numeric domain of given {@link Vec} computed by this task.

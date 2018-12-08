@@ -168,7 +168,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
     }
   }
-  
+
   @Override
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
@@ -200,7 +200,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
     return original_fr;
   }
-  
+
   @Override
   protected int desiredChunks(final Frame original_fr, boolean local) {
     return _parms._reproducible ? 1 : (int) Math.min(4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), original_fr.numRows());
@@ -472,7 +472,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           }
         }
         //store coefficient names for future use
-        //possibly change 
+        //possibly change
         model.model_info().data_info().coefNames();
       }
       finally {
