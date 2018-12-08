@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# This is a really old experimental script that was probably never used, 
+# This is a really old experimental script that was probably never used,
 # but I'm adding for posterity.
 #
 # Now that -proxy capability was added properly by MichalK, this will

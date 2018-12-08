@@ -109,7 +109,7 @@ class H2O(object):
             self.network = h2o_args.network_from_cmd_line
         else:
             self.network = network
-        
+
         # command line should always dominate for enabling
         if h2o_args.debugger: use_debugger = True
         self.use_debugger = use_debugger
@@ -204,10 +204,10 @@ class H2O(object):
             if 'post' == cmd:
                 # NOTE == cmd: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
                 # This is temporary.
-                # 
+                #
                 # This following does application/json (aka, posting JSON in the body):
                 # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
-                # 
+                #
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
             elif 'delete' == cmd:
@@ -224,7 +224,7 @@ class H2O(object):
             # because there's no delay, and we don't want to delay all cloud teardowns by waiting.
             exc_info = sys.exc_info()
             # use this to ignore the initial connection errors during build cloud when h2o is coming up
-            if not noExtraErrorCheck: 
+            if not noExtraErrorCheck:
                 h2p.red_print(
                     "ERROR: got exception on %s to h2o. \nGoing to check sandbox, then rethrow.." % (url + paramsStr))
                 time.sleep(2)
@@ -400,7 +400,7 @@ class H2O(object):
             print "WARNING: h2o is running with assertions disabled"
         else:
             args += ["-ea"]
-            
+
 
         if self.use_maprfs:
             args += ["-Djava.library.path=/opt/mapr/lib"]
@@ -420,7 +420,7 @@ class H2O(object):
                 ]
 
         if h2o_args.beta_features:
-            # no -beta 
+            # no -beta
             # args += ["-beta"]
             pass
 
@@ -428,7 +428,7 @@ class H2O(object):
             args += ["-network " + self.network]
 
         # H2O should figure it out, if not specified
-        # DON"T EVER USE on multi-machine...h2o should always get it right, to be able to run on hadoop 
+        # DON"T EVER USE on multi-machine...h2o should always get it right, to be able to run on hadoop
         # where it's not told
         # new 10/22/14. Allow forcing the ip when we do remote, for networks with bridges, where
         # h2o can't self identify (does -network work?)
@@ -495,12 +495,12 @@ class H2O(object):
 
         if self.disable_h2o_log:
             args += ['-nolog']
-	
+
 	args += ['-ga_opt_out']
 
         # psutil psopen needs param/value in different arg elements
-        # othetwise we'd need to pass as joined string, and run /bin/sh 
-        # this joins them up with space, then splits on space. 
+        # othetwise we'd need to pass as joined string, and run /bin/sh
+        # this joins them up with space, then splits on space.
         # works as long as no pathnames have embedded space, which should be true
         # for unix, maybe not windows. For windows we join them as string before use in psopen
         argsSplitByWhiteSpace = " ".join(args).split()
@@ -519,7 +519,7 @@ class LocalH2O(H2O):
         self.ice = tmp_dir('ice.')
         self.flatfile = flatfile_pathname()
         # so we can tell if we're remote or local. Apparently used in h2o_import.py
-        self.remoteH2O = False 
+        self.remoteH2O = False
 
         h2o_os_util.check_port_group(self.port)
         h2o_os_util.show_h2o_processes()
@@ -532,7 +532,7 @@ class LocalH2O(H2O):
         # see https://docs.python.org/2/library/subprocess.html#subprocess.Popen
         # for why I'm using shlex to split the cmd string into a sequence
         # confusing issues, especially when thinking about windows too
-        # OS/build     | os.name | platform.system() 
+        # OS/build     | os.name | platform.system()
         # -------------+---------+-----------------------
         # Win32 native | nt      | Windows
         # Win32 cygwin | posix   | CYGWIN_NT-5.1*
@@ -578,9 +578,9 @@ class LocalH2O(H2O):
             gone, alive = wait_procs(procs=[self.ps], timeout=3, callback=on_terminate)
             if alive:
                 self.ps.kill()
-            # from http://code.google.com/p/psutil/wiki/Documentation: wait(timeout=None) Wait for process termination 
-            # If the process is already terminated does not raise NoSuchProcess exception but just return None immediately. 
-            # If timeout is specified and process is still alive raises TimeoutExpired exception. 
+            # from http://code.google.com/p/psutil/wiki/Documentation: wait(timeout=None) Wait for process termination
+            # If the process is already terminated does not raise NoSuchProcess exception but just return None immediately.
+            # If timeout is specified and process is still alive raises TimeoutExpired exception.
             # hmm. maybe we're hitting the timeout
             waitingForKill = True
             return self.wait(timeout=3)
@@ -595,7 +595,7 @@ class LocalH2O(H2O):
                 print "It didn't die within 2 secs. Maybe will die soon. Maybe not! At: %s" % self.http_addr
             else:
                 print "Unexpected exception in terminate_self_only: ignoring"
-            # hack. 
+            # hack.
             # psutil 2.x needs function reference
             # psutil 1.x needs object reference
             if hasattr(self.ps.cmdline, '__call__'):
@@ -804,8 +804,8 @@ class RemoteHost(object):
             sftp = self.ssh.open_sftp()
             # check if file exists on remote side
             # does paramiko have issues with big files? (>1GB, or 650MB?). maybe we don't care.
-            # This would arise (as mentioned in the source, line no 667, 
-            # http://www.lag.net/paramiko/docs/paramiko.sftp_client-pysrc.html) when there is 
+            # This would arise (as mentioned in the source, line no 667,
+            # http://www.lag.net/paramiko/docs/paramiko.sftp_client-pysrc.html) when there is
             # any error reading the packet or when there is EOFError
 
             # but I'm getting sftp close here randomly at sm.
@@ -813,7 +813,7 @@ class RemoteHost(object):
             # http://stackoverflow.com/questions/15010540/paramiko-sftp-server-connection-dropped
             # http://stackoverflow.com/questions/12322210/handling-paramiko-sshexception-server-connection-dropped
             try:
-                # note we don't do a md5 compare. so if a corrupted file was uploaded we won't re-upload 
+                # note we don't do a md5 compare. so if a corrupted file was uploaded we won't re-upload
                 # until we do another build.
                 sftp.stat(dest)
                 print "{0} Skipping upload of file {1}. File {2} exists on remote side!".format(self, f, dest)

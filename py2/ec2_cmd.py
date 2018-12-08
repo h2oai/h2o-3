@@ -12,7 +12,7 @@ import traceback
 
 '''
     Simple EC2 utility:
-     
+
        * to setup clooud of 5 nodes: ./ec2_cmd.py create --instances 5
        * to terminated the cloud   : ./ec2_cmd.py terminate --hosts <host file returned by previous command>
 '''
@@ -34,7 +34,7 @@ DEFAULT_EC2_INSTANCE_CONFIGS = {
               'instance_type'   : 'm1.xlarge',
               'region'          : 'us-east-1',
               'pem'             : '~/.ec2/keys/mrjenkins_test.pem',
-              'username'        : '0xdiag',      
+              'username'        : '0xdiag',
               'aws_credentials' : '~/.ec2/AwsCredentials.properties',
               'hdfs_config'     : '~/.ec2/core-site.xml',
              },
@@ -44,7 +44,7 @@ DEFAULT_EC2_INSTANCE_CONFIGS = {
               'key_name'        : 'mrjenkins_test',
               'instance_type'   : 'm1.xlarge',
               'pem'             : '~/.ec2/keys/mrjenkins_test.pem',
-              'username'        : '0xdiag',      
+              'username'        : '0xdiag',
               'aws_credentials' : '~/.ec2/AwsCredentials.properties',
               'hdfs_config'     : '~/.ec2/core-site.xml',
               'region'          : 'us-west-1',
@@ -117,7 +117,7 @@ def find_file(base):
         return None
     return f
 
-''' Returns a boto connection to given region ''' 
+''' Returns a boto connection to given region '''
 def ec2_connect(region):
     check_required_env_variables()
     import boto.ec2
@@ -129,7 +129,7 @@ def ec2_connect(region):
 
 def check_required_env_variables():
     ok = True
-    if not os.environ['AWS_ACCESS_KEY_ID']: 
+    if not os.environ['AWS_ACCESS_KEY_ID']:
         warn("AWS_ACCESS_KEY_ID need to be defined!")
         ok = False
     if not os.environ['AWS_SECRET_ACCESS_KEY']:
@@ -167,7 +167,7 @@ def run_instances(count, ec2_config, region, waitForSSH=True, tags=None):
         log('Instances started in {0} seconds'.format(time.time() - start))
         log('Instances: ')
         for inst in reservation.instances: log("   {0} ({1}) : public ip: {2}, private ip: {3}".format(inst.public_dns_name, inst.id, inst.ip_address, inst.private_ip_address))
-        
+
         if waitForSSH:
             # kbn: changing to private address, so it should fail if not in right domain
             # used to have the public ip address
@@ -176,7 +176,7 @@ def run_instances(count, ec2_config, region, waitForSSH=True, tags=None):
         # Tag instances
         try:
             if tags:
-                conn.create_tags([i.id for i in reservation.instances], tags)                        
+                conn.create_tags([i.id for i in reservation.instances], tags)
         except:
             warn('Something wrong during tagging instances. Exceptions IGNORED!')
             print sys.exc_info()
@@ -189,7 +189,7 @@ def run_instances(count, ec2_config, region, waitForSSH=True, tags=None):
             terminate_reservation(reservation, region)
         raise
 
-''' Wait for ssh port 
+''' Wait for ssh port
 '''
 def ssh_live(ip, port=22):
     return h2o_cmd.port_live(ip,port)
@@ -233,7 +233,7 @@ def wait_for_ssh(ips, port=22, skipAlive=True, requiredsuccess=3):
     ''' Wait for ssh service to appear on given hosts'''
     log('Waiting for SSH on following hosts: {0}'.format(ips))
     for ip in ips:
-        if not skipAlive or not ssh_live(ip, port): 
+        if not skipAlive or not ssh_live(ip, port):
             log('Waiting for SSH on instance {0}...'.format(ip))
             count = 0
             while count < requiredsuccess:
@@ -258,7 +258,7 @@ def dump_hosts_config(ec2_config, reservation, filename=DEFAULT_HOSTS_FILENAME, 
     f = find_file(ec2_config['hdfs_config'])
     if f: cfg['hdfs_config']  = f
     else: warn_file_miss(ec2_config['hdfs_config'])
-    cfg['username']        = ec2_config['username'] 
+    cfg['username']        = ec2_config['username']
     cfg['use_flatfile']    = True
     cfg['h2o_per_host']    = h2o_per_host
     cfg['java_heap_GB']    = MEMORY_MAPPING[ec2_config['instance_type']]['xmx']
@@ -276,7 +276,7 @@ def dump_hosts_config(ec2_config, reservation, filename=DEFAULT_HOSTS_FILENAME, 
     # put ssh commands into comments
     cmds = get_ssh_commands(ec2_config, reservation)
     idx  = 1
-    for cmd in cmds: 
+    for cmd in cmds:
         cfg['ec2_comment_ssh_{0}'.format(idx)] = cmd
         idx += 1
 
@@ -306,7 +306,7 @@ def get_ssh_commands(ec2_config, reservation, ssh_options=""):
 def dump_ssh_commands(ec2_config, reservation):
     cmds = get_ssh_commands(ec2_config, reservation)
     for cmd in cmds:
-        print cmd 
+        print cmd
 
 # for cleaning /tmp after it becomes full, or any one string command (can separate with semicolon)
 def execute_using_ssh_commands(ec2_config, reservation, command_string='df'):
@@ -388,10 +388,10 @@ def invoke_hosts_action(action, hosts_config, args, ec2_reservation=None):
             h2o.touch_cloud()
             log("Cloud started. Let's roll!")
             log("You can start for example here \033[93mhttp://{0}:{1}\033[0m".format(hosts_config['ec2_instances'][0]['public_dns_name'],hosts_config['base_port']))
-            if args.timeout: 
+            if args.timeout:
                 log("Cloud will shutdown after {0} seconds or use Ctrl+C to shutdown it.".format(args.timeout))
                 time.sleep(args.timeout)
-            else: 
+            else:
                 log("To kill the cloud please use Ctrl+C as usual.")
                 while (True): time.sleep(3600)
         except:
@@ -400,7 +400,7 @@ def invoke_hosts_action(action, hosts_config, args, ec2_reservation=None):
             log("Goodbye H2O cloud...")
             h2o.tear_down_cloud()
             log("Cloud is gone.")
- 
+
     elif (action == 'stop_h2o'):
         pass
     elif (action == 'clean_tmp'):
@@ -470,7 +470,7 @@ def main():
         log("Instances  : {0}".format(args.instances))
         log("Tags       : {0}".format(tags))
         reservation = run_instances(args.instances, ec2_config, ec2_region, tags=tags)
-        
+
         hosts_cfg, filename   = dump_hosts_config(ec2_config, reservation, filename=args.hosts, h2o_per_host=args.h2o_per_host)
         dump_ssh_commands(ec2_config, reservation)
         if (args.action == 'demo'):
@@ -481,7 +481,7 @@ def main():
                 invoke_hosts_action('terminate', hosts_cfg, args)
 
     elif (args.action == 'show_defaults'):
-        print 
+        print
         print "\033[92mConfig\033[0m : {0}".format(json.dumps(DEFAULT_EC2_INSTANCE_CONFIGS,indent=2))
         print "\033[92mInstances\033[0m         : {0}".format(DEFAULT_NUMBER_OF_INSTANCES)
         print "\033[92mSupported regions\033[0m : {0}".format( [ i for i in DEFAULT_EC2_INSTANCE_CONFIGS ] )
@@ -494,8 +494,8 @@ def main():
         dump_hosts_config(ec2_config, ec2_reservation, filename=args.hosts)
     elif (args.action == 'show_reservations'):
         report_reservations(args.region, args.reservation)
-    else: 
-        if args.hosts: 
+    else:
+        if args.hosts:
             hosts_config = load_hosts_config(args.hosts)
             if hosts_config['ec2_reservation_id']: ec2_reservation = load_ec2_reservation(hosts_config['ec2_reservation_id'], ec2_region)
             else: ec2_reservation = None

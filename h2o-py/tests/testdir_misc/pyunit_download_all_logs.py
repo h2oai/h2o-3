@@ -6,8 +6,8 @@ from tests import pyunit_utils
 import os
 
 def download_all_logs():
-    
-    
+
+
 
     # default
     log_location = h2o.download_all_logs()

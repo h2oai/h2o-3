@@ -465,7 +465,7 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
     # FIX! what about usecloud or cloud_cloud_json params from build_cloud time?
     if force or not (h2o_args.usecloud or h2o_args.clone_cloud_json):
         try:
-            # update: send a shutdown to all nodes. 
+            # update: send a shutdown to all nodes.
             # h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
             # just send one?
@@ -528,13 +528,13 @@ def verify_cloud_size(nodeList=None, expectedCloudName=None, expectedLocked=None
     # local builds have (unknown) in h2o if you build.sh (instead of make)
     # gradle builds should always be right with version?
     if not expectedVersion.startswith('3'):
-        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 3) %s" % 
+        raise Exception("h2o version at node[0] doesn't look like h2o-dev version. (start with 3) %s" %
             expectedVersion)
 
     for i, v in enumerate(cloudVersion):
         if v != expectedVersion:
             versionStr = (",".join(map(str, cloudVersion)))
-            raise Exception("node %s. Inconsistent cloud version. nodeList report version: %s" % 
+            raise Exception("node %s. Inconsistent cloud version. nodeList report version: %s" %
                 (i, versionStr))
 
     if not ignoreHealth:
@@ -623,7 +623,7 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExt
                 # 'h2o' disappeared?
                 if 'h2o' not in ci:
                     print "ci:", dump_json(ci)
-                    # apparently this can happen in cases where I didn't join a cloud because 
+                    # apparently this can happen in cases where I didn't join a cloud because
                     # of a different md5 version. We'll eventually exception out?
                     # raise Exception("What happened to the 'h2o' ci dict entry?, not there")
                 else:

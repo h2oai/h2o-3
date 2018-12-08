@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def asfactor_basic():
-  
-  
+
+
 
   #Log.info("Printing out the head of the cars datasets")
   h2oframe =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars.csv"))

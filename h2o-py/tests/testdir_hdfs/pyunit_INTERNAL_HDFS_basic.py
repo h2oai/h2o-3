@@ -12,7 +12,7 @@ from tests import pyunit_utils
 
 
 def hdfs_basic():
-    
+
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.

@@ -27,7 +27,7 @@ ordinalChoices = range(0x1e, 0x100) # doesn't include last value ..allow 7f
 # ordinalChoices.remove(0x0a) # lf
 # ordinalChoices.remove(0x0d) # cr
 
-# white space (tab and space) will throw the col count off?. I guess they cause na 
+# white space (tab and space) will throw the col count off?. I guess they cause na
 # (since we're just doing single char here)
 ordinalChoices.remove(0x20) # space
 
@@ -123,7 +123,7 @@ class Basic(unittest.TestCase):
 
             assert len(missingList) == 0
             # FIX! check type?
-        
+
             # print "inspect:", h2o.dump_json(inspect)
             self.assertEqual(numRows, rowCount, msg='Wrong numRows: %s %s' % (numRows, rowCount))
             self.assertEqual(numCols, colCount, msg='Wrong numCols: %s %s' % (numCols, colCount))

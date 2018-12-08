@@ -27,7 +27,7 @@ def checkpoint_new_category_in_predictor():
     assert False, "Expected continued model-building to fail with new categories introduced in predictor"
   except EnvironmentError:
     pass
-  
+
   print("checkpoint_new_category_in_predictor-3")
 
   # attempt to predict on new model, but with observations that have expanded categorical predictor domain.

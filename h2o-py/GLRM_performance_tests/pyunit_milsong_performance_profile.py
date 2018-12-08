@@ -41,7 +41,7 @@ def glrm_subset():
     run_time_ms.append(acs_model._model_json['output']['end_time'] - acs_model._model_json['output']['start_time'])
     iterations.append(acs_model._model_json['output']['iterations'])
     objective.append(acs_model._model_json['output']['objective'])
-  
+
   print("Run time in ms: {0}".format(run_time_ms))
   print("number of iterations: {0}".format(iterations))
   print("objective function value: {0}".format(objective))

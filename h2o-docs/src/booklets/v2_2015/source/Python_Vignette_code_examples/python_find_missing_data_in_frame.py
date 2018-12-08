@@ -7,5 +7,5 @@ df3.isna()
 #    0     0     0     0
 #    0     0     0     1
 #    0     0     0     0
-# 
+#
 # [5 rows x 4 columns]

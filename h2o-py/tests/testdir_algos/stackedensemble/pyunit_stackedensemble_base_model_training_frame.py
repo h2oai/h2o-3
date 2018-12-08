@@ -15,10 +15,10 @@ from tests import pyunit_utils
 
 def stackedensemble_base_model_training_frame_test():
     """This test checks the following:
-    1) That passing in base models that use different subsets of 
+    1) That passing in base models that use different subsets of
        the features works. (different x, but same training_frame)
-    2) That passing in base models that use different subsets of 
-       the features works. (different training_frame) 
+    2) That passing in base models that use different subsets of
+       the features works. (different training_frame)
     3) TO DO: That passing in base models that use training frames with different nrows fails.
     """
 

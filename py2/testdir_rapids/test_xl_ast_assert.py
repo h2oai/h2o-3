@@ -96,7 +96,7 @@ class Basic(unittest.TestCase):
         #*****************************************
         c = DF('c1') # inits to -1
         h2p.yellow_print("compare1")
-        # doesn't assign result to a key?, gets result if scalar, otherwise gets a list or ??? 
+        # doesn't assign result to a key?, gets result if scalar, otherwise gets a list or ???
         # .result can give us scalar, list, Key, None
 
         # .result could be a property that triggers a csv download, if we didn't cache the scalar/list result because it was small?
@@ -122,7 +122,7 @@ class Basic(unittest.TestCase):
             print "true if of result", result
         else:
             print "false if of result", result
-    
+
     def test_xl_ast_assert_X(self):
         # uses h2o_xl to do magic with Rapids
         # does this DFInit to rows=0 now?

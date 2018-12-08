@@ -8,5 +8,5 @@ df
 #    1  a      0.1
 #    2  b      0.2
 #    3  c      0.3
-# 
+#
 # [3 rows x 3 columns]

@@ -68,10 +68,10 @@ class Basic(unittest.TestCase):
         for trial in range(5):
             for execExpr in funsList:
                 funs = '[%s]' % execExpr
-                execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, 
+                execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None,
                     timeoutSecs=4)
-                execExpr2 = '(= !junk (apply %r1 #2 %anon))' 
-                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, 
+                execExpr2 = '(= !junk (apply %r1 #2 %anon))'
+                execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None,
                     timeoutSecs=15)
                 # rows might be zero!
                 if execResult['num_rows'] or execResult['num_cols']:

@@ -66,9 +66,9 @@ def write_syn_dataset(csvPathname, rowCount, colCount, expectedMin, expectedMax,
             expectedUllSum = expectedUllSum ^ ullResult
             # print "%30s" % "expectedUll (0.16x):", "0x%0.16x" % expectedUll
 
-            # Now that you know how many decimals you want, 
+            # Now that you know how many decimals you want,
             # say, 15, just use a rstrip("0") to get rid of the unnecessary 0s:
-            # can't rstrip, because it gets rid of trailing exponents  like +0 which causes NA if + 
+            # can't rstrip, because it gets rid of trailing exponents  like +0 which causes NA if +
             s = "%.16f" % value
             rowData.append(s)
 
@@ -114,12 +114,12 @@ class Basic(unittest.TestCase):
                 csvPathname = SYNDATASETS_DIR + '/' + csvFilename
                 csvPathnameFull = h2i.find_folder_and_filename(None, csvPathname, returnFullPath=True)
                 print "Creating random", csvPathname
-                (expectedUllSum, expectedFpSum)  = write_syn_dataset(csvPathname, 
+                (expectedUllSum, expectedFpSum)  = write_syn_dataset(csvPathname,
                     rowCount, colCount, expectedMin, expectedMax, SEEDPERFILE)
                 expectedUllSumAsDouble = h2o_util.unsignedLongLongToDouble(expectedUllSum)
                 expectedFpSumAsLongLong = h2o_util.doubleToUnsignedLongLong(expectedFpSum)
 
-                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                     timeoutSecs=3000, retryDelaySecs=2)
                 numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
                 assert parse_key == hex_key
@@ -134,7 +134,7 @@ class Basic(unittest.TestCase):
                 # xorsum will zero out the sign and exponent
                 for execExpr in exprList:
                     for r in range(10):
-        
+
                         if 1==0:
                             execResult = h2o_cmd.runExec(ast=execExpr, timeoutSecs=30)
                             fpResult = execResult['scalar']

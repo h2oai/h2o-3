@@ -83,7 +83,7 @@ def get_file_size(f):
 def iter_chunked_file(file, chunk_size=2048):
     return iter(lambda: file.read(chunk_size), '')
 
-# operations to get bit patterns for fp 
+# operations to get bit patterns for fp
 # Python internally uses the native endianity and 64-bits for floats
 # Java floatToBits is the thing to convert fp to long bits
 # if it's real, use this to convert. All reals should match
@@ -131,13 +131,13 @@ def twoDecimals(l):
 #    return c < rel
 
 # Generic "approximately equal" function for any object type, with customisable error tolerance.
-# When called with float arguments, approxEqual(x, y[, tol[, rel]) compares x and y numerically, 
-# and returns True if y is within either absolute error tol or relative error rel of x, 
-# otherwise return False. 
+# When called with float arguments, approxEqual(x, y[, tol[, rel]) compares x and y numerically,
+# and returns True if y is within either absolute error tol or relative error rel of x,
+# otherwise return False.
 
 # The function defaults to sensible default values for tol and rel.
-# or any other pair of objects, approxEqual() looks for a method __approxEqual__ and, if found, 
-# calls it with arbitrary optional arguments. 
+# or any other pair of objects, approxEqual() looks for a method __approxEqual__ and, if found,
+# calls it with arbitrary optional arguments.
 # This allows types to define their own concept of "close enough".
 def _float_approxEqual(x, y, tol=1e-18, rel=1e-7, **kwargs):
     if tol is rel is None:
@@ -305,7 +305,7 @@ def fp_format(val=None, sel=None, only=None):
         # make choice modulo 3 (can update if more subgroups are added
         choice = choice % SUBGRPS
         assert choice >= 0 and choice < SUBGRP_SIZE
-        # now add a base offset = subgrou size. 
+        # now add a base offset = subgrou size.
         # (assume we keep in sync with the subgroup sizes above)
         if only=='e':
             choice += 0
@@ -323,9 +323,9 @@ def fp_format(val=None, sel=None, only=None):
 
 
 # http://eli.thegreenplace.net/2010/01/22/weighted-random-generation-in-python/
-# given [2, 3, 5] it returns 0 (the index of the first element) with probability 0.2, 
-# 1 with probability 0.3 and 2 with probability 0.5. 
-# The weights need not sum up to anything in particular, and can actually be 
+# given [2, 3, 5] it returns 0 (the index of the first element) with probability 0.2,
+# 1 with probability 0.3 and 2 with probability 0.5.
+# The weights need not sum up to anything in particular, and can actually be
 # arbitrary Python floating point numbers.
 
 # The weights need to cover the whole list? otherwise you don't get the rest of the choises
@@ -346,7 +346,7 @@ def choice_with_probability(tupleList):
     for item, prob in tupleList:
         if n < prob: break
         n = n - prob
-        if n < 0: 
+        if n < 0:
             raise Exception("h2o_util.choice_with_probability() error, prob's sum > 1")
     return item
 
@@ -387,7 +387,7 @@ def file_read_csv_col(csvPathname, col=0, skipHeader=True, datatype='float', pre
                         colData = row[col]
                     # only print first 5 for seeing
                     # don't print big col cases
-                    if rowNum < preview and len(row) <= 10: 
+                    if rowNum < preview and len(row) <= 10:
                         print colData
                     dataList.append(colData)
                 rowNum += 1
@@ -533,7 +533,7 @@ def file_spaces_to_comma(csvPathname1, csvPathname2):
     print "\n" + csvPathname1 + " with space(s)->comma to " + csvPathname2
 
 # UPDATE: R seems to be doing some kind of expand_cat on cols with '.' in them for NA
-# (the umass/princeton) data sets. Change to 0 for now so both H2O and R use them the 
+# (the umass/princeton) data sets. Change to 0 for now so both H2O and R use them the
 # same way
 def file_clean_for_R(csvPathname1, csvPathname2):
     infile = open(csvPathname1, 'r')
@@ -575,7 +575,7 @@ def might_h2o_think_number_or_whitespace(token):
     specialRegex = re.compile(r"""
         \s*
         [\$+-]? # single chars that might be considered numbers. alow spaces in between
-        \s*$ 
+        \s*$
         """, re.VERBOSE)
 
     # this matches white space? makes all white space count as number?
@@ -619,7 +619,7 @@ def might_h2o_think_number_or_whitespace(token):
         return False
 
 # from nmb10 at http://djangosnippets.org/snippets/2247/
-# Shows difference between two json like python objects. 
+# Shows difference between two json like python objects.
 # Shows properties, values from first object that are not in the second.
 # Examples:
 # import json # or other json serializer
@@ -629,14 +629,14 @@ def might_h2o_think_number_or_whitespace(token):
 # df.difference is ["path: last_name"]
 # JsonDiff(first, second, vice_versa=True) gives you difference from both objects in the one result.
 # df.difference is ["path: last_name", "path: pet_name"]
-# JsonDiff(first, second, with_values=True) gives you difference of the values strings. 
+# JsonDiff(first, second, with_values=True) gives you difference of the values strings.
 class JsonDiff(object):
     def __init__(self, first, second, with_values=False, vice_versa=False):
         self.difference = []
         self.check(first, second, with_values=with_values)
         if vice_versa:
             self.check(second, first, with_values=with_values)
-        
+
     def check(self, first, second, path='', with_values=False):
         if second != None:
             if not isinstance(first, type(second)):
@@ -667,9 +667,9 @@ class JsonDiff(object):
                 else:
                     # second is not dict. every key from first goes to the difference
                     PATH = None
-                    self.save_diff(new_path, PATH)                
+                    self.save_diff(new_path, PATH)
                     self.check(first[key], second, path=new_path, with_values=with_values)
-                
+
         # if object is list, loop over it and check.
         elif isinstance(first, list):
             for (index, item) in enumerate(first):
@@ -692,7 +692,7 @@ class JsonDiff(object):
                 if first != second:
                     self.save_diff('%s - %s | %s' % (path, first, second), 'diff')
         return
-            
+
     def save_diff(self, diff_message, type_):
         message = '%s: %s' % (type_, diff_message)
         if diff_message not in self.difference:
@@ -737,4 +737,4 @@ def json_repr(obj, curr_depth=0, max_depth=4):
 
     # a = json.dumps(serialize(obj))
     # c = json.loads(a)
-      
+

@@ -6,7 +6,7 @@ from h2o_test import verboseprint, dump_json, OutputObj
 
 print "This variant plays with colsep of space, and eols, more"
 
-targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park', 
+targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park',
     'good', 'liquor store rooftoop', 'facebook']
 
 lol = [
@@ -123,7 +123,7 @@ def create_file_with_seps(rowCount, colCount):
     print "Creating random", csvPathname
     write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE,
         colSepChar=colSepChar, rowSepChar=rowSepChar)
-    
+
     return csvPathname
 
 
@@ -197,11 +197,11 @@ class Basic(unittest.TestCase):
 
                 model_key = 'benign_w2v.hex'
                 bmResult = h2o.n0.build_model(
-                    algo='word2vec', 
+                    algo='word2vec',
                     model_id=model_key,
                     training_frame=parse_key,
-                    parameters=parameters, 
-                    timeoutSecs=10) 
+                    parameters=parameters,
+                    timeoutSecs=10)
                 bm = OutputObj(bmResult, 'bm')
 
                 modelResult = h2o.n0.models(key=model_key)
@@ -215,7 +215,7 @@ class Basic(unittest.TestCase):
 
                 prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
                 pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
-        
+
                 h2o_cmd.runStoreView()
 
 if __name__ == '__main__':

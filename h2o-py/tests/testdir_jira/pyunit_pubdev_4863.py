@@ -12,7 +12,7 @@ def pubdev_4863():
     except H2OResponseError as error:
         print(error)
         assert 'Error: Name lookup of \'123STARTSWITHDIGITS\' failed' in str(error)
-    
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_4863)
 else:

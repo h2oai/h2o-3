@@ -39,9 +39,9 @@ def stackedensemble_guassian_test():
 
     # train and cross-validate a GBM
     my_gbm = H2OGradientBoostingEstimator(distribution="gaussian",
-                                          max_depth=3, 
+                                          max_depth=3,
                                           learn_rate=0.2,
-                                          nfolds=nfolds, 
+                                          nfolds=nfolds,
                                           fold_assignment="Modulo",
                                           keep_cross_validation_predictions=True,
                                           seed=1)
@@ -56,10 +56,10 @@ def stackedensemble_guassian_test():
     print(perf_gbm_test)
 
     # train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees=30, 
-                                     nfolds=nfolds, 
+    my_rf = H2ORandomForestEstimator(ntrees=30,
+                                     nfolds=nfolds,
                                      fold_assignment="Modulo",
-                                     keep_cross_validation_predictions=True, 
+                                     keep_cross_validation_predictions=True,
                                      seed=1)
 
     my_rf.train(x=x, y=y, training_frame=train)
@@ -73,11 +73,11 @@ def stackedensemble_guassian_test():
     print(perf_rf_test)
 
     # Train and cross-validate an extremely-randomized RF
-    my_xrf = H2ORandomForestEstimator(ntrees=50, 
+    my_xrf = H2ORandomForestEstimator(ntrees=50,
                                       nfolds=nfolds,
-                                      histogram_type="Random", 
+                                      histogram_type="Random",
                                       fold_assignment="Modulo",
-                                      keep_cross_validation_predictions=True, 
+                                      keep_cross_validation_predictions=True,
                                       seed=1)
 
     my_xrf.train(x=x, y=y, training_frame=train)

@@ -52,7 +52,7 @@ class Basic(unittest.TestCase):
 
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=False)
 
             inspect = h2o_cmd.runInspect(key=hex_key)
@@ -112,42 +112,42 @@ class Basic(unittest.TestCase):
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==313
                 assert numCols==1
-            
-                print "z1" 
+
+                print "z1"
                 Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) )
-                print "z2" 
+                print "z2"
                 Assign('s1', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
 
-                print "z3" 
+                print "z3"
                 Assign(result_key, KeyIndexed(data_key, row='#1')).do
-                print "z4" 
+                print "z4"
                 Assign(result_key, KeyIndexed(data_key, row=Colon('#1', '#100')))
-                print "z5" 
+                print "z5"
                 Assign(result_key, KeyIndexed(data_key, row=Colon(1, 100)))
                 # this should fail rapids because of reverse msb/lsb
                 # illegal, detected
                 # execResult, Assign(result_key, KeyIndexed(data_key, row=Colon('#100', '#1')))
-                print "z6" 
+                print "z6"
                 Assign(result_key, KeyIndexed(data_key, row=Colon('#-2', '#-1')))
-                print "z7" 
+                print "z7"
                 Assign(result_key, KeyIndexed(data_key, row=Colon(-2, -1)))
                 # illegal, detected
                 # execResult, Assign(result_key, KeyIndexed(data_key, row=Colon('#-1', '#-2')))
                 # take advantage of number to string conversion
-                print "z8" 
+                print "z8"
                 Assign(result_key, KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
-                print "z9" 
+                print "z9"
                 Assign(result_key, KeyIndexed(data_key, col=Colon('#1', colCount-1, )))
 
                 # no assign
-                print "z10" 
+                print "z10"
                 result = KeyIndexed(data_key, row=Colon('#1', rowCount-10)).do()
-                print "z11" 
+                print "z11"
                 # result = KeyIndexed(data_key, col=Colon('#1', colCount-1,)).do()
 
 
                 # do some function translation
-                print "z12" 
+                print "z12"
                 # result = Fcn('==', 1, KeyIndexed(data_key, col=Colon('#1', colCount-1,))).do()
 
                 print "\n" + csvPathname, \

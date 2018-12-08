@@ -14,11 +14,11 @@ DO_RF = False
 # Don't write data if rowCount is None
 def write_syn_dataset(csvPathname, rowCount, headerData, rList):
     dsf = open(csvPathname, "w+")
-    
+
     if headerData is not None:
         dsf.write(headerData + "\n")
 
-    if rowCount is not None:        
+    if rowCount is not None:
         for i in range(rowCount):
             # two choices on the input. Make output choices random
             r = rList[random.randint(0,1)] + "," + str(random.randint(0,7))
@@ -51,7 +51,7 @@ class Basic(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
-    
+
     def test_parse_multi_header_single(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
         csvFilename = "syn_ints.csv"

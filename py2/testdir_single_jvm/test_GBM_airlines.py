@@ -29,7 +29,7 @@ class Basic(unittest.TestCase):
 
             model_key = 'GBMModelKey'
             # IsDepDelayed might already be enum, but just to be sure
-            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey,
                 columnTypeDict={'IsDepDelayed': 'Enum'}, timeoutSecs=timeoutSecs)
 
             pA = h2o_cmd.ParseObj(parseResult)
@@ -58,7 +58,7 @@ class Basic(unittest.TestCase):
                 # 'loss': 'Bernoulli',
                 # FIX..no variable importance for GBM yet?
                 # 'variable_importance': False,
-                # 'seed': 
+                # 'seed':
             }
 
             bmResult = h2o.n0.build_model(

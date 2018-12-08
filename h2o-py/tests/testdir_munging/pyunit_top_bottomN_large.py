@@ -9,7 +9,7 @@ import numpy as np
 def h2o_H2OFrame_top_bottomN():
     """
     PUBDEV-3624 Top or Bottom N test h2o.frame.H2OFrame.topN() and h2o.frame.H2OFrame.bottomN() functions.
-    Given a H2O frame, a column index or column name, a double denoting percentages of top/bottom rows to 
+    Given a H2O frame, a column index or column name, a double denoting percentages of top/bottom rows to
     return, the topN will return a H2OFrame containing two columns, one will
     be the topN (or bottomN) values of the specified column.  The other column will record the row indices into
     the original frame of where the topN (bottomN) values come from.  This will let the users to grab those

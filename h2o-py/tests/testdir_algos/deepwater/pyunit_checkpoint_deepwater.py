@@ -29,7 +29,7 @@ def deepwater_checkpoint():
   frame = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
   frame.drop(0)
   frame[1] = frame[1].asfactor()
-  
+
   ## delete the checkpoint file
   os.remove(model_path)
 

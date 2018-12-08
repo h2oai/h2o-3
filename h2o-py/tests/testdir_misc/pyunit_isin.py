@@ -11,9 +11,9 @@ def isin_check():
   assert (cars[0].isin("AMC Gremlin") == (cars[0] == "AMC Gremlin")).all()
   assert (cars[2].isin(6) == (cars[2] == 6)).all()
   assert not (cars.isin(["AMC Gremlin","AMC Concord DL"]) == cars.isin("AMC Gremlin")).all()
-  assert (cars.isin(["AMC Gremlin","AMC Concord DL",6]) == cars.isin("AMC Gremlin") + cars.isin("AMC Concord DL") 
+  assert (cars.isin(["AMC Gremlin","AMC Concord DL",6]) == cars.isin("AMC Gremlin") + cars.isin("AMC Concord DL")
           + cars.isin(6)).all()
-  
+
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(isin_check)

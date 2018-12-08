@@ -30,10 +30,10 @@ def get_xyz_sphere(R):
     theta = math.acos(costheta)
 
     phi = random.uniform(0, 2 * math.pi)
-    # now you have a (r, theta, phi) group which can be transformed to (x, y, z) 
+    # now you have a (r, theta, phi) group which can be transformed to (x, y, z)
     x = r * math.sin(theta) * math.cos(phi)
     y = r * math.sin(theta) * math.sin(phi)
-    z = r * math.cos(theta) 
+    z = r * math.cos(theta)
     # use these for jump dimensions? (picture "time" and other dimensions)
     zz = 0
     yy = 0
@@ -86,12 +86,12 @@ def write_spheres_dataset(csvPathname, CLUSTERS, n):
             currentCenter = zeroes
         else:
             lastCenter = currentCenter
-            currentCenter  = [a+b for a,b in zip(currentCenter, newOffset)] 
+            currentCenter  = [a+b for a,b in zip(currentCenter, newOffset)]
             if (sum(currentCenter) - sum(lastCenter) < (len(currentCenter)* ALLOWED_CENTER_DELTA)):
                 print "ERROR: adjacent centers are too close for our sort algorithm"
                 print "currentCenter:", currentCenter, "lastCenter:", lastCenter
                 raise Exception
-                
+
         centersList.append(currentCenter)
 
         # build a sphere at that center
@@ -105,7 +105,7 @@ def write_spheres_dataset(csvPathname, CLUSTERS, n):
         print "currentCenter:", currentCenter, "R:", R, "numPts", numPts
         for i in range(numPts):
             xyz = get_xyz_sphere(R)
-            xyzShifted  = [a+b for a,b in zip(xyz,currentCenter)] 
+            xyzShifted  = [a+b for a,b in zip(xyz,currentCenter)]
             dsf.write(",".join(map(str,xyzShifted))+"\n")
             totalRows += 1
 
@@ -188,7 +188,7 @@ class Basic(unittest.TestCase):
             km = h2o_kmeans.KMeansObj(modelResult, parameters, numRows, numColsUsed, labelListUsed)
 
             # no expected row/error?
-            expected = [(None, c, None, None) for c in centersList] 
+            expected = [(None, c, None, None) for c in centersList]
             expected.sort(key=lambda tup: sum(tup[1]))
             h2o_kmeans.compareResultsToExpected(km.tuplesSorted, expected, allowedDelta=[.01, .01, .01])
 

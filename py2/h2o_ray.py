@@ -52,7 +52,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             "\tprogress:", "%-10s" % progress, \
             "\tstatus:", "%-12s" % status, \
             "\tmsec:", msec
-        
+
         if status=='DONE' or status=='CANCELLED' or status=='FAILED':
             h2o_sandbox.check_sandbox_for_errors()
             return result
@@ -80,7 +80,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
 
 
 def import_files(self, path, timeoutSecs=180):
-    ''' 
+    '''
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
@@ -105,11 +105,11 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # these should override what parse setup gets below
     params_dict = {
         'source_frames': None,
-        'destination_frame': hex_key, 
-        'parse_type': None, # file type 
+        'destination_frame': hex_key,
+        'parse_type': None, # file type
         'separator': None,
         'single_quotes': None,
-        'check_header': None, # forces first line to be seen as column names 
+        'check_header': None, # forces first line to be seen as column names
         'number_columns': None,
         'column_names': None, # a list
         'column_types': None, # a list. or can use columnTypeDict param (see below)
@@ -119,7 +119,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         'delete_on_done': None,
         'blocking': None,
     }
-        
+
     # if key is a list, create a comma separated string
     # list or tuple but not string
     if not isinstance(key, basestring):
@@ -183,7 +183,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # but we don't pass columnNames like this?
     ct = setup_result['column_types']
     columnNames = setup_result['column_names']
-    if columnTypeDict: 
+    if columnTypeDict:
         for k,v in columnTypeDict.iteritems():
             if isinstance(k, int):
                 # if a column index
@@ -214,22 +214,22 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         'number_columns': setup_result['number_columns'],
         'column_names': columnNamesStr,
         'column_types': columnTypesStr,
-        'na_strings': naStrings, 
+        'na_strings': naStrings,
         'chunk_size': setup_result['chunk_size'],
         # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
     # HACK: if there are too many column names..don't print! it is crazy output
-    # just check the output of parse setup. Don't worry about columnNames passed as params here. 
+    # just check the output of parse setup. Don't worry about columnNames passed as params here.
     tooManyColNamesToPrint = setup_result['column_names'] and len(setup_result['column_names']) > 2000
     if tooManyColNamesToPrint:
-        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
+        h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.")
         h2p.yellow_print("See sandbox/commands.log")
 
     # merge params_dict into parse_params
     # don't want =None to overwrite parse_params
-    h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
+    h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup',
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
     print "parse source_frames is length:", len(parse_params['source_frames'])
@@ -296,11 +296,11 @@ def frames(self, key=None, timeoutSecs=60, **kwargs):
     frames are contained in a list called "frames" at the top level of the
     result.  Currently the list is unordered.
     TODO:
-    When find_compatible_models is implemented then the top level 
+    When find_compatible_models is implemented then the top level
     dict will also contain a "models" list.
     '''
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'frames', False)
-    
+
     # key can be type Key? (from h2o_xl) str(key) should return
     if key:
         if isinstance(key, Key):
@@ -316,29 +316,29 @@ def frames(self, key=None, timeoutSecs=60, **kwargs):
 # TODO: remove .json
 def columns(self, key, timeoutSecs=10, **kwargs):
     '''
-    Return the columns for a single Frame in the h2o cluster.  
+    Return the columns for a single Frame in the h2o cluster.
     '''
-    params_dict = { 
+    params_dict = {
         'offset': 0,
         'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'columns', True)
-    
+
     result = self.do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
     return result
 
 
 # TODO: remove .json
 '''
-Return a single column for a single Frame in the h2o cluster.  
+Return a single column for a single Frame in the h2o cluster.
 '''
 def column(self, key, column, timeoutSecs=10, **kwargs):
-    params_dict = { 
+    params_dict = {
         'offset': 0,
         'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'column', True)
-    
+
     result = self.do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
     return result
 
@@ -346,14 +346,14 @@ def column(self, key, column, timeoutSecs=10, **kwargs):
 # TODO: remove .json
 def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     '''
-    Return the summary for a single column for a single Frame in the h2o cluster.  
+    Return the summary for a single column for a single Frame in the h2o cluster.
     '''
-    params_dict = { 
+    params_dict = {
         # 'offset': 0,
         # 'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
-    
+
     result = self.do_json_request('3/Frames.json/%s/columns/%s/summary' % (key, column), timeout=timeoutSecs, params=params_dict)
     h2o_sandbox.check_sandbox_for_errors()
     return result
@@ -397,7 +397,7 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     params_dict = {}
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', False)
 
-    request = '3/ModelBuilders.json' 
+    request = '3/ModelBuilders.json'
     if algo:
         request += "/" + algo
 
@@ -409,7 +409,7 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
 
 def validate_model_parameters(self, algo, training_frame, parameters, timeoutSecs=60, **kwargs):
     '''
-    Check a dictionary of model builder parameters on the h2o cluster 
+    Check a dictionary of model builder parameters on the h2o cluster
     using the given algorithm and model parameters.
     '''
     assert algo is not None, '"algo" parameter is null'
@@ -420,7 +420,7 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     assert model_builders is not None, "/ModelBuilders REST call failed"
     assert algo in model_builders['model_builders']
     builder = model_builders['model_builders'][algo]
-    
+
     # TODO: test this assert, I don't think this is working. . .
     if training_frame is not None:
         frames = self.frames(key=training_frame)
@@ -436,7 +436,7 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     # TODO: add parameter value validation
 
     # FIX! why ignoreH2oError here?
-    result = self.do_json_request('/3/ModelBuilders.json/' + algo + "/parameters", cmd='post', 
+    result = self.do_json_request('/3/ModelBuilders.json/' + algo + "/parameters", cmd='post',
         timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
 
     verboseprint("model parameters validation: " + repr(result))
@@ -453,7 +453,7 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None, 
         raise Exception('Change destination_key in build_model() to model_id')
 
     '''
-    Build a model on the h2o cluster using the given algorithm, training 
+    Build a model on the h2o cluster using the given algorithm, training
     Frame and model parameters.
     '''
     assert algo is not None, '"algo" parameter is null'
@@ -465,12 +465,12 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None, 
     assert model_builders is not None, "/ModelBuilders REST call failed"
     assert algo in model_builders['model_builders'], "%s %s" % (algo, [k for k in model_builders['model_builders']])
     builder = model_builders['model_builders'][algo]
-    
+
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=training_frame)
     assert frames is not None, "/Frames/{0} REST call failed".format(training_frame)
 
-    key_name = frames['frames'][0]['frame_id']['name'] 
+    key_name = frames['frames'][0]['frame_id']['name']
     assert key_name==training_frame, \
         "/Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, key_name, training_frame)
     parameters['training_frame'] = training_frame
@@ -484,12 +484,12 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None, 
 
     print "build_model parameters", parameters
     start = time.time()
-    result1 = self.do_json_request('/3/ModelBuilders.json/' + algo, cmd='post', 
+    result1 = self.do_json_request('/3/ModelBuilders.json/' + algo, cmd='post',
         timeout=timeoutSecs, postData=parameters)
     # make get overwritten after polling
     elapsed = time.time() - start
     verboseprint("build_model result", dump_json(result1))
-      
+
     if noPoll:
         result = result1
     elif ('validation_error_count' in result1) and (result1['validation_error_count']>0):
@@ -541,7 +541,7 @@ def build_model(self, algo, training_frame, parameters, destination_frame=None, 
 
 def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
     '''
-    Score a model on the h2o cluster on the given Frame and return only the model metrics. 
+    Score a model on the h2o cluster on the given Frame and return only the model metrics.
     '''
     assert model is not None, '"model" parameter is null'
     assert frame is not None, '"frame" parameter is null'
@@ -553,7 +553,7 @@ def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
     # TODO: test this assert, I don't think this is working. . .
     frames = self.frames(key=frame)
     assert frames is not None, "/Frames/{0} REST call failed".format(frame)
-    
+
     print "frames:", dump_json(frames)
     # is the name not there?
     # assert frames['frames'][0]['model_id']['name'] == frame, "/Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, models['models'][0]['key']['name'], frame)
@@ -591,7 +591,7 @@ def predict(self, model, frame, timeoutSecs=60, **kwargs):
 
 def model_metrics(self, timeoutSecs=60, **kwargs):
     '''
-    ModelMetrics list. 
+    ModelMetrics list.
     '''
     result = self.do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
     h2o_sandbox.check_sandbox_for_errors()
@@ -601,11 +601,11 @@ def model_metrics(self, timeoutSecs=60, **kwargs):
 # TODO: remove .json
 def models(self, key=None, timeoutSecs=10, **kwargs):
     '''
-    Return all of the models in the h2o cluster, or a single model given its key.  
+    Return all of the models in the h2o cluster, or a single model given its key.
     The models are contained in a list called "models" at the top level of the
     result.  Currently the list is unordered.
     TODO:
-    When find_compatible_frames is implemented then the top level 
+    When find_compatible_frames is implemented then the top level
     dict will also contain a "frames" list.
     '''
     params_dict = {
@@ -619,7 +619,7 @@ def models(self, key=None, timeoutSecs=10, **kwargs):
         result = self.do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
     else:
         result = self.do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
-    
+
     verboseprint("models result:", dump_json(result))
     h2o_sandbox.check_sandbox_for_errors()
     return result

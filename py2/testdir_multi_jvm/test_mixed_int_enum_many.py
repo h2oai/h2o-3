@@ -90,7 +90,7 @@ class Basic(unittest.TestCase):
         timeoutSecs = 60
         for (rowCount, colCount, hex_key, enumChoices, enumExpected, intChoices, resultIsEnum) in tryList:
             # max error = half the bin size?
-        
+
             SEEDPERFILE = random.randint(0, sys.maxint)
             x += 1
 
@@ -105,7 +105,7 @@ class Basic(unittest.TestCase):
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
             print "numRows:", numRows, "numCols:", numCols
             inspect = h2o_cmd.runInspect(None, hex_key)
-            
+
             print "\nTrial:", trial, csvFilename
 
             # this summary only does one column?
@@ -160,7 +160,7 @@ class Basic(unittest.TestCase):
                     'co.zeros',
                     ]
 
-                
+
 
                 for c,n in zip(coList, coNameList):
                     print n+":", c
@@ -185,11 +185,11 @@ class Basic(unittest.TestCase):
                     # not always there
                     cardinality = len(co.domain)
                     self.assertEqual(cardinality, len(enumChoices),
-                        msg="trial %s: cardinality %s should be %s" % (trial, cardinality, len(enumChoices))) 
+                        msg="trial %s: cardinality %s should be %s" % (trial, cardinality, len(enumChoices)))
 
                 # assume I create the list above in the same order that h2o will show the order. sorted?
                 if ENABLE_ASSERTS and resultIsEnum:
-                    self.assertEqual(co.bins, enumChoices) 
+                    self.assertEqual(co.bins, enumChoices)
 
                 hcntTotal = sum(co.bins)
                 numRowsCreated = rowCount + len(intChoices)
@@ -201,7 +201,7 @@ class Basic(unittest.TestCase):
 
                 nacnt = co.missing
                 if ENABLE_ASSERTS and resultIsEnum:
-                    self.assertEqual(nacnt, expectedNaCnt[i], 
+                    self.assertEqual(nacnt, expectedNaCnt[i],
                         "trial %s: Column %s Expected %s. nacnt %s incorrect" % (trial, i, expectedNaCnt[i], nacnt))
 
                 # FIX! no checks for the case where it got parsed as int column!

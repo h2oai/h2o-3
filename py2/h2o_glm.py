@@ -58,9 +58,9 @@ def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4, all
 #************************************************************88
 
 # where do we get the CM?
-def simpleCheckGLM(self, model, parameters, 
+def simpleCheckGLM(self, model, parameters,
     labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
-    prettyPrint=False, noPrint=False, 
+    prettyPrint=False, noPrint=False,
     maxExpectedIterations=None, doNormalized=False, allowNaN=False):
 
     # FIX! the structure is all different
@@ -113,7 +113,7 @@ def simpleCheckGLM(self, model, parameters,
     # UPDATE: None (null json) is legal for coeffs
     coeffs = map(lambda x : float(x) if (x is not None and str(x) != "") else 0,  temp)
 
-    intercept = coeffs[-1] 
+    intercept = coeffs[-1]
     interceptName = coeffs_names[-1]
     assert interceptName == 'Intercept'
 
@@ -122,7 +122,7 @@ def simpleCheckGLM(self, model, parameters,
     # get rid of intercept in glm response
     # assert (len(coeffs)-1) == len(labelListUsed, \
     #    "%s %s %s %s" % (len(coeffs), len(labelListUsed), coeffs, labelListUsed)
-    
+
     # labelList still has the response column?
     # ignored columns aren't in model.names, but output response is.
     # labelListUsed has the response col removed so add 1
@@ -197,7 +197,7 @@ def pickRandGlmParams(paramDict, params):
             # only log/identity is legal?
             if params['family'] == 'poisson':
                 if params['link'] not in ('identity', 'log', 'familyDefault'):
-                    params['link'] = None 
+                    params['link'] = None
             # only tweedie/tweedie is legal?
             elif params['family'] == 'tweedie':
                 if params['link'] not in ('tweedie'):
@@ -231,11 +231,11 @@ def simpleCheckGLMScore(self, glmScore, family='gaussian', allowFailWarning=Fals
         c = re.compile("converge", re.IGNORECASE)
         for w in warnings:
             print "\nwarning:", w
-            if re.search(x,w) and not allowFailWarning: 
+            if re.search(x,w) and not allowFailWarning:
                 if re.search(c,w):
                     # ignore the fail to converge warning now
                     pass
-                else: 
+                else:
                     # stop on other 'fail' warnings (are there any? fail to solve?
                     raise Exception(w)
 
@@ -280,7 +280,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
     prettyPrint=False, noPrint=False, maxExpectedIterations=None, doNormalized=False, **kwargs):
     # if we hit the max_iter, that means it probably didn't converge. should be 1-maxExpectedIter
 
-    # h2o GLM will verboseprint the result and print errors. 
+    # h2o GLM will verboseprint the result and print errors.
     # so don't have to do that
     # different when cross validation  is used? No trainingErrorDetails?
     GLMModel = glm['glm_model']
@@ -296,11 +296,11 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
         c = re.compile("converge", re.IGNORECASE)
         for w in warnings:
             print "\nwarning:", w
-            if re.search(x,w) and not allowFailWarning: 
+            if re.search(x,w) and not allowFailWarning:
                 if re.search(c,w):
                     # ignore the fail to converge warning now
                     pass
-                else: 
+                else:
                     # stop on other 'fail' warnings (are there any? fail to solve?
                     raise Exception(w)
 
@@ -347,13 +347,13 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
         raise Exception("Should be a 'validation' key in submodels1: %s" % dump_json(submodels1))
     validationsList = submodels1['validation']
     validations = validationsList
-        
+
     # xval. compare what we asked for and what we got.
     n_folds = kwargs.setdefault('n_folds', None)
 
-    print "GLMModel/validations"        
+    print "GLMModel/validations"
     validations['null_deviance'] = h2o_util.cleanseInfNan(validations['null_deviance'])
-    validations['residual_deviance'] = h2o_util.cleanseInfNan(validations['residual_deviance'])        
+    validations['residual_deviance'] = h2o_util.cleanseInfNan(validations['residual_deviance'])
     print "%15s %s" % ("null_deviance:\t", validations['null_deviance'])
     print "%15s %s" % ("residual_deviance:\t", validations['residual_deviance'])
 
@@ -372,7 +372,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
             if t >= best_threshold: # ends up using next one if not present
                 best_index = i
                 break
-            
+
         assert best_index!=None, "%s %s" % (best_threshold, thresholds)
         print "Now printing the right 'best_threshold' %s from '_cms" % best_threshold
 
@@ -380,7 +380,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
         submodels = glm['glm_model']['submodels']
         # FIX! this isn't right if we have multiple lambdas? different submodels?
         cms = submodels[0]['validation']['_cms']
-        self.assertEqual(len(thresholds), len(cms), 
+        self.assertEqual(len(thresholds), len(cms),
             msg="thresholds %s and cm %s should be lists of the same size. %s" % (len(thresholds), len(cms), thresholds))
         # FIX! best_threshold isn't necessarily in the list. jump out if >=
         assert best_index<len(cms), "%s %s" % (best_index, len(cms))
@@ -486,7 +486,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
     # Just use it to index coefficients! works for header or no-header cases
     # I guess now we won't print the "None" cases for dropped columns (constant columns!)
     # Because Tomas doesn't get everything in 'coefficients_names' if dropped by GLMQuery before
-    # he gets it? 
+    # he gets it?
     def add_to_coefficient_list_and_string(c, cList, cString):
         if c in coefficients:
             cValue = coefficients[c]
@@ -499,7 +499,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
 
         cList.append(cValue)
         # we put each on newline for easy comparison to R..otherwise keep condensed
-        if prettyPrint: 
+        if prettyPrint:
             cValueString = "H2O coefficient " + cValueString + "\n"
         # not mutable?
         return cString + cValueString
@@ -512,7 +512,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
     for c in coefficients_names:
         cString = add_to_coefficient_list_and_string(c, cList, cString)
 
-    if prettyPrint: 
+    if prettyPrint:
         print "\nH2O intercept:\t\t%.5e" % intercept
         print cString
     else:
@@ -548,11 +548,11 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
         print "H2O Largest abs. coefficient value:", maxKey, coefficients[maxKey]
         minKey = min([(abs(coefficients[x]),x) for x in coefficients])[1]
         print "H2O Smallest abs. coefficient value:", minKey, coefficients[minKey]
-    else: 
+    else:
         print "Warning, no coefficients returned. Must be intercept only?"
 
     # many of the GLM tests aren't single column though.
-    # quick and dirty check: if all the coefficients are zero, 
+    # quick and dirty check: if all the coefficients are zero,
     # something is broken
     # intercept is in there too, but this will get it okay
     # just sum the abs value  up..look for greater than 0
@@ -577,7 +577,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
     return (warnings, cList, intercept)
 
 
-# compare this glm to last one. since the files are concatenations, 
+# compare this glm to last one. since the files are concatenations,
 # the results should be similar? 10% of first is allowed delta
 def compareToFirstGlm(self, key, glm, firstglm):
     # if isinstance(firstglm[key], list):
@@ -607,11 +607,11 @@ def compareToFirstGlm(self, key, glm, firstglm):
 def simpleCheckGLMGrid(self, glmGridResult, colX=None, allowFailWarning=False, **kwargs):
 # "grid": {
 #    "destination_keys": [
-#        "GLMGridResults__8222a49156af52532a34fb3ce4304308_0", 
-#        "GLMGridResults__8222a49156af52532a34fb3ce4304308_1", 
+#        "GLMGridResults__8222a49156af52532a34fb3ce4304308_0",
+#        "GLMGridResults__8222a49156af52532a34fb3ce4304308_1",
 #        "GLMGridResults__8222a49156af52532a34fb3ce4304308_2"
 #   ]
-# }, 
+# },
     destination_key = glmGridResult['grid']['destination_keys'][0]
     inspectGG = h2o_nodes.nodes[0].glm_view(destination_key)
     models = inspectGG['glm_model']['submodels']
@@ -631,12 +631,12 @@ def simpleCheckGLMGrid(self, glmGridResult, colX=None, allowFailWarning=False, *
 
 # get input from this.
 #   (missingValuesDict, constantValuesDict, enumSizeDict, colTypeDict, colNameDict) = \
-#                h2o_cmd.columnInfoFromInspect(parseResult['destination_key', 
+#                h2o_cmd.columnInfoFromInspect(parseResult['destination_key',
 #                exceptionOnMissingValues=False, timeoutSecs=300)
 
-def goodXFromColumnInfo(y, 
-    num_cols=None, missingValuesDict=None, constantValuesDict=None, enumSizeDict=None, 
-    colTypeDict=None, colNameDict=None, keepPattern=None, key=None, 
+def goodXFromColumnInfo(y,
+    num_cols=None, missingValuesDict=None, constantValuesDict=None, enumSizeDict=None,
+    colTypeDict=None, colNameDict=None, keepPattern=None, key=None,
     timeoutSecs=120, returnIgnoreX=False, noPrint=False, returnStringX=True):
 
     y = str(y)
@@ -644,7 +644,7 @@ def goodXFromColumnInfo(y,
     # if we pass a key, means we want to get the info ourselves here
     if key is not None:
         (missingValuesDict, constantValuesDict, enumSizeDict, colTypeDict, colNameDict) = \
-            h2o_cmd.columnInfoFromInspect(key, exceptionOnMissingValues=False, 
+            h2o_cmd.columnInfoFromInspect(key, exceptionOnMissingValues=False,
             max_column_display=99999999, timeoutSecs=timeoutSecs)
         num_cols = len(colNameDict)
 
@@ -667,7 +667,7 @@ def goodXFromColumnInfo(y,
             x.remove(k)
             # rf doesn't want it in ignore list
             # ignore_x.append(k)
-        elif name == y: # if they pass the name as y 
+        elif name == y: # if they pass the name as y
             if not noPrint:
                 print "Removing %d because name: %s matches output %s" % (k, name, y)
             x.remove(k)

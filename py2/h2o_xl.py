@@ -406,7 +406,7 @@ class Xbase(object):
                         execExpr2 = astForInit(self.frame)
                     else:
                         execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
-                
+
 
                 self.numRows = 1
                 self.numCols = 1
@@ -1185,7 +1185,7 @@ class Def(Xbase):
     __repr__ = __str__
 
 class If(Xbase):
-    def __init__(self, clause, *exprs): 
+    def __init__(self, clause, *exprs):
         super(If, self).__init__()
         # clause can't be a list
         # exprs can be lists or string
@@ -1212,7 +1212,7 @@ class If(Xbase):
 
 # can only text Expr or a Expr List for ifExpr/ElseExpr
 class IfElse(Xbase):
-    def __init__(self, clause, ifExpr, elseExpr): 
+    def __init__(self, clause, ifExpr, elseExpr):
         super(IfElse, self).__init__()
 
         ifExprList = unpackOperands(ifExpr, parent="IfElse ifExprs")

@@ -27,7 +27,7 @@ objList = [
         If(0, Return(3)),
         IfElse(0, 5, IfElse(0, 8, 9)),
         Assign('k', IfElse(0, 12, IfElse(0, 15, IfElse(0, 18, 19))), do=False),
-        If(1, Return(2)), 
+        If(1, Return(2)),
         ] ),
     Assign('e', Fcn('ms', 2), do=False),
 ]

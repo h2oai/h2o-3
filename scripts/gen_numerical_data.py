@@ -76,16 +76,16 @@ def genDataFrame(sizeMat, lowBound, uppderBound, numRep, numZeros, numNans, numI
     '''
     This function will generate an H2OFrame of two columns.  One column will be float and the other will
     be long.
-    
+
     :param sizeMat: integer denoting size of bounds
     :param lowBound: lower bound
-    :param uppderBound: 
-    :param trueRandom: 
+    :param uppderBound:
+    :param trueRandom:
     :param numRep: number of times to repeat arrays in order to generate duplicated rows
-    :param numZeros: 
-    :param numNans: 
-    :param numInfs: 
-    :return: 
+    :param numZeros:
+    :param numNans:
+    :param numInfs:
+    :return:
     '''
     if (numNans > 0):
         floatA = [float('NaN')]*numNans

@@ -8,7 +8,7 @@ from copy import copy
 # http://stackoverflow.com/questions/10026797/using-json-keys-as-python-attributes-in-nested-json
 # http://stackoverflow.com/questions/5021041/are-there-any-gotchas-with-this-python-pattern
 # other:
-# class AttributeDict(dict): 
+# class AttributeDict(dict):
 #     __getattr__ = dict.__getitem__
 #     __setattr__ = dict.__setitem__
 
@@ -46,7 +46,7 @@ class OutputObj(AttrDict):
             else:
                 raise Exception("The h2o json response says something failed. validation_messages: %s" % \
                     dump_json(self.validation_messages))
-            
+
         if not noPrint:
             for k,v in self.iteritems():
                 if k == 'parameters':
@@ -70,7 +70,7 @@ class OutputObj(AttrDict):
                 elif k == 'vec_ids':
                     print "Not showing 'vec_ids'"
                 # this is if I drill into an inspect column with an object
-                elif k == 'domain' and self.name=='inspect_column': 
+                elif k == 'domain' and self.name=='inspect_column':
                     print "Not showing 'domain'"
                 else:
                     #  if it's a list with > 20, just print it normal
@@ -372,7 +372,7 @@ def check_h2o_version():
 
 def setup_random_seed(seed=None):
     # h2o_args.unit_main() or h2o.init() or this function, may be the first to call it
-    # that makes sure it's called to setup any --seed init before we look for a 
+    # that makes sure it's called to setup any --seed init before we look for a
     # command line arg here. (h2o.setup_random_seed() is done before h2o.init() in tests)
     # parse_our_args() will be a noop if it was already called once
     noseRunning = sys.argv[0].endswith('nosetests')

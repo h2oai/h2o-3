@@ -27,7 +27,7 @@ def write_syn_dataset(csvPathname, rowCount, colCount, rangeMin, rangeMax, SEED=
 
         # Do a fixed distribution, with knowledge of the 1000-way binning in h2o
         # Divide by 500, so it's every other bin
-        # WEIRD: didn't get any percentiles with 5 entries all the same 
+        # WEIRD: didn't get any percentiles with 5 entries all the same
         for col in range(colCount):
             # add the col in there for a little variance
             value = col + (rangeMin + (row * step))
@@ -46,7 +46,7 @@ def write_syn_dataset(csvPathname, rowCount, colCount, rangeMin, rangeMax, SEED=
 
         rowDataCsv = ",".join(map(str,rowData))
         dsf.write(rowDataCsv + "\n")
-        
+
 
     dsf.close()
     return (expectedMin, expectedMax)

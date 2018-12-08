@@ -47,8 +47,8 @@ def pubdev_5265():
     # The very first value corresponding to 'A' in the explanatory variable column should be replaced by the mode value, which is 3.
     # As a result, 8 occurances of type C should be predicted
     grouped_occurances.as_matrix().tolist() ==  [['A', 4], ['B', 6], ['C', 8]]
-    
-    
+
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_5265)

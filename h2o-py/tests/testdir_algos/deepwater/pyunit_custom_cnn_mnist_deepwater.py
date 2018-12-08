@@ -55,7 +55,7 @@ def deepwater_custom_cnn_mnist():
   model = H2ODeepWaterEstimator(epochs=100, learning_rate=1e-3, mini_batch_size=64,
                                 network='user', network_definition_file="/tmp/symbol_custom-py.json",
 				image_shape=[28,28], channels=1)
-                                
+
   model.train(x=predictors,y=resp, training_frame=train, validation_frame=test)
   model.show()
   error = model.model_performance(valid=True).mean_per_class_error()

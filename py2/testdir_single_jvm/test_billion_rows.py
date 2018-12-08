@@ -25,7 +25,7 @@ class Basic(unittest.TestCase):
 
         csvFilenameAll = [
             # quick test first
-            # "covtype.data", 
+            # "covtype.data",
             # then the real thing
             "billion_rows.csv.gz",
             ]
@@ -36,7 +36,7 @@ class Basic(unittest.TestCase):
         ### h2b.browseTheCloud()
 
         for csvFilename in csvFilenameList:
-            # creates csvFilename.hex from file in importFolder dir 
+            # creates csvFilename.hex from file in importFolder dir
             start = time.time()
             parseResult = h2i.import_parse(bucket='home-0xdiag-datasets', path='standard/' + csvFilename,
                 timeoutSecs=timeoutSecs, pollTimeoutSecs=60)
@@ -51,8 +51,8 @@ class Basic(unittest.TestCase):
             labelList = iA.labelList
 
             parameters = {
-                'response_column': 'C2', 
-                'alpha': '[0]', 
+                'response_column': 'C2',
+                'alpha': '[0]',
                 'lambda': '[0]',
             }
             model_key = 'B.hex'

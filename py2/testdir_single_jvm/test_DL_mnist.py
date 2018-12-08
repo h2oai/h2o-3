@@ -52,7 +52,7 @@ class Basic(unittest.TestCase):
             'autoencoder': None, # boolean false
             # 'use_all_factor_levels': None, # boolean true
             # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
-            'activation': 'RectifierWithDropout', # enum Rectifier 
+            'activation': 'RectifierWithDropout', # enum Rectifier
             'hidden': '[117,131,129]', # int[] [200, 200]
             'epochs': 2.0, # double 10.0
             'train_samples_per_iteration': None, # long -2

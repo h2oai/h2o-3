@@ -8,20 +8,20 @@ from h2o_test import dump_json, verboseprint, check_sandbox_for_errors
 #********************************************************************************
 def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2oError=False, doFuns=False):
     if not node:
-        if len(h2o_nodes.nodes)==0: 
+        if len(h2o_nodes.nodes)==0:
             raise Exception("You appeared to have not h2o.init() a h2o cloud? nodes is empty." + \
                 "You may be misusing xl/rapids objects so they try to talk to h2o, before you have a cloud built." + \
                 "Check if you're using .do() or Assign() with default do==True h2o_nodes.nodes: %s" % h2o_nodes.nodes)
         node = h2o_nodes.nodes[0]
 
     if doFuns:
-        kwargs = {'funs': execExpr} 
+        kwargs = {'funs': execExpr}
     else:
-        kwargs = {'ast': execExpr} 
+        kwargs = {'ast': execExpr}
 
     start = time.time()
     if resultKey is not None:
-        # doesn't like no key 
+        # doesn't like no key
         node.rapids_iseval(ast_key=resultKey)
 
     resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
@@ -34,21 +34,21 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
 
     # when do I get cols?
 
-    # "result": "1.0351050710011848E-300", 
-    # "scalar": 1.0351050710011848e-300, 
-    # "funstr": null, 
+    # "result": "1.0351050710011848E-300",
+    # "scalar": 1.0351050710011848e-300,
+    # "funstr": null,
 
-    # "key": null, 
-    # "col_names": null, 
-    # "num_cols": 0, 
-    # "num_rows": 0, 
+    # "key": null,
+    # "col_names": null,
+    # "num_cols": 0,
+    # "num_rows": 0,
 
-    # "exception": null, 
+    # "exception": null,
 
     # echoing?
     # "string": null
-    # "funs": null, 
-    # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))", 
+    # "funs": null,
+    # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))",
 
     # can have zero rows and non-zero cols
     if (resultExec['num_rows']!=0) and 'key' in resultExec and resultExec['key']:
@@ -63,7 +63,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             # No longer required...can be null
             # if resultKey is None:
             #     raise Exception("\nWhy is key.name null when it looks like a frame result? %s" % dump_json(resultExec))
-                
+
             if resultKey is None:
                 pass
                 result = None
@@ -80,10 +80,10 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
                 if rows==0:
                     raise Exception("Inspect of resultKey %s has zero rows %s But resultExec didn't have zero rows %s" % \
                         (resultKey, resultExec['num_rows'], rows))
-                
+
                 result = inspect['frames'][0]['columns'][0]['mins']
-        
-    else: 
+
+    else:
         if (resultExec['num_rows']==0) and 'key' in resultExec and resultExec['key']:
             print "zero row key return"
             result = None
@@ -95,7 +95,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             # empty num_rows=0 will come thru here?
             print "scalar return"
             result = resultExec['scalar']
-            
+
     return resultExec, result
 
 #********************************************************************************
@@ -145,7 +145,7 @@ def checkScalarResult(resultExec, resultKey, allowEmptyResult=False, nanOkay=Fal
             " but num_rows: %s is 0 or None. Is that an expected 'empty' key state?" % num_rows+\
             " Use 'allowEmptyResult if so.")
 
-    # Cycle thru rows and extract all the meta-data into a dict?   
+    # Cycle thru rows and extract all the meta-data into a dict?
     # assume "0" and "row" keys exist for each list entry in rows
     # FIX! the key for the value can be 0 or 1 or ?? (apparently col?) Should change H2O here
 
@@ -161,7 +161,7 @@ def checkScalarResult(resultExec, resultKey, allowEmptyResult=False, nanOkay=Fal
     metaDict = cols[0]
     for key,value in metaDict.items():
         print "Inspect metaDict:", key, value
-            
+
     min_value = metaDict['min']
     stype = metaDict['type']
     # if it's an enum col, it's okay for min to be NaN ..
@@ -170,7 +170,7 @@ def checkScalarResult(resultExec, resultKey, allowEmptyResult=False, nanOkay=Fal
 
 def fill_in_expr_template(exprTemplate, colX=None, n=None, row=None, keyX=None, m=None):
     # FIX! does this push col2 too far? past the output col?
-    # just a string? 
+    # just a string?
     execExpr = exprTemplate
     if colX is not None:
         print "Assume colX %s is zero-based..added 1 for R based exec2" % colX
@@ -199,15 +199,15 @@ def exec_zero_list(zeroList,timeoutSecs=60):
         (resultExec, result) = exec_expr(h2o_nodes.nodes[0], execExpr, None,timeoutSecs)
 
 
-def exec_expr_list_rand(lenNodes, exprList, keyX, 
+def exec_expr_list_rand(lenNodes, exprList, keyX,
     # exec2 uses R "start with 1" behavior?
-    minCol=1, maxCol=55, 
-    minRow=1, maxRow=400000, 
-    maxTrials=200, 
+    minCol=1, maxCol=55,
+    minRow=1, maxRow=400000,
+    maxTrials=200,
     timeoutSecs=10, ignoreH2oError=False, allowEmptyResult=False, nanOkay=False):
 
     trial = 0
-    while trial < maxTrials: 
+    while trial < maxTrials:
         exprTemplate = random.choice(exprList)
 
         # UPDATE: all execs are to a single node. No mixed node streams
@@ -226,7 +226,7 @@ def exec_expr_list_rand(lenNodes, exprList, keyX,
         row = str(random.randint(minRow,maxRow))
 
         execExpr = fill_in_expr_template(exprTemplate, colX, ((trial+1)%4)+1, row, keyX)
-        (resultExec, result) = exec_expr(h2o_nodes.nodes[execNode], execExpr, None, 
+        (resultExec, result) = exec_expr(h2o_nodes.nodes[execNode], execExpr, None,
             timeoutSecs, ignoreH2oError)
 
         checkScalarResult(resultExec, None, allowEmptyResult=allowEmptyResult, nanOkay=nanOkay)
@@ -248,7 +248,7 @@ def exec_expr_list_rand(lenNodes, exprList, keyX,
         trial += 1
         print "Trial #", trial, "completed\n"
 
-def exec_expr_list_across_cols(lenNodes, exprList, keyX, 
+def exec_expr_list_across_cols(lenNodes, exprList, keyX,
     minCol=0, maxCol=54, timeoutSecs=10, incrementingResult=True):
     colResultList = []
     for colX in range(minCol, maxCol):

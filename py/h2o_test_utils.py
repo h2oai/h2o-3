@@ -70,7 +70,7 @@ def followPath(d, path_elems):
                 d = d[path_elem]
             else:
                 d = d[path_elem][idx]
-        
+
     return d
 
 def assertKeysExist(d, path, keys):
@@ -219,7 +219,7 @@ def validate_model_builder_result(result, original_params, model_name):
 def validate_grid_builder_result(result, original_params, grid_params, grid_id):
     '''
     Validate that a grid build result has no parameter validation errors,
-    and that it has a Job with a Key.  
+    and that it has a Job with a Key.
     '''
     global pp
     error = False
@@ -400,7 +400,7 @@ def validate_grid_parameters(grid_parameters, actual_parameters):
         # TODO: 1-d arrays only for the moment; no grid over DL layers
         if actual_type.endswith(']'):
             actual = actual[0]
-            
+
 
         # NOTE: check for IN
         assert actual in grid_param_values, "FAIL: Parameter with name: " + k + " expected to be a possible grid value: " + str(grid_param_values) + ", instead has: " + str(actual) + " cast from: " + str(actuals_dict[k]['actual_value']) + " ( type of expected: " + str(type(grid_param_values[0])) + ", type of actual: " + str(type(actual)) + ")"
@@ -425,12 +425,12 @@ def fetch_and_validate_grid_sort(a_node, key, sort_by, decreasing):
 
     # print("criteria sorted: " + repr(criteria))
     # print("original: " + repr(unsorted))
-    
+
     assert unsorted == criteria, "FAIL: model metrics were not sorted correctly by criterion: " + key + ", " + sort_by + ", decreasing: " + decreasing
 
     for i in range(len(grid['model_ids'])):
         assert grid['model_ids'][i]['name'] == training_metrics[i]['model']['name'], "FAIL: model_ids not sorted in the same order as training_metrics for grid: " + key + ", index: " + str(i)
-    
+
 
 def validate_predictions(a_node, result, model_name, frame_key, expected_rows, predictions_frame=None):
     '''
@@ -597,7 +597,7 @@ class GridSpec(dict):
         if isVerboser(): print('result: ' + repr(result))
         grid = a_node.grid(key=self['dest_key'])
         if isVerboser(): print('grid: ' + repr(grid))
-        
+
         validate_grid_builder_result(grid, self['params'], self['grid_params'], self['dest_key'])
 
         # print("grid result: " + repr(grid))

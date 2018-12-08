@@ -8,8 +8,8 @@ from tests import pyunit_utils
 
 
 def grid_wineGBM():
-    
-    
+
+
 
     wine = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/wine.data"))
     #wine.summary()

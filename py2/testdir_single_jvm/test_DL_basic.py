@@ -26,7 +26,7 @@ class Basic(unittest.TestCase):
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key,
             check_header=1, timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -62,7 +62,7 @@ class Basic(unittest.TestCase):
                 'autoencoder': None, # boolean false
                 # 'use_all_factor_levels': None, # boolean true
                 # [u'Tanh', u'TanhWithDropout', u'Rectifier', u'RectifierWithDropout', u'Maxout', u'MaxoutWithDropout']
-                'activation': None, # enum Rectifier 
+                'activation': None, # enum Rectifier
                 'hidden': None, # int[] [200, 200]
                 'epochs': None, # double 10.0
                 'train_samples_per_iteration': None, # long -2
@@ -116,11 +116,11 @@ class Basic(unittest.TestCase):
 
             model_key = 'benign_dl.hex'
             bmResult = h2o.n0.build_model(
-                algo='deeplearning', 
+                algo='deeplearning',
                 model_id=model_key,
                 training_frame=parse_key,
-                parameters=parameters, 
-                timeoutSecs=10) 
+                parameters=parameters,
+                timeoutSecs=10)
             print "bmResult:", dump_json(bmResult)
             bm = OutputObj(bmResult, 'bm')
 

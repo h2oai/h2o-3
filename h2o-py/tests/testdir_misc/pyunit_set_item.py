@@ -17,7 +17,7 @@ def pyunit_set_item():
   id_col[id_col==replaced_val] = replacement_val
   for i in list(range(replaced_val-1)) + list(range(replaced_val,pros.nrow)): assert id_col[(i,0)] == i+1
   assert id_col[(replaced_val-1,0)] == replacement_val
-  
+
 if __name__ == "__main__":
   pyunit_utils.standalone_test(pyunit_set_item)
 else:

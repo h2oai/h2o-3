@@ -6,10 +6,10 @@ import h2o2 as h2o
 import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
 
-expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 551128, 327648, 544044, 577981, 
-573487, 576189, 568616, 579415, 574437, 580907, 580833, 579865, 548378, 568602, 551041, 
-563581, 580413, 581009, 578167, 577590, 579113, 576991, 571753, 580174, 547639, 523260, 
-559734, 580538, 578423, 579926, 580066, 465765, 550842, 555346, 528493, 535858, 579401, 
+expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 551128, 327648, 544044, 577981,
+573487, 576189, 568616, 579415, 574437, 580907, 580833, 579865, 548378, 568602, 551041,
+563581, 580413, 581009, 578167, 577590, 579113, 576991, 571753, 580174, 547639, 523260,
+559734, 580538, 578423, 579926, 580066, 465765, 550842, 555346, 528493, 535858, 579401,
 579121, 580893, 580714, 565439, 567206, 572262, 0]
 
 CAUSE_FAIL = False
@@ -77,7 +77,7 @@ class Basic(unittest.TestCase):
 
             parseResult = a_node.parse(key=hex_key, timeoutSecs=timeoutSecs, chunk_size=4194304*4)
             pA = h2o_cmd.ParseObj(parseResult)
-            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=581012*multiplyExpected, 
+            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=581012*multiplyExpected,
                 expectedNumCols=55, expectedMissinglist=[])
             print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
@@ -89,7 +89,7 @@ class Basic(unittest.TestCase):
             # print "parseResult:", dump_json(parseResult)
             frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
-            
+
             parseKeyIndexedCheck(frames_result, multiplyExpected)
 
 if __name__ == '__main__':

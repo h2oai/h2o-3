@@ -58,12 +58,12 @@ class Basic(unittest.TestCase):
 
             if not firstDone:
                 colResultList0 = list(colResultList)
-                good = [float(x) for x in colResultList0] 
+                good = [float(x) for x in colResultList0]
                 firstDone = True
             else:
                 print "\n", colResultList0, "\n", colResultList
                 # create the expected answer...i.e. N * first
-                compare = [float(x)/resultMult for x in colResultList] 
+                compare = [float(x)/resultMult for x in colResultList]
                 print "\n", good, "\n", compare
                 self.assertEqual(good, compare, 'compare is not equal to good (first try * resultMult)')
 

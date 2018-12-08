@@ -10,8 +10,8 @@ from tests import pyunit_utils
 
 
 def bmp_unicode_chars():
-    
-    
+
+
 
     # get all h2o-supported utf-8 characters (the basic multilingual plane, minus some control characters)
     codes_in_decimal = open(pyunit_utils.locate("smalldata/unicode/h2o_supported_utf8_codes.csv"))

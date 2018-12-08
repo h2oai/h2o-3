@@ -9,7 +9,7 @@ from tests import pyunit_utils
 def test_performance():
     """
     This test will measure the time it takes to import a large file multiple times.
-    
+
     :return: None if passed.  Otherwise, an exception will be thrown.
     """
     startcsv = time.time()

@@ -7,8 +7,8 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def varimp_test():
-    
-    
+
+
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
     # Run GBM

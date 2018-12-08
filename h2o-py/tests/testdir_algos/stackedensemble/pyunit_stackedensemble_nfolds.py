@@ -59,7 +59,7 @@ def stackedensemble_nfolds_test():
                                      seed=1)
     my_rf.train(x=x, y=y, training_frame=train)
 
-    
+
     # Check that not setting nfolds still produces correct results
     stack0 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf])
     stack0.train(x=x, y=y, training_frame=train)

@@ -23,9 +23,9 @@ def write_syn_dataset(csvPathname, rowCount, colCount, lambd=0.2, SEED=None):
     for i in range(rowCount):
         rowData = []
 
-        # Exponential distribution. 
-        # lambd is 1.0 divided by the desired mean. It should be nonzero. 
-        # Returned values range from 0 to positive infinity if lambd is positive, 
+        # Exponential distribution.
+        # lambd is 1.0 divided by the desired mean. It should be nonzero.
+        # Returned values range from 0 to positive infinity if lambd is positive,
         # and from negative infinity to 0 if lambd is negative.
         for j in range(colCount):
             ri = random.expovariate(lambd=lambd)
@@ -43,7 +43,7 @@ def write_syn_dataset(csvPathname, rowCount, colCount, lambd=0.2, SEED=None):
 
         rowDataCsv = ",".join(map(str,rowData))
         dsf.write(rowDataCsv + "\n")
-        
+
 
     dsf.close()
     return (expectedMin, expectedMax)

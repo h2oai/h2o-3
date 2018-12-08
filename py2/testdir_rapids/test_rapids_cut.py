@@ -51,7 +51,7 @@ class Basic(unittest.TestCase):
 
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=False)
 
             inspect = h2o_cmd.runInspect(key=hex_key)
@@ -91,7 +91,7 @@ class Basic(unittest.TestCase):
 
                 inspect = h2o_cmd.runInspect(key='seq1')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-            
+
                 Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) )
                 Assign('seq5', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
 

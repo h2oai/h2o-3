@@ -77,7 +77,7 @@ class Basic(unittest.TestCase):
             csvPathname = '1B/reals_1000000x1000_15f.data'
 
         hex_key = 'r1'
-        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local', 
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
             hex_key=hex_key, timeoutSecs=3000, retryDelaySecs=2)
         inspect = h2o_cmd.runInspect(key=hex_key)
         missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)

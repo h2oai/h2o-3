@@ -59,7 +59,7 @@ class Basic(unittest.TestCase):
                 timeoutSecs=timeoutSecs, hex_key=hex_key, chunk_size=4194304/2, doSummary=False)
 
             pA = h2o_cmd.ParseObj(parseResult)
-            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=150*multiplyExpected, 
+            iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=150*multiplyExpected,
                 expectedNumCols=5, expectedMissinglist=[])
             print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 

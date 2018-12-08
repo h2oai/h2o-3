@@ -9,7 +9,7 @@ def pubdev_4593():
     words = h2o.H2OFrame(words)
     compare = h2o.H2OFrame(compare)
     dist = words.strdistance(compare, 'lv')
-    
+
     for row in range(0, dist[0].nrows):
         assert dist[row, 0] == 0, "Levenshtein outcome must be exactly zero"
 

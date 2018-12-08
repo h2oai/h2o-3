@@ -29,7 +29,7 @@ initList = [
         # '((= !x (+ #1 #2 #4)))',
         # '(((= !x (+ #1 #2 #4))))',
 
-        # okay. 
+        # okay.
         '(= !x + #1 #2)',
         '((= !x + #1 #2))',
         '(((= !x + #1 #2)))',
@@ -113,7 +113,7 @@ initList = [
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
 
-        #  r1[c(1,5,8,10,33),]  
+        #  r1[c(1,5,8,10,33),]
         # commas are illegal (var name?)
 
         # vectors can be strings or numbers only, not vars or keys
@@ -134,7 +134,7 @@ initList = [
         # '= !x (sum %r1 )'
         # '(= !x (xorsum ([ %r1 "null" #0) %TRUE))', # works
 
-        
+
         # 'cave=c(1.3,0,1,2,3,4,5)',
         # 'ma=c(2.3,0,1,2,3,4,5)',
         # 'r2.hex=c(3.3,0,1,2,3,4,5)',
@@ -212,7 +212,7 @@ class Basic(unittest.TestCase):
         csvPathname = 'iris/iris_wheader.csv'
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
-        
+
         bad = []
         for execExpr in exprList:
             try:

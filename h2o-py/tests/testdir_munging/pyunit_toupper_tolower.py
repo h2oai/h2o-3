@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 def toupper_tolower_check():
     # Connect to a pre-existing cluster
-    
+
 
     frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"), col_types=["numeric","numeric","numeric","numeric","string"])
 

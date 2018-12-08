@@ -13,19 +13,19 @@ def cv_airlines():
   response_col = "IsDepDelayed"
 
   dl = H2ODeepWaterEstimator(# cross-validation
-			     nfolds=3,                                                          
+			     nfolds=3,
 			     # network (fully-connected)
-			     hidden=[200,200], activation="Rectifier",                          
+			     hidden=[200,200], activation="Rectifier",
 			     # regularization
-	 		     hidden_dropout_ratios=[0.1,0.1], input_dropout_ratio=0.0,          
+	 		     hidden_dropout_ratios=[0.1,0.1], input_dropout_ratio=0.0,
 	 		     # learning rate
-			     learning_rate=5e-3, learning_rate_annealing=1e-6,                                    
+			     learning_rate=5e-3, learning_rate_annealing=1e-6,
 			     # momentum
-			     momentum_start=0.9, momentum_stable=0.99, momentum_ramp=1e7,       
+			     momentum_start=0.9, momentum_stable=0.99, momentum_ramp=1e7,
 		             # early stopping
-		             epochs=100, stopping_rounds=4, train_samples_per_iteration=30000,  
+		             epochs=100, stopping_rounds=4, train_samples_per_iteration=30000,
 			     # score often for early stopping
-			     mini_batch_size=32, score_duty_cycle=0.25, score_interval=1)       
+			     mini_batch_size=32, score_duty_cycle=0.25, score_interval=1)
 
   dl.train(x=predictors, y=response_col, training_frame=df)
   print(dl.show())

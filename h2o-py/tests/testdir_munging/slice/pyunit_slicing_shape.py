@@ -11,7 +11,7 @@ import random
 
 def slicing_shape():
     # Connect to a pre-existing cluster
-    
+
 
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     rows, cols = prostate.dim

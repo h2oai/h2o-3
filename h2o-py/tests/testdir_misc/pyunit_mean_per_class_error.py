@@ -92,7 +92,7 @@ def pyunit_mean_per_class_error():
 
     print(grid) ## sorted by logloss
     print(grid.get_grid("mean_per_class_error"))
-    
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_mean_per_class_error)

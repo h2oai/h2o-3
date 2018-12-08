@@ -58,5 +58,5 @@ elif StrictVersion(colorama.__version__) < StrictVersion("0.3.8"):
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade colorama" % (colorama.__version__, sys.version_info[0]))
     sys.exit(1)
-    
+
 __all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer", "H2OConnectionConf")

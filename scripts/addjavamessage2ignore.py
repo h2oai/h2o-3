@@ -398,7 +398,7 @@ def unknown_arg(s):
     print("ERROR: Unknown argument: " + s)
     print("")
     usage()
-        
+
 def main(argv):
     """
     Main program.

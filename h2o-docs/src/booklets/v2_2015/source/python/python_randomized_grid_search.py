@@ -72,7 +72,7 @@ RMSE: 0.193906262445
 MAE: 0.155086582663
 RMSLE: NaN
 Mean Residual Deviance: 0.0375996386155
-Scoring History: 
+Scoring History:
 
      timestamp            duration    number_of_trees    training_rmse   training_mse    training_deviance
 --   -------------------  ----------  -----------------  --------------  --------------  -------------------

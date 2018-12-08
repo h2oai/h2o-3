@@ -10,7 +10,7 @@ model_chkp = H2ODeepLearningEstimator(
         l1=1e-5,
         epochs=20)
 
-model_chkp.train(        
+model_chkp.train(
         x=x,
         y=y,
         training_frame=train,

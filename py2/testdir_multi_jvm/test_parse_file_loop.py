@@ -21,7 +21,7 @@ class Basic(unittest.TestCase):
         for i in range(2):
             for j in range(1,10):
                 # spread the parse around the nodes. Note that keys are produced by H2O, so keys not resused
-                nodeX = random.randint(0,lenNodes-1) 
+                nodeX = random.randint(0,lenNodes-1)
                 parseResult= h2i.import_parse(node=h2o.nodes[nodeX],
                     bucket='smalldata', path='logreg/prostate.csv', schema='put')
                 trial += 1

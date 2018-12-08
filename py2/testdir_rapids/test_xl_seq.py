@@ -26,7 +26,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    
+
     def test_xl_seq_A(self):
         # uses h2o_xl to do magic with Rapids
         # does this DFInit to rows=0 now?

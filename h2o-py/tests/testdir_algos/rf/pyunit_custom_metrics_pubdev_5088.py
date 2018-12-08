@@ -27,7 +27,7 @@ def test_custom_metric_computation_regression():
 def test_custom_metric_computation_binomial():
     (model, f_test) = binomial_model(H2ORandomForestEstimator, custom_rmse_mm())
     assert_correct_custom_metric(model, f_test, "rmse", "Binomial on prostate")
-    
+
 
 def test_custom_metric_computation_multinomial():
     (model, f_test) = multinomial_model(H2ORandomForestEstimator, custom_rmse_mm())

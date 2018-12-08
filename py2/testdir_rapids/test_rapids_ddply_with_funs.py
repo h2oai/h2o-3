@@ -110,7 +110,7 @@ initList = [
         # '((= !x (+ #1 #2 #4)))',
         # '(((= !x (+ #1 #2 #4))))',
 
-        # okay. 
+        # okay.
         '(= !x + #1 #2)',
         '((= !x + #1 #2))',
         '(((= !x + #1 #2)))',
@@ -198,7 +198,7 @@ unusedList = [
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
 
-        #  r1[c(1,5,8,10,33),]  
+        #  r1[c(1,5,8,10,33),]
         # commas are illegal (var name?)
 
         # vectors can be strings or numbers only, not vars or keys
@@ -210,7 +210,7 @@ unusedList = [
         # '= !x (sum %r1 )'
         # '(= !x (xorsum ([ %r1 "null" #0) %TRUE))', # works
 
-        
+
         # 'cave=c(1.3,0,1,2,3,4,5)',
         # 'ma=c(2.3,0,1,2,3,4,5)',
         # 'r2.hex=c(3.3,0,1,2,3,4,5)',
@@ -274,7 +274,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, base_port=54333, java_heap_GB=12) 
+        h2o.init(1, base_port=54333, java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -312,7 +312,7 @@ class Basic(unittest.TestCase):
                 print "Found key lhs assign", lhs
 
                 # KeyIndexeds gets too many rollup stats problems. Don't use for now
-                if 1==0: 
+                if 1==0:
                     inspect = h2o_cmd.runInspect(key=lhs)
                     missingList, labelList, numRows, numCols = infoFromInspect(inspect)
 
@@ -320,7 +320,7 @@ class Basic(unittest.TestCase):
                     print "\nstoreview:", dump_json(storeview)
                     if not k in storeView['keys']:
                         raise Exception("Expected to find %s in %s", (k, storeView['keys']))
-            else: 
+            else:
                 print "No key lhs assign"
 
             # rows might be zero!

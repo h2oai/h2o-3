@@ -43,12 +43,12 @@ def stackedensemble_binomial_test():
     nfolds = 5
 
     # train and cross-validate a GBM
-    my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", 
+    my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
                                           ntrees=10,
-                                          max_depth=3, 
-                                          min_rows=2, 
+                                          max_depth=3,
+                                          min_rows=2,
                                           learn_rate=0.2,
-                                          nfolds=nfolds, 
+                                          nfolds=nfolds,
                                           fold_assignment="Modulo",
                                           keep_cross_validation_predictions=True,
                                           seed=1)
@@ -63,10 +63,10 @@ def stackedensemble_binomial_test():
     print(perf_gbm_test)
 
     # train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees=50, 
-                                     nfolds=nfolds, 
+    my_rf = H2ORandomForestEstimator(ntrees=50,
+                                     nfolds=nfolds,
                                      fold_assignment="Modulo",
-                                     keep_cross_validation_predictions=True, 
+                                     keep_cross_validation_predictions=True,
                                      seed=1)
 
     my_rf.train(x=x, y=y, training_frame=train)

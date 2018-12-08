@@ -34,7 +34,7 @@ funsList = [
 # funs=[(def anon {x}  (- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;  (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)]
 
 # And then the apply comes next:
-# (apply %prostate.hex #2 %anon) 
+# (apply %prostate.hex #2 %anon)
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -61,7 +61,7 @@ class Basic(unittest.TestCase):
             for execExpr in funsList:
                 funs = '[%s]' % execExpr
                 execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=4)
-                execExpr2 = '(apply %r1 #2 %anon)' 
+                execExpr2 = '(apply %r1 #2 %anon)'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=4)
                 # rows might be zero!
                 if execResult['num_rows'] or execResult['num_cols']:

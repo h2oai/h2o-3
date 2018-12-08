@@ -43,7 +43,7 @@ def xgboost_estimation():
     if ("XGBoost" not in h2o.cluster().list_all_extensions()):
         print("XGBoost extension is not present.  Skipping test. . .")
         return
-     
+
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.

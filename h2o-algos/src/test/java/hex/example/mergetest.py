@@ -11,7 +11,7 @@ r_fr = h2o.H2OFrame(python_obj=rite)
 
 l_fr.describe()
 l_fr.show()
-r_fr.describe()    
+r_fr.describe()
 r_fr.show()
 
 print l_fr.merge(r_fr,False,False)

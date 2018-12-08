@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 
 def offset_1388():
-    
+
 
     print("Loading datasets...")
     pros_hex = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))

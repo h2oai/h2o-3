@@ -31,12 +31,12 @@ class Basic(unittest.TestCase):
         # for trial in range(maxx):
         # for trial in range(int(1e6),int(200e6),int(1e6)):
         for trial in [int(10e6)]:
-            
+
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
             length = trial
             execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
-    
+
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
             elapsed1 = time.time() - start
@@ -54,11 +54,11 @@ class Basic(unittest.TestCase):
             # for trial2 in range(0, 16):
                 col = 2 ** trial2
                 # assert col < 16384, "h2o can't take col == 16384 or more"
-             
+
                 vString = ' '.join(['%v' for x in range(col)])
                 execExpr = '(= !v2 (cbind %s))' % vString
 
-                # FIX! check the colnames. 2 cols get C1 and C10? odd 
+                # FIX! check the colnames. 2 cols get C1 and C10? odd
                 # try:
                 start = time.time()
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=40)
@@ -66,7 +66,7 @@ class Basic(unittest.TestCase):
 
                 if execResult['num_rows']:
                     keys.append(execExpr)
-                
+
                 # except:
                 #     elapsed2 = 0
                 #     h2p.red_print("ERROR: col = %s failed" % col)

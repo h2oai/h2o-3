@@ -21,7 +21,7 @@ class TargetEncoder(object):
     This is a main class that provides Python's API to the Java implementation of the target encoding.
 
     In general target encoding could be applied to three types of problems, namely:
-    
+
          1) Binary classification (supported)
          2) Multi-class classification (not supported yet)
          3) Regression (not supported yet)
@@ -29,7 +29,7 @@ class TargetEncoder(object):
     Sample usage:
 
     >>> targetEncoder = TargetEncoder(x=e_columns, y=responseColumnName, blending=True, inflection_point=3, smoothing=1)
-    >>> targetEncoder.fit(frame) 
+    >>> targetEncoder.fit(frame)
     >>> encodedValid = targetEncoder.transform(frame=frame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
     >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
     """
@@ -87,7 +87,7 @@ class TargetEncoder(object):
                 1) "kfold" - encodings for a fold are generated based on out-of-fold data.
                 2) "loo" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
                 3) "none" - we do not holdout anything. Using whole frame for training
-                
+
         :param float noise: amount of noise to add to the final target encodings.
         :param int seed: set to fixed value for reproducibility.
         """

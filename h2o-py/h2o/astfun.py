@@ -198,7 +198,7 @@ def _call_func_bc(nargs, idx, ops, keys):
     Implements transformation of CALL_FUNCTION bc inst to Rapids expression.
     The implementation follows definition of behavior defined in
     https://docs.python.org/3/library/dis.html
-    
+
     :param nargs: number of arguments including keyword and positional arguments
     :param idx: index of current instruction on the stack
     :param ops: stack of instructions

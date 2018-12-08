@@ -27,7 +27,7 @@ class Basic(unittest.TestCase):
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1,
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -91,8 +91,8 @@ class Basic(unittest.TestCase):
                 'balance_classes': False,
                 'max_after_balance_size': None,
                 'standardize': False,
-                'family': 'binomial', 
-                'link': None, 
+                'family': 'binomial',
+                'link': None,
                 'alpha': '[1e-4]',
                 'lambda': '[0.5]',
                 'prior1': None,
@@ -130,7 +130,7 @@ class Basic(unittest.TestCase):
                 for i,c in enumerate(cmms.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)
                 print ""
-                
+
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mm = OutputObj(mmResult['model_metrics'][0], 'mm')

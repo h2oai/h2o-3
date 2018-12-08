@@ -37,7 +37,7 @@ def deepwater_custom_regression():
 
   print("Importing the model architecture for training in H2O")
   model = H2ODeepWaterEstimator(epochs=20, nfolds=3, network_definition_file=PATH)
-                                
+
   model.train(x=predictors, y=response, training_frame=train)
   model.show()
   error = model.model_performance(xval=True).rmse()

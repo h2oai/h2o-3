@@ -40,14 +40,14 @@ class Basic(unittest.TestCase):
 
             start = time.time()
             parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
-                hex_key=csvFilename + ".hex", timeoutSecs=timeoutSecs, 
+                hex_key=csvFilename + ".hex", timeoutSecs=timeoutSecs,
                 retryDelaySecs=retryDelaySecs,
                 pollTimeoutSecs=pollTimeoutSecs)
             elapsed = time.time() - start
             print "Parse #", trial, "completed in", "%6.2f" % elapsed, "seconds.", \
                 "%d pct. of timeout" % ((elapsed*100)/timeoutSecs)
 
-            
+
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
             h2o_cmd.columnInfoFromInspect(parse_key, exceptionOnMissingValues=False)
 

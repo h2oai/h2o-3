@@ -22,7 +22,7 @@ def sandbox_tmp_file(prefix='', suffix=''):
     fd, path = tempfile.mkstemp(prefix=prefix, suffix=suffix, dir=dirname)
     # make sure the file now exists
     # os.open(path, 'a').close()
-    # give everyone permission to read it (jenkins running as 
+    # give everyone permission to read it (jenkins running as
     # 0xcustomer needs to archive as jenkins
     #permissions = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
     os.chmod(path, 0644) #'644')  #permissions)
@@ -72,7 +72,7 @@ def create_junit_xml(name, out, err, sandboxErrorMessage, errors=0, elapsed=0):
     content += err
     if sandboxErrorMessage:
         content += 'spawn errors from sandbox log parsing*********************************\n'
-        # maybe could split this into a 2nd stdout or stder ..see above 
+        # maybe could split this into a 2nd stdout or stder ..see above
         content += sandboxErrorMessage
     content += ']]>\n'
     content += '            </system-err>\n'
@@ -131,7 +131,7 @@ def rc_if_exists_and_done(ps):
     except psutil.AccessDenied:
         raise Exception("The R subprocess gave us AccessDenied")
 
-    # rc = None means it already completed? 
+    # rc = None means it already completed?
     # FIX! Is it none if we get a timeout exception on this python ..how is that captured?
     if rc:
         # increment the global errors count if we get a non-zero rc. non-zero rc should only happen once?
@@ -169,11 +169,11 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
         ps.pid, os.path.basename(outpath), os.path.basename(errpath))
     print "spawn_cmd", cmd_string, comment
 
-    # Reads the subprocess stdout until it is closed and 
+    # Reads the subprocess stdout until it is closed and
     # ...echo it our python stdout and also the R stdout file in sandbox
-    # Then wait for the program to exit. 
-    # Read before wait so that you don't risk the pipe filling up and hanging the program. 
-    # You wait after read for the final program exit and return code. 
+    # Then wait for the program to exit.
+    # Read before wait so that you don't risk the pipe filling up and hanging the program.
+    # You wait after read for the final program exit and return code.
     # If you don't wait, you'll get a zombie process (at least on linux)
 
     # this might not do what we want..see:
@@ -185,14 +185,14 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
         raise Exception("sh2junit: not immediate ps.is_running after start")
 
     # Until we get the rc, it can be a zombie process.
-    # A zombie process is not a real process. 
-    # it's just a remaining entry in the process table until the parent process requests the child's return code. 
+    # A zombie process is not a real process.
+    # it's just a remaining entry in the process table until the parent process requests the child's return code.
     # The actual process has ended and requires no other resources but said process table entry.
     linesMayExist = True
-    errors = 0 
+    errors = 0
     timeoutError = False
     while linesMayExist:
-        # get whatever accumulated, up to nothing returned 
+        # get whatever accumulated, up to nothing returned
         # only do up to 20 lines before we check timeout again
         # why was R processes not completing on centos?
         # linesMayExist = ps.is_running() and not ps.status() == psutil.STATUS_ZOMBIE
@@ -254,15 +254,15 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
             break
         # wait for some more output to accumulate
         time.sleep(0.25)
-        
+
     # It shouldn't be running now?
 
     # timeout=None waits forever. timeout=0 returns immediately.
     # default above is 5 minutes
-    # Wait for process termination. Since child:  return the exit code. 
-    # If the process is already terminated does not raise NoSuchProcess exception 
-    # but just return None immediately. 
-    # If timeout is specified and process is still alive raises psutil.TimeoutExpired() exception. 
+    # Wait for process termination. Since child:  return the exit code.
+    # If the process is already terminated does not raise NoSuchProcess exception
+    # but just return None immediately.
+    # If timeout is specified and process is still alive raises psutil.TimeoutExpired() exception.
     # old
     # rc = ps.wait(timeout)
     (lastrc, error) = rc_if_exists_and_done(ps)
@@ -274,9 +274,9 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
     # so that's always printed/saved?
     # None if no error
     sandboxErrorMessage = h2o_sandbox.check_sandbox_for_errors(
-        LOG_DIR='./sandbox', 
-        python_test_name=name, 
-        cloudShutdownIsError=True, 
+        LOG_DIR='./sandbox',
+        python_test_name=name,
+        cloudShutdownIsError=True,
         sandboxIgnoreErrors=True) # don't take exception on error
 
     if sandboxErrorMessage:
@@ -290,7 +290,7 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
         return (errors, outpath, errpath)
     else:
         # dump all the info as part of the exception? maybe too much
-        # is this bad to do in all cases? do we need it? 
+        # is this bad to do in all cases? do we need it?
         hline = "\n===========================================BEGIN DUMP=============================================================\n"
         hhline = "\n===========================================END DUMP=============================================================\n"
         out = '[stdout->err]: '.join(out.splitlines(True))
@@ -301,7 +301,7 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
         if sandboxErrorMessage:
             print "\n\n\nError in Sandbox. Ending test. Dumping sub-process output.\n"
             print hline
-            raise Exception("%s %s \n\tlastrc:%s \n\terrors:%s \n\tErrors found in ./sandbox log files?.\nR stdout:\n%s\n\nR stderr:\n%s\n%s" % 
+            raise Exception("%s %s \n\tlastrc:%s \n\terrors:%s \n\tErrors found in ./sandbox log files?.\nR stdout:\n%s\n\nR stderr:\n%s\n%s" %
                 (name, cmd_string, lastrc, errors, out, err, hhline))
         # could have already terminated?
         elif timeoutError:
@@ -312,7 +312,7 @@ def sh2junit(name='NoName', cmd_string='/bin/ls', timeout=300, shdir=None, **kwa
         else:
             print "\n\n\nCaught exception. Ending test. Dumping sub-process output.\n"
             print hline
-            raise Exception("%s %s \n\tlastrc:%s \n\terrors:%s \n\tLikely non-zero exit code from R.\nR stdout:\n%s\n\nR stderr:\n%s\n%s" % 
+            raise Exception("%s %s \n\tlastrc:%s \n\terrors:%s \n\tLikely non-zero exit code from R.\nR stdout:\n%s\n\nR stderr:\n%s\n%s" %
                 (name, cmd_string, lastrc, errors, out, err, hhline))
 
 
@@ -340,6 +340,6 @@ if __name__ == "__main__":
         else:
             # placeholder for test
             cmd_string = '/bin/ls'
-        
+
     sh2junit(name=args.name, cmd_string=cmd_string, timeout=args.timeout, shdir=args.shdir)
 

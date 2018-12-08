@@ -9,8 +9,8 @@ from tests import pyunit_utils
 
 
 def expr_show():
-    
-    
+
+
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     print("iris:")

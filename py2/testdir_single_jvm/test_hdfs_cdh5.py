@@ -56,7 +56,7 @@ class Basic(unittest.TestCase):
         print "try importing /tmp2"
         d = h2i.import_only(path="tmp2/*", schema='hdfs', timeoutSecs=1000)
         for (csvFilename, timeoutSecs) in csvFilenameList:
-            # creates csvFilename.hex from file in hdfs dir 
+            # creates csvFilename.hex from file in hdfs dir
             print "Loading", csvFilename, 'from HDFS'
             start = time.time()
             hex_key = "a.hex"

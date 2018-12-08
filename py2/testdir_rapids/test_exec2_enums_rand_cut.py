@@ -69,9 +69,9 @@ def create_col_enum_list(inCount):
         enumList = create_enum_list(n=random.randint(1,4), quoteChars=quoteChars)
         colEnumList.append(enumList)
     return colEnumList
-    
 
-def write_syn_dataset(csvPathname, rowCount, inCount=1, outCount=1, SEED='12345678', 
+
+def write_syn_dataset(csvPathname, rowCount, inCount=1, outCount=1, SEED='12345678',
         colSepChar=",", rowSepChar="\n", quoteChars="", colEnumList=None):
     r1 = random.Random(SEED)
 
@@ -118,7 +118,7 @@ class Basic(unittest.TestCase):
 
         n = ROWS
         tryList = [
-            (n, 10, 9, 'cE', 300), 
+            (n, 10, 9, 'cE', 300),
             ]
 
         # create key names to use for exec
@@ -149,12 +149,12 @@ class Basic(unittest.TestCase):
                     # celChoice = str(random.choice(range(len(cel))))
                     celChoice = random.choice(range(len(cel)))
                     cutValue[c] = celChoice
-    
+
                 cutExprList = []
 
                 pKey = Key('p')
                 for i,c in enumerate(cutValue):
-                    if c is None:   
+                    if c is None:
                         continue
                     else:
                         # new ...ability to reference cols
@@ -168,10 +168,10 @@ class Basic(unittest.TestCase):
                 for ce in cutExprList:
                     if cutExpr:
                         cutExpr = Fcn('&', cutExpr, ce)
-                    else: 
+                    else:
                         cutExpr = ce
 
-                print "cutExpr:", cutExpr    
+                print "cutExpr:", cutExpr
 
                 # should be two different keys in the sample
                 e = random.sample(eKeys,2)
@@ -216,7 +216,7 @@ class Basic(unittest.TestCase):
             Assign('b', [1,2,3])
             # could also append 1 col at a time, by assigning to the next col number?
             Assign('a', Cbind(['b' for i in range(colCount)]))
-            
+
             for eKey in eKeys:
                 Assign(eKey, 'a')
                 ## print h2o.dump_json(e)
@@ -241,7 +241,7 @@ class Basic(unittest.TestCase):
                     elapsed = time.time() - start
                     execTime = elapsed
                     print "exec 2 took", elapsed, "seconds."
-                
+
                     inspect = h2o_cmd.runInspect(key=fKey)
                     missingList, valueList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
 

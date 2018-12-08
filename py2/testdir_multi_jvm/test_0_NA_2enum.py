@@ -7,7 +7,7 @@ print "This only tests mixed 0 and NA. All NA or All 0 might be different"
 DO_REBALANCE = False
 REBALANCE_CHUNKS = 100
 
-# zero can be 0 (int) or 0.0000? (numeric?) 
+# zero can be 0 (int) or 0.0000? (numeric?)
 def write_syn_dataset(csvPathname, rowCount, colCount, zero, SEED):
     r1 = random.Random(SEED)
     dsf = open(csvPathname, "w+")
@@ -20,7 +20,7 @@ def write_syn_dataset(csvPathname, rowCount, colCount, zero, SEED):
                 ri1 = 'NA'
             else:
                 ri1 = zero
-            
+
             rowDataStr.append(ri1)
         rowDataCsv = ",".join(rowDataStr)
         dsf.write(rowDataCsv + "\n")
@@ -103,7 +103,7 @@ class Basic(unittest.TestCase):
                     raise Exception("column %s, which has name %s, didn't convert to Enum, is %s" % (column_index, colname, co.type))
                 # I'm generating NA's ..so it should be > 0. .but it could be zero . I guess i have enough rows to get at least 1
                 if co.missing<=0 or co.missing>rowCount:
-                    raise Exception("column %s, which has name %s, somehow got NA cnt wrong after convert to Enum  %s %s" % 
+                    raise Exception("column %s, which has name %s, somehow got NA cnt wrong after convert to Enum  %s %s" %
                         (column_index, colname, co.missing, rowCount))
 
                 if co.domain!=1: # NAs don't count?

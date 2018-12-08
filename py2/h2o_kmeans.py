@@ -41,8 +41,8 @@ class KMeansObj(OutputObj):
         size = self.size # [78, 5, 41, 76]
         model_category = self.model_category # Clustering
         iterations = self.iterations # 11.0
-        domains = self.domains 
-        names = self.names 
+        domains = self.domains
+        names = self.names
         categorical_column_count = self.categorical_column_count # 0
         centers_data = self.centers.data # [ 4 lists of centers ]
         # h2o returns it sliced across centers. transpose the list of lists, drop 0 which is the cluster id?
@@ -67,7 +67,7 @@ class KMeansObj(OutputObj):
             for c in centers:
                 assert len(c) == numCols, "%s %s" % (len(c), numCols)
 
-        # this should be true 
+        # this should be true
         if labels:
             assert len(labels) == numCols, \
                 "Need to pass correct labels and numCols after ignored columns removal %s %s" % (len(labels), numCols)
@@ -118,11 +118,11 @@ def bigCheckResults(kmeansObj, kmeans, csvPathname, parseResult, predictKey, **k
 
     # FIX! does the cluster order/naming match, compared to cluster variances
     sqr_error_per_cluster = cluster_variances
-    
+
     if (len(centers)!=len(rows_per_cluster) or len(centers)!=len(sqr_error_per_cluster)):
         raise Exception("centers, rows_per_cluster, sqr_error_per_cluster should all be same length %s, %s, %s" % \
             (len(centers), len(rows_per_cluster), len(sqr_error_per_cluster)))
-            
+
     print "Did iterations: %s  given max_iter: %s" % (iterations, max_iter)
     # shouldn't have to return a tuplesList from here any more
 
@@ -153,13 +153,13 @@ def compareResultsToExpected(tupleResultList, expected=None, allowedDelta=None, 
                 h2o_util.assertApproxEqual(a, b, tol=absAllowedDelta,
                     msg="Center value expected: %s actual: %s delta > %s" % (a, b, absAllowedDelta))
 
-            if not allowRowError and expRows: # allow error in row count? 
+            if not allowRowError and expRows: # allow error in row count?
                 absAllowedDelta = abs(allowedDelta[1] * expRows)
                 absAllowedDelta = max(absAllowedDelta, allowedDelta[1]) # comparing to 0?
                 h2o_util.assertApproxEqual(expRows, actRows, tol=absAllowedDelta,
                     msg="Rows expected: %s actual: %s delta > %s" % (expRows, actRows, absAllowedDelta))
 
-            if not allowRowError and expError: # allow error in row count? 
+            if not allowRowError and expError: # allow error in row count?
                 absAllowedDelta = abs(allowedDelta[2] * expError)
                 absAllowedDelta = max(absAllowedDelta, allowedDelta[2]) # comparing to 0?
                 h2o_util.assertApproxEqual(expRows, actRows, tol=absAllowedDelta,

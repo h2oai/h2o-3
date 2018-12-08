@@ -101,7 +101,7 @@ Residual deviance: 463.665485854
 AIC: 475.665485854
 AUC: 0.688203622124
 Gini: 0.376407244249
-Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.339885371023: 
+Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.339885371023:
        0    1    Error    Rate
 -----  ---  ---  -------  -------------
 0      154  73   0.3216   (73.0/227.0)

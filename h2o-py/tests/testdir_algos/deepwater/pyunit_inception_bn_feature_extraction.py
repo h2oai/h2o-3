@@ -29,9 +29,9 @@ def deepwater_inception_bn_feature_extraction():
   model = H2ODeepWaterEstimator(epochs=0, ## no training - just load the state - NOTE: training for this 3-class problem wouldn't work since the model has 1k classes
                                 mini_batch_size=32, ## mini-batch size is used for scoring
                                 ## all parameters below are needed
-                                network='user', 
-                                network_definition_file=os.getcwd() + "/model.json", 
-                                network_parameters_file=os.getcwd() + "/model.params", 
+                                network='user',
+                                network_definition_file=os.getcwd() + "/model.json",
+                                network_parameters_file=os.getcwd() + "/model.params",
                                 mean_image_file=os.getcwd() + "/mean_224.nd",
                                 image_shape=[224,224],
                                 channels=3

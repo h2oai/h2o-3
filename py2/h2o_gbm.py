@@ -59,7 +59,7 @@ def pp_cm(jcm, header=None):
     header = ['"%s"'%i for i in range(len(jcm[0]))]
     # cm = '   '.join(header)
     cm = '{0:<8}'.format('')
-    for h in header: 
+    for h in header:
         cm = '{0}|{1:<8}'.format(cm, h)
 
     cm = '{0}|{1:<8}'.format(cm, 'error')
@@ -93,7 +93,7 @@ def pp_cm_summary(cm):
     for classIndex,s in enumerate(scoresList):
         classSum = sum(s)
         if classSum == 0 :
-            # why would the number of scores for a class be 0? 
+            # why would the number of scores for a class be 0?
             # in any case, tolerate. (it shows up in test.py on poker100)
             print "classIndex:", classIndex, "classSum", classSum, "<- why 0?"
         else:
@@ -146,7 +146,7 @@ def pickRandGbmParams(paramDict, params):
         params[randomKey] = randomValue
 
 
-# compare this glm to last one. since the files are concatenations, 
+# compare this glm to last one. since the files are concatenations,
 # the results should be similar? 10% of first is allowed delta
 def compareToFirstGbm(self, key, glm, firstglm):
     # if isinstance(firstglm[key], list):
@@ -172,9 +172,9 @@ def compareToFirstGbm(self, key, glm, firstglm):
         self.assertGreaterEqual(abs(float(k)), 0.0, str(k) + " abs not >= 0.0 in current")
 
 
-def goodXFromColumnInfo(y, 
-    num_cols=None, missingValuesDict=None, constantValuesDict=None, enumSizeDict=None, 
-    colTypeDict=None, colNameDict=None, keepPattern=None, key=None, 
+def goodXFromColumnInfo(y,
+    num_cols=None, missingValuesDict=None, constantValuesDict=None, enumSizeDict=None,
+    colTypeDict=None, colNameDict=None, keepPattern=None, key=None,
     timeoutSecs=120, forRF=False, noPrint=False):
 
     y = str(y)
@@ -182,7 +182,7 @@ def goodXFromColumnInfo(y,
     # if we pass a key, means we want to get the info ourselves here
     if key is not None:
         (missingValuesDict, constantValuesDict, enumSizeDict, colTypeDict, colNameDict) = \
-            h2o_cmd.columnInfoFromInspect(key, exceptionOnMissingValues=False, 
+            h2o_cmd.columnInfoFromInspect(key, exceptionOnMissingValues=False,
             max_column_display=99999999, timeoutSecs=timeoutSecs)
         num_cols = len(colNameDict)
 
@@ -205,7 +205,7 @@ def goodXFromColumnInfo(y,
             x.remove(k)
             # rf doesn't want it in ignore list
             # ignore_x.append(k)
-        elif name == y: # if they pass the name as y 
+        elif name == y: # if they pass the name as y
             if not noPrint:
                 print "Removing %d because name: %s matches output %s" % (k, name, y)
             x.remove(k)
@@ -371,7 +371,7 @@ def simpleCheckGBMView(node=None, gbmv=None, noPrint=False, **kwargs):
         totalScores += classSum
 
     #****************************
-    if not noPrint: 
+    if not noPrint:
         print "Predicted summary:"
         # FIX! Not sure why we weren't working with a list..hack with dict for now
         for predictedClass,p in predictedClassDict.items():
@@ -380,9 +380,9 @@ def simpleCheckGBMView(node=None, gbmv=None, noPrint=False, **kwargs):
         # this should equal the num rows in the dataset if full scoring? (minus any NAs)
         print "totalScores:", totalScores
         print "totalRight:", totalRight
-        if totalScores != 0:  
+        if totalScores != 0:
             pctRight = 100.0 * totalRight/totalScores
-        else: 
+        else:
             pctRight = 0.0
         pctWrong = 100 - pctRight
         print "pctRight:", "%5.2f" % pctRight
@@ -394,7 +394,7 @@ def simpleCheckGBMView(node=None, gbmv=None, noPrint=False, **kwargs):
 
     sample_rate = kwargs.get('sample_rate', None)
     validation = kwargs.get('validation', None)
-    if (sample_rate==1 and not validation): 
+    if (sample_rate==1 and not validation):
         pass
     elif (totalScores<=0 or totalScores>5e9):
         raise Exception("scores in GBMView seems wrong. scores:", scoresList)
@@ -408,7 +408,7 @@ def simpleCheckGBMView(node=None, gbmv=None, noPrint=False, **kwargs):
     model_key = gbm_model['_key']
     classification_error = pctWrong
 
-    if not noPrint: 
+    if not noPrint:
         if 'minLeaves' not in treeStats or not treeStats['minLeaves']:
             raise Exception("treeStats seems to be missing minLeaves %s" % dump_json(treeStats))
         print """
@@ -424,7 +424,7 @@ def simpleCheckGBMView(node=None, gbmv=None, noPrint=False, **kwargs):
                 treeStats['maxDepth'],
                 classification_error,
                 )
-    
+
     ### modelInspect = node.inspect(model_key)
     dataInspect = h2o_cmd.runInspect(key=data_key)
     check_sandbox_for_errors()

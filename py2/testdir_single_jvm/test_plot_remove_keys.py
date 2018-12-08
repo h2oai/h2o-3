@@ -4,7 +4,7 @@ import h2o2 as h2o
 import h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e, h2o_util, h2o_gbm
 
 print "Plot the time to remove a key vs parsed size"
-print "Stress the # of cols with fp reals here." 
+print "Stress the # of cols with fp reals here."
 print "Can pick fp format but will start with just the first (e0)"
 def write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE, sel):
     # we can do all sorts of methods off the r object
@@ -48,7 +48,7 @@ class Basic(unittest.TestCase):
             (800000, 100, 'cJ', 400),
             (1000000, 100, 'cK', 400),
         ]
-        
+
         xList = []
         eList = []
         fList = []

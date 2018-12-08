@@ -44,7 +44,7 @@ def test_h2oconnectionconf():
     assert_url_pattern("http://localhost:54322/", "http", "localhost", "54322", None)
     assert_url_pattern("http://localhost:54323/cluster_X", "http", "localhost", "54323", "/cluster_X")
     assert_url_pattern("http://localhost:54324/a/b/c/d", "http", "localhost", "54324", "/a/b/c/d")
-    
+
 
 # This test doesn't really need a connection to H2O cluster.
 test_h2oconnectionconf()

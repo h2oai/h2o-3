@@ -3950,7 +3950,7 @@ def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
 def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, tol=1e-6):
     '''
     This method is used to test the partial dependency plots and is not meant for any other functions.
-    
+
     :param model:
     :param dataframe:
     :param xlist:

@@ -3,7 +3,7 @@ sys.path.extend(['.','..','../..','py'])
 import h2o2 as h2o
 import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
-# how does this make sense ? 
+# how does this make sense ?
 # is
 # oh, is the ast a collapse of the two R expressions, hence the double [[]]
 # the inner one is a rhs view from the first statement, the second is due to the lhs [] assign
@@ -11,7 +11,7 @@ import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # can (sum ..) migrate from rhs to lhs?
 # a <- hex[,1]
 # a[1:5,1] <- hex[5:9,1]
-# (= ([ ([ %iris.hex "null" #0)  {#0;#1;#2;#3;#4} #0) ([ %iris.hex (: #4 #8) #0)) 
+# (= ([ ([ %iris.hex "null" #0)  {#0;#1;#2;#3;#4} #0) ([ %iris.hex (: #4 #8) #0))
 exprList = [
         # fails
         # '(c {(+ (* #2 #2) (* #5 #5))})',
@@ -142,7 +142,7 @@ class Basic(unittest.TestCase):
                     # what if the destination doesn't exist?. Use unique name for each, to see
                     t = "t%s" % trial
                     cases = [
-                        # no colon 
+                        # no colon
                         '(= !{} {})'.format(t, execExpr),
                         # colon lhs
                         # '(= ([ %%s %s) %s)' % (t, colon, execExpr),
@@ -153,7 +153,7 @@ class Basic(unittest.TestCase):
                     ]
 
                     for case in cases:
-                        # init the data frame first to 0 (1 row, 1 col) 
+                        # init the data frame first to 0 (1 row, 1 col)
                         print "\nt:", t, "case:", case
                         # can't init it to empty
                         '(= !%s (c {#0})' % t

@@ -15,7 +15,7 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
-    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to ``5``. Use ``0`` to disable cross-validation; this will also 
+    :param int nfolds: Number of folds for k-fold cross-validation. Defaults to ``5``. Use ``0`` to disable cross-validation; this will also
       disable Stacked Ensemble (thus decreasing the overall model performance).
     :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``False``.
     :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
@@ -43,20 +43,20 @@ class H2OAutoML(object):
       a project name will be auto-generated based on the training frame ID.  More models can be trained on an
       existing AutoML project by specifying the same project name in muliple calls to the AutoML function
       (as long as the same training frame is used in subsequent runs).
-    :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
-      An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``, and the full list of options is: ``"DRF"`` 
-      (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``, ``"DeepLearning"`` and ``"StackedEnsemble"``. 
+    :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase.
+      An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``, and the full list of options is: ``"DRF"``
+      (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``, ``"DeepLearning"`` and ``"StackedEnsemble"``.
       Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions. 
-      This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
+    :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
+      This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build
       additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
-    :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume 
+    :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume
       significantly more memory in the H2O cluster. Defaults to ``False``.
-    :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory 
+    :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory
       in the H2O cluster. This option defaults to ``False``.
-    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
-      ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
-      ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
+    :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification,
+      ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between
+      ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``,
       ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
 
     :examples:
@@ -110,7 +110,7 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        
+
         # Make bare minimum build_control (if max_runtimes_secs is an invalid value, it will catch below)
         self.build_control = {
             'stopping_criteria': {
@@ -128,7 +128,7 @@ class H2OAutoML(object):
         if nfolds is not 5:
             assert_is_type(nfolds,int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
-        assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
+        assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
         self.build_control["nfolds"] = nfolds
         self.nfolds = nfolds
 
@@ -168,7 +168,7 @@ class H2OAutoML(object):
         if stopping_rounds is not 3:
             assert_is_type(stopping_rounds,int)
         self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-        self.stopping_rounds = stopping_rounds    
+        self.stopping_rounds = stopping_rounds
 
         if seed is not None:
             assert_is_type(seed,int)
@@ -247,12 +247,12 @@ class H2OAutoML(object):
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
-    def train(self, x = None, y = None, training_frame = None, fold_column = None, 
+    def train(self, x = None, y = None, training_frame = None, fold_column = None,
               weights_column = None, validation_frame = None, leaderboard_frame = None):
         """
         Begins an AutoML task, a background task that automatically builds a number of models
-        with various algorithms and tracks their performance in a leaderboard. At any point 
-        in the process you may use H2O's performance or prediction functions on the resulting 
+        with various algorithms and tracks their performance in a leaderboard. At any point
+        in the process you may use H2O's performance or prediction functions on the resulting
         models.
 
         :param x: A list of column names or indices indicating the predictor columns.
@@ -262,11 +262,11 @@ class H2OAutoML(object):
         :param weights_column: The name or index of the column in training_frame that holds per-row weights.
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold_column or weights_column).
-        :param validation_frame: H2OFrame with validation data to be scored on while training. Optional. 
-            This frame is used early stopping of individual models and early stopping of the grid searches 
+        :param validation_frame: H2OFrame with validation data to be scored on while training. Optional.
+            This frame is used early stopping of individual models and early stopping of the grid searches
             (unless max_models or max_runtime_secs overrides metric-based early stopping).
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
-            if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
+            if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard
             rankings instead.
 
         :returns: An H2OAutoML object.

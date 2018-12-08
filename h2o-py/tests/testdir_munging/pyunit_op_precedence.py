@@ -13,7 +13,7 @@ import numpy as np
 
 def op_precedence():
     # Connect to a pre-existing cluster
-    
+
 
     a = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]
     b = [[random.uniform(-100,100) for r in range(10)] for c in range(10)]

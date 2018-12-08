@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 def upload_import():
     # Connect to a pre-existing cluster
-    
+
 
     uploaded_frame = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
     imported_frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))

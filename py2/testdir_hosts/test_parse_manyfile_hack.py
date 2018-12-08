@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
                 assert len(importResult['fails'])==0
                 assert len(importResult['dels'])==0
                 importList.append(import_key)
-                
+
 
             timeoutSecs = 800
             parseResult = h2o.n0.parse(key=importList, timeoutSecs=timeoutSecs)

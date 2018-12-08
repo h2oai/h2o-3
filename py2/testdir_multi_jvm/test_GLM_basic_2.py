@@ -26,7 +26,7 @@ class Basic(unittest.TestCase):
         hex_key = "prostate.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key,
             check_header=1, timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -56,8 +56,8 @@ class Basic(unittest.TestCase):
                 'balance_classes': False,
                 'max_after_balance_size': None,
                 'standardize': False,
-                'family': 'binomial', 
-                'link': None, 
+                'family': 'binomial',
+                'link': None,
                 'tweedie_variance_power': None,
                 'tweedie_link_power': None,
                 'alpha': '[1e-4]',

@@ -72,7 +72,7 @@ class Basic(unittest.TestCase):
             csvPathnamegz = SYNDATASETS_DIR + '/' + csvFilenamegz
             h2o_util.file_gzip(csvPathname, csvPathnamegz)
 
-            parseResult = h2i.import_parse(path=csvPathnamegz, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathnamegz, schema='put', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=DOSUMMARY)
 
             pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)

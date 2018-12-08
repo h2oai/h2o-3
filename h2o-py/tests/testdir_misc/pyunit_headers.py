@@ -8,8 +8,8 @@ from tests import pyunit_utils
 
 
 def headers():
-    
-    
+
+
 
     headers = h2o.import_file(pyunit_utils.locate("smalldata/airlines/allyears2k_headers_only.csv"))
     headers_and = h2o.import_file(pyunit_utils.locate("smalldata/airlines/allyears2k.zip"))

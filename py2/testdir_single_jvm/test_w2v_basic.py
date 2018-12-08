@@ -7,7 +7,7 @@ import h2o_test
 
 DO_SUMMARY=False
 
-targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park', 
+targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park',
     'good', 'liquor store rooftoop', 'facebook']
 
 lol = [
@@ -124,7 +124,7 @@ def create_file_with_seps(rowCount, colCount):
     print "Creating random", csvPathname
     write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE,
         colSepChar=colSepChar, rowSepChar=rowSepChar)
-    
+
     return csvPathname
 
 
@@ -164,7 +164,7 @@ class Basic(unittest.TestCase):
             csvPathname = create_file_with_seps(rowCount, colCount)
 
             # just parse to make sure it's good
-            parseResult = h2i.import_parse(path=csvPathname, 
+            parseResult = h2i.import_parse(path=csvPathname,
                 check_header=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -210,11 +210,11 @@ class Basic(unittest.TestCase):
 
                 model_key = 'benign_w2v.hex'
                 bmResult = h2o.n0.build_model(
-                    algo='word2vec', 
+                    algo='word2vec',
                     model_id=model_key,
                     training_frame=parse_key,
-                    parameters=parameters, 
-                    timeoutSecs=60) 
+                    parameters=parameters,
+                    timeoutSecs=60)
                 bm = OutputObj(bmResult, 'bm')
 
                 modelResult = h2o.n0.models(key=model_key)
@@ -230,7 +230,7 @@ class Basic(unittest.TestCase):
 
                 # prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
                 # pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
-        
+
                 h2o_cmd.runStoreView()
 
 if __name__ == '__main__':

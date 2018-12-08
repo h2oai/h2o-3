@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def frame_as_list():
-  
-  
+
+
 
   prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
 

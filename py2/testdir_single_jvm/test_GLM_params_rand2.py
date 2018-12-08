@@ -64,7 +64,7 @@ class Basic(unittest.TestCase):
 
         ## columnTypeDict = {54: 'Enum'}
         columnTypeDict = None
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=binomial_key, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=binomial_key,
             columnTypeDict=columnTypeDict,
             check_header=1, timeoutSecs=180, doSummary=False)
 
@@ -101,7 +101,7 @@ class Basic(unittest.TestCase):
             parameters = {
                 'response_column': 'C55',
                 'alpha': 0.1,
-                # 'lambda': 1e-4, 
+                # 'lambda': 1e-4,
                 'lambda': 0,
             }
             h2o_glm.pickRandGlmParams(paramDict, parameters)
@@ -155,7 +155,7 @@ class Basic(unittest.TestCase):
                     for i,c in enumerate(cmms.cm):
                         print "\ncmms.cm[%s]" % i, tabulate(c)
                     print ""
-                
+
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mm = OutputObj(mmResult['model_metrics'][0], 'mm')

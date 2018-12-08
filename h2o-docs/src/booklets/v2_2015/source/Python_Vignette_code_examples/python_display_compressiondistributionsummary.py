@@ -1,12 +1,12 @@
 df.describe()
 
 # Rows: 100 Cols: 4
-# 
+#
 # Chunk compression summary:
 # chunk_type     chunkname   count   count_%   size   size_%
 # ------------   ---------   -----   -------   ----   ------
 # 64-bit Reals    C8D        4       100      3.4 KB  100
-# 
+#
 # Frame distribution summary:
 #                   size   #_rows   #_chunks_per_col  #_chunks
 # ---------------  ------  ------   ---------------   --------
@@ -16,9 +16,9 @@ df.describe()
 # max              3.4 KB  100      1                 4
 # stddev           0  B    0        0                 0
 # total            3.4 KB  100      1                 4
-# 
+#
 #            A          B          C          D
-# -------   --------   --------   --------   -------- 
+# -------   --------   --------   --------   --------
 # type      real       real       real       real
 # mins      -2.49822   -2.37446   -2.45977   -3.48247
 # mean      -0.01062   -0.23159    0.11423   -0.16228

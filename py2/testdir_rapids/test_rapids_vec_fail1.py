@@ -33,12 +33,12 @@ class Basic(unittest.TestCase):
         maxx = 29
         # for trial in range(maxx):
         for trial in range(int(1e6),int(100e6),int(10e6)):
-            
+
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
             length = trial
             execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
-    
+
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
             elapsed1 = time.time() - start
@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
 
             if execResult['num_rows']:
                 keys.append(execExpr)
-            
+
             xList.append(length)
             eList.append(elapsed1)
             fList.append(elapsed2)

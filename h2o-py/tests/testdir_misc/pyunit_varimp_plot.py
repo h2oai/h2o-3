@@ -10,10 +10,10 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 def varimp_plot_test():
   kwargs = {}
   kwargs['server'] = True
-  
+
   # import data set
   cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
-  
+
   # Constructing validation and train sets by sampling (20/80)
   s = cars[0].runif()
   cars_train = cars[s <= 0.8]

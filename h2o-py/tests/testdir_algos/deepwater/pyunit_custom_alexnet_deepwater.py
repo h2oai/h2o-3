@@ -74,7 +74,7 @@ def deepwater_custom_alexnet():
   model.train(x=[0],y=1, training_frame=frame)
   model.show()
   error = model.model_performance(train=True).mean_per_class_error()
-  #assert error < 0.1, "mean classification error is too high : " + str(error) 
+  #assert error < 0.1, "mean classification error is too high : " + str(error)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(deepwater_custom_alexnet)

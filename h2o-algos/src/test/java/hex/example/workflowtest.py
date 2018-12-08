@@ -83,7 +83,7 @@ def split_fit_predict(data):
   test  = data[(0.6 <= r) & (r < 0.9)]
   hold  = data[ 0.9 <= r ]
   print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow(),"rows, holdout has",hold.nrow()
-  
+
   # Run GBM
   gbm = h2o.gbm(x           =train.drop("bikes"),
                 y           =train     ["bikes"],
@@ -95,7 +95,7 @@ def split_fit_predict(data):
                 nbins=20,
                 learn_rate=0.1)
   #gbm.show()
-  
+
   # Run GLM
   glm = h2o.glm(x           =train.drop("bikes"),
                 y           =train     ["bikes"],
@@ -103,15 +103,15 @@ def split_fit_predict(data):
                 validation_y=test      ["bikes"],
                 drop_na20_cols=True)
   #glm.show()
-  
-  
+
+
   # ----------
   # 4- Score on holdout set & report
   train_r2_gbm = gbm.model_performance(train).r2()
   test_r2_gbm  = gbm.model_performance(test ).r2()
   hold_r2_gbm  = gbm.model_performance(hold ).r2()
   print "GBM R2 TRAIN=",train_r2_gbm,", R2 TEST=",test_r2_gbm,", R2 HOLDOUT=",hold_r2_gbm
-  
+
   train_r2_glm = glm.model_performance(train).r2()
   test_r2_glm  = glm.model_performance(test ).r2()
   hold_r2_glm  = glm.model_performance(hold ).r2()
@@ -119,7 +119,7 @@ def split_fit_predict(data):
   # --------------
 
 # Split the data (into test & train), fit some models and predict on the holdout data
-split_fit_predict(bpd)  
+split_fit_predict(bpd)
 # Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
 # variance of the bike-trip-starts.
@@ -142,12 +142,12 @@ wthr2 = wthr1["Year Local","Month Local","Day Local","Hour Local","Dew Point (C)
 wthr2["Precipitation One Hour (mm)"]._name = "Rain (mm)" # Shorter column name
 wthr2["Weather Code 1/ Description"]._name = "WC1" # Shorter column name
 wthr2.describe()
-# Much better!  
+# Much better!
 
 # Lets make daily averages - which will be another group-by - and filter down to
 # day-time bicycle weather (i.e., I'm ignoring the temperature at midnight here
 # assuming there are fewer bike rides at midnight.  There's a Better Way to do
-# this, but I'm just making easy baby steps).  
+# this, but I'm just making easy baby steps).
 
 ## Filtering first, between 7:00 and 19:00 (7am to 7pm).  Note: want to do
 ## pythonic 7 <= col <= 19, but cannot overload the double-ended range operator
@@ -171,7 +171,7 @@ wthr3["Days"] = (wthr3["msec"]/secsPerDay).floor()
 wthr3.describe()
 # msec looks sane (numbers like 1.3e12 are in the correct range for msec since
 # 1970).  Epoch Days matches closely with the epoch day numbers from the
-# CitiBike dataset.  
+# CitiBike dataset.
 
 # Lets drop off the extra time columns to make a easy-to-handle dataset.
 wthr4 = wthr3.drop("Year Local").drop("Month Local").drop("Day Local").drop("Hour Local").drop("msec")

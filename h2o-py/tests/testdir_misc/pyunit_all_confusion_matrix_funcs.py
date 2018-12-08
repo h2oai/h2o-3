@@ -8,8 +8,8 @@ import random
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def all_confusion_matrix_funcs():
-    
-    
+
+
 
     metrics = ["recall", "specificity", "min_per_class_accuracy", "absolute_mcc", "precision", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"]
     train = [True, False]

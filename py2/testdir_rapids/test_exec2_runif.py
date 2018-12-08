@@ -30,7 +30,7 @@ class Basic(unittest.TestCase):
         # work up to the failing case incrementally
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
-            # params for h2o-dev runif are: column, min, max, seed 
+            # params for h2o-dev runif are: column, min, max, seed
             AssignObj('r0.hex', KeyIndexed('r.hex',col=0) ),
             AssignObj('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=0), 1) ),
             AssignObj('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=1), -1)  ),
@@ -67,7 +67,7 @@ class Basic(unittest.TestCase):
             # time can be different
             print "df.difference:", h2o.dump_json(df.difference)
             self.assertLess(len(df.difference), 2)
-        
+
 
             print "results from the individual exec expresssions (ignore last which was an apply)"
             print "results:", results

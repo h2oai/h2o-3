@@ -6,7 +6,7 @@ from tests import pyunit_utils
 
 
 def pyunit_apply_assign():
-  
+
   fr = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
   bool_fr = fr.apply(lambda x: x['PSA'] > x['VOL'],axis=1)
   h2o.assign(fr.cbind(bool_fr), 'supp_fr')

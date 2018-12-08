@@ -11,7 +11,7 @@ from tests import pyunit_utils
 
 def continuous_or_categorical():
   # connect to h2o
-  
+
 
   aa = {
     'h1': [1, 8, 4, 3, 6],

@@ -8,8 +8,8 @@ from tests import pyunit_utils
 
 
 def space_headers():
-    
-    
+
+
 
     f = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/citibike_head.csv"))
 

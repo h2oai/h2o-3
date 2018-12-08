@@ -54,7 +54,7 @@ def stackedensemble_metalearner_test():
                                      seed=1)
     my_rf.train(x=x, y=y, training_frame=train)
 
-    
+
     # Check that not setting metalearner_algorithm still produces correct results
     # should be glm with non-negative weights
     stack0 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf])
@@ -77,7 +77,7 @@ def stackedensemble_metalearner_test():
     assert(meta1.algo == "gbm")
     # TO DO: Add a check that no other hyperparams have been set
 
- 
+
     # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
     stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="drf", metalearner_nfolds=3)
     stack2.train(x=x, y=y, training_frame=train)

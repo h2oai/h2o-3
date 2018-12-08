@@ -56,7 +56,7 @@ class Basic(unittest.TestCase):
                 # FIX! check if v is ever there.
 
                 # KeyIndexeds gets too many rollup stats problems. Don't use for now
-                if 1==0: 
+                if 1==0:
                     inspect = h2o_cmd.runInspect(key=lhs)
                     missingList, labelList, numRows, numCols = infoFromInspect(inspect)
 
@@ -64,7 +64,7 @@ class Basic(unittest.TestCase):
                     print "\nstoreview:", dump_json(storeview)
                     if not k in storeView['keys']:
                         raise Exception("Expected to find %s in %s", (k, storeView['keys']))
-            else: 
+            else:
                 print "No key lhs assign"
 
             # rows might be zero!

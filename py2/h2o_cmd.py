@@ -28,7 +28,7 @@ def runStoreView(node=None, **kwargs):
     for m in modelList:
         print "model:", m
     print "# of models:", len(modelList)
-    
+
     return {'keys': frameList + modelList}
 
 #************************************************************************
@@ -214,15 +214,15 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
             if maxDelta is None:
                 maxDelta = (co.maxs[0] - co.mins[0])/1000
 
-            if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
+            if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta,
                 msg='min is not approx. expected')
-            if expected[1]: h2o_util.assertApproxEqual(percentiles[2], expected[1], tol=maxDelta, 
+            if expected[1]: h2o_util.assertApproxEqual(percentiles[2], expected[1], tol=maxDelta,
                 msg='25th percentile is not approx. expected')
-            if expected[2]: h2o_util.assertApproxEqual(percentiles[4], expected[2], tol=maxDelta, 
+            if expected[2]: h2o_util.assertApproxEqual(percentiles[4], expected[2], tol=maxDelta,
                 msg='50th percentile (median) is not approx. expected')
-            if expected[3]: h2o_util.assertApproxEqual(percentiles[6], expected[3], tol=maxDelta, 
+            if expected[3]: h2o_util.assertApproxEqual(percentiles[6], expected[3], tol=maxDelta,
                 msg='75th percentile is not approx. expected')
-            if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
+            if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta,
                 msg='max is not approx. expected')
 
             # figure out the expected max error
@@ -313,7 +313,7 @@ class InspectObj(OutputObj):
 class SummaryObj(OutputObj):
     @classmethod
     def check(self,
-        expectedNumRows=None, expectedNumCols=None, 
+        expectedNumRows=None, expectedNumCols=None,
         expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
         noPrint=False, **kwargs):
 
@@ -330,7 +330,7 @@ class SummaryObj(OutputObj):
 
     # column is column name?
     def __init__(self, key, colIndex, colName,
-        expectedNumRows=None, expectedNumCols=None, 
+        expectedNumRows=None, expectedNumCols=None,
         expectedLabel=None, expectedType=None, expectedMissing=None, expectedDomain=None, expectedBinsSum=None,
         noPrint=False, timeoutSecs=30, **kwargs):
 
@@ -397,9 +397,9 @@ class SummaryObj(OutputObj):
 
         print "\nSummaryObj for", key, "for colName", colName, "colIndex:", colIndex
         print "SummaryObj created for:", key # vars(self)
-        
+
         # now do the assertion checks
-        self.check(expectedNumRows, expectedNumCols, 
+        self.check(expectedNumRows, expectedNumCols,
             expectedLabel, expectedType, expectedMissing, expectedDomain, expectedBinsSum,
             noPrint=noPrint, **kwargs)
 

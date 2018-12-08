@@ -58,10 +58,10 @@ class Basic(unittest.TestCase):
 
         h2p.green_print("To watch cloud in browser follow address:")
         h2p.green_print("   http://{0}:{1}/Cloud.html".format(h2o.nodes[0].http_addr, h2o.nodes[0].port))
-        h2p.blue_print("You can start a test (or tests) now!") 
+        h2p.blue_print("You can start a test (or tests) now!")
 
         h2p.blue_print("Will Check cloud status every %s secs and kill cloud if wrong or no answer" % incrTime)
-        if CHECK_WHILE_SLEEPING:        
+        if CHECK_WHILE_SLEEPING:
             h2p.blue_print("Will also look at redirected stdout/stderr logs in sandbox every %s secs" % incrTime)
 
         h2p.red_print("No checking of logs while sleeping, or check of cloud status")
@@ -76,7 +76,7 @@ class Basic(unittest.TestCase):
             # give them up to 120 secs to respond (each individually)
 
             ### h2o.verify_cloud_size(timeoutSecs=120)
-            if CHECK_WHILE_SLEEPING:        
+            if CHECK_WHILE_SLEEPING:
                 print "Checking sandbox log files"
                 h2o.check_sandbox_for_errors(cloudShutdownIsError=True)
             else:

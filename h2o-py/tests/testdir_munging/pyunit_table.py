@@ -22,16 +22,16 @@ def table_check():
   assert table1[2,1] == 50, "Expected 50 of {0}, but got {1}".format(table1[2,0], table1[2,1])
 
   # two-column (one argument)
-  
+
   #dense
   table2 = iris["C1"].table(iris["C5"])
-  
+
   #not dense
   table3 = iris["C1"].table(iris["C5"],dense=False)
-  
+
   #check same value
   assert (table3[table3['C1'] == 5,'Iris-setosa'] == table2[(table2['C1'] == 5) & (table2['C5'] == 'Iris-setosa'),'Counts']).all()
-  
+
   assert (table2 == iris[["C1","C5"]].table()).all()
   assert (table3 == iris[["C1","C5"]].table(dense=False)).all()
 
@@ -41,7 +41,7 @@ def table_check():
   table = {k:int(v) for k,v in list(table.items())}
   expected = Counter(itertools.chain(*cars[2].as_data_frame(False)[1:]))
   assert table == expected, "Expected {} for table counts but got {}".format(expected, table)
-  
+
 if __name__ == "__main__":
   pyunit_utils.standalone_test(table_check)
 else:

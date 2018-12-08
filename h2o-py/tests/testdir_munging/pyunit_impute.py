@@ -9,7 +9,7 @@ from tests import pyunit_utils
 
 def impute():
     # Connect to a pre-existing cluster
-    
+
 
     prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
     prostate.dim

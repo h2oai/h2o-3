@@ -8,7 +8,7 @@ from tests import pyunit_utils
 
 
 def offset_1897():
-    
+
 
     print('Checking binomial models for GLM with and without offset')
     print('Import prostate dataset into H2O and R...')

@@ -11,11 +11,11 @@ class Basic(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Uses your username specific json: pytest_config-<username>.json
-        h2o.init (1, 
-            # use_hdfs=True, 
+        h2o.init (1,
+            # use_hdfs=True,
             # aws_credentials=os.path.expanduser('~/.ec2/AwsCredentials.properties'),
             # hdfs_config=os.path.expanduser("~/.ec2/core-site.xml"),
-            java_heap_GB=12, 
+            java_heap_GB=12,
             java_extra_args='-XX:+PrintGCDetails')
 
     @classmethod

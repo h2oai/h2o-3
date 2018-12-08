@@ -16,7 +16,7 @@ os.environ['AWS_SSH_PRIVATE_KEY_FILE'] = ''
 
 # Launch EC2 instances with an IAM role
 # --------------------------------------
-# 
+#
 iam_profile_resource_name = None
 # or
 iam_profile_name = None
@@ -25,7 +25,7 @@ iam_profile_name = None
 # ------------------------------------------------
 
 # SSH key pair name.
-keyName = '' 
+keyName = ''
 
 # AWS security group name.
 # Note:

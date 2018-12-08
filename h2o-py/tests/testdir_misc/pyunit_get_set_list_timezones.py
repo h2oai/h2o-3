@@ -9,8 +9,8 @@ from tests import pyunit_utils
 import random
 
 def get_set_list_timezones():
-    
-    
+
+
 
     origTZ = h2o.get_timezone()
     print("Original timezone: {0}".format(origTZ))

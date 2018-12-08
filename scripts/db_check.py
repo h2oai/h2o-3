@@ -182,7 +182,7 @@ class CheckDB:
 
         #Reallocate width length
         widths[0] = widths[1] = widths[2] = widths[3] = 50
-        
+
         for w in widths:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'

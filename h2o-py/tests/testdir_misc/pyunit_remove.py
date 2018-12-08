@@ -9,10 +9,10 @@ from tests import pyunit_utils
 def remove_obj_client():
 
   training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
-  
+
   Y = 3
   X = list(range(3)) + list(range(4,11))
-  
+
   from h2o.estimators.glm import H2OGeneralizedLinearEstimator
   model = H2OGeneralizedLinearEstimator(family="binomial", alpha=0, Lambda=1e-5)
   print(model.model_id)
@@ -21,7 +21,7 @@ def remove_obj_client():
   print(model)
   h2o.remove(model)
   print(model)
-  
+
   h2o.remove(training_data)
   print(training_data)
 

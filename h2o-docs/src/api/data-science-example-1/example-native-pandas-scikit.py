@@ -51,11 +51,11 @@ tmp_uniquecarrier_df = DataFrame(tmp_uniquecarrier)
 print(tmp_uniquecarrier_df.shape)
 
 air_mapped = pd.concat([
-                        air_mapped, 
-                        tmp_origin_df, 
-                        tmp_dest_df, 
+                        air_mapped,
+                        tmp_origin_df,
+                        tmp_dest_df,
                         air_raw['Distance'],
-                        tmp_uniquecarrier_df, 
+                        tmp_uniquecarrier_df,
                         air_raw['Month'],
                         air_raw['DayofMonth'],
                         air_raw['DayOfWeek'],

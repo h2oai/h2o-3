@@ -12,7 +12,7 @@ print "Trying a different way, listing Rapids objects, rather than .ast() string
 # 'c' allowed
 # should be able to take a list of statements
 funsList = [
-    Def('anon', 'x', 
+    Def('anon', 'x',
         Assign('a', Fcn('var', 'x', None, False, None), do=False),
         Assign('b', Fcn('var', 'x', None, False, None), do=False),
         Assign('d', Fcn('var', 'x', None, False, None), do=False),
@@ -41,7 +41,7 @@ funsList = [
         Fcn('var', 'x', None, False, None),
     ),
 
-    Def('anon', 'x', 
+    Def('anon', 'x',
         [Assign(key, Fcn('var', 'x', None, False, None), do=False) for key in 'abdefghijklmnopqrstuvz'],
         [Assign(key, Fcn('sum', KeyIndexed('x',col=0), False), do=False) for key in 'abdefghijklmnopqrstuvz'],
         Fcn('var', 'x', None, False, None),

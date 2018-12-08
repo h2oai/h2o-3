@@ -100,7 +100,7 @@ if UTF8_MULTIBYTE:
         ordinalChoicesMulti += aSmallSet(0x010000,0x03ffff) # 3byte
         ordinalChoicesMulti += aSmallSet(0x040000,0x10ffff) # 4byte
 
-    
+
 if UTF8:
     massageUTF8Choices(ordinalChoices)
 
@@ -139,8 +139,8 @@ def create_enum_list(randChars="abcdefghijklmnopqrstuvwxyz", maxEnumSize=4, list
 
 def write_syn_dataset(csvPathname, enumList, rowCount, colCount=1, scale=1,
         colSepChar=",", rowSepChar="\n", SEED=12345678):
-    # always re-init with the same seed. 
-    # that way the sequence of random choices from the enum list should stay the same for each call? 
+    # always re-init with the same seed.
+    # that way the sequence of random choices from the enum list should stay the same for each call?
     # But the enum list is randomized
     robj = random.Random(SEED)
 
@@ -203,8 +203,8 @@ def write_syn_dataset(csvPathname, enumList, rowCount, colCount=1, scale=1,
                 howManyEnumsToUse = howManyEnumsToUseCol2
 
             # put in a small number of NAs (1%)
-            if not DISABLE_ALL_NA and (   
-                    (CAUSE_RANDOM_NA and robj.randint(0,99)==0) or 
+            if not DISABLE_ALL_NA and (
+                    (CAUSE_RANDOM_NA and robj.randint(0,99)==0) or
                     howManyEnumsToUse==0):
                 riIndex = None
                 riIndexSum += 0 # don't change
@@ -241,20 +241,20 @@ def write_syn_dataset(csvPathname, enumList, rowCount, colCount=1, scale=1,
             if DEBUG:
                 # I suppose by having it encoded as utf, we can see the byte representation here?
                 print "str:", repr(rowDataCsv), type(rowDataCsv)
-                # this has the right length..multibyte utf8 are decoded 
+                # this has the right length..multibyte utf8 are decoded
                 print "utf8:" , repr(decoded), type(decoded)
             dsf.write(decoded)
         else:
             dsf.write(rowDataCsv)
 
-        
+
     dsf.close()
-    # this is for comparing whether two datasets were generated identically 
+    # this is for comparing whether two datasets were generated identically
     # (last row is essentially a checksum, given the use of random generator for prior rows)
 
     # will be empty if we didn't enable REPORT_LAST_ENUM_INDICES
     rowIndexCsv = colSepChar.join(map(str,rowIndex)) + rowSepChar
-    return rowIndexCsv 
+    return rowIndexCsv
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -282,20 +282,20 @@ class Basic(unittest.TestCase):
 
         # from command line arg -long
         if h2o_args.long_test_case:
-            repeat = 1000 
+            repeat = 1000
             scale = 10 # scale up the # of rows
             tryList = [
-                (n*scale, 1, 'cI', 300), 
-                (n*scale, 1, 'cI', 300), 
-                (n*scale, 1, 'cI', 300), 
+                (n*scale, 1, 'cI', 300),
+                (n*scale, 1, 'cI', 300),
+                (n*scale, 1, 'cI', 300),
             ]
         else:
             repeat = 1
             scale = 1
             tryList = [
-                (n, 3, 'cI', 300), 
-                (n, 3, 'cI', 300), 
-                (n, 3, 'cI', 300), 
+                (n, 3, 'cI', 300),
+                (n, 3, 'cI', 300),
+                (n, 3, 'cI', 300),
             ]
 
         lastcolsHistory = []

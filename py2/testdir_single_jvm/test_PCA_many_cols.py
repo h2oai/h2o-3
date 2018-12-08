@@ -53,11 +53,11 @@ class Basic(unittest.TestCase):
         SYNDATASETS_DIR = h2o.make_syn_dir()
 
         tryList = [
-            (10000, 10, 'cA', 300), 
-            (10000, 50, 'cB', 300), 
-            (10000, 100, 'cC', 300), 
-            # (10000, 500, 'cH', 300), 
-            # (10000, 1000, 'cI', 300), 
+            (10000, 10, 'cA', 300),
+            (10000, 50, 'cB', 300),
+            (10000, 100, 'cC', 300),
+            # (10000, 500, 'cH', 300),
+            # (10000, 1000, 'cI', 300),
             ]
 
         for (rowCount, colCount, hex_key, timeoutSecs) in tryList:
@@ -129,30 +129,30 @@ if __name__ == '__main__':
 #                 PCAResult['python_%timeout'] = 1.0*elapsed / timeoutSecs
 #                 print "PCA completed in",     PCAResult['python_elapsed'], "seconds.", \
 #                       "%f pct. of timeout" % (PCAResult['python_%timeout'])
-#                 
+#
 #                 pcaView = h2o_cmd.runPCAView(modelKey=modelKey)
 #                 h2o_pca.simpleCheckPCA(self,pcaView)
 #                 h2o_pca.resultsCheckPCA(self,pcaView)
-# 
+#
 #                 # Logging to a benchmark file
 #                 algo = "PCA " + " tolerance=" + str(tolerance)
 #                 l = '{:d} jvms, {:d}GB heap, {:s} {:s} {:6.2f} secs'.format(
 #                     len(h2o.nodes), h2o.nodes[0].java_heap_GB, algo, csvFilename, PCAResult['python_elapsed'])
 #                 print l
 #                 h2o.cloudPerfH2O.message(l)
-# 
+#
 #                 pcaInspect = pcaView
 #                 # errrs from end of list? is that the last tree?
-#                 sdevs = pcaInspect["pca_model"]["sdev"] 
+#                 sdevs = pcaInspect["pca_model"]["sdev"]
 #                 print "PCA: standard deviations are :", sdevs
-# 
+#
 #                 propVars = pcaInspect["pca_model"]["propVar"]
 #                 print "PCA: Proportions of variance by eigenvector are :", propVars
-# 
+#
 #                 num_pc = pcaInspect['pca_model']['num_pc']
 #                 print "The number of standard deviations obtained: ", num_pc
-# 
-# 
+#
+#
 #                 if DO_PCA_SCORE:
 #                     # just score with same data
 #                     score_params = {
@@ -166,11 +166,11 @@ if __name__ == '__main__':
 #                     h2j.pollWaitJobs(timeoutSecs=300, pollTimeoutSecs=120, retryDelaySecs=2)
 #                     print "PCAScore completed in", pcaScoreResult['python_elapsed'], "seconds. On dataset: ", csvPathname
 #                     print "Elapsed time was ", pcaScoreResult['python_%timeout'], "% of the timeout"
-# 
+#
 #                     # Logging to a benchmark file
 #                     algo = "PCAScore " + " num_pc=" + str(score_params['num_pc'])
 #                     l = '{:d} jvms, {:d}GB heap, {:s} {:s} {:6.2f} secs'.format(
 #                         len(h2o.nodes), h2o.nodes[0].java_heap_GB, algo, csvFilename, pcaScoreResult['python_elapsed'])
 #                     print l
 #                     h2o.cloudPerfH2O.message(l)
-# 
+#

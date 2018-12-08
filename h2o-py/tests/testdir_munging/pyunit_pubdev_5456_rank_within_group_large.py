@@ -31,7 +31,7 @@ def generate_answerFrame(originalFrame, groupByCols, sortCols):
     to the frame that indicates the rank of the row within the groupBy columns sorted according to the sortCols.
 
     :param originalFrame:
-    :param groupByCols: 
+    :param groupByCols:
     :param sortCols:
     :return:
     """

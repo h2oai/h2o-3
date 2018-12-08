@@ -7,7 +7,7 @@ h2o.init()
 # Import data and transform data
 train = h2o.import_file("bigdata/laptop/mnist/train.csv.gz")
 
-# Specify a subset of features to include in the model 
+# Specify a subset of features to include in the model
 features = list(range(0,784))
 target = 784
 

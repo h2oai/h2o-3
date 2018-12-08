@@ -40,12 +40,12 @@ def stackedensemble_grid_gaussian():
     hyper_params = {"learn_rate" : [0.01, 0.03], "max_depth": [3, 4, 5, 6, 9],
                     "sample_rate": [0.7, 0.8, 0.9, 1.0],
                     "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
-    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}                    
+    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}
 
     # Train the grid
-    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, 
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10,
                                                             seed=1,
-                                                            nfolds=nfolds, 
+                                                            nfolds=nfolds,
                                                             fold_assignment="Modulo",
                                                             keep_cross_validation_predictions=True),
                          hyper_params=hyper_params,

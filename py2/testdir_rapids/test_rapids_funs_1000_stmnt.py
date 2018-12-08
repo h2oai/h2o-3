@@ -15,9 +15,9 @@ keyString = 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
 keyString += 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
 keyString += 'abdefghijklmnopqrstuvzabdefghijklmnopqrstuvz'
 funsList = [
-    Def('anon', 'x', 
+    Def('anon', 'x',
         [Assign(key, Fcn('var', 'x', None, False, None), do=False) for key in keyString],
-        
+
         [Assign(key, Fcn('sum', KeyIndexed('x',col=0), False), do=False) for key in keyString],
         [Assign(key, Fcn('max', KeyIndexed('x',col=0), False), do=False) for key in keyString],
         [Assign(key, Fcn('min', KeyIndexed('x',col=0), False), do=False) for key in keyString],

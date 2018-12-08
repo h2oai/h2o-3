@@ -10,7 +10,7 @@ from tests import pyunit_utils
 
 def insert_missing():
     # Connect to a pre-existing cluster
-    
+
 
     data = [[1, 2, 3, 1, 'a', 1, 9],
             [1, 6, 4, 2, 'a', 1, 9],

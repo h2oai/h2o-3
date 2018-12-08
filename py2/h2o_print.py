@@ -56,7 +56,7 @@ def yellow_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.YELLOW + str(msg) + b.ENDC, 
+        print b.YELLOW + str(msg) + b.ENDC,
     print
 
 def red_print(*args):

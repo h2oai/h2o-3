@@ -17,7 +17,7 @@ def compare_frames(expected, actual):
         assert t1 == t2, ("Bad types %s: expected %s, got %s" %(colname, t1, t2))
         col1 = expected[colname]
         s1 = str(h2o.as_list(col1))
-        col2 = actual[colname] 
+        col2 = actual[colname]
         s2 = str(h2o.as_list(col2))
         assert s1 == s2, ("bad values: expected[%d] = %r, actual[%d] = %r"
                           % (i, s1, i, s2))
@@ -26,13 +26,13 @@ def test1():
     badFrame = H2OFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, 5.2, 14]})
     badClone = H2OFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, 5.2, 14]})
     compare_frames(badFrame, badClone)
-    
+
     try:
       badFrame.asfactor()
       assert False, "The frame contaied a real number, an error should be thrown"
     except H2OValueError: # as designed
       pass
-        
+
     compare_frames(badFrame, badClone)
 
     originalAfterOp = H2OFrame.get_frame(badFrame.frame_id)

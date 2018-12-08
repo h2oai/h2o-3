@@ -14,11 +14,11 @@ def kill_child_processes():
     kill_process_tree(me, including_parent=False)
 
 # since we hang if hosts has bad IP addresses, thought it'd be nice
-# to have simple obvious feedback to user if he's running with -v 
+# to have simple obvious feedback to user if he's running with -v
 # and machines are down or his hosts definition has bad IPs.
 # FIX! currently not used
 def ping_host_if_verbose(host):
-    # if (h2o.verbose) 
+    # if (h2o.verbose)
     if 1==1:
         username = getpass.getuser()
         # if username=='jenkins' or username=='kevin' or username=='michal':
@@ -101,7 +101,7 @@ def show_h2o_processes():
                     users.add(pusername)
                     # now iterate through the cmdline, to see if it's got 'h2o
                     for c in pcmdline:
-                        if 'h2o' in c: 
+                        if 'h2o' in c:
                             h2oProcess = True
                             h2oUsers.add(pusername)
                             break
@@ -129,7 +129,7 @@ def show_h2o_processes():
                         # print p.get_connections()
                     except:
                         pass
-                
+
 
         if h2oFound:
             print "\n\n#**********************************************************************************************"

@@ -52,7 +52,7 @@ class Basic(unittest.TestCase):
 
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=False)
 
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
@@ -110,7 +110,7 @@ class Basic(unittest.TestCase):
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
                 assert numRows==313
                 assert numCols==1
-            
+
                 print "Now trying to do the functions with the alternate overloaded operators"
                 data_key = Key(parse_key)
                 result_key = Key()
@@ -118,7 +118,7 @@ class Basic(unittest.TestCase):
                 # as opposed to an object within a function
 
                 result_key.frame = 'a1'
-                result_key <<= data_key[Seq(range(1,4)), :]  
+                result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a2'
                 result_key <<= data_key[Seq(range(1,4)), :]
                 result_key.frame = 'a3'

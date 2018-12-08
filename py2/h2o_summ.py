@@ -27,25 +27,25 @@ def percentileOnSortedList(N, percent, key=lambda x:x, interpolate='mean'):
     k = (len(N)-1) * percent
     f = int(math.floor(k))
     c = int(math.ceil(k))
-    
+
     if f == c:
         d = key(N[f])
-        msg = "aligned:" 
+        msg = "aligned:"
 
     elif interpolate=='floor':
         d = key(N[f])
-        msg = "fractional with floor:" 
+        msg = "fractional with floor:"
 
     elif interpolate=='ceil':
         d = key(N[c])
-        msg = "fractional with ceil:" 
+        msg = "fractional with ceil:"
 
     elif interpolate=='funky':
         d0 = key(N[f]) * (c-k)
         d1 = key(N[c]) * (k-f)
         d = d0+d1
-        msg = "fractional with Tung(floor and ceil) :" 
-    
+        msg = "fractional with Tung(floor and ceil) :"
+
     elif interpolate=='linear':
         assert (c-f)==1
         assert (k>=f) and (k<=c)
@@ -56,7 +56,7 @@ def percentileOnSortedList(N, percent, key=lambda x:x, interpolate='mean'):
 
     elif interpolate=='mean':
         d = (key(N[c]) + key(N[f])) / 2.0
-        msg = "fractional with mean(floor and ceil):" 
+        msg = "fractional with mean(floor and ceil):"
 
     # print 3 around the floored k, for eyeballing when we're close
     flooredK = int(f)
@@ -89,10 +89,10 @@ def percentileOnSortedList_25_50_75( N, key=lambda x:x):
     return three
 
 #***************************************************************************
-def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float', 
-    h2oSummary2=None, 
+def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
+    h2oSummary2=None,
     h2oSummary2MaxErr=None,
-    h2oQuantilesApprox=None, h2oQuantilesExact=None, 
+    h2oQuantilesApprox=None, h2oQuantilesExact=None,
     h2oExecQuantiles=None,
     interpolate='linear', quantile=0.50, use_genfromtxt=False):
     SCIPY_INSTALLED = True
@@ -173,8 +173,8 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
         s2List = stats.mstats.mquantiles(targetFP, prob=quantile, alphap=alphap, betap=betap)
         s2 = s2List[0]
         # http://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mquantiles.html
-        # type 7 
-        # alphap=0.4, betap=0.4, 
+        # type 7
+        # alphap=0.4, betap=0.4,
         # type 2 not available? (mean)
         # alphap=1/3.0, betap=1/3.0 is approx median?
         h2p.red_print("scipy stats.mstats.mquantiles:", s2)
@@ -191,7 +191,7 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
     b = percentileOnSortedList(targetFP, quantile, interpolate='linear')
     label = str(quantile * 100) + '%'
     h2p.blue_print(label, "from sort:", b)
-    
+
     if SCIPY_INSTALLED:
         h2p.blue_print(label, "from numpy:", p)
         h2p.blue_print(label, "from scipy 1:", s1)
@@ -208,7 +208,7 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
     if h2oQuantilesExact:
         if math.isnan(float(h2oQuantilesExact)):
             raise Exception("h2oQuantilesExact is unexpectedly NaN %s" % h2oQuantilesExact)
-        h2o_util.assertApproxEqual(h2oQuantilesExact, b, tol=0.0000002, 
+        h2o_util.assertApproxEqual(h2oQuantilesExact, b, tol=0.0000002,
             msg='h2o quantile multipass is not approx. same as sort algo')
 
     if h2oQuantilesApprox:
@@ -266,7 +266,7 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
                 h2o_util.assertApproxEqual(h2oQuantilesApprox, s2, rel=0.5,
                     msg='h2o quantile singlepass is not same as scipy stats.mstats.mquantiles')
 
-        # see if scipy changes. nope. it doesn't 
+        # see if scipy changes. nope. it doesn't
         if 1==0:
             a = stats.mstats.mquantiles(targetFP, prob=quantile, alphap=alphap, betap=betap)
             h2p.red_print("after sort")

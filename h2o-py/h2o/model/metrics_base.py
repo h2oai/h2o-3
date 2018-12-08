@@ -240,7 +240,7 @@ class MetricsBase(backwards_compatible()):
             return None
 
     def custom_metric_value(self):
-        """Value of custom metric or None."""        
+        """Value of custom metric or None."""
         if MetricsBase._has(self._metric_json, "custom_metric_value"):
             return self._metric_json['custom_metric_value']
         else:

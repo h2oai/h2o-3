@@ -16,8 +16,8 @@ from tests import pyunit_utils
 import numpy as np
 
 def dim_checks():
-  
-  
+
+
 
   # Log.info("Uploading logreg/princeton/cuse.dat")
   h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))

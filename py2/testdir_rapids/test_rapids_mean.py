@@ -51,7 +51,7 @@ class Basic(unittest.TestCase):
 
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                 timeoutSecs=timeoutSecs, doSummary=False)
 
             inspect = h2o_cmd.runInspect(key=hex_key)

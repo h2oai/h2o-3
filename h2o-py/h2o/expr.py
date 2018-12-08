@@ -79,7 +79,7 @@ class ExprNode(object):
     # Flag to control application of local expression tree optimizations
     __ENABLE_EXPR_OPTIMIZATIONS__ = True
 
-    def __init__(self, op="", *args):      
+    def __init__(self, op="", *args):
         # assert isinstance(op, str), op
         self._op = op  # Base opcode string
         self._children = tuple(

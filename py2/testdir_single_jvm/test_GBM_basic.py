@@ -1,4 +1,4 @@
-import unittest, sys, time 
+import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o2 as h2o
 import h2o_cmd, h2o_import as h2i
@@ -55,18 +55,18 @@ class Basic(unittest.TestCase):
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
             # 'variable_importance': False,
-            # 'seed': 
+            # 'seed':
         })
 
         parameters.append({
-            'response_column': 'C55', 
+            'response_column': 'C55',
             'loss': 'multinomial',
             # This does nothing! intent is solely based on type of response col
-            'ntrees': 1, 
-            'max_depth': 20, 
-            'min_rows': 3, 
-            'nbins': 40, 
-            'learn_rate': 0.2, 
+            'ntrees': 1,
+            'max_depth': 20,
+            'min_rows': 3,
+            'nbins': 40,
+            'learn_rate': 0.2,
             })
 
         model_key = 'covtype_gbm.hex'

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # "Avoid locker or centralized resource by hard-wiring the port mapping within range"
-# "implied by max # of ports used per job, max # of executors per machine, and # of machines." 
+# "implied by max # of ports used per job, max # of executors per machine, and # of machines."
 # "Map of source determines port. in/out using env variables"
 print "\njenkins_h2o_port_allocate...."
 
@@ -43,13 +43,13 @@ def jenkins_h2o_port_allocate():
 
     which will create os environment variables H2O_PORT and H2O_PORT_OFFSET (legacy)
 
-        internal state for this script that can be updated: 
-            USED_HOSTNAMES (list of machine names), 
-            PORTS_PER_SLOT (max per any job), 
+        internal state for this script that can be updated:
+            USED_HOSTNAMES (list of machine names),
+            PORTS_PER_SLOT (max per any job),
             DEFAULT_BASE_PORT
-        If you modify any of the internal state, you may introduce contention between 
+        If you modify any of the internal state, you may introduce contention between
         new jenkins jobs and running jenkins jobs. (might not!)
-        You should stop/start all jobs (or ignore failures) if you modify internal state here. 
+        You should stop/start all jobs (or ignore failures) if you modify internal state here.
         Hence, no parameters to avoid living dangerously!
     """
     if os.environ.has_key("EXECUTOR_NUMBER"):
@@ -92,21 +92,21 @@ if __name__ == "__main__":
     jenkins_h2o_port_allocate()
 
 """
-This auto-magics the manual allocation I did when parallelized the current 8-way jenkins jobs, 
+This auto-magics the manual allocation I did when parallelized the current 8-way jenkins jobs,
 2 per machine, on the jenkins mr-0xd4 that dispatches to mr-0xd5 thru mr-0xd9
 
-The rationale for a global allocate requires understanding what machines a jenkins master/slave can be on, 
+The rationale for a global allocate requires understanding what machines a jenkins master/slave can be on,
 and what machines they send h2o jars to.
 
 at 0xdata:
 
-A jenkins master is a member of a group of machines. Jenkins can send the python or other test to another slave machine, and then the test can dispatch h2o either locally, or to other machines in the group. 
+A jenkins master is a member of a group of machines. Jenkins can send the python or other test to another slave machine, and then the test can dispatch h2o either locally, or to other machines in the group.
 
 it can target h2o.jar's anywhere in that group, or dispatch a job to a slave in that group that might do the same.
 
 We currently have two such groups, with one jenkins master in each group (mr-0xb4 and mr-0xd4)
 (update: let's just say it's all one big group. Not worth optimizing for subgroup knowlege)
-So using 
+So using
     (hostname offset in the list of total hostnames)  * (EXECUTOR_NUMBER-1 * PORTS_PER_SLOT)
 
 Will give a unique offset from the default 54340 base, for the job, regardless of which jenkins (master or slave) starts it in the group and where the h2o targest are (which is controlled by the config.json used in the job)

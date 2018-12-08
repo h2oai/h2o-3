@@ -6,16 +6,16 @@ import h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_util
 print "have to add leading/trailing whitespace and single/double quotes?"
 
 # A time token is built up from the definition of the time subtokens
-# A time token can have single quote/double quote/white space like any 
+# A time token can have single quote/double quote/white space like any
 # other string/number token, and is stripped of that before parsing.
 # # I'd like to see this rule met. Not sure if it's possible.
-# If the type for the column is guessed to be Time, 
+# If the type for the column is guessed to be Time,
 # then anything that doesn't match the time token definition must be NA'ed by h2o.
-# 
-# 
+#
+#
 # In all cases where there are multiple integer digits, leading zeroes can be present or individually dropped.
 # This could be one or two leading zeroes in some cases. Dropping all zeroes to create nothing, is not legal.
-# 
+#
 # dd :  two digit day, from 00 to 31. Is there any checking for the day being legal for the particular month and year?
 # MMM: three character month. Legal:
 #     months = [
@@ -32,22 +32,22 @@ print "have to add leading/trailing whitespace and single/double quotes?"
 #         ['Nov', 'NOV', 'nov'],
 #         ['Dec', 'DEC', 'dec']
 #         ]
-# 
+#
 # yy: two digit year, from 00 to 99.
 # MM: two digit month, from 00 to 12.
 # HH: two digit hour, from 00 to 23.
 # MM: two digit minute, from 00 to 59.
 # SS: two digit second, from 00 to 59.
 # SSS: three digit millisecond, from 000 to 999. (note here that one or two leading zeroes can be dropped).
-# 
+#
 # Subtokens can then be combined in these 4 formats. Note the "-", ":" or "." in the particular format is never optional.
 # Anything that doesn't match these formats, or has a subtoken that doesn't match the legal cases, should be NA'ed.
-# 
+#
 # dd-MMM-yy
 # yyyy-MM-dd
 # yyyy-MM-dd HH:mm:ss
 # yyyy-MM-dd HH:mm:ss.SSSS
- 
+
 print "test dd-MMM-yy format. caps for month?"
 print "apparently h2o NAs some cases. illegal dates in a month?"
 print "seems to be that we require leading zero in year, but it's okay to not have it in the date?"
@@ -107,7 +107,7 @@ def getRandomTimeStamp():
     day = days[h2o_util.weighted_choice(dayWeights)]
     # may or may not leading zero fill the day
     # if random.randint(0,1) == 1:
-    #     day = day.zfill(2) 
+    #     day = day.zfill(2)
 
     # yy year
     timestampFormat = random.randint(0,5)
@@ -142,7 +142,7 @@ def getRandomTimeStamp():
         month = str(random.randint(1,12))
         # may or may not leading zero fill the month
         # if random.randint(0,1) == 1:
-        #     month = month.zfill(2) 
+        #     month = month.zfill(2)
 
     # use calendar to make sure the day is legal for that month/year
     import calendar
@@ -153,28 +153,28 @@ def getRandomTimeStamp():
     # may or may not leading zero fill the hour
     hour = str(random.randint(0,23))
     if random.randint(0,1) == 1:
-        hour = hour.zfill(2) 
+        hour = hour.zfill(2)
 
     minute = str(random.randint(0,59))
     if random.randint(0,1) == 1:
-        minute = minute.zfill(2) 
+        minute = minute.zfill(2)
 
     second = str(random.randint(0,59))
     if random.randint(0,1) == 1:
-        second = second.zfill(2) 
+        second = second.zfill(2)
 
     milli = str(random.randint(0,999))
     # can be zero filled to 2 if <= 99
     r = random.randint(0,2) == 1
     if r==1:
-        milli = milli.zfill(2) 
+        milli = milli.zfill(2)
     elif r==2:
-        milli = milli.zfill(3) 
-    
-    # "dd-MMM-yy" 
-    # "yyyy-MM-dd", 
+        milli = milli.zfill(3)
+
+    # "dd-MMM-yy"
+    # "yyyy-MM-dd",
     # "yyyy-MM-dd HH:mm:ss" };
-    # "yyyy-MM-dd HH:mm:ss.SSS", 
+    # "yyyy-MM-dd HH:mm:ss.SSS",
 
     if timestampFormat==0:
         a  = "%s-%s-%02d" % (day, month, year)
@@ -216,7 +216,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         ### time.sleep(3600)
         h2o.tear_down_cloud(h2o.nodes)
-    
+
     def test_parse_time(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
         csvFilename = "syn_time.csv"
@@ -227,7 +227,7 @@ class Basic(unittest.TestCase):
         # rowCount = 1000
         rowCount = ROWS
         write_syn_dataset(csvPathname, rowCount, colCount, headerData)
-        
+
         for trial in range (20):
             rowData = rand_rowData()
             # make sure all key names are unique, when we re-put and re-parse (h2o caching issues)
@@ -287,6 +287,6 @@ class Basic(unittest.TestCase):
 if __name__ == '__main__':
     h2o.unit_main()
 
-    
+
 
 

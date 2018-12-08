@@ -82,7 +82,7 @@ class Basic(unittest.TestCase):
         timeoutSecs = 60
         for (rowCount, colCount, hex_key, choices, expected) in tryList:
             # max error = half the bin size?
-        
+
             SEEDPERFILE = random.randint(0, sys.maxint)
             x += 1
 
@@ -93,7 +93,7 @@ class Basic(unittest.TestCase):
             print "Creating random", csvPathname
             expectedNaCnt = write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE, choices)
 
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, 
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key,
                 timeoutSecs=10, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
             print pA.numRows, pA.numCols, pA.parse_key

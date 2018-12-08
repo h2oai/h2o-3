@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def https_import():
-    
-    
+
+
 
     url = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"
     aa = h2o.import_file(path=url)

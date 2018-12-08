@@ -7,8 +7,8 @@ import os
 import random
 
 def download_csv():
-    
-    
+
+
 
     iris1 = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 

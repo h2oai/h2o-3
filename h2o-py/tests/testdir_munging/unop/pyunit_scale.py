@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def center_scale():
-    
-    
+
+
 
     iris =  h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))[0:4]
 

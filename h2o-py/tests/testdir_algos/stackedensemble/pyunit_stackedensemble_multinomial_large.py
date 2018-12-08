@@ -12,7 +12,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.xgboost import H2OXGBoostEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator 
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils
 

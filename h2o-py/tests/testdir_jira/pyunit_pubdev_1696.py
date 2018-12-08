@@ -7,7 +7,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def pubdev_1696():
-    
+
 
     iris = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
 

@@ -11,14 +11,14 @@ test[y] = test[y].asfactor()
 # Train Deep Learning model and validate on test set
 model = H2ODeepLearningEstimator(
         distribution="multinomial",
-        activation="RectifierWithDropout", 
+        activation="RectifierWithDropout",
         hidden=[32,32,32],
-        input_dropout_ratio=0.2, 
-        sparse=True, 
-        l1=1e-5, 
+        input_dropout_ratio=0.2,
+        sparse=True,
+        l1=1e-5,
         epochs=10)
 model.train(
-        x=x, 
-        y=y, 
-        training_frame=train, 
+        x=x,
+        y=y,
+        training_frame=train,
         validation_frame=test)

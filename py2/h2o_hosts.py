@@ -45,7 +45,7 @@ def upload_jar_to_remote_hosts(hosts, slow_connection=False):
 #************************************************************
 # node_count is sometimes used positionally...break that out. all others are keyword args
 def build_cloud_with_hosts(node_count=None, **kwargs):
-    # legacy: we allow node_count to be positional. 
+    # legacy: we allow node_count to be positional.
     # if it's used positionally, stick in in kwargs (overwrite if there too)
     if node_count is not None:
         # we use h2o_per_host in the config file. will translate to node_count for build_cloud
@@ -61,18 +61,18 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
         'force_ip': False,
         'network': None,
         'use_flatfile': False,
-        # default to true, so when we flip import folder to hdfs+s3n import on ec2, 
+        # default to true, so when we flip import folder to hdfs+s3n import on ec2,
         # the cloud is built correctly
-        'use_hdfs': True, 
-        'hdfs_name_node': None, 
+        'use_hdfs': True,
+        'hdfs_name_node': None,
         'hdfs_config': None,
         'hdfs_version': None,
         'java_heap_GB': None,
         'java_heap_MB': None,
         'java_extra_args': None,
 
-        'timeoutSecs': 60, 
-        'retryDelaySecs': 2, 
+        'timeoutSecs': 60,
+        'retryDelaySecs': 2,
         'cleanup': True,
         'slow_connection': False,
 
@@ -95,7 +95,7 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
         'create_json': False,
         # pass this from cloud building to the common "release" h2o_test.py classes
         # for deciding whether keys should be deleted when a test ends.
-        'delete_keys_at_teardown': False, 
+        'delete_keys_at_teardown': False,
         'clone_cloud': False,
         'cloud_name': None,
         'force_tcp': None,
@@ -158,20 +158,20 @@ def build_cloud_with_hosts(node_count=None, **kwargs):
             key_filename = paramsToUse['key_filename']
             if key_filename: # don't try to expand if None
                key_filename=os.path.expanduser(key_filename)
-            hosts.append(RemoteHost(addr=h, 
+            hosts.append(RemoteHost(addr=h,
                 username=paramsToUse['username'], password=paramsToUse['password'], key_filename=key_filename))
 
     # done with these, don't pass to build_cloud
     # this was the list of ip's from the config file, replaced by 'hosts' to build_cloud
-    paramsToUse.pop('ip') 
+    paramsToUse.pop('ip')
 
     # we want to save username in the node info. don't pop
     # paramsToUse.pop('username')
     paramsToUse.pop('password')
     paramsToUse.pop('key_filename')
 
-    # flatfile is going into sandbox (LOG_DIR) now..so clean it first 
-    # (will make sandbox dir if it doesn't exist already)    
+    # flatfile is going into sandbox (LOG_DIR) now..so clean it first
+    # (will make sandbox dir if it doesn't exist already)
     clean_sandbox()
 
     # handles hosts=None correctly

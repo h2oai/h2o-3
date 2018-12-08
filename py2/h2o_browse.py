@@ -70,5 +70,5 @@ def browseJsonHistoryAsUrl(retryDelaySecs=0.25):
                 time.sleep(retryDelaySecs)
                 tabCount += 1
 
-            if tabCount==50: 
+            if tabCount==50:
                 break;

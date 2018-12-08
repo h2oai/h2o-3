@@ -17,7 +17,7 @@ from tests import pyunit_utils
 import numpy as np
 
 def kmeans_mllib():
-    
+
 
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.

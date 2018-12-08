@@ -42,7 +42,7 @@ def pyunit_columns_by_types():
     assert neg_time == [],"Expect an empty list since there are no time variables"
     assert neg_uuid == [],"Expect an empty list since there are no uuids"
     assert neg_bad == [],"Expect an empty list since there are no bad variable types"
-    
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pyunit_columns_by_types)
 else:

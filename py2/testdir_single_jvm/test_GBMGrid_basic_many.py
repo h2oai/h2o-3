@@ -60,7 +60,7 @@ class Basic(unittest.TestCase):
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
             # 'variable_importance': False,
-            # 'seed': 
+            # 'seed':
         }
 
         jobs = []
@@ -79,7 +79,7 @@ class Basic(unittest.TestCase):
             bm = OutputObj(bmResult, 'bm')
             print "GBMResult:", h2o.dump_json(bm)
 
-            # FIX! is this right for gridded? 
+            # FIX! is this right for gridded?
             job_key = bm.jobs[0].key.name
             # FIX! this isn't a full formed name (%)
             model_key = bm.jobs[0].dest.name

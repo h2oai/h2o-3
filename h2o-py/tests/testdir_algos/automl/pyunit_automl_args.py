@@ -135,7 +135,7 @@ def test_predict_on_train_set():
     print(aml.leaderboard)
     print("Check predictions")
     print(aml.predict(ds['train']))
-    
+
 
 def test_nfolds_param():
     print("Check nfolds is passed through to base models")

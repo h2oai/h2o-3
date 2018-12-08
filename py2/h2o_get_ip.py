@@ -6,7 +6,7 @@ import h2o_args
 
 # print "h2o_get_ip"
 
-# copied here from h2o_test.py to eliminate a circular import 
+# copied here from h2o_test.py to eliminate a circular import
 def verboseprint(*args, **kwargs):
     if h2o_args.verbose:
         for x in args: # so you don't have to create a single string

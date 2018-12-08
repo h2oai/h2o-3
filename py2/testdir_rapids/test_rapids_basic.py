@@ -6,7 +6,7 @@ import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 # ! is only needed if there is no indexing
 initList = [
-        # weird cases with lhs 
+        # weird cases with lhs
         # can only index v if it already exists. is the lhs addition before or after the indexed assign
         # if before, what does it add to. If after, does it add to the full key?
         # must be before.
@@ -18,7 +18,7 @@ initList = [
         # '(= ([ (+ #5 ([ %v #0 #0))  {#0;#1;#2;#3;#4} #0) ([ %v (: #4 #8) #0))',
 
         # weird cases with lhs
-        # dont need a rhs but should still modify?  
+        # dont need a rhs but should still modify?
         # does this add 5 to v and then nothing?
 
         # why does this fail?
@@ -129,7 +129,7 @@ initList = [
         # '((= !x (+ #1 #2 #4)))',
         # '(((= !x (+ #1 #2 #4))))',
 
-        # okay. 
+        # okay.
         '(= !x + #1 #2)',
         '((= !x + #1 #2))',
         '(((= !x + #1 #2)))',
@@ -216,7 +216,7 @@ initList = [
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
 
-        #  v[c(1,5,8,10,33),]  
+        #  v[c(1,5,8,10,33),]
         # commas are illegal (var name?)
 
         # vectors can be strings or numbers only, not vars or keys
@@ -228,7 +228,7 @@ initList = [
         # '= !x (sum %v )'
         # '(= !x (xorsum ([ %v "null" #0) %TRUE))', # works
 
-        
+
         # 'cave=c(1.3,0,1,2,3,4,5)',
         # 'ma=c(2.3,0,1,2,3,4,5)',
         # 'r2.hex=c(3.3,0,1,2,3,4,5)',

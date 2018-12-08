@@ -9,7 +9,7 @@ from h2o_test import verboseprint, dump_json, OutputObj
 # example 10.2 page 357
 # Ten features, standard independent Gaussian. Target y is:
 #   y[i] = 1 if sum(X[i]) > .34 else -1
-# 9.34 is the median of a chi-squared random variable with 10 degrees of freedom 
+# 9.34 is the median of a chi-squared random variable with 10 degrees of freedom
 # (sum of squares of 10 standard Gaussians)
 # http://www.stanford.edu/~hastie/local.ftp/Springer/ESLII_print5.pdf
 
@@ -61,8 +61,8 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
         'balance_classes': False,
         'max_after_balance_size': None,
         'standardize': False,
-        'family': 'binomial', 
-        'link': None, 
+        'family': 'binomial',
+        'link': None,
         'alpha': '[1e-4]',
         'lambda': '[0.5,0.25, 0.1]',
         'lambda_search': None,

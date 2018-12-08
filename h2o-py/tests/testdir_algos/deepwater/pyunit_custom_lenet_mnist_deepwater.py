@@ -48,8 +48,8 @@ def deepwater_custom_lenet_mnist():
 
   print("Importing the lenet model architecture for training in H2O")
   model = H2ODeepWaterEstimator(epochs=10,
-                                learning_rate=0.05, 
-                                learning_rate_annealing=1e-5, 
+                                learning_rate=0.05,
+                                learning_rate_annealing=1e-5,
                                 momentum_start=0.9,
                                 momentum_stable=0.9,
                                 mini_batch_size=128,
@@ -60,7 +60,7 @@ def deepwater_custom_lenet_mnist():
                                 network_definition_file="/tmp/symbol_lenet-py.json",
 				image_shape=[28,28],
                                 channels=1)
-                                
+
   model.train(x=predictors,y=resp, training_frame=train)
   model.show()
   print(model.model_performance(valid=True))

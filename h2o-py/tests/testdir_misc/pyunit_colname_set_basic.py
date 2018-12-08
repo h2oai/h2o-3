@@ -8,8 +8,8 @@ from tests import pyunit_utils
 
 
 def colname_set_basic():
-    
-    
+
+
 
     print("Uploading iris data...")
 

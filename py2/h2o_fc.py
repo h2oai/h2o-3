@@ -5,7 +5,7 @@ import h2o_print as h2p
 from h2o_test import get_sandbox_name, check_sandbox_for_errors, dump_json, verboseprint
 
 #*******************************************************************************
-# duplicate do_json_request here, because the normal one is a method on a h2o node object which 
+# duplicate do_json_request here, because the normal one is a method on a h2o node object which
 # doesn't exist yet. copied this from find_cloud.py
 def create_url(addr, port, loc):
     return 'http://%s:%s/%s' % (addr, port, loc)
@@ -36,9 +36,9 @@ def do_json_request(addr=None, port=None,  jsonRequest=None, params=None, timeou
         rjson = None
         emsg = "ERROR: json got ConnectionError or other exception"
         # Rethrow the exception after we've checked for stack trace from h2o.
-        # Out of memory errors maybe don't show up right away? 
-        # so we should wait for h2o to get it out to h2o stdout. 
-        # Don't want to rely on cloud teardown to check because there's no delay, 
+        # Out of memory errors maybe don't show up right away?
+        # so we should wait for h2o to get it out to h2o stdout.
+        # Don't want to rely on cloud teardown to check because there's no delay,
         # and we don't want to delay all cloud teardowns by waiting.
         exc_info = sys.exc_info()
         # we don't expect to have connection errors, so any exception is a bad thing.
@@ -68,7 +68,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     gc = do_json_request(http_addr, port, '3/Cloud.json', timeout=10)
     if gc is None:
         return possMemberList
-        
+
     version    = gc['version']
     # check to see if it's a h2o-dev version? (common problem when mixing h2o1/h2o-dev testing with --usecloud
 # local builds have (unknown)    if not version.startswith('0'):
@@ -135,8 +135,8 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
 
         use_maprfs = 'mapr' in hdfs_version
         use_hdfs = not use_maprfs # we default to enabling cdh4 on 172.16.2.176
-        node = { 
-            'http_addr': ip, 
+        node = {
+            'http_addr': ip,
             'port': int(port),  # print it as a number for the clone ingest
             'java_heap_GB': java_heap_GB,
             # this list is based on what tests actually touch (fail without these)
@@ -175,18 +175,18 @@ def find_cloud(ip_port=None,
     if not ip_port:
         ip_port='localhost:54321'
     # hdfs_config can be the hdfs xml config file
-    # hdfs_name_node an be ip, ip:port, hostname, hostname:port", 
+    # hdfs_name_node an be ip, ip:port, hostname, hostname:port",
     # None on expected size means don't check
 
     hdfsSetup = (hdfs_version, hdfs_config, hdfs_name_node)
-    # partition returns a 3-tuple as (LHS, separator, RHS) if the separator is found, 
+    # partition returns a 3-tuple as (LHS, separator, RHS) if the separator is found,
     # (original_string, '', '') if the separator isn't found
     possMembersList = [ip_port]
 
     h2oNodes = {}
     alreadyAdded = set()
     tries = 0
-    # we could just take a single node's word on the complete cloud, but this 
+    # we could just take a single node's word on the complete cloud, but this
     # two layer try is no big deal and gives some checking robustness when a bad cloud exists
     for n1, possMember in enumerate(possMembersList):
         tries += 1

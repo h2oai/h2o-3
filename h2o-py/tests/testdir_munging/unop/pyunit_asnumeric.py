@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 
 def asnumeric():
-    
+
 
     h2oframe =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars.csv"))
     rows = h2oframe.nrow

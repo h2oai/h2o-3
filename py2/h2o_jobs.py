@@ -55,18 +55,18 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
             # don't update lastUsedMemBytes if we're decreasing
             if usedMemBytes > lastUsedMemBytes[i]:
                 lastUsedMemBytes[i] = usedMemBytes
-            
+
             # sum all individual stats
             for stat in n:
                 if stat in statSum:
-                    try: 
+                    try:
                         statSum[stat] += n[stat]
                     except TypeError:
                         # raise Exception("statSum[stat] should be number %s %s" % (statSum[stat], stat, n[stat]))
                         print "ERROR: statSum[stat] should be number %s %s %s" % (statSum[stat], stat, n[stat])
                         # do nothing
                 else:
-                    try: 
+                    try:
                         statSum[stat] = n[stat] + 0.0
                     except TypeError:
                         pass # ignore non-numbers
@@ -78,9 +78,9 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
         time.sleep(retryDelaySecs)
         if not h2o_args.no_timeout and ((time.time() - start) > timeoutSecs):
             raise Exception("Timeout while polling in pollStatsWhileBusy: %s seconds" % timeoutSecs)
-    
 
-    # now print man 
+
+    # now print man
     print "Did %s polls" % polls
     statMean = {}
     print "Values are summed across all nodes (cloud members), so divide by node count"
@@ -95,12 +95,12 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
     # statMean['sys_cpu_%'],
     # statMean['system_load']
 
-# poll the Jobs queue and wait if not all done. 
+# poll the Jobs queue and wait if not all done.
 # Return matching keys to a pattern for 'destination_key"
 # for a job (model usually)
 
 # FIX! the pattern doesn't limit the jobs you wait for (sounds like it does)
-# I suppose it's rare that we'd want to wait for a subset of jobs, but lets 
+# I suppose it's rare that we'd want to wait for a subset of jobs, but lets
 # 'key' 'description' 'destination_key' could all be interesting things you want to pattern match agains?
 # what the heck, just look for a match in any of the 3 (no regex)
 # if pattern is not None, only stall on jobs that match the pattern (in any of those 3)
@@ -122,15 +122,15 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
             jobKeyType = key['type']
 
 #          "key": {
-#            "URL": "/3/Jobs.json/$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2", 
+#            "URL": "/3/Jobs.json/$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2",
 #            "__meta": {
-#              "schema_name": "JobKeyV1", 
-#              "schema_type": "Key<Job>", 
+#              "schema_name": "JobKeyV1",
+#              "schema_type": "Key<Job>",
 #              "schema_version": 1
-#            }, 
-#            "name": "$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2", 
+#            },
+#            "name": "$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2",
 #            "type": "Key<Job>"
-#    
+#
             progress = j['progress']
             progress_msg = j['progress_msg']
 
@@ -153,11 +153,11 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
                 check_sandbox_for_errors()
                 print ("ERROR: not stopping, but: pollWaitJobs found a cancelled job when it shouldn't have:\n %s" % dump_json(j))
                 print ("Continuing so maybe a json response will give more info")
-                
+
             ### verboseprint(j)
             # don't include cancelled jobs here
             elif j['status']!='DONE':
-                if not pattern: 
+                if not pattern:
                     # always print progress if busy job (no pattern used
                     print "time:", time.strftime("%I:%M:%S"), "progress:",  progress, dest
                     verboseprint("description:", description, "end_time:", end_time)

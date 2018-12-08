@@ -34,7 +34,7 @@ class Basic(unittest.TestCase):
         maxx = 29
         # for trial in range(maxx):
         for trial in range(int(1e6),int(8e6),int(1e6)):
-            
+
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
             length = trial
@@ -80,7 +80,7 @@ class Basic(unittest.TestCase):
 
             if execResult['num_rows']:
                 keys.append(execExpr)
-            
+
             xList.append(length)
             eList.append(elapsed1)
             fList.append(elapsed2)

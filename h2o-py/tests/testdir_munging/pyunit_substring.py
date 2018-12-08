@@ -27,13 +27,13 @@ def substring_check():
   assert string.substring(-4,-9)[0,0] == ''
   assert enum.substring(-5)[0,0] == 'nothing'
   assert enum.substring(-43,-3)[0,0] == ''
-  
+
   #test NA values
   string = h2o.H2OFrame.from_python([["nothing"],["NA"]], column_types=['string'], na_strings=["NA"])
   enum = h2o.H2OFrame.from_python([["nothing"],["NA"]], column_types=['enum'], na_strings=["NA"])
   assert ((string.substring(2,5)).isna() == h2o.H2OFrame([[0],[1]])).all()
   assert ((enum.substring(2,5)).isna() == h2o.H2OFrame([[0],[1]])).all()
-  
+
   #test empty strings
   string = h2o.H2OFrame.from_python([''], column_types=['string'])
   enum = h2o.H2OFrame.from_python([''], column_types=['enum'])

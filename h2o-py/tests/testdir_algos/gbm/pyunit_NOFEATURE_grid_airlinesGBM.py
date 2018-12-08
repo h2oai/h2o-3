@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def grid_airlinesGBM():
-    
-    
+
+
 
     air =  h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
     #air.summary()

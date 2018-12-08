@@ -3,7 +3,7 @@ import h2o_args, h2o_nodes
 
 # tests refer to h2o.unit_main
 from h2o_args import unit_main
-# start with just the stuff tests use, from here? 
+# start with just the stuff tests use, from here?
 # so they don't get hardwired to another module that might change?
 from h2o_test import setup_random_seed, make_syn_dir, verboseprint, check_sandbox_for_errors, dump_json
 import h2o_bc # init, tear_down_cloud
@@ -22,7 +22,7 @@ def init(*args, **kwargs):
         h2o_args.parse_our_args()
 
     global nodes, n0
-    # ugly, but we have 3 places that are kept in sync..check them all 
+    # ugly, but we have 3 places that are kept in sync..check them all
     def checkIsNone(thingName, thing):
         if not (thing is None or len(thing)==0):
             print "WARNING: %s is not empty before h2o.init()..Unlikely that makes sense? %s" %\

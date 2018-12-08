@@ -31,10 +31,10 @@ class Basic(unittest.TestCase):
         for (csvFilename,  timeoutSecs) in csvFilelist:
             hex_key = csvFilename + "_" + str(trial) + ".hex"
             # can't import the dir again while the src file is being parsed
-            parseResult = h2i.import_parse(bucket='home-0xdiag-datasets', 
+            parseResult = h2i.import_parse(bucket='home-0xdiag-datasets',
                 path=importFolderPath+"/"+csvFilename,
                 schema='put',
-                hex_key=hex_key, timeoutSecs=timeoutSecs, 
+                hex_key=hex_key, timeoutSecs=timeoutSecs,
                 intermediateResults=DO_INTERMEDIATE_RESULTS,
                 noPoll=True)
             trial += 1

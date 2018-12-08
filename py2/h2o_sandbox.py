@@ -100,7 +100,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     except:
                         raise Exception("%s/doneToLine.%s is corrupted (multiprocess issue?): %s" % \
                             (LOG_DIR, filename, r))
-                    
+
         except IOError:
             # no file
             doneToLine = 0
@@ -177,7 +177,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     ('Retrying after IO error' in line) or
                     ('Error on' in line) or
                     # temporary hack. getting these on shutdown in multi-machine
-                    # ApiWatch  ERRR WATER: ApiPortWatchdog: 
+                    # ApiWatch  ERRR WATER: ApiPortWatchdog:
                     #   Failed trying to connect to REST API IP and Port (/10.73.149.39:54323, 30000 ms)
                     ('ApiPortWatchdog' in line) or
                     ('Error reduced' in line) or
@@ -202,14 +202,14 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                     ('Mean Squared Error' in line) or
                     ('Error' in line and 'Actual' in line) or
                     # fvec
-                    ('prediction error' in line) or 
+                    ('prediction error' in line) or
                     ('errors on' in line) or
                     # R
                     ('class.error' in line) or
                     # original RF
-                    ('error rate' in line) or 
+                    ('error rate' in line) or
                     ('[Loaded ' in line) or
-                    ('[WARN]' in line) or 
+                    ('[WARN]' in line) or
                     ('CalcSquareErrorsTasks' in line))
 
             if (printing==0 and foundBad):
@@ -287,7 +287,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 print "###############################################################################################"
                 print errorMessage
                 print "###############################################################################################"
-            else: 
+            else:
                 raise Exception(errorMessage)
 
     if errorFound:
@@ -304,9 +304,9 @@ if __name__ == "__main__":
     arg_names = ['me', 'LOG_DIR', 'python_test_name', 'cloudShutdownIsError', 'sandboxIgnoreErrors', 'verbose']
     # https://docs.python.org/2/library/itertools.html
     # Nice..Learning itertools stuff:
-    # izip_longest: Make an iterator that aggregates elements from each of the iterables. 
-    # If the iterables are of uneven length, missing values are filled-in with fillvalue. 
-    # Iteration continues until the longest iterable is exhausted. 
+    # izip_longest: Make an iterator that aggregates elements from each of the iterables.
+    # If the iterables are of uneven length, missing values are filled-in with fillvalue.
+    # Iteration continues until the longest iterable is exhausted.
     args = dict(itertools.izip_longest(arg_names, sys.argv))
     # if you're running this from the command line, remove any existing doneToLine markers
     if not args['LOG_DIR']:
@@ -326,9 +326,9 @@ if __name__ == "__main__":
     errorMessage = check_sandbox_for_errors(
         LOG_DIR=LOG_DIR,
         python_test_name=args['python_test_name'],
-        cloudShutdownIsError=args['cloudShutdownIsError'], 
+        cloudShutdownIsError=args['cloudShutdownIsError'],
         sandboxIgnoreErrors=True,
-        verbose=True, 
+        verbose=True,
         )
         # sandboxIgnoreErrors=args['sandboxIgnoreErrors'],
         # verbose=args['verbose'],

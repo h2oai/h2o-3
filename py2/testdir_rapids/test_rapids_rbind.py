@@ -32,12 +32,12 @@ class Basic(unittest.TestCase):
         # for trial in range(int(1e6),int(200e6),int(1e6)):
         ROWS = int(100e6)
         for trial in [ROWS]:
-            
+
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
             length = trial
             execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
-    
+
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
             elapsed1 = time.time() - start
@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
             # fails. Post size?
             # for trial2 in range(0, 16):
                 rows = ROWS * trial2
-             
+
                 vString = ' '.join(['%v' for x in range(trial2)])
                 execExpr = '(= !v2 (rbind %s))' % vString
 
@@ -63,7 +63,7 @@ class Basic(unittest.TestCase):
 
                 if execResult['num_rows']:
                     keys.append(execExpr)
-                
+
                 if 1==1:
                     start = time.time()
                     execExpr = '(sum %v2 %TRUE)'

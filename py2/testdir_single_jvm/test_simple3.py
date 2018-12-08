@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
                 print name, stype, required, actual_value, values
             print
 
-    
+
     def test_b_algo_parameters(self):
         # for algo in ['kmeans', 'gbm', 'deeplearning', 'glm', 'word2vec', 'example', 'quantile', 'grep']:
         for algo in ['kmeans', 'gbm', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes']:

@@ -18,8 +18,8 @@ class Basic(unittest.TestCase):
         global SYNDATASETS_DIR
         SYNDATASETS_DIR = h2o.make_syn_dir()
 
-    @classmethod 
-    def tearDownClass(cls): 
+    @classmethod
+    def tearDownClass(cls):
         h2o.tear_down_cloud()
 
     def test_A_many_parse1(self):
@@ -89,7 +89,7 @@ class Basic(unittest.TestCase):
         "-.6e102|-.7e102|-.8e102|1",
         ]
         return rows
-    
+
     #     "# comment here is okay",
     #     "# comment here is okay too",
     # FIX! needed an extra line to avoid bug on default 67+ sample?
@@ -107,7 +107,7 @@ class Basic(unittest.TestCase):
         "Elodia|G.|Ali|1983-10-31"
         ]
         return rows
-    
+
     # update spec
     # intermixing blank lines in the first two lines breaks things
     # blank lines cause all columns except the first to get NA (red)
@@ -139,7 +139,7 @@ class Basic(unittest.TestCase):
         1:"\r\n",
         2:"\r"
         }
-    
+
     # tab here will cause problems too?
     #    5:['"\t','\t"'],
     #    8:["'\t","\t'"]
@@ -166,7 +166,7 @@ class Basic(unittest.TestCase):
         7:["'","'"],
         8:["' "," '"],
         }
-    
+
     def changeTokens(self, rows, tokenCase, tokenChangeDict):
         [cOpen,cClose] = tokenChangeDict[tokenCase]
         newRows = []
@@ -182,14 +182,14 @@ class Basic(unittest.TestCase):
             verboseprint(r)
             newRows.append(r)
         return newRows
-    
-    
+
+
     def writeRows(self,csvPathname,rows,eol):
         f = open(csvPathname, 'w')
         for r in rows:
             f.write(r + eol)
         # what about case of missing eoll at end of file?
-    
+
     sepChangeDict = {
         # NEW: 0x01 can be SEP character for Hive datasets
         0:"",
@@ -197,7 +197,7 @@ class Basic(unittest.TestCase):
         2:" ",
         3:"\t",
         }
-    
+
     def changeSep(self,rows,sepCase):
         # do a trial replace, to see if we get a <tab><sp> problem
         # comments at the beginning..get a good row
@@ -226,7 +226,7 @@ class Basic(unittest.TestCase):
             newRows = [r.replace('@',randomOtherSep) for r in newRows]
 
         return newRows
-    
+
     def tryThemAll(self, set, rows, enumsOnly=False):
         for eolCase in range(len(self.eolDict)):
             eol = self.eolDict[eolCase]
@@ -252,7 +252,7 @@ class Basic(unittest.TestCase):
                     else:
                         single_quotes = 0
                     parseResult = h2i.import_parse(path=csvPathname, schema='local', single_quotes=single_quotes,
-                        noPrint=not h2o_args.verbose, retryDelaySecs=0.1, 
+                        noPrint=not h2o_args.verbose, retryDelaySecs=0.1,
                         doSummary=DO_SUMMARY, intermediateResults=DO_INTERMEDIATE_RESULTS)
 
                     if DO_RF:
@@ -262,6 +262,6 @@ class Basic(unittest.TestCase):
                     h2o.check_sandbox_for_errors()
                     sys.stdout.write('.')
                     sys.stdout.flush()
-    
+
 if __name__ == '__main__':
     h2o.unit_main()

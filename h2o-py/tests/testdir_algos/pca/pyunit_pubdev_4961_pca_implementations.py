@@ -13,7 +13,7 @@ def pca_arrests():
   arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
 
   print("Testing to see whether the trained PCA are essentially the same using different implementation...")
-  
+
   eigenvector_standard = None
   for impl in ["MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"]:
     print("Run PCA with implementation: " + impl)

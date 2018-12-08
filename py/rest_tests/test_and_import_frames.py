@@ -12,33 +12,33 @@ def load_and_test(a_node, pp):
     # Test CreateFrame
     if h2o_test_utils.isVerbose(): print('Testing CreateFrame. . .')
     created_job = a_node.create_frame(dest='created') # call with defaults
-    
+
     a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV3 instance (aka the Job)
-    
+
     frames = a_node.frames(key='created')['frames']
     assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
     assert frames[0]['frame_id']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
-    
+
     created = frames[0]
     assert 'rows' in created, "FAIL: failed to find 'rows' field in CreateFrame result."
     assert created['rows'] == 10000, "FAIL: expected value of 'rows' field in CreateFrame result to be: " + str(10000) + ", found: " + str(created['rows'])
     assert 'columns' in created, "FAIL: failed to find 'columns' field in CreateFrame result."
     assert len(created['columns']) == 10, "FAIL: expected value of 'columns' field in CreateFrame result to be: " + str(10) + ", found: " + str(len(created['columns']))
-    
+
     #########################################################
     # Import and test all the datasets we'll need for the subsequent tests:
     #########################################################
-    
+
     # dest_key, path, expected_rows, model_category, response_column, ignored_columns
     datasets_to_import = [
         DatasetSpec('prostate_clustering', '../../smalldata/logreg/prostate.csv', 380, 'Clustering', None, ['ID']),
         DatasetSpec('prostate_binomial', '../../smalldata/logreg/prostate.csv', 380, 'Binomial', 'CAPSULE', ['ID']),
         DatasetSpec('prostate_regression', '../../smalldata/logreg/prostate.csv', 380, 'Regression', 'AGE', ['ID']),
-    
+
         DatasetSpec('airlines_binomial', '../../smalldata/airlines/allyears2k_headers.zip', 43978, 'Binomial', 'IsDepDelayed', ['DayofMonth', 'DepTime', 'CRSDepTime', 'ArrTime', 'CRSArrTime', 'TailNum', 'ActualElapsedTime', 'CRSElapsedTime', 'AirTime', 'ArrDelay', 'DepDelay', 'TaxiIn', 'TaxiOut', 'Cancelled', 'CancellationCode', 'Diverted', 'CarrierDelay', 'WeatherDelay', 'NASDelay', 'SecurityDelay', 'LateAircraftDelay', 'IsArrDelayed'] ),
         DatasetSpec('iris_multinomial', '../../smalldata/iris/iris_wheader.csv', 150, 'Multinomial', 'class', []),
        ]
-    
+
     datasets = {} # the dataset spec
     for dataset_spec in datasets_to_import:
         dataset = dataset_spec.import_and_validate_dataset(a_node) # it's also stored in dataset_spec['dataset']
@@ -47,25 +47,25 @@ def load_and_test(a_node, pp):
             a_node.as_factor(dataset_spec['dest_key'], dataset_spec['response_column'])
 
         datasets[dataset_spec['dest_key']] = dataset_spec
-    
-    
+
+
     ################################################
     # Test /Frames for prostate.csv
     frames = a_node.frames(row_count=5)['frames']
     frames_dict = h2o_test_utils.list_to_dict(frames, 'frame_id/name')
-    
+
     if h2o_test_utils.isVerboser():
         print("frames: ")
         pp.pprint(frames)
-    
+
     if h2o_test_utils.isVerboser():
         print("frames_dict: ")
         pp.pprint(frames_dict)
-    
+
     assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find " + 'prostate_binomial' + " in Frames list."
     assert not frames_dict['prostate_binomial']['is_text'], "FAIL: Parsed Frame is is_text"
-    
-    
+
+
     # Test /Frames/{key} for prostate.csv
     frames = a_node.frames(key='prostate_binomial', row_count=5)['frames']
     frames_dict = h2o_test_utils.list_to_dict(frames, 'frame_id/name')
@@ -76,8 +76,8 @@ def load_and_test(a_node, pp):
     assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
     h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
     assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
-    
-    
+
+
     # Test /Frames/{key}/columns for prostate.csv
     frames = a_node.columns(key='prostate_binomial')['frames']
     columns_dict = h2o_test_utils.list_to_dict(frames[0]['columns'], 'label')
@@ -86,7 +86,7 @@ def load_and_test(a_node, pp):
     assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
     h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
     assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
-    
+
     # Test /Frames/{key}/columns/{label} for prostate.csv
     frames = a_node.column(key='prostate_binomial', column='AGE')['frames']
     columns_dict = h2o_test_utils.list_to_dict(frames[0]['columns'], 'label')
@@ -94,7 +94,7 @@ def load_and_test(a_node, pp):
     assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
     h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
     assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
-    
+
     # Test /Frames/{key}/columns/{label}/summary for prostate.csv
     frames = a_node.summary(key='prostate_binomial', column='AGE')['frames']
     columns_dict = h2o_test_utils.list_to_dict(frames[0]['columns'], 'label')
@@ -117,7 +117,7 @@ def load_and_test(a_node, pp):
     assert col['percentiles'][15] == 78, 'FAIL: Failed to find 78 as the 99.0% percentile for AGE. '+str(col['percentiles'][15])
     assert col['percentiles'][16] == 79, 'FAIL: Failed to find 79 as the 99.9% percentile for AGE. '+str(col['percentiles'][16])
     # NB: col['percentiles'] corresponds to probs=[0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999]
-    
+
     # Test /SplitFrame for prostate.csv
     if h2o_test_utils.isVerbose(): print('Testing SplitFrame with named destination_frames. . .')
     splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destination_frames=['bigger', 'smaller'])
@@ -129,21 +129,21 @@ def load_and_test(a_node, pp):
     assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
     assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
     h2o_test_utils.validate_job_exists(a_node, splits['key']['name'])
-    
+
     if h2o_test_utils.isVerbose(): print('Testing SplitFrame with generated destination_frames. . .')
     splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
     frames = a_node.frames()['frames']
     h2o_test_utils.validate_frame_exists(a_node, splits['destination_frames'][0]['name'], frames)
     h2o_test_utils.validate_frame_exists(a_node, splits['destination_frames'][1]['name'], frames)
-    
+
     first = a_node.frames(key=splits['destination_frames'][0]['name'])['frames'][0]
     second = a_node.frames(key=splits['destination_frames'][1]['name'])['frames'][0]
     assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
     assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
 
     h2o_test_utils.validate_job_exists(a_node, splits['key']['name'])
-    
-    
-    
+
+
+
     return datasets
-    
+

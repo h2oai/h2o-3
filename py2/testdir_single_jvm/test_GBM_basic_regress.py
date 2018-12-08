@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
             # 'variable_importance': False,
-            # 'seed': 
+            # 'seed':
         }
 
         model_key = 'covtype_gbm.hex'

@@ -16,7 +16,7 @@ def group_by():
 
     In addition, it checks that operations on numeric/enum columns are performed and generated the correct
     expected outputs.
-    
+
     '''
     # Connect to a pre-existing cluster
 

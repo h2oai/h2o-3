@@ -18,7 +18,7 @@ ModelMetricsPCA: pca
 MSE: NaN
 RMSE: NaN
 
-Scoring History from Power SVD: 
+Scoring History from Power SVD:
     timestamp            duration    iterations    err          principal_component_
 --  -------------------  ----------  ------------  -----------  ----------------------
     2018-01-18 08:35:44  0.002 sec   0             29.6462      1

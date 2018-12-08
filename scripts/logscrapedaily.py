@@ -65,7 +65,7 @@ g_success_jobs = []                     # record job names of passed jobs
 g_success_job_java_message_types = []
 g_success_job_java_messages = []        # record of successful jobs bad java messages
 
-# text you will find before you can find your java_*_*.out.txt 
+# text you will find before you can find your java_*_*.out.txt
 g_before_java_file = ["H2O Cloud", "Node", "started with output file"]
 
 g_java_filenames = []   # contains all java filenames for us to mine
@@ -164,7 +164,7 @@ def find_time(each_line,temp_func_list):
     global g_weekdays
     global g_months
     global g_failed_test_info_dict
-    
+
     temp_strings = each_line.strip().split()
 
     if (len(temp_strings) > 2):
@@ -173,8 +173,8 @@ def find_time(each_line,temp_func_list):
             temp_func_list.remove(find_time)    # found timestamp, don't need to look again for it
 
     return True
-            
-   
+
+
 def find_node_name(each_line,temp_func_list):
     """
     Find the slave machine where a Jenkins job was executed on.  It will save this
@@ -500,18 +500,18 @@ def extract_job_build_url(url_string):
     global g_failed_test_info_dict
     global g_jenkins_url
     global g_view_name
-    
+
     tempString = url_string.strip('/').split('/')
 
     if len(tempString) < 6:
         print "Illegal URL resource address.\n"
         sys.exit(1)
-        
+
     g_failed_test_info_dict["1.jobName"] = tempString[6]
-        
+
     g_jenkins_url = tempString[2]
     g_view_name = tempString[4]
-    
+
 
 def grab_java_message():
     """scan through the java output text and extract the bad java messages that may or may not happened when
@@ -550,12 +550,12 @@ def grab_java_message():
                 if len(found) > 0:
                     if len(g_current_testname) > 0: # a new unit test is being started.  Save old info and move on
                         associate_test_with_java(g_current_testname,java_messages,java_message_types)
-        
+
                     g_current_testname = endStr.strip() # record the test name
-                    
+
                     java_messages = []
                     java_message_types = []
-        
+
             temp_strings = each_line.strip().split()
 
             if (len(temp_strings) >= 6) and (temp_strings[5] in g_all_java_message_type):
@@ -587,7 +587,7 @@ def grab_java_message():
                         # add tempMessage to bad java message list
 #                        addJavaMessages(tempMessage,temp_strings[5],java_messages,java_message_types)
         java_file.close()
-                            
+
 
 def addJavaMessages(tempMessage,messageType,java_messages,java_message_types):
     """
@@ -690,7 +690,7 @@ def extract_java_messages():
     global g_success_jobs # record job names of passed jobs
     global g_success_job_java_messages # record of successful jobs bad java messages
     global g_success_job_java_message_types
-   
+
     global g_java_general_bad_messages  # store java error messages when no job is running
     global g_java_general_bad_message_types # store java error message types when no job is running.
 

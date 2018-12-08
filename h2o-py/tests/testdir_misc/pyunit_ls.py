@@ -7,8 +7,8 @@ from tests import pyunit_utils
 
 
 def ls_test():
-    
-    
+
+
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
 

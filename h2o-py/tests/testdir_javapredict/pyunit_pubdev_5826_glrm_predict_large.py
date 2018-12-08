@@ -12,12 +12,12 @@ PUBDEV-5826: GLRM model predict and mojo predict differ
 During training, we are trying to decompose a dataset A = X*Y.  The X and Y matrices are updated iteratively until
 the reconstructed dataset A' converges to A using some metrics.
 
-During prediction/scoring, we try to do A = X'*Y where A and Y are known.  H2O will automatically detect if 
+During prediction/scoring, we try to do A = X'*Y where A and Y are known.  H2O will automatically detect if
 A is the same dataset used to train the model.  If it is, it will automatically return X.  If A is not the same
 dataset used during training, we will try to get X' given A and Y.  In this case, we will still use the GLRM framework
 of update.  However, we only perform update on X' since Y is already known.
 
-At first glance, we will expect that predict on the training frame and predict on a brand new frame will give 
+At first glance, we will expect that predict on the training frame and predict on a brand new frame will give
 different results since two different procedures are used.  Here, I am trying to narrow the differences between the
 two X generated in this case.
 
@@ -25,7 +25,7 @@ I will use a numerical dataset benign.csv and then work with another dataset tha
 columns prostate_cat.csv.
 
 The comparisons performed here are:
-1. investigate the relationship among rows of the X factor.  Note that we will have two X factors, one from training 
+1. investigate the relationship among rows of the X factor.  Note that we will have two X factors, one from training
 and one from mojo prediction.  If the relationships among the X factor are the same, this means that even if the two
 X factors are different, the relationship among the rows have not changed.  We checked two relationships, a. the
 direction between two rows (use inner product), b. the distance between two rows (use ||row1-row2||^2).
