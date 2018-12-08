@@ -52,7 +52,7 @@ test.rdoc_settimezone.golden <- function() {
   edf <- data.frame(year = c(114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900),
                    month = c(1, 1, 1, 2, 2, 10, 11),
                    day = c(7, 30, 31, 1, 2, 31, 1),
-                   hour = c(0, 0, 0, 0, 0, 0, 0)) 
+                   hour = c(0, 0, 0, 0, 0, 0, 0))
 
   print_diff(edf$year, ldf$year)
   expect_that(edf$year, equals(ldf$year))
@@ -66,7 +66,7 @@ test.rdoc_settimezone.golden <- function() {
   # erase side effect of test
   h2o.setTimezone(origTZ)
   h2o.rm(hdf)
-  
+
 }
 
 doTest("R Doc setTimezone", test.rdoc_settimezone.golden)

@@ -20,13 +20,13 @@ test <- function() {
 	z_sub = zz[sample(1:nrow(zz),size = round(nrow(zz)*(1/9)),replace = F),]
 	sub = rbind(o_sub,z_sub)
 	dim(sub)
-	
+
 	print("Calculate prior, offset and weights")
 	prior = length(which(full$y==1))/nrow(full) # probabilty of an event
 	r1 = length(which(sub$y==1))/nrow(sub)      # proportion of events in the dataset
 
 	sub$offset=log( (r1*(1-prior)) / ((1-r1)*prior) );
-	w1=prior/r1; 
+	w1=prior/r1;
 	w2=(1-prior)/(1-r1);
 	sub$weight = ifelse(sub$y==1,yes = w1,no = w2)
 
@@ -38,13 +38,13 @@ test <- function() {
 	print("Build Models")
 	glm_with_prior = h2o.glm(x = 2,y = 1,training_frame = sub_frame,family = "binomial",prior = prior)
 	print(glm_with_prior@model$coefficients_table)
-	
+
 	glm_with_offset = h2o.glm(x = 2,y = 1,training_frame = sub_frame,family = "binomial",offset_column = "offset")
 	print(glm_with_offset@model$coefficients_table)
-	
+
 	glm_with_weight = h2o.glm(x = 2,y = 1,training_frame = sub_frame,family = "binomial",prior = prior,weights_column = "weight")
 	print(glm_with_weight@model$coefficients_table)
-	
+
 	glm_with_full = h2o.glm(x = 2,y = 1,training_frame = full_frame,family = "binomial")
 	print(glm_with_full@model$coefficients_table)
 
@@ -66,7 +66,7 @@ test <- function() {
 	print(glm_with_prior2@model$coefficients_table)
 
 	expect_equal(glm_with_prior1@model$coefficients[2],glm_with_prior2@model$coefficients[2])
-	
+
 }
 
 

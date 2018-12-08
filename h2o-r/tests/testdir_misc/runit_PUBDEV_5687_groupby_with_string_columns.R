@@ -2,10 +2,10 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ##
 # Test groupby functions on a frame with String columns and make sure a warning
-# message was received.  
-# 
+# message was received.
+#
 # When groupby operations are performed on numeric columns, make sure it still returns the
-# correct output.a 
+# correct output.a
 ##
 
 test <- function(conn) {
@@ -15,7 +15,7 @@ test <- function(conn) {
   Log.info("Test method = nrow and median with string columns") # check warning is generated
   expect_warning(gp_nrow <- h2o.group_by(data = df.hex, by = "C1", nrow("C2")))
   expect_warning(gp_nrow <- h2o.group_by(data = df.hex, by = "C1", median("C3")))
-  
+
   Log.info("Test method = nrow and median with numeric columns") # check groupby still works
   gp_nrow <- h2o.group_by(data = df.hex, by = "C1", nrow("C4"))
   gp_nrow <- as.data.frame(gp_nrow)[,2]

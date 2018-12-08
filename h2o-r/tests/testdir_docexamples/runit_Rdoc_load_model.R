@@ -9,7 +9,7 @@ test.rdoc_load_model.golden <- function() {
   prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", alpha = 0.5)
   glmmodel.path <- h2o.saveModel(object = prostate.glm, path = sandbox())
   glmmodel.load <- h2o.loadModel(glmmodel.path)
-  
+
 }
 
 doTest("R Doc Load Model", test.rdoc_load_model.golden)

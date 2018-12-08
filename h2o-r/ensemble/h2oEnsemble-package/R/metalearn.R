@@ -2,11 +2,11 @@
 
 
 h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit with keep_levelone_data = TRUE
-                          metalearner = "h2o.glm.wrapper", 
+                          metalearner = "h2o.glm.wrapper",
                           seed = 1,
-                          keep_levelone_data = TRUE) {  
-  
-  
+                          keep_levelone_data = TRUE) {
+
+
   # Pull in level-one data from h2o.ensemble object
   levelone <- object$levelone  #includes y
   # Check that levelone is not NULL
@@ -17,15 +17,15 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
   family <- object$family
   runtime <- object$runtime
   learner <- names(object$basefits)
-  
+
   # object$levelone may be a key or an H2OFrame object
   if ((!inherits(levelone, "Frame") && !inherits(levelone, "H2OFrame")))
     tryCatch(levelone <- h2o.getFrame(levelone),
              error = function(err) {
                stop("object$levelone must be a valid H2OFrame or id")
              })
-  
-  
+
+
   # Validate metalearner argument
   if (length(metalearner)>1 | !is.character(metalearner) | !exists(metalearner)) {
     stop("The 'metalearner' argument must be a string, specifying the name of a base learner wrapper function.")
@@ -33,7 +33,7 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
   if (!exists(metalearner)) {
     stop("'metalearner' function name not found.")
   }
-  
+
 
   # What type of metalearning function do we have?
   # The h2o version is memory-optimized (the N x L level-one matrix, Z, never leaves H2O memory);
@@ -49,14 +49,14 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
     if (!("gaussian" %in% eval(formals(metalearner)$family))) {
       # TO DO: should make this more generic and print specific wrapper name in violation
       stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
-    }    
+    }
   }
-  
+
   # TO DO: Maybe remove this:
   # Do we want to rename this to `fit`? or overwrite original object...
   # Currently making a copy of the model
   fit <- object
-  
+
   # Metalearning: Regress y onto Z to learn optimal combination of base models
   print("Metalearning")
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
@@ -65,29 +65,29 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
     if (is.character(family)) {
       familyFun <- get(family, mode = "function", envir = parent.frame())
       #print(familyFun$family)  #does not work for SL.glmnet
-    } 
+    }
     # SL metalearner functions require pulling levelone data back into R memory (not recommended for big datasets)
     Zdf <- as.data.frame(levelone)[,-ncol(levelone)]  #TO DO: untested; levelone is Z,y
     Y <- as.data.frame(levelone)[,"y"]  # TO DO: untested
-    fit$runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y, 
-                                                                          X = Zdf, 
-                                                                          newX = Zdf, 
-                                                                          family = familyFun, 
-                                                                          id = seq(N), 
+    fit$runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y,
+                                                                          X = Zdf,
+                                                                          newX = Zdf,
+                                                                          family = familyFun,
+                                                                          id = seq(N),
                                                                           obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
     # H2O metalearner
-    fit$runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
-                                                                          y = "y", 
+    fit$runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner,
+                                                                          y = "y",
                                                                           training_frame = levelone,   #levelone := cbind(Z, y)
-                                                                          validation_frame = NULL, 
+                                                                          validation_frame = NULL,
                                                                           family = family), gcFirst = FALSE)
   }
-  
+
   if (!keep_levelone_data) {
     fit$levelone <- NULL
   }
-  
+
   # Should we update the runtime$total?
   # For now, just leave as is
   fit$metafit <- metafit

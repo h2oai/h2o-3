@@ -12,8 +12,8 @@ source("../../scripts/h2o-r-test-setup.R")
 test <- function() {
 	hex = h2o.importFile(locate("bigdata/laptop/airlines_all.05p.csv"), "hex")
   print(hex)
-      
-    
+
+
 }
 
 doTest("Parse 2008 airlines dataset from NAS", test)

@@ -11,7 +11,7 @@ test.RF.iris_class <- function() {
   iris.rf  <- h2o.randomForest(y = 6, x = 1:4, training_frame = iris.hex,
                                ntrees = 50, max_depth = 100)
   print(iris.rf)
-  
+
 }
 
 doTest("RF test iris all", test.RF.iris_class)

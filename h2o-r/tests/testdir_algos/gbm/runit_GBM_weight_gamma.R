@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-	
+
 	htable  = h2o.uploadFile(locate("smalldata/gbm_test/moppe.csv"))
 	htable$premiekl = as.factor(htable$premiekl)
 	htable$moptva = as.factor(htable$moptva)
@@ -17,7 +17,7 @@ test <- function() {
 	hh = h2o.gbm(x = 1:3,y = "medskad",training_frame = htable,distribution = "gamma",weights_column = "antskad",
              ntrees = 20,max_depth = 1,min_rows = 1,learn_rate = 1)
 	ph = as.vector(as.data.frame(h2o.predict(hh,newdata = htable)))
-	
+
 	#expect_equal(gg$initF,hh@model$init_f,tolerance = 1e-6)
 	#expect_equal(min(pr),min(ph[,1]),tolerance = 1e-6)
 	#expect_equal(max(pr),max(ph[,1]),tolerance = 1e-6)
@@ -26,7 +26,7 @@ test <- function() {
 	expect_equal(3751.01,min(ph[,1]),tolerance = 1e-4)
 	expect_equal(15291,max(ph[,1]),tolerance = 1e-4)
 	expect_equal(8119,mean(ph[,1]),tolerance = 1e-4)
-	
-	
+
+
 }
 doTest("GBM weight Test: GBM w/ weight for gamma distribution", test)

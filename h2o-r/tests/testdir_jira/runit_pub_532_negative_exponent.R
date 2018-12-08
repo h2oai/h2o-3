@@ -19,14 +19,14 @@ covtype.hex$C55^(-2)
 val0 <- covtype.hex$C55^-2
 covtype.hex$C55^ -2
 covtype.hex$C55 ^-2
-covtype.hex$C55 ^-2 
+covtype.hex$C55 ^-2
 
 
 #w/o h2o.exec:
 val <- covtype.hex$C55^-2
 covtype.hex$C55^ -2
 covtype.hex$C55 ^-2
-covtype.hex$C55 ^-2 
+covtype.hex$C55 ^-2
 
 print(val0)
 

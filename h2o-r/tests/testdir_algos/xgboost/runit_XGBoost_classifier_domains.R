@@ -64,16 +64,16 @@ test.xgboost.mult.levels <- function() {
   y <- "CAPSULE"
   x <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
   prostate.xgboost <- h2o.xgboost(model_id = "xgboost_prostate",
-                              x = x, y = y, 
-                              training_frame = prostate.hex, 
-                              ntrees = 50, 
+                              x = x, y = y,
+                              training_frame = prostate.hex,
+                              ntrees = 50,
                               distribution = "multinomial")
-  
+
   print("training_metrics for prostate: ")
   print(prostate.xgboost@model$training_metrics)
   print("training cm for prostate: ")
   print(h2o.confusionMatrix(prostate.xgboost@model$training_metrics))
-  
+
   domain = prostate.xgboost@model$training_metrics@metrics$domain
   print("domain for prostate XGBoost: ")
   print(domain)
@@ -90,11 +90,11 @@ test.xgboost.mult.levels <- function() {
   y <- "CAPSULE"
   x <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
   prostate_string_levels.xgboost <- h2o.xgboost(model_id = "xgboost_prostate",
-                              x = x, y = y, 
-                              training_frame = prostate_string_levels.hex, 
-                              ntrees = 50, 
+                              x = x, y = y,
+                              training_frame = prostate_string_levels.hex,
+                              ntrees = 50,
                               distribution = "multinomial")
-  
+
   print("training_metrics for prostate: ")
   print(prostate_string_levels.xgboost@model$training_metrics)
   print("training cm for prostate: ")

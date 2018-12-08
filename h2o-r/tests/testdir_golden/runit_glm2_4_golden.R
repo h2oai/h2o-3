@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.glm2Ridge.golden <- function() {
-	
+
 #RT's solver:
 ridgeLinear<-
 function(x, y, L)
@@ -20,8 +20,8 @@ names(coef)=c(paste("b",as.character(1:ncol(x)),sep=""),"b0")
 coef
 }
 
-#Import data: 
-Log.info("Importing HANDMADE data...") 
+#Import data:
+Log.info("Importing HANDMADE data...")
 hmR<- read.csv(locate("smalldata/glm_test/handmade.csv"), header=T)
 
 
@@ -51,7 +51,7 @@ H2Ocoeffs<- sort(fitH2O@model$coefficients_table$coefficients)
 H2Ocoeffs<- as.data.frame(H2Ocoeffs)
 print(H2Ocoeffs)
 
-RTcoeffs<- sort(as.matrix(RT1)) 
+RTcoeffs<- sort(as.matrix(RT1))
 
 #Log.info(paste("H2O Coeffs  : ", H2Ocoeffs,  "\t\t\t", "R GLMNET Coeffs  :", Rcoeffsglmnet))
 
@@ -77,7 +77,7 @@ expect_equal(fitH2O@model$training_metrics@metrics$null_deviance, fitRglmnet$nul
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
 
-   
+
 }
 
 doTest("GLM2 SimpleRidge", test.glm2Ridge.golden)

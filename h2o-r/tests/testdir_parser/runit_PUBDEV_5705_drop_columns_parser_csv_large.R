@@ -24,7 +24,7 @@ test.parseSkippedColumns<- function() {
     )
   filePath <- getwd()
   fileName <- paste0(filePath, '/tempFrame.csv')
-  
+
   h2o.downloadCSV(f1, fileName) # save generated file into csv
   fullFrameR <- as.data.frame(f1)
   skip_front <- c(1)
@@ -33,7 +33,7 @@ test.parseSkippedColumns<- function() {
   onePermute <- sample(h2o.ncol(f1))
   skipall <- onePermute
   skip99Per <- onePermute[1:floor(h2o.ncol(f1) * 0.99)]
-  
+
   # test skipall for h2o.importFile
   e <-
     tryCatch(
@@ -50,7 +50,7 @@ test.parseSkippedColumns<- function() {
         x
     )
   print(e2)
-  
+
   # skip 99% of the columns randomly
   print("Testing skipping 99% of columns")
   assertCorrectSkipColumns(fileName, fullFrameR, skip99Per, TRUE, h2o.getTypes(f1)) # test importFile

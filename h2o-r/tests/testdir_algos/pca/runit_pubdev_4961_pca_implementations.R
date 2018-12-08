@@ -2,11 +2,11 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 test.pca.implementations <- function() {
-  Log.info("Importing arrests.csv data...") 
+  Log.info("Importing arrests.csv data...")
   arrestsH2O <- h2o.uploadFile(
     locate("smalldata/pca_test/USArrests.csv"),
     destination_frame = "arrestsH2O")
-  
+
   Log.info("Testing to see whether the trained PCA are essentially the same using different implementation...")
   # Obtain eigenvectors for PCA trained using different implementations
   eigenvectors <- lapply(
@@ -20,7 +20,7 @@ test.pca.implementations <- function() {
         seed = 1234)
       model@model$eigenvectors
     })
-  
+
   # Compare to see if they are fundamentally the same
   invisible(lapply(names(eigenvectors[[1]]), function(pc_ind) {
     eigenvectors_standard <- abs(eigenvectors[[1]][[pc_ind]])

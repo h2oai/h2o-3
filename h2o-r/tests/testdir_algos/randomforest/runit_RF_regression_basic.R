@@ -15,7 +15,7 @@ test.regression.basic <- function() {
   cars.drf <- h2o.randomForest(x = 3:7, y = 2, cars.hex)
   print(cars.drf)
 
-  
+
 }
 
 doTest("Basic Regession using Random Forest", test.regression.basic)

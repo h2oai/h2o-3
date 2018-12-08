@@ -14,13 +14,13 @@ xgboost.grid.test <- function() {
     hyper_params = list( ntrees = ntrees_opts, max_depth = max_depth_opts, learn_rate = learn_rate_opts)
     wine.grid <- h2o.grid("xgboost", y = 2, x = c(1, 3:14),
                    distribution='gaussian',
-                   training_frame = wine.hex, 
+                   training_frame = wine.hex,
                    hyper_params = hyper_params)
     print(wine.grid)
     expect_equal(length(wine.grid@model_ids), size_of_hyper_space)
 
     # Get models
-    grid_models <- lapply(wine.grid@model_ids, function(mid) { 
+    grid_models <- lapply(wine.grid@model_ids, function(mid) {
       model = h2o.getModel(mid)
     })
     # Check expected number of models
@@ -30,7 +30,7 @@ xgboost.grid.test <- function() {
     expect_model_param(grid_models, "max_depth", max_depth_opts)
     expect_model_param(grid_models, "learn_rate", learn_rate_opts)
 
-    
+
 }
 
 doTest("XGBoost Grid Test: wine.data from smalldata", xgboost.grid.test)

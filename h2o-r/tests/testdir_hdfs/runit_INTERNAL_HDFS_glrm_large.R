@@ -43,7 +43,7 @@ check.hdfs_glrm <- function() {
   h2o.rm(cross.glrm@model$representation_name)   # Remove X matrix to free memory
 
 
-  
+
 }
 
 doTest("GLRM test", check.hdfs_glrm)

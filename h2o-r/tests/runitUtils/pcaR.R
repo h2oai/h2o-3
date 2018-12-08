@@ -1,7 +1,7 @@
 # Check each principal component (eigenvector) equal up to a sign flip
 checkSignedCols <- function(object, expected, tolerance = 1e-6) {
   expect_equal(dim(object), dim(expected))
-  
+
   is_flipped <- sapply(1:ncol(object), function(j) {
     flipped <- abs(object[,j] - expected[,j]) > abs(object[,j] + expected[,j])
     num_true <- length(which(flipped))
@@ -32,7 +32,7 @@ checkPCAModel<- function(fitH2O, fitR, tolerance=1e-6, sort_rows=TRUE, compare_a
 checkPCAModelWork <- function(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeader, RImportanceHeader, H2OImportanceHeader, tolerance=1e-6, sort_rows=TRUE, compare_all_importance=TRUE) {
   pcimpR <- pcimpR[,1:k]
   eigvecR <- eigvecR[,1:k]
-  
+
   if(sort_rows && !is.null(rownames(eigvecH2O)) && !is.null(rownames(eigvecR))) {
     Log.info("Sorting rows alphabetically by row name")
     eigvecH2O <- eigvecH2O[order(rownames(eigvecH2O)),]
@@ -40,7 +40,7 @@ checkPCAModelWork <- function(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeade
     expect_equal(dim(eigvecH2O), dim(eigvecR))
     expect_true(all(rownames(eigvecH2O) == rownames(eigvecR)))
   }
-  
+
   if(k == 1) {
     eigvecH2O <- as.matrix(eigvecH2O)
     eigvecR <- as.matrix(eigvecR)
@@ -49,7 +49,7 @@ checkPCAModelWork <- function(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeade
     colnames(eigvecR) <- "PC1"
     colnames(pcimpR) <- "PC1"
   }
-  
+
   Log.info(textHeader)
   Log.info(RImportanceHeader); print(pcimpR)
   Log.info(H2OImportanceHeader); print(pcimpH2O)
@@ -67,7 +67,7 @@ checkPCAModelWork <- function(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeade
     }
   }
 
-  Log.info("Compare Principal Components between R and H2O\n") 
+  Log.info("Compare Principal Components between R and H2O\n")
   Log.info("R Principal Components:"); print(eigvecR)
   Log.info("H2O Principal Components:"); print(eigvecH2O)
   checkSignedCols(as.matrix(eigvecH2O), as.matrix(eigvecR), tolerance = tolerance)

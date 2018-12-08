@@ -12,7 +12,7 @@ test <- function() {
 	fre = fre[1:5000,]
 	fre$VehPower = as.factor(fre$VehPower)
 	fren = as.data.frame(fre)
-	
+
 	#build models
 	print("build models")
 	gg = glm(formula = ClaimNb~ Area +as.factor(VehPower)+ VehAge+ DrivAge+ BonusMalus+ VehBrand + VehGas +Density +Region,family = "poisson",
@@ -26,7 +26,7 @@ test <- function() {
 	expect_less_than(hh@model$training_metrics@metrics$null_deviance, no_weight_hh@model$training_metrics@metrics$null_deviance)
 
 	print("test ends")
-	
+
 }
 
 

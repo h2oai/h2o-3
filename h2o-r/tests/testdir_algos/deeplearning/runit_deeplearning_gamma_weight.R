@@ -27,7 +27,7 @@ test <- function(h) {
 	#  train.fraction = 1,verbose=T)
 	#gg$train.error  #-4.3165
 	#pr = predict(gg,newdata = data,type = "response")
-	#summary(pr)  # mean = 0.04421; min = 0.02292; max = 0.07186; 
+	#summary(pr)  # mean = 0.04421; min = 0.02292; max = 0.07186;
 	myX = c( "Merit", "Class","C1M3","C4M3")
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="gamma",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
@@ -50,14 +50,14 @@ test <- function(h) {
 	#gg = gbm(formula = Loss~Class+Merit + C1M3 + C4M3, distribution = "gamma",data = data,
 	#   n.trees = 50,interaction.depth = 1,n.minobsinnode = 1,shrinkage = 1,bag.fraction = 1,
 	#   weights = data$Insured,train.fraction = 1,verbose=T)
-	#gg$train.error  #-5.1652 
-	#pr = predict(gg,newdata = data,type = "response") #mean = 0.04305; min = 0.02289; max = 0.07331 ; 
+	#gg$train.error  #-5.1652
+	#pr = predict(gg,newdata = data,type = "response") #mean = 0.04305; min = 0.02289; max = 0.07331 ;
 	#summary(pr)
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="gamma",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
                       weights_column = "Insured",training_frame = cancar, stopping_rounds=0)
-	hh@model$training_metrics@metrics$mean_residual_deviance  
+	hh@model$training_metrics@metrics$mean_residual_deviance
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cancar)) #mean = 0.04399   mean = 0.04423
 	summary(ph)
@@ -70,7 +70,7 @@ test <- function(h) {
 	expect_equal(0.02298414, min(ph[,1]), tolerance=1e-5)
 	expect_equal(0.07380657, max(ph[,1]), tolerance=1e-5)
 
-	
+
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for gamma distribution", test)
 

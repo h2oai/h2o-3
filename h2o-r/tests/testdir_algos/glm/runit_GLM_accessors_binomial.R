@@ -111,7 +111,7 @@ test.glm.bin.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.glm))
 
-  
+
 }
 
 doTest("Testing model accessors for GLM", test.glm.bin.accessors)

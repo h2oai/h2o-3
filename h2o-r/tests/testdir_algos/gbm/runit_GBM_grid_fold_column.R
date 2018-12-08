@@ -12,10 +12,10 @@ check.gbm.grid.cvcol <- function() {
     iris.hex$fold = ifelse(s < 0.3333, 0, ifelse(s < 0.6666, 1, 2))
     iris.hex
     grid <- h2o.grid("gbm",
-                     grid_id = "gbm_grid_test", 
-                     x = 1:4, 
-                     y = 5, 
-                     training_frame = iris.hex, 
+                     grid_id = "gbm_grid_test",
+                     x = 1:4,
+                     y = 5,
+                     training_frame = iris.hex,
                      hyper_params = hyper_parameters,
                      #nfolds = 3,
                      fold_column = "fold")

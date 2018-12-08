@@ -56,7 +56,7 @@ test.xgboost.mult.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.xgboost))
 
-  
+
 }
 
 doTest("Testing multinomial model accessors for XGBoost", test.xgboost.mult.accessors)

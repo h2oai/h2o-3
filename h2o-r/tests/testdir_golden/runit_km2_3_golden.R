@@ -5,23 +5,23 @@ source("../../scripts/h2o-r-test-setup.R")
 
 # Compare within-cluster sum of squared error
 test.kmslice.golden <- function() {
-  # Import data: 
-  Log.info("Importing iris.csv data...") 
+  # Import data:
+  Log.info("Importing iris.csv data...")
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
   irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris2.csv"), destination_frame = "irisH2O")
   # iris has some duplicated rows. Want to guarantee unique user_points centers
   # Still failing intermittently..a random user_points from the data, is the same as kmeans rand user_points ..
   # So that doesn't guarantee one true answer.
   # startIdx <- sort(sample(unique(1:nrow(irisR)), 3))
-  
+
   # full iris is used for test and train, so these indices always point to the same data
   startIdx <- c(1, 52, 102) # use the first row from each output class
-  
+
   Log.info("Initial cluster centers:"); print(irisR[startIdx,1:4])
   fitR <- kmeans(irisR[,1:4], centers = irisR[startIdx,1:4], iter.max = 1000, algorithm = "Lloyd")
   fitH2O <- h2o.kmeans(irisH2O[,1:4], user_points = irisH2O[startIdx,1:4], standardize = FALSE)
   checkKMeansModel(fitH2O, fitR, tol = 0.01)
-  
+
   Log.info("Compare Predicted Classes between R and H2O\n")
   classR <- fitted(fitR, method = "classes")
   # FIXME: predict directly on sliced H2O frame breaks
@@ -46,8 +46,8 @@ test.kmslice.golden <- function() {
 
   # one has dim names, the other doesn't. will get length error unless..
   expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
-  
-  
+
+
 }
 
 doTest("KMeans Test: Golden Kmeans - Iris without Standardization", test.kmslice.golden)

@@ -12,7 +12,7 @@ test <- function() {
 	cc$Class = as.factor(cc$Class)
 	myX =c("Merit","Class")
 	myY = "Claims"
-	
+
 	#without offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit) , distribution = "poisson",data = ca,
      #    n.trees = 9,interaction.depth = 1,n.minobsinnode = 1,shrinkage = 1,bag.fraction = 1,
@@ -49,7 +49,7 @@ test <- function() {
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 5313,score_training_samples = 0,score_validation_samples = 0,
                       offset_column = "logInsured",training_frame = cc, stopping_rounds=0)
-	#hh@model$training_metrics@metrics$mean_residual_deviance 
+	#hh@model$training_metrics@metrics$mean_residual_deviance
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cc))
 	summary(ph)
@@ -62,7 +62,7 @@ test <- function() {
 	expect_equal(572.5512, min(ph[,1]), tolerance=1e-5 )
 	expect_equal(217348, max(ph[,1]), tolerance=1e-5 )
 
-	
+
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for poisson distribution", test)
 

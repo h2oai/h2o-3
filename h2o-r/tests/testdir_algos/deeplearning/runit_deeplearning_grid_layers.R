@@ -20,7 +20,7 @@ check.deeplearning.gridlayers <- function() {
   expect_equal(length(hh@model_ids), size_of_hyper_space)
 
   # Get models
-  hh_models <- lapply(hh@model_ids, function(mid) { 
+  hh_models <- lapply(hh@model_ids, function(mid) {
     model = h2o.getModel(mid)
   })
   # Check expected number of models
@@ -48,7 +48,7 @@ check.deeplearning.gridlayers <- function() {
   cat("\n\n Defined hidden parameters for grid search:")
   print(hidden_opts)
 
-  
+
 }
 
 doTest("Deep Learning Grid Search: Hidden Layers", check.deeplearning.gridlayers)

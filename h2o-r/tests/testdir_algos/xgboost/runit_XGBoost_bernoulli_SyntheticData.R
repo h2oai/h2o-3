@@ -1,6 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-#   This test is to check bernoulli xgboost implementation, 
+#   This test is to check bernoulli xgboost implementation,
 #   It creates a synthetic dataset, runs xgboost grid in H2O and R and compares aucs
 
 
@@ -73,6 +73,6 @@ test.XGBoost.bernoulli.SyntheticData <- function() {
     expect_equal(num_models,6)
     print("XGBoost models summary")
     print(tru.xgboost)
-    
+
 }
 doTest("XGBoost Grid Test: Synthetic dataset with Bernoulli distribution H2O vs R", test.XGBoost.bernoulli.SyntheticData)

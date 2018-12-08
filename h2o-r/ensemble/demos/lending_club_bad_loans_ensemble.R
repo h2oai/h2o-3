@@ -19,7 +19,7 @@ x <- setdiff(names(data), c(y, "int_rate"))
 
 library(h2oEnsemble)
 # Specify the base learner library & the metalearner
-learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
+learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
              "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
 metalearner <- "h2o.glm.wrapper"
 family <- "binomial"
@@ -27,10 +27,10 @@ family <- "binomial"
 
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
-fit <- h2o.ensemble(x = x, y = y, 
+fit <- h2o.ensemble(x = x, y = y,
                     training_frame = train,
-                    family = family, 
-                    learner = learner, 
+                    family = family,
+                    learner = learner,
                     metalearner = metalearner,
                     cvControl = list(V = 5, shuffle = TRUE))
 
@@ -44,12 +44,12 @@ perf
 # 1          h2o.glm.wrapper 0.6777797
 # 4 h2o.deeplearning.wrapper 0.6788880
 # 3          h2o.gbm.wrapper 0.6832562
-# 
-# 
+#
+#
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
-# 
+#
 # Ensemble performance (AUC): 0.686066263066993
 
 
@@ -104,10 +104,10 @@ family <- "binomial"
 
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
-fit <- h2o.ensemble(x = x, y = y, 
+fit <- h2o.ensemble(x = x, y = y,
                     training_frame = train,
-                    family = family, 
-                    learner = learner, 
+                    family = family,
+                    learner = learner,
                     metalearner = metalearner,
                     cvControl = list(V = 5, shuffle = TRUE))
 
@@ -134,14 +134,14 @@ perf
 # 12          h2o.gbm.6 0.6836920
 # 8           h2o.gbm.2 0.6837584
 # 7           h2o.gbm.1 0.6839902
-# 
-# 
+#
+#
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
-# 
+#
 # Ensemble performance (AUC): 0.68690013373787
 
-# We see here that ensemble performance does increase 
-# by adding additional models to the ensemble. 
+# We see here that ensemble performance does increase
+# by adding additional models to the ensemble.
 # Test set AUC went from 0.686 to 0.687

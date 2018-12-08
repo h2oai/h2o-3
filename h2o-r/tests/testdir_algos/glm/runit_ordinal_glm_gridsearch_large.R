@@ -5,9 +5,9 @@ library(MASS)
 # This test makes sure gridsearch work with ordinal regression.  It is okay here not to have expect_true
 # tests here at the end of the test
 glmOrdinalGrid <- function() {
-  Dtrain <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv"))  
+  Dtrain <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv"))
   Dtrain$C11 <- h2o.asfactor(Dtrain$C11)
-  X   <- c(1:10)  
+  X   <- c(1:10)
   Y<-"C11"
   Log.info("Build the gridsearch model")
   alphas <- c(0.01, 0.3, 0.5)

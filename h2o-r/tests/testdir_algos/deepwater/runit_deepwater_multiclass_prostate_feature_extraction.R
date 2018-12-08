@@ -5,7 +5,7 @@ check.deeplearning_multi <- function() {
   if (!h2o.deepwater.available()) return()
 
   Log.info("Test checks if Deep Water works fine with a multiclass training and test dataset")
-  
+
   prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   prostate[,"GLEASON"] <- as.factor(prostate[,"GLEASON"])
 

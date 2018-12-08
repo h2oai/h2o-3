@@ -11,7 +11,7 @@ test.glrm.simplex <- function() {
   for(i in 1:nrow(X)) X[i,sample(1:ncol(X), 1)] <- 1
   train <- X %*% Y
   train.h2o <- as.h2o(train)
-  
+
   Log.info("Run GLRM with quadratic mixtures (simplex) regularization on X")
   initY <- matrix(runif(k*n), nrow = k, ncol = n)
   fitH2O <- h2o.glrm(train.h2o, k = k, init = "User", user_y = initY, loss = "Quadratic", regularization_x = "Simplex", regularization_y = "None", gamma_x = 1, gamma_y = 0)
@@ -26,17 +26,17 @@ test.glrm.simplex <- function() {
     tol <- (k-1) * .Machine$double.eps * sum(abs(row))   # From pg. 82 of Higham, Numerical Algorithms (2nd Ed)
     expect_equal(sum(row), 1, tolerance = tol)
   })
-  
+
   Log.info("Check final objective function value")
   fitXY <- fitX.mat %*% fitY
   expect_equal(sum((train - fitXY)^2), fitH2O@model$objective)
-  
+
   Log.info("Impute XY and check error metrics")
   pred <- predict(fitH2O, train.h2o)
   expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with quadratic loss is just XY product
   expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective, tolerance = 1e-4)
   expect_equal(fitH2O@model$training_metrics@metrics$caterr, 0)
-  
+
 }
 
 doTest("GLRM Test: Soft K-means Implementation by Quadratic Mixtures", test.glrm.simplex)

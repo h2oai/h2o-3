@@ -20,7 +20,7 @@ check.hex_1506 <- function() {
   expect_warning(h2o.glm(x = c(1:4,6:8), y = "class_REC", training_frame = iris.hex, family = "binomial", lambda = 0))
   expect_warning(h2o.glm(x = c(1:4,6:8), y = "class_REC", training_frame = iris.hex, family = "binomial", lambda = c(0,1e-5,0.1)))
 
-  
+
 }
 
 doTest("HEX-1506", check.hex_1506)

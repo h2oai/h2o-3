@@ -79,7 +79,7 @@ test.xgboost.bin.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(pros.xgboost))
 
-  
+
 }
 
 doTest("Testing binomial model accessors for XGBoost", test.xgboost.bin.accessors)

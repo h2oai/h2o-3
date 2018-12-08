@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   ## Import data
-  results = tryCatch({  
+  results = tryCatch({
     h2oData <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
     betaConstraints <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
     runTest<<-TRUE},

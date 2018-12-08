@@ -62,25 +62,25 @@ check.deeplearning_autoencoder <- function() {
 
 
      ## Another usecase: Use pretrained unsupervised autoencoder model to initialize a supervised Deep Learning model
-     pretrained_model <- h2o.deeplearning(x=predictors, 
-                                          y=resp, 
+     pretrained_model <- h2o.deeplearning(x=predictors,
+                                          y=resp,
                                           training_frame=train_supervised,
                                           validation_frame=test_hex,
                                           ignore_const_cols=F,
-                                          hidden=(nfeatures), 
-                                          epochs=1, 
+                                          hidden=(nfeatures),
+                                          epochs=1,
                                           reproducible=T,
                                           seed=1234,
                                           pretrained_autoencoder="ae_model")
      print(h2o.logloss(pretrained_model,valid=T))
-     
-     model_from_scratch <- h2o.deeplearning(x=predictors, 
-                                          y=resp, 
+
+     model_from_scratch <- h2o.deeplearning(x=predictors,
+                                          y=resp,
                                           training_frame=train_supervised,
                                           validation_frame=test_hex,
                                           ignore_const_cols=F,
-                                          hidden=(nfeatures), 
-                                          epochs=1, 
+                                          hidden=(nfeatures),
+                                          epochs=1,
                                           reproducible=T,
                                           seed=1234)
      print(h2o.logloss(model_from_scratch,valid=T))

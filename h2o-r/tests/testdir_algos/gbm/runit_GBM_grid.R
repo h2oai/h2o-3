@@ -21,7 +21,7 @@ check.gbm.grid <- function() {
   expect_equal(length(gg@model_ids), size_of_hyper_space)
 
   # Get models
-  gg_models <- lapply(gg@model_ids, function(mid) { 
+  gg_models <- lapply(gg@model_ids, function(mid) {
     model = h2o.getModel(mid)
   })
   # Check expected number of models

@@ -4,9 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.gbmMAEgauss.golden <- function() {
-	
-#Import data: 
-Log.info("Importing smtrees data...") 
+
+#Import data:
+Log.info("Importing smtrees data...")
 smtreesH2O <- h2o.uploadFile(locate("smalldata/gbm_test/smtrees.csv"), destination_frame="smtreesH2O")
 smtreesR <- read.csv(locate("smalldata/gbm_test/smtrees.csv"))
 

@@ -22,12 +22,12 @@ for(col in names(data.hex)) {
 colNames[1] <- "C1"
 names(data.hex) <- colNames
 
-myY = colNames[1] 
+myY = colNames[1]
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling
 # GLM
-glm_time <- system.time(data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS")) 
+glm_time <- system.time(data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS"))
 data1.glm
 print("Time it took to build GLM")
 print(glm_time)

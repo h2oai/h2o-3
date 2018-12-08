@@ -49,23 +49,23 @@ check.kmeans_mllib <- function() {
     path <- paste("smalldata/mllib_bench/bigcross_centers_", k, ".csv", sep = "")
     clust.mllib <- read.csv(locate(path), header = FALSE)
     clust.h2o <- getCenters(cross.km)
-  
+
     # Sort in ascending order by first dimension for comparison purposes
     ulen <- apply(clust.mllib, 2, function(x) { length(unique(x)) })
     cidx <- which(ulen == nrow(clust.mllib))
     cidx <- ifelse(length(cidx) == 0, 1, cidx[1])
-  
+
     Log.info(paste("Sorting clusters in ascending order by column", cidx))
     clust.mllib <- clust.mllib[order(clust.mllib[,cidx]),]
     clust.h2o <- clust.h2o[order(clust.h2o[,cidx]),]
     colnames(clust.mllib) <- colnames(clust.h2o)
     # rownames(clust.mllib) <- 1:k
     # rownames(clust.h2o) <- 1:k
-  
+
     cat("\nMLlib Cluster Centers:\n"); print(clust.mllib)
     cat("\nH2O Cluster Centers:\n"); print(clust.h2o)
     # expect_equal(t(clust.h2o), t(clust.mllib), tolerance = 0.3)
-  
+
     wcsse.mllib <- err.mllib[which(err.mllib[,1] == k),2]
     wcsse.h2o <- getTotWithinSS(cross.km) / n
     cat("\nMLlib Average Within-Cluster SSE: ", wcsse.mllib, "\n")
@@ -73,7 +73,7 @@ check.kmeans_mllib <- function() {
     expect_equal(wcsse.h2o, wcsse.mllib)
   }
 
-  
+
 }
 
 doTest("K-means comparison", check.kmeans_mllib)

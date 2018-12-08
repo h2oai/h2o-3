@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 check.deeplearning_multi <- function() {
   Log.info("Test checks if Deep Learning works fine with a categorical dataset")
-  
+
   print(locate("smalldata/logreg/prostate.csv"))
   prostate <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate")
   prostate[,2] <- as.factor(prostate[,2]) #CAPSULE -> Factor (response)
@@ -20,7 +20,7 @@ check.deeplearning_multi <- function() {
 
   hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,validation_frame=prostate,nfolds=2,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy", categorical_encoding="Binary")
   print(hh)
- 
+
   hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,validation_frame=prostate,nfolds=2,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy", categorical_encoding="Eigen")
   print(hh)
 }

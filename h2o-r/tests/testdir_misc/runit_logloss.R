@@ -75,7 +75,7 @@ test.logloss <- function() {
   expect_true(abs(ll1-ll2)<1e-6)
   expect_true(abs(ll1-ll3)<1e-6)
 
-  
+
 }
 
 doTest("Test logloss computation", test.logloss)

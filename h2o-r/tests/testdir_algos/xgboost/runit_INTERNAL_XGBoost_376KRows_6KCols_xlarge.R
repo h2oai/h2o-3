@@ -26,7 +26,7 @@ rtest <- function() {
       valid = data.hex[s > 0.8,]
 
       # XGBOOST model
-      xgboost_time <- system.time(model.xgboost <- h2o.xgboost(x = 3:(ncol(train)), y = 2, training_frame = train, validation_frame=valid, ntrees=10, max_depth=5)) 
+      xgboost_time <- system.time(model.xgboost <- h2o.xgboost(x = 3:(ncol(train)), y = 2, training_frame = train, validation_frame=valid, ntrees=10, max_depth=5))
       print("Time it took to build XGBOOST")
       print(xgboost_time)
       model.xgboost

@@ -20,24 +20,24 @@ automl.get.automl.test <- function() {
 
     aml1 <- h2o.automl(y = y,
                         training_frame = train,
-                        project_name="r_aml1", 
-                        stopping_rounds=3, 
-                        stopping_tolerance=0.001, 
-                        stopping_metric="AUC", 
-                        max_models=max_models, 
+                        project_name="r_aml1",
+                        stopping_rounds=3,
+                        stopping_tolerance=0.001,
+                        stopping_metric="AUC",
+                        max_models=max_models,
                         seed=1234)
 
     #Use h2o.getAutoML to get previous automl instance
     get_aml1 <- h2o.getAutoML(aml1@project_name)
-    
+
     print("Leader model ID/project_name for original automl object")
     print(aml1@leader@model_id)
     print(aml1@project_name)
     print("Leader model ID/project_name after fetching original automl object")
     print(get_aml1@leader@model_id)
     print(get_aml1@project_name)
-    
-    
+
+
     expect_equal(aml1@project_name, get_aml1@project_name)
     expect_equal(aml1@leader@model_id, get_aml1@leader@model_id)
     expect_equal(aml1@leaderboard, get_aml1@leaderboard)

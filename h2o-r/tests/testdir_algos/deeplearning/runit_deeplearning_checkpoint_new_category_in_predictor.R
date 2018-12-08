@@ -17,7 +17,7 @@ checkpoint.new.category.in.predictor <- function() {
   # this should fail until we figure out proper behavior
   expect_error(m3 <- h2o.deeplearning(x=c(1,2,3,5),y=4,training_frame=vir,epochs=200,checkpoint=m1@model_id))
 
-  
+
 }
 
 doTest("Deep Learning checkpoint with new categoricals", checkpoint.new.category.in.predictor )

@@ -77,7 +77,7 @@ check.gbm.grid.cars <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  
+
 }
 
 doTest("GBM Grid Search using cars dataset", check.gbm.grid.cars)

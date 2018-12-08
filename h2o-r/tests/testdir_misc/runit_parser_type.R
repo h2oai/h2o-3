@@ -16,7 +16,7 @@ test.parser_type <- function() {
 
   print(hex.csv)
 
-  
+
 }
 
 doTest("Test parser_type", test.parser_type)

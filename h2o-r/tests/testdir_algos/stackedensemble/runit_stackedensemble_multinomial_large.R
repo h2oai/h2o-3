@@ -79,8 +79,8 @@ stackedensemble.multinomial.test <- function() {
     print(perf_xgb_train)
     print("XGB test performance: ")
     print(perf_xgb_test)
-    
-    
+
+
     # Train & Cross-validate a Naive Bayes model
     my_nb <- h2o.naiveBayes(x = x,
                             y = y,
@@ -96,8 +96,8 @@ stackedensemble.multinomial.test <- function() {
     print(perf_nb_train)
     print("NB test performance: ")
     print(perf_nb_test)
-    
-    
+
+
     # Train & Cross-validate a Deep Learning model
     my_dnn <- h2o.deeplearning(x = x,
                                y = y,
@@ -114,8 +114,8 @@ stackedensemble.multinomial.test <- function() {
     print(perf_dnn_train)
     print("DNN test performance: ")
     print(perf_dnn_test)
-    
-    
+
+
     # Train & Cross-validate a GLM model
     my_glm <- h2o.glm(x = x,
                       y = y,
@@ -131,7 +131,7 @@ stackedensemble.multinomial.test <- function() {
     print("GLM training performance: ")
     print(perf_glm_train)
     print("GLM test performance: ")
-    print(perf_glm_test) 
+    print(perf_glm_test)
 
 
     print("Train StackedEnsemble Model")
@@ -142,7 +142,7 @@ stackedensemble.multinomial.test <- function() {
                                  validation_frame = test,  #also test that validation_frame is working
                                  base_models = list(my_gbm, my_rf, my_xgb, my_nb, my_dnn, my_glm))
     expect_true( inherits(stack, "H2OMultinomialModel") )
-    
+
     # Check that prediction works
     pred <- h2o.predict(stack, newdata = test)
     print(pred)
@@ -156,11 +156,11 @@ stackedensemble.multinomial.test <- function() {
     expect_true( inherits(perf_stack_valid, "H2OMultinomialMetrics") )
     perf_stack_test <- h2o.performance(stack, newdata = test)
     expect_true( inherits(perf_stack_test, "H2OMultinomialMetrics") )
-    
+
     # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
     # Test mean_per_class_error for each base learner
-    baselearner_best_mean_per_class_error_test <- min(h2o.mean_per_class_error(perf_gbm_test), 
-                                                      h2o.mean_per_class_error(perf_rf_test), 
+    baselearner_best_mean_per_class_error_test <- min(h2o.mean_per_class_error(perf_gbm_test),
+                                                      h2o.mean_per_class_error(perf_rf_test),
                                                       h2o.mean_per_class_error(perf_xgb_test),
                                                       h2o.mean_per_class_error(perf_nb_test),
                                                       h2o.mean_per_class_error(perf_dnn_test),

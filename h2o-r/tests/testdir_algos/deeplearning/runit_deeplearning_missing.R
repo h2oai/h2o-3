@@ -28,7 +28,7 @@ check.deeplearning_missing <- function() {
       data_missing = h2o.insertMissingValues(pred,fraction=missing_ratios[i], seed=12345)
       Sys.sleep(1.5)    #sleep until waitOnJob is fixed
       data_fin = h2o.cbind(data_missing, resp)
-    } else 
+    } else
       data_fin = data
 
     # split into train + test datasets
@@ -47,7 +47,7 @@ check.deeplearning_missing <- function() {
   }
   checkTrue(sum(errors) < 2.2, "Sum of classification errors is too large!")
 
-  
+
 }
 
 doTest("Deep Learning Missing Values Test", check.deeplearning_missing)

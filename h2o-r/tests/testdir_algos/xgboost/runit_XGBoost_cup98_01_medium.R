@@ -21,7 +21,7 @@ test.XGBoost <- function() {
                    distribution = "multinomial", ntrees = 5)
   print("done running xgboost")
 
-  
+
 }
 
 doTest("XGBoost Test: KDD cup 98, test 01", test.XGBoost)

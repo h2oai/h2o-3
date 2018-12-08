@@ -4,12 +4,12 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.glm2ProstateAUC.golden <- function() {
-	
+
     #Import data:
     Log.info("Importing Benign data...")
     prostateH2O<- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="cuseH2O")
     prostateR<- read.csv(locate("smalldata/logreg/prostate.csv"), header=T)
-    
+
  Log.info("Run matching models in R and H2O")
     fitH2O<- h2o.glm(y="CAPSULE", x=c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), training_frame=prostateH2O, family="binomial", lambda=0, alpha=0, nfolds=0, standardize=F)
     fitR<- glm(CAPSULE ~ AGE + RACE + DPROS + DCAPS + PSA + VOL + GLEASON, family=binomial, data=prostateR)
@@ -34,8 +34,8 @@ test.glm2ProstateAUC.golden <- function() {
     expect_equal(fitH2O@model$training_metrics@metrics$null_degrees_of_freedom, fitR$df.null, tolerance = 0.01)
     expect_equal(fitH2O@model$training_metrics@metrics$AIC, fitR$aic, tolerance = 0.01)
     expect_equal(aucR, aucH, tolerance=0.05)
-    
-    
+
+
 }
 
 doTest("GLM Test: GLM2 - ProstateAUC", test.glm2ProstateAUC.golden)

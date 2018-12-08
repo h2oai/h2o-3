@@ -10,11 +10,11 @@ test.km.prostate <- function() {
   prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"))
   prostate.sum <- summary(prostate.hex)
   print(prostate.sum)
-  
+
   # prostate.data = read.csv(text = getURL("https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/prostate.csv"), header = TRUE)
   prostate.data <- read.csv(locate("smalldata/logreg/prostate.csv"), header = TRUE)
   prostate.data <- na.omit(prostate.data)
-  
+
   for(i in 5:8) {
     Log.info(paste("H2O K-Means with ", i, " clusters:\n", sep = ""))
     Log.info(paste( "Using these columns: ", colnames(prostate.hex)[-1]) )
@@ -23,7 +23,7 @@ test.km.prostate <- function() {
     prostate.km <- kmeans(prostate.data[,3], centers = i)
   }
 
-  
+
 }
 
 doTest("KMeans Test: Prostate Data", test.km.prostate)

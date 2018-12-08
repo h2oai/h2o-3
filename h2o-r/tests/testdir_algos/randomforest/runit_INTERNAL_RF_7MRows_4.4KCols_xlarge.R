@@ -16,8 +16,8 @@ parse_time <- system.time(data.hex <- h2o.importFile(url))
 print("Time it took to parse")
 print(parse_time)
 
-# Start modeling   
-# Random Forest 
+# Start modeling
+# Random Forest
 response="C1" #1:1000 imbalance
 predictors=c(4:ncol(data.hex))
 

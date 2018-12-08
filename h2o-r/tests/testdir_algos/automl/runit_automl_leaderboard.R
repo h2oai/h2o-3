@@ -2,14 +2,14 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.leaderboard.test <- function() {
-  
+
     # Test each ML task to make sure the leaderboard is working as expected:
-    # Leaderboard columns are correct for each ML task 
+    # Leaderboard columns are correct for each ML task
     # Check that excluded algos are not in the leaderboard
     # Since we are not running this a long time, we can't guarantee that DNN and GLM will be in there
-  
+
     all_algos <- c("GLM", "DeepLearning", "GBM", "DRF", "XGBoost", "StackedEnsemble")
-  
+
     # Binomial:
     fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
     fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
@@ -29,7 +29,7 @@ automl.leaderboard.test <- function() {
     for (a in include_algos) {
       expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
     }
-    
+
 
     # Regression:
     fr2 <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"))
@@ -67,7 +67,7 @@ automl.leaderboard.test <- function() {
       expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
     }
 
-    
+
     # Exclude all the algorithms, check for empty leaderboard
     fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
     fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
@@ -78,7 +78,7 @@ automl.leaderboard.test <- function() {
     aml4@leaderboard
     # there's a dummy row of NAs in an "empty" leaderboard
     expect_equal(nrow(aml4@leaderboard), 1)
-    
+
     # Include all algorithms (all should be there, given large enough max_models)
     fr3 <- as.h2o(iris)
     aml5 <- h2o.automl(y = 5, training_frame = fr3, max_models = 12,
@@ -88,7 +88,7 @@ automl.leaderboard.test <- function() {
     for (a in include_algos) {
       expect_equal(sum(grepl(a, model_ids)) > 0, TRUE)
     }
-    
+
 }
 
 doTest("AutoML Leaderboard Test", automl.leaderboard.test)

@@ -12,27 +12,27 @@ test <- function() {
         prostate.data = h2o.uploadFile(locate("smalldata/prostate/prostate.csv.zip"), destination_frame="prostate.data", header=TRUE)
 
     print("Compare models with link unspecified and canonical link specified.")
-    	print("GAUSSIAN: ") 
+    	print("GAUSSIAN: ")
         model.gaussian.unspecified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="gaussian")
 		model.gaussian.specified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="gaussian", link="identity")
 		stopifnot(model.gaussian.unspecified@model$coefficients_table[1,]==model.gaussian.specified@model$coefficients_table[1,])
 
-		print("BINOMIAL: ") 
+		print("BINOMIAL: ")
         model.binomial.unspecified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="binomial")
 		model.binomial.specified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="binomial", link="logit")
 		stopifnot(model.binomial.unspecified@model$coefficients_table[1,]==model.binomial.specified@model$coefficients_table[1,])
 
-		print("POISSON: ") 
+		print("POISSON: ")
         model.poisson.unspecified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="poisson")
 		model.poisson.specified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="poisson", link="log")
 		stopifnot(model.poisson.unspecified@model$coefficients_table[1,]==model.poisson.specified@model$coefficients_table[1,])
 
-		print("GAMMA: ") 
+		print("GAMMA: ")
         model.gamma.unspecified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma")
 		model.gamma.specified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma", link="inverse")
 		stopifnot(model.gamma.unspecified@model$coefficients_table[1,]==model.gamma.specified@model$coefficients_table[1,])
 
-    
+
 }
 
 doTest("Testing glm picks correct link when unspecified: default canonical link for family", test)

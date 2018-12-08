@@ -11,7 +11,7 @@ test <- function() {
   iris[s,5] <- NA
   print(summary(iris))
   expect_that(sum(is.na(iris[5])), equals(numNAs))
-  
+
 }
 
 doTest("Count assigned NAs", test)

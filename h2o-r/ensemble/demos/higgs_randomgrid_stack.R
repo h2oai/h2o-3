@@ -13,28 +13,28 @@ x <- setdiff(names(train), y)
 family <- "binomial"
 
 #For binary classification, response should be a factor
-train[,y] <- as.factor(train[,y])  
+train[,y] <- as.factor(train[,y])
 test[,y] <- as.factor(test[,y])
 
 
 
 # Random Grid Search (e.g. 120 second maximum)
-# This is set to run fairly quickly, increase max_runtime_secs 
+# This is set to run fairly quickly, increase max_runtime_secs
 # or max_models to cover more of the hyperparameter space.
-# Also, you can expand the hyperparameter space of each of the 
+# Also, you can expand the hyperparameter space of each of the
 # algorithms by modifying the hyper param code below.
 
-search_criteria <- list(strategy = "RandomDiscrete", 
+search_criteria <- list(strategy = "RandomDiscrete",
                         max_runtime_secs = 120)
 nfolds <- 5
 
 # GBM Hyperparamters
-learn_rate_opt <- c(0.01, 0.03) 
+learn_rate_opt <- c(0.01, 0.03)
 max_depth_opt <- c(3, 4, 5, 6, 9)
 sample_rate_opt <- c(0.7, 0.8, 0.9, 1.0)
 col_sample_rate_opt <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
 hyper_params <- list(learn_rate = learn_rate_opt,
-                     max_depth = max_depth_opt, 
+                     max_depth = max_depth_opt,
                      sample_rate = sample_rate_opt,
                      col_sample_rate = col_sample_rate_opt)
 
@@ -52,7 +52,7 @@ gbm_models <- lapply(gbm_grid@model_ids, function(model_id) h2o.getModel(model_i
 
 
 # RF Hyperparamters
-mtries_opt <- 8:20 
+mtries_opt <- 8:20
 max_depth_opt <- c(5, 10, 15, 20, 25)
 sample_rate_opt <- c(0.7, 0.8, 0.9, 1.0)
 col_sample_rate_per_tree_opt <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
@@ -67,7 +67,7 @@ rf_grid <- h2o.grid("randomForest", x = x, y = y,
                     seed = 1,
                     nfolds = nfolds,
                     fold_assignment = "Modulo",
-                    keep_cross_validation_predictions = TRUE,                    
+                    keep_cross_validation_predictions = TRUE,
                     hyper_params = hyper_params,
                     search_criteria = search_criteria)
 rf_models <- lapply(rf_grid@model_ids, function(model_id) h2o.getModel(model_id))
@@ -75,8 +75,8 @@ rf_models <- lapply(rf_grid@model_ids, function(model_id) h2o.getModel(model_id)
 
 
 # Deeplearning Hyperparamters
-activation_opt <- c("Rectifier", "RectifierWithDropout", 
-                    "Maxout", "MaxoutWithDropout") 
+activation_opt <- c("Rectifier", "RectifierWithDropout",
+                    "Maxout", "MaxoutWithDropout")
 hidden_opt <- list(c(10,10), c(20,15), c(50,50,50))
 l1_opt <- c(0, 1e-3, 1e-5)
 l2_opt <- c(0, 1e-3, 1e-5)
@@ -91,7 +91,7 @@ dl_grid <- h2o.grid("deeplearning", x = x, y = y,
                     seed = 1,
                     nfolds = nfolds,
                     fold_assignment = "Modulo",
-                    keep_cross_validation_predictions = TRUE,                    
+                    keep_cross_validation_predictions = TRUE,
                     hyper_params = hyper_params,
                     search_criteria = search_criteria)
 dl_models <- lapply(dl_grid@model_ids, function(model_id) h2o.getModel(model_id))
@@ -109,7 +109,7 @@ glm_grid <- h2o.grid("glm", x = x, y = y,
                      family = "binomial",
                      nfolds = nfolds,
                      fold_assignment = "Modulo",
-                     keep_cross_validation_predictions = TRUE,                    
+                     keep_cross_validation_predictions = TRUE,
                      hyper_params = hyper_params,
                      search_criteria = search_criteria)
 glm_models <- lapply(glm_grid@model_ids, function(model_id) h2o.getModel(model_id))
@@ -122,7 +122,7 @@ models <- c(gbm_models, rf_models, dl_models, glm_models)
 metalearner <- "h2o.glm.wrapper"
 
 # Let's stack!
-stack <- h2o.stack(models = models, 
+stack <- h2o.stack(models = models,
                    response_frame = train[,y],
                    metalearner = metalearner)
 

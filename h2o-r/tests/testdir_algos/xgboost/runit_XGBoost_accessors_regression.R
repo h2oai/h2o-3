@@ -48,7 +48,7 @@ test.xgboost.regr.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(cars.xgboost))
 
-  
+
 }
 
 doTest("Testing regression model accessors for XGBoost", test.xgboost.regr.accessors)

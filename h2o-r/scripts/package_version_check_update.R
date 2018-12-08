@@ -2,8 +2,8 @@ invisible(options(echo=FALSE))
 
 # helpers, possibly removed if current head of this branch merged
 # https://svn.r-project.org/R/branches/tools4pkgs/src/library/tools/R/packages.R
-packages.dcf <- function(file = "DESCRIPTION", 
-                         which = c("Depends","Imports","LinkingTo"), 
+packages.dcf <- function(file = "DESCRIPTION",
+                         which = c("Depends","Imports","LinkingTo"),
                          except.priority = "base") {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
@@ -84,32 +84,32 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
     stop("Argument 'force_install' must be character vector, subset of 'pkgs' argument.")
   if (!dir.exists(lib.loc) && !dir.create(lib.loc, recursive=TRUE))
     stop(sprintf("Library location 'lib.loc' does not exists '%s' and directory could not be created.", lib.loc))
-  
+
   # exclude base R packages
   pkgs <- setdiff(pkgs, c("R", rownames(installed.packages(priority="base"))))
-  
+
   # proper output redirection so CI catch it
   cat <- function(..., file=stdout()) base::cat(..., file=file)
-  
+
   if (check_only)
     cat(c("", sprintf("INFO: R package%s check only. Please run `./gradlew syncRPackages` if you want to update instead", if (strict_version_check) "/version" else "")), sep="\n")
   else
     cat(c("", sprintf("INFO: R package%s s3 sync procedure", if (strict_version_check) "/version" else "")), sep="\n")
-  
+
   ap <- available.packages(contrib.url(repos))
   # missing available packages
   map <- setdiff(pkgs, ap[,"Package"])
   if (length(map))
     stop(sprintf("Packages requested to check or update are missing in upstream repo(s): %s.", paste(map, collapse=", ")))
-  
+
   cat(c("","INFO: Jenkins (package,version) list:", paste0("(",paste(ap[,"Package"], ap[,"Version"], sep=", "),")")), sep="\n")
-  
+
   # force update packages
   if (!check_only && length(force_install)) {
     cat(c("","INFO: Force installing packages:", paste(force_install, collapse=", "), ""), sep="\n")
     install.packages(force_install, lib=lib.loc, repos=repos, method=method, quiet=quiet)
   }
-  
+
   ip <- installed.packages(lib.loc)
   # missing installed packages
   mip <- setdiff(pkgs, ip[,"Package"])
@@ -118,7 +118,7 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
       "", "INFO: Missing the following Jenkins-approved R packages:", mip,
       if (check_only) c("", "INFO: Please run `./gradlew syncRPackages` to update")
     ), sep="\n")
-  
+
   mipv <- character()
   if (strict_version_check) {
     missing_installed_packages_version <- function(pkgs, ap, ip) {
@@ -129,7 +129,7 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
       setdiff(apv, ipv)
     }
     mipv <- missing_installed_packages_version(setdiff(pkgs, mip), ap, ip)
-    
+
     if (!length(mipv)) {
       cat(c("","INFO: Installed R packages match version to Jenkins-approved"), sep="\n")
     } else {
@@ -140,20 +140,20 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
       ), sep="\n")
     }
   }
-  
+
   if (check_only && length(c(mip, mipv)))
     stop("Check unsuccessful.")
-  
+
   inst_pkgs <- unique(c(unlist(sapply(strsplit(mipv, "_", fixed=TRUE), `[[`, 1L)), mip))
   if (length(inst_pkgs)) {
     if (any(reinst_pkgs<-inst_pkgs %in% force_install))
       stop(sprintf("Attempt to install packages again, those should be already installed by 'force_install' argument: %s.", paste(inst_pkg[reinst_pkgs], collapse=", ")))
-    
+
     cat(c("","INFO: Installing packages:", paste(inst_pkgs, collapse=", "), ""), sep="\n")
     install.packages(inst_pkgs, lib=lib.loc, repos=repos, method=method, quiet=quiet)
-    
+
     cat(c("",sprintf("INFO: R package sync complete. Conducting follow-on R package%s checks...", if (strict_version_check) "/version" else "")), sep="\n")
-    
+
     ip <- installed.packages(lib.loc)
     mip <- setdiff(pkgs, ip[,"Package"])
     if (strict_version_check)
@@ -163,9 +163,9 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
     if (length(mipv))
       stop(sprintf("Missing installed packages/version were not upgraded/downgraded for some reason: %s.",  paste(mipv, collapse=", ")))
   }
-  
+
   cat(c("","INFO: R package sync successful"), sep="\n")
-  
+
   TRUE
 }
 

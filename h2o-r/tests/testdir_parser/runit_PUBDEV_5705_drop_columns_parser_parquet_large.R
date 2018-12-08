@@ -19,7 +19,7 @@ test.parseSkippedColumnsParquet<- function() {
   onePermute <- sample(h2o.ncol(f1))
   skipall <- onePermute
   skip90Per <- onePermute[1:floor(h2o.ncol(f1) * 0.9)]
-  
+
   # test skipall for h2o.importFile
   e <-
     tryCatch(
@@ -36,7 +36,7 @@ test.parseSkippedColumnsParquet<- function() {
         x
     )
   print(e2)
-  
+
   # skip 90% of the columns randomly
   print("Testing skipping 99% of columns")
   assertCorrectSkipColumns(fileName, fullFrameR, skip90Per, TRUE, h2o.getTypes(f1)) # test importFile

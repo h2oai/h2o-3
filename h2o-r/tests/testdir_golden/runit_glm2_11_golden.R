@@ -5,21 +5,21 @@ source("../../scripts/h2o-r-test-setup.R")
 
 glm.objectiveFun.test<-
 function() {
-	
+
     filepath = locate("smalldata/glm_test/marketing_naRemoved.csv")
-    
+
     rr=read.csv(filepath)
     str(rr)
     dim(rr)
-    
+
     mfrmr=h2o.uploadFile(filepath,destination_frame = "mfrmr")
     str(mfrmr)
     myX = 2:13
-    myY = 1 
+    myY = 1
     alpha = 1
     lambda = 1e-5
-    
-    #H2O GLM model  
+
+    #H2O GLM model
     hh=h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",nfolds=0, alpha = alpha, lambda = lambda)
 
     res_dev = hh@model$training_metrics@metrics$residual_deviance
@@ -29,11 +29,11 @@ function() {
     cof = hh@model$coefficients_table[,3]
     cof = cof[2:length(cof)] # drop the intercept!
     L1 = sum(abs(cof))
-    L2 = sqrt(sum(cof^2)) 
+    L2 = sqrt(sum(cof^2))
     penalty = ( 0.5*(1-alpha)*L2^2 ) + ( alpha*L1 )
     objective = (res_dev/obs) + ( lambda * penalty )
-    
-    # GLMNET Model  
+
+    # GLMNET Model
     gg=glmnet(x=as.matrix(rr[,2:13]),y=(rr[,1]),alpha = alpha,lambda=lambda)
 
 	# Sanity Check whether comparing models built on the same dataset
@@ -59,7 +59,7 @@ function() {
 	print(paste("Objective function for model from R:  ",objective_R, sep = ""))
 	print(paste("Objective function for model from H2O:  ",objective, sep = ""))
 	expect_true(objective < objective_R + 1e-5*gg$nulldev)
-    
+
 }
 doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
 

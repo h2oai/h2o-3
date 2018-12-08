@@ -16,12 +16,12 @@ parse_time <- system.time(data.hex <- h2o.importFile(url))
 print("Time it took to parse")
 print(parse_time)
 
-# Start modeling   
-# GBM 
+# Start modeling
+# GBM
 response="C1" #1:1000 imbalance
 predictors=c(4:ncol(data.hex))
 
-# Start modeling   
+# Start modeling
 # Gradient Boosted Trees
 gbm_time <- system.time(mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "AUTO"))
 mdl.gbm

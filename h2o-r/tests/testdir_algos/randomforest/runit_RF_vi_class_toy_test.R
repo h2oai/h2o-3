@@ -14,6 +14,6 @@ rf.vi.test<- function() {
     print(rf@model$variable_importances)
     o <- order(rf@model$variable_importances$variable)
     expect_equal(o, c(3,2,1,6,4,5))
-    
+
 }
 doTest("Variable Importance RF Test: Weston toy data Smalldata", rf.vi.test)

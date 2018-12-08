@@ -51,7 +51,7 @@ check.naiveBayes.grid.cars <- function(conn) {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  
+
 }
 
 doTest("Naive Bayes Grid Search using cars dataset", check.naiveBayes.grid.cars)

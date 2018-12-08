@@ -9,7 +9,7 @@ test <- function() {
 	print("parse data")
 	dh = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame="dh")
 	colnames(dh)
-	
+
 	print("build models w/ and w/o weights")
 	myX = setdiff(colnames(dh),c("IDpol","ClaimNb","Exposure"))
 	hh_with_weights <- h2o.glm(x = myX,y = "ClaimNb",family = "tweedie",tweedie_variance_power = 1.05,
@@ -21,26 +21,26 @@ test <- function() {
         dd = as.data.frame(dh)
         gg_no_weights   <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd)
         gg_with_weights <- glm(ClaimNb~.-Exposure-IDpol, family=tweedie(var.power=1.05,link.power=0), data = dd,weights=Exposure)
-	
+
 	expect_equal(gg_with_weights$null.deviance, hh_with_weights@model$training_metrics@metrics$null_deviance)
 	expect_equal(deviance(gg_with_weights),hh_with_weights@model$training_metrics@metrics$residual_deviance)
 
 	expect_equal(gg_no_weights$null.deviance, hh_no_weights@model$training_metrics@metrics$null_deviance)
 	expect_equal(deviance(gg_no_weights),hh_no_weights@model$training_metrics@metrics$residual_deviance)
 
-	ph = as.data.frame(h2o.predict(hh_with_weights,newdata = dh)) 
-	pr = predict(gg_with_weights,newdata = dd,type = "response") 
+	ph = as.data.frame(h2o.predict(hh_with_weights,newdata = dh))
+	pr = predict(gg_with_weights,newdata = dd,type = "response")
 	expect_equal(mean(ph[,1]),mean(pr),tolerance=1e-5)
 
 	print("parse data")
-	library(MASS) 
+	library(MASS)
 	data(Insurance)
-	offset = log(Insurance$Holders) 
-	class(Insurance$Group) <- "factor" 
-	class(Insurance$Age) <- "factor" 
-	dd = data.frame(Insurance,offset) 
-	hdd = as.h2o(dd,destination_frame = "hdd") 
-	
+	offset = log(Insurance$Holders)
+	class(Insurance$Group) <- "factor"
+	class(Insurance$Age) <- "factor"
+	dd = data.frame(Insurance,offset)
+	hdd = as.h2o(dd,destination_frame = "hdd")
+
 	print("build models w/ and w/o offset")
 	myX = setdiff(colnames(hdd),c("Claims","offset"))
 	hh_with_offset <- h2o.glm(x = myX,y = "Claims",family = "tweedie",tweedie_variance_power = 1.7,tweedie_link_power = 0,
@@ -59,11 +59,11 @@ test <- function() {
 	expect_equal(deviance(gg_no_offset),hh_no_offset@model$training_metrics@metrics$residual_deviance)
 
 
-	ph = as.data.frame(h2o.predict(hh_with_offset,newdata = hdd)) 
+	ph = as.data.frame(h2o.predict(hh_with_offset,newdata = hdd))
 	pr = predict(gg_with_offset,newdata = dd,type = "response")
 	expect_equal(mean(ph[,1]),mean(pr),tolerance =1e-4)
 
-	
+
 }
 
 

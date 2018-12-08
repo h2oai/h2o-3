@@ -16,8 +16,8 @@ test.pca.arrests <- function() {
     arrests.pca.h2o <- h2o.prcomp(training_frame = arrests.hex, k = as.numeric(i))
     print(arrests.pca.h2o)
   }
-  
-  
+
+
 }
 
 doTest("PCA Test: USArrests Data", test.pca.arrests)

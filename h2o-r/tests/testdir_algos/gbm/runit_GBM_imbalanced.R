@@ -24,7 +24,7 @@ test.gbm.imbalanced <- function() {
 
   expect_true(class_6_err_imbalanced >= 0.99*class_6_err_balanced, "balance_classes makes it at least 1% worse!")
 
-  
+
 }
 
 doTest("GBM imbalanced", test.gbm.imbalanced)

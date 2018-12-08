@@ -37,7 +37,7 @@ check.kmeans.grid.iris <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  
+
 }
 
 doTest("K-means Grid Search using iris dataset", check.kmeans.grid.iris)

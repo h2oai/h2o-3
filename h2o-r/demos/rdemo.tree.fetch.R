@@ -34,15 +34,15 @@ for(node_index in 1:length(gbm.tree@left_children)){
   left_child <- gbm.tree@left_children[node_index]
   right_child <- gbm.tree@right_children[node_index]
   node_description <- gbm.tree@descriptions[node_index]
-  
+
   if(left_child == -1 && right_child == -1){
     sprintf("Node %d is a leaf node.", node_index)
     next
   }
-  
+
   cat(sprintf("Left child of node %d has number %d, right child has number %d. \n", node_index, left_child, right_child))
   cat(sprintf("Split rule for node %d is: %s.\n\n", node_index, node_description))
-  
+
 }
 
 

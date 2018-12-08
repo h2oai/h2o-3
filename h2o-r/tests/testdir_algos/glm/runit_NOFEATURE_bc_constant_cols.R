@@ -18,7 +18,7 @@ test <- function() {
 
     glm <- h2o.glm(x=indVars, y=depVars, training_frame=mnist, family=family_type, alpha=alpha, beta_constraints=bc)
 
-    
+
 }
 
 doTest("GLM Test: GLM w/ Beta Constraints with constant predictor columns", test)

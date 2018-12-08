@@ -14,7 +14,7 @@ test.rdocclusterstatus.golden <- function() {
     perf <- h2o.performance(model, hex)
     h2o.confusionMatrix(perf)
 
-    
+
 }
 
 doTest("R Doc Cluster Status", test.rdocclusterstatus.golden)

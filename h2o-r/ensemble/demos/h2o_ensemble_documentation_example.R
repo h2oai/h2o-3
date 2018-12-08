@@ -12,22 +12,22 @@ x <- setdiff(names(train), y)
 family <- "binomial"
 
 #For binary classification, response should be a factor
-train[,y] <- as.factor(train[,y])  
+train[,y] <- as.factor(train[,y])
 test[,y] <- as.factor(test[,y])
 
 
 # Specify the base learner library & the metalearner
-learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
+learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
              "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
 metalearner <- "h2o.deeplearning.wrapper"
 
 
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
-fit <- h2o.ensemble(x = x, y = y, 
-                    training_frame = train, 
-                    family = family, 
-                    learner = learner, 
+fit <- h2o.ensemble(x = x, y = y,
+                    training_frame = train,
+                    family = family,
+                    learner = learner,
                     metalearner = metalearner,
                     cvControl = list(V = 5, shuffle = TRUE))
 
@@ -43,12 +43,12 @@ perf  #prints the following
 # 4 h2o.deeplearning.wrapper 0.7261466
 # 2 h2o.randomForest.wrapper 0.7655972
 # 3          h2o.gbm.wrapper 0.7817096
-# 
-# 
+#
+#
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
-# 
+#
 # Ensemble performance (AUC): 0.784785565758091
 
 # To print the results for a particular metric, like MSE, do the following:
@@ -60,23 +60,23 @@ print(perf, metric = "MSE")
 # 4 h2o.deeplearning.wrapper 0.2182509
 # 2 h2o.randomForest.wrapper 0.1981485
 # 3          h2o.gbm.wrapper 0.1900497
-# 
-# 
+#
+#
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
-# 
+#
 # Ensemble performance (MSE): 0.189215219642971
 
 # By calculating the base learner test set metrics, we can compare the performance
 # of the ensemble to the top base learner - GBM is the top base learner, both by AUC and MSE.
 
-# Note that the ensemble results above are not reproducible since 
+# Note that the ensemble results above are not reproducible since
 # h2o.deeplearning is not reproducible when using multiple cores,
 # and we did not set a seed for h2o.randomForest.wrapper or h2o.gbm.wrapper.
 
 
-# To access results directly: 
+# To access results directly:
 
 # Ensemble test set AUC
 perf$ensemble@metrics$AUC

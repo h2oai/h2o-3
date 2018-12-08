@@ -2,9 +2,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.leaderboard_sort_metric.test <- function() {
-  
+
   # Test that sort_metric is working
-  
+
   # Binomial:
   fr1 <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
   fr1["CAPSULE"] <- as.factor(fr1["CAPSULE"])
@@ -54,8 +54,8 @@ automl.leaderboard_sort_metric.test <- function() {
   # check that leaderboard is sorted by mean_residual_deviance
   mrd_col <- as.vector(aml2@leaderboard[,"mean_residual_deviance"])
   expect_equal(identical(mrd_col, sort(mrd_col, decreasing = FALSE)), TRUE)
-  
-  
+
+
   # Multinomial:
   fr3 <- as.h2o(iris)
   aml3 <- h2o.automl(y = 5, training_frame = fr3, max_models = 2,
@@ -66,7 +66,7 @@ automl.leaderboard_sort_metric.test <- function() {
   # check that mse col is sorted already
   mse_col <- as.vector(aml3@leaderboard[,"mse"])
   expect_equal(identical(mse_col, sort(mse_col, decreasing = FALSE)), TRUE)
-  
+
   # new AutoML run, sort_metric AUTO (check sorting by mean_per_class_error)
   aml3 <- h2o.automl(y = 5, training_frame = fr3, max_models = 2,
                      project_name = "r_lbsm_test_aml3_auto")
@@ -74,7 +74,7 @@ automl.leaderboard_sort_metric.test <- function() {
   # check that leaderboard sorted by mean_per_class_error
   mpce_col <- as.vector(aml3@leaderboard[,"mean_per_class_error"])
   expect_equal(identical(mpce_col, sort(mpce_col, decreasing = FALSE)), TRUE)
- 
+
 }
 
 doTest("AutoML Sort Metric Test", automl.leaderboard_sort_metric.test)

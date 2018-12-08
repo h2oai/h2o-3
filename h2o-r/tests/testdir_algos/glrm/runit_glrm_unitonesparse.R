@@ -11,7 +11,7 @@ test.glrm.unitonesparse <- function() {
   for(i in 1:nrow(X)) X[i,sample(1:ncol(X), 1)] <- 1
   train <- X %*% Y
   train.h2o <- as.h2o(train)
-  
+
   Log.info("Run GLRM with unit one-sparse regularization on X")
   # initY <- Y + 0.1*matrix(runif(k*n,-1,1), nrow = k, ncol = n)
   initY <- matrix(runif(k*n), nrow = k, ncol = n)
@@ -22,13 +22,13 @@ test.glrm.unitonesparse <- function() {
 
   Log.info("Check that X matrix consists of rows of basis vectors")
   fitX.mat <- as.matrix(fitX)
-  is_basis <- apply(fitX.mat, 1, function(x) { 
+  is_basis <- apply(fitX.mat, 1, function(x) {
                       ones <- length(which(x == 1))
                       zeros <- length(which(x == 0))
                       ones == 1 && (zeros + ones) == length(x)
                     })
   expect_true(all(is_basis))
-  
+
   Log.info("Check final objective function value")
   fitXY <- fitX.mat %*% fitY
   expect_equal(sum((train - fitXY)^2), fitH2O@model$objective)
@@ -38,7 +38,7 @@ test.glrm.unitonesparse <- function() {
   expect_equivalent(as.matrix(pred), fitXY)   # Imputation for numerics with quadratic loss is just XY product
   expect_equal(fitH2O@model$training_metrics@metrics$numerr, fitH2O@model$objective)
   expect_equal(fitH2O@model$training_metrics@metrics$caterr, 0)
-  
+
 }
 
 doTest("GLRM Test: Unit One-sparse K-means Implementation", test.glrm.unitonesparse)

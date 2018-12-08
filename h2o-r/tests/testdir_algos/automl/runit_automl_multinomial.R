@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.multinomial.test <- function() {
-  
+
   # This test checks the following (for multinomial classification):
   #
   # 1) That h2o.automl executes w/o errors on multinomial data
@@ -16,10 +16,10 @@ automl.multinomial.test <- function() {
                     y = 5,
                     training_frame = train,
                     project_name = "automl.multinomial.test",
-                    seed = 1, 
+                    seed = 1,
                     max_models = 3,
                     stopping_rounds = 0)
-  
+
   # Check that there's a StackedEnsemble model in the leaderboard
   expect_true(sum(grepl("StackedEnsemble", as.vector(aml@leaderboard$model_id))) > 0)
 }

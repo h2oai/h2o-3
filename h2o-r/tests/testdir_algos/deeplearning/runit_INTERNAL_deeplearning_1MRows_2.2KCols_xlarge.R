@@ -19,7 +19,7 @@ print(parse_time)
 response=1 #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
 
-# Start modeling   
+# Start modeling
 # DL
 dl_time <- system.time(mdl.dl <- h2o.deeplearning(x=predictors, y=response, training_frame=data.hex, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5)))
 mdl.dl

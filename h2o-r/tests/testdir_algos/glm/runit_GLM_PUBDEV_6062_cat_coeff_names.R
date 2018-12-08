@@ -8,7 +8,7 @@ test.multinomial.coeff.names <- function() {
 
   cold <-my_model@model$coefficients_table
   cnew <- my_model@model$coefficients_table_multinomials_with_class_names
-  
+
   # spot check values, complete check is already done in Python
   expect_equal(cold[[2]], cnew[[2]], tolerance=1e-10, info= "Return numerical values are different.")
 }

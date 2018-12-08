@@ -6,8 +6,8 @@ source("../../scripts/h2o-r-test-setup.R")
 # The third Orc file contains big integer values that are used by sentinel for H2O frame.
 
 test.orc_parser.bad_data <- function() {
-  options(warn=1)     # make warnings to cause an error 
-  
+  options(warn=1)     # make warnings to cause an error
+
   # These files contain unsupported data types
   frame = h2o.importFile(locate("smalldata/parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc"))
   expect_warning(h2o.importFile(locate("smalldata/parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc")))
@@ -16,7 +16,7 @@ test.orc_parser.bad_data <- function() {
   # This file contains big integer value Long.MIN_VALUE that is used for sentinel
   frame = h2o.importFile(locate("smalldata/parser/orc/nulls-at-end-snappy.orc"))
   expect_warning(h2o.importFile(locate("smalldata/parser/orc/nulls-at-end-snappy.orc")))
-  
+
 #   b = warnings()    # collect all warnings into a list
 #   print(length(b))
 #   if (length(b) < 1) {

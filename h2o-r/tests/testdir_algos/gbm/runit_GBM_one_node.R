@@ -32,7 +32,7 @@ test.one.node.gbm <- function() {
     expect_equal(h2o.auc(gbm.sing), h2o.auc(gbm.mult))
   }
 
-  
+
 }
 
 doTest("Testing One Node vs Multi Node GBM", test.one.node.gbm)

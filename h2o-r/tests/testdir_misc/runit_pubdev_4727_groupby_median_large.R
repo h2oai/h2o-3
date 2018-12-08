@@ -26,7 +26,7 @@ test <- function(conn) {
     c1Vals <- h2o_groupby_median$C1
     c2Vals <- h2o_groupby_median$C2
     temp <- as.data.frame(df.hex)
- 
+
     for (colIndex in c(3 : numColEnd)) {
         for (index in c(1 : nrow(h2o_groupby_median))) {
             temp2 <- temp[temp$C1 == c1Vals[index], 1 : numColEnd]

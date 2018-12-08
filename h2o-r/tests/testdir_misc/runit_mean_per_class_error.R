@@ -133,7 +133,7 @@ test.mean_per_class_error <- function() {
       stopping_tolerance = 1e-3
     )
 
-    grid <- h2o.grid("gbm", grid_id="mygrid", 
+    grid <- h2o.grid("gbm", grid_id="mygrid",
                          x=predictors, y=response,
                          distribution="multinomial",
                          seed=1234,
@@ -147,7 +147,7 @@ test.mean_per_class_error <- function() {
 
     print(grid)
     print(h2o.getGrid("mygrid",sort_by="mean_per_class_error",decreasing=FALSE))
-  
+
 }
 
 doTest("Test mean_per_class_error computation", test.mean_per_class_error)

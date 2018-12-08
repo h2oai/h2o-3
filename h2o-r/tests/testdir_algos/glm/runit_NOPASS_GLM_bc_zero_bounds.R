@@ -70,7 +70,7 @@ test <- function() {
   print("TEST RESULTS FOR PROSTATE DATA SET with bounds [-0.1,0.1] : ")
   print(t)
 
-  
+
 }
 
 doTest("GLM Test: GLM w/ Beta Constraints", test)

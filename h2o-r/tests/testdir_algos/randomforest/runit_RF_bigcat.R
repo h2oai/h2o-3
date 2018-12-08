@@ -28,7 +28,7 @@ test.DRF.bigcat <- function() {
   default_cm <- h2o.confusionMatrix(drfmodel,bigcat.hex)[[1]]
 #  expect_equal(default_cm[1,2], 0)
 #  expect_equal(default_cm[2,1], 0)
-  
+
 }
 
 doTest("DRF Test: Classification with 100 categorical level predictor", test.DRF.bigcat)

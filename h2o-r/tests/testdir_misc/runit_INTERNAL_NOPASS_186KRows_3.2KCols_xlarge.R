@@ -20,22 +20,22 @@ for(col in names(data.hex)) {
 colNames[1] <- "C1"
 names(data.hex) <- colNames
 
-myY = colNames[1] 
+myY = colNames[1]
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling
 # GLM
-data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS") 
+data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="gaussian", solver = "L_BFGS")
 data1.glm
 
 #GBM on original dataset
 data1.gbm = h2o.gbm(x = myX, y = myY, training_frame = data.hex,
                     ntrees = 10, max_depth = 5, distribution = "multinomial")
-data1.gbm 
+data1.gbm
 
 #Deep Learning
 data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(10,10))
-data1.dl 
+data1.dl
 
 #Random Forest
 data1.rf = h2o.randomForest(x = myX, y = myY, training_frame = data.hex,

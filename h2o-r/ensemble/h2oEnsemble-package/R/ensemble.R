@@ -1,4 +1,4 @@
-h2o.ensemble <- function(x, y, training_frame, 
+h2o.ensemble <- function(x, y, training_frame,
                          model_id = NULL, validation_frame = NULL,
                          family = c("AUTO", "binomial", "gaussian", "quasibinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                          learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"),
@@ -6,12 +6,12 @@ h2o.ensemble <- function(x, y, training_frame,
                          cvControl = list(V = 5, shuffle = TRUE),  #maybe change this to cv_control
                          seed = 1,
                          parallel = "seq",  #only seq implemented
-                         keep_levelone_data = TRUE) 
+                         keep_levelone_data = TRUE)
 {
-  
+
   starttime <- Sys.time()
   runtime <- list()
-  
+
   # Training_frame may be a key or an H2O H2OFrame object
   if ((!inherits(training_frame, "Frame") && !inherits(training_frame, "H2OFrame")))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -29,7 +29,7 @@ h2o.ensemble <- function(x, y, training_frame,
   if (is.null(validation_frame)) {
     validation_frame <- training_frame
   }
-  
+
   # Determine prediction task family type automatically
   # TO DO: Add auto-detection for other distributions like gamma - right now auto-detect as "gaussian"
   family <- match.arg(family)
@@ -37,7 +37,7 @@ h2o.ensemble <- function(x, y, training_frame,
     if (is.factor(training_frame[,y])) {
       numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats == 2) {
-        family <- "binomial" 
+        family <- "binomial"
       } else {
         stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
       }
@@ -57,7 +57,7 @@ h2o.ensemble <- function(x, y, training_frame,
     if (family == "gamma") {
       if (ylim[1] <= 0) {
         stop("family = gamma requires a positive respone")
-      }      
+      }
     }
   } else {
     if (!is.factor(training_frame[,y])) {
@@ -66,11 +66,11 @@ h2o.ensemble <- function(x, y, training_frame,
       numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats > 2) {
         stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
-      } 
+      }
     }
     ylim <- NULL
   }
-  
+
   # Update control args by filling in missing list elements
   cvControl <- do.call(".cv_control", cvControl)
   V <- cvControl$V      #Number of CV folds
@@ -90,7 +90,7 @@ h2o.ensemble <- function(x, y, training_frame,
     stop("'metalearner' function name not found.")
   }
 
-  # This is not working, but we need a way to fail early when Naive Bayes wrappers are attempted to be used in a regression problem.  
+  # This is not working, but we need a way to fail early when Naive Bayes wrappers are attempted to be used in a regression problem.
   # # Check that Naive Bayes is not specified for a regression problem
   # if (family == "gaussian") {
   #   if (sum(!sapply(learner, function(l) "gaussian" %in% eval(formals(l)$family)))>0) {
@@ -100,10 +100,10 @@ h2o.ensemble <- function(x, y, training_frame,
   #   if (!("gaussian" %in% eval(formals(metalearner)$family))) {
   #     # TO DO: should make this more generic and print specific wrapper name in violation
   #     stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
-  #   }    
+  #   }
   # }
 
-    
+
   # Check remaining args
   if (inherits(parallel, "character")) {
     if (!(parallel %in% c("seq","multicore"))) {
@@ -112,7 +112,7 @@ h2o.ensemble <- function(x, y, training_frame,
   } else if (!inherits(parallel, "cluster")) {
     stop("'parallel' must be either 'seq' or 'multicore' or a snow cluster object")
   }
-  
+
   # Begin ensemble code
   if (is.numeric(seed)) set.seed(seed)  #If seed is specified, set seed prior to next step
   folds <- sample(rep(seq(V), ceiling(N/V)))[1:N]  # Cross-validation folds (stratified folds not yet supported)
@@ -126,21 +126,21 @@ h2o.ensemble <- function(x, y, training_frame,
   } else if (grepl("^h2o.", metalearner)){
     metalearner_type <- "h2o"
   }
-  
+
   # Create the Z matrix of cross-validated predictions
-  mm <- .make_Z(x = x, y = y, training_frame = training_frame, 
-                family = family, 
-                learner = learner, 
-                parallel = parallel, 
-                seed = seed, 
-                V = V, 
-                L = L, 
+  mm <- .make_Z(x = x, y = y, training_frame = training_frame,
+                family = family,
+                learner = learner,
+                parallel = parallel,
+                seed = seed,
+                V = V,
+                L = L,
                 idxs = idxs,
                 metalearner_type = metalearner_type)
   # TO DO: Could pass on the metalearner arg instead of metalearner_type and get this info internally
   basefits <- mm$basefits
   Z <- mm$Z  #pure Z (dimension N x L)
-  
+
   # Metalearning: Regress y onto Z to learn optimal combination of base models
   # TO DO: Replace grepl for metalearner_type
   # TO DO: Pass on additional args to match.fun(metalearner) for h2o type
@@ -151,46 +151,46 @@ h2o.ensemble <- function(x, y, training_frame,
     if (is.character(family)) {
       familyFun <- get(family, mode = "function", envir = parent.frame())
       #print(familyFun$family)  #does not work for SL.glmnet
-    } 
+    }
     Zdf <- as.data.frame(Z)
     Y <- as.data.frame(training_frame[,c(y)])[,1]
     # TO DO: for parity, need to add y col to Z like we do below
-    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y, 
-                                                                          X = Zdf, 
-                                                                          newX = Zdf, 
-                                                                          family = familyFun, 
-                                                                          id = seq(N), 
+    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(Y = Y,
+                                                                          X = Zdf,
+                                                                          newX = Zdf,
+                                                                          family = familyFun,
+                                                                          id = seq(N),
                                                                           obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
-    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?  
-    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
-                                                                          y = "y", 
-                                                                          training_frame = Z, 
-                                                                          validation_frame = NULL, 
+    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?
+    runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner,
+                                                                          y = "y",
+                                                                          training_frame = Z,
+                                                                          validation_frame = NULL,
                                                                           family = family), gcFirst = FALSE)
   }
-  
+
   # Since baselearning is now performed along with CV, see if we can get this info, or deprecate this
   runtime$baselearning <- NULL
   runtime$total <- Sys.time() - starttime
-  
+
   # Keep level-one data?
   if (!keep_levelone_data) {
     Z <- NULL
   }
-  
+
   # Ensemble model
   out <- list(x = x,
-              y = y, 
-              family = family, 
+              y = y,
+              family = family,
               learner = learner,
               metalearner = metalearner,
               cvControl = cvControl,
               folds = folds,
-              ylim = ylim, 
+              ylim = ylim,
               seed = seed,
               parallel = parallel,
-              basefits = basefits, 
+              basefits = basefits,
               metafit = metafit,
               levelone = Z,  #levelone = cbind(Z, y)
               runtime = runtime,
@@ -204,19 +204,19 @@ h2o.ensemble <- function(x, y, training_frame,
 
 # Generate the CV predicted values for all learners
 .make_Z <- function(x, y, training_frame, family, learner, parallel, seed, V, L, idxs, metalearner_type = c("h2o", "SuperLearner")) {
-  
+
   # Do V-fold cross-validation of each learner (in a loop/apply over 1:L)...
   fitlist <- sapply(X = 1:L, FUN = .fitWrapper, y = y, xcols = x, training_frame = training_frame,
-                    validation_frame = NULL, family = family, learner = learner, 
-                    seed = seed, fold_column = "fold_id", 
+                    validation_frame = NULL, family = family, learner = learner,
+                    seed = seed, fold_column = "fold_id",
                     simplify = FALSE)
-  
+
   runtime <- list()
   runtime$cv <- lapply(fitlist, function(ll) ll$fittime)
   names(runtime$cv) <- learner
   basefits <- lapply(fitlist, function(ll) ll$fit)  #Base fits (trained on full data) to be saved
-  names(basefits) <- learner      
-  
+  names(basefits) <- learner
+
   # In the case of binary classification, a 3-col HDF is returned, colnames == c("predict", "p0", "p1")
   # In the case of regression, 1-col HDF is already returned, colname == "predict"
   .compress_cvpred_into_1col <- function(l, family) {
@@ -229,7 +229,7 @@ h2o.ensemble <- function(x, y, training_frame,
     cvpred_sparse <- h2o.cbind(predlist)  #N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
     cvpred_col <- apply(cvpred_sparse, 1, sum)
     return(cvpred_col)
-  } 
+  }
   cvpred_framelist <- sapply(1:L, function(l) .compress_cvpred_into_1col(l, family))
   Z <- h2o.cbind(cvpred_framelist)
   names(Z) <- learner
@@ -237,7 +237,7 @@ h2o.ensemble <- function(x, y, training_frame,
 }
 
 
-# Train a model using learner l 
+# Train a model using learner l
 .fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed, fold_column) {
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
@@ -256,7 +256,7 @@ h2o.ensemble <- function(x, y, training_frame,
 # Wrapper function for .fitFun to record system.time
 .fitWrapper <- function(l, y, xcols, training_frame, validation_frame, family, learner, seed, fold_column) {
   print(sprintf("Cross-validating and training base learner %s: %s", l, learner[l]))
-  fittime <- system.time(fit <- .fitFun(l, y, xcols, training_frame, validation_frame, family, 
+  fittime <- system.time(fit <- .fitFun(l, y, xcols, training_frame, validation_frame, family,
                                         learner, seed, fold_column), gcFirst=FALSE)
   return(list(fit=fit, fittime=fittime))
 }
@@ -264,37 +264,37 @@ h2o.ensemble <- function(x, y, training_frame,
 
 .cv_control <- function(V = 5L, stratifyCV = TRUE, shuffle = TRUE){
   # Parameters that control the CV process
-  # Only part of this being used currently --  
+  # Only part of this being used currently --
   # Stratification is not enabled yet in the h2o.ensemble function.
-  # We can use a modified SuperLearner::CVFolds function (or similar) to 
+  # We can use a modified SuperLearner::CVFolds function (or similar) to
   # enable stratification by outcome in the future.
-  
+
   V <- as.integer(V)  #Number of cross-validation folds
   if(!is.logical(stratifyCV)) {
     stop("'stratifyCV' must be logical")
   }
   if(!is.logical(shuffle)) {
     stop("'shuffle' must be logical")
-  }  
+  }
   return(list(V = V, stratifyCV = stratifyCV, shuffle = shuffle))
 }
 
 
 predict.h2o.ensemble <- function(object, newdata, ...) {
-  
+
   if (object$family == "binomial") {
     basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
   } else {
     basepred <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,1]))
   }
   names(basepred) <- names(object$basefits)
-  
+
   if (grepl("H2O", class(object$metafit))) {
     # H2O ensemble metalearner from wrappers.R
     pred <- h2o.predict(object = object$metafit, newdata = basepred)
   } else {
     # SuperLearner wrapper function metalearner
-    basepreddf <- as.data.frame(basepred)  
+    basepreddf <- as.data.frame(basepred)
     pred <- predict(object = object$metafit$fit, newdata = basepreddf)
   }
   out <- list(pred = pred, basepred = basepred)

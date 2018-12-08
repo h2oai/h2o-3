@@ -11,7 +11,7 @@ test.RF.iris_ignore <- function() {
     iris.rf <- h2o.randomForest(y = 5, x = myX, training_frame = iris.hex, ntrees = 50, max_depth = 100)
     print(iris.rf)
   }
-  
+
 }
 
 doTest("RF test iris ignore", test.RF.iris_ignore)

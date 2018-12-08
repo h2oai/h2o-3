@@ -11,7 +11,7 @@ testPartialPlots <- function() {
   # build pdp without weight or NA
   h2o_pp_weight <- h2o.partialPlot(object = airlines_gbm, data = airlines_hex, cols = c("Input_miss", "fDayOfWeek"), plot = T, weight_column=weigth_col)
   h2o_pp_weight_NA <- h2o.partialPlot(object = airlines_gbm, data =  airlines_hex, cols = c("Input_miss", "fDayOfWeek"), plot = T, weight_column=weigth_col, include_na=TRUE)
-  
+
   assert_twoDTable_equal(h2o_pp_weight[[1]], h2o_pp_weight_NA[[1]]) # compare Input_miss pdp
   assert_twoDTable_equal(h2o_pp_weight[[2]], h2o_pp_weight_NA[[2]]) # compare fDayOfWeek pdp
   browser()

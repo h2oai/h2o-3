@@ -18,7 +18,7 @@ gbm.test <- function() {
   print(mrd)
   print("History of mean residual deivance is ")
   print(mrd_history)
-  
+
   expect_true(abs(mrd-h2o.mean_residual_deviance(gg)) < 1e-12)
 }
 

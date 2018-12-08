@@ -3,19 +3,19 @@ source("../../../scripts/h2o-r-test-setup.R")
 library(MASS)
 
 glmOrdinal <- function() {
-  Dtrain <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv"))  
-  Dtest <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_test_set.csv")) 
+  Dtrain <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv"))
+  Dtest <- h2o.uploadFile(locate("bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_test_set.csv"))
   Dtrain$C11 <- h2o.asfactor(Dtrain$C11)
   Dtest$C11 <- h2o.asfactor(Dtest$C11)
   h2o.describe(Dtrain)
   h2o.describe(Dtest)
 
-  X   <- c(1:10)  
+  X   <- c(1:10)
   Y<-"C11"
   Log.info("Build the model")
 
-  m1 <- h2o.glm(y = Y, x = X, training_frame = Dtrain, lambda=c(0.000000001), alpha=c(0.7), family = "ordinal", 
-                beta_epsilon=1e-8, objective_epsilon=1e-10, obj_reg=0.00001,max_iterations=1000 )  
+  m1 <- h2o.glm(y = Y, x = X, training_frame = Dtrain, lambda=c(0.000000001), alpha=c(0.7), family = "ordinal",
+                beta_epsilon=1e-8, objective_epsilon=1e-10, obj_reg=0.00001,max_iterations=1000 )
   temp <- h2o.predict(m1,Dtest)
   predh2o = as.data.frame(temp)
   Ddata <- as.data.frame(Dtest)

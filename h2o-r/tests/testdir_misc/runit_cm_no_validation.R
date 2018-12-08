@@ -49,7 +49,7 @@ test.cm.no.valid <- function() {
   expect_warning(h2o.confusionMatrix(pros.gbm, valid = TRUE))
   expect_error(h2o.confusionMatrix(pros.gbm, valid = TRUE, newdata = pros.test))
   expect_error(h2o.confusionMatrix(iris.glm, thresholds = 0.5))
-  
+
 }
 
 doTest("Testing h2o.confusionMatrix on a model with no validation frame", test.cm.no.valid)

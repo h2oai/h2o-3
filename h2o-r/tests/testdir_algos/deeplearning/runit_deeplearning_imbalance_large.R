@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning works fine with an imbalanced dataset")
-  
+
   covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
   hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=F,reproducible=T, seed=12345)
@@ -33,7 +33,7 @@ check.deeplearning_imbalanced <- function() {
   }
   checkTrue(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
-  
+
 }
 
 doTest("Deep Learning Imbalanced Test", check.deeplearning_imbalanced)

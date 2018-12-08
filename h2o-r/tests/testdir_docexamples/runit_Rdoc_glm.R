@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.rdocglm.golden <- function() {
-	
+
     # Run GLM of CAPSULE ~ AGE + RACE + PSA + DCAPS
     prostatePath = locate("smalldata/extdata/prostate.csv")
     prostate.hex = h2o.importFile(path = prostatePath, destination_frame = "prostate.hex")
@@ -16,7 +16,7 @@ test.rdocglm.golden <- function() {
     h2o.glm(y = "VOL", x = myX, training_frame = prostate.hex, family = "gaussian",
              nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 
-    
+
 }
 
 doTest("R Doc GLM example", test.rdocglm.golden)

@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-	
+
 	Hexpend =  read.csv(locate("smalldata/glm_test/HealthExpend.csv"))
 	MEPS=subset(Hexpend,EXPENDIP>0)
 	#MEPSgamma = gbm(formula = EXPENDIP~COUNTIP+AGE+GENDER+factor(RACE)+factor(REGION)+factor(EDUC)+
@@ -27,7 +27,7 @@ test <- function() {
 	expect_equal(hh@model$init_f,9.460660441)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,20.53711278)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
-	
+
 	#MEPStweedie=gbm(EXPENDIP~COUNTIP+AGE+insure,distribution =  "tweedie",verbose = T,
     #            data=MEPS,n.trees = 1,interaction.depth = 1,n.minobsinnode = 10,shrinkage = 1,bag.fraction = 1,train.fraction = 1)
 	myX = c("COUNTIP","AGE", "insure")
@@ -39,7 +39,7 @@ test <- function() {
 	expect_equal(hh@model$init_f,9.460660441)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,149.4331681)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
-	
+
 	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
 	fre$VehPower = as.factor(fre$VehPower)
 	#fren = as.data.frame(fre)
@@ -57,6 +57,6 @@ test <- function() {
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,0.610489769)
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 
-	
+
 }
 doTest("GBM residual deviance Test: GBM deviance for poisson/gamma/tweedie distributions", test)

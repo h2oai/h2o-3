@@ -68,7 +68,7 @@ loanStats$revol_util <- as.h2o(as.numeric(as.matrix(loanStats$revol_util)))
 # loanStats$revol_util <- as.numeric(loanStats$revol_util)
 
 print("Calculate the longest credit length in years...")
-time1 <- as.Date(h2o.strsplit(x = loanStats$earliest_cr_line, split = "-")[,2], format = "%Y") 
+time1 <- as.Date(h2o.strsplit(x = loanStats$earliest_cr_line, split = "-")[,2], format = "%Y")
 time2 <- as.Date(h2o.strsplit(x = loanStats$issue_d, split = "-")[,2], format = "%Y")
 loanStats$credit_length_in_years <- year(time2) - year(time1)
 ## Ideally you can parse the column as a Date column immediately

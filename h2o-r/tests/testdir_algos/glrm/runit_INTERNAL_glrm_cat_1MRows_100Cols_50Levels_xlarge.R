@@ -20,7 +20,7 @@ print(paste("Matrix decomposition rank k =", k_dim))
 print(paste("Creating categorical data frame with rows =", rows, "and cols =", cols, "with", levels, "unique levels each"))
 sst <- system.time(myframe <- h2o.createFrame(rows = rows, cols = cols,
                                               randomize = TRUE, categorical_fraction = 1.0, factors = levels,
-                                              integer_fraction = 0.0, binary_fraction = 0.0, 
+                                              integer_fraction = 0.0, binary_fraction = 0.0,
                                               missing_fraction = 0, has_response = FALSE))
 
 print(paste("Time it took to create frame:", as.numeric(sst[3])))

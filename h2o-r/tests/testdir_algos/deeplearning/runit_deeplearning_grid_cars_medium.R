@@ -82,7 +82,7 @@ check.deeplearning.grid.cars <- function() {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  
+
 }
 
 doTest("Deep Learning Grid Search using cars dataset", check.deeplearning.grid.cars)

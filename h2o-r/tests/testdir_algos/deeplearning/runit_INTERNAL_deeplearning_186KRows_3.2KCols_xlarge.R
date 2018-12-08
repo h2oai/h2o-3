@@ -23,7 +23,7 @@ for(col in names(data.hex)) {
 colNames[1] <- "C1"
 names(data.hex) <- colNames
 
-myY = colNames[1] 
+myY = colNames[1]
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling
@@ -31,7 +31,7 @@ myX = setdiff(names(data.hex), myY)
 dl_time <- system.time(data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex, epochs=.1, hidden=c(5,5)))
 print("Time it took to build DL")
 print(dl_time)
-data1.dl 
+data1.dl
 
 }
 

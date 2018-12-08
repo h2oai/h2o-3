@@ -278,8 +278,8 @@ withWarnings <- function(expr) {
 cleanSummary <- function(mysum, alphabetical = FALSE) {
   # Returns string without leading or trailing whitespace
   trim <- function(x) { gsub("^\\s+|\\s+$", "", x) }
-  
-  lapply(1:ncol(mysum), { 
+
+  lapply(1:ncol(mysum), {
     function(i) {
       nams <- sapply(mysum[,i], function(x) { trim(unlist(strsplit(x, ":"))[1]) })
       vals <- sapply(mysum[,i], function(x) {
@@ -305,7 +305,7 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
 checkSummary <- function(object, expected, tolerance = 1e-6) {
   sumR <- cleanSummary(expected, alphabetical = TRUE)
   sumH2O <- cleanSummary(object, alphabetical = TRUE)
-  
+
   expect_equal(length(sumH2O), length(sumR))
   lapply(1:length(sumR), function(i) {
     vecR <- sumR[[i]]; vecH2O <- sumH2O[[i]]
@@ -320,7 +320,7 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
   FAC_LEVS <- function(x) { sapply(x, function(z) { length(levels(z)) })}
-  
+
   df_fac <- data.frame(FAC(df))
   if(ncol(df_fac) == 0) {
     DF <- data.frame(NUM(df))
@@ -328,7 +328,7 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
   } else {
     if(!"ade4" %in% rownames(installed.packages())) install.packages("ade4")
     require(ade4)
-    
+
     df_fac_acm <- acm.disjonctif(df_fac)
     if (!use_all_factor_levels) {
       fac_offs <- cumsum(c(1, FAC_LEVS(df_fac)))
@@ -336,21 +336,21 @@ genDummyCols <- function(df, use_all_factor_levels = TRUE) {
       df_fac_acm <- data.frame(df_fac_acm[,-fac_offs])
     }
     DF <- data.frame(df_fac_acm, NUM(df))
-    fac_nams <- mapply(function(x, cname) { 
+    fac_nams <- mapply(function(x, cname) {
       levs <- levels(x)
       if(!use_all_factor_levels) levs <- levs[-1]
-      paste(cname, levs, sep = ".") }, 
+      paste(cname, levs, sep = ".") },
       df_fac, colnames(df)[which(sapply(df, is.factor))])
     fac_nams <- as.vector(unlist(fac_nams))
     fac_range <- 1:ncol(df_fac_acm)
     names(DF)[fac_range] <- fac_nams
-    
+
     if(ncol(NUM(df)) > 0) {
       num_range <- (ncol(df_fac_acm)+1):ncol(DF)
       names(DF)[num_range] <- colnames(df)[which(sapply(df, is.numeric))]
     }
   }
-  
+
   return(DF)
 }
 
@@ -361,7 +361,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
     df.clone[,is_num] <- scale(df.clone[,is_num], center = center, scale = scale)
     df.clone <- df.clone[, c(which(!is_num), which(is_num))]   # Move categorical column to front
   }
-  
+
   if(ignore_const_cols) {
     is_const <- sapply(df.clone, function(z) { var(z, na.rm = TRUE) == 0 })
     if(any(is_const))
@@ -405,20 +405,20 @@ h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
   df_h2o_obj <- as.data.frame(h2o_obj)
   df_r_obj <- as.data.frame(r_obj)
   expect_equal(length(df_h2o_obj), length(df_r_obj))
-  
-  #Check NAs are in same places 
+
+  #Check NAs are in same places
   df_h2o_nas <- is.na(df_h2o_obj)
   df_r_nas <- is.na(df_r_obj)
   expect_true(all(df_h2o_nas == df_r_nas))
-  
+
   #Check non-NAs are same vals
   df_h2o_obj_free <- df_h2o_obj[!df_h2o_nas]
   df_r_na_free <- df_r_obj[!df_r_nas]
-  
+
   expect_equal(length(df_h2o_obj_free), length(df_r_na_free))
   if (length(df_r_na_free) > 0)
     expect_true(all(abs(df_h2o_obj_free - df_r_na_free) < tolerance))
-  
+
 }
 
 #----------------------------------------------------------------------
@@ -585,17 +585,17 @@ runGLMMetricStop <- function(predictor_names, response_name, train_data, family,
 
     if (stop_now) {
       if (length(metric_list) < num_models_built) {
-        
+
         Log.info("number of models built by gridsearch: ")
         print(num_models_built)
         Log.info("number of models built proposed by stopping metrics: ")
         print(length(metric_list))
-        
+
         return(FALSE)
       } else {
         return(TRUE)
       }
-    } 
+    }
   }
 
   if (length(metric_list) == possible_model_number) {
@@ -620,20 +620,20 @@ evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decre
 
   metric_len = length(metric_list)
   metric_list = sort(metric_list, decreasing=!(is_decreasing))
-  
+
   start_len = 2*stop_round
-  
+
   bestInLastK = mean(metric_list[1:stop_round])
   lastBeforeK = mean(metric_list[(stop_round+1):start_len])
 
   if (!(sign(bestInLastK)) == sign(lastBeforeK))
     return(FALSE)
-  
+
   ratio = bestInLastK/lastBeforeK
-  
+
   if (is.nan(ratio))
     return(FALSE)
-  
+
   if (is_decreasing)
     return(!(ratio < (1-tolerance)))
   else
@@ -741,7 +741,7 @@ random_dataset <-
       # assume all else as multinomial
       response_num = round(runif(1, 3, 10))
     }
-    
+
     # generate all the fractions
     fractions <-
       c(runif(1, 0, 1),
@@ -764,7 +764,7 @@ random_dataset <-
         response_factors = response_num,
         missing_fraction = runif(1, 0, 0.05)
       )
-    
+
     return(random_frame)
   }
 
@@ -835,10 +835,10 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
   hiddenDropouts <- c()
   for (ind in 1:no_hidden_layers) {
     hidden <- c(hidden, round(runif(1, 1, max_node_number)))
-    
+
     if (grepl('Dropout', actFunc, fixed = TRUE)) {
       hiddenDropouts <- c(hiddenDropouts, runif(1, 0, 0.1))
-      
+
     }
   }
   return(list("hidden" = hidden, "hiddenDropouts" = hiddenDropouts))
@@ -1045,11 +1045,11 @@ mojoH2Opredict<-function(model, tmpdir_name, filename, get_leaf_node_assignment=
     cmd<-paste(cmd, "--leafNodeAssignment")
     predictions1 = h2o.predict_leaf_node_assignment(model, newTest)
   }
-  
+
   if (glrmReconstruct) {
     cmd <- paste(cmd, "--glrmReconstruct", sep=" ")
   }
-  
+
   safeSystem(cmd)  # perform mojo prediction
   predictions2 = h2o.importFile(paste(tmpdir_name, "out_mojo.csv", sep =
   '/'), header=T)
@@ -1075,7 +1075,7 @@ manual_partial_dependency <- function(model, dataframe, xlist, xname, weight_vec
   temp <- (xnames != xname)
   xnames_list <- xnames[temp]
   rowIndex <- 1
-  
+
   for (xval in xlist) {
     sumEle <- 0.0
     sumEleSq <- 0.0
@@ -1095,7 +1095,7 @@ manual_partial_dependency <- function(model, dataframe, xlist, xname, weight_vec
     for (rIndex in c(1:predRow)) {
       val <- predF[rIndex, target_index]
       weight <- weight_vector[rIndex, 1]
-      
+
       if ((abs(weight) > 0) && !is.nan(val)) {
         tempV <- val*weight
         sumEle <- sumEle+tempV
@@ -1118,7 +1118,7 @@ assert_twoDTable_array_equal <- function(table1, arraymean, arraystd, arraystder
   checkEqualsNumeric(table1[, "mean_response"], arraymean)
   checkEqualsNumeric(table1[, "stddev_response"], arraystd)
   checkEqualsNumeric(table1[, "std_error_mean_response"], arraystderr)
-  
+
 }
 assert_twoDTable_equal <- function(table1, table2) {
   checkEqualsNumeric(table1[, "mean_response"], table2[, "mean_response"][1:length(table1[, "mean_response"])])

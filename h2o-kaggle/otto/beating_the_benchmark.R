@@ -67,7 +67,7 @@ valid_holdout.hex <- h2o.assign(train.hex[rnd>=0.8,], "valid_holdout.hex")
 
 
 ######################################################################
-## Step 4 - Use H2O Flow to inspect the data and build some models on 
+## Step 4 - Use H2O Flow to inspect the data and build some models on
 ## train_holdout.hex/valid_holdout.hex to get a feeling for the problem
 ######################################################################
 
@@ -90,15 +90,15 @@ for (i in 1:10) {
                        "_minrows",rand_min_rows,
                        "_learnrate",rand_learn_rate
                        )
-  model <- h2o.gbm(x=predictors, 
-                   y=response, 
+  model <- h2o.gbm(x=predictors,
+                   y=response,
                    training_frame=train_holdout.hex,
                    validation_frame=valid_holdout.hex,
                    model_id=model_name,
                    distribution="multinomial",
-                   ntrees=rand_numtrees, 
-                   max_depth=rand_max_depth, 
-                   min_rows=rand_min_rows, 
+                   ntrees=rand_numtrees,
+                   max_depth=rand_max_depth,
+                   min_rows=rand_min_rows,
                    learn_rate=rand_learn_rate
                    )
   models <- c(models, model)
@@ -136,13 +136,13 @@ h2o.logloss(valid_perf)
 ## Step 6 - Build Final Model using the Full Training Data
 ######################################################################
 
-model <- h2o.gbm(x=predictors, 
+model <- h2o.gbm(x=predictors,
                  y=response,
                  model_id="final_model",
-                 training_frame=train.hex, 
+                 training_frame=train.hex,
                  distribution="multinomial",
                  ntrees=42,
-                 max_depth=10, 
+                 max_depth=10,
                  min_rows=10,
                  learn_rate=0.175
 )

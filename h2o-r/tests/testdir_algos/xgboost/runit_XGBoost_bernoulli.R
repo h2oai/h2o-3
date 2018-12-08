@@ -11,13 +11,13 @@ test.XGBoost.bernoulli <- function() {
   prostate.hex$RACE <- as.factor(prostate.hex$RACE)
   Log.info("Summary of prostate.csv from H2O:\n")
   print(summary(prostate.hex))
-  
+
   # Import csv data for R to use in comparison
   prostate.data <- read.csv(locate("smalldata/logreg/prostate.csv"), header = TRUE)
   prostate.data$RACE <- as.factor(prostate.data$RACE)
   Log.info("Summary of prostate.csv from R:\n")
   print(summary(prostate.data))
-  
+
   # Train H2O XGBoost Model:
   ntrees <<- 100
   distribution <<- "bernoulli"

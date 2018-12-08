@@ -11,7 +11,7 @@ test.headers <- function() {
   print(names(hex))
   checkIdentical(names(headers), names(hex))
 
-  
+
 }
 
 doTest("Import a dataset with a header H2OParsedData Object", test.headers)

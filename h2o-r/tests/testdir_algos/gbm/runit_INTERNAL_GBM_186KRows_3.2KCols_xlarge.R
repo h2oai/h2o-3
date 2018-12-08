@@ -22,7 +22,7 @@ for(col in names(data.hex)) {
 colNames[1] <- "C1"
 names(data.hex) <- colNames
 
-myY = colNames[1] 
+myY = colNames[1]
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling
@@ -30,7 +30,7 @@ myX = setdiff(names(data.hex), myY)
 gbm_time <- system.time(data1.gbm <-  h2o.gbm(x = myX, y = myY, training_frame = data.hex, ntrees = 10, max_depth = 5, distribution = "multinomial"))
 print("Time it took to build GBM")
 print(gbm_time)
-data1.gbm 
+data1.gbm
 
 }
 

@@ -17,7 +17,7 @@ summary(gait.hex)
 #          Matrix Decomposition         #
 #---------------------------------------#
 print("Build GLRM with quadratic loss and no regularization")
-gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10, loss = "Quadratic", 
+gait.glrm <- h2o.glrm(training_frame = gait.hex, cols = 2:ncol(gait.hex), k = 10, loss = "Quadratic",
                       regularization_x = "None", regularization_y = "None", max_iterations = 1000)
 gait.glrm
 

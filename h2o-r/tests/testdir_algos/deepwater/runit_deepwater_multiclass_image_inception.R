@@ -5,7 +5,7 @@ check.deeplearning_multi_image_inception <- function() {
   if (!h2o.deepwater.available()) return()
 
   Log.info("Test checks if Deep Water works fine with a multiclass image dataset")
-  
+
   df <- h2o.uploadFile(locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(head(df))
   path = 1 ## must be the first column

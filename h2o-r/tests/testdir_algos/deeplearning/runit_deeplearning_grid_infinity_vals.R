@@ -15,7 +15,7 @@ test.grid.infinity.values <- function(conn){
   expect_true(100 %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
   expect_true(Inf %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
 
-  
+
 }
 
 doTest("Grid infinity values", test.grid.infinity.values)

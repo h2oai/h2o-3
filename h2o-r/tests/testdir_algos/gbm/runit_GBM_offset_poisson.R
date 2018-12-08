@@ -6,12 +6,12 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function(h) {
-	
+
 	library(gbm)
-	library(MASS) 
+	library(MASS)
 	data(Insurance)
 	fit2 = gbm(Claims ~ District + Group + Age+ offset(log(Holders)) , interaction.depth = 1,n.minobsinnode = 1,shrinkage = .1,bag.fraction = 1,train.fraction = 1,
-            	data = Insurance, distribution ="poisson", n.trees = 600) 
+            	data = Insurance, distribution ="poisson", n.trees = 600)
 	link = predict.gbm(fit2, Insurance, n.trees=600, type="link")
 	link.offset = link + log(Insurance$Holders)
 	#for poisson
@@ -29,7 +29,7 @@ test <- function(h) {
 	expect_equal(min(pr), min(ph[,1]) ,tolerance=1e-4)
 	expect_equal(fit2$train.error[length(fit2$train.error)], hh@model$training_metrics@metrics$mean_residual_deviance,tolerance=1e-4) #residual deviance
 	expect_equal(max(pr), max(ph[,1]) ,tolerance=1e-4)
-	
-	
+
+
 }
 doTest("GBM offset Test: GBM w/ offset for poisson distribution", test)

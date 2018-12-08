@@ -62,16 +62,16 @@ test.gbm.mult.levels <- function() {
   y <- "CAPSULE"
   x <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
   prostate.gbm <- h2o.gbm(model_id = "gbm_prostate",
-                              x = x, y = y, 
-                              training_frame = prostate.hex, 
-                              ntrees = 50, 
+                              x = x, y = y,
+                              training_frame = prostate.hex,
+                              ntrees = 50,
                               distribution = "multinomial")
-  
+
   print("training_metrics for prostate: ")
   print(prostate.gbm@model$training_metrics)
   print("training cm for prostate: ")
   print(h2o.confusionMatrix(prostate.gbm@model$training_metrics))
-  
+
   domain = prostate.gbm@model$training_metrics@metrics$domain
   print("domain for prostate GBM: ")
   print(domain)
@@ -88,11 +88,11 @@ test.gbm.mult.levels <- function() {
   y <- "CAPSULE"
   x <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
   prostate_string_levels.gbm <- h2o.gbm(model_id = "gbm_prostate",
-                              x = x, y = y, 
-                              training_frame = prostate_string_levels.hex, 
-                              ntrees = 50, 
+                              x = x, y = y,
+                              training_frame = prostate_string_levels.hex,
+                              ntrees = 50,
                               distribution = "multinomial")
-  
+
   print("training_metrics for prostate: ")
   print(prostate_string_levels.gbm@model$training_metrics)
   print("training cm for prostate: ")

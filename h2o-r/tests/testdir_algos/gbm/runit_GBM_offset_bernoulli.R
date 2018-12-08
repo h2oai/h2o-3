@@ -24,7 +24,7 @@ test <- function() {
 	expect_equal(mean(pr), mean(ph[,3]),tolerance=1e-6 )
 	expect_equal(min(pr), min(ph[,3]),tolerance=1e-6 )
 	expect_equal(max(pr), max(ph[,3]),tolerance=1e-6 )
-	
-	
+
+
 }
 doTest("GBM offset Test: GBM w/ offset for bernoulli distribution", test)

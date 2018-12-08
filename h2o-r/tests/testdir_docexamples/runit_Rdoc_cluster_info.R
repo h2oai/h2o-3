@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.rdocclusterinfo.golden <- function() {
-	
+
 
 h2o.clusterInfo()
 

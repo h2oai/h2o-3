@@ -36,7 +36,7 @@ test.DRF.groupsplit <- function() {
   # print(test.cm)
   test.perf <- h2o.performance(drfmodel.h2o, test.hex)
   print(test.perf)
-  
+
 }
 
 doTest("DRF Test: Classification with 50 categorical level predictor", test.DRF.groupsplit)

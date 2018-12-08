@@ -28,7 +28,7 @@ s <- h2o.runif(data.hex)    # Useful when number of rows too large for R to hand
 data.train <- data.hex[s <= 0.8,]
 data.valid <- data.hex[s > 0.8,]
 
-## Response = Distance 
+## Response = Distance
 myY = "C19"
 myX = setdiff(names(data.hex), myY)
 ## Build GLM Model and compare AUC with h2o1
@@ -49,7 +49,7 @@ data3.gbm <- h2o.gbm(x = myX, y = myY, training_frame = data.train, validation_f
 
 #Deep Learning
 #data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.train, validation_frame=data.valid, replicate_training_data=FALSE, epochs=.1, hidden=c(5,5))
-#data1.dl 
+#data1.dl
 
 }
 

@@ -21,7 +21,7 @@ check.revalue <- function() {
   print(levels(air$Origin))
 
 
-  
+
 }
 
 doTest("Slice using != factor_level test", check.revalue)

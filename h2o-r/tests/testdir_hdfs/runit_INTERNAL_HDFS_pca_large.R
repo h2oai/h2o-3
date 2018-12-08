@@ -43,7 +43,7 @@ check.pca_large <- function() {
   print(cross.pca@model$importance)
 
 
-  
+
 }
 
 doTest("PCA test", check.pca_large)

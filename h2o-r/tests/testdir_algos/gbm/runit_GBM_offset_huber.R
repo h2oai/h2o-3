@@ -6,7 +6,7 @@ test <- function(h) {
   library(MASS)
   data(Insurance)
 
-	offset = log(Insurance$Holders) 
+	offset = log(Insurance$Holders)
   class(Insurance$Group) <- "factor"
   class(Insurance$Age) <- "factor"
   df = data.frame(Insurance,offset)

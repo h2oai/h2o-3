@@ -12,7 +12,7 @@ test.glrm.pubdev.3788 <- function() {
     data <- as.h2o(data)
 
     browser()
-    
+
     # Specify loss by column and set ignore_const_cols to TRUE
     glrm_model <- h2o.glrm(data, k = 2, model_id = "glrm_test.hex",
     loss_by_col = c("Quadratic", "Categorical", "Categorical"),
@@ -20,8 +20,8 @@ test.glrm.pubdev.3788 <- function() {
     ignore_const_cols = TRUE)
 
     archetypes <- h2o.proj_archetypes(glrm_model, data)  # make sure returned archetypes are not empty
-  
-    # check to make sure implementation is correct when no column indices are given since the 
+
+    # check to make sure implementation is correct when no column indices are given since the
     # loss_by_col length is the same as the number of columns in the frame.
     glrm_model2 <- h2o.glrm(data, k = 2, model_id = "glrm_test.hex",
                            loss_by_col = c("Quadratic", "Categorical", "Categorical"), ignore_const_cols = TRUE)

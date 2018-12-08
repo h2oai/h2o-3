@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ##
-# 
+#
 # Check the types of the columns returned from h2o after
 # calling as.data.frame.
 #
@@ -48,7 +48,7 @@ data.frame.type.test <- function() {
    expect_that(typeof(df.prostate.FV[,8]), equals("double"))
    expect_that(typeof(df.prostate.FV[,9]), equals("integer"))
 
-   
+
 }
 
 doTest("Type check data frame", data.frame.type.test)

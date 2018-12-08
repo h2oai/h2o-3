@@ -17,8 +17,8 @@ test <- function() {
 	 #        weights=Exposure,data = fren,n.trees = 100,interaction.depth = 1,n.minobsinnode = 1,shrinkage = .1,bag.fraction = 1,train.fraction = 1)
 	#gg$train.error #1.9965
 	#pr = predict(gg,newdata = fren,type = "response")
-	#summary(pr) #mean = 1.052; min = 1.004; max = 1.807; 
-	
+	#summary(pr) #mean = 1.052; min = 1.004; max = 1.807;
+
 	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",distribution =  "poisson",hidden = c(30), epochs = 100,
                       reproducible = T,activation = "Tanh", overwrite_with_best_model = F,
                       force_load_balance = F,
@@ -34,8 +34,8 @@ test <- function() {
 	expect_equal(1.058015, mean(ph[,1]), tolerance=1e-5 )
 	expect_equal(0.9048139, min(ph[,1]), tolerance=1e-5 )
 	expect_equal(1.301283, max(ph[,1]), tolerance=1e-5 )
-		
-	
+
+
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for poisson distribution", test)
 

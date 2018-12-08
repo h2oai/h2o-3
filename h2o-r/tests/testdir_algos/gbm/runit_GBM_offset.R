@@ -42,6 +42,6 @@ test.GBM <- function() {
   model <- gbm(CAPSULE~.-CAPSULE-ID + offset(offset), data=ldf, distribution="bernoulli")
   expect_true(abs((gbm@model$init_f - model$initF)/model$initF) < 1e-6, "initF mismatch with offset for bernoulli")
 
-  
+
 }
 doTest("GBM Test: offset", test.GBM)

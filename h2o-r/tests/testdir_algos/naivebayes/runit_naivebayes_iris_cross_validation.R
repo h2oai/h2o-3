@@ -10,7 +10,7 @@ test.nbayes.iris.cv <- function() {
 
   iris.nbayes.h2o <- h2o.naiveBayes(x = 1:4, y = 5, training_frame = iris.hex[1:99,], validation_frame=iris.hex[100:150,])
   print(iris.nbayes.h2o)
-   
+
   iris.nbayes.h2o <- h2o.naiveBayes(x = 1:4, y = 5, training_frame = iris.hex, nfolds=4, seed=1234)
   print(iris.nbayes.h2o)
 

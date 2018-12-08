@@ -4,9 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.glm2Poissonregression.golden <- function() {
-	
-#Import data: 
-Log.info("Importing CUSE data...") 
+
+#Import data:
+Log.info("Importing CUSE data...")
 cuseH2O<- h2o.uploadFile(locate("smalldata/logreg/cuseexpanded.csv"), destination_frame="cuseH2O")
 cuseR<- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 

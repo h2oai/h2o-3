@@ -41,7 +41,7 @@ test.gbm.regr.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(cars.gbm))
 
-  
+
 }
 
 doTest("Testing model accessors for GBM", test.gbm.regr.accessors)

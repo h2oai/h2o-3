@@ -15,15 +15,15 @@ source("../../scripts/h2o-r-test-setup.R")
 ##
 
 testpdpUserSplits <- function() {
-  
+
   prostate_hex = h2o.uploadFile(locate("smalldata/prostate/prostate_NA_weights.csv")) # constant weight C0, vary C10
-  
+
   ## Change CAPSULE to Enum
   prostate_hex[, "CAPSULE"] = as.factor(prostate_hex[, "CAPSULE"]) # should be enum by default
   ## build GBM model
-  prostate_gbm = h2o.gbm(x = c('CAPSULE', 'AGE', 'RACE', 'DPROS', 'DCAPS', 'PSA', 'VOL'), y = "GLEASON", 
+  prostate_gbm = h2o.gbm(x = c('CAPSULE', 'AGE', 'RACE', 'DPROS', 'DCAPS', 'PSA', 'VOL'), y = "GLEASON",
                          training_frame = prostate_hex, ntrees = 50, learn_rate=0.05, seed = 12345)
-  
+
   # build pdp normal
   h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F)
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
@@ -32,10 +32,10 @@ testpdpUserSplits <- function() {
                60.05263157894737, 61.94736842105263, 63.84210526315789, 65.73684210526315,
                67.63157894736842, 69.52631578947368, 71.42105263157895, 73.3157894736842,
                75.21052631578948, 77.10526315789474)
-  raceSplit = c("Black")  
+  raceSplit = c("Black")
   user_splits_list = list(c("AGE", ageSplit), c("RACE", raceSplit))
   h2o_pp_splits = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F, user_splits=user_splits_list)
-  
+
   # build pdp normal
   h2o_pp = h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE", "DCAPS"), plot = F)
   # compare pdp from both.  They are not the same length.  The user split is one shorter.

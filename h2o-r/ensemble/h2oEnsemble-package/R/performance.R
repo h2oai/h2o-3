@@ -3,21 +3,21 @@
 #     base: a list of H2OModelMetrics objects for base learner performance on `newdata`
 
 h2o.ensemble_performance <- function(object, newdata, score_base_models = TRUE) {
-  
+
   if (class(object) != "h2o.ensemble") {
     stop("object must be of class, h2o.ensemble")
   }
   if (!grepl("H2O", class(object$metafit))) {
     stop("H2O performance metrics are not supported for SuperLearner-based metalearners.")
   }
-  
+
   # Training_frame may be a key or an H2OFrame object
   if ((!inherits(newdata, "Frame") && !inherits(newdata, "H2OFrame")))
     tryCatch(newdata <- h2o.getFrame(newdata),
              error = function(err) {
                stop("argument \"newdata\" must be a valid H2OFrame or id")
              })
-  
+
   if (object$family == "binomial") {
     newdata_levelone <- h2o.cbind(sapply(object$basefits, function(ll) h2o.predict(object = ll, newdata = newdata)[,3]))
   } else {
@@ -55,7 +55,7 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE
       family <- "binomial"
     } else {
       # Will need to update this when the following is complete:
-      # https://0xdata.atlassian.net/browse/PUBDEV-2277 
+      # https://0xdata.atlassian.net/browse/PUBDEV-2277
       family <- "gaussian"
     }
   }
@@ -79,10 +79,10 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE
     print(res)
   }
   cat("\n")
-  
+
   # Ensemble test set AUC
   ensemble_perf <- x$ensemble@metrics[[metric]]
-  
+
   cat("\nH2O Ensemble Performance on <newdata>:")
   cat("\n----------------")
   cat(paste0("\nFamily: ", family))

@@ -21,19 +21,19 @@ test.pca.pubdev3827 <- function() {
     Log.info("Building PCA model using R...")
     pcaR = prcomp(aus, center=TRUE, scale.=TRUE, rank.=ranks)
   }
-  
+
   Log.info("Building PCA model with GramSVD...")
   gramSVD.pca <- h2o.prcomp(training_frame = australia.hex, transform=transformN, k=ranks)
   print(gramSVD.pca@model$scoring_history)
   print(gramSVD.pca@model$importance)
 
-  Log.info("Building PCA model with Randomized...") 
+  Log.info("Building PCA model with Randomized...")
   randomized.pca <- h2o.prcomp(training_frame = australia.hex, transform=transformN, k=ranks,
   pca_method="Randomized", compute_metrics=TRUE)
   print(randomized.pca@model$scoring_history)
   print(randomized.pca@model$importance)
 
-  Log.info("Building PCA model with Power...") 
+  Log.info("Building PCA model with Power...")
   power.pca <- h2o.prcomp(training_frame = australia.hex, transform=transformN, k=ranks,
                                pca_method="Power", compute_metrics=TRUE)
   print(power.pca@model$scoring_history)
@@ -66,10 +66,10 @@ test.pca.pubdev3827 <- function() {
   compare_all_importance=TRUE)
 
   Log.info("****** Comparing GramSVD PCA model and GLRM PCA model...")
-  isFlipped1 <- checkPCAModelWork(ranks, gramSVD.pca@model$importance, glrm.pca@model$importance, 
-                              gramSVD.pca@model$eigenvectors, glrm.pca@model$eigenvectors, 
-                              "Compare importance between PCA GramSVD and PCA GLRM", 
-                              "PCA GramSVD Importance of Components:", 
+  isFlipped1 <- checkPCAModelWork(ranks, gramSVD.pca@model$importance, glrm.pca@model$importance,
+                              gramSVD.pca@model$eigenvectors, glrm.pca@model$eigenvectors,
+                              "Compare importance between PCA GramSVD and PCA GLRM",
+                              "PCA GramSVD Importance of Components:",
                               "PCA GLRM Importance of Components:", tolerance=2e-1,
                               compare_all_importance=TRUE)
 

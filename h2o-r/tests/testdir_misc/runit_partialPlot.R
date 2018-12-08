@@ -30,7 +30,7 @@ test <- function() {
   # prostate_rf = randomForest(CAPSULE ~ AGE + RACE, data = prostate_df, ntree = 50)
   # r_age_pp = partialPlot(x = prostate_rf, pred.data = prostate_df, x.var = "AGE")
   # r_race_pp = partialPlot(x = prostate_rf, pred.data = prostate_df, x.var = "RACE")
-  
+
   ## Import prostate dataset
   prostate_hex = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate.hex")
 
@@ -40,7 +40,7 @@ test <- function() {
   seed = .Random.seed[1]
   Log.info(paste0("Random seed used = ", seed))
   prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 25, seed = seed)
-  
+
   ## Calculate the partial dependence manually using breaks from results of h2o.partialPlot
   ## Define function
   partialDependence <- function(object, pred.data, xname, h2o.pp) {
@@ -48,7 +48,7 @@ test <- function() {
     y.pt <- numeric(length(x.pt))
     y.sd <- numeric(length(x.pt))
     y.sem <- numeric(length(x.pt))
-    
+
     for (i in seq(along = x.pt)) {
       x.data <- pred.data
       x.data[, xname] <- x.pt[i]
@@ -56,7 +56,7 @@ test <- function() {
       y.pt[i] <- mean(pred[,ncol(pred)])
       y.sd[i] <- sd(pred[,ncol(pred)])
       y.sem[i] <- y.sd[i]/sqrt(nrow(x.data))
-      
+
       # # The logic used in the package "RandomForest"
       # # used for binary classifers to bound the partial dependence between -1 and 1
       # if(prostate.gbm@parameters$distribution == "bernoulli") {
@@ -67,13 +67,13 @@ test <- function() {
       #   y.pt[i] = mean(pr1 - pr_mean)
       # } else {
       #   y.pt[i] = mean( h2o.predict(object = object, newdata = x.data))
-      # 
+      #
       # }
-      
+
     }
     return(data.frame(xname = x.pt, mean_response = y.pt, stddev_response = y.sd, std_error_mean_response = y.sem))
   }
-  
+
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
   h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
@@ -91,26 +91,26 @@ test <- function() {
   #Standard Error of Mean Response
   checkEqualsNumeric(h2o_age_pp_2[,"std_error_mean_response"], h2o_age_pp[,"std_error_mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"std_error_mean_response"], h2o_race_pp[,"std_error_mean_response"])
-  
+
   ## Check spliced/subsetted datasets
   prostate_hex[, "RACE"] = as.factor(prostate_hex[, "RACE"])
   prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 25, seed = seed)
-  
+
   ## Subset prostate_hex by RACE
   prostate_hex_race_0 <- prostate_hex[prostate_hex$RACE == "0", ]
   prostate_hex_race_1 <- prostate_hex[prostate_hex$RACE == "1", ]
   prostate_hex_race_2 <- prostate_hex[prostate_hex$RACE == "2", ]
-  
+
   ## Calculate partial plot on the subsetted dataset
   h2o_pp_race_0 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_0, cols = "RACE", plot = F)
   h2o_pp_race_1 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_1, cols = "RACE", plot = F)
   h2o_pp_race_2 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_2, cols = "RACE", plot = F)
-  
+
   ## Calculate the partial dependence manually
   check_pp_race_0 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_0, xname = "RACE", h2o.pp = h2o_pp_race_0)
   check_pp_race_1 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_1, xname = "RACE", h2o.pp = h2o_pp_race_1)
   check_pp_race_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_2, xname = "RACE", h2o.pp = h2o_pp_race_2)
-  
+
   ## Check the partial plot from h2o
 
   #Mean response
@@ -127,15 +127,15 @@ test <- function() {
   checkEqualsNumeric(check_pp_race_0[,"std_error_mean_response"], h2o_pp_race_0[,"std_error_mean_response"])
   checkEqualsNumeric(check_pp_race_1[,"std_error_mean_response"], h2o_pp_race_1[,"std_error_mean_response"])
   checkEqualsNumeric(check_pp_race_2[,"std_error_mean_response"], h2o_pp_race_2[,"std_error_mean_response"])
-  
+
   ## H2O partial plot on the entire dataset
   h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
-  
+
   ## Dataset with only one level only scores with the first level in the column domain based off of the model
   checkEquals(h2o_pp_race_0$RACE, "0")
   checkEquals(h2o_pp_race_1$RACE, "1")
   checkEquals(h2o_pp_race_2$RACE, "2")
-  
+
   ## Check column name and column type matches using test dataset iris
   iris_hex = as.h2o(iris[1:100,])
   iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
@@ -144,22 +144,22 @@ test <- function() {
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$mean_response, iris_pps[[i]]$mean_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$stddev_response, iris_pps[[i]]$stddev_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$std_error_mean_response, iris_pps[[i]]$std_error_mean_response)))))
-  
+
   ## Check failure cases
-  ## 1) Selection of incorrect columns 
+  ## 1) Selection of incorrect columns
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex[-2], cols = "AGE"), "is not a column name")
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "BLAH"), "Invalid column names")
-  
-  ## 2) Ask to score on unsupported multinomial case 
+
+  ## 2) Ask to score on unsupported multinomial case
   iris_hex = as.h2o( iris)
   iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
   expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, "Sepal.Length"), "object must be a regression model or binary classfier")
-  
+
   ## 3) Nbins is smaller than cardinality of a categorical column
   prostate_hex[ ,"AGE"] = as.factor(prostate_hex[ ,"AGE"])
   prostate_gbm = h2o.gbm(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 10, seed = seed)
   expect_error(h2o.partialPlot(object = prostate_gbm, data = prostate_hex),"Column AGE's cardinality")
-  
+
 }
 
 doTest("Test Partial Dependence Plots in H2O: ", test)

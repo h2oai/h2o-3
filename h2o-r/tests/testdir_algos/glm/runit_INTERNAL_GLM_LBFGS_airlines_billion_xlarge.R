@@ -31,7 +31,7 @@ s <- h2o.runif(data.hex)    # Useful when number of rows too large for R to hand
 data.train <- data.hex[s <= 0.8,]
 data.valid <- data.hex[s > 0.8,]
 
-## Response = Distance 
+## Response = Distance
 
 myY = "C19"
 myX = setdiff(names(data.hex), myY)

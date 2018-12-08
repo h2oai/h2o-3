@@ -18,25 +18,25 @@ test.continuous.or.categorical <- function() {
                      col.types=c("Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Enum","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Enum"))
   timepassed = proc.time() - ptm
   print(timepassed)
-  
+
   print("************** orc parsing time without forcing column types: ")
   ptm <- proc.time()
   orc2 = h2o.importFile(locate("bigdata/laptop/parser/orc/pubdev_3200/air05_orc"),destination_frame = "orc2",col.names = names(original))
   timepassed = proc.time()-ptm
   print(timepassed)
   h2o.rm(orc2)
-  
+
   print("************** orc parsing time forcing same column types as csv: ")
   ptm <- proc.time()
 		orc = h2o.importFile(locate("bigdata/laptop/parser/orc/pubdev_3200/air05_orc"),destination_frame = "orc",col.names = names(original),
                      col.types=c("Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Enum","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Enum","Enum"))
   timepassed = proc.time()-ptm
 
-  
+
   print(timepassed)
-  
+
   	expect_equal(summary(csv),summary(original))
-  	
+
   	for(i in 1:ncol(csv)){
        print(i)
        expect_equal(summary(csv[,i]),summary(orc[,i]))

@@ -28,8 +28,8 @@ summary(whd_zcta)
 #        Low Rank Model of ZCTAs        #
 #---------------------------------------#
 print("Run GLRM to reduce ZCTA demographics to k = 10 archetypes")
-acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE", 
-                      loss = "Quadratic", regularization_x = "Quadratic", 
+acs_model <- h2o.glrm(training_frame = acs_full, k = 10, transform = "STANDARDIZE",
+                      loss = "Quadratic", regularization_x = "Quadratic",
                       regularization_y = "L1", gamma_x = 0.25, gamma_y = 0.5, max_iterations = 100)
 acs_model
 
@@ -71,7 +71,7 @@ test  <- whd_zcta[split > 0.8,]
 print("Build a DL model on original WHD data to predict repeat violators")
 myY <- "flsa_repeat_violator"
 myX <- setdiff(5:ncol(train), which(colnames(train) == myY))
-orig_time <- system.time(dl_orig <- h2o.deeplearning(x = myX, y = myY, training_frame = train, 
+orig_time <- system.time(dl_orig <- h2o.deeplearning(x = myX, y = myY, training_frame = train,
                                                      validation_frame = test, distribution = "multinomial",
                                                      epochs = 0.1, hidden = c(50,50,50)))
 
@@ -87,7 +87,7 @@ test_mod  <- whd_arch[split > 0.8,]
 
 print("Build a DL model on modified WHD data to predict repeat violators")
 myX <- setdiff(5:ncol(train_mod), which(colnames(train_mod) == myY))
-mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_frame = train_mod, 
+mod_time <- system.time(dl_mod <- h2o.deeplearning(x = myX, y = myY, training_frame = train_mod,
                                                    validation_frame = test_mod, distribution = "multinomial",
                                                    epochs = 0.1, hidden = c(50,50,50)))
 

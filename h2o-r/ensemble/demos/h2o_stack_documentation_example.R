@@ -24,9 +24,9 @@ test[,y] <- as.factor(test[,y])
 # 1. they be specified explicitly by using the fold_column argument, or
 # 2. use same value for `nfolds` and set `fold_assignment = "Modulo"`
 
-nfolds <- 5  
+nfolds <- 5
 
-glm1 <- h2o.glm(x = x, y = y, family = family, 
+glm1 <- h2o.glm(x = x, y = y, family = family,
                 training_frame = train,
                 nfolds = nfolds,
                 fold_assignment = "Modulo",
@@ -57,7 +57,7 @@ metalearner <- "h2o.glm.wrapper"
 
 stack <- h2o.stack(models = models,
                    response_frame = train[,y],
-                   metalearner = metalearner, 
+                   metalearner = metalearner,
                    seed = 1,
                    keep_levelone_data = TRUE)
 

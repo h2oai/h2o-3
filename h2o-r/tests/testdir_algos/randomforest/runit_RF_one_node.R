@@ -13,7 +13,7 @@ test.one.node.drf <- function() {
     drf.mult <- h2o.randomForest(x = 1:30, y = 31, training_frame = airs.hex,
       build_tree_one_node = F, seed = 1234)
     NULL
-    }, 
+    },
     error = function(err) { err }
   )
 
@@ -33,7 +33,7 @@ test.one.node.drf <- function() {
     expect_equal(h2o.auc(drf.sing), h2o.auc(drf.mult), tolerance = 0.01)
   }
 
-  
+
 }
 
 doTest("Testing One Node vs Multi Node Random Forest", test.one.node.drf)

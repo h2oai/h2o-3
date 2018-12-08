@@ -4,7 +4,7 @@ compareCats <- function(pred, actual) {
   pred.df <- data.frame(pred)
   actual.df <- data.frame(actual)
   if(ncol(pred.df) == 0 || nrow(pred.df) == 0) return(0)
-  
+
   misclass <- 0
   for(i in 1:ncol(pred.df)) {
     pstr <- as.character(pred.df[,i])
@@ -27,7 +27,7 @@ transformData <- function(df, transform = "NONE") {
     df_num_trans <- scale(NUM(df), center = TRUE, scale = TRUE)
   else
     stop("Unrecognized transformation type ", transform)
-  
+
   df_trans <- df
   df_trans[,sapply(df, is.numeric)] <- df_num_trans
   return(df_trans)
@@ -36,12 +36,12 @@ transformData <- function(df, transform = "NONE") {
 checkError <- function(dataR, imputeR, metricsH2O, transform = "NONE", impute_original = FALSE, tolerance = 1e-6) {
   NUM <- function(x) { x[,sapply(x, is.numeric)] }
   FAC <- function(x) { x[,sapply(x, is.factor)]  }
-  
+
   # Transform data in R to match what H2O processed and compute errors
   dataR_trans <- transformData(dataR, transform = ifelse(impute_original, "NONE", transform))
   numerrR <- sum((NUM(dataR_trans) - NUM(imputeR))^2, na.rm = TRUE)
   caterrR <- compareCats(FAC(imputeR), FAC(dataR_trans))
-  
+
   # Compare with H2O's generated training and validation metrics
   expect_equal(metricsH2O$numerr, numerrR, tolerance = tolerance)
   expect_equal(metricsH2O$caterr, caterrR)
@@ -60,7 +60,7 @@ checkGLRMPredErr <- function(fitH2O, trainH2O, validH2O = NULL, tolerance = 1e-6
   pred <- predict(fitH2O, trainH2O)   # TODO: Don't need trainH2O for pure imputation
   print(head(pred))
   print(fitH2O)
-  
+
   Log.info("Check training and validation error metrics")
   pred.df <- as.data.frame(pred)
   trainR <- as.data.frame(trainH2O)

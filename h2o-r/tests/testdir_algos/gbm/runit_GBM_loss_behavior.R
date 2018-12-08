@@ -42,7 +42,7 @@ test.GBM.ecology <- function() {
   eco.model <- h2o.gbm(x = 1:8, y = "Method", training_frame = eco.hex, distribution="multinomial")
   expect_true(class(eco.model) == "H2OMultinomialModel")
 
-  
+
 }
 
 doTest("GBM: Ecology Data", test.GBM.ecology)

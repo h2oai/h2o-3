@@ -19,7 +19,7 @@ print(parse_time)
 response=1 #1:1000 imbalance
 predictors=c(3:ncol(data.hex))
 
-# Start modeling   
+# Start modeling
 # Gradient Boosted Trees
 gbm_time <- system.time(mdl.gbm <- h2o.gbm(x=predictors, y=response, training_frame=data.hex, distribution = "bernoulli"))
 mdl.gbm

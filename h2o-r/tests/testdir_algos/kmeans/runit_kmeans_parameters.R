@@ -6,7 +6,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 check.verify.parameters.slot <- function() {
     Log.info("Getting data...")
     iris.hex <- h2o.uploadFile( locate("smalldata/iris/iris.csv"))
-    
+
     Log.info("Create and and duplicate...")
     iris.km <-  h2o.kmeans(x=1:4, training_frame=iris.hex, k = 3, seed = 1234, model_id = "f00b4r")
     parameters <- getParms(iris.km)
@@ -34,7 +34,7 @@ check.verify.parameters.slot <- function() {
     iris.km.cpy <- do.call("h2o.kmeans", parameters_unmunged)
     print(h2o.ls()[,1])
     expect_equal(length(h2o.ls()[,1]), 5)
-    
+
 }
 
 doTest("Kmeans Test: Verify correct parameters passed into model", check.verify.parameters.slot)

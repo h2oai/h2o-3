@@ -12,7 +12,7 @@ test.principalcomp.golden <- function() {
   model <- print(australia.pca)
   summary <- summary(australia.pca)
 
-  
+
 }
 
 doTest("R Doc Principal Components Regression Ex", test.principalcomp.golden)

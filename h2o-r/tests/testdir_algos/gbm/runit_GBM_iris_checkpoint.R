@@ -42,7 +42,7 @@ test.GBM.checkpoint_on_iris <- function() {
   b <- iris.gbm.total@model$validation_metrics
   expect_mm_equal(a, b)
 
-  
+
 }
 
 expect_mm_equal <- function(a, b, msg) {

@@ -106,7 +106,7 @@ test.XGBoost.rand_attk_forloop <- function() {
   for(i in 1:3)
     randomParams("gaussian", cars.train, cars.test, 4:7, 3)
 
-  
+
 }
 
 doTest("Checking XGBoost in Random Attack For Loops", test.XGBoost.rand_attk_forloop)

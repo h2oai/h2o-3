@@ -38,7 +38,7 @@ test.pub.767 <- function() {
                         max_depth = 100)
 
   print(m)
-  
+
 }
 
 doTest("PUB-767: randomForest on discontinuous integer classes.", test.pub.767)

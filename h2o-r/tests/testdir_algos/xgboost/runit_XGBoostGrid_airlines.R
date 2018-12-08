@@ -21,7 +21,7 @@ xgboost.grid.test <- function() {
     expect_equal(length(air.grid@model_ids), size_of_hyper_space)
 
     # Get models
-    grid_models <- lapply(air.grid@model_ids, function(mid) { 
+    grid_models <- lapply(air.grid@model_ids, function(mid) {
       model = h2o.getModel(mid)
     })
     # Check expected number of models

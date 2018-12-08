@@ -16,7 +16,7 @@ parse_time <- system.time(data.hex <- h2o.importFile(url))
 print("Time it took to parse")
 print(parse_time)
 
-# Start modeling   
+# Start modeling
 # GLM gaussian
 response="C1" #1:1000 imbalance
 predictors=c(3:ncol(data.hex))

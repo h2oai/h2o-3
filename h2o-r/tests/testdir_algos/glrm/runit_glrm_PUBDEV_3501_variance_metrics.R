@@ -12,10 +12,10 @@ test.glrm.pubdev_3501.variance.metrics <- function() {
   gamma_y = 0, max_iterations = 1000, recover_svd=TRUE, init="SVD", transform = "STANDARDIZE")
   print(glrm_model)
   print(glrm_model@model$importance)
-  
+
   # compare the variance metrics between PCA and GLRM to make sure GLRM is generating the right input.
   compare_tables(pca_model@model$importance, glrm_model@model$importance, 1e-4)
-  
+
 }
 
 doTest("PUBDEV-3501: add variance metrics for GLRM and Compare with PCA results", test.glrm.pubdev_3501.variance.metrics)

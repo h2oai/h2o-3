@@ -22,7 +22,7 @@ test.upload.import.small <- function() {
         expect_equal(cols_u, cols_i, info="Expected same number of cols regardless of method.")
     }
 
-    
+
 }
 
 doTest("Test upload import", test.upload.import.small)

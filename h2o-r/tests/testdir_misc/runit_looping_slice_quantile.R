@@ -49,13 +49,13 @@ heading("Generating the dataset...")
 
 df.gen <- function() {
     lst = list()
-    
+
     # Create binary columns.
     for (i in 1:num_binary_cols) {
         col_dat = rbinom(num_rows, 1, 0.5)
         col_name = sprintf("b%d", i)
         statement = sprintf("lst$%s <- col_dat", col_name)
-        
+
         # Add new binary column to list.
         eval(parse(text=statement))
     }
@@ -68,7 +68,7 @@ df.gen <- function() {
 
     f = function(a, b) { c = runif(1); if (c < combine_ratio) return (a) else return (b); }
     d3 = mapply(f, d1, d2)
-    
+
     # Add distribution columns to list.
     lst$d1 <- d1
     lst$d2 <- d2
@@ -76,7 +76,7 @@ df.gen <- function() {
 
     # Create data frame from list.
     df <- as.data.frame(lst)
-    
+
     # Return the data frame.
     return (df)
 }
@@ -97,24 +97,24 @@ slices.gen = function() {
     lst = list()
 
     num_slices = (2 ** num_binary_cols)
-    
+
     # Create binary columns initialized to -1.
     for (i in 1:num_binary_cols) {
         col_name = sprintf("b%d", i)
         statement = sprintf("%s <- seq(from = -1, to = -1, length.out = %d)", col_name, num_slices)
         eval(parse(text=statement))
     }
-    
+
     # Fill in values for binary columns.
     for (i in 1:num_slices) {
         value = i - 1
-        
+
         for (j in 1:num_binary_cols) {
             bit = bitwAnd(bitwShiftR(value, (j-1)), 0x1)
             col_name = sprintf("b%d", j)
             statement = sprintf("%s[%d] <- %d", col_name, i, bit)
             eval(parse(text=statement))
-        }        
+        }
     }
 
     # Add new binary column to list.
@@ -128,10 +128,10 @@ slices.gen = function() {
     lst$d2_quantile_result = seq(from = -1, to = -1, length.out = num_slices)
     lst$d3_quantile_result = seq(from = -1, to = -1, length.out = num_slices)
     lst$wallclock_sec <- seq(from = -1, to = -1, length.out = num_slices)
-    
+
     # Create data frame from list.
     df <- as.data.frame(lst)
-    
+
     # Return the data frame.
     return (df)
 }
@@ -174,7 +174,7 @@ for (i in 1:nrow(slices)) {
     # Create the slice.
     statement = sprintf("slice.df = df[%s,]", predicate)
     cat("SLICE: ", statement, "\n")
-    
+
     start_sec = Sys.time()
     eval(parse(text=statement))
     print(dim(df))
@@ -186,13 +186,13 @@ for (i in 1:nrow(slices)) {
     q3 = quantile(x = slice.df$d3, probs = c(0.999))
     end_sec = Sys.time()
     delta_sec = end_sec - start_sec
-    
+
     slices[i,"d1_quantile_result"] = q1
     slices[i,"d2_quantile_result"] = q2
     slices[i,"d3_quantile_result"] = q3
     slices[i,"wallclock_sec"] = delta_sec
     print(slices[i,])
-    
+
     cat("Removing last values...\n")
     slice.df = 0
     gc()

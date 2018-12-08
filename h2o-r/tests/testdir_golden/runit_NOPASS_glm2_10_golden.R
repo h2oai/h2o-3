@@ -4,9 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.glm2RidgeObjective.golden <- function() {
-	
+
 #IMPORT DATA:
-Log.info("Importing handmade data...") 
+Log.info("Importing handmade data...")
 handmadeH2O<- h2o.uploadFile(locate("smalldata/glm_test/handmade.csv"), destination_frame="handmade")
 handmadeR<- read.csv(locate("smalldata/glm_test/handmade.csv"))
 
@@ -26,17 +26,17 @@ ridgeGLMNet <- function (X,y,L){
 
 #H2O RIDGE
 ridgeH2O <- function (X,y,L){
-  fitH2O=h2o.glm(X, y, training_frame=handmadeH2O, nfolds=0, alpha=0, lambda=L, family="gaussian", standardize=T)        
+  fitH2O=h2o.glm(X, y, training_frame=handmadeH2O, nfolds=0, alpha=0, lambda=L, family="gaussian", standardize=T)
   betah <- fitH2O@model$coefficients_table$'Norm Coefficients'[hX]
-  
+
   betah <- c(betah, fitH2O@model$coefficients_table$'Norm Coefficients'[length(fitH2O@model$coefficients_table$'Norm Coefficients')])
-  names(betah) <- c(hX,"Intercept")    
- 
+  names(betah) <- c(hX,"Intercept")
+
 
   print("DEBUG CHECKKING")
   print(fitH2O@model$coefficients_table$'Norm Coefficients')
   print(t(betah))
- 
+
   t(betah)
 }
 
@@ -57,7 +57,7 @@ names(coef)=c(paste("b",as.character(1:ncol(x)),sep=""),"b0")
 }
 coef
 }
- 
+
 ridgeAnalytical  <- function(X,y,L){
 	nobs <- dim(X)[1];
 	ncols <- dim(X)[2];
@@ -81,18 +81,18 @@ sqerr <- function(x,y,beta){
 l2pen <- function(beta)(t(beta[1:length(beta)-1])%*%beta[1:length(beta)-1]);
 
 glmnetObjective <- function(beta,X,y,lambda){
-	nobs <- dim(X)[1];	
-	ncols<- dim(X)[2]; 
+	nobs <- dim(X)[1];
+	ncols<- dim(X)[2];
 	x <- cbind(as.matrix(X),1);
-	0.5*(sqerr(x,y,beta)/nobs + l2pen(beta)*lambda); 
+	0.5*(sqerr(x,y,beta)/nobs + l2pen(beta)*lambda);
 }
 
 ridgeObjective <- function(beta,X,y,lambda){
     t(X)
-	nobs <- dim(X)[1];	
-	ncols<- dim(X)[2]; 
+	nobs <- dim(X)[1];
+	ncols<- dim(X)[2];
 	x <- cbind(as.matrix(X),1);
-	0.5*(sqerr(x,y,beta) + l2pen(beta)*lambda); 
+	0.5*(sqerr(x,y,beta) + l2pen(beta)*lambda);
 }
 
 #BUILDING MODELS:
@@ -128,9 +128,9 @@ h2o2<- ridgeObjective(ridgeH2Obeta,X=Xvars.sc, y=Yvar, lambda=10)
     expect_equal(h2oO, ridgeO, tolerance = 0.1)
     expect_equal(h2o1, ridge1, tolerance = 0.1)
     expect_equal(h2o2, ridge2, tolerance = 0.1)
-    
-    
-    
+
+
+
 }
 
 doTest("GLM Test: GLM2 - RidgeObjective", test.glm2RidgeObjective.golden)

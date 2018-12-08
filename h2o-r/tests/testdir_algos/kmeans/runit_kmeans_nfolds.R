@@ -9,7 +9,7 @@ test.km.benign <- function() {
   benign.hex <- h2o.uploadFile(locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
-  
+
   benign.data <- read.csv(locate("smalldata/logreg/benign.csv"), header = TRUE)
   benign.data <- na.omit(benign.data)
   for( i in 1:6 ) {
@@ -18,7 +18,7 @@ test.km.benign <- function() {
     print(benign.km.h2o)
   }
 
-  
+
 }
 
 doTest("KMeans Test: Benign Data with 3-fold CV", test.km.benign)

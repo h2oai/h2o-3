@@ -6,20 +6,20 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test <- function(h) {
-	library(MASS) 
+	library(MASS)
 	data(Insurance)
 
-	#gg = gbm(Claims ~ District + Group + Age+ offset(log(Holders)) , verbose=T,interaction.depth = 1,n.minobsinnode = 1,shrinkage = .1,bag.fraction = 1,train.fraction = 1, 
-	#           data = Insurance, distribution ="gamma", n.trees = 600) 
-	#gg$train.error  #8.2989 
-	#pr = predict(gg, Insurance) 
-	#pr = exp(pr+log(Insurance$Holders)) 
-	#summary(pr)   #mean = 50.1100; min = 0.9134; max = 392.7000 ; 
-	offset = log(Insurance$Holders) 
-	class(Insurance$Group) <- "factor" 
-	class(Insurance$Age) <- "factor" 
-	df = data.frame(Insurance,offset) 
-	hdf = as.h2o(df,destination_frame = "hdf") 
+	#gg = gbm(Claims ~ District + Group + Age+ offset(log(Holders)) , verbose=T,interaction.depth = 1,n.minobsinnode = 1,shrinkage = .1,bag.fraction = 1,train.fraction = 1,
+	#           data = Insurance, distribution ="gamma", n.trees = 600)
+	#gg$train.error  #8.2989
+	#pr = predict(gg, Insurance)
+	#pr = exp(pr+log(Insurance$Holders))
+	#summary(pr)   #mean = 50.1100; min = 0.9134; max = 392.7000 ;
+	offset = log(Insurance$Holders)
+	class(Insurance$Group) <- "factor"
+	class(Insurance$Age) <- "factor"
+	df = data.frame(Insurance,offset)
+	hdf = as.h2o(df,destination_frame = "hdf")
 	hdf$Claims <- hdf$Claims+1e-19
 	hh = h2o.deeplearning(x = 1:3,y = "Claims",distribution ="gamma",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
@@ -37,7 +37,7 @@ test <- function(h) {
 	expect_equal(0.9473774, min(ph[,1]), tolerance=1e-5 )
 	expect_equal(416.5421, max(ph[,1]), tolerance=1e-5 )
 
-	
+
 }
 doTest("Deeplearning offset Test: deeplearning w/ offset for gamma distribution", test)
 

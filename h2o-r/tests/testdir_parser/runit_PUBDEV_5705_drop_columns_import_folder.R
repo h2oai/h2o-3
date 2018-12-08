@@ -9,7 +9,7 @@ test.parseSkippedColumnsFolder <- function() {
   allColnames <- h2o.names(originalFull)
   allTypeDict <- h2o.getTypes(originalFull)
   pathHeader <- locate("smalldata/synthetic_perfect_separation")
-  
+
   set.seed <- 12345
   onePermute <- sample(h2o.ncol(originalFull))
   skipall <- onePermute
@@ -24,10 +24,10 @@ test.parseSkippedColumnsFolder <- function() {
         x
     )
   print(e)
-  
+
   # skip 50% of the columns randomly
   print("Testing skipping 50% of columns")
-  assertCorrectSkipColumns( pathHeader, as.data.frame(originalFull), skip50Per,TRUE, h2o.getTypes(originalFull)) 
+  assertCorrectSkipColumns( pathHeader, as.data.frame(originalFull), skip50Per,TRUE, h2o.getTypes(originalFull))
 }
 
 doTest("Test parsing a folder", test.parseSkippedColumnsFolder)

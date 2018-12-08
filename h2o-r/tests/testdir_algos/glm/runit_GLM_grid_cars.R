@@ -79,7 +79,7 @@ check.glm.grid.cars <- function(conn) {
   # TODO
   # Log.info("Check best grid model against a randomly selected grid model...")
 
-  
+
 }
 
 doTest("GLM Grid Search using cars dataset", check.glm.grid.cars)

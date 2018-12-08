@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 test.glrm.iris <- function() {
-  Log.info("Importing iris_wheader.csv data...") 
+  Log.info("Importing iris_wheader.csv data...")
   irisH2O <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"), destination_frame = "irisH2O")
   print(summary(irisH2O))
 

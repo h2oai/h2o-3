@@ -3,7 +3,7 @@
 #####################################################
 ##
 ## Performance: 0.00973457
-## Relative performance: 70th out of 188; improves upon 
+## Relative performance: 70th out of 188; improves upon
 ## provided benchmark (0.01177621), and using all 1's (0.01017651)
 ######################################################
 #record the starting time
@@ -14,7 +14,7 @@ dir <- paste0(path.expand("~"), "/h2o-kaggle/rain/")
 
 ## read in a fixed number of rows (increase/decrease based on memory footprint)
 ## you can use read.csv in place of data.table; it's just much slower
-library(data.table) 
+library(data.table)
 train<-fread(paste0(dir,"train_2013.csv"), select="Expected")
 gc()
 

@@ -13,7 +13,7 @@ test.string.concat_to_date <- function(){
                               sep = "."), format = "%Y.%m.%d.%h")
   print(wthr2$msec)
 
-  
+
 }
 
 doTest("Turning Separate Columns into a Single Date Columns", test.string.concat_to_date)

@@ -6,7 +6,7 @@ test.kmsplit.golden <- function() {
   Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
   ozoneH2O <- h2o.uploadFile(locate("smalldata/glm_test/ozone.csv"))
-  
+
   # to get deterministic results, don't randomly split. use full dataset for test/train
   # Log.info("Split into test and training sets\n")
   # trainIdx <- sort(sample(nrow(ozoneR), round(0.75*nrow(ozoneR))))
@@ -33,7 +33,7 @@ test.kmsplit.golden <- function() {
   Log.info("R Final Clusters:"); print(fitR@centers)
   Log.info("H2O Final Clusters:"); print(getCenters(fitH2O))
   expect_equivalent(as.matrix(getCenters(fitH2O)), fitR@centers)
-  
+
   Log.info("Compare Predicted Classes on Test Data between R and H2O\n")
   classR <- predict(fitR, testR)
   # FIXME: predict directly on sliced H2O frame breaks

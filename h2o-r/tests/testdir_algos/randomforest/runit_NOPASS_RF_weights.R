@@ -6,14 +6,14 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test_weights_by_row_duplication <- function() {
-  
+
   require(testthat)
 
   print("Read in prostate data.")
-  prostate <- h2o.uploadFile("../../../../smalldata/prostate/prostate.csv", 
+  prostate <- h2o.uploadFile("../../../../smalldata/prostate/prostate.csv",
                              conn, destination_frame = "prostate")
   n <- nrow(prostate)
-  
+
   # Training data with weights
   # draw some random weights ~ Poisson, add 'x1' weight col and y to df, hdf
   set.seed(1234)
@@ -33,27 +33,27 @@ test_weights_by_row_duplication <- function() {
   rdf$x1 <- 1  #set weights back to 1.0
   rhdf <- as.h2o(object = rdf, conn = conn, destination_frame = "rhdf")  #for h2o
   rhdf$CAPSULE <- as.factor(rhdf$CAPSULE)
-  
+
   print("Set variables for h2o.")
   y <- "CAPSULE"
   x <- c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
-  
+
   print("build models with weights vs repeated rows with h2o")
-  hh1 <- h2o.randomForest(x = x, y = y, 
-                 training_frame = hdf_train, 
-                 validation_frame = hdf_test, 
-                 ntrees = 50, 
-                 weights_column = "x1",
-                 seed = 1)
-  hh2 <- h2o.randomForest(x = x, y = y, 
-                 training_frame = rhdf, 
+  hh1 <- h2o.randomForest(x = x, y = y,
+                 training_frame = hdf_train,
                  validation_frame = hdf_test,
-                 ntrees = 50, 
+                 ntrees = 50,
                  weights_column = "x1",
                  seed = 1)
-  
+  hh2 <- h2o.randomForest(x = x, y = y,
+                 training_frame = rhdf,
+                 validation_frame = hdf_test,
+                 ntrees = 50,
+                 weights_column = "x1",
+                 seed = 1)
+
   # Add a check that hh1 and hh2 produce the same results
-  
+
   expect_equal(hh1@model$training_metrics@metrics$MSE,
                hh2@model$training_metrics@metrics$MSE,
                tolerance = 1e-6)
@@ -73,8 +73,8 @@ test_weights_by_row_duplication <- function() {
   expect_equal(hh1@model$validation_metrics@metrics$logloss,
                hh2@model$validation_metrics@metrics$logloss,
                tolerance = 1e-6)
-  
-  
+
+
 }
 
 

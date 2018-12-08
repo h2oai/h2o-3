@@ -62,7 +62,7 @@ h2o.varimp_plot(loo_gbm)
 print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
 
 # For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
-# There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
+# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
 
 cv_train <- full_train
@@ -91,7 +91,7 @@ h2o.varimp_plot(cvte_gbm)
 print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Holdout Data")
 
 # For this model we will calculate the Target Encoding mapping on the te_holdout data
-# Since we are creating the encoding map on the te_holdout data and applying it to the training data, 
+# Since we are creating the encoding map on the te_holdout data and applying it to the training data,
 # we do not need to take data leakage precautions (set `holdout_type = None`)
 
 holdout_train <- train

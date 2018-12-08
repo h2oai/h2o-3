@@ -7,7 +7,7 @@ library(testthat)
 
 test.merge = function(Ns=c(1e6,5e6), numRepeats=40) {
   started.at = proc.time()
-  
+
   for (N in Ns) {
     cat("N=",N,"... repeat ")
     for (i in 1:numRepeats) {
@@ -21,7 +21,7 @@ test.merge = function(Ns=c(1e6,5e6), numRepeats=40) {
         categorical_fraction=0,binary_fraction=0,missing_fraction=0))
       Y$C1 = abs(Y$C1)
       colnames(Y) = c("KEY","Y1")
-      
+
       ans = h2o.merge(X, Y, method="radix")
       expect_true(abs(nrow(ans)/N - 1) < 0.05)
       rm(ans)
@@ -31,7 +31,7 @@ test.merge = function(Ns=c(1e6,5e6), numRepeats=40) {
     }
     cat("\n")
   }
-  cat("\nTotal time taken :", round((proc.time() - started.at)[["elapsed"]]/60, 1), "mins \n")  
+  cat("\nTotal time taken :", round((proc.time() - started.at)[["elapsed"]]/60, 1), "mins \n")
 }
 
 doTest("Test repeating merge", test.merge)

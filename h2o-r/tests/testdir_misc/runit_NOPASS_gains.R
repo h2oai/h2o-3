@@ -60,7 +60,7 @@ test.h2o.gains <- function() {
     stop("`h2o.gains` differs from the `gains` package computation")
   }
 
-  
+
 }
 
 doTest("Test H2O Gains", test.h2o.gains)

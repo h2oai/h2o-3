@@ -10,7 +10,7 @@ print("Print out summary of titanic data")
 print(summary(data))
 
 print("Split data into training, validation, testing and target encoding holdout")
-splits <- h2o.splitFrame(data, seed = 1234, ratios = c(0.7, 0.1, 0.1), 
+splits <- h2o.splitFrame(data, seed = 1234, ratios = c(0.7, 0.1, 0.1),
                          destination_frames = c("train.hex", "valid.hex", "te_holdout.hex", "test.hex"))
 train <- splits[[1]]
 valid <- splits[[2]]
@@ -23,8 +23,8 @@ myX <- setdiff(colnames(train), c("survived", "name", "ticket", "boat", "body"))
 
 # Since we are not creating any target encoding, we will use both the `train`` and `te_holdout`` frames to train our model
 full_train <- h2o.rbind(train, te_holdout)
-default_gbm <- h2o.gbm(x = myX, y = "survived", 
-                       training_frame = full_train, validation_frame = valid, 
+default_gbm <- h2o.gbm(x = myX, y = "survived",
+                       training_frame = full_train, validation_frame = valid,
                        ntrees = 1000, score_tree_interval = 10, model_id = "default_gbm",
                        # Early Stopping
                        stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
@@ -35,7 +35,7 @@ print("Perform Leave One Out Target Encoding on cabin, embarked, and home.dest")
 te_cols <- list("cabin", "embarked", "home.dest")
 
 # For this model we will calculate LOO Target Encoding on the full train
-# There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
+# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
 
 loo_train <- full_train
@@ -53,8 +53,8 @@ loo_test <- h2o.target_encode_apply(loo_test, x = te_cols, y = "survived", encod
 
 print("Run GBM with Leave One Out Target Encoding")
 myX <- setdiff(colnames(loo_test), c(te_cols, "survived", "name", "ticket", "boat", "body"))
-loo_gbm <- h2o.gbm(x = myX, y = "survived", 
-                   training_frame = loo_train, validation_frame = loo_valid, 
+loo_gbm <- h2o.gbm(x = myX, y = "survived",
+                   training_frame = loo_train, validation_frame = loo_valid,
                    ntrees = 1000, score_tree_interval = 10, model_id = "loo_gbm",
                    # Early Stopping
                    stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
@@ -65,7 +65,7 @@ h2o.varimp_plot(loo_gbm)
 print("Perform Target Encoding on cabin, embarked, and home.dest with Cross Validation Holdout")
 
 # For this model we will calculate Target Encoding mapping on the full training data with cross validation holdout
-# There is possible data leakage since we are creating the encoding map on the training and applying it to the training 
+# There is possible data leakage since we are creating the encoding map on the training and applying it to the training
 # To mitigate the effect of data leakage without creating a holdout data, we remove the existing value of the row (holdout_type = LeaveOneOut)
 
 cv_train <- full_train
@@ -83,8 +83,8 @@ cv_test <- h2o.target_encode_apply(cv_test, x = te_cols, y = "survived", encodin
 
 
 print("Run GBM with Cross Validation Target Encoding")
-cvte_gbm <- h2o.gbm(x = myX, y = "survived", 
-                    training_frame = cv_train, validation_frame = cv_valid, 
+cvte_gbm <- h2o.gbm(x = myX, y = "survived",
+                    training_frame = cv_train, validation_frame = cv_valid,
                     ntrees = 1000, score_tree_interval = 10, model_id = "cv_te_gbm",
                     # Early Stopping
                     stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
@@ -96,7 +96,7 @@ h2o.varimp_plot(cvte_gbm)
 print("Perform Target Encoding on cabin, embarked, and home.dest on Separate Holdout Data")
 
 # For this model we will calculate the Target Encoding mapping on the te_holdout data
-# Since we are creating the encoding map on the te_holdout data and applying it to the training data, 
+# Since we are creating the encoding map on the te_holdout data and applying it to the training data,
 # we do not need to take data leakage precautions (set `holdout_type = None`)
 
 holdout_train <- train
@@ -113,8 +113,8 @@ holdout_test <- h2o.target_encode_apply(holdout_test, x = te_cols, y = "survived
 
 
 print("Run GBM with Target Encoding on Holdout")
-holdout_gbm <- h2o.gbm(x = myX, y = "survived", 
-                       training_frame = holdout_train, validation_frame = holdout_valid, 
+holdout_gbm <- h2o.gbm(x = myX, y = "survived",
+                       training_frame = holdout_train, validation_frame = holdout_valid,
                        ntrees = 1000, score_tree_interval = 10, model_id = "holdout_gbm",
                        # Early Stopping
                        stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,

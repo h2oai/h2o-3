@@ -15,7 +15,7 @@ test.import.https <- function() {
   print(aa)
   print(t)
 
-  
+
 }
 
 doTest("Testing HTTPS File Import", test.import.https)

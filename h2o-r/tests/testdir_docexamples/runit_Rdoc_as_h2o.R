@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.rdocash2o.golden <- function() {
-	
+
 #Example from as.factor R example
 
 data(iris)

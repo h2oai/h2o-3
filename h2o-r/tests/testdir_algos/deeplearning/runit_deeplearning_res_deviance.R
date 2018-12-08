@@ -13,7 +13,7 @@ test <- function() {
 	hdata$EDUC = as.factor(hdata$EDUC)
 	hdata$PHSTAT = as.factor(hdata$PHSTAT)
 	hdata$INCOME = as.factor(hdata$INCOME)
-	
+
 
 	print("gamma")
 	myX = c("COUNTIP","AGE", "GENDER", "RACE" ,"REGION", "EDUC","PHSTAT","MNHPOOR" ,"ANYLIMIT","INCOME","insure")
@@ -29,11 +29,11 @@ test <- function() {
 
 	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
-	
+
 
 	print("tweedie")
 	myX = c("COUNTIP","AGE", "insure")
-	
+
 	hh = h2o.deeplearning(x = myX,y = "EXPENDIP",training_frame = hdata,hidden = c(25,25),epochs = 100,
                       train_samples_per_iteration = -1,validation_frame = hdata,activation = "Tanh",distribution = "tweedie", score_training_samples=0)
 	pr = as.data.frame(h2o.predict(hh,newdata = hdata))
@@ -51,7 +51,7 @@ test <- function() {
 
 	expect_equal(mean_deviance,hh@model$training_metrics@metrics$mean_residual_deviance, 1e-8)
 	expect_equal(mean_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance, 1e-8)
-	
+
 
 	print("poisson")
 	fre = h2o.uploadFile(locate("smalldata/glm_test/freMTPL2freq.csv.zip"),destination_frame = "fre")
@@ -70,7 +70,7 @@ test <- function() {
 
 	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
 	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-8)
-	
-	
+
+
 }
 doTest("DL residual deviance Test: DL deviance for poisson/gamma/tweedie distributions", test)
