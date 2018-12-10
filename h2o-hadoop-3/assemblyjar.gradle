@@ -1,0 +1,101 @@
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+dependencies {
+    compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
+    compile project(":h2o-hadoop-3:h2o-mapreduce-3-generic")
+    compile project(':h2o-app')
+    compile project(":h2o-web")
+    compile project(":h2o-avro-parser")
+    // Include GCS persist layer
+    compile(project(":h2o-persist-gcs"))
+    // Include S3 persist layer
+    compile(project(":h2o-persist-s3"))
+    // Include HDFS persist layer
+    compile (project(':h2o-persist-hdfs')) {
+        transitive = false
+    }
+
+    // For standalone mode to work with MapR, this extra library needs to be
+    // included, and it's not pulled in by the dependency stuff;  this must
+    // be a bug in MapR's packaging process.
+    if (project.hasProperty("maprExtraDependency")) {
+        compile(project.property("maprExtraDependency"))
+    }
+    if (orcSupported) {
+        compile(project(":h2o-orc-parser")) {
+            // We do not get any dependencies but directly rely on provided environment
+            transitive = false
+        }
+
+        // Here we depends on hive-exec, but it is Hadoop version specific
+        compile("org.apache.hive:hive-exec:$orcHiveExecVersion") {
+            transitive = false
+        }
+    }
+    compile(project(":h2o-parquet-parser"))
+}
+
+//
+// Bundle optional modules
+// The process is defined by convention. There are two flags:
+//  - -Pwith${componentName}=true - enables component "componentName" and includes it in assembly
+//  - -P${componentName}Version=3.14 - overrides default component version
+//
+for (comp in optionalComponents) {
+    def compName = comp['name']
+    def compVersion = comp['version']
+    def compEnabled = comp['enabled']
+    def compPropName = "with${compName.capitalize()}"
+    def compPropVersionName = "${compName}Version"
+
+    if (!project.hasProperty(compPropVersionName)) {
+        project.ext.set(compPropVersionName, compVersion)
+    }
+    if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
+        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+        apply from: "$rootDir/gradle/components/${compName}.gradle"
+    }
+
+}
+
+def hadoopShadowJarExcludes = ['META-INF/*.DSA',
+                               'META-INF/*.SF',
+                               'synchronize.properties',
+                               'uploader.properties',
+                               'test.properties',
+                               'cockpitlite.properties',
+                               'devpay_products.properties',
+                               // the license files are excluded for OS X compatibility (this is mainly for development)
+                               // OS X is unable to unpack these files from the jar on filesystem that is not case sensitive
+                               'LICENSE', 'license', 'LICENSE/*', 'license/*', 'META-INF/license', 'META-INF/LICENSE'
+]
+
+shadowJar {
+    mergeServiceFiles()
+    // Keep JODATIME shadowed even for CDH 6+
+    relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+    exclude hadoopShadowJarExcludes
+    baseName = 'h2odriver'
+    classifier = ''
+    manifest {
+        attributes 'Main-Class': 'water.hadoop.h2odriver'
+    }
+    zip64 true
+}
+
+artifacts {
+    archives shadowJar
+}
+
+// We just need Shadow Jar
+jar {
+    enabled = false
+}
+
+build.dependsOn shadowJar

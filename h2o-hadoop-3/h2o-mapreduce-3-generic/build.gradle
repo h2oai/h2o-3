@@ -1,11 +1,11 @@
 ext {
-  hadoopVersion = 'cdh5.2'
-  hadoopMavenArtifactVersion = '2.5.0-cdh5.2.0'
+  hadoopVersion = 'cdh6.0.1'
+  hadoopMavenArtifactVersion = '3.0.0-cdh6.0.1'
 }
 
 apply plugin: 'java'
 
-description = 'H2O mapreduce generic driver'
+description = 'H2O mapreduce generic driver for Hadoop 3'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -20,4 +20,6 @@ dependencies {
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
   compile project(":h2o-webserver-iface")
+  compile 'org.apache.hadoop:hadoop-mapreduce-client-app:3.0.0-cdh6.0.1'
+  compile 'org.apache.hive:hive-common:2.1.1-cdh6.0.1'
 }

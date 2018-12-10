@@ -1,8 +1,8 @@
 ext {
-    hadoopVersion = 'cdh6.0'
-    hadoopMavenArtifactVersion = '3.0.0-cdh6.0.0'
+    hadoopVersion = 'cdh6.0.1'
+    hadoopMavenArtifactVersion = '3.0.0-cdh6.0.1'
     orcSupported = true
-    orcHiveExecVersion = "2.1.1-cdh6.0.0"
+    orcHiveExecVersion = "2.1.1-cdh6.0.1"
 }
 
 apply from: '../assemblyjar.gradle'
@@ -12,6 +12,5 @@ dependencies {
         exclude module: "servlet-api"
         exclude group: "javax.servlet", module: "javax.servlet-api"
     }
-    compile 'org.apache.hadoop:hadoop-mapreduce-client-app:3.0.0-cdh6.0.0'
 }
 

@@ -328,7 +328,7 @@ def call(final pipelineContext) {
   def HADOOP_STAGES = []
   for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
     def stageTemplate = [
-      target: 'test-hadoop-smoke', timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      target: distribution == 'cdh' && version == '6.0' ? 'test-hadoop-3-smoke' : 'test-hadoop-2-smoke', timeoutValue: 25, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [
         distribution: distribution.name,
