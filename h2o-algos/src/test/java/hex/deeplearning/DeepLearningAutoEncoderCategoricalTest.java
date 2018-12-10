@@ -98,16 +98,16 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
         Assert.assertTrue(mymodel.testJavaScoring(train, recon_train, 1e-5));
 
         df1 = mymodel.scoreDeepFeatures(train, 0);
-        Assert.assertTrue(df1.numCols() == 10);
-        Assert.assertTrue(df1.numRows() == train.numRows());
+        Assert.assertEquals(10, df1.numCols());
+        Assert.assertEquals(train.numRows(), df1.numRows());
 
         df2 = mymodel.scoreDeepFeatures(train, 1);
-        Assert.assertTrue(df2.numCols() == 5);
-        Assert.assertTrue(df2.numRows() == train.numRows());
+        Assert.assertEquals(5, df2.numCols());
+        Assert.assertEquals(train.numRows(), df2.numRows());
 
         df3 = mymodel.scoreDeepFeatures(train, 2);
-        Assert.assertTrue(df3.numCols() == 3);
-        Assert.assertTrue(df3.numRows() == train.numRows());
+        Assert.assertEquals(3, df3.numCols());
+        Assert.assertEquals(train.numRows(), df3.numRows());
 
         // check if reconstruction error is the same from model and mojo model too. Testcase for PUBDEV-6030.
         try {
