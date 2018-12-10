@@ -135,22 +135,19 @@ public class DeeplearningMojoModel extends MojoModel {
   }
 
   /**
-   * Calculates average reconstruction error (MSE). Only from numerical features.
+   * Calculates average reconstruction error (MSE).
+   * Uses a normalization defined for the numerical features of the trained model.
    * @return average reconstruction error = ||original - reconstructed||^2 / length(original)
    */
   public double calculateReconstructionErrorPerRowData(double [] original, double [] reconstructed){
-    if (this._nums == 0) {
-      return 1;
-    }
-    double l2 = 0;
-    int numIndex;
+    int numStartIndex = original.length - this._nums;
     double norm;
-    for (int i = 0; i < this._nums; i++) {
-      numIndex = i + (original.length - this._nums);
-      norm = (this._normmul != null) ? this._normmul[i] : 1;
-      l2 += Math.pow((reconstructed[numIndex] - original[numIndex]) * norm, 2);
+    double l2 = 0;
+    for (int i = 0; i < original.length; i++) {
+      norm = (this._normmul != null) && (this._nums > 0) && (i >= (numStartIndex)) ? this._normmul[i-numStartIndex] : 1;
+      l2 += Math.pow((reconstructed[i] - original[i]) * norm, 2);
     }
-    return  l2 / this._nums;
+    return  l2 / original.length;
   }
 
   // class to store weight or bias for one neuron layer

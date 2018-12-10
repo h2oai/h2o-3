@@ -14,6 +14,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.Log;
 
@@ -84,33 +85,6 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
 
     Assert.assertEquals(l2vec.mean(), mymodel.mse(), 1e-8*mymodel.mse());
 
-    try {
-      DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
-      EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
-      AutoEncoderModelPrediction tmpPrediction;
-      RowData tmpRow;
-      double calcNormMse = 0;
-      for (int r = 0; r < train.numRows(); r++) {
-        tmpRow = new RowData();
-        for (int c = 0; c < train.numCols(); c++) {
-          tmpRow.put(train.names()[c], train.vec(c).at(r));
-        }
-        tmpPrediction = model.predictAutoEncoder(tmpRow);
-        calcNormMse += tmpPrediction.mse;
-      }
-      double mojoMeanError = calcNormMse/train.numRows();
-      sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
-      sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
-              "reconstruction error: ");
-      sb.append(mymodel.mse()).append(" == ").append(mojoMeanError).append("\n");
-      Assert.assertEquals(mymodel.mse(), mojoMeanError, 1e-7);
-
-    } catch (IOException error) {
-      sb.append("IOError: ").append(error.toString()).append("\n");
-    } catch (PredictException error){
-      sb.append("PredictException: ").append(error.toString()).append("\n");
-    }
-
     // Create reconstruction
     Log.info("Creating full reconstruction.");
     final Frame recon_train = mymodel.score(train);
@@ -131,11 +105,46 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     Assert.assertTrue(df3.numRows() == train.numRows());
     df3.delete();
 
-    // cleanup
-    recon_train.delete();
-    train.delete();
-    mymodel.delete();
-    l2.delete();
+    // check if reconstruction error is the same from model and mojo model too. Testcase for PUBDEV-6030.
+    try {
+      DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
+      EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
+      AutoEncoderModelPrediction tmpPrediction;
+      RowData tmpRow;
+      BufferedString bStr;
+      double calcNormMse = 0;
+      for (int r = 0; r < train.numRows(); r++) {
+        tmpRow = new RowData();
+        bStr = new BufferedString();
+        for (int c = 0; c < train.numCols(); c++) {
+          if (train.vec(c).isCategorical()) {
+            tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+          } else {
+            tmpRow.put(train.names()[c],  train.vec(c).at(r));
+          }
+        }
+        tmpPrediction = model.predictAutoEncoder(tmpRow);
+        calcNormMse += tmpPrediction.mse;
+      }
+      double mojoMeanError = calcNormMse/train.numRows();
+      sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
+      sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
+              "reconstruction error: ");
+      sb.append(mymodel.mse()).append(" == ").append(mojoMeanError).append("\n");
+      Assert.assertEquals(mymodel.mse(), mojoMeanError, 1e-7);
+
+    } catch (IOException error) {
+      Assert.fail(error.getStackTrace().toString());
+    } catch (PredictException error){
+      Assert.fail(error.getStackTrace().toString());
+    } finally {
+      // cleanup
+      Log.info(sb);
+      recon_train.delete();
+      train.delete();
+      mymodel.delete();
+      l2.delete();
+    }
   }
 }
 

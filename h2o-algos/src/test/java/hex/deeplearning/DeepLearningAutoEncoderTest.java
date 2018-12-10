@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -164,11 +165,17 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
             EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
             AutoEncoderModelPrediction tmpPrediction;
             RowData tmpRow;
+            BufferedString bStr;
             double calcNormMse = 0;
             for (int r = 0; r < train.numRows(); r++) {
               tmpRow = new RowData();
+              bStr = new BufferedString();
               for (int c = 0; c < train.numCols(); c++) {
-                tmpRow.put(train.names()[c], train.vec(c).at(r));
+                if (train.vec(c).isCategorical()) {
+                  tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+                } else {
+                  tmpRow.put(train.names()[c],  train.vec(c).at(r));
+                }
               }
               tmpPrediction = model.predictAutoEncoder(tmpRow);
               calcNormMse += tmpPrediction.mse;
