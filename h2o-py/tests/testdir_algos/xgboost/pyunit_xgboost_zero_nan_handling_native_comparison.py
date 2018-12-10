@@ -30,7 +30,7 @@ def xgboost_categorical_zero_nan_handling_sparse_vs_native():
     ntrees = 1
     h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":1.0, "col_sample_rate_per_tree" : 1.0,
                   "min_rows": 1, "score_tree_interval": ntrees + 1, "dmatrix_type": "sparse", "tree_method": "exact",
-                  "backend": "cpu"}
+                  "backend": "cpu", "reg_lambda": 0.0}
     nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
                    'tree_method': 'exact',
                    'seed': h2oParamsS["seed"],
@@ -39,6 +39,7 @@ def xgboost_categorical_zero_nan_handling_sparse_vs_native():
                    'eta': h2oParamsS["learn_rate"],
                    'grow_policy': 'depthwise',
                    'alpha': 0.0,
+                   'lambda': h2oParamsS["reg_lambda"],
                    'subsample': 1.0,
                    'colsample_bylevel': 1.0,
                    'max_delta_step': 0.0,
