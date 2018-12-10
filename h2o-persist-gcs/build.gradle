@@ -4,7 +4,7 @@ description = "H2O Persist GCS"
 
 dependencies {
     compile project(":h2o-core")
-    compile 'com.google.cloud:google-cloud-storage:1.19.0'
+    compile project(":h2o-persist-google-cloud-storage-shadow")
     testCompile "junit:junit:${junitVersion}"
     testCompile project(path: ":h2o-core", configuration: "testArchives")
 }

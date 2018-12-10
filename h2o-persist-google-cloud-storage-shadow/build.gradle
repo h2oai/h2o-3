@@ -1,0 +1,26 @@
+description = "Google Cloud Storage library in one single shadow jar, relocated under ai.h2o"
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+apply plugin: 'com.github.johnrengelman.shadow'
+
+dependencies {
+    compile 'com.google.cloud:google-cloud-storage:1.19.0'
+}
+
+shadowJar {
+    mergeServiceFiles()
+    classifier = ''
+}
+
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "ai.h2o"
+
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
+
+
+jar.enabled = false
+build.dependsOn shadowJar
