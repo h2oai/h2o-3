@@ -73,9 +73,7 @@ public class SchemaServer {
   public static void checkIfRegistered(Schema schema) {
     if (schemas_registered && !schema_to_iced.containsKey(schema.getSchemaName()))
       throw H2O.fail("Schema " + schema.getSchemaName() + " was instantiated before it was registered...\n"
-                     + "Did you forget to add an entry into your META-INF/services/water.api.Schema file, or\n"
-                     + "annotate your '" + schema.getSchemaName() + "' by annotation @AutoService(water.api.Schema.class)\n"
-                     + "if you are using auto-service?");
+                     + "Did you forget to add an entry into your META-INF/services/water.api.Schema file?");
   }
 
 
