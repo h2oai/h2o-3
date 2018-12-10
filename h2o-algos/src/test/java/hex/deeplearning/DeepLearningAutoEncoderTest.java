@@ -164,12 +164,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
             DeeplearningMojoModel mojoModel = (DeeplearningMojoModel) mymodel.toMojo();
             EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
             AutoEncoderModelPrediction tmpPrediction;
-            RowData tmpRow;
-            BufferedString bStr;
             double calcNormMse = 0;
             for (int r = 0; r < train.numRows(); r++) {
-              tmpRow = new RowData();
-              bStr = new BufferedString();
+              RowData tmpRow = new RowData();
+              BufferedString bStr = new BufferedString();
               for (int c = 0; c < train.numCols(); c++) {
                 if (train.vec(c).isCategorical()) {
                   tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
