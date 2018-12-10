@@ -339,10 +339,6 @@ task buildH2oDevDist(type: Exec) {
 }
 
 
-ext.libraries = [ // Shortcuts for common dependency versions across modules
-        google_guava: 'com.google.guava:guava:16.0.1'
-]
-
 task dist(dependsOn: buildH2oDevDist) 
 
 //

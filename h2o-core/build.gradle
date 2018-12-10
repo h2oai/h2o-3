@@ -28,8 +28,6 @@ dependencies {
     exclude module: "mail" 
   }
 
-  // guava only needed by hadoop now, not by H2O
-  compile libraries.google_guava
   compile "com.google.code.gson:gson:2.6.2"
   compile 'commons-lang:commons-lang:2.6'
   

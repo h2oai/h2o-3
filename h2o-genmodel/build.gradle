@@ -22,7 +22,6 @@ javadoc {
 //
 
 dependencies {
-  testCompile libraries.google_guava
   testCompile 'org.mockito:mockito-core:2.18.3'
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
