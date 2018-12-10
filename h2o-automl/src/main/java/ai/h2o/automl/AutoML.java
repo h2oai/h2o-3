@@ -315,7 +315,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           this.didLeaderboardSplit = true;
           userFeedback.info(Stage.DataImport, "Since nfolds == 0, automatically split the training data into training and leaderboard frame in the ratio 80/20");
         } else {
-          // Leaderboard frame is alrady there, no need to do anything
+          // Leaderboard frame is already there, no need to do anything
           userFeedback.info(Stage.DataImport, "Since nfolds == 0 and leaderboard dataset was specified, no auto-splitting needed.");
         }
       }
@@ -354,9 +354,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     optionallySplitLeaderboardDataset();
 
     if (null == this.trainingFrame) {
-      // we didn't need to split off the leaderboard_frame ourselves
-      this.trainingFrame = new Frame(origTrainingFrame);
-      DKV.put(this.trainingFrame);
+      // when nfolds>0, let trainingFrame be the original frame
+      this.trainingFrame = origTrainingFrame;
     }
 
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
