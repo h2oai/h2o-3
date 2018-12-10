@@ -333,7 +333,11 @@ def call(final pipelineContext) {
       customData: [
         distribution: distribution.name,
         version: distribution.version,
-        ldapConfigPath: 'scripts/jenkins/ldap-conf.txt'
+        ldapConfigPath: 'scripts/jenkins/config/ldap.txt',
+        kerberosUserName: 'jenkins@H2O.AI',
+        kerberosPrincipal: 'HTTP/localhost@H2O.AI',
+        kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
+        kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
       ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'

@@ -34,13 +34,15 @@ RUN apt-get update && \
     rm /usr/sbin/add_hdp_repo.sh && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-dev python-pip python-dev python-virtualenv libmysqlclient-dev sudo unzip html2text slapd ldap-utils
+    DEBIAN_FRONTEND=noninteractive apt-get install -y hadoop-conf-pseudo python-pip python-dev python-virtualenv \
+        libmysqlclient-dev sudo unzip html2text slapd ldap-utils libkrb5-dev
 
 # Create jenkins and hive users
 RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} jenkins && \
     adduser --disabled-password --gecos "" hive
 
-ENV H2O_BRANCH='master'
+ARG H2O_BRANCH=master
+ENV H2O_BRANCH=${H2O_BRANCH}
 
 # Set required env vars and install Java 8 and Pythons
 RUN \

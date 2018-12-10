@@ -1,4 +1,4 @@
-#! /usr/bin/groovy
+#!/usr/bin/groovy
 
 final String NODE_LABEL = 'docker && !mr-0xc8'
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
@@ -86,12 +86,14 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                                         -f hadoop/${distribution.name}/Dockerfile \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} \
+                                        --build-arg H2O_BRANCH=${params.gitBranch} \
                                         --build-arg VERSION=${distribution.version} .
 
                                     docker build \
                                         -t ${REGISTRY_PREFIX}/${imageName}-krb:${version} \
                                         -f hadoop/${distribution.name}/Dockerfile.kerberos \
                                         --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${imageName}:${version} \
+                                        --build-arg H2O_BRANCH=${params.gitBranch} \
                                         --build-arg PATH_PREFIX=hadoop/${distribution.name} .
                                 """
                             }

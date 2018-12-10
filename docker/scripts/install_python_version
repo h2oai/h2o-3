@@ -1,10 +1,7 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # Script for installing all R versions specified as comma separated list
 # in ${1} or in ${R_VERSIONS}.
-
-# exit on error
-set -e
 
 if [[ ! ${H2O_BRANCH} ]]; then
  echo "H2O_BRANCH must be set"
@@ -21,7 +18,7 @@ if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
 fi
 
 # Download test-requirements.txt file from GitHub
-wget -q https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
+wget -nv https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
 
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
