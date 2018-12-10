@@ -524,19 +524,17 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return new String[] {"unknown"};
   }
 
-  String rankTsv() {
-    String fieldSeparator = "\\t";
-    String lineSeparator = "\\n";
+  public String rankTsv() {
+    String lineSeparator = "\n";
 
-    StringBuffer sb = new StringBuffer();
-//  sb.append("Rank").append(fieldSeparator).append("Error").append(lineSeparator);
+    StringBuilder sb = new StringBuilder();
     sb.append("Error").append(lineSeparator);
 
     Model[] models = getModels();
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
-      sb.append(defaultMetricForModel(m));
+      sb.append(Arrays.toString(defaultMetricForModel(m)));
       sb.append(lineSeparator);
     }
     return sb.toString();
