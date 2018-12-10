@@ -1405,6 +1405,7 @@ public class XGBoostTest extends TestUtil {
       parms._train = f._key;
       parms._ignored_columns = new String[]{"name"};
       parms._seed = 42;
+      parms._reg_lambda = 0;
 
       XGBoostModel.XGBoostParameters noConstrParams = (XGBoostModel.XGBoostParameters) parms.clone();
       XGBoostModel noConstrModel = new hex.tree.xgboost.XGBoost(noConstrParams).trainModel().get();
