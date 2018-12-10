@@ -36,7 +36,6 @@ def xgboost_categorical_zero_nan_handling_sparse_vs_native():
                    'seed': h2oParamsS["seed"],
                    'booster': 'gbtree',
                    'objective': 'reg:linear',
-                   'lambda': 0.0,
                    'eta': h2oParamsS["learn_rate"],
                    'grow_policy': 'depthwise',
                    'alpha': 0.0,
