@@ -13,7 +13,12 @@ except ImportError:
     try:
         import winkerberos as kerberos
     except ImportError as e:
-        raise ImportError("Neither kerberos nor winkerberos package found, install one based on your OS.")
+        raise ImportError("Neither pykerberos nor winkerberos package found, install one based on your OS.")
+
+try:
+    import gssapi
+except ImportError:
+    raise ImportError("Required gssapi package not found.")
 
 from requests.auth import AuthBase
 import re
