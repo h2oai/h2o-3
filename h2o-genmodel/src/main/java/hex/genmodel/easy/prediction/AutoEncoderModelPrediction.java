@@ -25,5 +25,9 @@ public class AutoEncoderModelPrediction extends AbstractPrediction {
    */
   public RowData reconstructedRowData;
 
+  /**
+   * Reconstruction mean squared error calculated from original and reconstructed normalized data.
+   * average reconstruction error = ||original - reconstructed||^2 / length(original)
+   */
   public double mse;
 }

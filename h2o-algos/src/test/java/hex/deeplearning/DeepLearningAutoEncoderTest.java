@@ -175,8 +175,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
             }
             double mojoMeanError = calcNormMse/train.numRows();
             sb.append("Mojo mean reconstruction error (train): ").append(mojoMeanError).append("\n");
-            Assert.assertTrue("Mean reconstruction error should be the same from model compate to mojo model " +
-                    "reconstruction error.", mojoMeanError == mean_l2);
+            sb.append("Mean reconstruction error should be the same from model compare to mojo model " +
+                    "reconstruction error: ");
+            sb.append(mean_l2).append(" == ").append(mojoMeanError).append("\n");
+            Assert.assertEquals( mean_l2, mojoMeanError, 1e-7);
           } catch (IOException error) {
             Assert.fail("IOException when testing mojo mean reconstruction error: "+error.toString());
           } catch (PredictException error){
