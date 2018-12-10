@@ -62,14 +62,6 @@ public class H2OHttpViewImpl implements H2OHttpView {
     return SERVLETS;
   }
 
-  private String getLoginName(HttpServletRequest request) {
-    if (request.getUserPrincipal() == null) {
-      return null;
-    } else {
-      return request.getUserPrincipal().getName();
-    }
-  }
-
   @Override
   public boolean authenticationHandler(HttpServletRequest request, HttpServletResponse response) throws IOException {
     if (!config.loginType.needToCheckUserName()) {
@@ -77,8 +69,8 @@ public class H2OHttpViewImpl implements H2OHttpView {
       return false;
     }
 
-    final String loginName = getLoginName(request);
-    if (loginName != null && loginName.equals(config.user_name)) {
+    final String loginName = request.getUserPrincipal().getName();
+    if (loginName.equals(config.user_name)) {
       return false;
     }
     Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
