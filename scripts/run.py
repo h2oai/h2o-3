@@ -955,6 +955,8 @@ class Test(object):
             cmd += ['--ldapUsername', g_ldap_username]
         if g_ldap_password:
             cmd += ['--ldapPassword', g_ldap_password]
+        if g_kerb_principal:
+            cmd += ['--kerbPrincipal', g_kerb_principal]
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
@@ -1924,6 +1926,9 @@ class TestRunner(object):
             auth = None
             if g_ldap_password is not None and g_ldap_username is not None:
                 auth = (g_ldap_username, g_ldap_password)
+            elif g_kerb_principal is not None:
+                from h2o.auth import SpnegoAuth
+                auth = SpnegoAuth(service_principal=g_kerb_principal)
             http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port), auth=auth)
             json = http.json()
             if "cloud_healthy" in json:
@@ -2017,6 +2022,7 @@ g_test_ssl = False
 g_ldap_config = None
 g_ldap_username = None
 g_ldap_password = None
+g_kerb_principal = None
 g_rest_log = False
 g_jvm_opts = None
 
@@ -2159,6 +2165,8 @@ def usage():
     print("")
     print("    --ldap.config    Path to LDAP config. If set, all nodes will be started with LDAP support.")
     print("")
+    print("    --kerb.principal  Kerberos service principal.")
+    print("")
     print("    --jvm.opts       Additional JVM options.")
     print("")
     print("    --restLog        If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
@@ -2284,6 +2292,7 @@ def parse_args(argv):
     global g_test_ssl
     global g_ldap_username
     global g_ldap_password
+    global g_kerb_principal
     global g_ldap_config
     global g_rest_log
     global g_jvm_opts
@@ -2470,6 +2479,11 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_ldap_password = argv[i]
+        elif s == '--kerb.principal':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_kerb_principal = argv[i]
         elif s == '--jvm.opts':
             i += 1
             if i >= len(argv):

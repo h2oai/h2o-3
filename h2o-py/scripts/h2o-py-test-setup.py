@@ -14,6 +14,7 @@ _TEST_NAME_                   = ""
 _FORCE_CONNECT_               = False
 _LDAP_USER_NAME_              = None
 _LDAP_PASSWORD_               = None
+_KERB_PRINCIPAL_              = None
 
 def parse_args(args):
     global _H2O_IP_
@@ -29,6 +30,7 @@ def parse_args(args):
     global _FORCE_CONNECT_
     global _LDAP_USER_NAME_
     global _LDAP_PASSWORD_
+    global _KERB_PRINCIPAL_
 
     i = 1
     while (i < len(args)):
@@ -69,6 +71,10 @@ def parse_args(args):
             i = i + 1
             if (i > len(args)): usage()
             _LDAP_PASSWORD_ = args[i]
+        elif (s == "--kerbPrincipal"):
+            i = i + 1
+            if (i > len(args)): usage()
+            _KERB_PRINCIPAL_ = args[i]
         elif (s == "--forceConnect"):
             _FORCE_CONNECT_ = True
         else:
@@ -103,6 +109,8 @@ def usage():
     print("    --ldapUsername    LDAP username.")
     print("")
     print("    --ldapPassword    LDAP password.")
+    print("")
+    print("    --kerbPrincipal   Kerberos service principal.")
     print("")
     print("    --forceConnect    h2o will attempt to connect to cluster regardless of cluster's health.")
     print("")
@@ -141,6 +149,9 @@ def h2o_test_setup(sys_args):
     auth = None
     if _LDAP_USER_NAME_ is not None and _LDAP_PASSWORD_ is not None:
         auth = (_LDAP_USER_NAME_, _LDAP_PASSWORD_)
+    elif _KERB_PRINCIPAL_ is not None:
+        from h2o.auth import SpnegoAuth
+        auth = SpnegoAuth(service_principal=_KERB_PRINCIPAL_)
     h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False, auth=auth)
     h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 

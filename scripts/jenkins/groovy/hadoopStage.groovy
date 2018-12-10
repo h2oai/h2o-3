@@ -35,7 +35,7 @@ def call(final pipelineContext, final stageConfig) {
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
 
             echo "Running Make"
-            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke
+            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke${getMakeTargetSuffix(stageConfig)}
         """
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
@@ -43,6 +43,49 @@ def call(final pipelineContext, final stageConfig) {
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         defaultStage(pipelineContext, stageConfig)
     }
+}
+
+private GString getH2OStartupCmd_hadoop(final stageConfig) {
+    return """
+            rm -f h2o_one_node h2odriver.out
+            hadoop jar h2o-hadoop/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
+                -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 \\
+                -notify h2o_one_node -ea -proxy \\
+                -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
+                &> h2odriver.out &
+            for i in \$(seq 20); do
+              if [ -f 'h2o_one_node' ]; then
+                echo "H2O started on \$(cat h2o_one_node)"
+                break
+              fi
+              echo "Waiting for H2O to come up (\$i)..."
+              sleep 3
+            done
+            if [ ! -f 'h2o_one_node' ]; then
+              echo 'H2O failed to start!'
+              cat h2odriver.out
+              exit 1
+            fi
+            IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
+            export CLOUD_IP=\$CLOUD_IP
+            export CLOUD_PORT=\$CLOUD_PORT
+        """
+}
+
+private GString getH2OStartupCmd_kerberos(final stageConfig) {
+    def defaultPort = 54321
+    return """
+            java -Djavax.security.auth.useSubjectCredsOnly=false \\
+                -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp \\
+                -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
+                -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
+                -login_conf ${stageConfig.customData.kerberosConfigPath} \\
+                -spnego_properties ${stageConfig.customData.kerberosPropertiesPath} \\
+                > standalone_h2o.log 2>&1 & sleep 15
+            export KERB_PRINCIPAL=${stageConfig.customData.kerberosPrincipal}
+            export CLOUD_IP=\$(hostname --ip-address)
+            export CLOUD_PORT=${defaultPort}
+        """
 }
 
 /**
@@ -54,44 +97,35 @@ def call(final pipelineContext, final stageConfig) {
 private GString getH2OStartupCmd(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
-            return """
-                rm -f h2o_one_node h2odriver.out
-                hadoop jar h2o-hadoop/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 -notify h2o_one_node -ea -proxy -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login &> h2odriver.out &
-                for i in \$(seq 20); do
-                  if [ -f 'h2o_one_node' ]; then
-                    echo "H2O started on \$(cat h2o_one_node)"
-                    break
-                  fi
-                  echo "Waiting for H2O to come up (\$i)..."
-                  sleep 3
-                done
-                if [ ! -f 'h2o_one_node' ]; then
-                  echo 'H2O failed to start!'
-                  cat h2odriver.out
-                  exit 1
-                fi
-                IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
-                export CLOUD_IP=\$CLOUD_IP
-                export CLOUD_PORT=\$CLOUD_PORT
-            """
+            return getH2OStartupCmd_hadoop(stageConfig)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             def defaultPort = 54321
             return """
-                java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) >standalone_h2o.log 2>&1 & sleep 15
+                java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp \\
+                    -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
+                    > standalone_h2o.log 2>&1 & sleep 15
                 export CLOUD_IP=\$(hostname --ip-address)
                 export CLOUD_PORT=${defaultPort}
             """
         case H2O_HADOOP_STARTUP_MODE_WITH_KRB:
-            def defaultPort = 54321
-            return """
-                java -cp build/h2o.jar:\$(cat /opt/hive-jars/hive-libjars | tr ',' ':') water.H2OApp -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) >standalone_h2o.log 2>&1 & sleep 15
-                export CLOUD_IP=\$(hostname --ip-address)
-                export CLOUD_PORT=${defaultPort}
-            """
+            return getH2OStartupCmd_kerberos(stageConfig)
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
     }
 }
+
+private String getMakeTargetSuffix(final stageConfig) {
+    switch (stageConfig.customData.mode) {
+        case H2O_HADOOP_STARTUP_MODE_HADOOP:
+        case H2O_HADOOP_STARTUP_MODE_STANDALONE:
+            return "-ldap"
+        case H2O_HADOOP_STARTUP_MODE_WITH_KRB:
+            return "-kerb"
+        default:
+            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
+    }
+}
+
 
 private String getPostFailedBuildAction(final mode) {
     switch (mode) {

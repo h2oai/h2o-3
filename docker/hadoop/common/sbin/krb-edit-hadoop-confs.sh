@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash -ex
 
 # This script adds the kerberos only configs to relevant hadoop config files. For example,
 # if there are core-site.xml and core-site.xml.part files in ${HADOOP_CONF_DIR}, the content of
@@ -6,8 +6,6 @@
 #   1. remove the closing configuration tag from core-site.xml
 #   2. append content of core-site.xml.part to core-site.xml
 #   3. append the closing configuration tag to core-site.xml
-
-set -ex
 
 cd ${HADOOP_CONF_DIR}
 for conf in $(ls *.xml); do
