@@ -7,7 +7,6 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 dependencies {
-  compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   compile project(":h2o-hadoop-2:h2o-mapreduce-2-generic")
   // Libraries need for Google Cloud Storage strongly require this Guava version
   compile('com.google.guava:guava:20.0') {force = true}

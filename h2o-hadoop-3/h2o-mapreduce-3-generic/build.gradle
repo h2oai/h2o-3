@@ -16,10 +16,9 @@ compileJava {
 
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
+  compile ('org.apache.hadoop:hadoop-mapreduce-client-app:' + hadoopMavenArtifactVersion)
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
   compile project(":h2o-webserver-iface")
-  compile 'org.apache.hadoop:hadoop-mapreduce-client-app:3.0.0-cdh6.0.1'
-  compile 'org.apache.hive:hive-common:2.1.1-cdh6.0.1'
 }
