@@ -555,21 +555,13 @@ def class_extra_for(algo):
         def init_for_pipeline(self):
             \"\"\"
             Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
+            All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
 
             :returns: H2OPCA object
             \"\"\"
+            
             from h2o.transforms.decomposition import H2OPCA
-            return H2OPCA(model_id=self.model_id,
-                            k=self.k,
-                            max_iterations=self.max_iterations,
-                            seed=self.seed,
-                            transform="None" if self.transform is None else self.transform,
-                            use_all_factor_levels=False if self.use_all_factor_levels is None else self.use_all_factor_levels,
-                            pca_method="GramSVD" if self.pca_method is None else self.pca_method,
-                            pca_impl="mtj_evd_symmmatrix" if self.pca_impl is None else self.pca_impl,
-                            ignore_const_cols=True if self.ignore_const_cols is None else self.ignore_const_cols,
-                            impute_missing=False if self.impute_missing is None else self.impute_missing,
-                            compute_metrics=True if self.compute_metrics is None else self.compute_metrics)
+            return H2OPCA(**self._parms)
         """
 
 

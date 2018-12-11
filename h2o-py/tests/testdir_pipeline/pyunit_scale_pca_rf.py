@@ -24,7 +24,7 @@ def scale_pca_rf_pipe():
 def scale_pca_rf_pipe_new_import():
 
   from h2o.transforms.preprocessing import H2OScaler
-  from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
+  from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
   from h2o.estimators.random_forest import H2ORandomForestEstimator
   from sklearn.pipeline import Pipeline
 
@@ -34,7 +34,7 @@ def scale_pca_rf_pipe_new_import():
   # it should fail
   try:
     pipe = Pipeline([("standardize", H2OScaler()),
-                     ("pca", H2OPCA(k=2)),
+                     ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
                      ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
     pipe.fit(iris[:4], iris[4])
     print(pipe)
@@ -44,13 +44,13 @@ def scale_pca_rf_pipe_new_import():
 
   # build transformation pipeline using sklearn's Pipeline and H2O estimators with H2OPCA.init_for_pipeline()
   pipe = Pipeline([("standardize", H2OScaler()),
-                   ("pca", H2OPCA(k=2).init_for_pipeline()),
+                   ("pca", H2OPrincipalComponentAnalysisEstimator(k=2).init_for_pipeline()),
                    ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
   pipe.fit(iris[:4], iris[4])
   print(pipe)
 
   # set H2OPCA transform property
-  pca = H2OPCA(k=2)
+  pca = H2OPrincipalComponentAnalysisEstimator(k=2)
   pca.transform = "standardize"
   pipe = Pipeline([("standardize", H2OScaler()),
                    ("pca", pca.init_for_pipeline()),
