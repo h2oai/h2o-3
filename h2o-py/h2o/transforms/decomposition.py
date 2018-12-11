@@ -17,13 +17,7 @@ class H2OPCA(H2OEstimator):
                  pca_impl="mtj_evd_symmmatrix",
                  ignore_const_cols=True,
                  impute_missing=False,
-                 compute_metrics=True,
-                 training_frame=None,
-                 validation_frame=None,
-                 ignored_columns=None,
-                 score_each_iteration=False,
-                 max_runtime_secs=0,
-                 export_checkpoints_dir=None):
+                 compute_metrics=True):
         """
         Principal Components Analysis
 
@@ -71,14 +65,6 @@ class H2OPCA(H2OEstimator):
         :param bool ignore_const_cols: If true, will ignore constant columns.  Default is True.
         :param bool impute_missing:  whether to impute NA/missing values.
         :param bool compute_metrics: whether to compute metrics on training data.  Default is True.
-        :param Frame training_frame: Id of the training data frame.
-        :param Frame validation_frame: Id of the validation data frame.
-        :param List[str] ignored_columns: names of columns to ignore for training.
-        :param bool score_each_iteration: Whether to score during each iteration of model training. Default is False.
-        :param numeric max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
-            Default is 0.
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-
 
         :returns: A new instance of H2OPCA.
 
@@ -93,18 +79,6 @@ class H2OPCA(H2OEstimator):
         self._parms["pca_impl"] = pca_impl
         assert_is_type(transform, Enum("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"))
         self._parms["transform"] = transform
-        assert_is_type(training_frame, None, H2OFrame)
-        self._parms["training_frame"] = training_frame
-        assert_is_type(validation_frame, None, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
-        assert_is_type(ignored_columns, None, [str])
-        self._parms["ignored_columns"] = ignored_columns
-        assert_is_type(score_each_iteration, None, bool)
-        self._parms["score_each_iteration"] = score_each_iteration
-        assert_is_type(max_runtime_secs, None, numeric)
-        self._parms["max_runtime_secs"] = max_runtime_secs
-        assert_is_type(export_checkpoints_dir, None, str)
-        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
     def fit(self, X, y=None, **params):
         return super(H2OPCA, self).fit(X)

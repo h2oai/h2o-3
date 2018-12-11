@@ -11,7 +11,7 @@ def scale_pca_rf_pipe():
   from h2o.transforms import H2OPCA
   from h2o.estimators.random_forest import H2ORandomForestEstimator
   from sklearn.pipeline import Pipeline
-  from sklearn.model_selection import RandomizedSearchCV
+  from sklearn.grid_search import RandomizedSearchCV
   from h2o.cross_validation import H2OKFold
   from h2o.model.regression import h2o_r2_score
   from sklearn.metrics.scorer import make_scorer
@@ -52,7 +52,7 @@ def scale_pca_rf_pipe_new_import():
   from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator
   from h2o.estimators.random_forest import H2ORandomForestEstimator
   from sklearn.pipeline import Pipeline
-  from sklearn.model_selection import RandomizedSearchCV
+  from sklearn.grid_search import RandomizedSearchCV
   from h2o.cross_validation import H2OKFold
   from h2o.model.regression import h2o_r2_score
   from sklearn.metrics.scorer import make_scorer

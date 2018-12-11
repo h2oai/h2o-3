@@ -559,9 +559,12 @@ def class_extra_for(algo):
 
             :returns: H2OPCA object
             \"\"\"
-            
+            import inspect
             from h2o.transforms.decomposition import H2OPCA
-            return H2OPCA(**self._parms)
+            # check which parameters can be passed to H2OPCA init
+            var_names = list(dict(inspect.getmembers(H2OPCA.__init__.__code__))['co_varnames'])
+            parameters = {k: v for k, v in self._parms.items() if k in var_names}
+            return H2OPCA(**parameters)
         """
 
 
