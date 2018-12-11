@@ -524,7 +524,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return new String[] {"unknown"};
   }
 
-  public String rankTsv() {
+  String rankTsv() {
     String lineSeparator = "\n";
 
     StringBuilder sb = new StringBuilder();
