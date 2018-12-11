@@ -28,7 +28,6 @@ buildscript {
 plugins {
     id "java"
     id "com.github.hierynomus.license" version "0.14.0"
-    id "net.ltgt.apt" version "0.19"
 }
 
 //
@@ -136,15 +135,6 @@ ext {
       project(':h2o-algos')
     ]
     
-    // Apt required
-    // Only Java projects which needs to register core/rest/schema extensions
-    aptProjects = [
-      project(':h2o-core'),
-      project(':h2o-algos'),
-      project(':h2o-app'),
-      project(':h2o-automl')
-    ]
-
     //
     // Versions of libraries shared cross all projects
     // The version of protoc must match protobuf-java. If you don't depend on
@@ -265,10 +255,6 @@ subprojects {
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
         
-        // Apt preprocessor
-        if (project in aptProjects) {
-            apply from: "$rootDir/gradle/apt.gradle"
-        }
     }
 
     // Configure Scala projects
