@@ -71,8 +71,8 @@ Randomly split the data into 75% training and 25% testing. We will use the testi
 
    .. code-block:: python
 
-   # Split Frame into training and testing
-   train, test = df.split_frame(ratios=[0.75])
+    # Split Frame into training and testing
+    train, test = df.split_frame(ratios=[0.75])
 
 Now train the baseline model. We will train a GBM model with early stopping.
 
@@ -102,8 +102,8 @@ Now train the baseline model. We will train a GBM model with early stopping.
 
     auc_comparison
             Data       AUC
-    1   Training 0.8571747
-    2 Validation 0.7198658
+    1   Training 0.7492599
+    2 Validation 0.7070187
 
    .. code-block:: python
 
@@ -130,15 +130,15 @@ Now train the baseline model. We will train a GBM model with early stopping.
     # Get the AUC on the training and testing data:
     train_auc = gbm_baseline.auc(train=True)
     train_auc
-    0.751953970782117
+    0.7533638771470013
     valid_auc = gbm_baseline.auc(valid=True)
     valid_auc
-    0.7065760092048288
+    0.702557681703719
 
 
 Our training data has much higher AUC than our validation data.
 
-The variables with the greatest importance are ``addr_state``, ``term``, and ``int_rate``. It makes sense that the ``int_rate`` has such high variable importance since this is related to loan default but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
+The variables with the greatest importance are ``int_rate``, ``addr_state``, ``annual_inc``, and ``term``. It makes sense that the ``int_rate`` has such high variable importance because this is related to loan default, but it is surprising that ``addr_state`` has such high variable importance. The high variable importance could be because our model is memorizing the training data through this high cardinality categorical column.
 
 .. example-code::
    .. code-block:: r
@@ -180,8 +180,34 @@ See if the AUC improves on the test data if we remove the ``addr_state`` predict
 
     auc_comparison
               Model       AUC
-    1      Baseline 0.7198658
-    2 No addr_state 0.7270537
+    1      Baseline 0.7070187
+    2 No addr_state 0.7076197
+
+   .. code-block:: python
+
+    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti",
+                  "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
+                  "verification_status", "term", "purpose", "home_ownership"]
+
+    gbm_no_state=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                              ntrees=500,
+                                              sample_rate=0.8,
+                                              col_sample_rate=0.8,
+                                              seed=1234,
+                                              stopping_rounds=5,
+                                              stopping_metric="AUC",
+                                              stopping_tolerance=0.001,
+                                              model_id="gbm_no_state.hex")
+
+    gbm_no_state.train(x=predictors, y=response, training_frame=train,
+                       validation_frame=test)
+
+    auc_baseline = gbm_baseline.auc(valid=True)
+    auc_baseline
+    0.702557681703719
+    auc_nostate = gbm_no_state.auc(valid=True)
+    auc_nostate
+    0.7154636105071562
 
 We see a slight improvement in our test AUC if we do not include the ``addr_state`` predictor. This is a good indication that the GBM model may be overfitting with this column.
 
@@ -232,14 +258,13 @@ Perform Target Encoding
 
 Start by creating the target encoding map. This has the number of bad loans per state (``numerator``) and the number of rows per state (``denominator``). We can later use this information to create the target encoding per state.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     train$fold <- h2o.kfold_column(train, 5, seed = 1234)
     te_map <- h2o.target_encode_create(train, x = list("addr_state"), 
                                        y = response, fold_column = "fold")
     head(te_map$addr_state)
-
-::
 
     ##   addr_state fold numerator denominator
     ## 1         AK    0         3          11
@@ -249,13 +274,25 @@ Start by creating the target encoding map. This has the number of bad loans per 
     ## 5         AK    4         1           7
     ## 6         AL    0         7          52
 
+   .. code-block:: python
+
+    foldColumnName="fold"
+    train[foldColumnName] = train.kfold_column(n_folds=5, seed=1234)
+    
+    from h2o.targetencoder import TargetEncoder
+    teColumns=["addr_state"]
+    te_map = TargetEncoder(x=teColumns, y=response, fold_column="fold", blending_avg=True)
+    te_map.fit(train)
+
+
 Apply the target encoding to our training and testing data. For our training data, we will use the parameters:
 
 -  ``holdout_type``: "KFold"
 -  ``blended_avg``: TRUE
 -  ``noise_level``: NULL (by default it will add 0.01 \* range of y of random noise)
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     ext_train <- h2o.target_encode_apply(train, x = list("addr_state"), y = response, 
                                          target_encode_map = te_map, holdout_type = "KFold",
@@ -264,8 +301,6 @@ Apply the target encoding to our training and testing data. For our training dat
 
     head(ext_train[c("addr_state", "fold", "TargetEncode_addr_state")])
 
-::
-
     ##   addr_state fold TargetEncode_addr_state
     ## 1         AK    0               0.1212239
     ## 2         AK    0               0.1212239
@@ -273,6 +308,16 @@ Apply the target encoding to our training and testing data. For our training dat
     ## 4         AK    0               0.1212239
     ## 5         AK    0               0.1212239
     ## 6         AK    0               0.1212239
+
+   .. code-block:: python
+
+    ext_train = te_map.transform(is_train_or_valid=True, 
+                                 frame=train, 
+                                 holdout_type="kfold", 
+                                 noise=0.0, 
+                                 seed=1234)
+    ext_train
+
 
 For our testing data, we will use the parameters:
 
