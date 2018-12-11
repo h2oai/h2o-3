@@ -134,6 +134,22 @@ public class DeeplearningMojoModel extends MojoModel {
     return (mc == ModelCategory.AutoEncoder)? _units[0]: (isClassifier()?nclasses()+1 :2);
   }
 
+  /**
+   * Calculates average reconstruction error (MSE).
+   * Uses a normalization defined for the numerical features of the trained model.
+   * @return average reconstruction error = ||original - reconstructed||^2 / length(original)
+   */
+  public double calculateReconstructionErrorPerRowData(double [] original, double [] reconstructed){
+    int numStartIndex = original.length - this._nums;
+    double norm;
+    double l2 = 0;
+    for (int i = 0; i < original.length; i++) {
+      norm = (this._normmul != null) && (this._nums > 0) && (i >= (numStartIndex)) ? this._normmul[i-numStartIndex] : 1;
+      l2 += Math.pow((reconstructed[i] - original[i]) * norm, 2);
+    }
+    return  l2 / original.length;
+  }
+
   // class to store weight or bias for one neuron layer
   public static class StoreWeightsBias implements Serializable {
     float[] _wValues; // store weight or bias arrays
