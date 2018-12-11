@@ -354,8 +354,8 @@ def gen_module(schema, algo, module):
     print_ln(paste0("Number of Base Models: ", length(baselearners)))
     print_ln("\nBase Models (count by algorithm type):")
     print(table(unlist(lapply(baselearners, function(baselearner) baselearner@algorithm))))
-    
-    
+
+
     print_ln("\nMetalearner:\n")
     print_ln(paste0(
       "Metalearner algorithm: ",
@@ -371,10 +371,10 @@ def gen_module(schema, algo, module):
         "  Fold column: ",
         ifelse(is.null(metalearner_fold_column), "NULL", metalearner_fold_column )))
     }
-    
+
     if (!missing(metalearner_params))
       print_ln(paste0("Metalearner hyperparameters: ", parms$metalearner_params))
-    
+
   })
   class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
         """
