@@ -224,4 +224,17 @@ public class ArrayUtilsTest extends TestUtil {
     assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,(byte)0xde,(byte)0x80,5}, decodeAsInt(0x80decafe, bs, 0));
     
   }
+
+  @Test
+  public void testFloatsToDouble() {
+    assertNull(toDouble((float[]) null));
+    assertArrayEquals(new double[]{1.0, 2.2}, toDouble(new float[]{1.0f, 2.2f}), 1e-7);
+  }
+
+  @Test
+  public void testIntsToDouble() {
+    assertNull(toDouble((int[]) null));
+    assertArrayEquals(new double[]{1.0, 42.0}, toDouble(new int[]{1, 42}), 0);
+  }
+
 }

@@ -19,6 +19,12 @@ public class XGBoostModelV3 extends ModelSchemaV3<
     @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 variable_importances;
 
+    @API(help="Variable Importances - Cover", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances_cover;
+
+    @API(help="Variable Importances - Frequency", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances_frequency;
+
     @API(help="XGBoost Native Parameters", direction=API.Direction.OUTPUT, level = API.Level.secondary)
     TwoDimTableV3 native_parameters;
 

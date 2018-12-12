@@ -3911,6 +3911,25 @@ def genTrainFrame(nrow, ncol, enumCols=0, enumFactors=2, responseLevel=2, miscfr
         trainFrame = trainFrameNumerics.cbind(yresponse)
     return trainFrame
 
+def check_xgb_var_imp(h2o_train, h2o_model, xgb_train, xgb_model, tolerance=1e-6):
+    column_map = dict(zip(h2o_train.names, xgb_train.feature_names))
+
+    h2o_var_imps = h2o_model.varimp()
+    h2o_var_frequencies = h2o_model._model_json["output"]["variable_importances_frequency"].cell_values
+    freq_map = dict(map(lambda (col, freq, scaled, percentage): (col, freq), h2o_var_frequencies))
+    
+
+    # XGBoost reports average gain of a split
+    xgb_var_imps = xgb_model.get_score(importance_type="gain")
+
+    for h2o_var_imp in h2o_var_imps:
+        frequency = freq_map[h2o_var_imp[0]]
+        xgb_var_imp = xgb_var_imps[column_map[h2o_var_imp[0]]]
+        abs_diff = abs(h2o_var_imp[1]/frequency - xgb_var_imp)
+        norm = max(1, abs(h2o_var_imp[1]/frequency), abs(xgb_var_imp))
+        assert abs_diff/norm < tolerance, "Variable importance of feature {0} is different. H2O: {1}, XGB {2}"\
+            .format(h2o_var_imp[0], h2o_var_imp[1], xgb_var_imp)
+
 def summarizeResult_regression(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD, nativeScoreTime, tolerance=1e-6):
     # Result comparison in terms of time
     print("H2OXGBoost train time is {0}ms.  Native XGBoost train time is {1}s.\n  H2OGBoost scoring time is {2}s."
