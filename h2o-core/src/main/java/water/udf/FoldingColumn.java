@@ -1,11 +1,11 @@
 package water.udf;
 
-import com.google.common.collect.Lists;
 import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.util.fp.Foldable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +49,11 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   public FoldingColumn(Foldable<X, Y> f, Iterable<Column<X>> columns) {
     super(columns.iterator().next());
     this.f = f;
-    this.columns = (Column<X>[])Lists.newArrayList(columns).toArray();
+    ArrayList<Column<X>> al = new ArrayList<>();
+    for (Column<X> column : columns) {
+      al.add(column);
+    }
+    this.columns = (Column<X>[])al.toArray();
   }
   
   @Override public Y get(long idx) {
