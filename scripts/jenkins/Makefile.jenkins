@@ -338,7 +338,7 @@ test-package-hadoop:
 test-hadoop-common-smoke-ldap:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
-test-hadoop-common-smoke-krb:
+test-hadoop-common-smoke-kerb:
 	cd h2o-hadoop-common/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 test-hadoop-2-smoke-ldap: test-hadoop-common-smoke-ldap
@@ -347,16 +347,10 @@ test-hadoop-2-smoke-ldap: test-hadoop-common-smoke-ldap
 test-hadoop-3-smoke-ldap: test-hadoop-common-smoke-ldap
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 
-test-hadoop-2-smoke-krb: test-hadoop-common-smoke-krb
-	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
-
-test-hadoop-3-smoke-krb: test-hadoop-common-smoke-krb
-	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
-
-test-hadoop-2-smoke-kerb:
+test-hadoop-2-smoke-kerb: test-hadoop-common-smoke-kerb
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
-test-hadoop-3-smoke-kerb:
+test-hadoop-3-smoke-kerb: test-hadoop-common-smoke-kerb
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 coverage-junit-algos-jenkins:
