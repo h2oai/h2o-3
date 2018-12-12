@@ -6,6 +6,7 @@ import hex.genmodel.IClusteringModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -326,7 +327,10 @@ public class EasyPredictModelWrapper implements Serializable {
     p.original = expandRawData(rawData, output.length);
     p.reconstructed = output;
     p.reconstructedRowData = reconstructedToRowData(output);
-
+    if (m instanceof DeeplearningMojoModel){
+      DeeplearningMojoModel mojoModel = ((DeeplearningMojoModel)m);
+      p.mse =  mojoModel.calculateReconstructionErrorPerRowData(p.original, p.reconstructed);
+    }
     return p;
   }
 
