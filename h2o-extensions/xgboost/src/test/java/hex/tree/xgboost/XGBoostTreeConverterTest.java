@@ -53,15 +53,16 @@ public class XGBoostTreeConverterTest extends TestUtil {
             parms._max_depth = 3;
             parms._train = tfr._key;
             parms._response_column = response;
+            parms._reg_lambda = 0;
 
             model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
             final GBTree booster = (GBTree) new Predictor(new ByteArrayInputStream(model.model_info()._boosterBytes)).getBooster();
             final RegTree tree = booster.getGroupedTrees()[0][0];
             final RegTreeNode[] nodes = tree.getNodes();
+            assertNotNull(nodes);
 
             final SharedTreeGraph sharedTreeGraph = model.convert(0, "down");
-            final String s = XGBoostUtils.makeFeatureMap(tfr, model.model_info()._dataInfoKey.get());
             assertNotNull(sharedTreeGraph);
             assertEquals(parms._ntrees, sharedTreeGraph.subgraphArray.size());
             final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.subgraphArray.get(0);
@@ -91,12 +92,14 @@ public class XGBoostTreeConverterTest extends TestUtil {
             parms._ignored_columns = new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","UniqueCarrier", "Dest"};
             parms._train = tfr._key;
             parms._response_column = response;
+            parms._reg_lambda = 0;
 
             model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
             final GBTree booster = (GBTree) new Predictor(new ByteArrayInputStream(model.model_info()._boosterBytes)).getBooster();
             final RegTree tree = booster.getGroupedTrees()[0][0];
             final RegTreeNode[] nodes = tree.getNodes();
+            assertNotNull(nodes);
 
             final SharedTreeGraph sharedTreeGraph = model.convert(0, "NO");
             assertNotNull(sharedTreeGraph);
