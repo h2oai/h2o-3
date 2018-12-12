@@ -203,7 +203,7 @@ public abstract class SharedTreeModel<
 
         CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
-        DKV.put(ctAux);
+        DKV.put(ctAux,fs);
       }
       _ntrees++;
       // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
