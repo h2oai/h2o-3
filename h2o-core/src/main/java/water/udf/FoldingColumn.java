@@ -49,11 +49,11 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   public FoldingColumn(Foldable<X, Y> f, Iterable<Column<X>> columns) {
     super(columns.iterator().next());
     this.f = f;
-    ArrayList<Column<X>> al = new ArrayList<>();
+    ArrayList<Column<X>> list = new ArrayList<>();
     for (Column<X> column : columns) {
-      al.add(column);
+      list.add(column);
     }
-    this.columns = (Column<X>[])al.toArray();
+    this.columns = (Column<X>[])list.toArray();
   }
   
   @Override public Y get(long idx) {

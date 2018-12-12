@@ -41,7 +41,8 @@ dependencies {
 
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
-
+  
+  testCompile "com.google.guava:guava:16.0.1"
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.mockito:mockito-core:2.18.0"
   testCompile "org.apache.httpcomponents:httpclient:4.1"

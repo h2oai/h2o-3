@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Several helper methods inspired by Guava library. We want to avoid bringing guava dependency when possible.
+ * Several helper methods inspired by Guava library - https://github.com/google/guava/. We want to avoid bringing guava dependency when possible.
  * 
  * Duplicating some code from that library is a small sacrifice for not bringing the whole dependency
  */
