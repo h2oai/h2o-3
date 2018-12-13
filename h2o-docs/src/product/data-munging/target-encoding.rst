@@ -72,7 +72,7 @@ Randomly split the data into 75% training and 25% testing. We will use the testi
    .. code-block:: python
 
     # Split Frame into training and testing
-    train, test = df.split_frame(ratios=[0.75])
+    train, test = df.split_frame(ratios=[0.75], seed=1234)
 
 Now train the baseline model. We will train a GBM model with early stopping.
 
@@ -130,10 +130,10 @@ Now train the baseline model. We will train a GBM model with early stopping.
     # Get the AUC on the training and testing data:
     train_auc = gbm_baseline.auc(train=True)
     train_auc
-    0.7533638771470013
+    0.7492599314713426
     valid_auc = gbm_baseline.auc(valid=True)
     valid_auc
-    0.702557681703719
+    0.707018686126265
 
 
 Our training data has much higher AUC than our validation data.
@@ -204,10 +204,10 @@ See if the AUC improves on the test data if we remove the ``addr_state`` predict
 
     auc_baseline = gbm_baseline.auc(valid=True)
     auc_baseline
-    0.702557681703719
+    0.707018686126265
     auc_nostate = gbm_no_state.auc(valid=True)
     auc_nostate
-    0.7154636105071562
+    0.7076197256885596
 
 We see a slight improvement in our test AUC if we do not include the ``addr_state`` predictor. This is a good indication that the GBM model may be overfitting with this column.
 
@@ -224,15 +224,15 @@ Target encoding in H2O-3 is performed in two steps:
 To apply the target encoding, we have several options included to prevent overfitting:
 
 -  ``holdout_type``: whether or not a holdout should be used in constructing the target average
--  ``blended_avg``: whether to perform a blended average
--  ``noise_level``: whether to include random noise to the average
+-  ``blended_avg`` (R)/``blending_avg`` (Python): whether to perform a blended average
+-  ``noise_level`` (R)/``noise`` (Python): whether to include random noise to the average
 
 Holdout Type
 ''''''''''''
 
 The ``holdout_type`` parameter defines whether the target average should be constructed on all rows of data. Overfitting can be prevented by removing some hold out data when calculating the target average on the training data.
 
-The ``h2o.target_encode_apply`` function offers the options:
+The ``h2o.target_encode_apply`` (R)/``transform`` (Python) function offers the following ``holdout_type`` options:
 
 -  None: no holdout, mean is calculating on all rows of data \*\* this should be used for test data
 -  LeaveOneOut: mean is calculating on all rows of data excluding the row itself
@@ -246,12 +246,12 @@ The ``h2o.target_encode_apply`` function offers the options:
 Blended Average
 '''''''''''''''
 
-The ``blended_avg`` parameter defines if the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group's target value and the global target value.
+The ``blended_avg`` (R)/``blending_avg`` (Python) parameter defines whether the target average should be weighted based on the count of the group. It is often the case, that some groups may have a small number of records and the target average will be unreliable. To prevent this, the blended average takes a weighted average of the group's target value and the global target value.
 
 Noise Level
 '''''''''''
 
-The ``noise_level`` parameter determines if random noise should be added to the target average.
+The ``noise_level`` (R)/``noise`` (Python) parameter determines if random noise should be added to the target average.
 
 Perform Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -288,8 +288,8 @@ Start by creating the target encoding map. This has the number of bad loans per 
 Apply the target encoding to our training and testing data. For our training data, we will use the parameters:
 
 -  ``holdout_type``: "KFold"
--  ``blended_avg``: TRUE
--  ``noise_level``: NULL (by default it will add 0.01 \* range of y of random noise)
+-  ``blended_avg``/``blending_avg``: TRUE
+-  ``noise_level``/``noise``: NULL (by default it will add 0.01 \* range of y of random noise)
 
 .. example-code::
    .. code-block:: r
@@ -314,9 +314,10 @@ Apply the target encoding to our training and testing data. For our training dat
     ext_train = te_map.transform(is_train_or_valid=True, 
                                  frame=train, 
                                  holdout_type="kfold", 
-                                 noise=0.0, 
+                                 noise=0.0,
                                  seed=1234)
-    ext_train
+
+    head_ext_train = ext_train.head(rows=5, cols=17)
 
 
 For our testing data, we will use the parameters:
@@ -327,7 +328,8 @@ For our testing data, we will use the parameters:
 
 We do not need to apply any of the overfitting prevention techniques since our target encoding map was created on the training data, not the testing data.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     ext_test <- h2o.target_encode_apply(test, x = list("addr_state"), y = response,
                                         target_encode_map = te_map, holdout_type = "None",
@@ -335,8 +337,6 @@ We do not need to apply any of the overfitting prevention techniques since our t
                                         blended_avg = FALSE, noise_level = 0)
 
     head(ext_test[c("addr_state", "TargetEncode_addr_state")])
-
-::
 
     ##   addr_state TargetEncode_addr_state
     ## 1         AK               0.1521739
@@ -346,27 +346,30 @@ We do not need to apply any of the overfitting prevention techniques since our t
     ## 5         AK               0.1521739
     ## 6         AK               0.1521739
 
+   .. code-block:: python
+
+    ext_test = te_map.transform(is_train_or_valid=True, 
+                                frame=test, 
+                                holdout_type="none", 
+                                noise=0.0,
+                                seed=1234)
+
+    head_ext_test = ext_test.head()
+
+
+
 Train Model with KFold Target Encoding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Train a new model, this time replacing the ``addr_state`` with the ``TargetEncode_addr_state``.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
-    predictors <- c("loan_amnt", 
-                    "int_rate", 
-                    "emp_length", 
-                    "annual_inc", 
-                    "dti", 
-                    "delinq_2yrs", 
-                    "revol_util", 
-                    "total_acc", 
-                    "longest_credit_length",
-                    "verification_status", 
-                    "term", 
-                    "purpose", 
-                    "home_ownership", 
-                    "TargetEncode_addr_state")
+    predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", 
+                    "dti", "delinq_2yrs", "revol_util", "total_acc", 
+                    "longest_credit_length", "verification_status", "term", 
+                    "purpose", "home_ownership", "TargetEncode_addr_state")
 
     gbm_state_te <- h2o.gbm(x = predictors, 
                             y = response, 
@@ -379,9 +382,31 @@ Train a new model, this time replacing the ``addr_state`` with the ``TargetEncod
                             stopping_tolerance = 0.001,
                             model_id = "gbm_state_te.hex")
 
+   .. code-block:: python
+
+    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", 
+                  "dti", "delinq_2yrs", "revol_util", "total_acc", 
+                  "longest_credit_length", "verification_status", 
+                  "term", "purpose", "home_ownership", "addr_state_te"]
+
+    gbm_state_te=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                              ntrees=500,
+                                              sample_rate=0.8,
+                                              col_sample_rate=0.8,
+                                              seed=1234,
+                                              stopping_rounds=5,
+                                              stopping_metric="AUC",
+                                              stopping_tolerance=0.001,
+                                              model_id="gbm_no_state.hex")
+
+    gbm_state_te.train(x=predictors, y=response, training_frame=ext_train,
+                       validation_frame=ext_test)
+
+
 The AUC of the first and second model is shown below:
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     # Get AUC
     auc_state_te <- h2o.auc(gbm_state_te, valid = TRUE)
@@ -397,13 +422,28 @@ The AUC of the first and second model is shown below:
     2              No addr_state 0.7270537
     3 addr_state Target Encoding 0.7254448
 
+  .. code-block:: python
+
+   # Get AUC
+   auc_state_te = gbm_state_te.auc(valid=True)
+   auc_state_te
+   0.7091353041718448
+
+
 
 We see a slight increase in the AUC on the test data. Now the ``addr_state`` has much smaller variable importance. It is no longer the most important feature but the 8th.
 
-.. code:: r
+.. example-code::
+   .. code-block:: r
 
     # Variable Importance
     h2o.varimp_plot(gbm_state_te)
+
+   .. code-block:: python
+
+    # Variable Importance
+    gbm_state_te.varimp_plot()
+
 
 .. figure:: ../images/gbm_variable_importance2.png
    :alt: GBM Variable importance - second run
@@ -414,5 +454,5 @@ References
 ~~~~~~~~~~
 
 -  `Target Encoding in H2O-3 Demo <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.target_encode.R>`__
--  `Preprocessing Scheme for High-Cardinality Categorical Columns <https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf>`__
 -  `Automatic Feature Engineering Webinar <https://www.youtube.com/watch?v=VMTKcT1iHww>`__
+-   Daniele Micci-Barreca. 2001. A preprocessing scheme for high-cardinality categorical attributes in classification and prediction problems. SIGKDD Explor. Newsl. 3, 1 (July 2001), 27-32.
