@@ -329,7 +329,7 @@ benchmark:
 
 test-package-hadoop:
 	zip -q -r test-package-hadoop \
-		scripts/jenkins/config/ scripts/jenkins/ldap-conf.txt \
+		scripts/jenkins/config/ \
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-common/tests/python/
