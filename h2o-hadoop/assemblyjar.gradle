@@ -14,6 +14,9 @@ dependencies {
     compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   }
   compile project(':h2o-hadoop:h2o-' + hadoopVersion)
+  // Libraries need for Google Cloud Storage strongly require this Guava version
+  compile('com.google.guava:guava:20.0') {force = true}
+  compile project(":h2o-hadoop:h2o-mapreduce-generic")
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
@@ -87,6 +90,7 @@ shadowJar {
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
   relocate 'org.joda.time', 'ai.h2o.org.joda.time'
   exclude hadoopShadowJarExcludes
+  relocate 'com.google.common', 'ai.h2o.com.google.common'
   baseName = 'h2odriver'
   classifier = ''
   manifest {
