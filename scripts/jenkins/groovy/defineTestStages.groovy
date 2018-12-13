@@ -333,7 +333,7 @@ def call(final pipelineContext) {
       customData: [
         distribution: distribution.name,
         version: distribution.version,
-        ldapConfigPath: "scripts/jenkins/config/ldap-jetty-${distribution.name == 'cdh' && distribution.version == '6.0' ? '9' : '8'}.txt",
+        ldapConfigPath: 'scripts/jenkins/config/ldap-jetty-' + (distribution.name == 'cdh' && distribution.version == '6.0' ? '9' : '8') + '.txt',
         kerberosUserName: 'jenkins@H2O.AI',
         kerberosPrincipal: 'HTTP/localhost@H2O.AI',
         kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
