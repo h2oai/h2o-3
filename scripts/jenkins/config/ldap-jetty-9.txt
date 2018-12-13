@@ -1,5 +1,5 @@
 ldaploginmodule {
-    org.eclipse.jetty.server.server.plus.jaas.spi.LdapLoginModule required
+    org.eclipse.jetty.jaas.spi.LdapLoginModule required
     debug="true"
     useLdaps="false"
     contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
