@@ -4946,7 +4946,7 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     node
 }
 
-.arrayArgumentHelper <- function (arr) {
+.arrayArgumentHelper <- function(arr) {
     if(length(arr) == 1) {
         arr <- .quote(arr)
     } else {
@@ -4970,7 +4970,7 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
 #' @return Returns an object containing the target encoding mapping for each column in `x`.
 #' @seealso \code{\link{h2o.target_encode_transform}} for applying the target encoding mapping to a frame.
 #' @export
-h2o.target_encode_fit <- function (data, x, y, fold_column=NULL)
+h2o.target_encode_fit <- function(data, x, y, fold_column = NULL)
 {
 
     # Handling `x` parameter
@@ -4984,7 +4984,7 @@ h2o.target_encode_fit <- function (data, x, y, fold_column=NULL)
     }
 
     # Handling `fold_column` parameter
-    if(missing(fold_column)) {
+    if (missing(fold_column)) {
         fold_column_name <- ""
     } else {
         if (is.numeric(fold_column)) {
@@ -5020,8 +5020,8 @@ h2o.target_encode_fit <- function (data, x, y, fold_column=NULL)
 #' @return Returns an H2OFrame object containing the target encoding per record.
 #' @seealso \code{\link{h2o.target_encode_fit}} for creating the target encoding map
 #' @export
-h2o.target_encode_transform <- function (data, x, y, target_encode_map, holdout_type,
-                                        fold_column = NULL, blended_avg=TRUE, inflection_point=NULL, smoothing=NULL,
+h2o.target_encode_transform <- function(data, x, y, target_encode_map, holdout_type,
+                                        fold_column = NULL, blended_avg = TRUE, inflection_point = NULL, smoothing = NULL,
                                         noise = -1, seed = -1, is_train_or_valid)
 {
     # Handling `x` parameter
@@ -5035,7 +5035,7 @@ h2o.target_encode_transform <- function (data, x, y, target_encode_map, holdout_
     }
 
     # Handling `fold_column` parameter
-    if(missing(fold_column)) {
+    if (missing(fold_column)) {
         fold_column_name <- ""
     } else {
         if (is.numeric(fold_column)) {
@@ -5045,11 +5045,11 @@ h2o.target_encode_transform <- function (data, x, y, target_encode_map, holdout_
     }
 
     # Handling `holdout_type` parameter
-    if(!(holdout_type %in% c("KFold", "LeaveOneOut", "None"))){
+    if (!(holdout_type %in% c("KFold", "LeaveOneOut", "None"))){
         stop(paste0("`holdout_type` must be one of the following: KFold, LeaveOneOut, None but got "
         , holdout_type))
     }
-    if(holdout_type == "LeaveOneOut") holdout_type <- "loo"
+    if (holdout_type == "LeaveOneOut") holdout_type <- "loo"
 
     mapKeys <- attr(target_encode_map, "map_keys")
     emKeys <- mapKeys$string
