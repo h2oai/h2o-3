@@ -43,7 +43,7 @@ class TargetEncoder(object):
         """
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
 
-        :param List[str] or List[int] x: List of categorical column names or indicess that we want apply target encoding to
+        :param List[str] or List[int] x: List of categorical column names or indices that we want apply target encoding to
 
         :param str or int y: response column name or index we will create encodings with
         :param str or int fold_column: fold column if we want to use 'kfold' holdout_type
