@@ -30,8 +30,8 @@ class TargetEncoder(object):
 
     >>> targetEncoder = TargetEncoder(x=e_columns, y=responseColumnName, blending=True, inflection_point=3, smoothing=1)
     >>> targetEncoder.fit(frame) 
-    >>> encodedValid = targetEncoder.transform(frame=frame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
-    >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
+    >>> encodedValid = targetEncoder.transform(frame=frame, holdout_type="kfold", seed=1234)
+    >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, seed=1234)
     """
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -74,13 +74,12 @@ class TargetEncoder(object):
 
         return self._encodingMap
 
-    def transform(self, is_train_or_valid, frame = None, holdout_type = None, noise = -1, seed = -1):
+    def transform(self, frame = None, holdout_type = None, noise = -1, seed = -1):
         """
         Apply transformation to `te_columns` based on the encoding maps generated during `TargetEncoder.fit()` call.
         You must not pass encodings manually from `.fit()` method because they are being stored internally
         after `.fit()' had been called.
 
-        :param bool is_train_or_valid: explicitly specify type of the data.
         :param frame frame: to which frame we are applying target encoding transformations.
         :param str holdout_type: Supported options:
 
@@ -100,4 +99,4 @@ class TargetEncoder(object):
         return H2OFrame._expr(expr=ExprNode("target.encoder.transform", encodingMapKeys, encodingMapFramesKeys, frame, self._teColumns, holdout_type,
                                             self._responseColumnName, self._foldColumnName,
                                             self._blending, self._inflectionPoint, self._smoothing,
-                                            noise, seed, is_train_or_valid))
+                                            noise, seed))
