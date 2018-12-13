@@ -1,7 +1,6 @@
 package water.util;
 import java.io.IOException;
 import java.io.InputStream;
-import com.google.common.base.Throwables;
 
 public abstract class RIStream extends InputStream {
 
@@ -43,7 +42,7 @@ public abstract class RIStream extends InputStream {
     try{close();} catch(Exception e){} // ignore any errors
   }
   private void try2Recover(int attempt, IOException e) {
-    if(attempt == _retries) Throwables.propagate(e);
+    if(attempt == _retries) throw new RuntimeException(e);
     Log.warn("[H2OS3InputStream] Attempt("+attempt + ") to recover from " + e.getMessage() + "), off = " + _off);
     try{_is.close();}catch(IOException ex){}
     _is = null;

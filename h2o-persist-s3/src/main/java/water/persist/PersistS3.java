@@ -1,27 +1,31 @@
 package water.persist;
 
-import java.io.*;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.util.*;
-
-import water.*;
-import water.fvec.FileVec;
-import water.fvec.S3FileVec;
-import water.fvec.Vec;
-import water.util.Log;
-import water.util.RIStream;
-import com.amazonaws.*;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.*;
-import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
+import water.*;
+import water.fvec.FileVec;
+import water.fvec.S3FileVec;
+import water.fvec.Vec;
+import water.util.ByteStreams;
+import water.util.Log;
+import water.util.RIStream;
 
-import com.google.common.io.ByteStreams;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.util.*;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 

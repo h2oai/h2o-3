@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import com.google.gson.reflect.TypeToken;
 import hex.ensemble.StackedEnsemble;
 import hex.StackedEnsembleModel;
 import hex.tree.gbm.GBMModel;
@@ -13,7 +14,6 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.FrameV3;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
 import java.util.Arrays;
@@ -90,6 +90,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       super.fillImpl(impl);
       if (metalearner_params != null && !metalearner_params.isEmpty()) {
         Properties p = new Properties();
+        
         HashMap<String, String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>() {
         }.getType());
         for (Map.Entry<String, String[]> param : map.entrySet()) {

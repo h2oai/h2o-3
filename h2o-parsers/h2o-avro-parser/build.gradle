@@ -8,6 +8,7 @@ dependencies {
   // Avro support
   compile "org.apache.avro:avro:1.8.0"
 
+  testCompile "com.google.guava:guava:16.0.1"
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
 }
