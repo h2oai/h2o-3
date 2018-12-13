@@ -138,7 +138,7 @@ Install on Hadoop
 
 	unzip h2o-3.20.0.1-*.zip
 	cd h2o-3.20.0.1-*
-	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
+	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
 3. Point your browser to H2O. (See "Open H2O Flow in your web browser" in the output below.)
 
