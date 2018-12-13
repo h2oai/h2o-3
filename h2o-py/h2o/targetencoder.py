@@ -28,7 +28,7 @@ class TargetEncoder(object):
 
     Sample usage:
 
-    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blending_avg=True, inflection_point=3, smoothing=1)
+    >>> targetEncoder = TargetEncoder(x=te_columns, y=responseColumnName, blended_avg=True, inflection_point=3, smoothing=1)
     >>> targetEncoder.fit(trainFrame) 
     >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
     >>> encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
