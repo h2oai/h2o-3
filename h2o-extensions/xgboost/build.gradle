@@ -10,7 +10,7 @@ dependencies {
     testCompile "junit:junit:${junitVersion}"
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testCompile project(path: ":h2o-core", configuration: "testArchives")
-    testCompile project(":h2o-jetty-${defaultJettyVersion}")
+    testRuntimeOnly project(":${defaultTestsWebserverModule}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
