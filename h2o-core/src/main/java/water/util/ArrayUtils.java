@@ -1840,4 +1840,23 @@ public class ArrayUtils {
     Arrays.fill(ary, c);
     return ary;
   }
+
+  public static double[] toDouble(float[] floats) {
+    if (floats == null)
+      return null;
+    double[] ary = new double[floats.length];
+    for (int i = 0; i < floats.length; i++)
+      ary[i] = floats[i];
+    return ary;
+  }
+
+  public static double[] toDouble(int[] ints) {
+    if (ints == null)
+      return null;
+    double[] ary = new double[ints.length];
+    for (int i = 0; i < ints.length; i++)
+      ary[i] = ints[i];
+    return ary;
+  }
+
 }

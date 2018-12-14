@@ -407,21 +407,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
-  VarImp computeVarImp(Map<String, Integer> varimp) {
-    if (varimp.isEmpty())
-      return null;
-    // compute variable importance
-    float[] viFloat = new float[varimp.size()];
-    String[] names = new String[varimp.size()];
-    int j=0;
-    for (Map.Entry<String, Integer> it : varimp.entrySet()) {
-      viFloat[j] = it.getValue();
-      names[j] = it.getKey();
-      j++;
-    }
-    return new VarImp(viFloat, names);
-  }
-
   @Override
   protected boolean needsPostProcess() {
     return false; // scoring functions return final predictions

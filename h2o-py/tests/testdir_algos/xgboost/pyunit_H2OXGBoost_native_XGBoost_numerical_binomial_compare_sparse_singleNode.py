@@ -72,6 +72,9 @@ def comparison_test():
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
         nativeScoreTime = time.time()-time1
 
+        print("Comparing H2OXGBoost variable importances with native XGBoost when DMatrix is set to sparse.....")
+        pyunit_utils.check_xgb_var_imp(trainFile, h2oModelS, nativeTrain, nativeModel, tolerance=1e-6)
+
         print("Comparing H2OXGBoost results with native XGBoost result when DMatrix is set to sparse.....")
         pyunit_utils.summarizeResult_binomial(h2oPredictS, nativePred, h2oTrainTimeS, nativeTrainTime, h2oPredictTimeS,
                                               nativeScoreTime, tolerance=1e-6)

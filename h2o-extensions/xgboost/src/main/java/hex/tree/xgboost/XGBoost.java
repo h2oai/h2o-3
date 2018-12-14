@@ -500,24 +500,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, Integer> varimp;
+        final Map<String, XGBoostUtils.FeatureScore> varimp;
         Booster booster = null;
         try {
           booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, Integer>>() {
+          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, XGBoostUtils.FeatureScore>>() {
             @Override
-            public Map<String, Integer> apply(Booster booster) throws XGBoostError {
-              return booster.getFeatureScore(featureMapFileAbsolutePath);
+            public Map<String, XGBoostUtils.FeatureScore> apply(Booster booster) throws XGBoostError {
+              final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
+              return XGBoostUtils.parseFeatureScores(modelDump);
             }
           }, booster);
         } finally {
           if (booster != null)
             BoosterHelper.dispose(booster);
         }
-        out._varimp = model.computeVarImp(varimp);
+        out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
-        out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
+        if (out._varimp != null) {
+          out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
+          out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
+          out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
+        }
         model.update(_job);
         Log.info(model);
         scored = true;
@@ -525,6 +530,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       return scored;
     }
+  }
+
+  private static TwoDimTable createVarImpTable(String name, double[] rel_imp, String[] coef_names) {
+    return hex.ModelMetrics.calcVarImp(rel_imp, coef_names, "Variable Importances" + (name != null ? " - " + name : ""),
+            new String[]{"Relative Importance", "Scaled Importance", "Percentage"});
+  }
+
+  private static XgbVarImp computeVarImp(Map<String, XGBoostUtils.FeatureScore> varimp) {
+    if (varimp.isEmpty())
+      return null;
+    float[] gains = new float[varimp.size()];
+    float[] covers = new float[varimp.size()];
+    int[] freqs = new int[varimp.size()];
+    String[] names = new String[varimp.size()];
+    int j = 0;
+    for (Map.Entry<String, XGBoostUtils.FeatureScore> it : varimp.entrySet()) {
+      gains[j] = it.getValue()._gain;
+      covers[j] = it.getValue()._cover;
+      freqs[j] = it.getValue()._frequency;
+      names[j] = it.getKey();
+      j++;
+    }
+    return new XgbVarImp(names, gains, covers, freqs);
   }
 
   private static final class BoosterProvider {

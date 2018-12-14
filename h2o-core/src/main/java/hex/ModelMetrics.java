@@ -6,10 +6,7 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.PojoUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -317,17 +314,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public static TwoDimTable calcVarImp(VarImp vi) {
     if (vi == null) return null;
-    double[] dbl_rel_imp = new double[vi._varimp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = vi._varimp[i];
-    }
-    return calcVarImp(dbl_rel_imp, vi._names);
+    return calcVarImp(vi._varimp, vi._names);
   }
   public static TwoDimTable calcVarImp(final float[] rel_imp, String[] coef_names) {
-    double[] dbl_rel_imp = new double[rel_imp.length];
-    for (int i=0; i<dbl_rel_imp.length; ++i) {
-      dbl_rel_imp[i] = rel_imp[i];
-    }
+    double[] dbl_rel_imp = ArrayUtils.toDouble(rel_imp);
     return calcVarImp(dbl_rel_imp, coef_names);
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {

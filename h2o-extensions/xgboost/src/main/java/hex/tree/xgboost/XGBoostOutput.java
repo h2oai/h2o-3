@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import hex.Model;
 import hex.ScoreKeeper;
-import hex.VarImp;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -32,7 +31,9 @@ public class XGBoostOutput extends Model.Output {
     return skl.toArray(new ScoreKeeper[skl.size()]);
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
-  public TwoDimTable _variable_importances;
-  public VarImp _varimp;
+  public TwoDimTable _variable_importances; // gain
+  public TwoDimTable _variable_importances_cover;
+  public TwoDimTable _variable_importances_frequency;
+  public XgbVarImp _varimp;
   public TwoDimTable _native_parameters;
 }
