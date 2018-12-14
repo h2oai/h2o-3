@@ -10,10 +10,12 @@
 #' @param y The name or index of the response variable in the model. For classification, the y column must be a 
 #'        factor, otherwise regression will be performed. Indexes are 1-based in R.
 #' @param training_frame Training frame (H2OFrame or ID).
-#' @param validation_frame Validation frame (H2OFrame or ID); Optional.  This frame is used for early stopping 
-#'        of individual models and early stopping of the grid searches (unless max_models or max_runtimes_secs overrides metric-based early stopping).
+#' @param validation_frame Validation frame (H2OFrame or ID); Optional.  This argument is ignored unless the user sets nfolds = 0. 
+#'        If cross-validation is turned off, then a validation frame can be specified and used for early stopping of individual models and early 
+#'        stopping of the grid searches.  By default and when nfolds > 1, cross-validation metrics will be used for early stopping and thus 
+#'        validation_frame will be ignored.
 #' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using 
-#'       this data frame intead of using cross-validation metrics, which is the default.
+#'        this data frame intead of using cross-validation metrics, which is the default.
 #' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 

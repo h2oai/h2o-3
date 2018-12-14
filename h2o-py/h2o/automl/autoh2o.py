@@ -262,9 +262,10 @@ class H2OAutoML(object):
         :param weights_column: The name or index of the column in training_frame that holds per-row weights.
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold_column or weights_column).
-        :param validation_frame: H2OFrame with validation data to be scored on while training. Optional. 
-            This frame is used early stopping of individual models and early stopping of the grid searches 
-            (unless max_models or max_runtime_secs overrides metric-based early stopping).
+        :param validation_frame: H2OFrame with validation data. This argument is ignored unless the user sets 
+            nfolds = 0. If cross-validation is turned off, then a validation frame can be specified and used 
+            for early stopping of individual models and early stopping of the grid searches.  By default and 
+            when nfolds > 1, cross-validation metrics will be used for early stopping and thus validation_frame will be ignored.
         :param leaderboard_frame: H2OFrame with test data for scoring the leaderboard.  This is optional and
             if this is set to None (the default), then cross-validation metrics will be used to generate the leaderboard 
             rankings instead.
