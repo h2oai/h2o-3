@@ -3,7 +3,16 @@ package water.util;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Random;
+
 public class IcedBitSetUnitTest {
+
+  @Test (expected = AssertionError.class) 
+  public void outOfBounds() {
+    int len = 32 + (int) (10000 * new Random().nextDouble());
+    IcedBitSet bs = new IcedBitSet(len);
+    bs.set(len);
+  }
 
   @Test
   public void byteTo8digitBinaryString() {

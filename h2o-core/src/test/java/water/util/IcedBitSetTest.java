@@ -96,12 +96,6 @@ public class IcedBitSetTest extends TestUtil {
     check(bs, 0, idx);
   }
 
-  @Test (expected = AssertionError.class) public void outOfBounds() {
-    int len = 32 + (int) (10000 * new Random().nextDouble());
-    IcedBitSet bs = new IcedBitSet(len);
-    bs.set(len);
-  }
-
   @Test public void fillSparse() {
     int len = 10 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
