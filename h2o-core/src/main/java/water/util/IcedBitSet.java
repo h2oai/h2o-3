@@ -1,6 +1,5 @@
 package water.util;
 
-import hex.genmodel.GenModel;
 import water.AutoBuffer;
 import water.Iced;
 
@@ -122,13 +121,21 @@ public class IcedBitSet extends Iced {
     int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
       if( i>0 && _bitoff + 8*i < size()) sb.p(' ');
-      for( int j=0; j<8; j++ ) {
-        if (_bitoff + 8*i + j >= size()) break;
-        sb.p((_val[_byteoff + i] >> j) & 1);
-      }
+      sb.p(byteTo8digitBinaryString(_val[_byteoff + i]));
     }
     return sb.p("}");
   }
+
+  /**
+   * Converts byte to binary 8-digit string.
+   * @param b  the byte to be converted
+   * @return binary representation, lowest bit (weight 1) goes last
+   */
+  static String byteTo8digitBinaryString(byte b) {
+    final String binaryString = "0000000" + Integer.toBinaryString(b);
+    return binaryString.substring(binaryString.length() - 8);
+  }
+
   public String toStrArray() {
     StringBuilder sb = new StringBuilder();
     sb.append("{").append(_val[_byteoff]);
