@@ -454,7 +454,11 @@ public class EasyPredictModelWrapper implements Serializable {
       p.leafNodeAssignments = assignments._paths;
       p.leafNodeAssignmentIds = assignments._nodeIds;
     }
-
+    if (m instanceof SharedTreeMojoModel) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, new double[preds.length]);
+    }
     return p;
   }
 
@@ -497,6 +501,11 @@ public class EasyPredictModelWrapper implements Serializable {
     if (m.calibrateClassProbabilities(preds)) {
       p.calibratedClassProbabilities = new double[m.getNumResponseClasses()];
       System.arraycopy(preds, 1, p.calibratedClassProbabilities, 0, p.calibratedClassProbabilities.length);
+    }
+    if (m instanceof SharedTreeMojoModel) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, new double[preds.length]);
     }
     return p;
   }
@@ -547,7 +556,11 @@ public class EasyPredictModelWrapper implements Serializable {
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
     p.label = domainValues[p.labelIndex];
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
-
+    if (m instanceof SharedTreeMojoModel) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, new double[preds.length]);
+    }
     return p;
   }
 
@@ -667,7 +680,11 @@ public class EasyPredictModelWrapper implements Serializable {
       p.leafNodeAssignmentIds = assignments._nodeIds;
     }
     p.value = preds[0];
-
+    if (m instanceof SharedTreeMojoModel) {
+        double[] rawData = nanArray(m.nfeatures());
+        rawData = fillRawData(data, rawData);
+        p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, new double[preds.length]);
+    }
     return p;
   }
 

@@ -940,4 +940,20 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         return _computeGraph(treeNumber);
     }
 
+    public double[] scoreStagedPredictions(double[] row, double[] preds) {
+        int contribOffset = nclasses() == 1 ? 0 : 1;
+        double[] trees_result = new double[_ntree_groups * _ntrees_per_group];
+
+        for (int groupIndex = 0; groupIndex < _ntree_groups; groupIndex++) {
+            double[] tmpPreds = new double[preds.length];
+            scoreTreeRange(row, 0, groupIndex+1, tmpPreds);
+            unifyPreds(row, 0, tmpPreds);
+            for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+                int tree_index = groupIndex * _ntrees_per_group + classIndex;
+                trees_result[tree_index] = tmpPreds[contribOffset+classIndex];
+            }
+        }
+        return trees_result;
+    }
+
 }
