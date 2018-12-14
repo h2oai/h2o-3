@@ -28,7 +28,7 @@ def comparison_test():
 
         nativeXGBoostParam = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
         nativeXGBoostInput = data.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
-        
+
         nativeModel = xgb.train(params=nativeXGBoostParam[0],
                                 dtrain=nativeXGBoostInput, num_boost_round=nativeXGBoostParam[1])
         nativePred = nativeModel.predict(data=nativeXGBoostInput, ntree_limit=nativeXGBoostParam[1])

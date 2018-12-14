@@ -136,7 +136,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
           // TODO: what is in _id_maps for no matches (-1?) and exclude those
           // i.e. find the minimum >=0. Then treat -1 in _id_map as an NA when
           // writing key
-          //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  
+          //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);
           // if we join to a small subset of levels starting at 0, we'll
           // benefit from the smaller range here, though
           max = BigInteger.valueOf(ArrayUtils.maxValue(_id_maps[i]));
@@ -184,7 +184,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     biggestBit = _isInt[i] ? rangeD : (rangeD == 64 ? 64 : rangeD + 1);
 
     // TODO: feed back to R warnings()
-    if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  
+    if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");
     assert biggestBit >= 1;
     _shift[i] = Math.max(8, biggestBit)-8;
     long MSBwidth = 1L << _shift[i];

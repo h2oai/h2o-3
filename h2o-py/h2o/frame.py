@@ -1874,8 +1874,8 @@ class H2OFrame(object):
         :param method: ``"forward"`` or ``"backward"``
         :param axis:  0 for columnar-wise or 1 for row-wise fill
         :param maxlen: Max number of consecutive NA's to fill
-        
-        :return: 
+
+        :return:
         """
         assert_is_type(axis, 0, 1)
         assert_is_type(method,str)
@@ -2236,7 +2236,7 @@ class H2OFrame(object):
           >>> E = queries.distance(references, "l1")
           >>> (E.transpose() == A).all()
 
-        :returns: An H2OFrame of the matrix containing pairwise distance / similarity between the 
+        :returns: An H2OFrame of the matrix containing pairwise distance / similarity between the
             rows of this frame (N x p) and ``y`` (M x p), with dimensions (N x M).
         """
         assert_is_type(y, H2OFrame)
@@ -2292,7 +2292,7 @@ class H2OFrame(object):
             fr._ex._cache.types = {name: "enum" for name in self.types}
         else:
             raise H2OTypeError("Types are not available in result")
-        
+
         return fr
 
 
@@ -2646,11 +2646,11 @@ class H2OFrame(object):
             for index in range(1, len(incLevel)):
                 c2 = c2.cbind(tempFrame[enumCols[incLevel[index]]])
                 tempFrame = tempFrame.drop(enumCols[incLevel[index]])
-               
+
             enumCols = c2.names
             tempFrame = c2.cbind(tempFrame)
             pandaFtrain = tempFrame.as_data_frame(use_pandas=True, header=True) # redo translation from H2O to panda
-        
+
             pandaTrainPart = generatePandaEnumCols(pandaFtrain, enumCols[0], nrows, tempFrame[enumCols[0]].categories())
             pandaFtrain.drop([enumCols[0]], axis=1, inplace=True)
 
@@ -2826,7 +2826,7 @@ class H2OFrame(object):
         """
         Given a column name or one column index, a percent N, this function will return the top or bottom N% of the
          values of the column of a frame.  The column must be a numerical column.
-    
+
         :param column: a string for column name or an integer index
         :param nPercent: a top or bottom percentage of the column values to return
         :param grabTopN: -1 to grab bottom N percent and 1 to grab top N percent
@@ -2857,7 +2857,7 @@ class H2OFrame(object):
         """
         Given a column name or one column index, a percent N, this function will return the top N% of the values
         of the column of a frame.  The column must be a numerical column.
-    
+
         :param column: a string for column name or an integer index
         :param nPercent: a top percentage of the column values to return
         :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
@@ -2869,7 +2869,7 @@ class H2OFrame(object):
         """
         Given a column name or one column index, a percent N, this function will return the bottom N% of the values
         of the column of a frame.  The column must be a numerical column.
-    
+
         :param column: a string for column name or an integer index
         :param nPercent: a bottom percentage of the column values to return
         :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
@@ -3454,7 +3454,7 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
     """
     import numpy as np
     import pandas as pd
-    
+
     cmissingNames=[cname+".missing(NA)"]
     tempnp = np.zeros((nrows,1), dtype=np.int)
     # check for nan and assign it correct value

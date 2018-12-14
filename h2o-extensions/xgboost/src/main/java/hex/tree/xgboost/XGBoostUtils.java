@@ -928,7 +928,7 @@ public class XGBoostUtils {
                     }
                 }
                 fs._frequency = 1;
-                
+
                 if (featureScore.containsKey(fid)) {
                     featureScore.get(fid).add(fs);
                 } else {
@@ -942,7 +942,7 @@ public class XGBoostUtils {
     static class FeatureScore {
         static final String GAIN_KEY = "gain";
         static final String COVER_KEY = "cover";
-        
+
         int _frequency;
         float _gain;
         float _cover;

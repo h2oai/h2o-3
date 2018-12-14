@@ -326,7 +326,7 @@ public class XGBoostTest extends TestUtil {
       assertTrue(fs2.get(feature)._gain > 0);
       assertTrue(fs1.get(feature)._gain <= fs2.get(feature)._gain);
     }
-    
+
     Rabit.shutdown();
   }
 

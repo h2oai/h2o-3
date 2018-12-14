@@ -281,7 +281,7 @@ public class SortTest extends TestUtil {
           fr.vec(colIndex).set(_rand.nextInt((int)fr.numRows()), Double.NEGATIVE_INFINITY);
         }
       }
-      
+
       Scope.track(fr);
       sortedInt = fr.sort(new int[]{colIndex});
       Scope.track(sortedInt);
@@ -334,13 +334,13 @@ public class SortTest extends TestUtil {
       sortedInt = fr.sort(new int[]{0}, new int[]{-1});
       Scope.track(fr);
       Scope.track(sortedInt);
-      
+
       assert fr.numRows()==sortedInt.numRows();
     } finally {
       Scope.exit();
     }
   }
-  
+
   private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
     Scope.enter();
     Vec vec = frSorted.vec(colIndex);

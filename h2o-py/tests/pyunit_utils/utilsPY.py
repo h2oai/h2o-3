@@ -3917,7 +3917,7 @@ def check_xgb_var_imp(h2o_train, h2o_model, xgb_train, xgb_model, tolerance=1e-6
     h2o_var_imps = h2o_model.varimp()
     h2o_var_frequencies = h2o_model._model_json["output"]["variable_importances_frequency"].cell_values
     freq_map = dict(map(lambda t: (t[0], t[1]), h2o_var_frequencies))
-    
+
 
     # XGBoost reports average gain of a split
     xgb_var_imps = xgb_model.get_score(importance_type="gain")
@@ -3969,7 +3969,7 @@ def summarizeResult_binomial_DS(h2oPredictD, nativePred, h2oTrainTimeD, nativeTr
 def compare_weightedStats(model, dataframe, xlist, xname, weightV, pdpTDTable, tol=1e-6):
     '''
     This method is used to test the partial dependency plots and is not meant for any other functions.
-    
+
     :param model:
     :param dataframe:
     :param xlist:
