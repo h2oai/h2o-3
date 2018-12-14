@@ -46,7 +46,7 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     String foldColumnName = getFoldColumnName(env, stk, asts);
     boolean withBlending = getWithBlending(env, stk, asts);
 
-    BlendingParams params = getBlendingParams(env, stk, asts, withBlending);
+    BlendingParams params = withBlending ? getBlendingParams(env, stk, asts) : null;
 
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
@@ -66,13 +66,10 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     }
   }
 
-  private BlendingParams getBlendingParams(Env env, Env.StackHelp stk, AstRoot[] asts, boolean withBlending) {
-    if(withBlending) {
+  private BlendingParams getBlendingParams(Env env, Env.StackHelp stk, AstRoot[] asts) {
       double inflectionPoint = getInflectionPoint(env, stk, asts);
       double smoothing = getSmoothing(env, stk, asts);
       return new BlendingParams(inflectionPoint, smoothing);
-    }
-    return null;
   }
 
   private Map<String, Frame> reconstructEncodingMap(String[] encodingMapKeys, Frame[] encodingMapFrames) {

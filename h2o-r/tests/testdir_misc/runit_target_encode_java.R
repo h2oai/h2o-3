@@ -4,8 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 # Testing target encoding  (h2o.target_encode_fit and h2o.target_encode_transform)
 ##
 
-doTestAndContinue <-
-function(testDesc, test) {
+doTestAndContinue <- function(testDesc, test) {
     tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
 }
 
