@@ -116,14 +116,16 @@ public class IcedBitSet extends Iced {
   @Override public String toString() { return toString(new SB()).toString(); }
   public SB toString(SB sb) {
     sb.p("{");
-    if( _bitoff>0 ) sb.p("...").p(_bitoff).p(" 0-bits... ");
+    if (_bitoff > 0) {
+      sb.p("...").p(_bitoff).p(" 0-bits...");
+    }
 
     int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      if( i>0 && _bitoff + 8*i < size()) sb.p(' ');
+      sb.p(' ');
       sb.p(byteTo8digitBinaryString(_val[_byteoff + i]));
     }
-    return sb.p("}");
+    return sb.p(" }");
   }
 
   /**
