@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.CreateFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -309,6 +310,37 @@ public class SortTest extends TestUtil {
     }
   }
 
+  /***
+   * This simple test just want to test and make sure that processing the final frames by a batch does
+   * not leak memories.  The accuracy of the sort is tested elsewhere.
+   */
+  @Test public void testSortOOM() throws IOException {
+    Scope.enter();
+    Frame fr, sortedInt;
+    try {
+      CreateFrame cf = new CreateFrame();
+      cf.rows=9000000;
+      cf.cols = 2;
+      cf.categorical_fraction = 0;
+      cf.integer_fraction = 1;
+      cf.binary_fraction = 0;
+      cf.time_fraction = 0;
+      cf.string_fraction = 0;
+      cf.binary_ones_fraction = 0;
+      cf.integer_range = 1;
+      cf.has_response = false;
+      cf.seed = 1234;
+      fr = cf.execImpl().get();
+      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
+      Scope.track(fr);
+      Scope.track(sortedInt);
+      
+      assert fr.numRows()==sortedInt.numRows();
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
     Scope.enter();
     Vec vec = frSorted.vec(colIndex);

@@ -54,7 +54,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
   @Override
   public void compute2() {
-    keytmp = new byte[_keySize];
+    keytmp = MemoryManager.malloc1(_keySize);
     counts = new long[_keySize][256];
     Key k;
 
@@ -84,11 +84,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     _x = new byte[nbatch][];
     int b;
     for (b = 0; b < nbatch-1; b++) {
-      _o[b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
-      _x[b] = new byte[_batchSize * _keySize];
+      _o[b] = MemoryManager.malloc8(_batchSize);          // TO DO?: use MemoryManager.malloc8()
+      _x[b] = MemoryManager.malloc1(_batchSize * _keySize);
     }
-    _o[b] = new long[lastSize];
-    _x[b] = new byte[lastSize * _keySize];
+    _o[b] = MemoryManager.malloc8(lastSize);
+    _x[b] = MemoryManager.malloc1(lastSize * _keySize);
 
     SplitByMSBLocal.OXbatch ox[/*node*/] = new SplitByMSBLocal.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
@@ -98,8 +98,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
       DKV.remove(k);
     }
-    int oxOffset[] = new int[H2O.CLOUD.size()];
-    int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
+    int oxOffset[] = MemoryManager.malloc4(H2O.CLOUD.size());
+    int oxChunkIdx[] = MemoryManager.malloc4(H2O.CLOUD.size());  // that node has n chunks and which of those are we currently on?
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
     final Vec vec = _fr.anyVec();
