@@ -471,6 +471,8 @@ Prediction
 
 With H2O-3, you can generate predictions for a model based on samples in a test set. This can be accomplished in memory or using MOJOs/POJOs.  
 
+For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
+
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
 
