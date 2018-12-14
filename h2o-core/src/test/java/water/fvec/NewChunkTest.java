@@ -618,5 +618,16 @@ public class NewChunkTest extends TestUtil {
     }
   }
 
+  @Test public void testAddNumDecompose() {
+    nc = new NewChunk(av, 0);
+    nc.addNumDecompose(0.0);
+    nc.addNumDecompose(Math.PI);
+    nc.addNumDecompose(Double.NEGATIVE_INFINITY);
+    nc.addNumDecompose(Double.POSITIVE_INFINITY);
+    nc.addNumDecompose(Double.NaN);
+    nc.addNumDecompose(Double.MAX_VALUE);
+    nc.addNumDecompose(Double.MIN_VALUE);
+    nc.addNumDecompose(Double.MIN_NORMAL);
+  }
 }
 
