@@ -30,6 +30,8 @@ import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -133,7 +135,7 @@ class Jetty9Helper {
         constraint.setName("auth");
         constraint.setAuthenticate(true);
 
-        constraint.setRoles(new String[]{Constraint.ANY_ROLE});
+        constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
         final ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*"); // Lock down all API calls
