@@ -143,7 +143,6 @@ public class TestUtil extends Iced {
 
         if (keyValue != null && keyValue.isFrame()) {
           Frame frame = (Frame) key.get();
-          frame.remove();
           localKeySet.remove(key);
           unreportedKeyCount--;
           Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
@@ -151,18 +150,17 @@ public class TestUtil extends Iced {
           for (Key vecKey : frame.keys()) {
             Log.err(String.format("   Vector '%s'. This vector contains the following chunks:", vecKey.toString()));
             localKeySet.remove(vecKey);
-            vecKey.remove();
             unreportedKeyCount--;
 
             final Vec vec = (Vec) vecKey.get();
             for (int i = 0; i < vec.nChunks(); i++) {
               final Key chunkKey = vec.chunkKey(i);
-              chunkKey.remove();
               Log.err(String.format("       Chunk id %d, key '%s'", i, chunkKey));
               localKeySet.remove(vec.chunkKey(i));
               unreportedKeyCount--;
             }
           }
+          key.remove();
         }
       }
 
@@ -173,9 +171,6 @@ public class TestUtil extends Iced {
       for (Key key : localKeySet) {
         final Value keyValue = Value.STORE_get(key);
 
-        if (isIgnorableKeyLeak(key, keyValue)) {
-          continue;
-        }
         unreportedKeyCount--;
         Log.err(String.format("Key '%s'", key.toString()));
       }
