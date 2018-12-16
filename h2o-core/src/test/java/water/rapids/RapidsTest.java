@@ -688,18 +688,15 @@ public class RapidsTest extends TestUtil {
 
   @Test public void test_frameKeyStartsWithNumber() {
     Frame fr = null;
-    Key key = null;
     
     try {
       Scope.enter();
-      key = Key.make("123STARTSWITHDIGITS");
+      final Key key = Key.make("123STARTSWITHDIGITS");
       fr = parse_test_file(key, "smalldata/logreg/prostate.csv");
       Val val = Rapids.exec("(cols_py 123STARTSWITHDIGITS 'ID')");
       Assert.assertNotNull(val);
       val.getFrame().delete();
     } finally {
-      Scope.exit();
-      if (key != null) key.remove();
       if (fr != null) fr.remove();
     }
   }
