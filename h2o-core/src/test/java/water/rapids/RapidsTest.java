@@ -690,7 +690,6 @@ public class RapidsTest extends TestUtil {
     Frame fr = null;
     
     try {
-      Scope.enter();
       final Key key = Key.make("123STARTSWITHDIGITS");
       fr = parse_test_file(key, "smalldata/logreg/prostate.csv");
       Val val = Rapids.exec("(cols_py 123STARTSWITHDIGITS 'ID')");

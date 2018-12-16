@@ -126,12 +126,18 @@ public class TestUtil extends Iced {
 
   @After
   public void checkLeakedKeys() {
+    performLeakedKeysCheck();
+  }
+
+
+  protected static void performLeakedKeysCheck() {
     final int leaked_keys = H2O.store_size() - _initial_keycnt;
     int unreportedKeyCount = leaked_keys;
     int nonIgnorableKeyCount = leaked_keys;
+    int cnt = 0;
     Set<Key> localKeySet = new HashSet<>(H2O.localKeySet());
-    
-    if( leaked_keys > 0 ) {
+
+    if (leaked_keys > 0) {
       for (Key key : H2O.localKeySet()) {
         final Value keyValue = Value.STORE_get(key);
         if (isIgnorableKeyLeak(key, keyValue)) {
@@ -140,7 +146,7 @@ public class TestUtil extends Iced {
           localKeySet.remove(key);
           continue;
         }
-
+        cnt++;
         if (keyValue != null && keyValue.isFrame()) {
           Frame frame = (Frame) key.get();
           localKeySet.remove(key);
@@ -175,12 +181,12 @@ public class TestUtil extends Iced {
         Log.err(String.format("Key '%s'", key.toString()));
       }
 
-      for(Key key : H2O.localKeySet()){
+      for (Key key : H2O.localKeySet()) {
         H2O.localKeySet().remove(key);
       }
 
-      assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0);
-      
+      assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0 || cnt != 0);
+
 
     }
     // Bulk brainless key removal.  Completely wipes all Keys without regard.

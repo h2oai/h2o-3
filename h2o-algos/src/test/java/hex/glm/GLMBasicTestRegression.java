@@ -12,7 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
-import water.TestUtil;
+import water.TestUtilSharedResources;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -31,7 +31,8 @@ import static water.util.FileUtils.getFile;
 /**
  * Created by tomasnykodym on 6/4/15.
  */
-public class GLMBasicTestRegression extends TestUtil {
+
+public class GLMBasicTestRegression extends TestUtilSharedResources {
   static Frame _canCarTrain;
   static Frame _earinf;
   static Frame _weighted;
@@ -249,8 +250,8 @@ public class GLMBasicTestRegression extends TestUtil {
         assertEquals(expected_pvals[i], actual_pvals[i],1e-4);
       }
     } finally {
-      if (model1 != null) model1.delete();
-      if (model2 != null) model2.delete();
+      if (model1 != null) model1.remove();
+      if (model2 != null) model2.remove();
     }
   }
 
