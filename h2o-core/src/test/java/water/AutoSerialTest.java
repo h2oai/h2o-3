@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class AutoSerialTest extends Iced {
   @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
-  @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
+  @After public static void checkLeakedKeys() { new TestUtil().checkLeakedKeys(); }
 
   byte _byte, _bytes[];
   short _short, _shorts[];

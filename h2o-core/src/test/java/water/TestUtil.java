@@ -1,6 +1,7 @@
 package water;
 
 import hex.CreateFrame;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -123,8 +124,8 @@ public class TestUtil extends Iced {
     outStream.close();
   }
 
-  @AfterClass
-  public static void checkLeakedKeys() {
+  @After
+  public void checkLeakedKeys() {
     final int leaked_keys = H2O.store_size() - _initial_keycnt;
     int unreportedKeyCount = leaked_keys;
     int nonIgnorableKeyCount = leaked_keys;
@@ -142,6 +143,7 @@ public class TestUtil extends Iced {
 
         if (keyValue != null && keyValue.isFrame()) {
           Frame frame = (Frame) key.get();
+          frame.remove();
           localKeySet.remove(key);
           unreportedKeyCount--;
           Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
@@ -149,11 +151,13 @@ public class TestUtil extends Iced {
           for (Key vecKey : frame.keys()) {
             Log.err(String.format("   Vector '%s'. This vector contains the following chunks:", vecKey.toString()));
             localKeySet.remove(vecKey);
+            vecKey.remove();
             unreportedKeyCount--;
 
             final Vec vec = (Vec) vecKey.get();
             for (int i = 0; i < vec.nChunks(); i++) {
               final Key chunkKey = vec.chunkKey(i);
+              chunkKey.remove();
               Log.err(String.format("       Chunk id %d, key '%s'", i, chunkKey));
               localKeySet.remove(vec.chunkKey(i));
               unreportedKeyCount--;
@@ -172,12 +176,16 @@ public class TestUtil extends Iced {
         if (isIgnorableKeyLeak(key, keyValue)) {
           continue;
         }
-
         unreportedKeyCount--;
         Log.err(String.format("Key '%s'", key.toString()));
       }
 
+      for(Key key : H2O.localKeySet()){
+        H2O.localKeySet().remove(key);
+      }
+
       assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0);
+      
 
     }
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
