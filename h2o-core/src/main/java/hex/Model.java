@@ -2122,6 +2122,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   config.setModel(genmodel)
                           .setConvertUnknownCategoricalLevelsToNa(true)
                           .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+                          .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
           );
         } catch (IOException e) {
           throw new RuntimeException(e);

@@ -443,17 +443,18 @@ public class GBMTest extends TestUtil {
       parms._distribution = DistributionFamily.bernoulli;
 
       GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-
       Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
-      double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
-      for (int c = 0; c < stagedProbabilities.numCols(); c++) { 
-        stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(0);
-      }
-      
       try {
         GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
-        EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
-        for(int r = 0; r < 10; r++) {
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
+        for (int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+
           RowData tmpRow = new RowData();
           BufferedString bStr = new BufferedString();
           for (int c = 0; c < train.numCols(); c++) {
@@ -467,13 +468,13 @@ public class GBMTest extends TestUtil {
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
         }
-      } catch (IOException ex) {
-        fail(ex.toString());
-      } catch (PredictException ex){
-        fail(ex.toString());
-      } finally {
-        if(gbm != null) gbm.delete();
-        if(stagedProbabilities != null) stagedProbabilities.delete();
+        } catch(IOException ex){
+          fail(ex.toString());
+        } catch(PredictException ex){
+          fail(ex.toString());
+        } finally{
+          if (gbm != null) gbm.delete();
+          if (stagedProbabilities != null) stagedProbabilities.delete();
       }
     } finally {
       Scope.exit();
@@ -496,17 +497,18 @@ public class GBMTest extends TestUtil {
       parms._distribution = DistributionFamily.multinomial;
 
       GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-
       Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
-      double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
-      for (int c = 0; c < stagedProbabilities.numCols(); c++) {
-        stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(0);
-      }
-
       try {
         GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
-        EasyPredictModelWrapper model = new EasyPredictModelWrapper(mojoModel);
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
         for(int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+
           RowData tmpRow = new RowData();
           BufferedString bStr = new BufferedString();
           for (int c = 0; c < train.numCols(); c++) {
@@ -516,17 +518,18 @@ public class GBMTest extends TestUtil {
               tmpRow.put(train.names()[c], train.vec(c).at(r));
             }
           }
+
           MultinomialModelPrediction tmpPrediction = model.predictMultinomial(tmpRow);
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
         }
       } catch (IOException ex) {
         fail(ex.toString());
-      } catch (PredictException ex){
+      } catch (PredictException ex) {
         fail(ex.toString());
       } finally {
-        if(gbm != null) gbm.delete();
-        if(stagedProbabilities != null) stagedProbabilities.delete();
+        if (gbm != null) gbm.delete();
+        if (stagedProbabilities != null) stagedProbabilities.delete();
       }
     } finally {
       Scope.exit();
