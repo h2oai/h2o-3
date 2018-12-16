@@ -125,28 +125,69 @@ public class TestUtil extends Iced {
 
   @AfterClass
   public static void checkLeakedKeys() {
-    int leaked_keys = H2O.store_size() - _initial_keycnt;
-    int cnt=0;
+    final int leaked_keys = H2O.store_size() - _initial_keycnt;
+    int unreportedKeyCount = leaked_keys;
+    int nonIgnorableKeyCount = leaked_keys;
+    Set<Key> localKeySet = new HashSet<>(H2O.localKeySet());
+    
     if( leaked_keys > 0 ) {
-      for( Key k : H2O.localKeySet() ) {
-        Value value = Value.STORE_get(k);
-        // Ok to leak VectorGroups and the Jobs list
-        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
-            // Also leave around all attempted Jobs for the Jobs list
-            (value.isJob() && value.<Job>get().isStopped()) ) {
-          leaked_keys--;
-        } else {
-          System.out.println(k + " -> " + (value.type() != TypeMap.PRIM_B ? value.get() : "byte[]"));
-          if( cnt++ < 10 )
-            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+      for (Key key : H2O.localKeySet()) {
+        final Value keyValue = Value.STORE_get(key);
+        if (isIgnorableKeyLeak(key, keyValue)) {
+          unreportedKeyCount--;
+          nonIgnorableKeyCount--;
+          localKeySet.remove(key);
+          continue;
+        }
+
+        if (keyValue != null && keyValue.isFrame()) {
+          Frame frame = (Frame) key.get();
+          localKeySet.remove(key);
+          unreportedKeyCount--;
+          Log.err(String.format("Leaked frame with key '%s'. This frame contains the following vectors:", frame._key.toString()));
+
+          for (Key vecKey : frame.keys()) {
+            Log.err(String.format("   Vector '%s'. This vector contains the following chunks:", vecKey.toString()));
+            localKeySet.remove(vecKey);
+            unreportedKeyCount--;
+
+            final Vec vec = (Vec) vecKey.get();
+            for (int i = 0; i < vec.nChunks(); i++) {
+              final Key chunkKey = vec.chunkKey(i);
+              Log.err(String.format("       Chunk id %d, key '%s'", i, chunkKey));
+              localKeySet.remove(vec.chunkKey(i));
+              unreportedKeyCount--;
+            }
+          }
         }
       }
-      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+
+      if (!localKeySet.isEmpty()) {
+        Log.err(String.format("%nThere are also %d more leaked keys:", unreportedKeyCount));
+      }
+
+      for (Key key : localKeySet) {
+        final Value keyValue = Value.STORE_get(key);
+
+        if (isIgnorableKeyLeak(key, keyValue)) {
+          continue;
+        }
+
+        unreportedKeyCount--;
+        Log.err(String.format("Key '%s'", key.toString()));
+      }
+
+      assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0);
+
     }
-    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
+  }
+
+  private static boolean isIgnorableKeyLeak(final Key key, final Value keyValue) {
+    return keyValue == null || keyValue.isVecGroup() || keyValue.isESPCGroup() || key == Job.LIST
+            || (keyValue.isJob() && keyValue.<Job>get().isStopped());
   }
 
   /**
