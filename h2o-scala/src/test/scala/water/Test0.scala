@@ -22,6 +22,3 @@ class Test0 extends FunSuite {
     Assert.assertTrue(true)
   }
 }
-
-object Test0 extends TestUtil {
-}
