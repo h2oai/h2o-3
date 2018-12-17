@@ -175,14 +175,8 @@ public class TestUtil extends Iced {
       }
 
       for (Key key : localKeySet) {
-        final Value keyValue = Value.STORE_get(key);
-
         unreportedKeyCount--;
         Log.err(String.format("Key '%s'", key.toString()));
-      }
-
-      for (Key key : H2O.localKeySet()) {
-        H2O.localKeySet().remove(key);
       }
 
       assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0 || cnt != 0);
