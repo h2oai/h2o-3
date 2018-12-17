@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
 /**
  * Created by tomasnykodym on 4/26/15.
  */
-public class GLMBasicTestBinomial extends TestUtil {
+public class GLMBasicTestBinomial extends TestUtilSharedResources {
   static Frame _prostateTrain; // prostate_cat_replaced
   static Frame _prostateTrainUpsampled; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
