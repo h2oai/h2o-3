@@ -941,10 +941,13 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     }
 
     /**
-     * Returns staged predictions of tree algos (tree prediction probabilities per iteration).
+     * Returns staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+     * The output structure is for tree Tt and class Cc:
+     * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+     * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
      * @param row Input row.
      * @param predsLength Length of prediction result. 
-     * @return
+     * @return array of staged prediction probabilities
      */
     public double[] scoreStagedPredictions(double[] row, int predsLength) {
         int contribOffset = nclasses() == 1 ? 0 : 1;

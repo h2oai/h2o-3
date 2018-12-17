@@ -427,6 +427,9 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - binomial data.
+   */
   @Test public void testPredictStagedProbabilitiesBinomial() {
     Scope.enter();
     try {
@@ -449,6 +452,7 @@ public class GBMTest extends TestUtil {
         EasyPredictModelWrapper model = new EasyPredictModelWrapper(
                 new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
         );
+        // test for the first 10 rows in training data
         for (int r = 0; r < 10; r++) {
           double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
           for (int c = 0; c < stagedProbabilities.numCols(); c++) {
@@ -468,12 +472,10 @@ public class GBMTest extends TestUtil {
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
         }
-        } catch(IOException ex){
-          fail(ex.toString());
-        } catch(PredictException ex){
+        } catch(IOException | PredictException ex){
           fail(ex.toString());
         } finally{
-          if (gbm != null) gbm.delete();
+          gbm.delete();
           if (stagedProbabilities != null) stagedProbabilities.delete();
       }
     } finally {
@@ -481,6 +483,9 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - multinomial data.
+   */
   @Test public void testPredictStagedProbabilitiesMultinomial() {
     Scope.enter();
     try {
@@ -503,6 +508,7 @@ public class GBMTest extends TestUtil {
         EasyPredictModelWrapper model = new EasyPredictModelWrapper(
                 new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
         );
+        // test for the first 10 rows in training data
         for(int r = 0; r < 10; r++) {
           double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
           for (int c = 0; c < stagedProbabilities.numCols(); c++) {
@@ -523,12 +529,10 @@ public class GBMTest extends TestUtil {
           double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
           assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
         }
-      } catch (IOException ex) {
-        fail(ex.toString());
-      } catch (PredictException ex) {
+      } catch (IOException | PredictException ex) {
         fail(ex.toString());
       } finally {
-        if (gbm != null) gbm.delete();
+        gbm.delete();
         if (stagedProbabilities != null) stagedProbabilities.delete();
       }
     } finally {
