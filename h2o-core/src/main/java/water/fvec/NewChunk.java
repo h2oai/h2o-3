@@ -19,7 +19,7 @@ import static water.H2OConstants.MAX_STR_LEN;
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
 
-  private static final int[] EXP10s = new int[Double.MAX_EXPONENT - Double.MIN_EXPONENT];
+  private static final int[] EXP10s = new int[Double.MAX_EXPONENT - Double.MIN_EXPONENT + 1];
   private static final double[] INV_POW10s = new double[EXP10s.length];
 
   static {
@@ -524,6 +524,14 @@ public class NewChunk extends Chunk {
         addNum(0, 0);
       else // subnormal
         addNum(d);
+      return;
+    } else if (expIdx == Double.MAX_EXPONENT - Double.MIN_EXPONENT + 1) {
+      // NaN or infinity
+      if (d == Double.NaN) { // NaN
+        addNA();
+      } else {
+        addNum(d); // infinity
+      }
       return;
     }
 
