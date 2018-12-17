@@ -19,7 +19,7 @@ import java.util.Map;
 public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransform> {
   @Override
   public String[] args() {
-    return new String[]{"encodingMapKeys encodingMapFrames frameToTransform teColumns strategy targetColumnName foldColumnName withBlending inflectionPoint smoothing noise seed isTest"};
+    return new String[]{"encodingMapKeys encodingMapFrames frameToTransform teColumns strategy targetColumnName foldColumnName withBlending inflectionPoint smoothing noise seed"};
   }
 
   @Override
@@ -29,7 +29,7 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
   @Override
   public int nargs() {
-    return 1 + 13;
+    return 1 + 12;
   }
 
   @Override
@@ -47,7 +47,6 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
     double smoothing = getSmoothing(env, stk, asts);
     double noise = getNoise(env, stk, asts);
     double seed = getSeed(env, stk, asts);
-    boolean isTainOrValidSet =  getIsTrainOrValidSet(env, stk, asts);
     boolean withImputationForOriginalColumns = true;
 
     BlendingParams params = new BlendingParams(inflectionPoint, smoothing);
@@ -58,10 +57,10 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
 
     if(noise == -1) {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, withImputationForOriginalColumns, (long) seed, isTainOrValidSet));
+              foldColumnName, withBlending, withImputationForOriginalColumns, (long) seed));
     } else {
       return new ValFrame(tec.applyTargetEncoding(frame, targetColumnName, encodingMap, dataLeakageHandlingStrategy,
-              foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed, isTainOrValidSet));
+              foldColumnName, withBlending, noise, withImputationForOriginalColumns, (long) seed));
     }
   }
 
@@ -160,9 +159,4 @@ public class AstTargetEncoderTransform extends AstBuiltin<AstTargetEncoderTransf
   private double getSeed(Env env, Env.StackHelp stk, AstRoot asts[]) {
     return stk.track(asts[12].exec(env)).getNum();
   }
-
-  private boolean getIsTrainOrValidSet(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    return stk.track(asts[13].exec(env)).getNum() == 1;
-  }
-
 }

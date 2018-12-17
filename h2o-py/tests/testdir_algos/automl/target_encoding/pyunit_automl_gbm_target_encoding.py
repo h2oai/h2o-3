@@ -56,9 +56,9 @@ def titanic_with_te_kfoldstrategy(frame = None, seeds = None):
                                     fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
       targetEncoder.fit(frame=ds['train'])
 
-      encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="kfold", seed=1234, is_train_or_valid=True)
-      encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=True)
-      encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
+      encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="kfold", seed=1234)
+      encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0)
+      encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0)
 
       myX = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin_te", "embarked_te", "home.dest_te"]
       air_model = H2OGradientBoostingEstimator(ntrees=1000,
@@ -96,9 +96,9 @@ def titanic_with_te_loostrategy(frame = None, seeds = None):
                                   fold_column= foldColumnName, blending_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=ds['train'])
 
-    encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="loo", seed=1234, is_train_or_valid=True)
-    encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=True)
-    encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
+    encodedTrain = targetEncoder.transform(frame=ds['train'], holdout_type="loo", seed=1234)
+    encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0)
+    encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0)
 
     myX = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin_te", "embarked_te", "home.dest_te"]
     air_model = H2OGradientBoostingEstimator(ntrees=1000,
@@ -136,9 +136,9 @@ def titanic_with_te_nonestrategy(frame = None, seeds = None):
                                   blending_avg= True, inflection_point = 3, smoothing = 1)
     targetEncoder.fit(frame=holdout)
 
-    encodedTrain = targetEncoder.transform(frame=train, holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=True)
-    encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=True)
-    encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0, seed=1234, is_train_or_valid=False)
+    encodedTrain = targetEncoder.transform(frame=train, holdout_type="none", noise=0.0)
+    encodedValid = targetEncoder.transform(frame=ds['valid'], holdout_type="none", noise=0.0)
+    encodedTest = targetEncoder.transform(frame=ds['test'], holdout_type="none", noise=0.0)
 
     myX = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin_te", "embarked_te", "home.dest_te"]
     air_model = H2OGradientBoostingEstimator(ntrees=1000,
