@@ -463,7 +463,7 @@ public class DTree extends Iced {
     }
 
     // Pick the best column from the given histograms
-    public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) { // FIXME
+    public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) {
       DTree.Split best = null;
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
