@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomasnykodym on 10/28/15.
  */
-public class GLMBasicTestMultinomial extends TestUtil {
+public class GLMBasicTestMultinomial extends TestUtilSharedResources {
   static Frame _covtype;
   static Frame _train;
   static Frame _test;
