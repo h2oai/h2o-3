@@ -175,7 +175,6 @@ public class TestUtil extends Iced {
       }
 
       for (Key key : localKeySet) {
-        unreportedKeyCount--;
         Log.err(String.format("Key '%s'", key.toString()));
       }
 
