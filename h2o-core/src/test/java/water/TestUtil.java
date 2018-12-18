@@ -179,8 +179,6 @@ public class TestUtil extends Iced {
       }
 
       assertFalse(String.format("There are %d keys leaked.", nonIgnorableKeyCount), nonIgnorableKeyCount > 0 || cnt != 0);
-
-
     }
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();

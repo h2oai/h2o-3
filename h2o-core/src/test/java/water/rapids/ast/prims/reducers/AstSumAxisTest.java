@@ -6,6 +6,7 @@ import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
+import water.TestUtilSharedResources;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
@@ -20,7 +21,7 @@ import static org.junit.Assert.*;
 /**
  * Test the AstSumAxis.java class
  */
-public class AstSumAxisTest extends TestUtil {
+public class AstSumAxisTest extends TestUtilSharedResources {
     private static Vec vi1, vd1, vd2, vd3, vs1, vt1, vt2, vc1, vc2;
     private static ArrayList<Frame> allFrames;
 
