@@ -1,14 +1,11 @@
 package water.util;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
 
 import java.util.Random;
 
-public class RNGTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+public class RNGTest {
   final static long[] seed = {7234723423423402343L, 1234882173459262304L};
 
   enum NumType { DOUBLE, FLOAT, LONG, INT }
