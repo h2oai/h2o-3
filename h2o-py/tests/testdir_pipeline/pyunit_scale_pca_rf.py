@@ -32,31 +32,35 @@ def scale_pca_rf_pipe_new_import():
 
   # build transformation pipeline using sklearn's Pipeline and H2O estimators without H2OPCA.init_for_pipeline()
   # it should fail
+  # Note: if you use PCA algo in a different combination of pipeline tasks, it could not fail, for example
+  #     if you comment line with H2ORandomForestEstimator task, the fit method doesn't fail because the pipeline doesn't
+  #     use _fit_transform_one method thus does not use H2OPrincipalComponentAnalysisEstimator.transform method
   try:
-    pipe = Pipeline([("standardize", H2OScaler()),
+    pipe = Pipeline([
+                     ("standardize", H2OScaler()),
                      ("pca", H2OPrincipalComponentAnalysisEstimator(k=2)),
-                     ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+                     ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))
+                    ])
     pipe.fit(iris[:4], iris[4])
-    print(pipe)
-    assert True, "Pipeline should fail without using H2OPCA.init_for_pipeline()"
-  except:
-    pass
+    assert False, "Pipeline should fail without using H2OPrincipalComponentAnalysisEstimator.init_for_pipeline()"
+  except TypeError:
+     pass
+
 
   # build transformation pipeline using sklearn's Pipeline and H2O estimators with H2OPCA.init_for_pipeline()
   pipe = Pipeline([("standardize", H2OScaler()),
                    ("pca", H2OPrincipalComponentAnalysisEstimator(k=2).init_for_pipeline()),
-                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))])
   pipe.fit(iris[:4], iris[4])
-  print(pipe)
+  #print(pipe)
 
   # set H2OPCA transform property
   pca = H2OPrincipalComponentAnalysisEstimator(k=2)
   pca.transform = "standardize"
   pipe = Pipeline([("standardize", H2OScaler()),
                    ("pca", pca.init_for_pipeline()),
-                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+                   ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))])
   pipe.fit(iris[:4], iris[4])
-  print(pipe)
 
 
 if __name__ == "__main__":
