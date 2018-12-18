@@ -3,10 +3,7 @@ package hex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
-import water.MRTask;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -19,7 +16,7 @@ import static water.util.FrameUtils.parseFrame;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ConfusionMatrixTest extends TestUtil {
+public class ConfusionMatrixTest extends TestUtilSharedResources {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(5); }
 
