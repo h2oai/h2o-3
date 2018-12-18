@@ -79,7 +79,7 @@ public class NewChunkTest extends TestUtil {
     int missingSize()  {return _missing == null?0:_missing.size();}
   }
 
-  
+
   private void testIntegerChunk(long [] values, int mantissaSize) {
     Vec v = Vec.makeCon(0,0);
     // single bytes
@@ -485,22 +485,22 @@ public class NewChunkTest extends TestUtil {
       assertEquals("Wrong (3) at " + (K-4), 0, nc.atd(K-4), Math.ulp(0));
       assertEquals("Wrong (4) at " + (K-3), Double.NaN, nc.atd(K-3), Math.ulp(Double.NaN)); // this is weird: ulp(NaN) is NaN)
       for (int i = K-2; i < K; i++) assertEquals("Wrong (5) at " + i, 0, nc.atd(i), Math.ulp(0));
-      
+
       post();
       cc.set(K-5, 0);
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0,cc.atd(K-5),Math.ulp(0));
       assertTrue(cc.chk2() instanceof CXIChunk);
-      
+
       for (int i = 0; i < K-3; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
       assertEquals(Double.NaN, cc.atd(K-3), Math.ulp(Double.NaN));
       for (int i = K-2; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
       assertEquals(1,cc.chk2().sparseLenZero());
-      
+
     } finally { remove();}
   }
-  
+
   @Test public void testCNAXDChunk_setPostSparse() {
     try {
       pre();
@@ -532,7 +532,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(4,cc.chk2().sparseLenNA());
     } finally {remove();}
   }
-  
+
   @Test public void testSparseCat() {
     try {
       av = new AppendableVec(Vec.newKey(), Vec.T_CAT);
