@@ -42,10 +42,10 @@ import java.util.Map;
  * with the data quality.
  * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
  * setConvertUnknownCategoricalLevelsToNa(true) instead.
- * 
+ *
  * Detection of unknown categoricals may be observed by registering an implementation of {@link ErrorConsumer}
  * in the process of {@link Config} creation.
- * 
+ *
  * Deprecation note: Total number of unknown categorical variables is newly accessible by registering {@link hex.genmodel.easy.error.CountingErrorConsumer}.
  *
  *
@@ -64,8 +64,8 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
-  private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned 
-    
+  private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
+
   /**
    * Observer interface with methods corresponding to errors during the prediction.
    */
@@ -150,7 +150,7 @@ public class EasyPredictModelWrapper implements Serializable {
       return this;
     }
 
-    public Config setEnableStagedProbabilities (boolean val) throws IOException { 
+    public Config setEnableStagedProbabilities (boolean val) throws IOException {
         if (val && (model==null))
             throw new IOException("enableStagedProbabilities cannot be set with null model.  Call setModel() first.");
         if (val && !(model instanceof SharedTreeMojoModel))
@@ -845,7 +845,7 @@ public class EasyPredictModelWrapper implements Serializable {
         if (Double.isNaN(value)) {
           // If this point is reached, the original value remains NaN.
           errorConsumer.dataTransformError(dataColumnName, o, "Given non-categorical value is unparseable, treating as NaN.");
-        } 
+        }
         rawData[index] = value;
       }
       else {

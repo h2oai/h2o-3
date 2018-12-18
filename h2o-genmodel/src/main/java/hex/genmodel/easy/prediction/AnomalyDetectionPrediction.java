@@ -14,6 +14,6 @@ public class AnomalyDetectionPrediction extends AbstractPrediction {
    * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
    * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
    */
-  public double[] stageProbabilities; 
+  public double[] stageProbabilities;
 
 }
