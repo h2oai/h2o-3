@@ -126,25 +126,37 @@ public class IcedBitSet extends Iced {
   public SB toString(SB sb) {
     sb.p("{");
     if (_bitoff > 0) {
-      sb.p("...").p(_bitoff).p(" 0-bits...");
+      sb.p("...").p(_bitoff).p(" 0-bits... ");
     }
 
+    int limit = _nbits;
     final int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      sb.p(' ');
-      sb.p(byteTo8digitBinaryString(_val[_byteoff + i]));
+      if (i > 0){
+        sb.p(' ');
+      }
+      sb.p(byteToBinaryString(_val[_byteoff + i], limit));
+      limit -= 8;
     }
-    return sb.p(" }");
+    return sb.p("}");
   }
 
   /**
-   * Converts byte to binary 8-digit string.
+   * Converts a byte into its binary representation (with at most 8 digits).
    * @param b  the byte to be converted
-   * @return binary representation, lowest bit (weight 1) goes last
+   * @param limit  the maximal length of returned string - it will never exceed 8 anyway
+   * @return binary representation, lowest bit (weight 1) goes first
    */
-  static String byteTo8digitBinaryString(byte b) {
-    final String binaryString = "0000000" + Integer.toBinaryString(b);
-    return binaryString.substring(binaryString.length() - 8);
+  static String byteToBinaryString(byte b, int limit) {
+    final StringBuilder sb = new StringBuilder();
+    if (limit > 8) {
+      limit = 8;
+    }
+    for (int i = 0; i < limit; i++) {
+      sb.append((char)('0' + (b&1)));
+      b>>=1;
+    }
+    return sb.toString();
   }
 
   public String toStrArray() {
