@@ -25,6 +25,7 @@ public class TransparentProxyServlet extends ProxyServlet.Transparent {
   @Override
   protected void addProxyHeaders(HttpServletRequest clientRequest,
                                  Request proxyRequest) {
+    proxyRequest.getHeaders().remove("Authorization");
     proxyRequest.header("Authorization", _basicAuth);
   }
 }
