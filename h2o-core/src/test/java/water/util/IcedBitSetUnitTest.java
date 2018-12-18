@@ -16,9 +16,10 @@ public class IcedBitSetUnitTest {
 
   @Test
   public void byteTo8digitBinaryString() {
-    Assert.assertEquals("00000001", IcedBitSet.byteTo8digitBinaryString((byte) 0x01));
-    Assert.assertEquals("01000001", IcedBitSet.byteTo8digitBinaryString((byte) 0x41));
-    Assert.assertEquals("11111110", IcedBitSet.byteTo8digitBinaryString((byte) -2));
+    Assert.assertEquals("10000000", IcedBitSet.byteToBinaryString((byte) 0x01, 8));
+    Assert.assertEquals("10000010", IcedBitSet.byteToBinaryString((byte) 0x41, 10));
+    Assert.assertEquals("01111111", IcedBitSet.byteToBinaryString((byte) -2, 22));
+    Assert.assertEquals("011", IcedBitSet.byteToBinaryString((byte) -2, 3));
   }
 
   @Test
@@ -35,7 +36,7 @@ public class IcedBitSetUnitTest {
 
     final String comment = bitSet.toString();
     Assert.assertEquals("Error in generated comment",
-         "{...4 0-bits... 11111110 11111111 11111111 11111111 11111111 10111111 11111111 11111111 11111111 11111101 11111101 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111011 11110111 11111111 11111111 11111111 11011111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111110 11111111 11111110 01111111 11111110 11111111 11111111 11111111 11111111 11111110 11110111 11111111 11111111 11111111 11111111 11111111 11110111 11111111 11111111 01011110 11111011 11101111 00001111 }",
+         "{...4 0-bits... 01111111 11111111 11111111 11111111 11111111 11111101 11111111 11111111 11111111 10111111 10111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11011111 11101111 11111111 11111111 11111111 11111011 11111111 11111111 11111111 11111111 11111100 11111111 11111111 01111111 11111111 01111111 11111110 01111111 11111111 11111111 11111111 11111111 01111111 11101111 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 01111010 11011111 11110111 11110000}",
         comment);
   }
 
@@ -53,13 +54,13 @@ public class IcedBitSetUnitTest {
 
     final String comment = bitSet.toString();
     Assert.assertEquals("Error in generated comment",
-        "{...17 0-bits... 11111111 11111110 11110101 11111111 11111111 11111111 11100011 11111011 01010111 01111110 }",
+        "{...17 0-bits... 11111111 01111111 10101111 11111111 11111111 11111111 11000111 11011111 11101010 01111110}",
         comment);
   }
 
   @Test
   public void HEXDEV_725_snippet3() {
-    // near line 12608 - snippet 2
+    // near line 82609 - snippet 3
     final byte[] GRPSPLIT2 = new byte[]{119, -5, -1, -1, -1, -3, -1, 127, -21, 78, 111, 29};
     final IcedBitSet bitSet = new IcedBitSet(GRPSPLIT2.length * 8);
     bitSet.fill(GRPSPLIT2, 0, GRPSPLIT2.length * 8, 1);
@@ -71,7 +72,7 @@ public class IcedBitSetUnitTest {
 
     final String comment = bitSet.toString();
     Assert.assertEquals("Error in generated comment",
-        "{...1 0-bits... 01110111 11111011 11111111 11111111 11111111 11111101 11111111 01111111 11101011 01001110 01101111 00011101 }",
+        "{...1 0-bits... 11101110 11011111 11111111 11111111 11111111 10111111 11111111 11111110 11010111 01110010 11110110 10111000}",
         comment);
   }
 }
