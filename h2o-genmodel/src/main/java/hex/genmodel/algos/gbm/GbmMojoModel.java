@@ -59,4 +59,5 @@ public final class GbmMojoModel extends SharedTreeMojoModel implements SharedTre
     public String[] leaf_node_assignment(double[] row) {
         return getDecisionPath(row);
     }
+
 }

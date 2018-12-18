@@ -1,8 +1,14 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import org.junit.Assert;
@@ -30,9 +36,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static hex.genmodel.utils.DistributionFamily.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.fvec.FVecTest.makeByteVec;
 
 public class GBMTest extends TestUtil {
@@ -423,6 +427,119 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - binomial data.
+   */
+  @Test public void testPredictStagedProbabilitiesBinomial() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("smalldata/gbm_test/ecology_model.csv"));
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.bernoulli;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      try {
+        GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
+        // test for the first 10 rows in training data
+        for (int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+
+          RowData tmpRow = new RowData();
+          BufferedString bStr = new BufferedString();
+          for (int c = 0; c < train.numCols(); c++) {
+            if (train.vec(c).isCategorical()) {
+              tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+            } else {
+              tmpRow.put(train.names()[c], train.vec(c).at(r));
+            }
+          }
+          BinomialModelPrediction tmpPrediction = model.predictBinomial(tmpRow);
+          double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
+          assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+        }
+        } catch(IOException | PredictException ex){
+          fail(ex.toString());
+        } finally{
+          gbm.delete();
+          if (stagedProbabilities != null) stagedProbabilities.delete();
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * Staged predictions test (prediction probabilities of trees per iteration) - multinomial data.
+   */
+  @Test public void testPredictStagedProbabilitiesMultinomial() {
+    Scope.enter();
+    try {
+      final Key<Frame> target = Key.make();
+      Frame train = Scope.track(parse_test_file("/smalldata/logreg/prostate.csv"));
+      train.remove("ID").remove();     // Remove unique ID
+      int ci = train.find("RACE");
+      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "RACE"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Frame stagedProbabilities = Scope.track(gbm.scoreStagedPredictions(train, target));
+      try {
+        GbmMojoModel mojoModel = (GbmMojoModel) gbm.toMojo();
+        EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(mojoModel).setEnableStagedProbabilities(true)
+        );
+        // test for the first 10 rows in training data
+        for(int r = 0; r < 10; r++) {
+          double[] stagedProbabilitiesRow = new double[stagedProbabilities.numCols()];
+          for (int c = 0; c < stagedProbabilities.numCols(); c++) {
+            stagedProbabilitiesRow[c] = stagedProbabilities.vec(c).at(r);
+          }
+
+          RowData tmpRow = new RowData();
+          BufferedString bStr = new BufferedString();
+          for (int c = 0; c < train.numCols(); c++) {
+            if (train.vec(c).isCategorical()) {
+              tmpRow.put(train.names()[c], train.vec(c).atStr(bStr, r).toString());
+            } else {
+              tmpRow.put(train.names()[c], train.vec(c).at(r));
+            }
+          }
+
+          MultinomialModelPrediction tmpPrediction = model.predictMultinomial(tmpRow);
+          double[] mojoStageProbabilitiesRow = tmpPrediction.stageProbabilities;
+          assertArrayEquals(stagedProbabilitiesRow, mojoStageProbabilitiesRow, 1e-15);
+        }
+      } catch (IOException | PredictException ex) {
+        fail(ex.toString());
+      } finally {
+        gbm.delete();
+        if (stagedProbabilities != null) stagedProbabilities.delete();
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
   // A test of locking the input dataset during model building.
   @Test public void testModelLock() {
     GBM gbm=null;
@@ -785,7 +902,7 @@ public class GBMTest extends TestUtil {
         parms._balance_classes = true;
         parms._seed = 0;
         parms._build_tree_one_node = true;
-        
+
         // Build a first model; all remaining models should be equal
         GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);

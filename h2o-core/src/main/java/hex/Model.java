@@ -613,11 +613,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-    
+
     public void setNames(String[] names) {
       _names = names;
     }
-    
+
     public String _origNames[]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
@@ -1514,7 +1514,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /**
    * Post-process prediction frame.
-   * 
+   *
    * @param adaptFrm
    * @param predictFr
    * @return
@@ -1555,7 +1555,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Output parameter: Metric builder */
     public ModelMetrics.MetricBuilder _mb;
-    
+
     public BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights,
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
@@ -1639,7 +1639,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       super.reduce(bs);
       if (_mb != null) _mb.reduce(bs._mb);
     }
-    
+
     @Override protected void postGlobal() {
       super.postGlobal();
       if(_mb != null) {
@@ -2127,6 +2127,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   config.setModel(genmodel)
                           .setConvertUnknownCategoricalLevelsToNa(true)
                           .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+                          .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
           );
         } catch (IOException e) {
           throw new RuntimeException(e);

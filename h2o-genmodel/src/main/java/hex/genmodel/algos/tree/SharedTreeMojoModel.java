@@ -18,7 +18,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
-    
+
     private ScoreTree _scoreTree;
 
     /**
@@ -938,6 +938,31 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     @Override
     public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
         return _computeGraph(treeNumber);
+    }
+
+    /**
+     * Returns staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+     * The output structure is for tree Tt and class Cc:
+     * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+     * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
+     * @param row Input row.
+     * @param predsLength Length of prediction result.
+     * @return array of staged prediction probabilities
+     */
+    public double[] scoreStagedPredictions(double[] row, int predsLength) {
+        int contribOffset = nclasses() == 1 ? 0 : 1;
+        double[] trees_result = new double[_ntree_groups * _ntrees_per_group];
+
+        for (int groupIndex = 0; groupIndex < _ntree_groups; groupIndex++) {
+            double[] tmpPreds = new double[predsLength];
+            scoreTreeRange(row, 0, groupIndex+1, tmpPreds);
+            unifyPreds(row, 0, tmpPreds);
+            for (int classIndex = 0; classIndex < _ntrees_per_group; classIndex++) {
+                int tree_index = groupIndex * _ntrees_per_group + classIndex;
+                trees_result[tree_index] = tmpPreds[contribOffset+classIndex];
+            }
+        }
+        return trees_result;
     }
 
 }
