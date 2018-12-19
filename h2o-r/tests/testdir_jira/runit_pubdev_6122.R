@@ -14,8 +14,8 @@ test.pdp.save <- function() {
     
     check_file <- function(feature){
       filepath <- paste0(temp_filename_no_extension,'_',feature,'.png')
-      print(filepath)
       expect_true(file.size(filepath) > 0)
+      unlink(filepath)
     }
     
     lapply(cols, check_file)
