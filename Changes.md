@@ -2,6 +2,68 @@
 
 ## H2O
 
+### Xia (3.22.0.3) - 12/21/2018
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5829'>PUBDEV-5829</a>] - Fixed an issue with the REST API. Calling "get model" no longer returns 0 for the timestamp of the model. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5959'>PUBDEV-5959</a>] - The PySparking client no longer hangs after re-connecting to the H2O external backend.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5990'>PUBDEV-5990</a>] - Fixed an OOM issue in h2o.arrange.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6059'>PUBDEV-6059</a>] - Fixed an issue that caused importing Pargue files with large Double data to fail.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6076'>PUBDEV-6076</a>] - After applying group_by to a time stamped column, the original time stamp format is now retained. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6079'>PUBDEV-6079</a>] - In AutoML, cross-validation metrics are now used for early stopping by default. Because of this, the validation_frame argument is now ignored unless nfolds==0 and, in that case, will be used for early stopping. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6098'>PUBDEV-6098</a>] - Fixed an issue that caused the MOJO visualizer to fail for Isolation Forest models. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6101'>PUBDEV-6101</a>] - StackedEnsembleMojoModel is now serializable. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6117'>PUBDEV-6117</a>] - The Python client now allows users to enable XGBoost compare with any H2O frame. The convert_H2OFrame_2_DMatrix method accepts any H2O frame and can convert it to valid data for native XGBoost. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6120'>PUBDEV-6120</a>] - H2O XGBoost now reports correct variable importances. The variable importances are computed from the gains of their respective loss functions during tree construction.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6122'>PUBDEV-6122</a>] - Users can now save PDP plots. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6137'>PUBDEV-6137</a>] - Fixed an issue with GCS support on Hadoop environments. 
+</li>
+</ul>
+    
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1984'>PUBDEV-1984</a>] - Added monotonic variables for GBM. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6030'>PUBDEV-6030</a>] - EasyPredictModelWrapper now calculates reconstruction errors for AutoEncoder. 
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6106'>PUBDEV-6106</a>] - Prediction contributions from each tree from MOJO to easywrapper are now exposed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6110'>PUBDEV-6110</a>] - Updated Gradle to version 5.0.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6115'>PUBDEV-6115</a>] - Fixed the output of rankTsv in the AutoML leaderboard.
+</li>
+</ul>
+                                                            
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6105'>PUBDEV-6105</a>] - Updated the description of enum_limited to indicate that T=1024.
+</li>
+</ul>
+
 ### Xia (3.22.0.2) - 11/21/2018
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-xia/2/index.html</a>
