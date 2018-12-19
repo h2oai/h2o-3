@@ -248,35 +248,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return model job
    */
   public Job<M> trainModelOnH2ONode() {
-    if (H2O.ARGS.client) {
-      if (error_count() > 0)
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-      RemoteTrainModelTask tmt = new RemoteTrainModelTask(_job, _job._result, _parms);
-      H2ONode leader = H2O.CLOUD.leader();
-      new RPC<>(leader, tmt).call().get();
-      return _job;
-    } else {
-      return trainModel(); // use directly
-    }
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    TrainModelRunnable trainModel = new TrainModelRunnable(this);
+    H2O.runOnH2ONode(trainModel);
+    return _job;
   }
 
-  private static class RemoteTrainModelTask extends DTask<RemoteTrainModelTask> {
+  private static class TrainModelRunnable extends H2O.RemoteRunnable<TrainModelRunnable> {
+    private transient ModelBuilder _mb;
     private Job<Model> _job;
     private Key<Model> _key;
     private Model.Parameters _parms;
     @SuppressWarnings("unchecked")
-    private RemoteTrainModelTask(Job job, Key key, Model.Parameters parms) {
-      _job = (Job<Model>) job;
-      _key = (Key<Model>) key;
-      _parms = parms;
+    private TrainModelRunnable(ModelBuilder mb) {
+      _mb = mb;
+      _job = (Job<Model>) _mb._job;
+      _key = _job._result;
+      _parms = _mb._parms;
     }
     @Override
-    public void compute2() {
-      ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
-      mb._parms = _parms;
-      mb.init(false); // validate parameters
-      mb.trainModel();
-      tryComplete();
+    public void setupOnRemote() {
+      _mb = ModelBuilder.make(_parms.algoName(), _job, _key);
+      _mb._parms = _parms;
+      _mb.init(false); // validate parameters
+    }
+    @Override
+    public void run() {
+      _mb.trainModel();
     }
   }
 
@@ -329,6 +328,40 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( !nFoldCV() ) trainModelImpl().compute2();
     else computeCrossValidation();
     return _result.get();
+  }
+
+  /**
+   * Train a model as part of a larger job. The model will be built on a non-client node. 
+   * 
+   * @param job containing job
+   * @param result key of the resulting model
+   * @param params model parameters
+   * @param fr input frame, ignored if null
+   * @param <MP> Model.Parameters
+   * @return instance of a Model
+   */
+  public static <MP extends Model.Parameters> Model trainModelNested(Job<?> job, Key<Model> result, MP params, Frame fr) {
+    H2O.runOnH2ONode(new TrainModelNestedRunnable(job, result, params, fr));
+    return result.get();
+  }
+
+  private static class TrainModelNestedRunnable extends H2O.RemoteRunnable<TrainModelNestedRunnable> {
+    private Job<?> _job;
+    private Key<Model> _key;
+    private Model.Parameters _parms;
+    private Frame _fr;
+    private TrainModelNestedRunnable(Job<?> job, Key<Model> key, Model.Parameters parms, Frame fr) {
+      _job = job;
+      _key = key;
+      _parms = parms;
+      _fr = fr;
+    }
+    @Override
+    public void run() {
+      ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
+      mb._parms = _parms;
+      mb.trainModelNested(_fr);
+    }
   }
 
   /** Model-specific implementation of model training
