@@ -884,7 +884,8 @@ class ModelBase(backwards_compatible()):
 
 
     def partial_plot(self, data, cols, destination_key=None, nbins=20, weight_column=None,
-                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None):
+                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
+                     save_to_file=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -900,6 +901,7 @@ class ModelBase(backwards_compatible()):
         :param server: ?
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
+        :param save_to_file Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
 
@@ -1027,6 +1029,8 @@ class ModelBase(backwards_compatible()):
                 axs[i, 0].yaxis.grid()
             if len(col) > 1:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            if(save_to_file is not None):
+                plt.savefig(save_to_file)
 
         return pps
 
