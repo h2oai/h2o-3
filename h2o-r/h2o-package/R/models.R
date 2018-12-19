@@ -2,6 +2,8 @@
 #' H2O Model Related Functions
 #'
 #' @importFrom graphics strwidth par legend polygon
+#' @importFrom grDevices dev.copy dev.off png
+
 NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
