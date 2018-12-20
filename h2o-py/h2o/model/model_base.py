@@ -34,6 +34,9 @@ class ModelBase(backwards_compatible()):
         self._job = None  # used when _future is True
         self._have_pojo = False
         self._have_mojo = False
+        self._start_time = None
+        self._end_time = None
+        self._run_time = None
 
 
     @property
@@ -107,6 +110,21 @@ class ModelBase(backwards_compatible()):
     def have_mojo(self):
         """True, if export to MOJO is possible"""
         return self._have_mojo
+
+    @property
+    def start_time(self):
+        """Timestamp (milliseconds since 1970) when the model training was started."""
+        return self._start_time
+
+    @property
+    def end_time(self):
+        """Timestamp (milliseconds since 1970) when the model training was ended."""
+        return self._end_time
+
+    @property
+    def run_time(self):
+        """Model training time in milliseconds"""
+        return self._run_time
 
 
     def __repr__(self):
