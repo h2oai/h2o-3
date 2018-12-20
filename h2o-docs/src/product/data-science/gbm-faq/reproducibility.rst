@@ -7,4 +7,8 @@ Reproducibility
 
 - **How deterministic is GBM?**
 
- As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible (even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples). 
+ As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible (even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples).
+
+- **Can reproducibility be guaranteed in multinode clusters?**
+
+Yes, as long as the cluster configuration is the same and the model training is triggered from the leader node of the cluster the resulting model will be the same given the other requirements are satisfied (seed, no early stopping). For two clusters to be considered the same they need to have the same number of nodes and the nodes need to have the same number of CPU cores available (or the same restriction on number of threads).
