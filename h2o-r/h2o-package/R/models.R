@@ -3081,7 +3081,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' Inside each list, the first element is the column name followed by values defined by the user.
 #' @param save_to Fully qualified prefix of the image files the resulting plots should be saved to, e.g. '/home/user/pdp'.
 #'  Plots for each feature are saved separately in PNG format, each file receives a suffix equal to the corresponding feature name, e.g. `/home/user/pdp_AGE.png`.
-#'  If the files already exists, they will be overridden. Files are only saves if plot argument is set to True.
+#'  If the files already exists, they will be overridden.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -3215,20 +3215,26 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       } else {
         plot(pp[,1:2], type = "l", main = attr(x,"description") )
       }
-      if(!is.null(save_to)){
-        # If user accidentally provides one of the most common suffixes in R, it is removed.
-        save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
-        destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
-        dev.copy(png, destination_file)
-        dev.off()
-        
-      }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
+  
+  pp.plot.save <- function(pp) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
+    png(destination_file)
+    pp.plot(pp)
+    dev.off()
+  }
 
   if(plot) lapply(pps, pp.plot)
+  
+  if(!is.null(save_to)){
+    lapply(pps, pp.plot.save)
+  }
+  
   if(length( pps) == 1) {
     return(pps[[1]])
   } else {
