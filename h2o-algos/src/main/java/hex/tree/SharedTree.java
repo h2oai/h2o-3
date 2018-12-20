@@ -562,7 +562,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.UndecidedNode udn = _tree.undecided(leaf);
 //        System.out.println((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset]);
+        DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
 //        System.out.println(dn + "\n" + dn._split);
         if (dn._split == null) udn.do_not_split();
         else {
@@ -638,8 +638,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   }
 
   // Builder-specific decision node
-  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
-    return new DTree.DecidedNode(udn, hs);
+  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[], Constraints cs ) {
+    return new DTree.DecidedNode(udn, hs, cs);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

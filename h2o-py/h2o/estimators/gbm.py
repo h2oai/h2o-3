@@ -39,7 +39,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func", "monotone_constraints"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -861,5 +861,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def monotone_constraints(self):
+        """
+        A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
+        decreasing constraint.
+
+        Type: ``dict``.
+        """
+        return self._parms.get("monotone_constraints")
+
+    @monotone_constraints.setter
+    def monotone_constraints(self, monotone_constraints):
+        assert_is_type(monotone_constraints, None, dict)
+        self._parms["monotone_constraints"] = monotone_constraints
 
 

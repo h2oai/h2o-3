@@ -1,11 +1,10 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
+import hex.KeyValue;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.CompressedTree;
-import hex.tree.Score;
-import hex.tree.SharedTreeModel;
+import hex.tree.*;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -25,6 +24,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public double _col_sample_rate;
     public double _max_abs_leafnode_pred;
     public double _pred_noise_bandwidth;
+    public KeyValue[] _monotone_constraints;
 
     public GBMParameters() {
       super();
@@ -41,6 +41,25 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public String algoName() { return "GBM"; }
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
+
+    Constraints constraints(Frame f) {
+      if (_monotone_constraints == null || _monotone_constraints.length == 0) {
+        return null;
+      }
+      Constraint[] cs = new Constraint[f.numCols()];
+      for (KeyValue spec : _monotone_constraints) {
+        if (spec.getValue() == 0)
+          continue;
+        int col = f.find(spec.getKey());
+        if (col < 0) {
+          throw new IllegalStateException("Invalid constraint specification, column '" + spec.getKey() + "' doesn't exist.");
+        }
+        int direction = spec.getValue() < 0 ? -1 : 1;
+        cs[col] = new Constraint(direction);
+      }
+      return new Constraints(cs);
+    }
+
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
