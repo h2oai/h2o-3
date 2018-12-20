@@ -1,0 +1,780 @@
+* {
+  font-family: "proxima-nova", sans-serif;
+}
+
+.btn-yellow {
+  padding: 15px 30px;
+}
+
+
+#container {
+  width: 100%;
+}
+
+#title {
+  height:390px;
+  position: relative;
+}
+
+.bg-img img {
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  height: 390px;
+  display: inline;
+  z-index: -1;
+}
+
+#title h1 {
+  background: none;
+  height: auto;
+  height: auto;
+  font-size: 72px;
+  font-weight: bold;
+  padding: 5px;
+  padding-top: 10px;
+}
+
+#title #banner-content {
+  max-width: 1110px;
+  margin: 0 auto;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#banner-content h1 {
+  padding-bottom: 0px;
+}
+
+#title .version {
+  text-align: left;
+  font-size: 14px;
+  padding: 10px;
+  padding-top: 0px;
+  font-weight: 100;
+}
+
+#header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  /*justify-content: space-around;*/
+  position: relative;
+  height: 130px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+#logo {
+  height: 65px;
+  width: 65px;
+
+}
+#subtitle {
+  background: none;
+  color: #000;
+  padding: 10px;
+  text-align: left;
+  width: 70%;
+}
+#subtitle p {
+  font-size: 34px;
+  line-height: 38px;
+  font-weight: 500;
+}
+
+p.links {
+  position: absolute;
+  right: 0;
+  font-size: 14px;
+
+}
+
+p.links a {
+  color: #000;
+  text-decoration: none;
+  padding-bottom: 10px;
+}
+
+p.links a:before {
+  background: #000;
+  height: 4px;
+}
+
+
+#content {
+  padding: 30px 20px 143px 20px;
+  max-width: 1110px;
+  margin: 0 auto;
+}
+
+#tabs {
+  padding-top: 55px;
+  display: inline-block;
+  border: none;
+}
+#tabs:after {
+  content: "";
+  width: 98%;
+  border-bottom: 1px solid #bdbdbd;
+  display: block;
+}
+#tabs.latest-release:after{
+  width: 93%;
+}
+#tabs.dai {
+  padding-top: 10px;
+}
+
+#tabs.dai:after {
+  width: 88%;
+}
+
+#tabs span {
+  border: none;
+  text-transform: none;
+  font-weight: 700;
+  font-size: 14px;
+  color: #000;
+  margin: 0 60px;
+  margin-left: 0px;
+  padding: 0px;
+  height: 30px;
+
+}
+
+@media screen and (max-width: 600px) {
+  #tabs span {
+    margin: 0 50px;
+    margin-left: 0px;
+  }
+
+  .mktoModal .mktoModalContent {
+    right: 20px !important;
+  }
+
+  #title .version, #subtitle {
+    padding-left: 5px;
+  }
+
+
+}
+
+#tabs.sparklingtabs span {
+  margin: 0 30px;
+  margin-left: 0px;
+  font-size: 13px;
+}
+
+
+
+#tabs span.active, #tabs span:hover{
+  border: none;
+  border-bottom: 4px solid #ffe600;
+  text-decoration: none;
+  color: #000;
+}
+
+#downloads {
+  text-align: left;
+  margin-top: 40px;
+}
+
+p.get-started-p {
+  font-size: 18px;
+  font-weight: 200;
+}
+
+p.get-started-p:last-child {
+  margin-top: 0px;
+  margin-bottom: 0px !important;
+}
+
+.get-started-p.mono {
+	font-family: monospace;
+	line-height: 23px;
+	margin-bottom: 0px !important;
+}
+
+a.download-button {
+  background-color: #ffe600;
+  background-image: none;
+  padding: 15px 30px;
+  line-height: initial;
+  font-size: 14px;
+  color: #000;
+  height: auto;
+  text-transform: none;
+  font-weight: 600;
+}
+
+
+.get-started {
+  margin-top:50px;
+  margin-bottom: 25px;
+  font-size: 36px;
+  font-weight: 500;
+}
+
+
+
+
+#quickstart-zip h2#getting-started {
+  font-weight: 500;
+}
+
+h2.get-started {
+  font-family: "futura-pt";
+}
+
+.firststep {
+  font-family: "proxima-nova", sans-serif !important;
+  font-weight: 600;
+}
+
+#content p.terminal {
+  line-height: 23px;
+  font-size: 18px;
+  padding: 20px;
+}
+
+#documentation {
+  border: none;
+}
+
+#documentation h2.get-started:first-child {
+  margin-top: 75px;
+}
+
+#documentation h2.get-started {
+    margin-bottom: 5px;
+}
+
+#documentation > div {
+  margin-left: 0px;
+}
+
+#documentation li {
+  color: #008cff;
+  font-size: 18px;
+  font-weight: 200;
+  line-height: 30px;
+}
+
+#panels table {
+  color: #000;
+}
+
+#panels th {
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+table.note td {
+    line-height: normal !important;
+}
+
+
+th:first-child {
+    width: 23%;
+}
+
+th:nth-child(2) {
+    width: 27%;
+}
+
+th:nth-child(3) {
+    width: 30%;
+}
+
+th:nth-child(4) {
+    width: 10%;
+}
+
+tr td:first-child {
+  padding-left: 2.5%;
+}
+
+
+#panels tbody, #panels tr, #panels td {
+  text-align: left;
+  font-size: 18px;
+  font-weight: 200;
+  line-height: 40px;
+}
+
+#quickstart-linux, #quickstart-windows, #quickstart-mac, #quickstart-power{
+	overflow: scroll;
+}
+
+#quickstart-linux table, #quickstart-windows table,#quickstart-mac table, #quickstart-power table {
+  color: #000;
+}
+
+#quickstart-linux th, #quickstart-windows th, #quickstart-mac th, #quickstart-power th {
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: left;
+}
+
+#quickstart-linux tbody, #quickstart-linux tr, #quickstart-linux td, #quickstart-windows tbody, #quickstart-windows tr, #quickstart-windows td, #quickstart-mac tbody, #quickstart-mac tr, #quickstart-mac td, #quickstart-power tbody, #quickstart-power tr, #quickstart-power td  {
+  text-align: left;
+  font-size: 18px;
+  font-weight: 200;
+  line-height: 40px;
+  padding-left: 0px;
+}
+
+#quickstart-linux td:first-child, #quickstart-windows td:first-child, #quickstart-mac td:first-child, #quickstart-power td:first-child{
+	padding-left: 10px !important;
+}
+
+#quickstart-linux td:last-child, #quickstart-windows td:last-child, #quickstart-mac td:last-child, #quickstart-power td:last-child{
+  padding-right: 10px !important;
+}
+
+#quickstart-zip {
+  padding-bottom: 25px;
+  border-bottom: 1px solid #9f9f9d;
+
+}
+
+#quickstart-zip p.get-started-p:last-child {
+  margin-top: 45px;
+}
+
+
+#note {
+  font-size: 14px;
+  font-weight: 200;
+}
+
+
+tbody tr:nth-child(2n) {
+    background: #d3d3d1;
+}
+
+.mktoForm input {
+  border: 1px solid #ccc;
+}
+
+::placeholder {
+  color: #757575;
+}
+
+@media screen and (max-width: 1024px) {
+  #container {
+    width: 100%;
+  }
+
+  #title h1{
+    font-size: 36px;
+  }
+
+  #subtitle {
+    width: 100%;
+    font-size: 25px;
+  }
+
+  #logo {
+    left: 72px;
+  }
+
+  p.links {
+    right: 72px;
+  }
+
+  #subtitle p {
+    font-size: 17px;
+    line-height: 22px;
+  }
+
+  #title #banner-content {
+    padding: 0px 72px;
+  }
+
+  #content, #header {
+    padding: 34px 72px;
+  }
+
+  .get-started {
+    margin-top: 25px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  #quickstart-linux th, #quickstart-windows th, #quickstart-mac th, #quickstart-power th {
+    font-size: 12px;
+    line-height: normal;
+  }
+
+  #quickstart-linux tbody, #quickstart-linux tr, #quickstart-linux td, #quickstart-windows tbody, #quickstart-windows tr, #quickstart-windows td, #quickstart-mac tbody, #quickstart-mac tr, #quickstart-mac td, #quickstart-power tbody, #quickstart-power tr, #quickstart-power td   {
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  #note {
+    line-height: normal;
+    font-size: 12px;
+  }
+
+  #documentation h2.get-started {
+    margin-bottom: 0px;
+  }
+
+  #content p.terminal {
+    word-break: break-word;
+  }
+
+
+
+  @media screen and (max-width: 767px) {
+    #quickstart-linux tbody, #quickstart-linux tr, #quickstart-linux td, #quickstart-windows tbody, #quickstart-windows tr, #quickstart-windows td, #quickstart-mac tbody, #quickstart-mac tr, #quickstart-mac td, #quickstart-power tbody, #quickstart-power tr, #quickstart-power td {
+      padding-left: 20px;
+    }
+    #quickstart-linux th, #quickstart-windows th, #quickstart-mac th, #quickstart-power th {
+      padding-left: 20px;
+    }
+
+    #quickstart-linux td:last-child, #quickstart-windows td:last-child, #quickstart-mac td:last-child, #quickstart-power td:last-child{
+      padding-right: 10px !important;
+    }
+
+    #title #banner-content {
+      padding: 0px 34px;
+    }
+
+    #content, #header {
+      padding: 34px 34px;
+    }
+  }
+
+  @media screen and (min-width: 600px) and (max-width: 767px) {
+    #quickstart-linux tbody, #quickstart-linux tr, #quickstart-linux td, #quickstart-windows tbody, #quickstart-windows tr, #quickstart-windows td, #quickstart-mac tbody, #quickstart-mac tr, #quickstart-mac td, #quickstart-power tbody, #quickstart-power tr, #quickstart-power td {
+      padding-left: 0px;
+    }
+    #quickstart-linux th, #quickstart-windows th, #quickstart-mac th, #quickstart-power th {
+      padding-left: 0px;
+    }
+
+    #quickstart-linux td:last-child, #quickstart-windows td:last-child, #quickstart-mac td:last-child, #quickstart-power td:last-child{
+      padding-right: 10px !important;
+    }
+
+
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 520px !important;
+
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 520px;
+          margin: 0 auto;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      left: 0px !important;
+    }
+
+
+    #quickstart-linux th:first-child, #quickstart-windows th:first-child, #quickstart-mac th:first-child, #quickstart-power th:first-child {
+      padding-left: 0px !important;
+    }
+  }
+
+  @media screen and (max-width: 425px) {
+    #content {
+        padding: 17px 17px;
+    }
+
+    th:first-child {
+      padding-left: 0px;
+    }
+
+    .mktoForm {
+      margin: 0 auto !important;
+    }
+
+    .mktoForm input[type=text], .mktoForm input[type=url], .mktoForm input[type=email], .mktoForm input[type=tel], .mktoForm input[type=number], .mktoForm input[type=date], .mktoForm textarea.mktoField, .mktoForm select.mktoField{
+      min-width: 100% !important;
+    }
+
+    p.links {
+        right: 33px;
+    }
+
+
+    #title #banner-content {
+      padding: 0px 10px;
+    }
+
+    #tabs {
+      display: inline-block;
+    }
+    #tabs span {
+      display: block;
+    }
+    table {
+      table-layout: auto;
+    }
+
+    tr td:first-child {
+      padding-left: 0;
+    }
+
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 385px !important;
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 385px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      padding: 0px !important;
+      left: 0px !important;
+    }
+
+    #quickstart-linux td:first-child, #quickstart-windows td:first-child, #quickstart-mac td:first-child, #quickstart-power td:first-child{
+        padding-left: 20px !important;
+
+    }
+
+    #title #banner-content {
+      padding: 0px 17px;
+    }
+
+    #content, #header {
+      padding: 34px 17px;
+    }
+
+  }
+
+
+
+  @media screen and (max-width: 425px) {
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 385px !important;
+
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 385px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      left: 0px !important;
+    }
+    #quickstart-linux td:first-child, #quickstart-windows td:first-child, #quickstart-mac td:first-child, #quickstart-power td:first-child{
+        padding-left: 10px !important;
+
+    }
+
+    #quickstart-linux th:first-child, #quickstart-windows th:first-child, #quickstart-mac th:first-child, #quickstart-power th:first-child {
+      padding-left: 0px !important;
+    }
+  }
+
+
+
+
+  @media screen and (max-width: 414px) {
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 375px !important;
+
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 375px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      left: 0px !important;
+    }
+  }
+
+  @media screen and (max-width: 375px) {
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 335px !important;
+
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 335px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      padding: 0px !important;
+      left: 0px !important;
+    }
+  }
+
+
+  @media screen and (max-width: 360px) {
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 320px !important;
+
+    }
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 320px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      left: 0px !important;
+    }
+    #quickstart-linux td:first-child, #quickstart-windows td:first-child, #quickstart-mac td:first-child, #quickstart-power td:first-child{
+        padding-left: 10px !important;
+
+    }
+
+    #quickstart-linux th:first-child, #quickstart-windows th:first-child, #quickstart-mac th:first-child, #quickstart-power th:first-child {
+      padding-left: 0px !important;
+    }
+  }
+
+
+  @media screen and (max-width: 320px) {
+    .width100 img {
+      display: none;
+    }
+
+    .mktoModalMain {
+      max-width: 280px !important;
+
+}
+
+    .width100 .abc{
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+
+    .mktoForm {
+      max-width: 280px;
+    }
+
+    .mktoModalContent {
+      margin-left: 20px;
+    }
+    .mktoModal .mktoModalContent {
+      padding: 0px !important;
+      left: 0px !important;
+    }
+  }
+
+
+
+}
+
+.mktoModal .mktoModalClose {
+  line-height: 16px !important;
+}
+
+
+@media screen and (min-width: 1024px) {
+  @-moz-document url-prefix() {
+    .mktoModal .mktoModalContent {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      -webkit-transform: translate(-50%, -50%);
+      -ms-transform:translate(-50%, -50%) ;
+    }
+  }
+
+  #quickstart-linux, #quickstart-windows, #quickstart-mac, #quickstart-power {
+    -ms-overflow-style: none;
+  }
+
+
+}
+
+/*.mktoModalContent, .mktoModalMain {
+  width: calc(100% - 60px) !important;
+  margin: 0 30px;
+}
+
+.mktoModalMain .abc {
+  width: 100% !important;
+}
+*/
+
+
