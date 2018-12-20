@@ -21,17 +21,21 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6079'>PUBDEV-6079</a>] - In AutoML, cross-validation metrics are now used for early stopping by default. Because of this, the validation_frame argument is now ignored unless nfolds==0 and, in that case, will be used for early stopping. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6098'>PUBDEV-6098</a>] - Fixed an issue that caused the MOJO visualizer to fail for Isolation Forest models. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6098'>PUBDEV-6098</a>] - Fixed an issue that caused the MOJO visualizer to fail for Isolation Forest models.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6101'>PUBDEV-6101</a>] - StackedEnsembleMojoModel is now serializable. 
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6107'>PUBDEV-6107</a>] - In the R client, fixed an error that occurrred when running getModelTree.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6109'>PUBDEV-6109</a>] - In Flow, fixed an issue that caused POJOs, MOJOs, and genmodel.jar to fail to download. This occurred when Flow was launched via Enterprise Steam and in any deployment where user_context was specified. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6111'>PUBDEV-6111</a>] - Fixed the formula used for calculating L2 distance. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6117'>PUBDEV-6117</a>] - The Python client now allows users to enable XGBoost compare with any H2O frame. The convert_H2OFrame_2_DMatrix method accepts any H2O frame and can convert it to valid data for native XGBoost. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6120'>PUBDEV-6120</a>] - H2O XGBoost now reports correct variable importances. The variable importances are computed from the gains of their respective loss functions during tree construction.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6122'>PUBDEV-6122</a>] - Users can now save PDP plots. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6122'>PUBDEV-6122</a>] - Users can now save PDP plots. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6137'>PUBDEV-6137</a>] - Fixed an issue with GCS support on Hadoop environments. 
 </li>
@@ -40,15 +44,19 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1984'>PUBDEV-1984</a>] - Added monotonic variables for GBM. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1984'>PUBDEV-1984</a>] - Added monotonic variables for GBM.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6030'>PUBDEV-6030</a>] - EasyPredictModelWrapper now calculates reconstruction errors for AutoEncoder. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6091'>PUBDEV-6091</a>] - When running a grid search, a timesteamp column was added that shows when each model was added to the grid summary table. 
 </li>
 </ul>
             
 <h4>Improvement</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5865'>PUBDEV-5865</a>] - In GBM, users can now specify the `monotone_constraints` parameter.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6106'>PUBDEV-6106</a>] - Prediction contributions from each tree from MOJO to easywrapper are now exposed.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6110'>PUBDEV-6110</a>] - Updated Gradle to version 5.0.
@@ -60,7 +68,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xia/3/index.ht
 <h4>Docs</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4377'>PUBDEV-4377</a>] - Updated the Prediction section to include information on how the prediction threshold is selected for classification problems.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6105'>PUBDEV-6105</a>] - Updated the description of enum_limited to indicate that T=1024.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6148'>PUBDEV-6148</a>] - In the GBM chapter, added `monotone_constraints` to list of available parameters.
 </li>
 </ul>
 
