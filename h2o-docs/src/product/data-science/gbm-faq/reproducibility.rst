@@ -22,6 +22,6 @@ Reproducibility
 
  For two clusters to be considered the same, they need to have the same number of nodes and the nodes need to have the same number of CPU cores available (or the same restriction on number of threads). When H2O is running on Hadoop, the leader node is automatically returned by the h2odriver as the node that the user should connect to. In multinode deployments of Standalone H2O, the leader node has to be manually identified by the user. Flow users can easily check whether they are connected to the leader node by opening Cluster Status (from the Admin menu) and checking that the first node has the same IP address as they see in their browser's address bar.
  
- ![Leader Node in Cluster Status](images/GBMReproducibility_LeaderNode.png) 
+ ![Leader Node in Cluster Status](../../images/GBMReproducibility_LeaderNode.png) 
 
  **Note** In H2O versions prior to 3.18.0.1, the node automatically returned by the h2odriver while running on Hadoop was not guaranteed to be the leader node.  If you are using a version prior to 3.18.0.1 and you are running H2O on Hadoop, the leader node has to be manually identified by the user for reproducibility.
