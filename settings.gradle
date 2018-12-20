@@ -13,7 +13,9 @@ include 'h2o-persist-hdfs'
 include 'h2o-persist-s3'
 include 'h2o-persist-http'
 include 'h2o-docs'
-include 'h2o-hadoop:h2o-mapreduce-generic'
+include 'h2o-hadoop-common'
+include 'h2o-hadoop-2:h2o-mapreduce-2-generic'
+include 'h2o-hadoop-3:h2o-mapreduce-3-generic'
 include 'h2o-genmodel'
 include 'h2o-bindings'
 include 'h2o-test-integ'
@@ -78,7 +80,7 @@ if (System.getProperty("user.name").equals("jenkins")
 
   // Default hadoop build targets
   def allTargets = [
-         "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8", "cdh5.9", "cdh5.10", "cdh5.13", "cdh5.14",
+         "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8", "cdh5.9", "cdh5.10", "cdh5.13", "cdh5.14", "cdh6.0",
          "hdp2.2", "hdp2.3", "hdp2.4", "hdp2.5", "hdp2.6",
          "mapr4.0", "mapr5.0", "mapr5.1", "mapr5.2", "iop4.2"
   ]
@@ -87,7 +89,8 @@ if (System.getProperty("user.name").equals("jenkins")
   // Include selected/all Hadoop targets
   if (System.getenv("BUILD_HADOOP") != "false") {
     targets.each { name ->
-      include "h2o-hadoop:h2o-${name}-assembly"
+      include "h2o-hadoop-2:h2o-${name}-assembly"
+      include "h2o-hadoop-3:h2o-${name}-assembly"
     }
   }
 }

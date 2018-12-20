@@ -35,7 +35,7 @@ def call(final pipelineContext, final stageConfig) {
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
 
             echo "Running Make"
-            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} test-hadoop-smoke${getMakeTargetSuffix(stageConfig)}
+            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)}
         """
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
@@ -48,7 +48,7 @@ def call(final pipelineContext, final stageConfig) {
 private GString getH2OStartupCmd_hadoop(final stageConfig) {
     return """
             rm -f h2o_one_node h2odriver.out
-            hadoop jar h2o-hadoop/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
+            hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
                 -libjars "\$(cat /opt/hive-jars/hive-libjars)" -n 1 -mapperXmx 2g -baseport 54445 \\
                 -notify h2o_one_node -ea -proxy \\
                 -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
@@ -95,6 +95,7 @@ private GString getH2OStartupCmd_kerberos(final stageConfig) {
  * @return the cmd used to start H2O in given mode
  */
 private GString getH2OStartupCmd(final stageConfig) {
+    hadoopVersion = stageConfig.customData.distribution == 'cdh' && stageConfig.customData.version == '6.0' ? '3' : '2'
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getH2OStartupCmd_hadoop(stageConfig)

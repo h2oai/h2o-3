@@ -30,6 +30,8 @@ import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -133,7 +135,7 @@ class Jetty9Helper {
         constraint.setName("auth");
         constraint.setAuthenticate(true);
 
-        constraint.setRoles(new String[]{Constraint.ANY_ROLE});
+        constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
         final ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*"); // Lock down all API calls
@@ -153,10 +155,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);

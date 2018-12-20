@@ -13,7 +13,6 @@ configurations {
 
 // Dependencies
 dependencies {
-    compile project(":h2o-app")
     compile project(":h2o-grpc")
     compile "org.slf4j:slf4j-log4j12:1.7.5"
 }
