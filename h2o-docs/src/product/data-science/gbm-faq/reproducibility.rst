@@ -14,7 +14,7 @@ Reproducibility
  Yes, as long as:
  -  the cluster configuration is the same
  -  the model training is triggered from the leader node of the cluster
- -  reproducible requirements are satisified
+ -  reproducible requirements are satisfied
   -  same training data
   -  same parameters
   -  same seed
