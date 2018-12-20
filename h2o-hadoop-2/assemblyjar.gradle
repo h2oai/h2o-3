@@ -10,7 +10,9 @@ dependencies {
   compile project(":h2o-hadoop-2:h2o-mapreduce-2-generic")
   // Libraries need for Google Cloud Storage strongly require this Guava version
   compile('com.google.guava:guava:20.0') {force = true}
-  compile project(':h2o-app')
+  compile(project(':h2o-app')) {
+    exclude module: "${defaultWebserverModule}"
+  }
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
   // Include GCS persist layer
