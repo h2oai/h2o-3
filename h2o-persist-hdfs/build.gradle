@@ -17,7 +17,7 @@ dependencies {
     testCompile "junit:junit:${junitVersion}"
     testCompile "org.hamcrest:hamcrest-junit:2.0.0.0"
     testCompile project(path: ":h2o-core", configuration: "testArchives")
-    testRuntimeOnly project(":${defaultTestsWebserverModule}")
+    testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
