@@ -3081,7 +3081,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' Inside each list, the first element is the column name followed by values defined by the user.
 #' @param save_to Fully qualified prefix of the image files the resulting plots should be saved to, e.g. '/home/user/pdp'.
 #'  Plots for each feature are saved separately in PNG format, each file receives a suffix equal to the corresponding feature name, e.g. `/home/user/pdp_AGE.png`.
-#'  If the files already exists, they will be overridden.
+#'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -3231,7 +3231,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 
   if(plot) lapply(pps, pp.plot)
   
-  if(!is.null(save_to)){
+  if(plot && !is.null(save_to)){
     lapply(pps, pp.plot.save)
   }
   
