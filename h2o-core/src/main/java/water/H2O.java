@@ -1237,8 +1237,13 @@ final public class H2O {
       return runnable;
     } else {
       RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
-      H2ONode leader = H2O.CLOUD.leader();
-      return new RPC<>(leader, task).call().get()._runnable;
+      try {
+        return new RPC<>(node, task).call().get()._runnable;
+      } catch (DistributedException e) {
+        Log.trace("Exception in calling runnable on a remote node",  e);
+        Throwable cause = e.getCause();
+        throw cause instanceof RuntimeException ? (RuntimeException) cause : e;
+      }
     }
   }
 
