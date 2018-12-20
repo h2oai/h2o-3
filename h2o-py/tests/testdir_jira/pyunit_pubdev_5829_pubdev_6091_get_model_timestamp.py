@@ -7,14 +7,10 @@ import numpy as np
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
-def test_api_returns_the_same_timestamp():
+def test_api_timestamp():
     prostate_train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
 
-    #Log.info("Converting CAPSULE and RACE columns to factors...\n")
     prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
-
-    # Import prostate_train.csv as numpy array for scikit comparison
-    trainData = np.loadtxt(pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), delimiter=',', skiprows=1)
 
     ntrees = 1
     learning_rate = 0.1
@@ -33,7 +29,13 @@ def test_api_returns_the_same_timestamp():
     models = h2o.api("GET /3/Models")
     assert model._model_json['timestamp'] == models["models"][0]["timestamp"], "Timestamp should be the same."
 
+    assert gbm_h2o.start_time is not None and gbm_h2o.start_time > 0
+    assert gbm_h2o.end_time is not None and gbm_h2o.end_time > 0
+    assert gbm_h2o.run_time is not None and gbm_h2o.run_time > 0
+
+    assert gbm_h2o.end_time - gbm_h2o.start_time == gbm_h2o.run_time
+
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_api_returns_the_same_timestamp)
+    pyunit_utils.standalone_test(test_api_timestamp)
 else:
-    test_api_returns_the_same_timestamp()
+    test_api_timestamp()
