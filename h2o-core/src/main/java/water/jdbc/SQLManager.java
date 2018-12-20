@@ -280,7 +280,9 @@ public class SQLManager {
     switch(databaseType) {
       case SQL_SERVER_DB_TYPE:  // requires ORDER BY clause with OFFSET/FETCH NEXT clauses, syntax supported since SQLServer 2012
         sqlText += " ORDER BY ROW_NUMBER() OVER (ORDER BY (SELECT 0))";
-        //fall through oracle syntax for offset logic
+        sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
+        break;
+        
       case ORACLE_DB_TYPE:
         sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
         break;
