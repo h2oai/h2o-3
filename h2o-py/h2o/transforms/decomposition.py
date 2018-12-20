@@ -1,7 +1,8 @@
 from ..estimators.estimator_base import H2OEstimator
 from h2o.utils.typechecks import Enum
 from h2o.utils.typechecks import assert_is_type
-
+from h2o.frame import H2OFrame
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OPCA(H2OEstimator):
     """
@@ -63,7 +64,7 @@ class H2OPCA(H2OEstimator):
             ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``  (default: ``"mtj_evd_symmmatrix"``).
         :param bool ignore_const_cols: If true, will ignore constant columns.  Default is True.
         :param bool impute_missing:  whether to impute NA/missing values.
-        :param bool compute_metrics: whether to compute metrics on training data.  Default to True
+        :param bool compute_metrics: whether to compute metrics on training data.  Default is True.
 
         :returns: A new instance of H2OPCA.
 
