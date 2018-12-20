@@ -36,9 +36,9 @@ def partial_plot_test_with_user_splits():
     pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True, save_to_file=filename)
     assert os.path.getsize(filename) > 0
     os.unlink(filename)
-       
+
     pdpUserSplit = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True,
-                                          user_splits=user_splits)  
+                                          user_splits=user_splits)
 
     # compare results
     pyunit_utils.assert_H2OTwoDimTable_equal_upto(pdpUserSplit[0], pdpOrig[0], pdpUserSplit[0].col_header, tolerance=1e-10)

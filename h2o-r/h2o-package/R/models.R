@@ -298,7 +298,7 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
     }
     if (collapseArrays) {
       if(any(sapply(paramValue, function(x) !is.null(x) && is.H2OFrame(x))))
-         paramValue <- lapply( paramValue, function(x) { 
+         paramValue <- lapply( paramValue, function(x) {
                             if (is.null(x)) NULL
                             else if (all(is.na(x))) NA
                             else paste0('"',h2o.getId(x),'"')
@@ -379,7 +379,7 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
                           }
                           mapping <- .type.map[paramDef$type,]
                           type <- mapping[1L, 1L]
-                          # Note: we apply this transformatio also for types 
+                          # Note: we apply this transformatio also for types
                           # reported by the backend as scalar because of PUBDEV-1955
                           if (is.list(hv)) {
                             hv <- as.vector(hv, mode=type)
@@ -390,7 +390,7 @@ h2o.getFutureModel <- function(object,verbose=FALSE) {
                             hv <- h2o.getId(hv)
                           .h2o.transformParam(paramDef, hv, collapseArrays = FALSE)
                         }
-          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce) 
+          transf_hyper_vals <- if (is_scalar) sapply(hyper_vals,transf_fce) else lapply(hyper_vals, transf_fce)
           hyper_params[[name]] <<- transf_hyper_vals
         }
       }
@@ -596,11 +596,11 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If newdata is passed in, then train, valid, and xval are ignored.
 #' @param train A logical value indicating whether to return the training metrics (constructed during training).
-#' 
+#'
 #' Note: when the trained h2o model uses balance_classes, the training metrics constructed during training will be from the balanced training dataset.
 #' For more information visit: \url{https://0xdata.atlassian.net/browse/TN-9}
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
-#' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training). 
+#' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training).
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
@@ -612,7 +612,7 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, newdata=prostate.hex)
-#' 
+#'
 #' ## If model uses balance_classes
 #' ## the results from train = TRUE will not match the results from newdata = prostate.hex
 #' prostate.gbm.balanced <- h2o.gbm(3:9, "CAPSULE", prostate.hex, balance_classes = TRUE)
@@ -626,15 +626,15 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if (!is.null(data)) {
     warning("The `data` argument is DEPRECATED; use `newdata` instead as `data` will eventually be removed")
     if (is.null(newdata)) newdata <- data
-    else stop("Do not use both `data` and `newdata`; just use `newdata`")  
+    else stop("Do not use both `data` and `newdata`; just use `newdata`")
   }
 
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
   if(!is.null(newdata) && !is.H2OFrame(newdata)) stop("`newdata` must be an H2OFrame object")
-  if(!is.logical(train) || length(train) != 1L || is.na(train)) stop("`train` must be TRUE or FALSE") 
-  if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE") 
-  if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE") 
+  if(!is.logical(train) || length(train) != 1L || is.na(train)) stop("`train` must be TRUE or FALSE")
+  if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE")
+  if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
 
   missingNewdata <- missing(newdata) || is.null(newdata)
@@ -667,11 +667,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   else if( train || (!train && !valid && !xval) ) return(model@model$training_metrics)    # no newdata, train, valid, and xval are false (all defaults), return the training metrics
   else if( valid ) {
     if( is.null(model@model$validation_metrics@metrics) ) return(NULL) # no newdata, but valid is true, return the validation metrics
-    else                                                  return(model@model$validation_metrics)  
+    else                                                  return(model@model$validation_metrics)
   }
   else { #if xval
     if( is.null(model@model$cross_validation_metrics@metrics) ) return(NULL) # no newdata, but xval is true, return the crosss_validation metrics
-    else                                                        return(model@model$cross_validation_metrics)  
+    else                                                        return(model@model$cross_validation_metrics)
   }
 }
 
@@ -762,7 +762,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AUC )
   if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
-    if ( !train && !valid && !xval ) { 
+    if ( !train && !valid && !xval ) {
       metric <- model.parts$tm@metrics$AUC
       if ( !is.null(metric) ) return(metric)
     }
@@ -788,7 +788,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
     }
     if ( !is.null(v) ) {
       names(v) <- v_names
-      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }      
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
   warning(paste0("No AUC for ", class(object)))
@@ -1194,7 +1194,7 @@ h2o.coef <- function(object) {
     }
   } else {
     stop("Can only extract coefficients from GLM and CoxPH models")
-  }  
+  }
 }
 
 #'
@@ -1873,7 +1873,7 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 
 #'
 #' Get the total within cluster sum of squares.
-#' 
+#'
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training tot_withinss value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of tot_withinss' are returned, where the names are "train", "valid"
 #' or "xval".
@@ -1911,7 +1911,7 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 }
 
 #' Get the between cluster sum of squares
-#' 
+#'
 #' Get the between cluster sum of squares.
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training betweenss value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of betweenss' are returned, where the names are "train", "valid"
@@ -1951,7 +1951,7 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 
 #'
 #' Get the total sum of squares.
-#' 
+#'
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training totss value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of totss' are returned, where the names are "train", "valid"
 #' or "xval".
@@ -2125,10 +2125,10 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   warning(paste0("No null deviance for ", class(object)))
   invisible(NULL)
 }
-    
+
 
 #' Retrieve the residual deviance
-#' 
+#'
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training residual deviance value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of residual deviances are returned, where the names are "train", "valid"
 #' or "xval".
@@ -2222,11 +2222,11 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   }
   warning(paste0("No residual dof for ", class(object)))
   invisible(NULL)
-}  
-    
+}
+
 
 #' Retrieve the null degrees of freedom
-#' 
+#'
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training null degrees of freedom value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of null degrees of freedom are returned, where the names are "train", "valid"
 #' or "xval".
@@ -2507,12 +2507,12 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' if (requireNamespace("mlbench", quietly=TRUE)) {
 #'     library(h2o)
 #'     h2o.init()
-#'     
+#'
 #'     df <- as.h2o(mlbench::mlbench.friedman1(10000,1))
 #'     rng <- h2o.runif(df, seed=1234)
 #'     train <- df[rng<0.8,]
 #'     valid <- df[rng>=0.8,]
-#'     
+#'
 #'     gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid,
 #'                    ntrees=500, learn_rate=0.01, score_each_iteration = TRUE)
 #'     plot(gbm)
@@ -2607,7 +2607,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       ylim <- range(c(df[,c(training_metric)], df[,c(validation_metric)]))  #sync up y axes
       if (sum(is.na(ylim))>1) {
         ylim <- c(0.0, 1.0)
-      }  
+      }
       graphics::plot(df[,c(timestep)], df[,c(training_metric)], type="l", xlab = "", ylab = "", axes = FALSE,
                      main = "Scoring History", col = "blue", ylim = ylim, ...)
       graphics::par(new = TRUE)
@@ -2704,7 +2704,7 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 
   }
 }
-  
+
 #' Plot Standardized Coefficient Magnitudes
 #'
 #' Plot a GLM model's standardized coefficient magnitudes.
@@ -2917,7 +2917,7 @@ h2o.sdev <- function(object) {
 #' df <- as.h2o(iris)
 #' tab <- h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
-#' plot(tab)              
+#' plot(tab)
 #' }
 #' @export
 h2o.tabulate <- function(data, x, y,
@@ -2963,23 +2963,23 @@ h2o.tabulate <- function(data, x, y,
 #' df <- as.h2o(iris)
 #' tab <- h2o.tabulate(data = df, x = "Sepal.Length", y = "Petal.Width",
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
-#' plot(tab)              
+#' plot(tab)
 #' }
 #' @export
 plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
-  
+
   if (!inherits(x, "H2OTabulate")) {
     stop("Must be an H2OTabulate object")
   }
-  
+
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("In order to plot.H2OTabulate you must have ggplot2 package installed")
   }
-  
+
   # Pull small counts table into R memory to plot
   df <- as.data.frame(x$count_table)
   names(df) <- c("c1", "c2", "counts")
-  
+
   # Reorder the levels for better plotting
   if (suppressWarnings(is.na(sum(as.numeric(df$c1))))) {
     c1_order <- order(unique(df$c1))
@@ -2995,15 +2995,15 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   c2_labels <- unique(df$c2)
   df$c1 <- factor(df$c1, levels = c1_labels[c1_order])
   df$c2 <- factor(df$c2, levels = c2_labels[c2_order])
-  
+
   # Plot heatmap
   c1 <- c2 <- counts <- NULL #set these to pass CRAN checks w/o warnings
-  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2)) 
+  (p <- ggplot2::ggplot(df, ggplot2::aes(c1, c2))
   + ggplot2::geom_tile(ggplot2::aes(fill = counts), colour = "white") + ggplot2::scale_fill_gradient(low = "white", high = "steelblue"))
-  
+
   # Adjust the plot
   p <- p + ggplot2::theme_grey(base_size = base_size) + ggplot2::labs(x = xlab, y = ylab) + ggplot2::scale_x_discrete(expand = c(0, 0)) + ggplot2::scale_y_discrete(expand = c(0, 0)) + ggplot2::theme(legend.position = "none", axis.ticks = ggplot2::element_blank(), axis.text.x = ggplot2::element_text(size = base_size * 0.8, angle = 330, hjust = 0, colour = "grey50"))
-  
+
   # Return a ggplot object
   return(p)
 }
@@ -3116,7 +3116,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   y = object@parameters$y
   x = cols
   args <- .verify_dataxy(data, x, y)
-  
+
   if (is.numeric(weight_column) && (weight_column != -1)) {
       stop("weight_column should be a column name of your data frame.")
   } else if (is.character(weight_column)) { # weight_column_index is column name
@@ -3133,7 +3133,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   parms$nbins <- nbins
   parms$weight_column_index <- weight_column
   parms$add_missing_na <- include_na
-  
+
   if (length(user_splits) == 0) {
     parms$user_cols <- NULL
     parms$user_splits <- NULL
@@ -3168,7 +3168,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           }
 
           user_num_splits <- c(user_num_splits, nVal)
-          user_cols <- c(user_cols, csname)          
+          user_cols <- c(user_cols, csname)
         } else {
           stop ("Partial dependency plots are generated for numerical and categorical columns only.")
         }
@@ -3200,7 +3200,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     if(!all(is.na(pp))) {
       type = col_types[which(col_names == names(pp)[1])]
       if(type == "enum") pp[,1] = factor( pp[,1], levels=pp[,1])
-      
+
       ## Plot one standard deviation above and below the mean
       if( plot_stddev) {
         ## Added upper and lower std dev confidence bound
@@ -3211,7 +3211,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
         lines(pp[,1], pp[,2], lwd = 2)
         lines(pp[,1], lower, col = "blue", lty = 2)
-        lines(pp[,1], upper, col = "blue", lty = 2) 
+        lines(pp[,1], upper, col = "blue", lty = 2)
       } else {
         plot(pp[,1:2], type = "l", main = attr(x,"description") )
       }
@@ -3219,7 +3219,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
-  
+
   pp.plot.save <- function(pp) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
@@ -3230,11 +3230,11 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   }
 
   if(plot) lapply(pps, pp.plot)
-  
+
   if(plot && !is.null(save_to)){
     lapply(pps, pp.plot.save)
   }
-  
+
   if(length( pps) == 1) {
     return(pps[[1]])
   } else {
@@ -3296,11 +3296,11 @@ h2o.deepfeatures <- function(object, data, layer) {
 
 #'
 #' The H2ONode class.
-#' 
+#'
 #' @slot id An \code{integer} representing node's unique identifier. Generated by H2O.
 #' @slot levels A \code{character} representing categorical levels on split from parent's node belonging into this node. NULL for root node or non-categorical splits.
-#' 
-#' #' @aliases H2ONode 
+#'
+#' #' @aliases H2ONode
 #'
 setClass("H2ONode", representation(
   id = "integer"
@@ -3310,9 +3310,9 @@ setClass("H2ONode", representation(
 #' The H2OLeafNode class.
 #'
 #' This class represents a single leaf node in an \code{H2OTree}.
-#' 
+#'
 #' #' @aliases H2OLeafNode
-#' 
+#'
 setClass("H2OLeafNode", representation(
   prediction = "numeric"
 ),
@@ -3321,7 +3321,7 @@ contains = "H2ONode")
 #'
 #' The H2OSplitNode class.
 #'
-#' This class represents a single non-terminal node in an \code{H2OTree}. 
+#' This class represents a single non-terminal node in an \code{H2OTree}.
 #' @slot threshold A \code{numeric} split threshold, typically when the split column is numerical.
 #' @slot left_child A \code{H2ONodeOrNULL} representing the left child node, if a node has one.
 #' @slot right_child A \code{H2ONodeOrNULL} representing the right child node, if a node has one.
@@ -3329,7 +3329,7 @@ contains = "H2ONode")
 #' @slot left_levels A \code{character} representing the levels of a categorical feature heading to the left child of this node. NA for non-categorical split.
 #' @slot right_levels A \code{character} representing the levels of a categorical feature heading to the right child of this node. NA for non-categorical split.
 #' @slot na_direction A \code{character} representing the direction of NA values. LEFT means NA values go to the left child node, RIGH means NA values go to the right child node.
-#' @aliases H2OSplitNode 
+#' @aliases H2OSplitNode
 #' @export
 setClass(
   "H2OSplitNode",
@@ -3348,7 +3348,7 @@ setClass(
 #' @rdname H2ONode-class
 #' @param object an \code{H2ONode} object.
 #' @export
-setMethod('show', 'H2ONode', 
+setMethod('show', 'H2ONode',
           function(object){
             print.H2ONode(object)
           })
@@ -3359,13 +3359,13 @@ print.H2ONode <- function(node){
     cat("Terminal node. Prediction is")
     return()
   }
-  
-  
+
+
   if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
   if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
   cat("\n")
   cat("Splits on column", node@split_feature, "\n")
-  
+
   if(is.na(node@threshold)){
     if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_levels, "\n")
     if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_levels, "\n")
@@ -3420,7 +3420,7 @@ setClass(
 #' @rdname H2OTree-class
 #' @param object an \code{H2OTree} object.
 #' @export
-setMethod('show', 'H2OTree', 
+setMethod('show', 'H2OTree',
           function(object){
             print.H2OTree(object)
           })
@@ -3444,12 +3444,12 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
   child_node_index <- node + 1
   left <- tree@left_children[child_node_index]
   right <- tree@right_children[child_node_index]
-  
+
   node_levels <- if(is.null(tree@levels[[node + 1]])) NA_character_ else tree@levels[[node + 1]]
-  
+
   left_child = .h2o.walk_tree(left, tree)
   right_child = .h2o.walk_tree(right, tree)
-  
+
   node <- NULL
   if(is.null(left_child) && is.null(right_child)){
     node <- new("H2OLeafNode",
@@ -3469,7 +3469,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
        left_levels = left_node_levels,
        right_levels = right_node_levels)
   }
-  
+
   node
 }
 
@@ -3500,9 +3500,9 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       tree_number = tree_number - 1,
       tree_class = tree_class_request
     )
-  
+
   res$thresholds[is.nan(res$thresholds)] <- NA
-  
+
   tree <- new(
     "H2OTree",
     left_children = res$left_children,
@@ -3515,12 +3515,12 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     nas = res$nas,
     predictions = res$predictions
   )
-  
+
   node_index <- 0
   left_ordered <- c()
   right_ordered <- c()
   node_ids <- c(res$root_node_id)
-  
+
   for(i in 1:length(tree@left_children)){
     if(tree@left_children[i] != -1){
       node_index <- node_index + 1
@@ -3529,7 +3529,7 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
     } else {
       left_ordered[i] <- -1
     }
-    
+
     if(tree@right_children[i] != -1){
       node_index <- node_index + 1
       right_ordered[i] <- node_index
@@ -3538,27 +3538,27 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       right_ordered[i] <- -1
     }
   }
-  
+
   tree@node_ids <- node_ids
   tree@left_children <- as.integer(left_ordered)
   tree@right_children <- as.integer(right_ordered)
-  
+
   if(!is.null(res$tree_class)){
     tree@tree_class <- res$tree_class
   }
-  
+
   if(is.logical(res$levels)){ # Vector of NAs is recognized as logical type in R
     tree@levels <- rep(list(NULL), length(res$levels))
   } else {
     tree@levels <- res$levels
   }
-  
+
   for (i in 1:length(tree@levels)){
     if(!is.null(tree@levels[[i]])){
     tree@levels[[i]] <- tree@levels[[i]] + 1
     }
   }
-  
+
   # Convert numerical categorical levels to characters
   pointer <-as.integer(1);
   for(i in 1:length(tree@left_children)){
@@ -3572,12 +3572,12 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
       next
     }
     split_column_domain <- model@model$domains[[split_column_cat_index]]
-    
+
     # Left child node's levels converted to characters
     left_char_categoricals <- c()
     if(left != -1)  {
       pointer <- pointer + 1;
-      
+
       if(!is.null(tree@levels[[pointer]])){
         for(level_index in 1:length(tree@levels[[pointer]])){
           left_char_categoricals[level_index] <- split_column_domain[tree@levels[[pointer]][level_index]]
@@ -3585,8 +3585,8 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
         tree@levels[[pointer]] <- left_char_categoricals;
       }
     }
-    
-    
+
+
     # Right child node's levels converted to characters, if there is any
     right_char_categoricals <- c()
     if(right != -1)  {

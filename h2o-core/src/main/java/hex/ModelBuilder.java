@@ -331,8 +331,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
-   * Train a model as part of a larger job. The model will be built on a non-client node. 
-   * 
+   * Train a model as part of a larger job. The model will be built on a non-client node.
+   *
    * @param job containing job
    * @param result key of the resulting model
    * @param params model parameters
