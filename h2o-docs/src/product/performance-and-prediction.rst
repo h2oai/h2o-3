@@ -473,6 +473,16 @@ With H2O-3, you can generate predictions for a model based on samples in a test 
 
 For classification problems, predicted probabilities and labels are compared against known results. (Note that for binary models, labels are based on the maximum F1 threshold from the model object.) For regression problems, predicted regression targets are compared against testing targets and typical error metrics.
 
+Prediction Threshold
+~~~~~~~~~~~~~~~~~~~~
+
+For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
+
+- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
+- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
+- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
+- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
+
 In-Memory Prediction
 ~~~~~~~~~~~~~~~~~~~~
 
