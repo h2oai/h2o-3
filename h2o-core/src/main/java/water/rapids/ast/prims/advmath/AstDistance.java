@@ -129,8 +129,9 @@ public class AstDistance extends AstBuiltin<AstDistance> {
             }
           } else if (l2) {
             for (int c = 0; c < p; ++c) { //cols
-              distRQ += Math.sqrt(Math.pow(cs[c].atd(r) - Qs[c].at(q), 2));
+              distRQ += Math.pow(cs[c].atd(r) - Qs[c].at(q), 2);
             }
+            distRQ = Math.sqrt(distRQ);
           } else if (cosine || cosine_sq) {
             for (int c = 0; c < p; ++c) { //cols
               distRQ += cs[c].atd(r) * Qs[c].at(q);
