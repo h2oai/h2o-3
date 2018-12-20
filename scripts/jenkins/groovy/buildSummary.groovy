@@ -206,7 +206,7 @@ class BuildSummary {
 
     private void updateJobDescriptionIfRequired(final context) {
         if (updateJobDescription) {
-            context.currentBuild.description = getSummaryHTML(context)
+            context.currentBuild.description = "Build for pull request"
         }
     }
 
