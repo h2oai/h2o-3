@@ -27,8 +27,6 @@ import java.lang.reflect.Field;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -1217,14 +1215,40 @@ final public class H2O {
     return task;
   }
 
-  public static abstract class H2OFuture<T> implements Future<T> {
-    public final T getResult(){
-      try {
-        return get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
-      }
+  public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
+    H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
+    return runOnH2ONode(node, runnable);
+  }
+
+  // package-private for unit tests
+  static <T extends RemoteRunnable> T runOnH2ONode(H2ONode node, T runnable) {
+    if (node == H2O.SELF) {
+      // run directly
+      runnable.run();
+      return runnable;
+    } else {
+      RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
+      H2ONode leader = H2O.CLOUD.leader();
+      return new RPC<>(leader, task).call().get()._runnable;
     }
+  }
+
+  private static class RunnableWrapperTask<T extends RemoteRunnable> extends DTask<RunnableWrapperTask<T>> {
+    private final T _runnable;
+    private RunnableWrapperTask(T runnable) {
+      _runnable = runnable;
+    }
+    @Override
+    public void compute2() {
+      _runnable.setupOnRemote();
+      _runnable.run();
+      tryComplete();
+    }
+  }
+
+  public abstract static class RemoteRunnable<T extends RemoteRunnable> extends Iced<T> {
+    public void setupOnRemote() {}
+    public abstract void run();
   }
 
   /** Simple wrapper over F/J {@link CountedCompleter} to support priority
