@@ -43,12 +43,15 @@ loo_valid <- valid
 loo_test <- test
 
 # Create Leave One Out Encoding Map
-encoding_map <- h2o.target_encode_create(full_train, te_cols, "survived")
+encoding_map <- h2o.target_encode_create(loo_train, te_cols, "survived")
 
 # Apply Leave One Out Encoding Map on Training, Validation, Testing Data
 loo_train <- h2o.target_encode_apply(loo_train, x = te_cols,  y = "survived", encoding_map, holdout_type = "LeaveOneOut", seed = 1234)
 loo_valid <- h2o.target_encode_apply(loo_valid, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
 loo_test <- h2o.target_encode_apply(loo_test, x = te_cols, y = "survived", encoding_map, holdout_type = "None", noise_level = 0)
+
+head(loo_train, 100)
+h2o.exportFile(loo_train, "titanic_loo_train_old.csv", force=TRUE)
 
 
 print("Run GBM with Leave One Out Target Encoding")
@@ -76,7 +79,7 @@ cv_train$fold <- h2o.kfold_column(cv_train, nfolds = 5, seed = 1234)
 # Create Leave One Out Encoding Map
 encoding_map <- h2o.target_encode_create(cv_train, te_cols, "survived", "fold")
 
-# Apply Leave One Out Encoding Map on Training, Validation, Testing Data
+# Apply KFold Encoding Map on Training, Validation, Testing Data
 cv_train <- h2o.target_encode_apply(cv_train, x = te_cols,  y = "survived", encoding_map, holdout_type = "KFold", fold_column = "fold", seed = 1234)
 cv_valid <- h2o.target_encode_apply(cv_valid, x = te_cols, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)
 cv_test <- h2o.target_encode_apply(cv_test, x = te_cols, y = "survived", encoding_map, holdout_type = "None", fold_column = "fold", noise_level = 0)

@@ -266,6 +266,8 @@ reference:
       - h2o.tanh
       - h2o.target_encode_apply
       - h2o.target_encode_create
+      - h2o.target_encode_fit
+      - h2o.target_encode_transform
       - h2o.toFrame
       - h2o.tokenize
       - h2o.tolower
