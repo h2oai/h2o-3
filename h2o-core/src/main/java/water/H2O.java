@@ -1215,6 +1215,15 @@ final public class H2O {
     return task;
   }
 
+  /**
+   * Executes a runnable on a regular H2O Node (= not on a client).
+   * If the current H2O Node is a regular node, the runnable will be executed directly (RemoteRunnable#run will be invoked).
+   * If the current H2O Node is a client node, the runnable will be send to a leader node of the cluster and executed there.
+   * The caller shouldn't make any assumptions on where the code will be run.
+   * @param runnable code to be executed
+   * @param <T> RemoteRunnable
+   * @return executed runnable (will be a different instance if executed remotely).
+   */
   public static <T extends RemoteRunnable> T runOnH2ONode(T runnable) {
     H2ONode node = H2O.ARGS.client ? H2O.CLOUD.leader() : H2O.SELF;
     return runOnH2ONode(node, runnable);
@@ -1228,8 +1237,13 @@ final public class H2O {
       return runnable;
     } else {
       RunnableWrapperTask<T> task = new RunnableWrapperTask<>(runnable);
-      H2ONode leader = H2O.CLOUD.leader();
-      return new RPC<>(leader, task).call().get()._runnable;
+      try {
+        return new RPC<>(node, task).call().get()._runnable;
+      } catch (DistributedException e) {
+        Log.trace("Exception in calling runnable on a remote node",  e);
+        Throwable cause = e.getCause();
+        throw cause instanceof RuntimeException ? (RuntimeException) cause : e;
+      }
     }
   }
 
