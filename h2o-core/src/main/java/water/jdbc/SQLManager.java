@@ -239,8 +239,10 @@ public class SQLManager {
   static String buildSelectSingleRowSql(String databaseType, String table, String columns) {
 
     switch(databaseType) {
+      case SQL_SERVER_DB_TYPE: //syntax supported since SQLServer 2008
+        return "SELECT TOP(1) " + columns + " FROM " + table;
+        
       case ORACLE_DB_TYPE:
-      case SQL_SERVER_DB_TYPE:
         return "SELECT " + columns + " FROM " + table + " FETCH NEXT 1 ROWS ONLY";
 
       case TERADATA_DB_TYPE:
@@ -276,8 +278,12 @@ public class SQLManager {
 
     String sqlText = "SELECT " + columns + " FROM " + table;
     switch(databaseType) {
+      case SQL_SERVER_DB_TYPE:  // requires ORDER BY clause with OFFSET/FETCH NEXT clauses, syntax supported since SQLServer 2012
+        sqlText += " ORDER BY ROW_NUMBER() OVER (ORDER BY (SELECT 0))";
+        sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
+        break;
+        
       case ORACLE_DB_TYPE:
-      case SQL_SERVER_DB_TYPE:
         sqlText += " OFFSET " + start + " ROWS FETCH NEXT " + length + " ROWS ONLY";
         break;
 
